@@ -123,30 +123,33 @@ const StrategyContent = () => {
 
         {/* Dynamic Content Rendering - Simplified Markdown mapping */}
         <div className="prose prose-zinc max-w-none">
-          {content.split('\n').map((line, i) => {
+          {content && content.split('\n').map((line, i) => {
+            const trimLine = line.trim();
             if (line.startsWith('# ')) return <h1 key={i} className="text-4xl font-black tracking-tight mb-8 font-sans">{line.replace('# ', '')}</h1>;
             if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-black mt-12 mb-4 border-b border-zinc-200 pb-2 font-sans">{line.replace('## ', '')}</h2>;
             if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-black mt-8 mb-2 font-sans italic text-purple-900">{line.replace('### ', '')}</h3>;
             if (line.startsWith('> ')) return <div key={i} className="border-l-4 border-purple-500 pl-4 py-2 bg-purple-50 my-6 italic text-zinc-700">{line.replace('> ', '')}</div>;
-            if (line.trim() === '---') return <hr key={i} className="my-12 border-zinc-200" />;
-            if (line.trim() === '') return <div key={i} className="h-4" />;
+            if (trimLine === '---') return <hr key={i} className="my-12 border-zinc-200" />;
+            if (trimLine === '') return <div key={i} className="h-4" />;
             
-            // Simple table detection (very basic for this specific doc)
-            if (line.includes('|') && line.includes('---')) return null;
-            if (line.startsWith('|')) {
-               return (
-                 <div key={i} className="my-4 overflow-x-auto">
-                   <table className="w-full text-left text-sm border-collapse border border-zinc-200">
-                     <tbody>
-                       <tr className="border-b border-zinc-100">
-                         {line.split('|').filter(c => c.trim()).map((td, tdi) => (
-                           <td key={tdi} className="p-3 border-x border-zinc-100 font-medium bg-zinc-50">{td.trim()}</td>
-                         ))}
-                       </tr>
-                     </tbody>
-                   </table>
-                 </div>
-               );
+            // Simple table detection
+            if (line.includes('|') && !line.includes('---')) {
+               const cells = line.split('|').map(c => c.trim()).filter(c => c !== '');
+               if (cells.length > 0) {
+                 return (
+                   <div key={i} className="my-4 overflow-x-auto">
+                     <table className="w-full text-left text-sm border-collapse border border-zinc-200">
+                       <tbody>
+                         <tr className="border-b border-zinc-100">
+                           {cells.map((td, tdi) => (
+                             <td key={tdi} className="p-3 border-x border-zinc-100 font-medium bg-zinc-50/50">{td}</td>
+                           ))}
+                         </tr>
+                       </tbody>
+                     </table>
+                   </div>
+                 );
+               }
             }
 
             if (line.startsWith('- ')) return <li key={i} className="ml-4 list-disc text-sm mb-2 text-zinc-700">{line.replace('- ', '')}</li>;
