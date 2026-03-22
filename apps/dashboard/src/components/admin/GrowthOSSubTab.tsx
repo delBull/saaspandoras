@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
-import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X } from "lucide-react";
+import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -74,6 +75,100 @@ interface LeadSuggestion {
     };
   };
 }
+
+
+const StrategyContent = () => {
+  const [content, setContent] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/docs/monetization-plan')
+      .then(res => res.json())
+      .then(data => {
+        setContent(data.content || '');
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 gap-4">
+        <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
+        <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Cargando Estrategia Maestra...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-12 bg-white text-zinc-900 font-serif selection:bg-purple-100 selection:text-purple-900 leading-relaxed overflow-x-hidden">
+      <div className="max-w-3xl mx-auto space-y-8">
+        {/* Document Header Decorator */}
+        <div className="flex justify-between items-start border-b-2 border-zinc-900 pb-8 mb-12">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-zinc-900 rounded flex items-center justify-center text-white font-black italic text-xl">P</div>
+            <div className="flex flex-col">
+              <span className="font-black text-xs uppercase tracking-tighter">Pandora's Protocol</span>
+              <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Internal Memo</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="block text-[10px] font-bold uppercase text-zinc-400">Expediente:</span>
+            <span className="block text-xs font-black">GOS-2026-MARKETING</span>
+          </div>
+        </div>
+
+        {/* Dynamic Content Rendering - Simplified Markdown mapping */}
+        <div className="prose prose-zinc max-w-none">
+          {content.split('\n').map((line, i) => {
+            if (line.startsWith('# ')) return <h1 key={i} className="text-4xl font-black tracking-tight mb-8 font-sans">{line.replace('# ', '')}</h1>;
+            if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-black mt-12 mb-4 border-b border-zinc-200 pb-2 font-sans">{line.replace('## ', '')}</h2>;
+            if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-black mt-8 mb-2 font-sans italic text-purple-900">{line.replace('### ', '')}</h3>;
+            if (line.startsWith('> ')) return <div key={i} className="border-l-4 border-purple-500 pl-4 py-2 bg-purple-50 my-6 italic text-zinc-700">{line.replace('> ', '')}</div>;
+            if (line.trim() === '---') return <hr key={i} className="my-12 border-zinc-200" />;
+            if (line.trim() === '') return <div key={i} className="h-4" />;
+            
+            // Simple table detection (very basic for this specific doc)
+            if (line.includes('|') && line.includes('---')) return null;
+            if (line.startsWith('|')) {
+               return (
+                 <div key={i} className="my-4 overflow-x-auto">
+                   <table className="w-full text-left text-sm border-collapse border border-zinc-200">
+                     <tbody>
+                       <tr className="border-b border-zinc-100">
+                         {line.split('|').filter(c => c.trim()).map((td, tdi) => (
+                           <td key={tdi} className="p-3 border-x border-zinc-100 font-medium bg-zinc-50">{td.trim()}</td>
+                         ))}
+                       </tr>
+                     </tbody>
+                   </table>
+                 </div>
+               );
+            }
+
+            if (line.startsWith('- ')) return <li key={i} className="ml-4 list-disc text-sm mb-2 text-zinc-700">{line.replace('- ', '')}</li>;
+            
+            return <p key={i} className="text-base mb-4 text-zinc-700 text-pretty">{line}</p>;
+          })}
+        </div>
+
+        {/* Footer Signature */}
+        <div className="mt-20 pt-12 border-t border-zinc-200 flex justify-between items-center opacity-60 grayscale scale-90">
+             <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">Approved by</span>
+                <span className="font-serif italic text-lg">Growth Operating System Engine</span>
+             </div>
+             <div className="w-16 h-16 rounded-full border-2 border-red-900/20 flex items-center justify-center text-red-900/40 text-[8px] font-black uppercase text-center rotate-12 border-dashed">
+                Classified<br/>Top Secret
+             </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 
 export default function GrowthOSSubTab() {
@@ -562,6 +657,38 @@ export default function GrowthOSSubTab() {
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-bold text-white tracking-tight">🚀 Growth OS</h3>
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[10px] uppercase font-bold tracking-widest">Protocol Multi-tenant</Badge>
+              <div className="flex items-center -space-x-px">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link 
+                      href="/growth-os" 
+                      target="_blank"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-l-full text-[10px] font-black uppercase tracking-widest transition-all group"
+                    >
+                      <Monitor className="w-3 h-3" />
+                      Preview
+                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-950 border-zinc-800 text-[10px] text-zinc-400">
+                    Ver cómo los protocolos ven los paquetes de Growth OS
+                  </TooltipContent>
+                </Tooltip>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button 
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-r-full text-[10px] font-black uppercase tracking-widest transition-all group"
+                    >
+                      <FileText className="w-3 h-3" />
+                      Estrategia Master
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-zinc-950 border-zinc-800 text-white overflow-hidden flex flex-col p-0">
+                    <StrategyContent />
+                  </DialogContent>
+                </Dialog>
+              </div>
               <Dialog>
                 <DialogTrigger asChild>
                   <button className="text-zinc-600 hover:text-purple-400 transition-colors p-1 rounded-full hover:bg-white/5">
