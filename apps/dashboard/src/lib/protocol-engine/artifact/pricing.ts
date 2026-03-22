@@ -38,8 +38,9 @@ export async function resolveArtifactPrice({
   }
 
   // 3. Static Fallback from Phase/Project data
-  const isBase = chainId === 8453 || chainId === 84532;
-  const decimals = isBase ? 1e6 : 1e18;
+  // Base Mainnet (8453) is USDC (6 decimals), others (Sepolia, Ethereum) are Native (18 decimals)
+  const decimals = (chainId === 8453) ? 1e6 : 1e18;
+
   return {
     price: BigInt(Math.round((fallbackPrice || 0) * decimals)),
     source: 'fallback'

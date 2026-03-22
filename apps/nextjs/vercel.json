@@ -1,7 +1,8 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "turbo run build --filter=@saasfly/nextjs",
-  "installCommand": "bun install",
-  "ignoreCommand": "npx turbo-ignore @saasfly/nextjs"
+  "outputFileTracingRoot": "../../",
+  "buildCommand": "turbo run build --filter=@saasfly/nextjs...",
+  "installCommand": "bun install --frozen-lockfile",
+  "ignoreCommand": "npx turbo-ignore --fallback=HEAD^ @saasfly/nextjs"
 }

@@ -32,7 +32,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate Request
-    const apiKey = req.headers.get('x-api-key');
+    const rawAuth = req.headers.get('authorization');
+    const apiKey = req.headers.get('x-api-key') || (rawAuth?.startsWith('Bearer ') ? rawAuth.substring(7) : null);
     const userAgent = req.headers.get('user-agent') || 'unknown';
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
 
@@ -246,7 +247,7 @@ export async function OPTIONS(req: NextRequest) {
       headers: {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, x-api-key",
+        "Access-Control-Allow-Headers": "Content-Type, x-api-key, Authorization",
         "Access-Control-Allow-Credentials": "true",
       },
     });

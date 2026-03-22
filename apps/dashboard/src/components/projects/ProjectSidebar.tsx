@@ -154,6 +154,24 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   };
 
   const allPhases = getPhases();
+  const config = typeof project.w2eConfig === 'string'
+    ? JSON.parse(project.w2eConfig)
+    : (project.w2eConfig || {});
+  const accessCardImage = config.accessCardImage || project.image_url;
+
+  // --- Smooth Scroll Logic ---
+  const scrollToPhases = () => {
+    const element = document.getElementById('tab-phases');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Fallback: switch tab via URL if not in DOM, but try to stay on page if possible
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'utility');
+      url.hash = 'tab-phases';
+      window.location.href = url.toString();
+    }
+  };
   // let accumulatedUSD = 0; // Unused
   let accumulatedTokens = 0;
 
@@ -245,19 +263,19 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
           {/* Access / Investment Card */}
           <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 relative overflow-hidden group">
             {/* Access Card Background (Optional visual flair) */}
-            {project.w2eConfig?.accessCardImage && (
+            {accessCardImage && (
               <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={project.w2eConfig.accessCardImage} alt="" className="w-full h-full object-cover blur-sm" />
+                <img src={accessCardImage} alt="" className="w-full h-full object-cover blur-sm" />
               </div>
             )}
 
             <div className="text-center mb-6 relative z-10">
-              {project.w2eConfig?.accessCardImage && (
+              {accessCardImage && (
                 <div className="mb-4 flex flex-col items-center">
                   <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-lime-400/50 shadow-[0_0_20px_rgba(163,230,53,0.3)] mb-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={project.w2eConfig.accessCardImage} alt="Access NFT" className="w-full h-full object-cover" />
+                    <img src={accessCardImage} alt="Access NFT" className="w-full h-full object-cover" />
                   </div>
                   <h3 className="text-lime-400 font-bold text-sm tracking-wider uppercase">Access Card</h3>
                 </div>
@@ -311,12 +329,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     Acceso Verificado
                   </div>
                   <button
-                    onClick={() => {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set('tab', 'utility');
-                      url.hash = 'tab-phases';
-                      window.location.href = url.toString();
-                    }}
+                    onClick={scrollToPhases}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-lime-400 hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
@@ -337,12 +350,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <span>Obtener Acceso</span>
                   </button>
                   <button
-                    onClick={() => {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set('tab', 'utility');
-                      url.hash = 'tab-phases';
-                      window.location.href = url.toString();
-                    }}
+                    onClick={scrollToPhases}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-white hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
@@ -392,7 +400,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 </SimpleTooltip>
 
                 {/* 3. Support / Donate (Activator) */}
-                <SimpleTooltip content="Apoyar Creador (Donación)">
+                <SimpleTooltip content="Like (Próximamente)">
                   <button className="p-2 text-zinc-400 hover:text-pink-400 transition-colors cursor-not-allowed">
                     <Heart className="w-3 h-3" />
                   </button>

@@ -9,7 +9,7 @@ export function resolvePayment({
   chainId: number;
   totalValue: bigint;
 }) {
-  // Logic: Most chains use Native (ETH), but Base is configured for USDC
+  // Logic: Base Mainnet (8453) uses USDC (ERC20), others (Sepolia, Ethereum) use Native (ETH)
   const isNative = chainId !== 8453; 
 
   if (isNative) {
