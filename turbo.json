@@ -2,7 +2,8 @@
   "$schema": "https://turborepo.org/schema.json",
   "globalDependencies": [
     "**/.env.*local",
-    "tsconfig.json"
+    "tsconfig.json",
+    "bun.lockb"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
@@ -12,16 +13,23 @@
     "VERCEL_GIT_COMMIT_REF",
     "VERCEL_GIT_COMMIT_SHA"
   ],
-  "pipeline": {
+  "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": [
         "dist/**",
         ".next/**",
         "!.next/cache/**"
+      ],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "next.config.*"
       ]
     },
-
     "build-packages": {
       "dependsOn": [],
       "inputs": [
@@ -29,34 +37,44 @@
         "packages/*/package.json",
         "packages/*/tsconfig.json"
       ],
-      "outputs": ["packages/*/dist/**"]
+      "outputs": [
+        "packages/*/dist/**"
+      ]
     },
-
     "build-apps": {
-      "dependsOn": ["build-packages"],
+      "dependsOn": [
+        "build-packages"
+      ],
       "inputs": [
         "apps/*/src/**",
         "apps/*/package.json",
-        "apps/*/tsconfig.json"
+        "apps/*/tsconfig.json",
+        "apps/*/next.config.*"
       ],
-      "outputs": ["apps/*/.next/**"]
+      "outputs": [
+        "apps/*/.next/**"
+      ]
     },
-
     "dev": {
       "persistent": true,
       "cache": false
     },
-
     "lint": {
-      "dependsOn": ["^build-packages"],
-      "outputs": ["node_modules/.cache/.eslintcache"]
+      "dependsOn": [
+        "^build-packages"
+      ],
+      "outputs": [
+        "node_modules/.cache/.eslintcache"
+      ]
     },
-
     "typecheck": {
-      "dependsOn": ["^build-packages"],
-      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+      "dependsOn": [
+        "^build-packages"
+      ],
+      "outputs": [
+        "node_modules/.cache/tsbuildinfo.json"
+      ]
     },
-
     "clean": {
       "cache": false
     }
