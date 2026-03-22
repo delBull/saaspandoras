@@ -72,11 +72,13 @@ export async function executeGrowthActions(
       let success = false;
 
       switch (action) {
-        case 'SEND_WELCOME_EXPLORE_D1': {
+    case 'SEND_WELCOME_EXPLORE_D1': {
           const res = await sendExploreWelcomeEmail({
             to: lead.email,
             projectName: project.name,
-            differentiator: project.differentiator || 'Innovando en la Web3'
+            differentiator: project.differentiator || 'Innovando en la Web3',
+            projectSlug: project.slug,
+            baseUrl: (project as any).baseUrl
           });
           success = res.success;
           break;
@@ -86,6 +88,8 @@ export async function executeGrowthActions(
           const res = await sendInvestWelcomeEmail({
             to: lead.email,
             projectName: project.name,
+            projectSlug: project.slug,
+            baseUrl: (project as any).baseUrl
           });
           success = res.success;
           break;
@@ -249,7 +253,9 @@ async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise
             isActive: false, 
             instructor: "Pandora's AI Architect",
             modules: [],
-            skillsCovered: ['Quick Onboarding', project.name]
+            skillsCovered: ['Quick Onboarding', project.name],
+            createdAt: new Date(),
+            updatedAt: new Date()
         } as any);
 
         return `https://dash.pandoras.finance/education/courses/${draftId}`;

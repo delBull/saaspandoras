@@ -15,12 +15,19 @@ import React from 'react';
 
 interface InvestStep1EmailProps {
   projectName: string;
+  projectSlug?: string;
+  baseUrl?: string;
 }
 
 export const InvestStep1Email = ({
-  projectName = 'nuestro proyecto'
+  projectName = 'nuestro proyecto',
+  projectSlug = '',
+  baseUrl = 'https://dash.pandoras.finance'
 }: InvestStep1EmailProps) => {
   const previewText = `Tu interés en ${projectName} - Siguientes Pasos`;
+
+  // Dynamic link to the project or educational draft
+  const investUrl = `${baseUrl}/education/courses/draft-${projectSlug}`;
 
   return (
     <Html>
@@ -51,8 +58,8 @@ export const InvestStep1Email = ({
 
             <Section className="text-center mt-[32px] mb-[32px]">
               <Button
-                className="bg-[#000000] rounded text-white text-[12px] font-semibold no-underline text-center px-5 py-3"
-                href={`https://pandoras.finance/projects`} // To be made dynamic later
+                className="bg-[#000000] rounded-lg text-white text-[14px] font-bold no-underline text-center px-10 py-4 inline-block"
+                href={investUrl}
               >
                 Acceso directo a detalles
               </Button>

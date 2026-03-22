@@ -195,21 +195,22 @@ export function configureNotifications(config: NotificationConfig) {
 
 // Auto-configure from environment (support both naming variants)
 // Auto-configure from environment - LAZY LOADED, NOT TOP LEVEL
-const discordWebhook = process.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_UR;
+// Auto-configure from environment - LAZY LOADED, NOT TOP LEVEL
+const discordWebhook = process.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_ALERTS;
 const discordApplyWebhook = process.env.DISCORD_APPLY_WEBHOOK_URL || "https://discord.com/api/webhooks/1448752441838272622/r2rdM6ch5ajcrf0nZOuzFuUOSEYYJqo3l4j2W9cIxkAAAX-Hlf4Gy8R-XE0m6djm7mUv";
 
 export function ensureNotificationServiceConfigured() {
-  if (discordWebhook || discordApplyWebhook) {
-    // Check if already configured to avoid spamming logs
-    if (notificationService.isConfigured) return;
+  // Check if already configured to avoid spamming logs
+  if (notificationService.isConfigured) return;
 
+  if (discordWebhook || discordApplyWebhook) {
     configureNotifications({
       discord: {
         webhookUrl: discordWebhook || '',
         applyWebhookUrl: discordApplyWebhook
       }
     });
-    console.log('🚀 Notification service auto-configured with Discord (Dual Channels)');
+    console.log('🚀 Notification service auto-configured with Discord');
   }
 }
 

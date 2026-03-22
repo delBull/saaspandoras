@@ -257,8 +257,9 @@ export async function POST(req: NextRequest) {
             slug: projectContext.slug,
             name: projectContext?.title || 'Protocolo Ecosystem',
             type: projectContext?.businessCategory || 'Ecosistema',
-            discordWebhookUrl: projectContext?.discordWebhookUrl
-          }
+            discordWebhookUrl: projectContext?.discordWebhookUrl,
+            baseUrl: process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dash.pandoras.finance'
+          } as any
         });
       } catch (e) {
         console.error(`❌ [Growth Engine] Executor failed silently for ${email}:`, e);
