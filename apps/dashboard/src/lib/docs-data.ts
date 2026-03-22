@@ -630,6 +630,139 @@ Grow your protocol's community through our built-in, automated referral system.
     ]
   },
   {
+    id: "growth-os",
+    title: "Growth OS & Automation",
+    icon: "Rocket",
+    sections: [
+      {
+        id: "growth-engine",
+        title: "The Growth Engine",
+        content: `# Growth OS: The Conversion Machine
+        
+Pandoras provides an institutional-grade **Growth Engine** that transforms casual visitors into active protocol members. Unlike traditional CRMs, Growth OS is natively integrated with the blockchain identity layer.
+
+## 🧠 State Machine Architecture
+
+Every lead captured via the Pandoras ecosystem (Widget or API) is managed by a deterministic state machine. This ensures that every user receives the right context at the right time.
+
+### Core States:
+- **🆕 NEW**: Initial capture, context collection.
+- **🔍 EXPLORE**: User navigating documentation or exploring utility.
+- **📚 EDUCATING**: Active consumption of educational courses or "moats".
+- **💎 INVEST_READY**: High-intent behavior detected (intent=invest + high score).
+- **✅ CONVERTED**: Successful conversion (minted license, joined DAO).
+
+## 🚀 Performance Features
+
+### Atomic Transitions
+The engine implements **Transition Guards** to prevent invalid state jumps, ensuring data integrity and professional reporting.
+
+### Production-Ready Idempotency
+Our **Idempotency Layer** ensures that automated actions (like emails) are executed exactly once, even in high-concurrency environments.
+
+### Fresh Read Consistency
+Mitigates race conditions by re-fetching the latest lead metadata immediately before any state change or action execution.
+`
+      },
+      {
+        id: "marketing-roadmap",
+        title: "Marketing & Nurturing Roadmap",
+        content: `# Marketing & Nurturing Roadmap
+        
+Our goal is to automate the growth of partner protocols through sovereign nurturing flows.
+
+## 📍 Phase 0: Foundation (COMPLETED)
+- ✅ **State-based Growth Engine**: Deterministic state transitions.
+- ✅ **Multi-tenant Lead Capture**: Isolated data for partner protocols.
+- ✅ **Real-time Scoring (QS)**: Behavioral lead qualification.
+- ✅ **Step 1 Automation**: Intent-based Nurturing (Welcome Flows).
+
+## 🚀 Phase 1: Engagement (IN PROGRESS)
+- 🔄 **Moat Integration**: Automated enrollment in educational courses based on Lead State.
+- 🔄 **Drip Campaigns**: Multi-step email sequences (Phase 2: Deep Dive, Phase 3: Social Proof).
+- 🔄 **Real-time Team Alerts**: Direct notifications to protocol founders via Discord when high-value leads (Whales) are detected.
+
+## 📡 Phase 2: Omni-channel Growth
+- ⏳ **WhatsApp Nurturing**: High-conversion messaging for FOMO and critical events (Presale Live, Reward Claims).
+- ⏳ **Lead Unification**: Relational attribution to share audience insights across the Pandoras ecosystem securely.
+- ⏳ **Smart A/B Testing**: Automated optimization of campaign content.
+
+## 💎 Phase 3: Ecosystem Incentives
+- ⏳ **Cross-Protocol Rewards**: Incentives for users who represent high quality across multiple protocols.
+- ⏳ **Governed Growth**: DAO-voted marketing strategies and treasury-funded growth initiatives.
+`
+      },
+      {
+        id: "growth-os-admin",
+        title: "Admin Guide: Managing Growth",
+        content: `# Admin Guide: Managing Growth
+        
+As an administrator, the Growth OS allows you to monitor and catalyze the conversion funnel of any project in the ecosystem.
+
+## 📊 Understanding Lead States
+
+Each lead is classified into one of these five states based on their behavior:
+
+1.  **🆕 NEW**: The user just shared their contact info. No specific action taken yet.
+2.  **🔍 EXPLORE**: The user expressed curiosity in the protocol's documentation or vision.
+    *   *Action*: The system sends an educational "Welcome Explore" email.
+3.  **📚 EDUCATING**: The user is actively consuming a course (Moat).
+    *   *Action*: The system tracks progress and prepares rewards.
+4.  **💎 INVEST_READY**: High-intent detected. User wants to join a whitelist or invest.
+    *   *Action*: Real-time Discord alerts are sent to the project's founders.
+5.  **✅ CONVERTED**: The user completed the final goal (Purchase/Mint).
+
+## 🔔 Setting up Project Alerts
+
+To ensure protocol founders receive real-time alerts:
+1.  Create a private Discord channel for the project team.
+2.  Create a Webhook in that channel (Settings > Integrations > Webhooks).
+3.  Go to the **Project Configuration** and paste the Webhook URL in the \`discordWebhookUrl\` field.
+4.  The Growth Engine will now route all **INVEST_READY** alerts directly to that channel.
+`
+      },
+      {
+        id: "growth-os-dev",
+        title: "Developer Integration: Smart Widgets",
+        content: `# Developer Integration: Smart Widgets
+
+The Pandoras Widget is more than a lead capture form; it's a context-aware entry point for the Growth Engine.
+
+## 🛠️ Contextual Pre-classification
+
+You can use the same widget in different parts of a landing page or documentation to pre-classify leads using the \`data-intent\` attribute.
+
+### Example: Investor Landing Page
+If the widget is on a page specifically for investors, use the \`invest\` intent:
+\`\`\`html
+<script 
+  src="https://dash.pandoras.finance/api/v1/widget/v1.js" 
+  data-project-id="your-project-slug"
+  data-intent="invest"
+  defer
+></script>
+\`\`\`
+
+### Example: Documentation / Blog
+If the widget is in a "Learn More" section, use the \`explore\` intent:
+\`\`\`html
+<script 
+  src="https://dash.pandoras.finance/api/v1/widget/v1.js" 
+  data-project-id="your-project-slug"
+  data-intent="explore"
+  defer
+></script>
+\`\`\`
+
+## 🧠 Why it matters
+Using the correct \`data-intent\` allows the Growth Engine to trigger different nurturing flows immediately:
+- **Invest**: Triggers an invitation to a strategy call and alerts the team.
+- **Explore**: Triggers an automated educational course (Moat) to move the lead towards the next stage.
+`
+      }
+    ]
+  },
+  {
     id: "security",
     title: "Security & Trust",
     icon: "Shield",
