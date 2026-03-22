@@ -2,9 +2,9 @@
   "name": "@saasfly/ui",
   "private": true,
   "version": "0.1.0",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
       "*": [
@@ -13,10 +13,11 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup src/*.ts src/*.tsx --format esm,cjs --dts --clean",
     "clean": "git clean -xdf .turbo node_modules",
     "format": "prettier --check '**/*.{ts,tsx}' ",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev": "tsup src/*.ts src/*.tsx --format esm,cjs --watch"
   },
   "dependencies": {
     "@radix-ui/react-accessible-icon": "next",
@@ -65,10 +66,10 @@
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",
     "@saasfly/prettier-config": "workspace:*",
-    "@saasfly/typescript-config": "workspace:*",
     "@saasfly/tailwind-config": "workspace:*",
-    "@types/react": "18.3.3",
+    "@saasfly/typescript-config": "workspace:*",
     "@tanstack/react-table": "8.17.0",
+    "@types/react": "18.3.3",
     "date-fns": "3.3.1",
     "eslint": "8.57.0",
     "prettier": "3.2.5",
@@ -78,6 +79,7 @@
     "react-hook-form": "7.51.4",
     "tailwindcss": "3.4.1",
     "tailwindcss-animate": "^1.0.7",
+    "tsup": "^8.5.1",
     "typescript": "5.4.5"
   },
   "prettier": "@saasfly/prettier-config",
@@ -89,52 +91,240 @@
     ]
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./3d-card": "./src/3d-card.tsx",
-    "./accordion": "./src/accordion.tsx",
-    "./alert-dialog": "./src/alert-dialog.tsx",
-    "./alert": "./src/alert.tsx",
-    "./animated-gradient-text": "./src/animated-gradient-text.tsx",
-    "./animated-list": "./src/animated-list.tsx",
-    "./animated-tooltip": "./src/animated-tooltip.tsx",
-    "./avatar": "./src/avatar.tsx",
-    "./background-lines": "./src/background-lines.tsx",
-    "./button": "./src/button.tsx",
-    "./calendar": "./src/calendar.tsx",
-    "./callout": "./src/callout.tsx",
-    "./card-hover-effect": "./src/card-hover-effect.tsx",
-    "./card-skeleton": "./src/card-skeleton.tsx",
-    "./card": "./src/card.tsx",
-    "./checkbox": "./src/checkbox.tsx",
-    "./colorful-text": "./src/colorful-text.tsx",
-    "./command": "./src/command.tsx",
-    "./container-scroll-animation": "./src/container-scroll-animation.tsx",
-    "./data-table": "./src/data-table.tsx",
-    "./dialog": "./src/dialog.tsx",
-    "./dropdown-menu": "./src/dropdown-menu.tsx",
-    "./following-pointer": "./src/following-pointer.tsx",
-    "./form": "./src/form.tsx",
-    "./glowing-effect": "./src/glowing-effect.tsx",
-    "./icons": "./src/icons.tsx",
-    "./infinite-moving-cards": "./src/infinite-moving-cards.tsx",
-    "./input": "./src/input.tsx",
-    "./label": "./src/label.tsx",
-    "./marquee": "./src/marquee.tsx",
-    "./meteors": "./src/meteors.tsx",
-    "./popover": "./src/popover.tsx",
-    "./scroll-area": "./src/scroll-area.tsx",
-    "./select": "./src/select.tsx",
-    "./sheet": "./src/sheet.tsx",
-    "./skeleton": "./src/skeleton.tsx",
-    "./sparkles": "./src/sparkles.tsx",
-    "./switch": "./src/switch.tsx",
-    "./table": "./src/table.tsx",
-    "./tabs": "./src/tabs.tsx",
-    "./text-generate-effect": "./src/text-generate-effect.tsx",
-    "./text-reveal": "./src/text-reveal.tsx",
-    "./toaster": "./src/toaster.tsx",
-    "./typewriter-effect": "./src/typewriter-effect.tsx",
-    "./use-toast": "./src/use-toast.tsx",
-    "./wobble-card": "./src/wobble-card.tsx"
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./3d-card": {
+      "import": "./dist/3d-card.mjs",
+      "require": "./dist/3d-card.js",
+      "types": "./dist/3d-card.d.ts"
+    },
+    "./accordion": {
+      "import": "./dist/accordion.mjs",
+      "require": "./dist/accordion.js",
+      "types": "./dist/accordion.d.ts"
+    },
+    "./alert-dialog": {
+      "import": "./dist/alert-dialog.mjs",
+      "require": "./dist/alert-dialog.js",
+      "types": "./dist/alert-dialog.d.ts"
+    },
+    "./alert": {
+      "import": "./dist/alert.mjs",
+      "require": "./dist/alert.js",
+      "types": "./dist/alert.d.ts"
+    },
+    "./animated-gradient-text": {
+      "import": "./dist/animated-gradient-text.mjs",
+      "require": "./dist/animated-gradient-text.js",
+      "types": "./dist/animated-gradient-text.d.ts"
+    },
+    "./animated-list": {
+      "import": "./dist/animated-list.mjs",
+      "require": "./dist/animated-list.js",
+      "types": "./dist/animated-list.d.ts"
+    },
+    "./animated-tooltip": {
+      "import": "./dist/animated-tooltip.mjs",
+      "require": "./dist/animated-tooltip.js",
+      "types": "./dist/animated-tooltip.d.ts"
+    },
+    "./avatar": {
+      "import": "./dist/avatar.mjs",
+      "require": "./dist/avatar.js",
+      "types": "./dist/avatar.d.ts"
+    },
+    "./background-lines": {
+      "import": "./dist/background-lines.mjs",
+      "require": "./dist/background-lines.js",
+      "types": "./dist/background-lines.d.ts"
+    },
+    "./button": {
+      "import": "./dist/button.mjs",
+      "require": "./dist/button.js",
+      "types": "./dist/button.d.ts"
+    },
+    "./calendar": {
+      "import": "./dist/calendar.mjs",
+      "require": "./dist/calendar.js",
+      "types": "./dist/calendar.d.ts"
+    },
+    "./callout": {
+      "import": "./dist/callout.mjs",
+      "require": "./dist/callout.js",
+      "types": "./dist/callout.d.ts"
+    },
+    "./card-hover-effect": {
+      "import": "./dist/card-hover-effect.mjs",
+      "require": "./dist/card-hover-effect.js",
+      "types": "./dist/card-hover-effect.d.ts"
+    },
+    "./card-skeleton": {
+      "import": "./dist/card-skeleton.mjs",
+      "require": "./dist/card-skeleton.js",
+      "types": "./dist/card-skeleton.d.ts"
+    },
+    "./card": {
+      "import": "./dist/card.mjs",
+      "require": "./dist/card.js",
+      "types": "./dist/card.d.ts"
+    },
+    "./checkbox": {
+      "import": "./dist/checkbox.mjs",
+      "require": "./dist/checkbox.js",
+      "types": "./dist/checkbox.d.ts"
+    },
+    "./colorful-text": {
+      "import": "./dist/colorful-text.mjs",
+      "require": "./dist/colorful-text.js",
+      "types": "./dist/colorful-text.d.ts"
+    },
+    "./command": {
+      "import": "./dist/command.mjs",
+      "require": "./dist/command.js",
+      "types": "./dist/command.d.ts"
+    },
+    "./container-scroll-animation": {
+      "import": "./dist/container-scroll-animation.mjs",
+      "require": "./dist/container-scroll-animation.js",
+      "types": "./dist/container-scroll-animation.d.ts"
+    },
+    "./data-table": {
+      "import": "./dist/data-table.mjs",
+      "require": "./dist/data-table.js",
+      "types": "./dist/data-table.d.ts"
+    },
+    "./dialog": {
+      "import": "./dist/dialog.mjs",
+      "require": "./dist/dialog.js",
+      "types": "./dist/dialog.d.ts"
+    },
+    "./dropdown-menu": {
+      "import": "./dist/dropdown-menu.mjs",
+      "require": "./dist/dropdown-menu.js",
+      "types": "./dist/dropdown-menu.d.ts"
+    },
+    "./following-pointer": {
+      "import": "./dist/following-pointer.mjs",
+      "require": "./dist/following-pointer.js",
+      "types": "./dist/following-pointer.d.ts"
+    },
+    "./form": {
+      "import": "./dist/form.mjs",
+      "require": "./dist/form.js",
+      "types": "./dist/form.d.ts"
+    },
+    "./glowing-effect": {
+      "import": "./dist/glowing-effect.mjs",
+      "require": "./dist/glowing-effect.js",
+      "types": "./dist/glowing-effect.d.ts"
+    },
+    "./icons": {
+      "import": "./dist/icons.mjs",
+      "require": "./dist/icons.js",
+      "types": "./dist/icons.d.ts"
+    },
+    "./infinite-moving-cards": {
+      "import": "./dist/infinite-moving-cards.mjs",
+      "require": "./dist/infinite-moving-cards.js",
+      "types": "./dist/infinite-moving-cards.d.ts"
+    },
+    "./input": {
+      "import": "./dist/input.mjs",
+      "require": "./dist/input.js",
+      "types": "./dist/input.d.ts"
+    },
+    "./label": {
+      "import": "./dist/label.mjs",
+      "require": "./dist/label.js",
+      "types": "./dist/label.d.ts"
+    },
+    "./marquee": {
+      "import": "./dist/marquee.mjs",
+      "require": "./dist/marquee.js",
+      "types": "./dist/marquee.d.ts"
+    },
+    "./meteors": {
+      "import": "./dist/meteors.mjs",
+      "require": "./dist/meteors.js",
+      "types": "./dist/meteors.d.ts"
+    },
+    "./popover": {
+      "import": "./dist/popover.mjs",
+      "require": "./dist/popover.js",
+      "types": "./dist/popover.d.ts"
+    },
+    "./scroll-area": {
+      "import": "./dist/scroll-area.mjs",
+      "require": "./dist/scroll-area.js",
+      "types": "./dist/scroll-area.d.ts"
+    },
+    "./select": {
+      "import": "./dist/select.mjs",
+      "require": "./dist/select.js",
+      "types": "./dist/select.d.ts"
+    },
+    "./sheet": {
+      "import": "./dist/sheet.mjs",
+      "require": "./dist/sheet.js",
+      "types": "./dist/sheet.d.ts"
+    },
+    "./skeleton": {
+      "import": "./dist/skeleton.mjs",
+      "require": "./dist/skeleton.js",
+      "types": "./dist/skeleton.d.ts"
+    },
+    "./sparkles": {
+      "import": "./dist/sparkles.mjs",
+      "require": "./dist/sparkles.js",
+      "types": "./dist/sparkles.d.ts"
+    },
+    "./switch": {
+      "import": "./dist/switch.mjs",
+      "require": "./dist/switch.js",
+      "types": "./dist/switch.d.ts"
+    },
+    "./table": {
+      "import": "./dist/table.mjs",
+      "require": "./dist/table.js",
+      "types": "./dist/table.d.ts"
+    },
+    "./tabs": {
+      "import": "./dist/tabs.mjs",
+      "require": "./dist/tabs.js",
+      "types": "./dist/tabs.d.ts"
+    },
+    "./text-generate-effect": {
+      "import": "./dist/text-generate-effect.mjs",
+      "require": "./dist/text-generate-effect.js",
+      "types": "./dist/text-generate-effect.d.ts"
+    },
+    "./text-reveal": {
+      "import": "./dist/text-reveal.mjs",
+      "require": "./dist/text-reveal.js",
+      "types": "./dist/text-reveal.d.ts"
+    },
+    "./toaster": {
+      "import": "./dist/toaster.mjs",
+      "require": "./dist/toaster.js",
+      "types": "./dist/toaster.d.ts"
+    },
+    "./typewriter-effect": {
+      "import": "./dist/typewriter-effect.mjs",
+      "require": "./dist/typewriter-effect.js",
+      "types": "./dist/typewriter-effect.d.ts"
+    },
+    "./use-toast": {
+      "import": "./dist/use-toast.mjs",
+      "require": "./dist/use-toast.js",
+      "types": "./dist/use-toast.d.ts"
+    },
+    "./wobble-card": {
+      "import": "./dist/wobble-card.mjs",
+      "require": "./dist/wobble-card.js",
+      "types": "./dist/wobble-card.d.ts"
+    }
   }
 }
