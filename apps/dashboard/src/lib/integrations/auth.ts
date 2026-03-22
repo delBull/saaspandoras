@@ -92,14 +92,22 @@ export class IntegrationKeyService {
      * Ensures a project has an API key for the given environment.
      * Returns the existing key (if available as fingerprint) or a new one.
      */
-    static async ensureKeyForProject(projectId: number, env: 'staging' | 'production', clientName?: string) {
-        // 1. Check for existing active client for this project/env
+    static async ensureKeyForProject(
+        projectId: number, 
+        env: 'staging' | 'production', 
+        clientName?: string,
+        type: 'public' | 'secret' = 'public'
+    ) {
+        const prefix = type === 'public' ? 'pk_%' : 'sk_%';
+
+        // 1. Check for existing active client for this project/env and type
         const existing = await db.query.integrationClients.findFirst({
-            where: (clients, { and, eq, isNull }) => and(
+            where: (clients, { and, eq, isNull, like }) => and(
                 eq(clients.projectId, projectId),
                 eq(clients.environment, env),
                 eq(clients.isActive, true),
-                isNull(clients.revokedAt)
+                isNull(clients.revokedAt),
+                like(clients.keyFingerprint, prefix)
             )
         });
 
@@ -112,7 +120,7 @@ export class IntegrationKeyService {
         }
 
         // 2. Generate new key
-        const { key, hash, fingerprint } = this.generateKey(env);
+        const { key, hash, fingerprint } = this.generateKey(env, type);
 
         // 3. Save to DB
         const [inserted] = await db.insert(integrationClients).values({
