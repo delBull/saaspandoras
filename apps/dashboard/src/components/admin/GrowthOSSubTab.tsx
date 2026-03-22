@@ -834,9 +834,11 @@ export default function GrowthOSSubTab() {
                   {/* Visual Webhook Confirmation */}
                   {discordWebhookUrl && (
                     <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Badge className="bg-blue-500/20 text-blue-400 border-none text-[9px] uppercase h-4">Webhook Activo</Badge>
-                        <span className="text-[10px] text-zinc-500 truncate font-mono">{discordWebhookUrl.substring(0, 30)}...</span>
+                      <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                        <Badge className="bg-blue-500/20 text-blue-400 border-none text-[8px] uppercase whitespace-nowrap px-1.5 py-0.5 font-black shrink-0">
+                          Webhook Activo
+                        </Badge>
+                        <span className="text-[10px] text-zinc-500 truncate font-mono flex-1">{discordWebhookUrl.substring(0, 30)}...</span>
                       </div>
                       <UIButton 
                         variant="ghost" 
