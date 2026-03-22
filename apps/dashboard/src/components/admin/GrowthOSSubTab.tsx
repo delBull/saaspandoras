@@ -830,6 +830,27 @@ export default function GrowthOSSubTab() {
                   ) : (
                     <button onClick={() => setIsAddingDomain(true)} className="text-[10px] text-purple-400 font-bold">+ Agregar Dominio</button>
                   )}
+
+                  {/* Visual Webhook Confirmation */}
+                  {discordWebhookUrl && (
+                    <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Badge className="bg-blue-500/20 text-blue-400 border-none text-[9px] uppercase h-4">Webhook Activo</Badge>
+                        <span className="text-[10px] text-zinc-500 truncate font-mono">{discordWebhookUrl.substring(0, 30)}...</span>
+                      </div>
+                      <UIButton 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-5 w-5 p-0 text-zinc-600 hover:text-red-400"
+                        onClick={() => {
+                          setDiscordWebhookUrl('');
+                          saveProjectSettings({ discordWebhookUrl: null });
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </UIButton>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 mt-4 border-t border-zinc-800">
