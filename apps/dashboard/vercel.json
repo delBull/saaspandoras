@@ -3,6 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "turbo run build --filter=@saasfly/dashboard...",
   "installCommand": "bun install --frozen-lockfile",
+  "ignoreCommand": "exit 1",
   "crons": [
     {
       "path": "/api/cron/marketing",
