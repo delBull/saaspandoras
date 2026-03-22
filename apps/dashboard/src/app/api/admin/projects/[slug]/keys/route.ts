@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { projects as projectsSchema, integrationClients } from "@/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, like } from "drizzle-orm";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
@@ -50,21 +50,38 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
-    // Find integration client
-    const client = await db.query.integrationClients.findFirst({
+    // Determine Environment
+    const env = (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_URL?.includes('staging')) ? 'staging' : 'production';
+
+    // 1. Get Public Key Client
+    const publicClient = await db.query.integrationClients.findFirst({
         where: and(
             eq(integrationClients.projectId, project.id),
-            eq(integrationClients.environment, 'production'),
+            eq(integrationClients.environment, env),
             eq(integrationClients.isActive, true),
-            isNull(integrationClients.revokedAt)
+            isNull(integrationClients.revokedAt),
+            like(integrationClients.keyFingerprint, 'pk_%')
+        )
+    });
+
+    // 2. Get Secret Key Client
+    const secretClient = await db.query.integrationClients.findFirst({
+        where: and(
+            eq(integrationClients.projectId, project.id),
+            eq(integrationClients.environment, env),
+            eq(integrationClients.isActive, true),
+            isNull(integrationClients.revokedAt),
+            like(integrationClients.keyFingerprint, 'sk_%')
         )
     });
 
     return NextResponse.json({
         projectId: project.id,
         slug: slug,
-        apiKey: client ? client.keyFingerprint : null,
-        hasKey: !!client
+        environment: env,
+        publicKey: publicClient ? publicClient.keyFingerprint : null,
+        secretKey: secretClient ? secretClient.keyFingerprint : null,
+        hasKeys: !!publicClient || !!secretClient
     });
 
   } catch (error) {
@@ -75,7 +92,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 /**
  * POST /api/admin/projects/[slug]/keys
- * Generates/Ensures an API key for a project.
+ * Generates/Ensures BOTH an API key and a Secret key for a project.
  */
 export async function POST(_request: NextRequest, { params }: RouteParams) {
     try {
@@ -110,17 +127,29 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         if (!userIsAdmin && !isOwner) {
             return NextResponse.json({ message: "No autorizado" }, { status: 403 });
         }
+        
+        const env = (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_URL?.includes('staging')) ? 'staging' : 'production';
     
-        const result = await IntegrationKeyService.ensureKeyForProject(
+        const publicResult = await IntegrationKeyService.ensureKeyForProject(
             project.id, 
-            'production', 
-            `Client: ${project.title}`
+            env, 
+            `Client: ${project.title} (Public)`,
+            'public'
+        );
+
+        const secretResult = await IntegrationKeyService.ensureKeyForProject(
+            project.id, 
+            env, 
+            `Client: ${project.title} (Secret)`,
+            'secret'
         );
     
         return NextResponse.json({
-            message: result.isNew ? "API Key generada exitosamente" : "API Key recuperada",
-            apiKey: result.key || result.fingerprint, // Return raw key only if newly created
-            isNew: result.isNew
+            message: "API Keys verificadas/generadas exitosamente",
+            environment: env,
+            publicKey: publicResult.key || publicResult.fingerprint,
+            secretKey: secretResult.key || secretResult.fingerprint,
+            isNew: publicResult.isNew || secretResult.isNew
         });
     
       } catch (error) {
@@ -128,3 +157,4 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ message: "Internal Error" }, { status: 500 });
       }
 }
+

@@ -82,7 +82,8 @@ export default function GrowthOSSubTab() {
   // Growth Infra States
   const [stats, setStats] = useState({ views: 0, clicks: 0, leads: 0 });
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
-  const [apiKey, setApiKey] = useState<string>('pk_grow_live_xxxxxxx'); // Simulation
+  const [publicKey, setPublicKey] = useState<string>('pk_grow_test_xxxxxxx'); // Simulation
+  const [secretKey, setSecretKey] = useState<string>('sk_grow_test_xxxxxxx'); // Simulation
   const [copied, setCopied] = useState(false);
   const [showDevHub, setShowDevHub] = useState(false);
   
@@ -100,7 +101,8 @@ export default function GrowthOSSubTab() {
 
   const fetchApiKey = async (projectId: string) => {
     if (projectId === 'all') {
-      setApiKey('pk_grow_live_xxxxxxx');
+      setPublicKey('pk_grow_test_xxxxxxx');
+      setSecretKey('sk_grow_test_xxxxxxx');
       return;
     }
 
@@ -113,16 +115,18 @@ export default function GrowthOSSubTab() {
       let response = await fetch(`/api/admin/projects/${project.slug}/keys`);
       let data = await response.json();
 
-      if (response.ok && data.hasKey) {
-        setApiKey(data.apiKey);
+      if (response.ok && data.hasKeys) {
+        setPublicKey(data.publicKey);
+        setSecretKey(data.secretKey);
       } else {
         // 2. Proactive generation for internal/selected project
         console.log("Generating API Key proactive...");
         response = await fetch(`/api/admin/projects/${project.slug}/keys`, { method: 'POST' });
         data = await response.json();
         if (response.ok) {
-          setApiKey(data.apiKey);
-          if (data.isNew) toast.success("Clave API generada para este proyecto");
+          setPublicKey(data.publicKey);
+          setSecretKey(data.secretKey);
+          if (data.isNew) toast.success("Claves API generadas para este proyecto");
         }
       }
     } catch (error) {
@@ -314,7 +318,8 @@ export default function GrowthOSSubTab() {
     } else {
         setStats({ views: 0, clicks: 0, leads: 0 });
         setAllowedDomains([]);
-        setApiKey('pk_grow_live_xxxxxxx');
+        setPublicKey('pk_grow_test_xxxxxxx');
+        setSecretKey('sk_grow_test_xxxxxxx');
         setSuggestions([]);
     }
   }, [selectedProjectId, leads.length, projects]);
@@ -881,13 +886,13 @@ export default function GrowthOSSubTab() {
                           {loadingKey ? (
                             <span className="animate-pulse">Cargando configuración...</span>
                           ) : (
-                            `<script \n  src="https://${getDashboardDomain()}/api/v1/widget/v1.js" \n  data-project-id="${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId)}" \n  data-api-key="${apiKey}" \n  defer\n></script>`
+                            `<script \n  src="https://${getDashboardDomain()}/api/v1/widget/v1.js" \n  data-project-id="${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId)}" \n  data-api-key="${publicKey}" \n  defer\n></script>`
                           )}
                         </code>
                         <button 
                           onClick={() => {
                             const projectSlug = selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId);
-                            const code = `<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="${projectSlug}" data-api-key="${apiKey}" defer></script>`;
+                            const code = `<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="${projectSlug}" data-api-key="${publicKey}" defer></script>`;
                             navigator.clipboard.writeText(code);
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
@@ -1029,7 +1034,7 @@ export default function GrowthOSSubTab() {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Authorization": "Bearer ${apiKey}" // Usa tu Secret Key (sk_..) en Backend
+    "Authorization": "Bearer ${secretKey}" // Usa tu Secret Key (sk_..) en Backend
   },
   body: JSON.stringify({
     projectId: "${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId)}",
@@ -1052,10 +1057,10 @@ export default function GrowthOSSubTab() {
                             </p>
                             <div className="bg-zinc-950 rounded-xl p-3 border border-zinc-800 font-mono text-[9px] text-zinc-500 relative group/global">
                                 <code>
-                                    {`<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="external" data-api-key="${apiKey}"></script>`}
+                                    {`<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="external" data-api-key="${publicKey}"></script>`}
                                 </code>
                                 <button 
-                                    onClick={() => navigator.clipboard.writeText(`<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="external" data-api-key="${apiKey}" data-color="#7c3aed"></script>`)}
+                                    onClick={() => navigator.clipboard.writeText(`<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="external" data-api-key="${publicKey}" data-color="#7c3aed"></script>`)}
                                     className="absolute top-2 right-2 p-1.5 bg-zinc-900 border border-zinc-700 rounded text-[9px] opacity-0 group-hover/global:opacity-100 hover:text-white"
                                 >
                                     Copiar Global
