@@ -1,6 +1,9 @@
+import path from "path";
+
 // next.config.js
 
 const nextConfig = {
+  outputFileTracingRoot: path.join(process.cwd(), "../../"),
   // 🔧 Evita fallos de tracing en Vercel (muy importante para segmentos como (dashboard))
   experimental: {
     // Note: serverComponentsExternalPackages has been moved to serverExternalPackages
