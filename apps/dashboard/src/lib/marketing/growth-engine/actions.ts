@@ -232,7 +232,7 @@ async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise
     });
 
     if (existing) {
-        return `${baseUrl}/en/education/courses/${existing.id}`;
+        return `${baseUrl}/en/education/course/${existing.id}`;
     }
 
     const draftId = `draft-${project.slug}`;
@@ -241,7 +241,7 @@ async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise
     });
 
     if (existingDraft) {
-        return `${baseUrl}/en/education/courses/${existingDraft.id}`;
+        return `${baseUrl}/en/education/course/${existingDraft.id}`;
     }
 
     // 3. Create NEW Project-Specific Course Draft with Generated Modules
@@ -264,11 +264,11 @@ async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise
             updatedAt: new Date()
         } as any);
 
-        return `${baseUrl}/en/education/courses/${draftId}`;
+        return `${baseUrl}/en/education/course/${draftId}`;
     } catch (insertErr) {
         // If someone else inserted it between our check and now, just ignore and return the link
         console.warn(`[Growth Engine] Course draft insertion conflict for ${project.name}. Probably already exists.`);
-        return `${baseUrl}/en/education/courses/${draftId}`;
+        return `${baseUrl}/en/education/course/${draftId}`;
     }
 }
 
