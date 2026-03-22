@@ -67,6 +67,9 @@ SECURITY_QUESTIONNAIRE_DELTA.md
 WEBHOOK_SPEC.md
 DEPLOY.md
 nft_lab.md
+apps/dashboard/docs/
+apps/dashboard/scripts/check_projects_recovery.ts
+apps/dashboard/scripts/search_narai*
 
 # Note: PUBLIC_SECURITY_OVERVIEW.md is intentionally NOT ignored (safe for public)
 apps/dashboard/drizzle_backup/

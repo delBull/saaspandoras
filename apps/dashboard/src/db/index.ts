@@ -14,6 +14,5 @@ const globalForDrizzle = globalThis as unknown as {
 
 export const db = globalForDrizzle.dbInstance ?? drizzle(sql, { schema, logger: true });
 
-if (process.env.NODE_ENV !== "production") {
-    globalForDrizzle.dbInstance = db;
-}
+// Shared singleton in all environments to prevent pool exhaustion in serverless
+globalForDrizzle.dbInstance = db;

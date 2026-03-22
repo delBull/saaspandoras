@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "~/db";
 import { courses, courseEnrollments } from "~/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
+import { validateAdminSession } from "@/lib/admin-auth";
+import { logger } from "@/lib/logger";
 
 export const dynamic = 'force-dynamic';
 
@@ -442,11 +443,32 @@ const SEED_COURSES = [
 ];
 
 // GET - All courses (including inactive) with enrollment stats
-export async function GET(_request: Request) {
+export async function GET(request: Request) {
+  const { session, errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
+
+  const requestId = logger.generateRequestId();
+  const userId = session!.userId;
+
   try {
-    const { session } = await getAuth(await headers());
-    if (!session?.address || !await isAdmin(session.address)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    logger.info({
+      requestId,
+      userId,
+      event: "GET_COURSES_START",
+      path: "/api/admin/courses"
+    });
+
+    // Health check for courses table
+    try {
+       await db.execute(sql`SELECT 1 FROM courses LIMIT 1`);
+    } catch (testError) {
+       logger.error({
+         requestId,
+         userId,
+         event: "DB_HEALTH_CHECK_FAILED",
+         error: testError instanceof Error ? testError.message : String(testError)
+       });
+       return NextResponse.json({ error: "Database access failed", requestId }, { status: 500 });
     }
 
     const allCourses = await db
@@ -463,7 +485,7 @@ export async function GET(_request: Request) {
         orderIndex: courses.orderIndex,
         isActive: courses.isActive,
         imageUrl: courses.imageUrl,
-        modules: courses.modules, // 🔥 Add this line
+        modules: courses.modules,
         createdAt: courses.createdAt,
         updatedAt: courses.updatedAt,
         totalEnrollments: sql<number>`cast(count(${courseEnrollments.id}) as integer)`,
@@ -471,29 +493,52 @@ export async function GET(_request: Request) {
       })
       .from(courses)
       .leftJoin(courseEnrollments, eq(courses.id, courseEnrollments.courseId))
-      .groupBy(courses.id)
+      .groupBy(courses.id, courses.title, courses.description, courses.category, courses.difficulty, courses.duration, courses.xpReward, courses.creditsReward, courses.instructor, courses.orderIndex, courses.isActive, courses.imageUrl, courses.modules, courses.createdAt, courses.updatedAt)
       .orderBy(courses.orderIndex);
 
+    logger.info({
+      requestId,
+      userId,
+      event: "GET_COURSES_SUCCESS",
+      metadata: { count: allCourses.length }
+    });
+    
     return NextResponse.json({
       courses: allCourses,
       total: allCourses.length,
     });
 
   } catch (error) {
-    console.error('[Admin Courses GET]', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    logger.error({
+      requestId,
+      userId,
+      event: "GET_COURSES_ERROR",
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      requestId
+    }, { status: 500 });
   }
 }
 
 // POST - Create course OR seed
 export async function POST(request: Request) {
-  try {
-    const { session } = await getAuth(await headers());
-    if (!session?.address || !await isAdmin(session.address)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const { session, errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
 
+  const requestId = logger.generateRequestId();
+  const userId = session!.userId;
+
+  try {
     const body = await request.json() as any;
+
+    logger.info({
+      requestId,
+      userId,
+      event: "POST_COURSES_START",
+      metadata: { action: body.action || 'create' }
+    });
 
     // Seed action
     if (body.action === 'seed') {
@@ -568,16 +613,24 @@ export async function POST(request: Request) {
 
 // PATCH - Update course
 export async function PATCH(request: Request) {
-  try {
-    const { session } = await getAuth(await headers());
-    if (!session?.address || !await isAdmin(session.address)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const { session, errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
 
+  const requestId = logger.generateRequestId();
+  const userId = session!.userId;
+
+  try {
     const body = await request.json() as any;
     if (!body.id) {
-      return NextResponse.json({ error: 'Course ID required' }, { status: 400 });
+      return NextResponse.json({ error: 'Course ID required', requestId }, { status: 400 });
     }
+
+    logger.info({
+      requestId,
+      userId,
+      event: "PATCH_COURSE_START",
+      metadata: { courseId: body.id }
+    });
 
     const { id, ...updates } = body;
     const [updated] = await db
@@ -600,17 +653,25 @@ export async function PATCH(request: Request) {
 
 // DELETE - Soft-delete (isActive = false)
 export async function DELETE(request: Request) {
-  try {
-    const { session } = await getAuth(await headers());
-    if (!session?.address || !await isAdmin(session.address)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const { session, errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
 
+  const requestId = logger.generateRequestId();
+  const userId = session!.userId;
+
+  try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ error: 'Course ID required' }, { status: 400 });
+      return NextResponse.json({ error: 'Course ID required', requestId }, { status: 400 });
     }
+
+    logger.info({
+      requestId,
+      userId,
+      event: "DELETE_COURSE_START",
+      metadata: { courseId: id }
+    });
 
     await db
       .update(courses)
