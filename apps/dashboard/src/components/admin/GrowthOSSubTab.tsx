@@ -47,6 +47,14 @@ interface Lead {
   fingerprint: string | null;
 }
 
+interface Course {
+  id: string;
+  title: string;
+  category: string;
+  isActive: boolean;
+  xpReward: number;
+}
+
 
 interface GrowthInsight {
   title: string;
@@ -99,6 +107,11 @@ export default function GrowthOSSubTab() {
   const [isUnifying, setIsUnifying] = useState(false);
   const [isScanningSuggestions, setIsScanningSuggestions] = useState(false);
   const [showUnifyModal, setShowUnifyModal] = useState(false);
+
+  // Course Management States
+  const [projectCourses, setProjectCourses] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [isTogglingCourse, setIsTogglingCourse] = useState<string | null>(null);
 
   const fetchApiKey = async (projectId: string) => {
     if (projectId === 'all') {
@@ -173,7 +186,8 @@ export default function GrowthOSSubTab() {
       if (response.ok) {
         toast.success("Configuración actualizada");
         if (payload.discordWebhookUrl !== undefined) {
-           setProjects(prev => prev.map(p => p.id === Number(selectedProjectId) ? { ...p, discordWebhookUrl: payload.discordWebhookUrl } : p));
+           setDiscordWebhookUrl(payload.discordWebhookUrl || '');
+           setProjects(prev => prev.map(p => String(p.id) === String(selectedProjectId) ? { ...p, discordWebhookUrl: payload.discordWebhookUrl } : p));
         }
       } else {
         toast.error("Error al guardar en el servidor");
@@ -286,6 +300,60 @@ export default function GrowthOSSubTab() {
     }
   };
 
+  const fetchProjectCourses = async (projectId: string) => {
+    if (projectId === 'all') {
+      setProjectCourses([]);
+      return;
+    }
+
+    const project = projects.find(p => p.id === Number(projectId));
+    if (!project) return;
+
+    setLoadingCourses(true);
+    try {
+      const response = await fetch('/api/admin/courses');
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Filter by draft-slug prefix
+        const relevant = (data.courses || []).filter((c: any) => 
+          c.id.startsWith(`draft-${project.slug}`)
+        );
+        setProjectCourses(relevant);
+      }
+    } catch (error) {
+      console.error('Error fetching project courses:', error);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  const handleToggleCourseStatus = async (courseId: string, currentStatus: boolean) => {
+    setIsTogglingCourse(courseId);
+    try {
+      const response = await fetch('/api/admin/courses', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: courseId,
+          isActive: !currentStatus
+        })
+      });
+
+      if (response.ok) {
+        toast.success(!currentStatus ? "Curso publicado globalmente" : "Curso movido a borrador privado");
+        setProjectCourses(prev => prev.map(c => c.id === courseId ? { ...c, isActive: !currentStatus } : c));
+      } else {
+        toast.error("Error al actualizar estado del curso");
+      }
+    } catch (error) {
+       console.error('Error toggling course status:', error);
+       toast.error("Error de conexión");
+    } finally {
+      setIsTogglingCourse(null);
+    }
+  };
+
 
   useEffect(() => {
     fetchProjects();
@@ -302,12 +370,14 @@ export default function GrowthOSSubTab() {
       setDiscordWebhookUrl(project?.discordWebhookUrl || '');
       fetchApiKey(selectedProjectId);
       fetchSuggestions(selectedProjectId);
+      fetchProjectCourses(selectedProjectId);
     } else {
       setAllowedDomains([]);
       setPublicKey('pk_grow_test_xxxxxxx');
       setSecretKey('sk_grow_test_xxxxxxx');
       setSuggestions([]);
       setDiscordWebhookUrl('');
+      setProjectCourses([]);
     }
   }, [selectedProjectId, projects]);
 
@@ -740,6 +810,96 @@ export default function GrowthOSSubTab() {
           )}
         </div>
 
+        {/* Project Course Manager (New Section - Phase 1.6) */}
+        {selectedProjectId !== 'all' && (
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 animate-in fade-in duration-700">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 border border-blue-500/20">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                    Gestor de Contenido Educativo
+                    <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Marketing Nurturing</Badge>
+                  </h4>
+                  <p className="text-sm text-zinc-500">Administra los cursos autogenerados por IA para nutrir a tus leads.</p>
+                </div>
+              </div>
+            </div>
+
+            {loadingCourses ? (
+              <div className="py-12 flex justify-center">
+                <RefreshCw className="w-8 h-8 text-zinc-800 animate-spin" />
+              </div>
+            ) : projectCourses.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 rounded-3xl">
+                <BookOpen className="w-8 h-8 text-zinc-800 mb-3" />
+                <p className="text-sm text-zinc-600">Aún no hay cursos generados para este protocolo.</p>
+                <p className="text-[10px] text-zinc-700 mt-1 uppercase font-bold">Se crean automáticamente al capturar el primer lead</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {projectCourses.map((course) => (
+                  <div key={course.id} className="bg-zinc-950/50 p-5 rounded-2xl border border-zinc-800 flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className={`p-2 rounded-xl ${course.isActive ? 'bg-green-500/10 text-green-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                        {course.isActive ? <Globe className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                      </div>
+                      <div className="overflow-hidden">
+                        <h5 className="font-bold text-sm text-white truncate">{course.title}</h5>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-zinc-500 font-mono uppercase">{course.id}</span>
+                          <span className="text-zinc-700 text-[10px]">|</span>
+                          <span className="text-[10px] text-zinc-400">{course.category}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
+                      <Badge className={cn(
+                        "text-[9px] uppercase font-black px-2 py-0.5 border-none",
+                        course.isActive ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"
+                      )}>
+                        {course.isActive ? "Público" : "Privado (Draft)"}
+                      </Badge>
+                      
+                      <UIButton
+                        size="sm"
+                        variant={course.isActive ? "outline" : "default"}
+                        className={cn(
+                          "h-8 text-[10px] font-bold rounded-xl",
+                          course.isActive ? "border-zinc-800 text-zinc-400 hover:bg-zinc-900" : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
+                        )}
+                        disabled={isTogglingCourse === course.id}
+                        onClick={() => handleToggleCourseStatus(course.id, course.isActive)}
+                      >
+                        {isTogglingCourse === course.id ? (
+                          <RefreshCw className="w-3 h-3 animate-spin mr-1" />
+                        ) : course.isActive ? (
+                          "Mover a Privado"
+                        ) : (
+                          <>
+                            <Globe className="w-3 h-3 mr-1" />
+                            Publicar Globalmente
+                          </>
+                        )}
+                      </UIButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-6 flex items-center gap-2 p-3 bg-zinc-950/30 rounded-xl border border-zinc-800/50">
+               <Info className="w-4 h-4 text-zinc-600" />
+               <p className="text-[10px] text-zinc-500 leading-relaxed italic">
+                 <strong>Nota:</strong> Los cursos marcados como "Privados" solo son accesibles mediante el enlace directo enviado a los leads. Al "Publicar Globalmente", el curso aparecerá en el marketplace principal de la Academia Pandoras.
+               </p>
+            </div>
+          </div>
+        )}
+
         {/* Global Stats Table & Integration */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -834,9 +994,11 @@ export default function GrowthOSSubTab() {
                   {/* Visual Webhook Confirmation */}
                   {discordWebhookUrl && (
                     <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Badge className="bg-blue-500/20 text-blue-400 border-none text-[9px] uppercase h-4">Webhook Activo</Badge>
-                        <span className="text-[10px] text-zinc-500 truncate font-mono">{discordWebhookUrl.substring(0, 30)}...</span>
+                      <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                        <Badge className="bg-blue-500/20 text-blue-400 border-none text-[8px] uppercase whitespace-nowrap px-1.5 py-0.5 font-black shrink-0">
+                          Webhook Activo
+                        </Badge>
+                        <span className="text-[10px] text-zinc-500 truncate font-mono flex-1">{discordWebhookUrl.substring(0, 30)}...</span>
                       </div>
                       <UIButton 
                         variant="ghost" 

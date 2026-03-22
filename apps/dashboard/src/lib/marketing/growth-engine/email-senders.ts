@@ -6,6 +6,8 @@ export async function sendExploreWelcomeEmail(context: {
   to: string;
   projectName: string;
   differentiator: string;
+  projectSlug?: string;
+  baseUrl?: string;
 }) {
   console.log(`[Growth Engine] Sending Explore Step 1 Email to ${context.to}`);
   
@@ -27,7 +29,9 @@ export async function sendExploreWelcomeEmail(context: {
       subject: `Acceso rápido: Entendiendo ${context.projectName}`,
       react: ExploreStep1Email({ 
         projectName: context.projectName,
-        differentiator: context.differentiator
+        differentiator: context.differentiator,
+        projectSlug: context.projectSlug,
+        baseUrl: context.baseUrl
       }),
     });
     return { success: true, data };
@@ -40,6 +44,8 @@ export async function sendExploreWelcomeEmail(context: {
 export async function sendInvestWelcomeEmail(context: {
   to: string;
   projectName: string;
+  projectSlug?: string;
+  baseUrl?: string;
 }) {
   console.log(`[Growth Engine] Sending Invest Step 1 Email to ${context.to}`);
   
@@ -60,7 +66,9 @@ export async function sendInvestWelcomeEmail(context: {
       to: [context.to],
       subject: `Tu interés en ${context.projectName} - Siguientes Pasos`,
       react: InvestStep1Email({ 
-        projectName: context.projectName
+        projectName: context.projectName,
+        projectSlug: context.projectSlug,
+        baseUrl: context.baseUrl
       }),
     });
     return { success: true, data };

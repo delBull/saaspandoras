@@ -12,23 +12,32 @@ async function main() {
 
   try {
     if (MODE === 'CLEANUP') {
-      console.log(`🧹 Starting Deep Cleanup for Project ID: ${TARGET_PROJECT_ID}`);
+      const TARGET_EMAIL = "marco.munoz9@gmail.com";
+      console.log(`🧹 Starting Targeted Cleanup for: ${TARGET_EMAIL}`);
       
-      const attDeleted = await db.delete(marketingLeadAttributions).where(eq(marketingLeadAttributions.projectId, TARGET_PROJECT_ID));
-      console.log(`- Deleted attributions`);
+      const { courses } = require('./src/db/schema');
 
-      // Delete events for leads of this project
-      const leads = await db.select({ id: marketingLeads.id }).from(marketingLeads).where(eq(marketingLeads.projectId, TARGET_PROJECT_ID));
+      // 1. Get lead IDs for this email
+      const leads = await db.select({ id: marketingLeads.id }).from(marketingLeads).where(eq(marketingLeads.email, TARGET_EMAIL));
       const leadIds = leads.map(l => l.id);
-      
+
       if (leadIds.length > 0) {
-        // We delete by batches or simple in if small
+        // 2. Delete Events
         await db.delete(marketingLeadEvents).where(sql`lead_id IN (${sql.join(leadIds, sql`, `)})`);
-        console.log(`- Deleted ${leadIds.length} lead events`);
+        console.log(`- Deleted events for ${leadIds.length} leads`);
+
+        // 3. Delete Attributions
+        await db.delete(marketingLeadAttributions).where(sql`lead_id IN (${sql.join(leadIds, sql`, `)})`);
+        console.log(`- Deleted attributions`);
+
+        // 4. Delete Leads
+        await db.delete(marketingLeads).where(eq(marketingLeads.email, TARGET_EMAIL));
+        console.log(`- Deleted marketing lead record`);
       }
 
-      const leadsDeleted = await db.delete(marketingLeads).where(eq(marketingLeads.projectId, TARGET_PROJECT_ID));
-      console.log(`- Deleted marketing leads`);
+      // 5. Delete AI Courses (drafts)
+      const coursesDeleted = await db.delete(courses).where(sql`id LIKE 'draft-%'`);
+      console.log(`- Deleted AI course drafts starting with 'draft-'`);
       
       console.log("✅ Cleanup Finished.");
       return;

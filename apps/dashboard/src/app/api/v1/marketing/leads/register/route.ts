@@ -250,15 +250,17 @@ export async function POST(req: NextRequest) {
             name: result.name,
             intent: result.intent,
             projectId: result.projectId,
-            metadata: result.metadata
+            metadata: result.metadata,
+            score: score
           },
           project: {
             id: targetProjectId,
             slug: projectContext.slug,
             name: projectContext?.title || 'Protocolo Ecosystem',
             type: projectContext?.businessCategory || 'Ecosistema',
-            discordWebhookUrl: projectContext?.discordWebhookUrl
-          }
+            discordWebhookUrl: projectContext?.discordWebhookUrl,
+            baseUrl: origin || process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dash.pandoras.finance'
+          } as any
         });
       } catch (e) {
         console.error(`❌ [Growth Engine] Executor failed silently for ${email}:`, e);

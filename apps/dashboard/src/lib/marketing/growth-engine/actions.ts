@@ -72,11 +72,13 @@ export async function executeGrowthActions(
       let success = false;
 
       switch (action) {
-        case 'SEND_WELCOME_EXPLORE_D1': {
+    case 'SEND_WELCOME_EXPLORE_D1': {
           const res = await sendExploreWelcomeEmail({
             to: lead.email,
             projectName: project.name,
-            differentiator: project.differentiator || 'Innovando en la Web3'
+            differentiator: project.differentiator || 'Innovando en la Web3',
+            projectSlug: project.slug,
+            baseUrl: (project as any).baseUrl
           });
           success = res.success;
           break;
@@ -86,6 +88,8 @@ export async function executeGrowthActions(
           const res = await sendInvestWelcomeEmail({
             to: lead.email,
             projectName: project.name,
+            projectSlug: project.slug,
+            baseUrl: (project as any).baseUrl
           });
           success = res.success;
           break;
@@ -93,7 +97,9 @@ export async function executeGrowthActions(
 
         case 'NOTIFY_TEAM':
           ensureNotificationServiceConfigured();
-          success = await notificationService.notifyGrowthLead(lead, project);
+          // Ensure score is passed from context to notification service
+          const leadWithScore = { ...lead, score: lead.score || 0 };
+          success = await notificationService.notifyGrowthLead(leadWithScore, project);
           break;
 
         case 'ASSIGN_COURSE':
@@ -219,12 +225,14 @@ async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise
             )
         );
 
+    const baseUrl = (project as any).baseUrl || 'https://dash.pandoras.finance';
+
     const existing = await db.query.courses.findFirst({
         where: activeCondition
     });
 
     if (existing) {
-        return `https://dash.pandoras.finance/education/courses/${existing.id}`;
+        return `${baseUrl}/en/education/course/${existing.id}`;
     }
 
     const draftId = `draft-${project.slug}`;
@@ -233,29 +241,62 @@ async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise
     });
 
     if (existingDraft) {
-        return `https://dash.pandoras.finance/education/courses/${existingDraft.id}`;
+        return `${baseUrl}/en/education/course/${existingDraft.id}`;
     }
 
-    // 3. Create NEW Project-Specific Course Draft
+    // 3. Create NEW Project-Specific Course Draft with Generated Modules
     try {
+        const modules = generateModulesTemplate(project);
+        
         // Idempotent Insert using prefix-based ID
         await db.insert(courses).values({
             id: draftId,
             title: `Masterclass: ${project.name}`,
-            description: `Curso personalizado generado por IA para profundizar en ${project.name}.`,
+            description: `Curso personalizado para profundizar en ${project.name} y el ecosistema Pandoras.`,
             category: project.businessCategory || 'Web3',
             difficulty: 'beginner',
             duration: '15 min',
             isActive: false, 
             instructor: "Pandora's AI Architect",
-            modules: [],
-            skillsCovered: ['Quick Onboarding', project.name]
+            modules: modules,
+            skillsCovered: ['Quick Onboarding', project.name, 'RWA & Tokenization'],
+            createdAt: new Date(),
+            updatedAt: new Date()
         } as any);
 
-        return `https://dash.pandoras.finance/education/courses/${draftId}`;
+        return `${baseUrl}/en/education/course/${draftId}`;
     } catch (insertErr) {
         // If someone else inserted it between our check and now, just ignore and return the link
         console.warn(`[Growth Engine] Course draft insertion conflict for ${project.name}. Probably already exists.`);
-        return `https://dash.pandoras.finance/education/courses/${draftId}`;
+        return `${baseUrl}/en/education/course/${draftId}`;
     }
+}
+
+/**
+ * Option B: Template-based Module Generator (Guided AI approach)
+ * Mixes Project Niche + Pandoras Infrastructure
+ */
+function generateModulesTemplate(project: ProjectContextPayload) {
+  const niche = project.businessCategory || 'Tecnología';
+  
+  return [
+    {
+      id: "mod-1",
+      title: `Bienvenida a ${project.name}`,
+      content: `Hola! En este primer paso conocerás cómo ${project.name} está simplificando el acceso a ${niche}. Olvida lo complicado: aquí descubrirás cómo participar en este ecosistema de forma directa y transparente.`,
+      duration: "5 min"
+    },
+    {
+      id: "mod-2",
+      title: `Protocolos de Utilidad con Pandoras`,
+      content: `Usamos la tecnología de Pandoras Finance para crear "Protocolos de Utilidad". Esto significa que ${project.name} ahora ofrece beneficios reales y tangibles que puedes usar desde el primer día, sin necesidad de ser un experto en finanzas avanzadas.`,
+      duration: "5 min"
+    },
+    {
+      id: "mod-3",
+      title: `Tus Primeros Pasos`,
+      content: `Aprende cómo aprovechar las recompensas y servicios que ${project.name} tiene para ti. Todo está diseñado para que sea tan fácil como usar tu aplicación favorita, permitiéndote ser parte del crecimiento del proyecto de forma segura.`,
+      duration: "5 min"
+    }
+  ];
 }
