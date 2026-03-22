@@ -16,6 +16,8 @@ import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
 import { waitForSession } from "@/lib/session";
+import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
+import { Button } from "@/components/ui/button";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -243,6 +245,7 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 
 export default function DashboardPage() {
   const { account } = usePersistedAccount();
+  const [leadModal, setLeadModal] = useState(false);
 
   // Hoist data fetching here to prevent layout shift/empty states
   const [homeData, setHomeData] = useState<{
@@ -312,6 +315,24 @@ export default function DashboardPage() {
           className="text-2xl md:text-3xl font-bold text-white tracking-tighter leading-tight"
           delay={500}
         />
+        {!account && (
+          <div className="mt-4 flex gap-4">
+            <Button 
+              onClick={() => setLeadModal(true)}
+              className="bg-white text-black hover:bg-zinc-200 font-black uppercase text-[10px] tracking-widest h-10 px-6 rounded-xl shadow-lg shadow-white/5"
+            >
+              Get Started Now
+            </Button>
+            <Link href="/growth-os">
+              <Button 
+                variant="outline"
+                className="border-zinc-800 text-zinc-400 hover:text-white font-black uppercase text-[10px] tracking-widest h-10 px-6 rounded-xl"
+              >
+                Learn More
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Dynamic Featured Carousel + Notifications Grid */}
@@ -354,8 +375,11 @@ export default function DashboardPage() {
           <AccessArtifactsSection accessCards={homeData.accessCards} artifacts={homeData.artifacts} />
         </div>
       )}
-
-
+      <LeadCaptureModal 
+        isOpen={leadModal} 
+        onClose={() => setLeadModal(false)} 
+        source="dashboard-home"
+      />
     </div>
   );
 }

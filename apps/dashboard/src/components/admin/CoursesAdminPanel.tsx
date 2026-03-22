@@ -117,8 +117,14 @@ export function CoursesAdminPanel() {
             const res = await fetch('/api/admin/courses');
             if (!res.ok) throw new Error('Failed to fetch');
             const data = await res.json();
-            setCourses(data.courses ?? []);
-        } catch {
+            if (Array.isArray(data.courses)) {
+                setCourses(data.courses);
+            } else {
+                console.error('Courses API returned non-array data:', data);
+                setCourses([]);
+            }
+        } catch (error) {
+            console.error('Fetch courses error:', error);
             toast.error('Error al cargar cursos');
         } finally {
             setLoading(false);
@@ -136,7 +142,7 @@ export function CoursesAdminPanel() {
                 body: JSON.stringify({ action: 'seed' }),
             });
             const data = await res.json();
-            if (res.ok) {
+            if (res.ok && Array.isArray(data.results)) {
                 const created = data.results.filter((r: any) => r.action === 'created').length;
                 const skipped = data.results.filter((r: any) => r.action === 'skipped').length;
                 toast.success(`Seed completado: ${created} creados, ${skipped} existentes`);
@@ -144,8 +150,9 @@ export function CoursesAdminPanel() {
             } else {
                 toast.error(data.error || 'Error en seed');
             }
-        } catch {
-            toast.error('Error de red');
+        } catch (error) {
+            console.error('Seed error:', error);
+            toast.error('Error de red al ejecutar seed');
         } finally {
             setSeeding(false);
         }

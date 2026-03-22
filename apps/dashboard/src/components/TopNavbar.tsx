@@ -246,8 +246,8 @@ export function TopNavbar({
     }
   };
 
-  // Check if we're on specific pages that need special handling
-  const isApplicantsPage = pathname === '/applicants';
+   const isApplicantsPage = pathname === '/applicants';
+   const isLandingPage = pathname === '/growth-os' || pathname === '/founders' || pathname === '/';
 
   // Get panel state from localStorage for dynamic adjustment
   const [panelCollapsed, setPanelCollapsed] = useState(true);
@@ -313,26 +313,28 @@ export function TopNavbar({
 
               {/* Profile Button or Connect Button */}
               {!account?.address ? (
-                <button
-                  id="wallet-connect-btn"
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      localStorage.removeItem("wallet-logged-out");
-                    }
-                    connect({
-                      client,
-                      chain: config.chain,
-                      showThirdwebBranding: false,
-                      showAllWallets: false,
-                      size: "compact",
-                       wallets,
-                    })
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-lime-400 hover:bg-lime-500 text-gray-900 rounded-lg transition-colors shadow-lg shadow-lime-400/20"
-                >
-                  <WalletIcon className="w-5 h-5" />
-                  <span>Inicia Sesión</span>
-                </button>
+                !isLandingPage && (
+                  <button
+                    id="wallet-connect-btn"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        localStorage.removeItem("wallet-logged-out");
+                      }
+                      connect({
+                        client,
+                        chain: config.chain,
+                        showThirdwebBranding: false,
+                        showAllWallets: false,
+                        size: "compact",
+                        wallets,
+                      })
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-lime-400 hover:bg-lime-500 text-gray-900 rounded-lg transition-colors shadow-lg shadow-lime-400/20"
+                  >
+                    <WalletIcon className="w-5 h-5" />
+                    <span>Inicia Sesión</span>
+                  </button>
+                )
               ) : (
                 <button
                   onClick={(e) => {
@@ -471,7 +473,7 @@ export function TopNavbar({
                   <div className="text-gray-400 text-xs">Cursos Web3 con rewards (+toknes)</div>
                 </div>
               </Link>
-              {((adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp)) ||
+              {Boolean((adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp)) ||
                 (userProfile?.projectCount && userProfile.projectCount > 0)) && (
                   <Link
                     href="/profile/projects"
