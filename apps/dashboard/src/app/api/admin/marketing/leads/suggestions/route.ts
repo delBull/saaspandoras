@@ -26,6 +26,13 @@ export async function GET(req: NextRequest) {
 
     const suggestions = await AttributionService.getSuggestions(Number(projectId));
 
+    if (suggestions === null) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Project not found' 
+      }, { status: 404 });
+    }
+
     return NextResponse.json({
       success: true,
       data: suggestions
