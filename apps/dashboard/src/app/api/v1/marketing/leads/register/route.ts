@@ -94,7 +94,13 @@ export async function POST(req: NextRequest) {
     // 1.5 Security Check: Allowed Domains (ONLY FOR PUBLIC KEYS)
     const projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
-      columns: { allowedDomains: true, slug: true, title: true, businessCategory: true }
+      columns: { 
+        allowedDomains: true, 
+        slug: true, 
+        title: true, 
+        businessCategory: true,
+        discordWebhookUrl: true 
+      }
     });
 
     if (!projectContext) {
@@ -250,7 +256,8 @@ export async function POST(req: NextRequest) {
             id: targetProjectId,
             slug: projectContext.slug,
             name: projectContext?.title || 'Protocolo Ecosystem',
-            type: projectContext?.businessCategory || 'Ecosistema'
+            type: projectContext?.businessCategory || 'Ecosistema',
+            discordWebhookUrl: projectContext?.discordWebhookUrl
           }
         });
       } catch (e) {
