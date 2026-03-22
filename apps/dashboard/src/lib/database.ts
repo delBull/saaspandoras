@@ -6,23 +6,20 @@ import postgres from "postgres";
 // This prevents "too many clients" errors by reusing connections
 // Lazy initialization to prevent global side effects during build/import
 // Standard Next.js Postgres caching mechanism
+const DATABASE_URL = process.env.DATABASE_URL || "";
+
+// Standard Next.js Postgres caching mechanism
 const globalForPostgres = globalThis as unknown as {
   sqlInstance: ReturnType<typeof postgres> | undefined;
 };
 
-const connectionString = process.env.DATABASE_URL || "";
-const isProduction = process.env.NODE_ENV === 'production';
-
-if (!connectionString) {
-  console.warn("⚠️ Warning: DATABASE_URL is not set. Database features will fail.");
-}
-
-export const sql = globalForPostgres.sqlInstance ?? postgres(connectionString, {
-  max: 100, // Increased to 100 to handle parallel API calls from dashboard hydration
-  idle_timeout: 30, // Increased to 30 to keep connections alive longer
-  connect_timeout: 20, // Increased to 20 to allow more time during high concurrency peaks
-  prepare: false,
-  ssl: isProduction ? 'require' : false,
+// Use a more resilient configuration for serverless
+export const sqlInstance = globalForPostgres.sqlInstance || postgres(DATABASE_URL, {
+  max: 15, // Slightly increased but still safe for Neon Free/Paid tiers
+  idle_timeout: 30, // Increased to keep connections alive longer between warm starts
+  connect_timeout: 10,
+  prepare: false, // Essential for Neon pooled connections
+  ssl: { rejectUnauthorized: false }, // Consistent across environments to prevent SSL chain errors
   debug: (connection, query, params) => {
     if (process.env.DEBUG_DB === 'true') {
       console.log('SQL:', query);
@@ -30,16 +27,16 @@ export const sql = globalForPostgres.sqlInstance ?? postgres(connectionString, {
   }
 });
 
-if (!isProduction) {
-  globalForPostgres.sqlInstance = sql;
-}
+// Shared singleton across all environments
+globalForPostgres.sqlInstance = sqlInstance;
 
-export default sql;
+export default sqlInstance;
+export { sqlInstance as sql };
 
 // Health check function
 export async function checkDatabaseHealth() {
   try {
-    await sql`SELECT 1`;
+    await sqlInstance`SELECT 1`;
     return true;
   } catch (error) {
     console.error('Database health check failed:', error);

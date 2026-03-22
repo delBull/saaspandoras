@@ -9,7 +9,7 @@ import {
   marketingLeadIntentEnum,
   projects
 } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { IdentityService } from '@/lib/marketing/identity-service';
 import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
@@ -42,18 +42,51 @@ export async function POST(req: NextRequest) {
     // Use request origin/referer as fallback for origin if not provided in body
     const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
 
-    if (!apiKey) {
-      console.warn(`[Growth OS] Missing API Key in registration attempt from IP: ${ip}, Origin: ${requestOrigin}`);
-      return NextResponse.json({ error: 'Missing API Key' }, { status: 401 });
+    const isInternalDashboard = requestOrigin?.includes('pandoras.finance') || requestOrigin?.includes('localhost');
+    
+    let client;
+    if (!apiKey && isInternalDashboard) {
+      // Use the core Pandora project for internal dashboard leads
+      // Try by ID 1 first (Staging/Legacy) then by slug (Production-safe)
+      client = await db.query.integrationClients.findFirst({
+        where: or(
+          eq(integrationClients.projectId, 1),
+          eq(integrationClients.name, 'Pandoras Protocol')
+        )
+      });
+      
+      console.info(`[Growth OS] Internal Dashboard Lead bypass for Origin: ${requestOrigin}. Client found: ${!!client}`);
+    }
+ else if (apiKey) {
+      client = await IntegrationKeyService.validateKey(apiKey);
     }
 
-    const client = await IntegrationKeyService.validateKey(apiKey);
     if (!client) {
-      console.warn(`[SECURITY] Invalid API Key attempt: ${apiKey.substring(0, 12)}... from IP: ${ip}, Origin: ${requestOrigin}`);
-      return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
+      // Fallback: If it's internal dashboard and no integration client exists, 
+      // check if the main project exists at least.
+      if (isInternalDashboard) {
+        const mainProject = await db.query.projects.findFirst({
+          where: eq(projects.slug, 'pandoras-protocol')
+        });
+        
+        if (mainProject) {
+          // Construct a virtual client for the internal logic
+          client = {
+            projectId: mainProject.id,
+            name: 'Internal Dashboard (Legacy Fallback)',
+            environment: 'production'
+          } as any;
+          console.info(`[Growth OS] Using Virtual Internal Client for Project: ${mainProject.slug}`);
+        }
+      }
     }
 
-    const { keyType, keyEnv, projectId: clientProjectId } = client;
+    if (!client) {
+      console.warn(`[SECURITY] Invalid or missing API Key attempt: ${apiKey?.substring(0, 12) || 'NONE'} from IP: ${ip}, Origin: ${requestOrigin}`);
+      return NextResponse.json({ error: 'Invalid or missing API Key' }, { status: 403 });
+    }
+
+    const { keyType = 'secret', keyEnv = 'production', projectId: clientProjectId } = client as any;
 
     // 2. Parse & Validate Body
     const body = await req.json();

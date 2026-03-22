@@ -7,45 +7,38 @@ export const runtime = "nodejs";
 import { projects as projectsSchema } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { projectApiSchema } from "@/lib/project-schema-api";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { validateAdminSession } from "@/lib/admin-auth";
+import { logger } from "@/lib/logger";
 import { headers } from "next/headers";
 import slugify from "slugify";
 import { validateRequestBody } from "@/lib/security-utils";
 
-export async function GET(_request: Request) {
-  const requestId = Math.random().toString(36).substring(7);
+export async function GET(request: Request) {
+  const { session, errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
+
+  const requestId = logger.generateRequestId();
+  const userId = session!.userId;
+
   try {
-    console.log(`🔍 [${requestId}] Admin API: Starting GET /api/admin/projects...`);
+    logger.info({
+      requestId,
+      userId,
+      event: "GET_PROJECTS_START",
+      path: "/api/admin/projects"
+    });
 
-    // Check admin authentication
-    const { session, isVerified } = await getAuth(await headers());
-
-    if (!isVerified) {
-      console.log('❌ Admin API: Access denied (Unverified identity) for user:', session?.address ?? session?.userId);
-      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
-    }
-
-    const userIsAdmin = await isAdmin(session?.address ?? session?.userId, isVerified);
-
-    if (!userIsAdmin) {
-      console.log('❌ Admin API: Access denied for user:', session?.address ?? session?.userId);
-      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-    }
-
-    console.log('✅ Admin API: Authentication passed for user:', session?.address ?? session?.userId);
-
-    console.log('🔍 Admin API: Fetching projects from database...');
-
-    // Test simple query first
+    // Health check for projects table
     try {
-      const testQuery = await db.execute(sql`SELECT COUNT(*) as count FROM projects`);
-      console.log('✅ Admin API: Database connection test passed, projects count:', testQuery[0]);
-    } catch (dbError) {
-      console.error('❌ Admin API: Database connection failed:', dbError);
-      return NextResponse.json(
-        { message: "Database connection failed", error: dbError instanceof Error ? dbError.message : 'Unknown DB error' },
-        { status: 500 }
-      );
+      await db.execute(sql`SELECT 1 FROM projects LIMIT 1`);
+    } catch (testError) {
+      logger.error({
+        requestId,
+        userId,
+        event: "DB_HEALTH_CHECK_FAILED",
+        error: testError instanceof Error ? testError.message : String(testError)
+      });
+      return NextResponse.json({ error: "Database access failed", requestId }, { status: 500 });
     }
 
     // Try comprehensive query first
@@ -235,13 +228,11 @@ export async function GET(_request: Request) {
 
 
 export async function POST(request: Request) {
-  const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
+  const { session, errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
 
-  if (!userIsAdmin) {
-    console.log('❌ Admin API POST: Access denied for user:', session?.address ?? session?.userId);
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-  }
+  const requestId = logger.generateRequestId();
+  const userId = session!.userId;
 
   try {
     const body: unknown = await request.json();
@@ -249,6 +240,12 @@ export async function POST(request: Request) {
     // Validación inmediata del body
     const validation = validateRequestBody(body);
     if (!validation.isValid) {
+      logger.warn({
+        requestId,
+        userId,
+        event: "POST_PROJECT_INVALID_BODY",
+        error: validation.error
+      });
       return NextResponse.json({ message: validation.error }, { status: 400 });
     }
 
