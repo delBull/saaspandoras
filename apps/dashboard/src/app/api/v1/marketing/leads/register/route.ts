@@ -250,7 +250,8 @@ export async function POST(req: NextRequest) {
             name: result.name,
             intent: result.intent,
             projectId: result.projectId,
-            metadata: result.metadata
+            metadata: result.metadata,
+            score: score
           },
           project: {
             id: targetProjectId,
