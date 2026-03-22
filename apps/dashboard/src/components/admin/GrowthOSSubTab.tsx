@@ -186,7 +186,8 @@ export default function GrowthOSSubTab() {
       if (response.ok) {
         toast.success("Configuración actualizada");
         if (payload.discordWebhookUrl !== undefined) {
-           setProjects(prev => prev.map(p => p.id === Number(selectedProjectId) ? { ...p, discordWebhookUrl: payload.discordWebhookUrl } : p));
+           setDiscordWebhookUrl(payload.discordWebhookUrl || '');
+           setProjects(prev => prev.map(p => String(p.id) === String(selectedProjectId) ? { ...p, discordWebhookUrl: payload.discordWebhookUrl } : p));
         }
       } else {
         toast.error("Error al guardar en el servidor");

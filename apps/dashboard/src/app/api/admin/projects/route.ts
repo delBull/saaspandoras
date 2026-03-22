@@ -136,6 +136,7 @@ export async function GET(_request: Request) {
           deploymentStatus: true,
           w2eConfig: true,
           allowedDomains: true,
+          discordWebhookUrl: true,
         }
       });
       console.log(`📊 Admin API: Found ${projectsData.length} projects (excluding infrastructure)`);
@@ -183,6 +184,8 @@ export async function GET(_request: Request) {
           // Featured info
           featured: project.featured,
           featuredButtonText: project.featured_button_text,
+          // Discord Webhook
+          discordWebhookUrl: project.discord_webhook_url,
           // Add other fields as needed
         }));
 
