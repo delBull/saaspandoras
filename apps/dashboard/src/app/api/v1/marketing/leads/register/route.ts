@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       fingerprint: fingerprint || null,
       identityHash: identityHash,
       origin: origin || null,
-      intent: (intent || 'explore') as any,
+      intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
       consent: true,
       metadata: metadata || {},
       status: 'active' as any,
