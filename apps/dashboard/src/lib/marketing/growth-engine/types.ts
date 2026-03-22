@@ -58,6 +58,7 @@ export interface LeadContextPayload {
   name?: string | null;
   intent: string;
   projectId: number;
+  score?: number;
   metadata?: any;
 }
 
