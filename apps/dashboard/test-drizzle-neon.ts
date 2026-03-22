@@ -7,7 +7,7 @@ async function main() {
   const client = postgres('postgresql://neondb_owner:npg_IZJDPG21sLkC@ep-muddy-mud-ad6mipow-pooler.c-2.us-east-1.aws.neon.tech/neondb', { ssl: 'require' });
   const db = drizzle(client);
 
-  const MODE: string = 'TEST'; // Set to 'CLEANUP' to clear data
+  const MODE: string = 'CLEANUP'; // Set to 'CLEANUP' to clear data
   const TARGET_PROJECT_ID = 12;
 
   try {
