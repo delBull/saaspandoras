@@ -300,7 +300,12 @@ export default function GrowthOSSubTab() {
     try {
       const response = await fetch('/api/admin/projects');
       const data = await response.json();
-      setProjects(data);
+      if (Array.isArray(data)) {
+        setProjects(data);
+      } else {
+        console.error('Projects API returned non-array data:', data);
+        setProjects([]);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -412,12 +417,15 @@ export default function GrowthOSSubTab() {
       const response = await fetch('/api/admin/courses');
       const data = await response.json();
       
-      if (response.ok) {
+      if (response.ok && Array.isArray(data.courses)) {
         // Filter by draft-slug prefix
-        const relevant = (data.courses || []).filter((c: any) => 
+        const relevant = data.courses.filter((c: any) => 
           c.id.startsWith(`draft-${project.slug}`)
         );
         setProjectCourses(relevant);
+      } else {
+        console.error('Courses API error or malformed data:', data);
+        setProjectCourses([]);
       }
     } catch (error) {
       console.error('Error fetching project courses:', error);
