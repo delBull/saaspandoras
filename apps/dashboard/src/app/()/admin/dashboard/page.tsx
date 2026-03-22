@@ -77,12 +77,20 @@ export default function AdminDashboardPage() {
         fetch('/api/admin/users')
       ]);
 
-      if (projectsRes.ok) setProjects(await projectsRes.json());
-      if (adminsRes.ok) {
-        const raw = await adminsRes.json() as any[];
-        setAdmins(raw.map(a => ({ ...a, role: a.role ?? 'admin' })));
+      if (projectsRes.ok) {
+        const data = await projectsRes.json();
+        if (Array.isArray(data)) setProjects(data);
       }
-      if (usersRes.ok) setUsers(await usersRes.json());
+      if (adminsRes.ok) {
+        const raw = await adminsRes.json();
+        if (Array.isArray(raw)) {
+          setAdmins(raw.map((a: any) => ({ ...a, role: a.role ?? 'admin' })));
+        }
+      }
+      if (usersRes.ok) {
+        const data = await usersRes.json();
+        if (Array.isArray(data)) setUsers(data);
+      }
 
     } catch (error) {
       console.error('🔄 Admin dashboard: Error refreshing data:', error);
@@ -210,12 +218,20 @@ export default function AdminDashboardPage() {
           return;
         }
 
-        if (projectsRes.ok) setProjects(await projectsRes.json());
-        if (adminsRes.ok) {
-          const raw = await adminsRes.json() as any[];
-          setAdmins(raw.map(a => ({ ...a, role: a.role ?? 'admin' })));
+        if (projectsRes.ok) {
+          const data = await projectsRes.json();
+          if (Array.isArray(data)) setProjects(data);
         }
-        if (usersRes.ok) setUsers(await usersRes.json());
+        if (adminsRes.ok) {
+          const raw = await adminsRes.json();
+          if (Array.isArray(raw)) {
+            setAdmins(raw.map((a: any) => ({ ...a, role: a.role ?? 'admin' })));
+          }
+        }
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          if (Array.isArray(data)) setUsers(data);
+        }
 
       } catch (error) {
         console.error('🏛️ Admin dashboard: Error fetching data:', error);

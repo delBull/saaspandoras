@@ -49,7 +49,7 @@ async function verifyDb(name: string, url: string) {
 
 async function main() {
   const localUrl = "postgresql://Marco@localhost:5432/pandoras_local";
-  const stagingUrl = "postgresql://neondb_owner:npg_IZJDPG21sLkC@ep-muddy-mud-ad6mipow-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+  const stagingUrl = "postgresql://neondb_owner:npg_9lRfvsopJ2UM@ep-cool-feather-ambh76vv-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
   const mainUrl = "postgresql://neondb_owner:npg_MjazsA5ybWQ3@ep-summer-bread-adqdsnx4-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require";
 
   const localOk = await verifyDb("LOCAL", localUrl);

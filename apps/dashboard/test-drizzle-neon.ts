@@ -4,7 +4,7 @@ import { marketingLeads, marketingLeadEvents, marketingLeadAttributions } from '
 import { eq, sql } from 'drizzle-orm';
 
 async function main() {
-  const client = postgres('postgresql://neondb_owner:npg_IZJDPG21sLkC@ep-muddy-mud-ad6mipow-pooler.c-2.us-east-1.aws.neon.tech/neondb', { ssl: 'require' });
+  const client = postgres('postgresql://neondb_owner:npg_9lRfvsopJ2UM@ep-cool-feather-ambh76vv-pooler.c-5.us-east-1.aws.neon.tech/neondb', { ssl: 'require' });
   const db = drizzle(client);
 
   const MODE: string = 'CLEANUP'; // Set to 'CLEANUP' to clear data
