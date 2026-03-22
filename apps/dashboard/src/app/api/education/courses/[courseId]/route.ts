@@ -25,7 +25,10 @@ export async function GET(
     const [course] = await db
       .select()
       .from(courses)
-      .where(and(eq(courses.id, courseId), eq(courses.isActive, true)));
+      .where(and(
+        eq(courses.id, courseId), 
+        sql`${courses.isActive} = true OR ${courses.id} LIKE 'draft-%'`
+      ));
 
     if (!course) {
       return NextResponse.json({ message: "Curso no encontrado" }, { status: 404 });

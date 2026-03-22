@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
             name: projectContext?.title || 'Protocolo Ecosystem',
             type: projectContext?.businessCategory || 'Ecosistema',
             discordWebhookUrl: projectContext?.discordWebhookUrl,
-            baseUrl: process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dash.pandoras.finance'
+            baseUrl: origin || process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dash.pandoras.finance'
           } as any
         });
       } catch (e) {
