@@ -1014,6 +1014,33 @@ export default function GrowthOSSubTab() {
                             </div>
                         </div>
 
+                        {/* Server-to-Server API Integration */}
+                        <div className="pt-6 border-t border-zinc-800">
+                            <h5 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-green-400" />
+                                Integración Server-to-Server (Backend)
+                            </h5>
+                            <p className="text-xs text-zinc-500 mb-3">
+                                Registra leads de forma segura desde tu backend. La API acepta <strong>Authorization: Bearer</strong> o <strong>x-api-key</strong>.
+                            </p>
+                            <div className="bg-zinc-950 rounded-xl p-3 border border-zinc-800 font-mono text-[9px] text-green-400 overflow-x-auto relative group/s2s">
+                                <pre className="whitespace-pre-wrap">
+{`fetch("https://${getDashboardDomain()}/api/v1/marketing/leads/register", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${apiKey}" // Usa tu Secret Key (sk_..) en Backend
+  },
+  body: JSON.stringify({
+    projectId: "${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId)}",
+    email: "user@example.com",
+    consent: true
+  })
+})`}
+                                </pre>
+                            </div>
+                        </div>
+
                         {/* Global Widget Option */}
                         <div className="pt-6 border-t border-zinc-800">
                             <h5 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
