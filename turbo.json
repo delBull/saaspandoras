@@ -45,7 +45,8 @@
       "outputs": [
         "dist/**",
         ".next/**",
-        "!.next/cache/**"
+        "!.next/cache/**",
+        ".contentlayer/**"
       ],
       "inputs": [
         "src/**",
