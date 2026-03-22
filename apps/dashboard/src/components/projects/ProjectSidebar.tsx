@@ -133,9 +133,12 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       // 2. If V2, check artifacts for phases
       if (phases.length === 0 && project.artifacts?.length) {
         // Collect phases from all artifacts (V2 modular approach)
-        // Usually, the primary artifact has the phases the user configured in the modal
+        // Ensure each phase knows which contract address it belongs to
         const artifactPhases = project.artifacts
-          .flatMap((a: any) => a.phases || [])
+          .flatMap((a: any) => (a.phases || []).map((p: any) => ({
+            ...p,
+            artifactAddress: a.address || a.contractAddress // Handle both possible field names
+          })))
           .filter((p: any) => p?.name);
 
         if (artifactPhases.length > 0) {
@@ -151,6 +154,24 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   };
 
   const allPhases = getPhases();
+  const config = typeof project.w2eConfig === 'string'
+    ? JSON.parse(project.w2eConfig)
+    : (project.w2eConfig || {});
+  const accessCardImage = config.accessCardImage || project.image_url;
+
+  // --- Smooth Scroll Logic ---
+  const scrollToPhases = () => {
+    const element = document.getElementById('tab-phases');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Fallback: switch tab via URL if not in DOM, but try to stay on page if possible
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'utility');
+      url.hash = 'tab-phases';
+      window.location.href = url.toString();
+    }
+  };
   // let accumulatedUSD = 0; // Unused
   let accumulatedTokens = 0;
 
@@ -242,53 +263,48 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
           {/* Access / Investment Card */}
           <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 relative overflow-hidden group">
             {/* Access Card Background (Optional visual flair) */}
-            {project.w2eConfig?.accessCardImage && (
+            {accessCardImage && (
               <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={project.w2eConfig.accessCardImage} alt="" className="w-full h-full object-cover blur-sm" />
+                <img src={accessCardImage} alt="" className="w-full h-full object-cover blur-sm" />
               </div>
             )}
 
             <div className="text-center mb-6 relative z-10">
-              {project.w2eConfig?.accessCardImage ? (
+              {accessCardImage && (
                 <div className="mb-4 flex flex-col items-center">
                   <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-lime-400/50 shadow-[0_0_20px_rgba(163,230,53,0.3)] mb-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={project.w2eConfig.accessCardImage} alt="Access NFT" className="w-full h-full object-cover" />
+                    <img src={accessCardImage} alt="Access NFT" className="w-full h-full object-cover" />
                   </div>
                   <h3 className="text-lime-400 font-bold text-sm tracking-wider uppercase">Access Card</h3>
                 </div>
-              ) : (
-                <div className="text-3xl font-bold text-white mb-2">
-                  {price === 0 ? (
-                    <span>{currentSupply} / {maxSupply > 0 ? maxSupply.toLocaleString() : '∞'}</span>
-                  ) : (
-                    <span>${raisedAmount.toLocaleString()}</span>
-                  )}
-                </div>
               )}
 
-              {!project.w2eConfig?.accessCardImage && (
-                <div className="w-full bg-zinc-800/50 rounded-full h-3 mb-4 overflow-hidden border border-white/5">
-                  <div
-                    className="bg-lime-400 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
-                  ></div>
+              {/* Goal and Status Tags */}
+              <div className="flex flex-col items-center gap-3 mb-6 relative z-10 w-full px-4">
+                <div className="bg-zinc-900/60 border border-white/10 px-4 py-3 rounded-2xl flex items-center justify-between gap-4 w-full shadow-lg">
+                  <div className="flex flex-col items-start gap-0.5">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Objetivo</span>
+                    <span className="text-sm font-bold text-white tracking-tight">
+                      ${targetAmount.toLocaleString(undefined, { 
+                        minimumFractionDigits: 0, 
+                        maximumFractionDigits: (targetAmount < 1 ? 4 : 0) 
+                      })} USD
+                    </span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                    isDeployed 
+                    ? 'bg-lime-500/10 text-lime-400 border border-lime-500/20' 
+                    : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isDeployed ? 'bg-lime-400 animate-pulse' : 'bg-yellow-400'}`} />
+                    {isDeployed ? 'Activo' : 'Espera'}
+                  </div>
                 </div>
-              )}
-
-              <div className="flex justify-between text-sm mb-6">
-                <span className="text-zinc-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
-                <span className="text-zinc-400">Status: {isDeployed ? '🟢 Activo' : '🟡 Espera'}</span>
               </div>
 
-              {/* === BUTTON LOGIC ===
-                Priority: 1) Owner → DAO Management
-                          2) Has Access NFT → Acceso Verificado
-                          3) Deployed + Contract + Connected → Obtener Acceso
-                          4) Deployed + Connected (no contract) → locked placeholder
-                          5) Not connected → Conecta tu Wallet
-              */}
+              {/* === BUTTON LOGIC === */}
               {isOwner ? (
                 // Owner: show DAO management button
                 <div className="space-y-2 w-full mb-4">
@@ -313,12 +329,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     Acceso Verificado
                   </div>
                   <button
-                    onClick={() => {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set('tab', 'utility');
-                      url.hash = 'tab-phases';
-                      window.location.href = url.toString();
-                    }}
+                    onClick={scrollToPhases}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-lime-400 hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
@@ -339,12 +350,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <span>Obtener Acceso</span>
                   </button>
                   <button
-                    onClick={() => {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set('tab', 'utility');
-                      url.hash = 'tab-phases';
-                      window.location.href = url.toString();
-                    }}
+                    onClick={scrollToPhases}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-white hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
@@ -394,7 +400,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 </SimpleTooltip>
 
                 {/* 3. Support / Donate (Activator) */}
-                <SimpleTooltip content="Apoyar Creador (Donación)">
+                <SimpleTooltip content="Like (Próximamente)">
                   <button className="p-2 text-zinc-400 hover:text-pink-400 transition-colors cursor-not-allowed">
                     <Heart className="w-3 h-3" />
                   </button>

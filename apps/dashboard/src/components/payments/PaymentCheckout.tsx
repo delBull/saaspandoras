@@ -10,16 +10,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, CreditCard, Wallet, Landmark } from "lucide-react";
 import { PayEmbed } from "thirdweb/react";
-import { createThirdwebClient } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
 import { base, sepolia } from "thirdweb/chains";
 import { getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
 import { TransactionButton, useActiveAccount } from "thirdweb/react";
 
-// Initialize Thirdweb
-const client = createThirdwebClient({
-    clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
-});
+// Using shared client
 
 // Token Addresses (Native USDC)
 const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";

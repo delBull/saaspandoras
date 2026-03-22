@@ -182,6 +182,7 @@ export const projects = pgTable("projects", {
   whitepaperUrl: varchar("whitepaper_url", { length: 512 }), // Prospecto de inversión
   twitterUrl: varchar("twitter_url", { length: 512 }),
   discordUrl: varchar("discord_url", { length: 512 }),
+  discordWebhookUrl: text("discord_webhook_url"), // Webhook para alertas de Growth OS (Phase 1.5)
   telegramUrl: varchar("telegram_url", { length: 512 }),
   linkedinUrl: varchar("linkedin_url", { length: 512 }),
 

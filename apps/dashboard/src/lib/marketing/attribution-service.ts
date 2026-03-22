@@ -46,20 +46,13 @@ export class AttributionService {
     }
 
     // 2. Fingerprint Match (+0.3)
-    // In a real scenario, we'd check if this fingerprint has converted in this project before
-    // For suggestions, we might check if other leads with same fingerprint are in this project
-    // (Wait, the user suggestion was simpler: just identifying signals)
-    // Let's assume for now we look at the lead's own data.
-    // Actually, fingerprint match only makes sense if we have other data points.
-    // For now, let's stick to the principle: if we have a fingerprint match with existing project data.
-    if (lead.fingerprint && project.metadata?.knownFingerprints?.includes(lead.fingerprint)) {
+    const projectMeta = (project as any).metadata || {};
+    if (lead.fingerprint && projectMeta.knownFingerprints?.includes(lead.fingerprint)) {
       factors.fingerprintMatch = true;
     }
 
     // 3. Email Match (+0.2)
-    // If the email is already registered in this project (as a different lead record or user)
-    // (This is rare for projectId=1 leads but possible if they used another account)
-    if (lead.email && project.metadata?.knownEmails?.includes(lead.email)) {
+    if (lead.email && projectMeta.knownEmails?.includes(lead.email)) {
       factors.emailMatch = true;
     }
 
@@ -79,11 +72,12 @@ export class AttributionService {
       where: eq(projects.id, projectId)
     });
 
-    if (!project) throw new Error("Project not found");
+    if (!project) return null;
 
-    // Fetch leads from global pool (projectId = 1)
+    // Fetch leads from global pool AND other external captures
+    // Logic: Look for leads that are NOT already attributed to this project
     const globalLeads = await db.query.marketingLeads.findMany({
-      where: eq(marketingLeads.projectId, 1),
+      where: (leads, { ne }) => ne(leads.projectId, projectId),
       limit: 100 // Safety limit
     });
 

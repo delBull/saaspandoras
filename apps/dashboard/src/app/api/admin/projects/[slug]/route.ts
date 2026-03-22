@@ -110,6 +110,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       applicantPosition: true,
       verificationAgreement: true,
       allowedDomains: true,
+      discordWebhookUrl: true,
 
       // Note: Additional fields from extended schema are not currently defined in the database schema
     };
@@ -238,10 +239,17 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
       if (body.coverPhotoUrl !== undefined) updates.coverPhotoUrl = body.coverPhotoUrl;
       if (body.allowedDomains !== undefined) updates.allowedDomains = body.allowedDomains;
+      if (body.discordWebhookUrl !== undefined) updates.discordWebhookUrl = body.discordWebhookUrl;
 
-      // Optional: generate new slug if title changed (admin only or owner?)
+      // Optional: generate new slug if title changed
       if (body.title && body.title !== existingProject.title) {
-        updates.slug = slugify(body.title, { lower: true, strict: true });
+        try {
+          updates.slug = slugify(body.title, { lower: true, strict: true });
+        } catch (slugErr) {
+          console.error('❌ Slugify error:', slugErr);
+          // Fallback to a simple slug if complex characters fail
+          updates.slug = body.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        }
       }
 
       if (Object.keys(updates).length === 0) {

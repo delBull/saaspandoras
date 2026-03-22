@@ -55,9 +55,20 @@ export async function POST(
             // Body might be empty, ignore
         }
 
-        const project = await db.query.projects.findFirst({
-            where: eq(projects.slug, slug),
-        });
+        // Try to parse as ID, if fails, treat as slug
+        const projectId = Number(slug);
+        const isId = !isNaN(projectId);
+
+        let project;
+        if (isId) {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.id, projectId),
+            });
+        } else {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.slug, slug),
+            });
+        }
 
         if (!project) {
             return NextResponse.json({ error: "Project not found" }, { status: 404 });

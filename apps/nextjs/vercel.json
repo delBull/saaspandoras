@@ -1,7 +1,6 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "bun run build",
-  "installCommand": "bun install",
-  "ignoreCommand": "npx turbo-ignore @saasfly/nextjs"
+  "buildCommand": "turbo run build --filter=@saasfly/nextjs...",
+  "installCommand": "bun install --frozen-lockfile"
 }

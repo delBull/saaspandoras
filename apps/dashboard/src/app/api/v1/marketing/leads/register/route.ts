@@ -12,6 +12,8 @@ import {
 import { eq, and } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { IdentityService } from '@/lib/marketing/identity-service';
+import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
+import { executeGrowthActions, computeNextGrowthMetadata } from '@/lib/marketing/growth-engine/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,53 +34,87 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate Request
-    const apiKey = req.headers.get('x-api-key');
+    const rawAuth = req.headers.get('authorization');
+    const apiKey = req.headers.get('x-api-key') || (rawAuth?.startsWith('Bearer ') ? rawAuth.substring(7) : null);
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+
+    // Use request origin/referer as fallback for origin if not provided in body
+    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
+
     if (!apiKey) {
+      console.warn(`[Growth OS] Missing API Key in registration attempt from IP: ${ip}, Origin: ${requestOrigin}`);
       return NextResponse.json({ error: 'Missing API Key' }, { status: 401 });
     }
 
     const client = await IntegrationKeyService.validateKey(apiKey);
     if (!client) {
+      console.warn(`[SECURITY] Invalid API Key attempt: ${apiKey.substring(0, 12)}... from IP: ${ip}, Origin: ${requestOrigin}`);
       return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
     }
+
+    const { keyType, keyEnv, projectId: clientProjectId } = client;
 
     // 2. Parse & Validate Body
     const body = await req.json();
     let { email, name, phoneNumber, walletAddress, fingerprint, origin, intent, consent, metadata, projectId } = body;
 
-    // Use request origin/referer as fallback for origin if not provided in body
-    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
     if (!origin && requestOrigin) {
       origin = requestOrigin;
     }
 
     // Resolve Project Context - Support both ID (numeric) and Slug (string)
-
     let targetProjectId: number;
-    if (projectId === 'external') {
-      targetProjectId = 1;
-    } else if (projectId && isNaN(Number(projectId))) {
+    let resolutionMethod = 'unknown';
+
+    if (projectId === 'external' || !projectId) {
+      targetProjectId = Number(clientProjectId || 1);
+      resolutionMethod = projectId === 'external' ? 'explicit_external' : 'client_default';
+    } else if (isNaN(Number(projectId))) {
+      // It's a slug, try to find it
       const projectBySlug = await db.query.projects.findFirst({
         where: eq(projects.slug, projectId),
         columns: { id: true }
       });
-      targetProjectId = projectBySlug?.id || 1;
+      
+      if (projectBySlug) {
+        targetProjectId = projectBySlug.id;
+        resolutionMethod = 'slug_match';
+      } else {
+        // FALLBACK: If slug doesn't match, use the client's associated project
+        targetProjectId = Number(clientProjectId || 1);
+        resolutionMethod = 'slug_mismatch_fallback';
+        console.warn(`⚠️ [Growth OS] Slug mismatch: Received "${projectId}", falling back to Client Project ID ${targetProjectId}`);
+      }
     } else {
-      targetProjectId = Number(projectId || client.projectId || 1);
+      targetProjectId = Number(projectId);
+      resolutionMethod = 'explicit_id';
     }
 
-    // 1.5 Security Check: Allowed Domains
+    // 1.5 Security Check: Allowed Domains (ONLY FOR PUBLIC KEYS)
     const projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
-      columns: { allowedDomains: true }
+      columns: { allowedDomains: true, slug: true, title: true, businessCategory: true }
     });
 
-    if (projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
+    if (!projectContext) {
+      console.error(`❌ [Growth OS] Project Context not found for ID ${targetProjectId} (Method: ${resolutionMethod})`);
+      return NextResponse.json({ error: 'Invalid project context' }, { status: 404 });
+    }
+
+    const isSecretKey = keyType === 'secret';
+
+    if (!isSecretKey && projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
       const isAllowed = projectContext.allowedDomains.some(domain => requestOrigin?.toLowerCase().includes(domain.toLowerCase()));
       if (!isAllowed) {
-        console.warn(`[SECURITY] Lead blocked for Domain ${requestOrigin} (Project: ${targetProjectId})`);
-        return NextResponse.json({ error: 'Unauthorized domain for this Growth SDK instance' }, { status: 403 });
+        console.warn(`[SECURITY] Public Lead blocked for Domain ${requestOrigin} (Project: ${projectContext.slug}, IP: ${ip})`);
+        return NextResponse.json({ 
+          error: 'Unauthorized domain for this Growth SDK instance',
+          details: process.env.NODE_ENV === 'development' ? `Domain ${requestOrigin} not in [${projectContext.allowedDomains.join(',')}]` : undefined
+        }, { status: 403 });
       }
+    } else if (isSecretKey) {
+      console.info(`[AUDIT] Secret Key Registration for Project: ${projectContext.slug} (IP: ${ip}, UA: ${userAgent})`);
     }
 
 
@@ -105,6 +141,25 @@ export async function POST(req: NextRequest) {
       })
     ]);
 
+    // 3.5 Replay Protection / Deduplication
+    if (existingLead && existingLead.updatedAt) {
+      const lastUpdate = new Date(existingLead.updatedAt).getTime();
+      const now = new Date().getTime();
+      if (now - lastUpdate < 30000) { // 30 seconds window
+        console.info(`[DEDUPE] Lead already registered recently: ${email} for Project ${targetProjectId}`);
+        return NextResponse.json({
+          success: true,
+          message: 'Lead already registered recently',
+          isNewLead: false,
+          data: {
+            id: existingLead.id,
+            score: existingLead.score,
+            status: existingLead.status
+          }
+        });
+      }
+    }
+
     // 4. Intent Scoring Logic
     let score = 50; 
     if (intent === 'invest') score += 30;
@@ -113,6 +168,25 @@ export async function POST(req: NextRequest) {
     if (walletAddress) score += 15;
     if (phoneNumber) score += 10; // Extra score for phone (higher commitment)
     score = Math.min(score, 100);
+
+    // 4.5. GROWTH ENGINE: Resolve State and Compute Metadata
+    const GROWTH_ENGINE_V2 = true;
+    let growthActionsToExecute: any[] = [];
+    let newMetadata = metadata || {};
+    
+    if (GROWTH_ENGINE_V2) {
+      const engineResult = resolveGrowthAction('LEAD_CAPTURED', {
+        id: existingLead?.id || 'new', // New leads don't have ID yet
+        email,
+        intent: intent || 'explore',
+        projectId: targetProjectId
+      });
+      
+      if (engineResult) {
+        growthActionsToExecute = engineResult.actions;
+        newMetadata.growth = computeNextGrowthMetadata(existingLead?.metadata, engineResult.nextState as any);
+      }
+    }
 
     // 5. Ingest Lead (Upsert)
     // Create a base object for both insert values and update set
@@ -126,9 +200,9 @@ export async function POST(req: NextRequest) {
       fingerprint: fingerprint || null,
       identityHash: identityHash,
       origin: origin || null,
-      intent: (intent || 'explore') as any,
+      intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
       consent: true,
-      metadata: metadata || {},
+      metadata: newMetadata,
       status: 'active' as any,
       score: score,
       updatedAt: new Date(),
@@ -160,7 +234,33 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log(`📥 [Growth OS] Registration successful: ${email} for Project ${targetProjectId}`);
+    // 7. GROWTH ENGINE: Execute Actions (Silent Fallback)
+    if (GROWTH_ENGINE_V2 && result && growthActionsToExecute.length > 0) {
+      try {
+        await executeGrowthActions(growthActionsToExecute, {
+          lead: {
+            id: result.id,
+            email: result.email,
+            name: result.name,
+            intent: result.intent,
+            projectId: result.projectId,
+            metadata: result.metadata
+          },
+          project: {
+            id: targetProjectId,
+            slug: projectContext.slug,
+            name: projectContext?.title || 'Protocolo Ecosystem',
+            type: projectContext?.businessCategory || 'Ecosistema'
+          }
+        });
+      } catch (e) {
+        console.error(`❌ [Growth Engine] Executor failed silently for ${email}:`, e);
+      }
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📥 [Growth OS] Registration successful: ${email} for Project ${targetProjectId}`);
+    }
 
     return NextResponse.json({
       success: true,
@@ -192,7 +292,7 @@ export async function OPTIONS(req: NextRequest) {
       headers: {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, x-api-key",
+        "Access-Control-Allow-Headers": "Content-Type, x-api-key, Authorization",
         "Access-Control-Allow-Credentials": "true",
       },
     });

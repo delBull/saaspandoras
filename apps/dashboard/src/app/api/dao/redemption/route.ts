@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
+import { client } from "~/lib/thirdweb-client";
+
 import { db } from "~/db";
 import { userBalances } from "~/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { createThirdwebClient, getContract, prepareTransaction, sendTransaction, waitForReceipt } from "thirdweb";
+import { getContract, prepareTransaction, sendTransaction, waitForReceipt } from "thirdweb";
 import { privateKeyToAccount } from "thirdweb/wallets";
 import { base, sepolia } from "thirdweb/chains";
 import { generateMintSignature } from "thirdweb/extensions/erc20";
 
-const client = createThirdwebClient({
-    secretKey: process.env.THIRDWEB_SECRET_KEY || "",
-});
+// Using shared client from ~/lib/thirdweb-client
 
 export async function POST(request: Request) {
     try {

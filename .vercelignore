@@ -1,0 +1,12 @@
+# Minimal Vercel Ignore
+# Rely on turbo-ignore for smart skipping
+
+.git
+node_modules
+.next
+.turbo
+cache/
+tmp/
+.temp/
+*.log
+.DS_Store

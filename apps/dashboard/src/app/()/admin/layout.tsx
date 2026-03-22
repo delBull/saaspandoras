@@ -3,6 +3,8 @@ import { getAuth, isAdmin } from "@/lib/auth";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 export default async function AdminDashboardLayout({
     children,
 }: {
@@ -59,5 +61,5 @@ export default async function AdminDashboardLayout({
     }
 
     // 4. Render dashboard if authorized
-    return <>{children}</>;
+    return <TooltipProvider>{children}</TooltipProvider>;
 }

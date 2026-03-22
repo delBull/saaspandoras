@@ -1,5 +1,6 @@
 
 
+import path from "path";
 import { withContentlayer } from "next-contentlayer2";
 
 // @ts-check
@@ -13,13 +14,10 @@ import withMDX from "@next/mdx";
 
 /** @type {import("next").NextConfig} */
 const config = {
+  outputFileTracingRoot: path.join(process.cwd(), "../../"),
   reactStrictMode: true,
   /** Enables hot reloading for local packages without a build step */
   transpilePackages: [
-    "@saasfly/api",
-    "@saasfly/db",
-    "@saasfly/shared",
-    "@saasfly/ui",
     "@walletconnect/ethereum-provider",
     "viem",
     "wagmi",

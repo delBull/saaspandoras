@@ -1,6 +1,10 @@
+import path from "path";
+
 // next.config.js
+// 🚀 Force rebuild for turborepo v2 testing
 
 const nextConfig = {
+  outputFileTracingRoot: path.join(process.cwd(), "../../"),
   // 🔧 Evita fallos de tracing en Vercel (muy importante para segmentos como (dashboard))
   experimental: {
     // Note: serverComponentsExternalPackages has been moved to serverExternalPackages
@@ -40,8 +44,6 @@ const nextConfig = {
   },
 
   transpilePackages: [
-    "@pandoras/core-webhooks",
-    "@saasfly/ui",
     "react-markdown",
     "remark-gfm",
     "rehype-highlight",
@@ -76,6 +78,10 @@ const nextConfig = {
 
   async rewrites() {
     return [
+      {
+        source: "/api/v1/widget/v1.js",
+        destination: "/scripts/growth-widget.v1.js",
+      },
       {
         source: "/auth/:path*",
         destination: `${process.env.NEXT_PUBLIC_API_URL || "https://api.pandoras.finance"}/auth/:path*`,

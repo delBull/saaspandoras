@@ -3,11 +3,31 @@
   "version": "0.1.0",
   "private": true,
   "exports": {
-    ".": "./src/index.ts",
-    "./resend": "./src/email.ts",
-    "./MagicLinkEmail": "./src/emails/magic-link-email.tsx",
-    "./subscriptions": "./src/subscriptions.ts",
-    "./env": "./src/env.mjs"
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./resend": {
+      "import": "./dist/email.mjs",
+      "require": "./dist/email.js",
+      "types": "./dist/email.d.ts"
+    },
+    "./MagicLinkEmail": {
+      "import": "./dist/magic-link-email.mjs",
+      "require": "./dist/magic-link-email.js",
+      "types": "./dist/magic-link-email.d.ts"
+    },
+    "./subscriptions": {
+      "import": "./dist/subscriptions.mjs",
+      "require": "./dist/subscriptions.js",
+      "types": "./dist/subscriptions.d.ts"
+    },
+    "./env": {
+      "import": "./dist/env.mjs",
+      "require": "./dist/env.js",
+      "types": "./dist/env.d.ts"
+    }
   },
   "typesVersions": {
     "*": {
@@ -18,7 +38,9 @@
   },
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
-    "format": "prettier --check '**/*.{mjs,ts,json}' "
+    "format": "prettier --check '**/*.{mjs,ts,json}' ",
+    "build": "tsup src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs --format esm,cjs --watch"
   },
   "dependencies": {
     "@saasfly/ui": "workspace:*",
@@ -30,6 +52,7 @@
     "@saasfly/typescript-config": "workspace:*",
     "eslint": "8.57.0",
     "prettier": "3.2.5",
+    "tsup": "^8.5.1",
     "typescript": "5.4.5"
   },
   "eslintConfig": {
@@ -38,5 +61,8 @@
       "@saasfly/eslint-config/base"
     ]
   },
-  "prettier": "@saasfly/prettier-config"
+  "prettier": "@saasfly/prettier-config",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts"
 }
