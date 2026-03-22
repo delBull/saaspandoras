@@ -81,16 +81,28 @@ export async function GET(
 
     let projectResult: any;
 
+    const projectId = Number(slug);
+    const isId = !isNaN(projectId);
+
     try {
-      projectResult = await db.query.projects.findFirst({
-        where: (projects, { eq, and }) => and(eq(projects.slug, slug), eq(projects.isDeleted, false))
-      });
+      if (isId) {
+        projectResult = await db.query.projects.findFirst({
+          where: (projects, { eq, and }) => and(eq(projects.id, projectId), eq(projects.isDeleted, false))
+        });
+      } else {
+        projectResult = await db.query.projects.findFirst({
+          where: (projects, { eq, and }) => and(eq(projects.slug, slug), eq(projects.isDeleted, false))
+        });
+      }
     } catch (ormError) {
       console.warn('⚠️ API: ORM Error (legacy data?), trying raw SQL:', ormError);
       const { sql } = await import('drizzle-orm');
-      const rawRes = await db.execute(sql`SELECT * FROM projects WHERE slug = ${slug} AND is_deleted = false LIMIT 1`);
-      if (rawRes && rawRes.length > 0) {
-        projectResult = rawRes[0];
+      if (isId) {
+        const rawRes = await db.execute(sql`SELECT * FROM projects WHERE id = ${projectId} AND is_deleted = false LIMIT 1`);
+        if (rawRes && rawRes.length > 0) projectResult = rawRes[0];
+      } else {
+        const rawRes = await db.execute(sql`SELECT * FROM projects WHERE slug = ${slug} AND is_deleted = false LIMIT 1`);
+        if (rawRes && rawRes.length > 0) projectResult = rawRes[0];
       }
     }
 

@@ -32,9 +32,19 @@ export async function POST(
 
 
         // 2. Fetch Project
-        const project = await db.query.projects.findFirst({
-            where: eq(projects.slug, slug),
-        });
+        const projectId = Number(slug);
+        const isId = !isNaN(projectId);
+
+        let project;
+        if (isId) {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.id, projectId),
+            });
+        } else {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.slug, slug),
+            });
+        }
 
         if (!project) {
             return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -56,7 +66,7 @@ export async function POST(
                 raisedAmount: project.targetAmount, // Assume full sale certification
                 // We could also add a 'certifiedAt' if we had such column, but we rely on updatedAt
             })
-            .where(eq(projects.slug, slug));
+            .where(eq(projects.id, project.id)); // Use ID for update safety
 
         console.log(`✅ Project ${slug} certified as COMPLETED (Sale Finalized).`);
 

@@ -1,9 +1,9 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "bun run build",
-  "installCommand": "bun install",
-  "ignoreCommand": "npx turbo-ignore @saasfly/dashboard",
+  "buildCommand": "turbo run build --filter=@saasfly/dashboard...",
+  "installCommand": "bun install --frozen-lockfile",
+  "ignoreCommand": "exit 1",
   "crons": [
     {
       "path": "/api/cron/marketing",

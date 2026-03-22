@@ -218,58 +218,84 @@ export function MyProtocolsView() {
 
     // --- Content State ---
     return (
-        <div className="space-y-8 pt-32 px-4 md:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div className="space-y-10 pt-32 px-4 md:px-8 max-w-7xl mx-auto pb-20">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-4xl font-bold text-white mb-2">Mis Accesos</h1>
-                    <p className="text-zinc-400 max-w-2xl">
-                        Gestiona tus activos, verifica tus Access Cards y participa en las decisiones de gobernanza de los protocolos donde eres miembro.
+                    <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic mb-2">
+                        Mis <span className="text-lime-400">Protocolos</span>
+                    </h1>
+                    <p className="text-zinc-500 max-w-xl font-medium leading-relaxed">
+                        Centro de comando para tus activos de gobernanza y accesos exclusivos en el ecosistema Pandoras.
                     </p>
                 </div>
-                <div className="text-right bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Participación Total</p>
-                    <p className="text-2xl font-mono text-lime-400">{memberProjects.length} Protocolos</p>
+                <div className="flex gap-4">
+                    <div className="bg-zinc-900/50 backdrop-blur-md border border-white/5 p-4 rounded-2xl min-w-[160px]">
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1">Membresías</p>
+                        <p className="text-3xl font-mono text-lime-400 font-bold">{memberProjects.length}</p>
+                    </div>
+                    {memberProjects.some(p => p.hasActiveProposals) && (
+                        <div className="bg-red-500/5 backdrop-blur-md border border-red-500/20 p-4 rounded-2xl min-w-[160px]">
+                            <p className="text-[10px] text-red-400/70 uppercase tracking-widest font-bold mb-1">Votaciones Activas</p>
+                            <p className="text-3xl font-mono text-white font-bold">
+                                {memberProjects.filter(p => p.hasActiveProposals).length}
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Governance Calendar Widget */}
-            <UserGovernanceList projectIds={memberProjects.map(p => Number(p.id))} />
+            {/* Governance Activities */}
+            <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-lime-500/20 to-purple-600/20 rounded-3xl blur opacity-25" />
+                <div className="relative bg-zinc-950/40 backdrop-blur-xl border border-white/10 rounded-3xl p-1">
+                    <UserGovernanceList projectIds={memberProjects.map(p => Number(p.id))} />
+                </div>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Protocols Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {memberProjects.map((project) => (
-                    <Link key={project.id} href={`/projects/${project.slug}/dao`}>
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-lime-500/30 transition-colors group h-full flex flex-col"
-                        >
-                            {/* Header Image */}
-                            <div className="h-32 bg-zinc-800 relative">
+                    <motion.div
+                        key={project.id}
+                        whileHover={{ y: -8 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="group relative"
+                    >
+                        {/* Shadow Glow Effect */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-b from-white/10 to-transparent rounded-[2rem] blur-sm opacity-0 group-hover:opacity-100 transition duration-500" />
+                        
+                        <div className="relative bg-zinc-900/90 border border-white/5 rounded-[2rem] overflow-hidden flex flex-col h-full backdrop-blur-sm shadow-2xl transition-colors group-hover:border-lime-500/20">
+                            {/* Card Header (Image + Overlay) */}
+                            <div className="h-44 relative overflow-hidden">
                                 {project.coverPhotoUrl ? (
-                                    <>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={project.coverPhotoUrl} alt={project.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
-                                    </>
+                                    <img 
+                                        src={project.coverPhotoUrl} 
+                                        alt={project.title} 
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-40 group-hover:opacity-60" 
+                                    />
                                 ) : (
                                     <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
                                 )}
-                                <div className="absolute top-4 right-4 flex gap-2">
-                                    <span className="px-3 py-1 bg-black/50 backdrop-blur text-white text-xs font-bold rounded-full border border-white/10">
-                                        MEMBER
-                                    </span>
-                                    {project.governorContractAddress && (
-                                        <span className="px-3 py-1 bg-purple-900/50 backdrop-blur text-white text-xs font-bold rounded-full border border-purple-500/30 flex items-center gap-1">
-                                            <VoteIcon className="w-3 h-3 text-purple-400" />
-                                            DAO
-                                        </span>
-                                    )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
+                                
+                                {/* Badges */}
+                                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                                    <div className="px-3 py-1 bg-lime-400 text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                                        Active Member
+                                    </div>
                                     {project.hasActiveProposals && (
-                                        <span className="px-3 py-1 bg-red-900/50 backdrop-blur text-white text-xs font-bold rounded-full border border-red-500/30 flex items-center gap-1">
-                                            <VoteIcon className="w-3 h-3 text-red-400" />
-                                            VOTE
-                                        </span>
+                                        <div className="px-3 py-1 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg animate-pulse flex items-center gap-1">
+                                            <VoteIcon className="w-3 h-3" />
+                                            Active Vote
+                                        </div>
                                     )}
-                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-black/20 border border-white/5 group-hover:border-blue-500/30 transition-colors">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                </div>
+
+                                {/* Logo Overlay */}
+                                <div className="absolute -bottom-6 left-8 p-1 bg-zinc-900 rounded-2xl border border-white/10 shadow-xl z-10 transition-transform group-hover:scale-110">
+                                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/40">
                                         <img
                                             src={(project as any).logoUrl || '/placeholder-logo.png'}
                                             alt={project.title}
@@ -279,29 +305,46 @@ export function MyProtocolsView() {
                                 </div>
                             </div>
 
-                            {/* Content */}
-                            <div className="p-6 flex-1 flex flex-col">
-                                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-lime-400 transition-colors">{project.title}</h3>
-                                <p className="text-sm text-gray-400 line-clamp-2 mb-6 flex-1">{project.description}</p>
+                            {/* Content Section */}
+                            <div className="p-8 pt-10 flex-1 flex flex-col">
+                                <div className="mb-4">
+                                    <h3 className="text-2xl font-black text-white tracking-tight group-hover:text-lime-400 transition-colors">
+                                        {project.title}
+                                    </h3>
+                                    <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest mt-1">
+                                        ID: #{project.id.toString().padStart(4, '0')} • {(project as any).ticker || 'PBOX'}
+                                    </p>
+                                </div>
 
-                                {/* Quick Stats (Placeholder until wired deeper) */}
-                                <div className="grid grid-cols-2 gap-4 mt-auto pt-6 border-t border-zinc-800">
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                                            <CreditCardIcon className="w-3 h-3" /> Access Card
-                                        </p>
-                                        <p className="text-sm font-medium text-white">Activa</p>
+                                <p className="text-sm text-zinc-400 line-clamp-2 mb-8 flex-1 leading-relaxed">
+                                    {project.description}
+                                </p>
+
+                                {/* Action Matrix */}
+                                <div className="grid grid-cols-2 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5 p-px">
+                                    <div className="bg-zinc-900/50 p-4">
+                                        <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">Status</p>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-lime-400" />
+                                            <p className="text-xs font-bold text-white uppercase">Activa</p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-gray-500 mb-1 flex items-center justify-end gap-1">
-                                            <CoinsIcon className="w-3 h-3" /> Staking
-                                        </p>
-                                        <p className="text-sm font-medium text-lime-400">Ver Dashboard</p>
+                                    <div className="bg-zinc-900/50 p-4 border-l border-white/5">
+                                        <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">DAI/Rewards</p>
+                                        <p className="text-xs font-bold text-lime-400 uppercase">Ver Dashboard</p>
                                     </div>
                                 </div>
+
+                                {/* Main Button */}
+                                <Link href={`/projects/${project.slug}/dao`} className="block mt-6">
+                                    <button className="w-full py-4 bg-white/5 hover:bg-white text-white hover:text-black font-black uppercase text-xs tracking-widest rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 group/btn">
+                                        Administrar Membresía
+                                        <ArrowRightIcon className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                                    </button>
+                                </Link>
                             </div>
-                        </motion.div>
-                    </Link>
+                        </div>
+                    </motion.div>
                 ))}
             </div>
         </div>

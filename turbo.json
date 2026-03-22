@@ -1,17 +1,60 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": [],
-  "pipeline": {
+  "globalDependencies": [
+    "**/.env.*local",
+    "tsconfig.json",
+    "bun.lockb"
+  ],
+  "globalEnv": [
+    "NEXTAUTH_SECRET",
+    "NEXTAUTH_URL",
+    "STRIPE_API_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "RESEND_API_KEY",
+    "RESEND_FROM",
+    "THIRDWEB_SECRET_KEY",
+    "POSTGRES_URL",
+    "POSTGRES_PRISMA_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL_NON_POOLING",
+    "POSTGRES_USER",
+    "POSTGRES_HOST",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_DATABASE",
+    "POSTGRES_URL_NO_SSL",
+    "DATABASE_URL",
+    "PGHOST",
+    "PGPASSWORD",
+    "PGDATABASE",
+    "PGUSER",
+    "PGHOST_UNPOOLED"
+  ],
+  "globalPassThroughEnv": [
+    "NODE_ENV",
+    "VERCEL",
+    "VERCEL_ENV",
+    "VERCEL_URL",
+    "VERCEL_GIT_COMMIT_REF",
+    "VERCEL_GIT_COMMIT_SHA"
+  ],
+  "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["src/**", "package.json", "tsconfig.json"],
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": [
         "dist/**",
         ".next/**",
-        "!.next/cache/**"
+        "!.next/cache/**",
+        ".contentlayer/**"
+      ],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "next.config.*"
       ]
     },
-
     "build-packages": {
       "dependsOn": [],
       "inputs": [
@@ -19,34 +62,44 @@
         "packages/*/package.json",
         "packages/*/tsconfig.json"
       ],
-      "outputs": ["packages/*/dist/**"]
+      "outputs": [
+        "packages/*/dist/**"
+      ]
     },
-
     "build-apps": {
-      "dependsOn": ["build-packages"],
+      "dependsOn": [
+        "build-packages"
+      ],
       "inputs": [
         "apps/*/src/**",
         "apps/*/package.json",
-        "apps/*/tsconfig.json"
+        "apps/*/tsconfig.json",
+        "apps/*/next.config.*"
       ],
-      "outputs": ["apps/*/.next/**"]
+      "outputs": [
+        "apps/*/.next/**"
+      ]
     },
-
     "dev": {
       "persistent": true,
       "cache": false
     },
-
     "lint": {
-      "dependsOn": ["^build-packages"],
-      "outputs": ["node_modules/.cache/.eslintcache"]
+      "dependsOn": [
+        "^build-packages"
+      ],
+      "outputs": [
+        "node_modules/.cache/.eslintcache"
+      ]
     },
-
     "typecheck": {
-      "dependsOn": ["^build-packages"],
-      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+      "dependsOn": [
+        "^build-packages"
+      ],
+      "outputs": [
+        "node_modules/.cache/tsbuildinfo.json"
+      ]
     },
-
     "clean": {
       "cache": false
     }

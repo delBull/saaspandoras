@@ -62,7 +62,29 @@ class NotificationService {
 
     // Send to Discord with Green color (not urgent) to the APPS channel
     const appWebhook = this.config?.discord?.applyWebhookUrl;
-    return await this.sendDiscord(notificationText, false, 5763719, appWebhook); // Green color
+    return await this.sendDiscord(notificationText, false, 5763719, appWebhook, "Nueva Aplicación");
+  }
+
+  /**
+   * Send notification for a high-intent Growth Lead (Phase 1.5)
+   */
+  async notifyGrowthLead(lead: any, project: any): Promise<boolean> {
+    const notificationText = `
+💎 **NUEVO LEAD DE ALTA INTENCIÓN**
+
+👤 **Nombre**: ${lead.name || 'Anónimo'}
+📧 **Email**: ${lead.email}
+🎯 **Intención**: ${lead.intent?.toUpperCase()}
+📊 **Score**: ${lead.score || 0}/100
+🚀 **Proyecto**: ${project.name}
+
+🔗 **Ver Lead**: /admin/dashboard?tab=marketing&subtab=growth-os
+`.trim();
+
+    // Route to project-specific webhook if provided, else fallback to default
+    const targetWebhook = project.discordWebhookUrl || this.config?.discord?.webhookUrl;
+    
+    return await this.sendDiscord(notificationText, true, 3447003, targetWebhook, "Growth OS Alert");
   }
 
   /**
@@ -83,9 +105,12 @@ class NotificationService {
   /**
    * Send Discord notification (100% FREE!)
    */
-  private async sendDiscord(text: string, urgent: boolean, color?: number, targetWebhook?: string): Promise<boolean> {
+  private async sendDiscord(text: string, urgent: boolean, color?: number, targetWebhook?: string, titleOverride?: string): Promise<boolean> {
     const webhookToUse = targetWebhook || this.config?.discord?.webhookUrl;
-    if (!webhookToUse) return true; // Skip if no webhook configured
+    if (!webhookToUse) {
+      console.warn('⚠️ Discord notification skipped: No webhook URL configured.');
+      return false; // No longer returning true for skipped notifications
+    }
 
     try {
       const response = await fetch(webhookToUse, {
@@ -93,24 +118,25 @@ class NotificationService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           embeds: [{
-            title: urgent ? '🚨 AGENTE HUMANO REQUERIDO' : '🤖 Notificación del Sistema',
+            title: titleOverride || (urgent ? '🚨 ALERTA CRÍTICA' : '🤖 Notificación del Sistema'),
             description: text,
             color: color || (urgent ? 16711680 : 3447003), // Custom or Red/Blue
             timestamp: new Date().toISOString()
           }],
-          username: 'Pandoras Bot'
+          username: 'Pandoras Growth Bot'
         }),
       });
 
       if (response.ok) {
-        console.log('✅ Discord notification sent');
+        console.log('✅ Discord notification sent successfully');
         return true;
       } else {
-        console.error('❌ Discord failed:', response.status);
+        const errorText = await response.text();
+        console.error(`❌ Discord API failed (${response.status}): ${errorText}`);
         return false;
       }
     } catch (error) {
-      console.error('❌ Discord error:', error);
+      console.error('❌ Discord network/fetch error:', error);
       return false;
     }
   }

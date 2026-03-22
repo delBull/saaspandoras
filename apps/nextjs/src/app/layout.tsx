@@ -22,8 +22,11 @@ const fontSans = FontSans({
   variable: "--font-sans",
 });
 
-const fontHeading = localFont({
-  src: "../styles/fonts/CalSans-SemiBold.woff2",
+import { Montserrat } from "next/font/google";
+
+const fontHeading = Montserrat({
+  subsets: ["latin"],
+  weight: "600",
   variable: "--font-heading",
 });
 

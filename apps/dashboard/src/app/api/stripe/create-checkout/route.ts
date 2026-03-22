@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
-
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2024-04-10" as any, // Use latest or pinned version
-});
+import { stripe } from "@/lib/stripe";
 
 export async function POST(req: Request) {
     try {
