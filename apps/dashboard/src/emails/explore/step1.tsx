@@ -16,13 +16,20 @@ import React from 'react';
 interface ExploreStep1EmailProps {
   projectName: string;
   differentiator?: string;
+  projectSlug?: string;
+  baseUrl?: string;
 }
 
 export const ExploreStep1Email = ({
   projectName = 'nuestro proyecto',
-  differentiator = 'una tecnología diferencial'
+  differentiator = 'una tecnología diferencial',
+  projectSlug = '',
+  baseUrl = 'https://dash.pandoras.finance'
 }: ExploreStep1EmailProps) => {
   const previewText = `Viste algo en ${projectName} que te llamó la atención...`;
+  
+  // Dynamic link to the project or educational draft
+  const exploreUrl = `${baseUrl}/education/courses/draft-${projectSlug}`;
 
   return (
     <Html>
@@ -61,8 +68,8 @@ export const ExploreStep1Email = ({
 
             <Section className="text-center mt-[32px] mb-[32px]">
               <Button
-                className="bg-[#000000] rounded text-white text-[12px] font-semibold no-underline text-center px-5 py-3"
-                href={`https://pandoras.finance/projects`} // To be made dynamic later
+                className="bg-[#000000] rounded-lg text-white text-[14px] font-bold no-underline text-center px-10 py-4 inline-block"
+                href={exploreUrl}
               >
                 Explorar ahora
               </Button>

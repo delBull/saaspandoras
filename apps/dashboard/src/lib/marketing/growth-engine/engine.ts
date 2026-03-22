@@ -18,13 +18,13 @@ export function resolveGrowthAction(event: GrowthEvent, lead: LeadContextPayload
     case 'LEAD_CAPTURED':
       if (normalizedIntent === 'explore') {
         nextState = 'EXPLORE';
-        actions = ['SEND_WELCOME_EXPLORE_D1'];
+        actions = ['SEND_WELCOME_EXPLORE_D1', 'NOTIFY_TEAM', 'ASSIGN_COURSE'];
       } else if (normalizedIntent === 'invest' || normalizedIntent === 'whitelist') {
         nextState = 'INVEST_READY';
-        actions = ['SEND_WELCOME_INVEST_D1', 'NOTIFY_TEAM'];
+        actions = ['SEND_WELCOME_INVEST_D1', 'NOTIFY_TEAM', 'ASSIGN_COURSE'];
       } else {
         nextState = 'EXPLORE';
-        actions = ['SEND_WELCOME_EXPLORE_D1'];
+        actions = ['SEND_WELCOME_EXPLORE_D1', 'NOTIFY_TEAM', 'ASSIGN_COURSE'];
       }
       break;
 
