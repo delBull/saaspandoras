@@ -1,6 +1,7 @@
 import path from "path";
 
 // next.config.js
+// 🚀 Force rebuild for turborepo v2 testing
 
 const nextConfig = {
   outputFileTracingRoot: path.join(process.cwd(), "../../"),
