@@ -12,8 +12,13 @@ import {
   AcademicCapIcon, 
   WalletIcon, 
   TrophyIcon,
-  Squares2X2Icon
+  Squares2X2Icon,
+  ArrowLeftOnRectangleIcon
 } from '@heroicons/react/24/outline';
+import { useActiveAccount, useConnectModal, useDisconnect, useActiveWallet } from "thirdweb/react";
+import { client } from "@/lib/thirdweb-client";
+import { wallets } from "@/lib/wallets";
+import { config } from "@/config";
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -23,6 +28,10 @@ interface MobileSidebarProps {
 
 export function MobileSidebar({ isOpen, onClose, isAdmin }: MobileSidebarProps) {
   const pathname = usePathname();
+  const account = useActiveAccount();
+  const wallet = useActiveWallet();
+  const { connect } = useConnectModal();
+  const { disconnect } = useDisconnect();
 
   const links = [
     { label: "Hub", href: "/", icon: <HomeIcon className="w-5 h-5" /> },
@@ -95,12 +104,55 @@ export function MobileSidebar({ isOpen, onClose, isAdmin }: MobileSidebarProps) 
               ))}
             </nav>
 
-            {/* Footer Area inside Drawer */}
-            <div className="mt-auto pt-6 border-t border-white/5">
+            {/* Footer Area inside Drawer: Login/Logout */}
+            <div className="mt-auto pt-6 border-t border-white/5 space-y-4">
+              {!account ? (
+                <button
+                  onClick={() => {
+                    onClose();
+                    connect({
+                      client,
+                      chain: config.chain,
+                      showThirdwebBranding: false,
+                      showAllWallets: false,
+                      size: "compact",
+                      wallets,
+                    });
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-lime-400 text-gray-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-lime-400/20 active:scale-95 transition-all"
+                >
+                  <WalletIcon className="w-5 h-5" />
+                  Iniciar Sesión
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="px-4 py-3 bg-zinc-900 rounded-2xl border border-white/5 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Conectado</span>
+                      <span className="text-xs font-mono text-lime-400">
+                        {account.address.substring(0, 6)}...{account.address.substring(38)}
+                      </span>
+                    </div>
+                    <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(163,230,53,0.5)]" />
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      if (wallet) disconnect(wallet);
+                      onClose();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-zinc-900 text-red-400 hover:text-red-300 rounded-2xl font-bold text-sm border border-red-500/20 active:scale-95 transition-all"
+                  >
+                    <ArrowLeftOnRectangleIcon className="w-5 h-5" />
+                    Cerrar Sesión
+                  </button>
+                </div>
+              )}
+
               <div className="p-4 bg-zinc-900/50 rounded-2xl border border-white/5">
-                <p className="text-[10px] text-gray-500 font-mono mb-2 uppercase tracking-widest">Growth Engine</p>
+                <p className="text-[10px] text-gray-500 font-mono mb-2 uppercase tracking-widest">Growth Engine v1.5</p>
                 <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full w-2/3 bg-lime-400" />
+                  <div className="h-full w-full bg-gradient-to-r from-lime-400 to-emerald-500" />
                 </div>
               </div>
             </div>
