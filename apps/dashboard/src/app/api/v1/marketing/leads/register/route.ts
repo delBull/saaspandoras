@@ -12,6 +12,8 @@ import {
 import { eq, and } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { IdentityService } from '@/lib/marketing/identity-service';
+import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
+import { executeGrowthActions, computeNextGrowthMetadata } from '@/lib/marketing/growth-engine/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +94,7 @@ export async function POST(req: NextRequest) {
     // 1.5 Security Check: Allowed Domains (ONLY FOR PUBLIC KEYS)
     const projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
-      columns: { allowedDomains: true, slug: true }
+      columns: { allowedDomains: true, slug: true, title: true, businessCategory: true }
     });
 
     if (!projectContext) {
@@ -167,6 +169,25 @@ export async function POST(req: NextRequest) {
     if (phoneNumber) score += 10; // Extra score for phone (higher commitment)
     score = Math.min(score, 100);
 
+    // 4.5. GROWTH ENGINE: Resolve State and Compute Metadata
+    const GROWTH_ENGINE_V2 = true;
+    let growthActionsToExecute: any[] = [];
+    let newMetadata = metadata || {};
+    
+    if (GROWTH_ENGINE_V2) {
+      const engineResult = resolveGrowthAction('LEAD_CAPTURED', {
+        id: existingLead?.id || 'new', // New leads don't have ID yet
+        email,
+        intent: intent || 'explore',
+        projectId: targetProjectId
+      });
+      
+      if (engineResult) {
+        growthActionsToExecute = engineResult.actions;
+        newMetadata.growth = computeNextGrowthMetadata(existingLead?.metadata, engineResult.nextState as any);
+      }
+    }
+
     // 5. Ingest Lead (Upsert)
     // Create a base object for both insert values and update set
     const baseLeadData = {
@@ -181,7 +202,7 @@ export async function POST(req: NextRequest) {
       origin: origin || null,
       intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
       consent: true,
-      metadata: metadata || {},
+      metadata: newMetadata,
       status: 'active' as any,
       score: score,
       updatedAt: new Date(),
@@ -211,6 +232,30 @@ export async function POST(req: NextRequest) {
           isNewLead: !existingLead
         }
       });
+    }
+
+    // 7. GROWTH ENGINE: Execute Actions (Silent Fallback)
+    if (GROWTH_ENGINE_V2 && result && growthActionsToExecute.length > 0) {
+      try {
+        await executeGrowthActions(growthActionsToExecute, {
+          lead: {
+            id: result.id,
+            email: result.email,
+            name: result.name,
+            intent: result.intent,
+            projectId: result.projectId,
+            metadata: result.metadata
+          },
+          project: {
+            id: targetProjectId,
+            slug: projectContext.slug,
+            name: projectContext?.title || 'Protocolo Ecosystem',
+            type: projectContext?.businessCategory || 'Ecosistema'
+          }
+        });
+      } catch (e) {
+        console.error(`❌ [Growth Engine] Executor failed silently for ${email}:`, e);
+      }
     }
 
     if (process.env.NODE_ENV !== 'production') {
