@@ -11,7 +11,8 @@ import {
   boolean,
   uniqueIndex,
   index,
-  uuid
+  uuid,
+  bigint
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -431,11 +432,16 @@ export const gamificationEvents = pgTable("gamification_events", {
   // Context
   projectId: integer("project_id").references(() => projects.id),
   metadata: jsonb("metadata"),
+  dedupId: varchar("dedup_id", { length: 255 }), // Prevent duplicate event processing
 
   // Timestamps
   createdAt: timestamp("created_at").defaultNow().notNull(),
   processedAt: timestamp("processed_at"),
-});
+}, (table) => ({
+  dedupIndex: uniqueIndex("gamification_event_dedup_idx").on(table.dedupId),
+  projectIndex: index("gamification_event_project_idx").on(table.projectId),
+  userIndex: index("gamification_event_user_idx").on(table.userId),
+}));
 
 export const userPoints = pgTable("user_points", {
   id: serial("id").primaryKey(),
@@ -1000,6 +1006,45 @@ export const daoActivitySubmissions = pgTable("dao_activity_submissions", {
   statusUpdatedAt: timestamp("status_updated_at", { withTimezone: true }), // When status changed
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 });
+
+// --- NEW DAO ARCHITECTURE TABLES ---
+
+export const daoMembers = pgTable("dao_members", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  wallet: varchar("wallet", { length: 42 }).notNull(),
+  votingPower: decimal("voting_power", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  artifactsCount: integer("artifacts_count").default(0).notNull(),
+  sourceCampaignId: integer("source_campaign_id").references(() => campaigns.id),
+  joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueProjectMember: uniqueIndex("unique_project_member").on(table.projectId, table.wallet),
+  projectIndex: index("dao_member_project_idx").on(table.projectId),
+  walletIndex: index("dao_member_wallet_idx").on(table.wallet),
+  campaignIndex: index("dao_member_campaign_idx").on(table.sourceCampaignId),
+}));
+
+export const daoTreasury = pgTable("dao_treasury", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull().unique(),
+  nativeBalance: decimal("native_balance", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  usdcBalance: decimal("usdc_balance", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  pboxBalance: decimal("pbox_balance", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const daoTreasurySnapshots = pgTable("dao_treasury_snapshots", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  token: varchar("token", { length: 50 }).notNull(), // e.g., 'ETH', 'USDC'
+  balance: decimal("balance", { precision: 18, scale: 6 }).notNull(),
+  usdValue: decimal("usd_value", { precision: 18, scale: 6 }),
+  blockNumber: bigint("block_number", { mode: "number" }),
+  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  projectTokenIdx: index("dao_treasury_snapshot_project_token_idx").on(table.projectId, table.token),
+}));
 
 
 // DAO Chat / Forum Tables

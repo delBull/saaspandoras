@@ -27,7 +27,8 @@ import {
   AlertCircle,
   BarChart3,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  HelpCircle
 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createDemandDraft, launchCampaign } from "@/actions/campaigns";
@@ -40,7 +41,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -318,15 +320,78 @@ export function MarketAttackEngine({ projectId, projectName }: MarketAttackEngin
             </div>
 
             {/* QUICK STATS BAR */}
-            <div className="flex gap-6 pt-2">
+            <div className="flex flex-wrap gap-4 md:gap-6 pt-2">
                <div className="flex items-center gap-2">
                   <BarChart3 size={14} className="text-emerald-500" />
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Performance Score: <span className="text-white">87%</span></span>
                </div>
-               <div className="flex items-center gap-2 border-l border-zinc-800 pl-6">
+               <div className="flex items-center gap-2 border-l border-zinc-800 pl-4 md:pl-6">
                   <Clock size={14} className="text-purple-500" />
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Next Peak Hour: <span className="text-white">19:00</span></span>
                </div>
+               
+               <Dialog>
+                 <DialogTrigger asChild>
+                   <button className="flex items-center gap-2 px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all">
+                     <HelpCircle size={12} className="text-lime-400" />
+                     ¿Cómo usar?
+                   </button>
+                 </DialogTrigger>
+                 <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-2xl">
+                   <DialogHeader>
+                     <DialogTitle className="text-2xl font-black italic flex items-center gap-3">
+                       <Zap className="text-lime-400 fill-lime-400/20" />
+                       Guía de Crecimiento: Market Attack
+                     </DialogTitle>
+                     <DialogDescription className="text-zinc-500 text-xs">
+                       Domina el motor de demanda y acelera la adquisición de usuarios en menos de 60 segundos por post.
+                     </DialogDescription>
+                   </DialogHeader>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                     <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
+                       <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                         <Target className="w-4 h-4 text-purple-400" />
+                         1. ADN Estratégico
+                       </h4>
+                       <p className="text-[11px] text-zinc-400 leading-relaxed">
+                         Selecciona el <strong>Ángulo</strong> de ataque (Curiosidad, Ganancias, Miedo) y la <strong>Emoción</strong> dominante. El sistema adaptará todo el contenido a esta vibración.
+                       </p>
+                     </div>
+                     <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
+                       <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                         <MousePointer2 className="w-4 h-4 text-emerald-400" />
+                         2. Ciclo de Impacto
+                       </h4>
+                       <p className="text-[11px] text-zinc-400 leading-relaxed">
+                         Itera entre <strong>Hooks</strong> (captura atención), <strong>Scripts</strong> (educa/retiene) y <strong>CTAs</strong> (convierte). No uses siempre lo mismo; refresca cada 24 horas.
+                       </p>
+                     </div>
+                     <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
+                       <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                         <Rocket className="w-4 h-4 text-orange-400" />
+                         3. Publicación Rápida
+                       </h4>
+                       <p className="text-[11px] text-zinc-400 leading-relaxed">
+                         Usa el botón <strong>Post Landing</strong> para enviar el borrador directamente a tus campañas unificadas. Etiqueta como 'Demand' para trackear el ROI real.
+                       </p>
+                     </div>
+                     <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
+                       <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                         <RefreshCw className="w-4 h-4 text-blue-400" />
+                         4. Secuencia de 3 Días
+                       </h4>
+                       <p className="text-[11px] text-zinc-400 leading-relaxed">
+                         Cambia a modo <strong>3-Day Sequence</strong> para generar una narrativa coherente: Día 1 (Gancho), Día 2 (Mecanismo), Día 3 (Cierre de Venta).
+                       </p>
+                     </div>
+                   </div>
+                   <div className="p-3 bg-lime-500/10 border border-lime-500/20 rounded-lg">
+                     <p className="text-[10px] text-lime-400 font-bold uppercase tracking-widest text-center">
+                       Tip: Menos es más. Un post agresivo con un CTA claro rinde 4x que un post genérico.
+                     </p>
+                   </div>
+                 </DialogContent>
+               </Dialog>
             </div>
           </div>
 

@@ -158,7 +158,7 @@ export default function GrowthOSLanding() {
               <br/> IN 60 SECONDS
             </h1>
             <p className="text-lg md:text-2xl text-zinc-500 font-bold leading-relaxed max-w-3xl mx-auto mb-16 uppercase tracking-tight">
-              Deja de pensar qué postear. Nuestro <span className="text-white">Demand Engine</span> genera la narrativa y la ejecuta por ti. De tráfico frío a inversores educados sin fricción.
+              Diseña, Ejecuta y Escala. No solo te traemos leads… <span className="text-white">construimos gobernanza</span>. Atribución absoluta del "Governance Acquisition Cost" (GAC).
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4">
               <Button 
@@ -189,8 +189,8 @@ export default function GrowthOSLanding() {
              <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
              <div className="text-center space-y-4 relative z-10">
                 <Rocket className="w-16 h-16 text-purple-500 mx-auto mb-6 animate-bounce" />
-                <h3 className="text-3xl font-black tracking-tighter">⚡ DEMAND ENGINE INTERFACE</h3>
-                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Narrativa Dual Automática • Cierre en un clic • 3-Day Sequences</p>
+                 <h3 className="text-3xl font-black tracking-tighter">⚡ DEMAND ENGINE + DAO GOVERNANCE</h3>
+                 <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Narrativa Dual Automática • GAC Tracking • Governance Concentrator</p>
              </div>
           </div>
         </motion.div>
@@ -198,8 +198,8 @@ export default function GrowthOSLanding() {
         {/* STATS SECTION */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-40">
           {[
-            { label: 'Marketing Velocity', value: '10x' },
-            { label: 'Time to First Post', value: '< 1m' },
+            { label: 'Governance GAC', value: 'Tracker' },
+            { label: 'Time to First DAO', value: '< 2m' },
             { label: 'Narrative Accuracy', value: '98%' },
             { label: 'Conversion Lift', value: '+45%' },
           ].map((stat, i) => (
@@ -219,57 +219,57 @@ export default function GrowthOSLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-stretch">
             <TierCard 
-              tier="Fase 1: HOOK"
-              title="Setup & Leads"
+              tier="GGE: CORE"
+              title="DAO Monitor"
               price="$300"
-              description="Te implementamos el sistema y te generamos tus primeros leads cualificados en 72h."
+              description="La base para cualquier protocolo serio. Métricas on-chain y atribución básica de miembros."
               accentColor="purple"
               icon={Zap}
-              onCTA={() => openConversion('HOOK: Setup & Leads')}
+              onCTA={() => openConversion('CORE: DAO Monitor')}
               features={[
-                'Setup Asistido White-label',
-                'Primeros Leads Cualificados',
-                'Captura con IA Inteligente',
-                'Branding Personalizado',
-                'Dashboard de Resultados',
-                'Configuración Multi-tenant'
+                'DAO Metrics Dashboard',
+                'Poder de Voto (Real)',
+                'Miembros Únicos Tracker',
+                'Atribución Básica',
+                'Setup Asistido',
+                'Soporte Estándar'
               ]}
             />
             
             <TierCard 
-              tier="Fase 2: GROWTH"
-              title="Scale Engine"
-              price="$199"
+              tier="GGE: PRO"
+              title="Growth Optimizer"
+              price="$599"
               popular={true}
-              description="Nurturing automático y gestión de audiencia para escala masiva y retención."
+              description="Atribución avanzada y tracking de GAC para optimizar la toma de poder."
               accentColor="emerald"
               icon={Rocket}
-              onCTA={() => openConversion('GROWTH: Scale Engine')}
+              onCTA={() => openConversion('PRO: Growth Optimizer')}
               features={[
-                'Educación IA 24/7 (Cursos)',
-                'Newsletter Automation',
-                'Shortlinks Tracking PRO',
-                'Discord Webhooks Expert',
-                'Atribución de Conversión',
-                'API Keys con Scopes'
+                'Governance Attribution',
+                'GAC (Governance Acq Cost)',
+                'Campaign Influence Score',
+                'Treasury Intelligence',
+                'Educación IA Automática',
+                'Prioridad en Soporte'
               ]}
             />
             
             <TierCard 
-              tier="Fase 3: IDENTITY"
-              title="Partner VIP"
+              tier="GGE: ELITE"
+              title="Strategic Fortress"
               price="Rev Share"
-              description="Nos convertimos en tu infraestructura crítica. Cobramos basándonos en tu éxito."
+              description="Protección total y optimización automática del crecimiento de gobernanza."
               accentColor="indigo"
               icon={Key}
-              onCTA={() => openConversion('IDENTITY: Partner VIP')}
+              onCTA={() => openConversion('ELITE: Strategic Fortress')}
               features={[
-                'SBT Identity & Reputation',
-                'WhatsApp & Telegram Bridge',
-                'Smart QRs Dinámicos',
-                'Revenue Tracking System',
-                'Campañas Omni-canal',
-                'Partner Global Listing'
+                'Alertas de Centralización',
+                'Anti-Manipulation Model',
+                'Auto-Optimization Loop',
+                'SBT Reputation Layer',
+                'Partner Global Listing',
+                'Consejería Estratégica'
               ]}
             />
           </div>
