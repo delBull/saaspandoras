@@ -286,7 +286,7 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
 
     try {
       // Extract force flag from config if present (smuggled in ProjectTableView)
-      const forceRedeploy = (config as any)?.forceRedeploy;
+      const forceRedeploy = config?.forceRedeploy;
 
       const response = await fetch(`/api/admin/deploy-protocol/${projectSlug}`, {
         method: 'POST',

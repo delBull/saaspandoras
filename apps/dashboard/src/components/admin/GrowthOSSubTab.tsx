@@ -85,6 +85,9 @@ interface LeadSuggestion {
 const StrategyContent = ({ type = 'monetization' }: { type?: 'monetization' | 'roadmap' }) => {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [isTestingData, setIsTestingData] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   useEffect(() => {
     const endpoint = type === 'roadmap' ? '/api/admin/docs/growth-roadmap' : '/api/admin/docs/monetization-plan';
@@ -279,6 +282,11 @@ export default function GrowthOSSubTab() {
 
   // Section Navigation
   const [activeSection, setActiveSection] = useState<'overview' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence'>('overview');
+
+  // States for testing live data
+  const [isTestingData, setIsTestingData] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   const fetchApiKey = async (projectId: string) => {
     if (projectId === 'all') {
@@ -1373,6 +1381,233 @@ export default function GrowthOSSubTab() {
         {activeSection === 'performance' && (
           <CampaignPerformanceDashboard projectId={Number(selectedProjectId)} />
         )}
+        {/* Growth Infrastructure Health (Layer 4 - Deployment Integrity) */}
+        {selectedProjectId !== 'all' && (
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 border border-indigo-500/20">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                    Growth Infrastructure Health
+                    <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-400">V2.0 SYSTEM</Badge>
+                  </h4>
+                  <p className="text-sm text-zinc-500">Monitorea la integridad de la configuración de economía y crecimiento.</p>
+                </div>
+              </div>
+
+              <UIButton 
+                onClick={async () => {
+                  setIsTestingData(true);
+                  setShowTestModal(true);
+                  try {
+                    const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                    if (!project) return;
+                    
+                    const [configRes, stateRes] = await Promise.all([
+                      fetch(`/api/public/project/${project.slug}/config?apiKey=${publicKey}`),
+                      fetch(`/api/public/project/${project.slug}/state?apiKey=${publicKey}`)
+                    ]);
+                    
+                    const config = await configRes.json();
+                    const state = await stateRes.json();
+                    
+                    setTestResult({ config, state });
+                  } catch (error) {
+                    console.error('Error testing live data:', error);
+                    toast.error("Error al recuperar datos en tiempo real");
+                  } finally {
+                    setIsTestingData(false);
+                  }
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6 h-12 shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+              >
+                <Monitor className="w-4 h-4" />
+                Verificar Endpoints Live
+              </UIButton>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Validation Cards */}
+              <div className={cn(
+                "p-5 rounded-2xl border transition-all",
+                (testResult?.config?.tiers?.length || 0) > 0 ? "bg-zinc-950/50 border-zinc-800" : "bg-orange-500/5 border-orange-500/20"
+              )}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="p-2 bg-zinc-900 rounded-lg text-zinc-500"><Coins className="w-4 h-4" /></div>
+                  {(testResult?.config?.tiers?.length || 0) > 0 ? (
+                    <Badge className="bg-green-500/10 text-green-400 border-none text-[8px]">OK</Badge>
+                  ) : (
+                    <Badge className="bg-orange-500 text-white border-none text-[8px] animate-pulse">CRITICAL</Badge>
+                  )}
+                </div>
+                <h5 className="font-bold text-sm text-white">Tier System</h5>
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  {(testResult?.config?.tiers?.length || 0) > 0 
+                    ? `${testResult.config.tiers.length} Tiers configurados correctamente.`
+                    : "No se detectaron Tiers. El sistema de beneficios está inactivo."}
+                </p>
+              </div>
+
+              <div className={cn(
+                "p-5 rounded-2xl border transition-all",
+                (testResult?.config?.phases?.length || 0) > 0 ? "bg-zinc-950/50 border-zinc-800" : "bg-red-500/5 border-red-500/20"
+              )}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="p-2 bg-zinc-900 rounded-lg text-zinc-500"><Zap className="w-4 h-4" /></div>
+                  {(testResult?.config?.phases?.length || 0) > 0 ? (
+                    <Badge className="bg-green-500/10 text-green-400 border-none text-[8px]">OK</Badge>
+                  ) : (
+                    <Badge className="bg-red-500 text-white border-none text-[8px] animate-pulse">ERROR</Badge>
+                  )}
+                </div>
+                <h5 className="font-bold text-sm text-white">Utility Phases</h5>
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  {(testResult?.config?.phases?.length || 0) > 0 
+                    ? `${testResult.config.phases.length} Fases de distribución activas.`
+                    : "No hay fases configuradas. No se pueden realizar compras."}
+                </p>
+              </div>
+
+              <div className={cn(
+                "p-5 rounded-2xl border transition-all",
+                testResult?.config?.treasuryAddress ? "bg-zinc-950/50 border-zinc-800" : "bg-orange-500/5 border-orange-500/20"
+              )}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="p-2 bg-zinc-900 rounded-lg text-zinc-500"><Wallet className="w-4 h-4" /></div>
+                  {testResult?.config?.treasuryAddress ? (
+                    <Badge className="bg-green-500/10 text-green-400 border-none text-[8px]">OK</Badge>
+                  ) : (
+                    <Badge className="bg-orange-500 text-white border-none text-[8px] animate-pulse">WARNING</Badge>
+                  )}
+                </div>
+                <h5 className="font-bold text-sm text-white">Treasury Sync</h5>
+                <p className="text-[10px] text-zinc-500 mt-1 truncate">
+                  {testResult?.config?.treasuryAddress 
+                    ? `Treasury: ${testResult.config.treasuryAddress}`
+                    : "Falta dirección de tesorería. El recaudo está detenido."}
+                </p>
+              </div>
+
+              <div className={cn(
+                "p-5 rounded-2xl border transition-all",
+                (testResult?.config?.totalAllocation || 0) > 0 ? "bg-zinc-950/50 border-zinc-800" : "bg-orange-500/5 border-orange-500/20"
+              )}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="p-2 bg-zinc-900 rounded-lg text-zinc-500"><Target className="w-4 h-4" /></div>
+                  {(testResult?.config?.totalAllocation || 0) > 0 ? (
+                    <Badge className="bg-green-500/10 text-green-400 border-none text-[8px]">OK</Badge>
+                  ) : (
+                    <Badge className="bg-orange-500 text-white border-none text-[8px] animate-pulse">LEAKAGE</Badge>
+                  )}
+                </div>
+                <h5 className="font-bold text-sm text-white">Supply Integrity</h5>
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  {(testResult?.config?.totalAllocation || 0) > 0 
+                    ? `${testResult.config.totalAllocation} Artefactos en pool de distribución.`
+                    : "Pool vacío. Configura el allocation para habilitar ventas."}
+                </p>
+              </div>
+            </div>
+
+            {/* Developer Snippets Section (Simplified V2.0 Integration) */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-950/30 p-6 rounded-3xl border border-zinc-800/50">
+               <div>
+                  <h6 className="text-[10px] font-black uppercase text-zinc-400 mb-3 tracking-widest flex items-center gap-2">
+                    <FileText className="w-3 h-3" /> Quick Widget Injection
+                  </h6>
+                  <div className="bg-zinc-900 rounded-xl p-4 font-mono text-[9px] text-zinc-500 border border-zinc-800 relative group overflow-hidden">
+                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {
+                          navigator.clipboard.writeText(`<script src="${window.location.origin}/sdk/growth.js" data-project="${selectedProjectId}"></script>`);
+                          toast.success("Snippet copiado");
+                        }}>COPY</UIButton>
+                     </div>
+                     <code>
+                        {`<script src="${window.location.origin}/js/growth-v2.js"`}<br/>
+                        {`  data-project-id="${selectedProjectId}"`}<br/>
+                        {`  data-theme="premium"`}<br/>
+                        {`></script>`}
+                     </code>
+                  </div>
+               </div>
+               
+               <div>
+                  <h6 className="text-[10px] font-black uppercase text-zinc-400 mb-3 tracking-widest flex items-center gap-2">
+                    <RefreshCw className="w-3 h-3" /> Live API Endpoints (v2.0)
+                  </h6>
+                  <div className="space-y-2">
+                    <div className="bg-zinc-900/50 p-2 rounded-lg border border-zinc-800 flex justify-between items-center group">
+                       <span className="text-[9px] font-mono text-zinc-500">GET /api/protocol/config</span>
+                       <UIButton variant="link" size="sm" className="h-4 text-[8px] p-0 text-indigo-400 opacity-0 group-hover:opacity-100" onClick={() => window.open(`/api/protocol/config?projectId=${selectedProjectId}`, '_blank')}>OPEN</UIButton>
+                    </div>
+                    <div className="bg-zinc-900/50 p-2 rounded-lg border border-zinc-800 flex justify-between items-center group">
+                       <span className="text-[9px] font-mono text-zinc-500">GET /api/protocol/state</span>
+                       <UIButton variant="link" size="sm" className="h-4 text-[8px] p-0 text-emerald-400 opacity-0 group-hover:opacity-100" onClick={() => window.open(`/api/protocol/state?projectId=${selectedProjectId}`, '_blank')}>OPEN</UIButton>
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+        )}
+
+        <Dialog open={showTestModal} onOpenChange={setShowTestModal}>
+          <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-4xl p-8 rounded-[2.5rem]">
+            <DialogHeader className="mb-6">
+              <DialogTitle className="text-xl font-black italic flex items-center gap-2">
+                <RefreshCw className={cn("w-5 h-5 text-blue-400", isTestingData && "animate-spin")} />
+                Test Live Data: {projects.find(p => String(p.id) === String(selectedProjectId))?.title}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Config Panel */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Config Response (Normalized)</span>
+                  {testResult?.config && <Badge className="bg-green-500/10 text-green-400 text-[8px] border-none">200 OK</Badge>}
+                </div>
+                <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 h-[400px] overflow-auto no-scrollbar">
+                  {isTestingData ? (
+                    <div className="h-full flex items-center justify-center"><RefreshCw className="w-8 h-8 animate-spin text-zinc-800" /></div>
+                  ) : testResult?.config ? (
+                    <pre className="text-[10px] text-blue-400 font-mono leading-relaxed">{JSON.stringify(testResult.config, null, 2)}</pre>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-zinc-700 text-xs italic">Intentando recuperar configuración...</div>
+                  )}
+                </div>
+              </div>
+
+              {/* State Panel */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Real-time State (On-chain)</span>
+                  {testResult?.state && <Badge className="bg-emerald-500/10 text-emerald-400 text-[8px] border-none">ACTIVE</Badge>}
+                </div>
+                <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 h-[400px] overflow-auto no-scrollbar">
+                  {isTestingData ? (
+                    <div className="h-full flex items-center justify-center"><RefreshCw className="w-8 h-8 animate-spin text-zinc-800" /></div>
+                  ) : testResult?.state ? (
+                    <pre className="text-[10px] text-emerald-400 font-mono leading-relaxed">{JSON.stringify(testResult.state, null, 2)}</pre>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-zinc-700 text-xs italic">Intentando recuperar estado en tiempo real...</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-zinc-900 flex justify-between items-center">
+              <p className="text-[10px] text-zinc-500 leading-relaxed max-w-sm italic">
+                Esta utilidad verifica que los endpoints públicos de configuración y estado responden correctamente para el widget v2.0.
+              </p>
+              <UIButton variant="outline" className="rounded-xl border-zinc-800 font-bold text-xs" onClick={() => setShowTestModal(false)}>
+                Cerrar Verificación
+              </UIButton>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );

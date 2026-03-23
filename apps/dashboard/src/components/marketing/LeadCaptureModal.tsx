@@ -51,6 +51,7 @@ export function LeadCaptureModal({ isOpen, onClose, tierName, source = 'growth-o
           origin: window.location.href,
           metadata: {
             source,
+            sessionId: typeof window !== 'undefined' ? localStorage.getItem("growth_session_id") : null,
             tags: [source, 'organic', tierName ? 'premium' : 'exploration'],
             tier: tierName || 'general',
             requestedAt: new Date().toISOString()

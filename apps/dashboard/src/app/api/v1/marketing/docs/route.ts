@@ -13,17 +13,17 @@ export async function GET() {
 
   try {
     // In Vercel monorepo, process.cwd() is apps/dashboard
-    const docPath = path.join(process.cwd(), "docs/MONETIZATION_MASTER_PLAN.md");
+    const strategyPath = path.join(process.cwd(), "docs/MONETIZATION_MASTER_PLAN.md");
+    const devGuidePath = path.join(process.cwd(), "docs/DEVELOPER_GUIDE_V2.md");
     
     let content = "";
-    if (fs.existsSync(docPath)) {
-      content = fs.readFileSync(docPath, "utf-8");
-    } else {
-      // Fallback: try from root if process.cwd() is different
-      const rootPath = path.join(process.cwd(), "apps/dashboard/docs/MONETIZATION_MASTER_PLAN.md");
-      if (fs.existsSync(rootPath)) {
-        content = fs.readFileSync(rootPath, "utf-8");
-      }
+    
+    if (fs.existsSync(strategyPath)) {
+      content += fs.readFileSync(strategyPath, "utf-8");
+    }
+
+    if (fs.existsSync(devGuidePath)) {
+      content += "\n\n---\n\n" + fs.readFileSync(devGuidePath, "utf-8");
     }
 
     if (!content) {

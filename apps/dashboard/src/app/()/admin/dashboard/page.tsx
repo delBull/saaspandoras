@@ -16,6 +16,9 @@ import { ProjectApplicationButton } from "@/components/ProjectApplicationButton"
 import { ProjectTableView } from "@/components/ProjectTableView";
 import { ProjectCardsView } from "@/components/ProjectCardsView";
 import { ShortlinksAnalyticsTab } from "@/components/admin/ShortlinksAnalyticsTab";
+import { DeploymentConfigModal } from "@/components/admin/DeploymentConfigModal";
+import DeploymentProgressModal from "@/components/admin/DeploymentProgressModal";
+import type { DeploymentConfig } from "@/types/deployment";
 import { waitForSession } from "@/lib/session";
 
 // NOTE: Using 'draft' and 'incomplete' in UI but DB ENUM needs migration to include these values
@@ -54,6 +57,15 @@ export default function AdminDashboardPage() {
   const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+
+  // Deployment Config Modal State
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [selectedProjectForDeployment, setSelectedProjectForDeployment] = useState<{ id: string, title: string, slug: string, forceRedeploy?: boolean } | null>(null);
+
+  // Deployment Progress State
+  const [deploymentStatus, setDeploymentStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
+  const [deploymentError, setDeploymentError] = useState<string | undefined>(undefined);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
 
   // New state for improved UX
   const [searchQuery, setSearchQuery] = useState(''); // Search/filter by title
@@ -106,6 +118,66 @@ export default function AdminDashboardPage() {
     walletAddress: walletAddress ?? undefined,
     refreshCallback: refreshData,
   });
+
+  const handleConfigConfirm = async (config: DeploymentConfig) => {
+    if (selectedProjectForDeployment) {
+      setIsConfigModalOpen(false);
+
+      // Start Progress Modal
+      setDeploymentStatus('deploying');
+      setDeploymentError(undefined);
+      setIsProgressModalOpen(true);
+
+      try {
+        const result = await deployProtocol(
+          selectedProjectForDeployment.id,
+          selectedProjectForDeployment.title,
+          selectedProjectForDeployment.slug,
+          { ...config, forceRedeploy: selectedProjectForDeployment.forceRedeploy } as any
+        );
+
+        const jobId = (result as any)?.jobId;
+
+        if (jobId) {
+          // Start Polling
+          const pollStatus = async () => {
+            try {
+              const pollRes = await fetch(`/api/admin/deployment-job/${jobId}`);
+              if (!pollRes.ok) throw new Error("Failed to poll status");
+              const { job } = await pollRes.json();
+
+              if (job.status === 'completed') {
+                setDeploymentStatus('success');
+                return; // Stop polling
+              } else if (job.status === 'failed') {
+                setDeploymentStatus('error');
+                setDeploymentError(job.error || "Deployment failed in background");
+                return; // Stop polling
+              }
+
+              // Continue polling
+              setTimeout(pollStatus, 3000);
+            } catch (pollErr) {
+              console.error("Polling error:", pollErr);
+              setTimeout(pollStatus, 5000);
+            }
+          };
+          pollStatus();
+        } else {
+          // Fallback if no jobId returned (sync legacy)
+          setDeploymentStatus('success');
+        }
+      } catch (err) {
+        setDeploymentStatus('error');
+        setDeploymentError(err instanceof Error ? err.message : 'Error desconocido al desplegar');
+      }
+    }
+  };
+
+  const handleOpenDeployConfig = async (id: string, title: string, slug?: string, config?: DeploymentConfig) => {
+    setSelectedProjectForDeployment({ id, title, slug: slug || '', forceRedeploy: config?.forceRedeploy });
+    setIsConfigModalOpen(true);
+  };
 
   // Use global featured projects hook
   const { toggleFeatured, isFeatured } = useFeaturedProjects();
@@ -583,9 +655,9 @@ export default function AdminDashboardPage() {
                       toggleFeatured={toggleFeatured}
                       setStatusDropdown={setStatusDropdown}
                       statusDropdown={statusDropdown}
-                      onDeployProtocol={deployProtocol}
-                      onCloneProject={cloneProject}
-                      actionsLoading={actionsLoading}
+                       onDeployProtocol={handleOpenDeployConfig}
+                       onCloneProject={cloneProject}
+                       actionsLoading={actionsLoading}
                     />
                   )}
                 </>
@@ -749,9 +821,7 @@ export default function AdminDashboardPage() {
                     tabIndex={0}
                   >
                     <span>🗑️ Eliminar</span>
-                    {actionsLoading[`delete-${currentProject.id}`] && (
-                      <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
-                    )}
+                    {actionsLoading[`delete-${currentProject.id}`]}
                   </button>
                 );
 
@@ -851,20 +921,19 @@ export default function AdminDashboardPage() {
                   // BOTÓN EDITAR - disponible para TODOS los proyectos que no estén pending
                   actions.splice(1, 0,
                     <button
-                      key="edit"
-                      onClick={() => {
-                        setProjectToEdit(currentProject);
-                        setIsEditModalOpen(true);
-                        setActionsDropdown(null);
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors flex items-center text-blue-400 hover:text-blue-300"
-                      title="Editar proyecto de forma moderna"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      ✏️ Editar
-                    </button>
+                       key="edit"
+                       onClick={() => {
+                         handleOpenDeployConfig(currentProject.id, currentProject.title, currentProject.slug!);
+                         setActionsDropdown(null);
+                       }}
+                       className="w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors flex items-center text-indigo-400 hover:text-indigo-300"
+                       title="Configurar protocolos, artefactos y economía"
+                     >
+                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                       </svg>
+                       ✏️ Config/Editar
+                     </button>
                   );
                 }
 
@@ -884,6 +953,33 @@ export default function AdminDashboardPage() {
         project={projectToEdit}
         onSuccess={refreshData}
         walletAddress={walletAddress || undefined}
+      />
+
+      {/* Deployment Configuration Modal */}
+      <DeploymentConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        onConfirm={handleConfigConfirm}
+        projectTitle={selectedProjectForDeployment?.title || ''}
+        projectSlug={selectedProjectForDeployment?.slug}
+        applicantWalletAddress={projects.find(p => p.id === selectedProjectForDeployment?.id)?.applicantWalletAddress}
+        projectTotalTokens={projects.find(p => p.id === selectedProjectForDeployment?.id)?.totalTokens ?? undefined}
+        isLoading={false}
+      />
+
+      {/* Visual Deployment Progress Modal */}
+      <DeploymentProgressModal
+        isOpen={isProgressModalOpen}
+        onClose={() => {
+          setIsProgressModalOpen(true); // Don't allow accidental close
+          if (deploymentStatus === 'success' || deploymentStatus === 'error') {
+            setIsProgressModalOpen(false);
+            if (deploymentStatus === 'success') setSelectedProjectForDeployment(null);
+          }
+        }}
+        status={deploymentStatus}
+        error={deploymentError}
+        projectTitle={selectedProjectForDeployment?.title || ''}
       />
     </div>
   );

@@ -54,6 +54,42 @@ export type NetworkType = 'sepolia' | 'base';
 
 export type ProtocolLayoutType = 'Access' | 'Identity' | 'Membership' | 'Coupon' | 'Reputation' | 'Yield';
 
+// Perks & Packages Configuration
+export type PerkType = 'discount' | 'bonus_tokens' | 'exclusive_access' | 'extra_apy' | 'multiplier' | 'other';
+
+export interface PerkConfig {
+    id: string;
+    name: string;
+    description: string;
+    type: PerkType;
+    value?: string | number;
+    bonusMultiplier?: number; // e.g. 1.1x for Residente
+    monetaryValue?: number; // Tangible translation to USD
+}
+
+export interface TierConfig {
+    id: string;
+    name: string; // Explorador, Residente, VIP, etc.
+    minArtifacts: number;
+
+    perks: {
+        nights?: number;
+        yieldBoost?: number;
+        discount?: number;
+        vipAccess?: boolean;
+        custom?: string[];
+    };
+
+    ui: {
+        highlightColor?: string;
+        badge?: string;
+    };
+
+    // Derived / UI Helpers (Optional but useful for internal dashboard state)
+    description?: string;
+    nextTierId?: string;
+}
+
 export interface DeploymentConfig {
     // V2 Core
     artifacts: ArtifactConfig[];
@@ -66,6 +102,10 @@ export interface DeploymentConfig {
     accessCardImage?: string;
     accessCardSupply?: number;
 
+    // Progression Economy
+    tiers?: TierConfig[];
+    packages?: TierConfig[]; // Keep for backward compatibility during transition
+
     // W2E Economic Schedule
     w2eConfig?: {
         phase1APY: number;
@@ -73,6 +113,9 @@ export interface DeploymentConfig {
         phase3APY: number;
         royaltyBPS: number;
     };
+
+    // Emergency / Debug
+    forceRedeploy?: boolean;
 }
 
 
