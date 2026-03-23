@@ -12,11 +12,21 @@ export interface Project {
   discordUrl?: string;
   telegramUrl?: string;
   linkedinUrl?: string;
+  logoUrl?: string;
+  videoPitch?: string;
   businessCategory?: string;
+  protoclMecanism?: string;
+  artefactUtility?: string;
+  worktoearnMecanism?: string;
+  monetizationModel?: string;
+  adquireStrategy?: string;
+  mitigationPlan?: string;
   targetAmount: number;
   target_amount?: number | string;
   raisedAmount?: number | string;
   raised_amount?: number | string;
+  tokensOffered?: number | string;
+  tokenPriceUsd?: number | string;
   status: ProjectStatus;
   source?: string; // Identifies where project came from: 'web_form' | 'whatsapp_form'
   createdAt: string;
@@ -30,6 +40,7 @@ export interface Project {
   applicantEmail?: string;
   applicantPhone?: string;
   applicantWalletAddress?: string;
+  applicantPosition?: string;
   // Featured project fields
   featured?: boolean;
   featuredButtonText?: string;

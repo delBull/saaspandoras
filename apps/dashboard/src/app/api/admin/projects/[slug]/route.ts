@@ -112,7 +112,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
       allowedDomains: true,
       discordWebhookUrl: true,
 
-      // Note: Additional fields from extended schema are not currently defined in the database schema
+      // Conversational Form Fields
+      protoclMecanism: true,
+      artefactUtility: true,
+      worktoearnMecanism: true,
+      monetizationModel: true,
+      adquireStrategy: true,
+      mitigationPlan: true,
+      legalStatusDetails: true,
     };
 
     if (isId) {
@@ -412,6 +419,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
         // Mantener el status existente, a menos que se especifique cambiarlo
         status: existingProject.status,
+
+        // --- Sección 8: Campos Conversational Form ---
+        protoclMecanism: data.protoclMecanism ?? null,
+        artefactUtility: data.artefactUtility ?? null,
+        worktoearnMecanism: data.worktoearnMecanism ?? null,
+        monetizationModel: data.monetizationModel ?? null,
+        adquireStrategy: data.adquireStrategy ?? null,
+        mitigationPlan: data.mitigationPlan ?? null,
       })
       .where(eq(projectsSchema.id, projectId));
 
