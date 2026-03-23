@@ -23,7 +23,7 @@ export const customer = pgTable("Customer", {
 ]);
 
 export const user = pgTable("User", {
-	id: text().default(gen_random_uuid()).primaryKey().notNull(),
+	id: text().default(sql`gen_random_uuid()`).primaryKey().notNull(),
 	name: text(),
 	email: text(),
 	image: text(),
@@ -51,7 +51,7 @@ export const k8SClusterConfig = pgTable("K8sClusterConfig", {
 ]);
 
 export const whatsappUsers = pgTable("whatsapp_users", {
-	id: text().default(gen_random_uuid()).primaryKey().notNull(),
+	id: text().default(sql`gen_random_uuid()`).primaryKey().notNull(),
 	phone: text().notNull(),
 	name: text(),
 	priorityLevel: text("priority_level").default('normal').notNull(),
@@ -64,7 +64,7 @@ export const whatsappUsers = pgTable("whatsapp_users", {
 ]);
 
 export const whatsappSessions = pgTable("whatsapp_sessions", {
-	id: text().default(gen_random_uuid()).primaryKey().notNull(),
+	id: text().default(sql`gen_random_uuid()`).primaryKey().notNull(),
 	userId: text("user_id").notNull(),
 	flowType: text("flow_type").notNull(),
 	state: jsonb().default({}).notNull(),
@@ -85,7 +85,7 @@ export const whatsappSessions = pgTable("whatsapp_sessions", {
 ]);
 
 export const whatsappMessages = pgTable("whatsapp_messages", {
-	id: text().default(gen_random_uuid()).primaryKey().notNull(),
+	id: text().default(sql`gen_random_uuid()`).primaryKey().notNull(),
 	sessionId: text("session_id"),
 	direction: text().notNull(),
 	body: text(),

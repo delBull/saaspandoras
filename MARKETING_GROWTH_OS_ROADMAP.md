@@ -74,13 +74,46 @@ Transform Pandoras from a simple dashboard into a **Growth Infrastructure** for 
 
 ---
 
-### Phase 7: CRM Automations & Developer Experience
+### Phase 7: CRM Automations & Developer Experience [IN PROGRESS 🏗️]
 **Goal**: Make the system work while you sleep and empower external devs.
 
-- [ ] **Developer Portal [PLANNED 🛠️]**: 
-    - A dedicated UI at `/dashboard/developers` with API documentation, sandbox mode, and integration status.
+- [x] **Developer Portal Core**: API documentation and snippet generator integrated into Growth House. [x]
 - [ ] **Smart Telegram Alerts**: Notify protocol owners when a "High Quality Lead" (Score > 85) is captured.
 - [ ] **Email Drip Integration**: Auto-sync leads to Mailchimp/Brevo for automated follow-up.
+
+---
+
+### Phase 8: Demand Engine & Instant Execution [COMPLETED 🚀]
+- **Market Attack Engine v2.6**: Strategic execution hub with "Close the Loop" capabilities.
+- **Launch Panel "Canonical"**: 60-second execution via automated draft creation (`createCampaign`).
+- **Urgency Engine**: "TODAY'S EXECUTION" daily tracker for protocol operators.
+- **Auto-Launch Mode**: One-click generation + persistence + redirect to marketing dashboard.
+- [x] **Content Sections**: Dedicated areas for Monetization, Content Nurturing, and Demand Engine. [x]
+- [x] **Persistence Layer**: Real integration with Drizzle/Server Actions for campaign drafts. [x]
+
+---
+
+### Phase 8.1: "Canon" Architecture & Performance V3 [COMPLETED 🚀]
+- [x] **Unified Schema**: Consolidated `campaigns` table with `source` field for Demand/WA/Manual.
+- [x] **Content DNA**: Implemented `demand_drafts` with strategic attributes (Angle, Emotion, Mechanism).
+- [x] **High-Performance Telemetry**: Denormalized `campaign_stats` for instant dashboard loading.
+- [x] **ROI Tracker**: Advanced `demand_events` for conversion value and attribution tracking.
+- [x] **Performance Score**: Real-time algorithmic scoring of campaign efficiency.
+
+---
+
+### Phase 9: The "Auto-Scaling" Intelligence [FUTURE 🚀]
+**Goal**: Transition from manual optimization to autonomous protocol growth.
+
+- [ ] **Autonomous Budget Routing**: 
+    - Automatically increase allocation to campaigns with `Score > 90`.
+    - Pause or archive campaigns with `Score < 30` and high spend.
+- [ ] **DNA Mutation**: 
+    - The engine automatically generates new drafts by mixing "Winning Patterns" (e.g., Scarcity + Authority + Access).
+- [ ] **Market Prediction**: 
+    - Forecast lead volume based on historical DNA performance data.
+- [ ] **DAO-Incentivized Scaling**: 
+    - Link campaign performance directly to PBOX rewards for the community agents who generated the content.
 
 ---
 

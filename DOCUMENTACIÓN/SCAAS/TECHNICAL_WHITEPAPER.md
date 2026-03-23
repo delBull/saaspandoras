@@ -661,6 +661,40 @@ By defaulting to the Virtual Protocol, the Telegram integration achieves instant
 
 ---
 
+## **14. Growth OS - Demand Engine**
+
+### **14.1 Objective**
+
+The "Demand Engine" is the operational layer of the Growth OS, designed to transform lead distribution and audience insights into immediate marketing execution. It bridges the gap between passive CRM data and active market participation.
+
+### **14.2 Dual-Layer Narrative Architecture**
+
+The engine implements a **Dual-Layer Narrative** approach to maintain strategic consistency across the ecosystem:
+
+1.  **Global Layer (Pandora)**: Abstract, high-level narratives focused on infrastructure, DAO participation, and long-term ecosystem growth.
+2.  **Tangible Layer (Project-Specific)**: Direct, objective-driven narratives (e.g., Narai Whitelist, Yield participation) tailored to the specific value proposition of the protocol.
+
+The system automatically switches context based on the `selectedProjectId` or `origin` of the lead, ensuring that marketing copy and execution steps are always relevant to the target audience.
+
+### **14.3 One-Click Launch Panel (Demand Engine v2.6)**
+
+The "Launch Panel" is the core execution interface, optimized for the "Money Machine" workflow:
+-   **Canonical 3-Phase Layout**: (1) Awareness, (2) Show them what they’re missing, (3) Conversion.
+-   **Content Iteration**: [ ← → ] controls to cycle through AI-curated hooks, scripts, and CTAs.
+-   **Integrated Platform Publishing**: Simplified "Create Post" modal with smart-sync to campaigns.
+-   **Urgency Tracker**: "TODAY'S EXECUTION" visual indicator for daily task completion.
+-   **Auto-Launch Mode**: Automated compilation of hook, script, and CTA into a persistent marketing draft with one click.
+-   **Direct Analytics**: Performance scores and peak hour insights integrated directly into the header.
+
+### **14.4 Psychometric Lead Scoring**
+
+The engine integrates with the AI Growth Advisor to score leads based on:
+-   **Investment Intent**: Weighted on-chain and off-chain signifiers.
+-   **Educational Engagement**: Tracking completion rates of automated courses.
+-   **Verification Status**: Identification of verified Pandoras users to prioritize reward distribution.
+
+---
+
 ## **References**
 
 1. **OpenZeppelin Contracts**: Security and standards library
@@ -677,3 +711,27 @@ This technical whitepaper is for informational purposes only and does not consti
 ---
 
 *SCaaS Technical Whitepaper v2.1 - March 2026*
+
+---
+
+## **12. Marketing Canon & Demand Engine v3.0**
+
+### **12.1 Unified Campaign Infrastructure**
+
+To solve the fragmentation of multi-channel marketing, SCaaS V3 implements a **Unified Campaign Architecture**. All promotional activities (WhatsApp, Demand Engine, Social Ads) are consolidated into a single `campaigns` registry.
+
+**Key Components:**
+- **`campaigns` Table**: Centralized record with `source` attribution and unified status management.
+- **`demand_drafts` (Content DNA)**: Decoupled content storage that persists the strategic "DNA" of an ad (Hook, Script, CTA, Angle, Emotion, Mechanism).
+- **`campaign_stats` (Performance Intelligence)**: A denormalized table tracking `impressions`, `clicks`, `leads`, `purchases`, `revenue`, and an algorithmic `score`.
+
+### **12.2 Content DNA & Intelligence Engine**
+
+The "Market Attack" Engine leverages Content DNA to identify winning patterns across the ecosystem. By tracking **CTR** (Clicks/Impressions) and **ROI** linked to specific strategic attributes, the system provides a "Winning Patterns" output.
+
+**The Performance Score Calculation (Canon):**
+$$Score = \min(100, (Clicks \times 0.1) + (Leads \times 0.4) + (Purchases \times 0.8) + (Revenue \times 0.05))$$
+
+This score enables autonomous decision-making, such as "Auto-Scaling" high-performing campaigns and archiving underperforming ones.
+
+This algorithmic approach ensures that the "Demand Engine" is not just a content generator, but a self-optimizing growth machine.
