@@ -92,4 +92,13 @@ export const projectApiSchema = z.object({
   applicantEmail: z.string().email("Email inválido").optional(),
   applicantPhone: z.string().optional(),
   verificationAgreement: z.boolean().refine(val => val === true, { message: "Debes aceptar el acuerdo." }),
+
+  // Conversational Form Fields
+  protoclMecanism: z.string().optional(),
+  artefactUtility: z.string().optional(),
+  worktoearnMecanism: z.string().optional(),
+  monetizationModel: z.string().optional(),
+  adquireStrategy: z.string().optional(),
+  mitigationPlan: z.string().optional(),
+  legalStatusDetails: z.string().optional(),
 });
