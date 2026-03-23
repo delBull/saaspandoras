@@ -19,21 +19,40 @@ async function syncEnum(name: string, url: string) {
   });
 
   try {
-    // Add value if not exists - using a robust check
+    // 1. project_status enum
     await sql.unsafe(`
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'project_status' AND e.enumlabel = 'active_client') THEN
           ALTER TYPE project_status ADD VALUE 'active_client';
-          RAISE NOTICE 'Added active_client to project_status';
-        ELSE
-          RAISE NOTICE 'active_client already exists in project_status';
         END IF;
       END
       $$;
     `);
 
-    console.log(`✅ ${name}: project_status enum check completed.`);
+    // 2. campaign_source enum
+    await sql.unsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'campaign_source') THEN
+          CREATE TYPE campaign_source AS ENUM ('whatsapp', 'demand_engine', 'manual');
+        END IF;
+      END
+      $$;
+    `);
+
+    // 3. campaign_status enum
+    await sql.unsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'campaign_status') THEN
+          CREATE TYPE campaign_status AS ENUM ('active', 'paused', 'completed', 'archived');
+        END IF;
+      END
+      $$;
+    `);
+
+    console.log(`✅ ${name}: Enums synchronized.`);
     
   } catch (e) {
     console.error(`❌ ${name} Sync Error:`, (e as Error).message);

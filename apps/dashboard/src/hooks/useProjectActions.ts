@@ -161,7 +161,9 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
       approved: 'Aprobado',
       rejected: 'Rechazado',
       live: 'En Vivo',
-      completed: 'Completado'
+      completed: 'Completado',
+      draft: 'Borrador',
+      active_client: 'Cliente Activo'
     };
 
     const confirmMessage = `¿Cambiar el status del proyecto "${projectTitle}" a "${statusLabels[newStatus]}"?`;
