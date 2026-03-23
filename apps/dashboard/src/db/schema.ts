@@ -11,7 +11,8 @@ import {
   boolean,
   uniqueIndex,
   index,
-  uuid
+  uuid,
+  bigint
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -431,11 +432,16 @@ export const gamificationEvents = pgTable("gamification_events", {
   // Context
   projectId: integer("project_id").references(() => projects.id),
   metadata: jsonb("metadata"),
+  dedupId: varchar("dedup_id", { length: 255 }), // Prevent duplicate event processing
 
   // Timestamps
   createdAt: timestamp("created_at").defaultNow().notNull(),
   processedAt: timestamp("processed_at"),
-});
+}, (table) => ({
+  dedupIndex: uniqueIndex("gamification_event_dedup_idx").on(table.dedupId),
+  projectIndex: index("gamification_event_project_idx").on(table.projectId),
+  userIndex: index("gamification_event_user_idx").on(table.userId),
+}));
 
 export const userPoints = pgTable("user_points", {
   id: serial("id").primaryKey(),
@@ -1000,6 +1006,45 @@ export const daoActivitySubmissions = pgTable("dao_activity_submissions", {
   statusUpdatedAt: timestamp("status_updated_at", { withTimezone: true }), // When status changed
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 });
+
+// --- NEW DAO ARCHITECTURE TABLES ---
+
+export const daoMembers = pgTable("dao_members", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  wallet: varchar("wallet", { length: 42 }).notNull(),
+  votingPower: decimal("voting_power", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  artifactsCount: integer("artifacts_count").default(0).notNull(),
+  sourceCampaignId: integer("source_campaign_id").references(() => campaigns.id),
+  joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueProjectMember: uniqueIndex("unique_project_member").on(table.projectId, table.wallet),
+  projectIndex: index("dao_member_project_idx").on(table.projectId),
+  walletIndex: index("dao_member_wallet_idx").on(table.wallet),
+  campaignIndex: index("dao_member_campaign_idx").on(table.sourceCampaignId),
+}));
+
+export const daoTreasury = pgTable("dao_treasury", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull().unique(),
+  nativeBalance: decimal("native_balance", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  usdcBalance: decimal("usdc_balance", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  pboxBalance: decimal("pbox_balance", { precision: 18, scale: 6 }).default("0.000000").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const daoTreasurySnapshots = pgTable("dao_treasury_snapshots", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  token: varchar("token", { length: 50 }).notNull(), // e.g., 'ETH', 'USDC'
+  balance: decimal("balance", { precision: 18, scale: 6 }).notNull(),
+  usdValue: decimal("usd_value", { precision: 18, scale: 6 }),
+  blockNumber: bigint("block_number", { mode: "number" }),
+  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  projectTokenIdx: index("dao_treasury_snapshot_project_token_idx").on(table.projectId, table.token),
+}));
 
 
 // DAO Chat / Forum Tables
@@ -1780,3 +1825,123 @@ export const marketingLeadAttributionsRelations = relations(marketingLeadAttribu
     references: [projects.id],
   }),
 }));
+
+// =========================================================
+// CANONICAL MARKETING & DEMAND ENGINE TABLES (v3.0)
+// =========================================================
+
+export const campaignSourceEnum = pgEnum("campaign_source", [
+  "whatsapp",
+  "demand_engine",
+  "manual"
+]);
+
+export const campaignStatusEnum = pgEnum("campaign_status", [
+  "active",
+  "paused",
+  "completed",
+  "archived"
+]);
+
+export const demandDrafts = pgTable("demand_drafts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  
+  // Content DNA
+  hook: text("hook").notNull(),
+  script: text("script").notNull(),
+  cta: text("cta").notNull(),
+  fullContent: text("full_content").notNull(),
+  
+  // Strategy Attributes
+  angle: varchar("angle", { length: 100 }),    // Scarcity, Authority, curiosity...
+  emotion: varchar("emotion", { length: 100 }),  // FOMO, Greed, Trust...
+  mechanism: varchar("mechanism", { length: 255 }), // How it works (The Big Secret, The New Way...)
+  
+  status: varchar("status", { length: 20 }).default('draft').notNull(), // draft, campaign_ready
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const campaigns = pgTable("campaigns", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  draftId: uuid("draft_id").references(() => demandDrafts.id),
+  
+  name: varchar("name", { length: 255 }).notNull(),
+  source: campaignSourceEnum("source").default("manual").notNull(),
+  type: varchar("type", { length: 50 }).default("conversion").notNull(), // conversion, awareness, etc.
+  platform: varchar("platform", { length: 50 }), // instagram, tiktok, twitter, multi
+  
+  status: campaignStatusEnum("status").default("active").notNull(),
+  
+  budget: decimal("budget", { precision: 18, scale: 2 }),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const demandEvents = pgTable("demand_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  campaignId: uuid("campaign_id").references(() => campaigns.id).notNull(),
+  
+  eventType: varchar("event_type", { length: 50 }).notNull(), // impression, click, lead, purchase
+  value: decimal("value", { precision: 18, scale: 2 }),      // Monetary value for ROI
+  source: varchar("source", { length: 50 }).default("shortlink").notNull(), // link, qr, manual
+  
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const campaignStats = pgTable("campaign_stats", {
+  campaignId: uuid("campaign_id").references(() => campaigns.id).primaryKey(),
+  
+  impressions: integer("impressions").default(0).notNull(),
+  clicks: integer("clicks").default(0).notNull(),
+  leads: integer("leads").default(0).notNull(),
+  purchases: integer("purchases").default(0).notNull(),
+  revenue: decimal("revenue", { precision: 18, scale: 2 }).default("0").notNull(),
+  score: decimal("score", { precision: 5, scale: 1 }).default("0").notNull(),
+  
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Relationships
+export const demandDraftsRelations = relations(demandDrafts, ({ many, one }) => ({
+  campaigns: many(campaigns),
+  project: one(projects, {
+    fields: [demandDrafts.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
+  draft: one(demandDrafts, {
+    fields: [campaigns.draftId],
+    references: [demandDrafts.id],
+  }),
+  project: one(projects, {
+    fields: [campaigns.projectId],
+    references: [projects.id],
+  }),
+  events: many(demandEvents),
+  stats: one(campaignStats, {
+    fields: [campaigns.id],
+    references: [campaignStats.campaignId],
+  }),
+}));
+
+export const demandEventsRelations = relations(demandEvents, ({ one }) => ({
+  campaign: one(campaigns, {
+    fields: [demandEvents.campaignId],
+    references: [campaigns.id],
+  }),
+}));
+
+// Types
+export type DemandDraft = typeof demandDrafts.$inferSelect;
+export type Campaign = typeof campaigns.$inferSelect;
+export type DemandEvent = typeof demandEvents.$inferSelect;
+export type CampaignStat = typeof campaignStats.$inferSelect;

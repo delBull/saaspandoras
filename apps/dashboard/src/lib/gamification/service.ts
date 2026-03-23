@@ -20,6 +20,7 @@ import {
   userReferrals,
   gamificationEvents,
   actionLogs,
+  daoMembers,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
 import { eq, sql, desc, or, and } from 'drizzle-orm';
@@ -202,9 +203,34 @@ export class GamificationService {
   static async trackEvent(
     walletAddress: string,
     eventType: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    dedupId?: string
   ): Promise<GamificationEvent> {
     const walletAddressLower = walletAddress.toLowerCase();
+    
+    // 🛡️ DEDUPLICATION GUARD: Check if this event (by dedupId) was already processed
+    if (dedupId) {
+      try {
+        const existingEvent = await db.query.gamificationEvents.findFirst({
+          where: eq(gamificationEvents.dedupId, dedupId)
+        });
+        if (existingEvent) {
+          console.log(`🛡️ Event with dedupId ${dedupId} already processed. Skipping.`);
+          return {
+            id: existingEvent.id.toString(),
+            userId: walletAddress,
+            type: eventType as any,
+            category: existingEvent.category as any,
+            points: existingEvent.points,
+            metadata: existingEvent.metadata as any,
+            createdAt: existingEvent.createdAt
+          };
+        }
+      } catch (dedupError) {
+        console.warn('⚠️ Failed to check dedupId:', dedupError);
+      }
+    }
+
     console.log(`🎯 GamificationService: Tracking event ${eventType} for wallet ${walletAddressLower}`);
     try {
       // First, ensure user exists in users table and get their numeric ID
@@ -332,6 +358,7 @@ export class GamificationService {
         points: points,
         projectId: metadata?.projectId ? Number(metadata.projectId) : null,
         metadata: metadata ? metadata : {},
+        dedupId: dedupId || null, // Guard for future reconciliation
       }).returning();
 
       // 🚀 WEBHOOK: Notify external clients
@@ -355,6 +382,21 @@ export class GamificationService {
         }
       } catch (webhookError) {
         console.warn('⚠️ Failed to queue gamification webhook:', webhookError);
+      }
+
+      // 🎯 DAO SYNC: If this is a membership event, sync to dao_members table
+      const daoTriggerEvents = ['artifact_acquired', 'access_card_acquired', 'artifact_purchased'];
+      if (daoTriggerEvents.includes(eventType.toLowerCase()) && metadata?.projectId) {
+        try {
+          await this.upsertDaoMember(
+            Number(metadata.projectId),
+            walletAddressLower,
+            1, // Default increment
+            metadata?.campaignId ? Number(metadata.campaignId) : undefined
+          );
+        } catch (daoError) {
+          console.warn('⚠️ Failed to sync DAO member:', daoError);
+        }
       }
 
       // Return basic event object (without ID dependency)
@@ -760,6 +802,44 @@ export class GamificationService {
    */
   static async triggerAchievementUnlock(userId: string, eventType: string, totalPoints: number): Promise<void> {
     await this.checkAndUnlockAchievements(userId, eventType, totalPoints);
+  }
+
+  /**
+   * Upsert a DAO member and update their voting power/artifacts count
+   */
+  private static async upsertDaoMember(
+    projectId: number,
+    wallet: string,
+    incrementArtifacts: number = 1,
+    campaignId?: number
+  ): Promise<void> {
+    const walletLower = wallet.toLowerCase();
+    console.log(`👤 Syncing DAO member ${walletLower} for project ${projectId}`);
+    try {
+      await db.insert(daoMembers)
+        .values({
+          projectId,
+          wallet: walletLower,
+          artifactsCount: incrementArtifacts,
+          votingPower: incrementArtifacts.toString(), // Default 1:1 voting power
+          sourceCampaignId: campaignId || null,
+          joinedAt: new Date(),
+          lastActiveAt: new Date()
+        })
+        .onConflictDoUpdate({
+          target: [daoMembers.projectId, daoMembers.wallet],
+          set: {
+            artifactsCount: sql`${daoMembers.artifactsCount} + ${incrementArtifacts}`,
+            votingPower: sql`(${daoMembers.artifactsCount} + ${incrementArtifacts})::text`, // Cast to text for decimal field compatibility in set
+            sourceCampaignId: campaignId ? campaignId : undefined, // Update attribution if provided
+            lastActiveAt: new Date()
+          }
+        });
+      console.log(`✅ Upserted DAO member ${walletLower} for project ${projectId}`);
+    } catch (error) {
+      console.error(`❌ Error upserting DAO member:`, error);
+      throw error;
+    }
   }
 
   /**

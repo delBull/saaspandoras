@@ -148,43 +148,60 @@ export default function GrowthOSLanding() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             <Badge className="bg-zinc-900 text-purple-400 border-zinc-800 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-10 shadow-xl">
-              Web3 Protocol Growth Partner
+              Instant Execution Hub for Web3
             </Badge>
             <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] mb-10">
-              TRAFFIC &rarr; <br/>
+              INSIGHTS &rarr; <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-zinc-100 to-emerald-400">
-                HOLDERS
+                EXECUTION
               </span>
-              <br/> BY DEFAULT
+              <br/> IN 60 SECONDS
             </h1>
-            <p className="text-lg md:text-2xl text-zinc-500 font-bold leading-relaxed max-w-2xl mx-auto mb-16 uppercase tracking-tight">
-              Convierte tráfico anónimo en usuarios listos para invertir. La infraestructura definitiva de captación y cierre para protocolos.
+            <p className="text-lg md:text-2xl text-zinc-500 font-bold leading-relaxed max-w-3xl mx-auto mb-16 uppercase tracking-tight">
+              Diseña, Ejecuta y Escala. No solo te traemos leads… <span className="text-white">construimos gobernanza</span>. Atribución absoluta del "Governance Acquisition Cost" (GAC).
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4">
               <Button 
                 onClick={() => openConversion()}
-                className="h-20 px-14 rounded-3xl bg-white text-black font-black text-xl hover:bg-zinc-200 transition-all shadow-[0_0_60px_rgba(255,255,255,0.15)] uppercase tracking-tighter italic"
+                className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-white text-black font-black text-xl hover:bg-zinc-200 transition-all shadow-[0_0_60px_rgba(255,255,255,0.15)] uppercase tracking-tighter italic"
               >
-                Empezar Ahora
+                Pide tu Setup
               </Button>
               <Button 
                 onClick={() => setDocModal(true)}
                 variant="ghost" 
-                className="h-20 px-10 rounded-3xl text-zinc-400 font-black text-lg hover:bg-white/5 transition-all uppercase tracking-tighter hover:text-white"
+                className="w-full sm:w-auto h-20 px-10 rounded-3xl text-zinc-400 font-black text-lg hover:bg-white/5 transition-all uppercase tracking-tighter hover:text-white"
               >
-                Ver Documentación
+                Launch Panel Docs
               </Button>
             </div>
           </motion.div>
         </div>
 
+        {/* DEMAND ENGINE PREVIEW */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          className="relative mb-48 rounded-[3rem] border border-zinc-800 bg-zinc-900/50 p-1 lg:p-4 shadow-2xl overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
+          <div className="aspect-video rounded-[2.5rem] bg-zinc-950 border border-zinc-800 flex items-center justify-center relative group">
+             <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+             <div className="text-center space-y-4 relative z-10">
+                <Rocket className="w-16 h-16 text-purple-500 mx-auto mb-6 animate-bounce" />
+                 <h3 className="text-3xl font-black tracking-tighter">⚡ DEMAND ENGINE + DAO GOVERNANCE</h3>
+                 <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Narrativa Dual Automática • GAC Tracking • Governance Concentrator</p>
+             </div>
+          </div>
+        </motion.div>
+
         {/* STATS SECTION */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-40">
           {[
-            { label: 'Leads Capturados', value: '1M+' },
-            { label: 'Protocolos Activos', value: '50+' },
-            { label: 'Cursos Generados', value: '5k+' },
-            { label: 'Retención Media', value: '85%' },
+            { label: 'Governance GAC', value: 'Tracker' },
+            { label: 'Time to First DAO', value: '< 2m' },
+            { label: 'Narrative Accuracy', value: '98%' },
+            { label: 'Conversion Lift', value: '+45%' },
           ].map((stat, i) => (
             <div key={i} className="text-center p-10 rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 backdrop-blur-md group hover:border-zinc-700 transition-colors">
               <div className="text-5xl font-black text-white mb-2 tracking-tighter group-hover:scale-110 transition-transform">{stat.value}</div>
@@ -202,57 +219,57 @@ export default function GrowthOSLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-stretch">
             <TierCard 
-              tier="Fase 1: HOOK"
-              title="Setup & Leads"
+              tier="GGE: CORE"
+              title="DAO Monitor"
               price="$300"
-              description="Te implementamos el sistema y te generamos tus primeros leads cualificados en 72h."
+              description="La base para cualquier protocolo serio. Métricas on-chain y atribución básica de miembros."
               accentColor="purple"
               icon={Zap}
-              onCTA={() => openConversion('HOOK: Setup & Leads')}
+              onCTA={() => openConversion('CORE: DAO Monitor')}
               features={[
-                'Setup Asistido White-label',
-                'Primeros Leads Cualificados',
-                'Captura con IA Inteligente',
-                'Branding Personalizado',
-                'Dashboard de Resultados',
-                'Configuración Multi-tenant'
+                'DAO Metrics Dashboard',
+                'Poder de Voto (Real)',
+                'Miembros Únicos Tracker',
+                'Atribución Básica',
+                'Setup Asistido',
+                'Soporte Estándar'
               ]}
             />
             
             <TierCard 
-              tier="Fase 2: GROWTH"
-              title="Scale Engine"
-              price="$199"
+              tier="GGE: PRO"
+              title="Growth Optimizer"
+              price="$599"
               popular={true}
-              description="Nurturing automático y gestión de audiencia para escala masiva y retención."
+              description="Atribución avanzada y tracking de GAC para optimizar la toma de poder."
               accentColor="emerald"
               icon={Rocket}
-              onCTA={() => openConversion('GROWTH: Scale Engine')}
+              onCTA={() => openConversion('PRO: Growth Optimizer')}
               features={[
-                'Educación IA 24/7 (Cursos)',
-                'Newsletter Automation',
-                'Shortlinks Tracking PRO',
-                'Discord Webhooks Expert',
-                'Atribución de Conversión',
-                'API Keys con Scopes'
+                'Governance Attribution',
+                'GAC (Governance Acq Cost)',
+                'Campaign Influence Score',
+                'Treasury Intelligence',
+                'Educación IA Automática',
+                'Prioridad en Soporte'
               ]}
             />
             
             <TierCard 
-              tier="Fase 3: IDENTITY"
-              title="Partner VIP"
+              tier="GGE: ELITE"
+              title="Strategic Fortress"
               price="Rev Share"
-              description="Nos convertimos en tu infraestructura crítica. Cobramos basándonos en tu éxito."
+              description="Protección total y optimización automática del crecimiento de gobernanza."
               accentColor="indigo"
               icon={Key}
-              onCTA={() => openConversion('IDENTITY: Partner VIP')}
+              onCTA={() => openConversion('ELITE: Strategic Fortress')}
               features={[
-                'SBT Identity & Reputation',
-                'WhatsApp & Telegram Bridge',
-                'Smart QRs Dinámicos',
-                'Revenue Tracking System',
-                'Campañas Omni-canal',
-                'Partner Global Listing'
+                'Alertas de Centralización',
+                'Anti-Manipulation Model',
+                'Auto-Optimization Loop',
+                'SBT Reputation Layer',
+                'Partner Global Listing',
+                'Consejería Estratégica'
               ]}
             />
           </div>
@@ -284,7 +301,7 @@ export default function GrowthOSLanding() {
         </div>
 
         {/* FOOTER CTA */}
-        <div className="rounded-[4rem] bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 p-16 lg:p-32 text-center relative overflow-hidden group">
+        <div className="rounded-[3rem] md:rounded-[4rem] bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 p-8 md:p-16 lg:p-32 text-center relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[120px] group-hover:bg-emerald-500/20 transition-all duration-700"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 blur-[120px] group-hover:bg-purple-500/20 transition-all duration-700"></div>
           
@@ -295,7 +312,7 @@ export default function GrowthOSLanding() {
           <Button 
             onClick={() => openConversion()}
             size="lg" 
-            className="h-20 px-14 rounded-3xl bg-emerald-500 text-black font-black text-2xl hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/30 relative z-10 uppercase italic tracking-tighter"
+            className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-emerald-500 text-black font-black text-xl md:text-2xl hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/30 relative z-10 uppercase italic tracking-tighter"
           >
             Pide tu Setup ahora
           </Button>

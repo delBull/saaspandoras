@@ -80,3 +80,8 @@ contracts/cache/
 contracts/out/
 local-data-export.json
 *.log
+# Operational Synchronization Scripts
+sync-all-dbs.js
+sync-local-to-staging.js
+apps/dashboard/scripts/fix-all-db-sync.ts
+apps/dashboard/scripts/sync-all-db-enums.ts

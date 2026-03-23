@@ -74,7 +74,7 @@ export default function ConversationalForm() {
   const account = useActiveAccount();
 
   const methods = useForm<ProjectFormData>({
-    resolver: zodResolver(projectSchema),
+    resolver: zodResolver(projectSchema as any),
     mode: 'onChange',
   });
 
