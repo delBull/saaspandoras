@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
+import { EditProjectModal } from "@/components/admin/EditProjectModal";
 import WhatsAppLeadsTab from "@/components/admin/WhatsAppLeadsTab";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -51,6 +52,8 @@ export default function AdminDashboardPage() {
   const [actionsDropdownPosition, setActionsDropdownPosition] = useState<{ top: number, left: number } | null>(null); // Posición del dropdown
   const [actionsLoading, setActionsLoading] = useState<Record<string, boolean>>({}); // Track loading states for actions
   const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
 
   // New state for improved UX
   const [searchQuery, setSearchQuery] = useState(''); // Search/filter by title
@@ -847,18 +850,21 @@ export default function AdminDashboardPage() {
 
                   // BOTÓN EDITAR - disponible para TODOS los proyectos que no estén pending
                   actions.splice(1, 0,
-                    <Link
+                    <button
                       key="edit"
-                      href={`/admin/projects/${currentProject.id}/edit`}
+                      onClick={() => {
+                        setProjectToEdit(currentProject);
+                        setIsEditModalOpen(true);
+                        setActionsDropdown(null);
+                      }}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors flex items-center text-blue-400 hover:text-blue-300"
-                      onClick={() => setActionsDropdown(null)}
-                      title="Editar proyecto"
+                      title="Editar proyecto de forma moderna"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                       ✏️ Editar
-                    </Link>
+                    </button>
                   );
                 }
 
@@ -868,6 +874,17 @@ export default function AdminDashboardPage() {
           </div>
         </>
       )}
+      {/* Modal de Edición Moderna */}
+      <EditProjectModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setProjectToEdit(null);
+        }}
+        project={projectToEdit}
+        onSuccess={refreshData}
+        walletAddress={walletAddress || undefined}
+      />
     </div>
   );
 }
