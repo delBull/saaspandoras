@@ -4,24 +4,24 @@
   "private": true,
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
     "./env": {
+      "types": "./dist/env.d.ts",
       "import": "./dist/env.mjs",
-      "require": "./dist/env.js",
-      "types": "./dist/env.d.ts"
+      "require": "./dist/env.js"
     },
     "./edge": {
+      "types": "./dist/edge.d.ts",
       "import": "./dist/edge.mjs",
-      "require": "./dist/edge.js",
-      "types": "./dist/edge.d.ts"
+      "require": "./dist/edge.js"
     },
     "./transformer": {
+      "types": "./dist/transformer.d.ts",
       "import": "./dist/transformer.mjs",
-      "require": "./dist/transformer.js",
-      "types": "./dist/transformer.d.ts"
+      "require": "./dist/transformer.js"
     }
   },
   "typesVersions": {
