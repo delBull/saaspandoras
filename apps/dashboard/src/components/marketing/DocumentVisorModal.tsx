@@ -146,6 +146,13 @@ export function DocumentVisorModal({ isOpen, onClose }: DocumentVisorModalProps)
           </div>
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="border-emerald-500/20 text-emerald-400 uppercase text-[9px] font-black tracking-widest px-3 py-1 bg-emerald-500/5">Verified Partner</Badge>
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all group"
+              title="Cerrar Documentación"
+            >
+              <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+            </button>
           </div>
         </div>
 

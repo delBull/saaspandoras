@@ -55,7 +55,7 @@ export function Sidebar({
     if (defaultOpen !== undefined) {
       return defaultOpen;
     }
-    return true; // Estado por defecto abierto
+    return false; // Estado por defecto cerrado
   };
 
   const [open, setOpen] = useState(getInitialState);

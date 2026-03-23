@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
-import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2 } from "lucide-react";
+import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3 } from "lucide-react";
+import { MarketAttackEngine } from "./growth/MarketAttackEngine";
+import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
 import {
   Tooltip,
   TooltipContent,
@@ -77,12 +79,13 @@ interface LeadSuggestion {
 }
 
 
-const StrategyContent = () => {
+const StrategyContent = ({ type = 'monetization' }: { type?: 'monetization' | 'roadmap' }) => {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/docs/monetization-plan')
+    const endpoint = type === 'roadmap' ? '/api/admin/docs/growth-roadmap' : '/api/admin/docs/monetization-plan';
+    fetch(endpoint)
       .then(res => res.json())
       .then(data => {
         setContent(data.content || '');
@@ -92,7 +95,7 @@ const StrategyContent = () => {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  }, [type]);
 
   if (loading) {
     return (
@@ -139,7 +142,7 @@ const StrategyContent = () => {
 
         {/* Dynamic Content Rendering */}
         <div className="space-y-6">
-          {content && content.split('\n').map((line, i) => {
+          {content?.split('\n').map((line, i) => {
             const trimLine = line.trim();
             if (line.startsWith('# ')) return (
               <h1 key={i} className="text-4xl md:text-5xl font-black tracking-tighter mb-10 text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500 font-sans">
@@ -267,6 +270,9 @@ export default function GrowthOSSubTab() {
   const [projectCourses, setProjectCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [isTogglingCourse, setIsTogglingCourse] = useState<string | null>(null);
+
+  // Section Navigation
+  const [activeSection, setActiveSection] = useState<'overview' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap'>('overview');
 
   const fetchApiKey = async (projectId: string) => {
     if (projectId === 'all') {
@@ -586,56 +592,6 @@ export default function GrowthOSSubTab() {
     <TooltipProvider>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-        {/* Guía de Inicio Rápido (Top Section) */}
-        <div className="bg-gradient-to-r from-purple-900/20 to-indigo-900/10 border border-purple-500/20 rounded-2xl overflow-hidden shadow-2xl">
-          <button
-            onClick={() => setShowGuide(!showGuide)}
-            className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <h4 className="font-bold text-white text-sm">¿Cómo usar Growth OS?</h4>
-                <p className="text-xs text-zinc-400">Guía rápida para maximizar el crecimiento de tus protocolos.</p>
-              </div>
-            </div>
-            {showGuide ? <ChevronUp className="text-zinc-500" /> : <ChevronDown className="text-zinc-500" />}
-          </button>
-
-          {showGuide && (
-            <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-purple-400 font-bold text-xs uppercase tracking-widest">
-                  <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-[10px]">1</span>
-                  Captura Automática
-                </div>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Usa nuestra API o el Widget en las landings de tus protocolos. Los leads se sincronizan en tiempo real aquí.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-widest">
-                  <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px]">2</span>
-                  Filtrado Inteligente
-                </div>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Usa el selector de proyecto para ver métricas específicas. Verás el **"Quality Score"** calculado por nuestro motor de IA.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-green-400 font-bold text-xs uppercase tracking-widest">
-                  <span className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-[10px]">3</span>
-                  Acción de CRM
-                </div>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Identifica a los **"Usuarios Verificados"** (con cuenta en Pandoras) para priorizar whitelists y oportunidades de inversión.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Lead Unification Alert (Strategic Feature) */}
         {selectedProjectId !== 'all' && (suggestions.length > 0 || isScanningSuggestions) && (
@@ -788,8 +744,9 @@ export default function GrowthOSSubTab() {
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">Proyecto:</label>
+            <label htmlFor="project-selector" className="text-xs font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">Proyecto:</label>
             <select
+              id="project-selector"
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
               className="bg-zinc-950 border border-zinc-700 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none w-full md:w-72 shadow-xl hover:border-zinc-500 transition-all cursor-pointer"
@@ -802,34 +759,150 @@ export default function GrowthOSSubTab() {
           </div>
         </div>
 
+        {/* Global Sub-Navigation */}
+        <div className="flex bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800/50 w-full overflow-x-auto no-scrollbar">
+          {[
+            { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+            { id: 'monetization', label: 'Strategy', icon: <Coins className="w-4 h-4" /> },
+            { id: 'roadmap', label: 'Roadmap', icon: <BookOpen className="w-4 h-4 text-purple-400" /> },
+            { id: 'content', label: 'Content', icon: <PenTool className="w-4 h-4" /> },
+            { id: 'market-attack', label: 'Market Attack', icon: <Flame className="w-4 h-4 text-orange-500" /> },
+            { id: 'performance', label: 'Performance', icon: <BarChart3 className="w-4 h-4 text-emerald-500" /> },
+          ].map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id as any)}
+              className={cn(
+                "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-1",
+                activeSection === section.id 
+                  ? "bg-zinc-900 text-white shadow-xl shadow-black/40 border border-zinc-800" 
+                  : "text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              {section.icon}
+              {section.label}
+              {section.id === 'market-attack' && <Badge className="ml-1 bg-orange-500 text-white text-[8px] px-1 py-0 h-4 border-none animate-pulse">HOT</Badge>}
+            </button>
+          ))}
+        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800 hover:border-blue-500/30 transition-all group">
-            <div className="flex justify-between items-start mb-2">
-              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><Globe className="w-5 h-5" /></div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-blue-400 p-0.5 rounded transition-colors group/info">
-                    AUDIENCIA <Info className="w-3 h-3 group-hover/info:animate-pulse" />
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
-                  <DialogHeader>
-                    <DialogTitle className="text-blue-400 flex items-center gap-2">
-                      <Globe className="w-5 h-5" />
-                      Audiencia Total
-                    </DialogTitle>
-                    <DialogDescription className="text-zinc-400">
-                      Número total de correos únicos capturados para este proyecto a través de todos los canales de entrada (Widget, API, Formulario).
-                    </DialogDescription>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
+        {activeSection === 'market-attack' && (
+          <MarketAttackEngine 
+            projectId={selectedProjectId} 
+            projectName={selectedProjectId === 'all' ? 'Pandora Global' : projects.find(p => String(p.id) === String(selectedProjectId))?.title} 
+          />
+        )}
+
+        {activeSection === 'monetization' && (
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl overflow-hidden min-h-[600px] flex flex-col">
+            <div className="p-8 border-b border-zinc-800 bg-zinc-900/60">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Coins className="w-6 h-6 text-yellow-400" />
+                Monetization Master Plan
+              </h3>
+              <p className="text-sm text-zinc-500">Plan estratégico para la viabilidad económica del ecosistema.</p>
             </div>
-            <div className="text-3xl font-bold text-white">{leads.length}</div>
-            <div className="text-xs text-zinc-500 mt-1">Total Leads capturados</div>
+            <div className="flex-1 overflow-y-auto">
+              <StrategyContent type="monetization" />
+            </div>
           </div>
+        )}
+
+        {activeSection === 'roadmap' && (
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl overflow-hidden min-h-[600px] flex flex-col">
+            <div className="p-8 border-b border-zinc-800 bg-zinc-900/60">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-6 h-6 text-purple-400" />
+                Growth OS Roadmap
+              </h3>
+              <p className="text-sm text-zinc-500">Hoja de ruta física del desarrollo y despliegue del motor de crecimiento.</p>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <StrategyContent type="roadmap" />
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'overview' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* Guía de Inicio Rápido (Top Section) */}
+            <div className="bg-gradient-to-r from-purple-900/20 to-indigo-900/10 border border-purple-500/20 rounded-2xl overflow-hidden shadow-2xl">
+              <button
+                onClick={() => setShowGuide(!showGuide)}
+                className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="font-bold text-white text-sm">¿Cómo usar Growth House?</h4>
+                    <p className="text-xs text-zinc-400">Guía rápida para maximizar el crecimiento de tus protocolos.</p>
+                  </div>
+                </div>
+                {showGuide ? <ChevronUp className="text-zinc-500" /> : <ChevronDown className="text-zinc-500" />}
+              </button>
+
+              {showGuide && (
+                <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-purple-400 font-bold text-xs uppercase tracking-widest">
+                      <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-[10px]">1</span>
+                      Captura Automática
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Usa nuestra API o el Widget en las landings de tus protocolos. Los leads se sincronizan en tiempo real aquí.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-widest">
+                      <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px]">2</span>
+                      Filtrado Inteligente
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Usa el selector de proyecto para ver métricas específicas. Verás el **"Quality Score"** calculado por nuestro motor de IA.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-green-400 font-bold text-xs uppercase tracking-widest">
+                      <span className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-[10px]">3</span>
+                      Acción de CRM
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Identifica a los **"Usuarios Verificados"** (con cuenta en Pandoras) para priorizar whitelists y oportunidades de inversión.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800 hover:border-blue-500/30 transition-all group">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><Globe className="w-5 h-5" /></div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-blue-400 p-0.5 rounded transition-colors group/info">
+                        AUDIENCIA <Info className="w-3 h-3 group-hover/info:animate-pulse" />
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                      <DialogHeader>
+                        <DialogTitle className="text-blue-400 flex items-center gap-2">
+                          <Globe className="w-5 h-5" />
+                          Audiencia Total
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                          Número total de correos únicos capturados para este proyecto a través de todos los canales de entrada (Widget, API, Formulario).
+                        </DialogDescription>
+                      </DialogHeader>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <div className="text-3xl font-bold text-white">{leads.length}</div>
+                <div className="text-xs text-zinc-500 mt-1">Total Leads capturados</div>
+              </div>
 
           <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800 hover:border-green-500/30 transition-all">
             <div className="flex justify-between items-start mb-2">
@@ -1005,310 +1078,113 @@ export default function GrowthOSSubTab() {
           )}
         </div>
 
-        {/* Project Course Manager (New Section - Phase 1.6) */}
-        {selectedProjectId !== 'all' && (
-          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 animate-in fade-in duration-700">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 border border-blue-500/20">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-white flex items-center gap-2">
-                    Gestor de Contenido Educativo
-                    <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Marketing Nurturing</Badge>
-                  </h4>
-                  <p className="text-sm text-zinc-500">Administra los cursos autogenerados por IA para nutrir a tus leads.</p>
-                </div>
-              </div>
-            </div>
-
-            {loadingCourses ? (
-              <div className="py-12 flex justify-center">
-                <RefreshCw className="w-8 h-8 text-zinc-800 animate-spin" />
-              </div>
-            ) : projectCourses.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 rounded-3xl">
-                <BookOpen className="w-8 h-8 text-zinc-800 mb-3" />
-                <p className="text-sm text-zinc-600">Aún no hay cursos generados para este protocolo.</p>
-                <p className="text-[10px] text-zinc-700 mt-1 uppercase font-bold">Se crean automáticamente al capturar el primer lead</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projectCourses.map((course) => (
-                  <div key={course.id} className="bg-zinc-950/50 p-5 rounded-2xl border border-zinc-800 flex items-center justify-between group hover:border-blue-500/30 transition-all">
-                    <div className="flex items-center gap-4 overflow-hidden">
-                      <div className={`p-2 rounded-xl ${course.isActive ? 'bg-green-500/10 text-green-400' : 'bg-orange-500/10 text-orange-400'}`}>
-                        {course.isActive ? <Globe className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
-                      </div>
-                      <div className="overflow-hidden">
-                        <h5 className="font-bold text-sm text-white truncate">{course.title}</h5>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-zinc-500 font-mono uppercase">{course.id}</span>
-                          <span className="text-zinc-700 text-[10px]">|</span>
-                          <span className="text-[10px] text-zinc-400">{course.category}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
-                      <Badge className={cn(
-                        "text-[9px] uppercase font-black px-2 py-0.5 border-none",
-                        course.isActive ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"
-                      )}>
-                        {course.isActive ? "Público" : "Privado (Draft)"}
-                      </Badge>
-                      
-                      <UIButton
-                        size="sm"
-                        variant={course.isActive ? "outline" : "default"}
-                        className={cn(
-                          "h-8 text-[10px] font-bold rounded-xl",
-                          course.isActive ? "border-zinc-800 text-zinc-400 hover:bg-zinc-900" : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
-                        )}
-                        disabled={isTogglingCourse === course.id}
-                        onClick={() => handleToggleCourseStatus(course.id, course.isActive)}
-                      >
-                        {isTogglingCourse === course.id ? (
-                          <RefreshCw className="w-3 h-3 animate-spin mr-1" />
-                        ) : course.isActive ? (
-                          "Mover a Privado"
-                        ) : (
-                          <>
-                            <Globe className="w-3 h-3 mr-1" />
-                            Publicar Globalmente
-                          </>
-                        )}
-                      </UIButton>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="mt-6 flex items-center gap-2 p-3 bg-zinc-950/30 rounded-xl border border-zinc-800/50">
-               <Info className="w-4 h-4 text-zinc-600" />
-               <p className="text-[10px] text-zinc-500 leading-relaxed italic">
-                 <strong>Nota:</strong> Los cursos marcados como "Privados" solo son accesibles mediante el enlace directo enviado a los leads. Al "Publicar Globalmente", el curso aparecerá en el marketplace principal de la Academia Pandoras.
-               </p>
-            </div>
           </div>
         )}
 
-        {/* Global Stats Table & Integration */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Conversion Funnel */}
-          <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h4 className="font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-green-400" />
-                  Conversion Funnel
-                </h4>
-                <p className="text-xs text-zinc-500">Rendimiento del Widget en tiempo real.</p>
+        {activeSection === 'content' && (
+          <div className="space-y-6">
+            {selectedProjectId === 'all' ? (
+              <div className="bg-zinc-900/40 border-2 border-dashed border-zinc-800 rounded-3xl p-20 flex flex-col items-center justify-center text-center">
+                <PenTool className="w-12 h-12 text-zinc-700 mb-4" />
+                <h4 className="text-white font-bold text-lg mb-2">Editor de Contenido por Proyecto</h4>
+                <p className="text-zinc-500 max-w-md">Selecciona un proyecto específico para gestionar sus cursos, guías de educación y threads autogenerados.</p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Live Tracking</span>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="relative">
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="text-zinc-400 font-bold">1. IMPRESIONES (VIEWS)</span>
-                  <span className="text-white font-mono">{stats.views}</span>
-                </div>
-                <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 w-full opacity-30"></div>
-                </div>
-              </div>
-
-              <div className="relative pl-8">
-                <div className="absolute left-3 top-0 bottom-0 w-px bg-zinc-800"></div>
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="text-zinc-400 font-bold">2. CLICKS EN WIDGET</span>
-                  <span className="text-white font-mono">{stats.clicks}</span>
-                </div>
-                <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500" style={{ width: `${(stats.clicks / (stats.views || 1)) * 100}%` }}></div>
-                </div>
-                <div className="text-[10px] text-zinc-600 mt-1">CTR: {Math.round((stats.clicks / (stats.views || 1)) * 100)}%</div>
-              </div>
-
-              <div className="relative pl-16">
-                <div className="absolute left-11 top-0 bottom-0 w-px bg-zinc-800"></div>
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="text-zinc-400 font-bold">3. LEADS CAPTURADOS</span>
-                  <span className="text-white font-mono">{stats.leads}</span>
-                </div>
-                <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500" style={{ width: `${(stats.leads / (stats.clicks || 1)) * 100}%` }}></div>
-                </div>
-                <div className="text-[10px] text-zinc-600 mt-1">Conv. Rate: {Math.round((stats.leads / (stats.clicks || 1)) * 100)}%</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Widget Integration & Settings */}
-          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 flex flex-col justify-between">
-            <div>
-              <h4 className="font-bold text-white mb-4 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-blue-400" />
-                Growth SDK Config
-              </h4>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Dominios Permitidos</label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {allowedDomains.map(domain => (
-                      <Badge key={domain} variant="secondary" className="bg-zinc-800/50 text-zinc-400 border-zinc-700 text-[10px] flex items-center gap-1 pr-1">
-                        {domain}
-                        <button onClick={() => removeDomain(domain)} className="hover:text-red-400 p-0.5"><X className="w-2 h-2" /></button>
-                      </Badge>
-                    ))}
+            ) : (
+              <div className="animate-in fade-in duration-500">
+                {/* Project Course Manager */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 border border-blue-500/20">
+                        <BookOpen className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                          Gestor de Contenido Educativo
+                          <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Marketing Nurturing</Badge>
+                        </h4>
+                        <p className="text-sm text-zinc-500">Administra los cursos autogenerados por IA para nutrir a tus leads.</p>
+                      </div>
+                    </div>
                   </div>
 
-                  {isAddingDomain ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newDomain}
-                        onChange={(e) => setNewDomain(e.target.value)}
-                        placeholder="dominio.io"
-                        className="h-8 text-xs bg-zinc-950 border-zinc-800"
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
-                      />
-                      <UIButton size="sm" className="h-8 px-3 text-[10px] bg-purple-600" onClick={handleAddDomain}>Agregar</UIButton>
+                  {loadingCourses ? (
+                    <div className="py-12 flex justify-center">
+                      <RefreshCw className="w-8 h-8 text-zinc-800 animate-spin" />
+                    </div>
+                  ) : projectCourses.length === 0 ? (
+                    <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 rounded-3xl">
+                      <BookOpen className="w-8 h-8 text-zinc-800 mb-3" />
+                      <p className="text-sm text-zinc-600">Aún no hay cursos generados para este protocolo.</p>
+                      <p className="text-[10px] text-zinc-700 mt-1 uppercase font-bold">Se crean automáticamente al capturar el primer lead</p>
                     </div>
                   ) : (
-                    <button onClick={() => setIsAddingDomain(true)} className="text-[10px] text-purple-400 font-bold">+ Agregar Dominio</button>
-                  )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {projectCourses.map((course) => (
+                        <div key={course.id} className="bg-zinc-950/50 p-5 rounded-2xl border border-zinc-800 flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                          <div className="flex items-center gap-4 overflow-hidden">
+                            <div className={`p-2 rounded-xl ${course.isActive ? 'bg-green-500/10 text-green-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                              {course.isActive ? <Globe className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                            </div>
+                            <div className="overflow-hidden">
+                              <h5 className="font-bold text-sm text-white truncate">{course.title}</h5>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-zinc-500 font-mono uppercase">{course.id}</span>
+                                <span className="text-zinc-700 text-[10px]">|</span>
+                                <span className="text-[10px] text-zinc-400">{course.category}</span>
+                              </div>
+                            </div>
+                          </div>
 
-                  {/* Visual Webhook Confirmation */}
-                  {discordWebhookUrl && (
-                    <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                        <Badge className="bg-blue-500/20 text-blue-400 border-none text-[8px] uppercase whitespace-nowrap px-1.5 py-0.5 font-black shrink-0">
-                          Webhook Activo
-                        </Badge>
-                        <span className="text-[10px] text-zinc-500 truncate font-mono flex-1">{discordWebhookUrl.substring(0, 30)}...</span>
-                      </div>
-                      <UIButton 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-5 w-5 p-0 text-zinc-600 hover:text-red-400"
-                        onClick={() => {
-                          setDiscordWebhookUrl('');
-                          saveProjectSettings({ discordWebhookUrl: null });
-                        }}
-                      >
-                        <X className="w-3 h-3" />
-                      </UIButton>
+                          <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
+                            <Badge className={cn(
+                              "text-[9px] uppercase font-black px-2 py-0.5 border-none",
+                              course.isActive ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"
+                            )}>
+                              {course.isActive ? "Público" : "Privado (Draft)"}
+                            </Badge>
+                            
+                            <UIButton
+                              size="sm"
+                              variant={course.isActive ? "outline" : "default"}
+                              className={cn(
+                                "h-8 text-[10px] font-bold rounded-xl",
+                                course.isActive ? "border-zinc-800 text-zinc-400 hover:bg-zinc-900" : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
+                              )}
+                              disabled={isTogglingCourse === course.id}
+                              onClick={() => handleToggleCourseStatus(course.id, course.isActive)}
+                            >
+                              {isTogglingCourse === course.id ? (
+                                <RefreshCw className="w-3 h-3 animate-spin mr-1" />
+                              ) : course.isActive ? (
+                                "Mover a Privado"
+                              ) : (
+                                <>
+                                  <Globe className="w-3 h-3 mr-1" />
+                                  Publicar Globalmente
+                                </>
+                              )}
+                            </UIButton>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
-                </div>
-
-                <div className="pt-4 mt-4 border-t border-zinc-800">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Discord Webhook Alertas</label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={discordWebhookUrl}
-                      onChange={(e) => setDiscordWebhookUrl(e.target.value)}
-                      placeholder="https://discord.com/api/webhooks/..."
-                      className="h-8 text-[10px] bg-zinc-950 border-zinc-800 font-mono"
-                    />
-                    <UIButton size="sm" variant="outline" className="h-8 px-3 text-[10px] border-zinc-700" onClick={() => saveProjectSettings({ discordWebhookUrl })}>
-                      Guardar
-                    </UIButton>
+                  
+                  <div className="mt-6 flex items-center gap-2 p-3 bg-zinc-950/30 rounded-xl border border-zinc-800/50">
+                    <Info className="w-4 h-4 text-zinc-600" />
+                    <p className="text-[10px] text-zinc-500 leading-relaxed italic">
+                      <strong>Nota:</strong> Los cursos marcados como "Privados" solo son accesibles mediante el enlace directo enviado a los leads. Al "Publicar Globalmente", el curso aparecerá en el marketplace principal de la Academia Pandoras.
+                    </p>
                   </div>
                 </div>
-
-                <div className="pt-4 border-t border-zinc-800 text-[10px] text-zinc-400 font-mono break-all relative group/code">
-                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-black text-zinc-500 uppercase tracking-widest">Snippet</span>
-                    <Badge className="bg-orange-500/10 text-orange-400 text-[9px]">V1.0</Badge>
-                   </div>
-                   <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800">
-                    <code>{`<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || 'external')}" data-api-key="${publicKey}" defer></script>`}</code>
-                   </div>
-                </div>
               </div>
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* Leads Table */}
-        <div className="bg-zinc-900/30 border border-zinc-800 rounded-2xl overflow-hidden backdrop-blur-sm">
-          <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-            <h4 className="font-bold text-white flex items-center gap-2">Directorio de Leads <Badge variant="secondary" className="bg-zinc-800 text-zinc-400">{leads.length}</Badge></h4>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-zinc-950/50 text-zinc-500 uppercase text-[10px] tracking-[0.2em] font-black border-b border-zinc-800">
-                <tr>
-                  <th className="px-8 py-5">Perfil</th>
-                  <th className="px-6 py-5">Protocolo</th>
-                  <th className="px-6 py-5">Intención</th>
-                  <th className="px-6 py-5">Estado</th>
-                  <th className="px-6 py-5 whitespace-nowrap">Growth Modo</th>
-                  <th className="px-6 py-5 text-center">Score</th>
-                  <th className="px-8 py-5 text-right">Captura</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/50">
-                {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-zinc-800/20 transition-all group">
-                    <td className="px-8 py-5">
-                      <div className="flex flex-col">
-                        <span className="text-zinc-100 font-bold group-hover:text-white transition-colors flex items-center gap-2">
-                          {lead.name || lead.email.split('@')[0]}
-                          {lead.userId && <UserCheck className="w-3 h-3 text-blue-400" />}
-                        </span>
-                        <span className="text-zinc-500 text-xs font-mono">{lead.email}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 cursor-default">
-                       <span className="text-white bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700 text-[11px] font-bold">
-                        {lead.projectName || 'Pandoras'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                       <span className="flex items-center gap-2 text-zinc-300 font-medium">
-                        <span className="text-lg">{getIntentEmoji(lead.intent)}</span>
-                        {lead.intent.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black border tracking-wider uppercase ${getStatusColor(lead.status)}`}>
-                        {lead.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      {lead.metadata?.growth?.state ? (
-                        <div className="flex flex-col gap-1">
-                          <Badge className={cn(
-                            "text-[9px] uppercase font-black px-2 py-0.5 border-none",
-                            lead.metadata.growth.state === 'INVEST_READY' ? "bg-green-500 text-white" :
-                            "bg-zinc-800 text-zinc-400"
-                          )}>
-                            {lead.metadata.growth.state}
-                          </Badge>
-                        </div>
-                      ) : <span className="text-zinc-600 text-[10px] italic">Legacy</span>}
-                    </td>
-                    <td className="px-6 py-5 text-center font-mono font-black">{lead.score || 0}</td>
-                    <td className="px-8 py-5 text-right text-zinc-500 text-xs">
-                      {new Date(lead.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        )}
+        {activeSection === 'performance' && (
+          <CampaignPerformanceDashboard projectId={Number(selectedProjectId)} />
+        )}
       </div>
     </TooltipProvider>
   );

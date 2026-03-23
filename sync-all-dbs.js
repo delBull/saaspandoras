@@ -5,7 +5,8 @@
  * Usage: node sync-all-dbs.js
  */
 
-const postgres = require('postgres');
+let postgres = require('postgres');
+if (postgres.default) postgres = postgres.default;
 require('dotenv').config({ path: 'apps/dashboard/.env.local' });
 
 const LOCAL_URL = process.env.DATABASE_URL || 'postgresql://Marco@localhost:5432/pandoras_local';
@@ -32,7 +33,11 @@ const tables = [
   'marketing_leads',
   'marketing_lead_events',
   'marketing_lead_attributions',
-  'marketing_campaigns'
+  'marketing_campaigns',
+  'demand_drafts',
+  'campaigns',
+  'demand_events',
+  'campaign_stats'
 ];
 
 
