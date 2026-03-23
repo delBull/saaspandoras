@@ -7,6 +7,7 @@ import { cn, getDashboardDomain } from "@/lib/utils"
 import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3 } from "lucide-react";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
+import { DAOMetrics } from "../dao/DAOMetrics";
 import {
   Tooltip,
   TooltipContent,
@@ -272,7 +273,7 @@ export default function GrowthOSSubTab() {
   const [isTogglingCourse, setIsTogglingCourse] = useState<string | null>(null);
 
   // Section Navigation
-  const [activeSection, setActiveSection] = useState<'overview' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence'>('overview');
 
   const fetchApiKey = async (projectId: string) => {
     if (projectId === 'all') {
@@ -687,10 +688,10 @@ export default function GrowthOSSubTab() {
                     <Link 
                       href="/growth-os" 
                       target="_blank"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-l-full text-[10px] font-black uppercase tracking-widest transition-all group"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest transition-all group"
                     >
                       <Monitor className="w-3 h-3" />
-                      Preview
+                      Preview Landing
                       <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   </TooltipTrigger>
@@ -698,20 +699,6 @@ export default function GrowthOSSubTab() {
                     Ver cómo los protocolos ven los paquetes de Growth OS
                   </TooltipContent>
                 </Tooltip>
-
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <button 
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-r-full text-[10px] font-black uppercase tracking-widest transition-all group"
-                    >
-                      <FileText className="w-3 h-3" />
-                      Estrategia Master
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-zinc-950 border-zinc-800 text-white overflow-hidden flex flex-col p-0">
-                    <StrategyContent />
-                  </DialogContent>
-                </Dialog>
               </div>
               <Dialog>
                 <DialogTrigger asChild>
@@ -722,20 +709,32 @@ export default function GrowthOSSubTab() {
                 <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-purple-400">
-                      <BookOpen className="w-5 h-5" />
-                      Growth OS Overview
+                      <Zap className="w-5 h-5" />
+                      Growth OS: Ecosistema de Demanda
                     </DialogTitle>
                     <DialogDescription className="text-zinc-400 pt-4">
-                      Sistema centralizado de captación de demanda. Separa los leads de Pandoras de los leads específicos de cada protocolo externo.
+                      Infraestructura autónoma de captación y conversión. Growth OS permite a cada protocolo operar como una entidad soberana de marketing dentro del ecosistema Pandoras.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4 text-xs text-zinc-400 leading-relaxed">
-                    <p>Esta herramienta permite a los protocolos del ecosistema Pandoras gestionar su propia audiencia de forma soberana.</p>
-                    <ul className="list-disc ml-4 space-y-2">
-                      <li>Seguimiento de conversiones en tiempo real.</li>
-                      <li>Segmentación por intención de usuario.</li>
-                      <li>Integración vía Script o API global.</li>
-                    </ul>
+                    <p>
+                      A diferencia de un CRM tradicional, Growth OS combina **Inteligencia de Mercado** con **Ejecución de Contenido** en tiempo real.
+                    </p>
+                    <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 space-y-3">
+                      <div className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1" />
+                        <p><span className="text-white font-bold">Demand Engine:</span> Generación de contenido con ADN estratégico (Ángulos y Emociones).</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1" />
+                        <p><span className="text-white font-bold">Relational Leads:</span> Atribución inteligente de audiencia global a protocolos específicos.</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1" />
+                        <p><span className="text-white font-bold">ROI Tracking:</span> Scoring algorítmico basado en conversiones reales y revenue share.</p>
+                      </div>
+                    </div>
+                    <p className="italic text-[10px]">Utiliza el panel de Market Attack para lanzar ofensivas de marketing coordinadas en menos de 60 segundos.</p>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -765,6 +764,7 @@ export default function GrowthOSSubTab() {
             { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
             { id: 'monetization', label: 'Strategy', icon: <Coins className="w-4 h-4" /> },
             { id: 'roadmap', label: 'Roadmap', icon: <BookOpen className="w-4 h-4 text-purple-400" /> },
+            { id: 'intelligence', label: 'Governance IQ', icon: <Sparkles className="w-4 h-4 text-blue-400" /> },
             { id: 'content', label: 'Content', icon: <PenTool className="w-4 h-4" /> },
             { id: 'market-attack', label: 'Market Attack', icon: <Flame className="w-4 h-4 text-orange-500" /> },
             { id: 'performance', label: 'Performance', icon: <BarChart3 className="w-4 h-4 text-emerald-500" /> },
@@ -791,6 +791,21 @@ export default function GrowthOSSubTab() {
             projectId={selectedProjectId} 
             projectName={selectedProjectId === 'all' ? 'Pandora Global' : projects.find(p => String(p.id) === String(selectedProjectId))?.title} 
           />
+        )}
+
+        {activeSection === 'intelligence' && (
+          <div className="space-y-6">
+             <div className="bg-gradient-to-r from-blue-900/20 to-zinc-900/40 p-8 rounded-3xl border border-blue-500/20 mb-8">
+                <h3 className="text-2xl font-black text-white italic flex items-center gap-3 mb-2">
+                   <Sparkles className="w-7 h-7 text-blue-400" /> 
+                   Governance Growth Engine (GGE)
+                </h3>
+                <p className="text-zinc-400 text-sm max-w-2xl font-medium">
+                   Optimización de la captura de poder basada en marketing estratégico. Aquí monitoreamos cómo tus campañas se convierten en decisiones de protocolo.
+                </p>
+             </div>
+             <DAOMetrics projectId={Number(selectedProjectId === 'all' ? 0 : selectedProjectId)} />
+          </div>
         )}
 
         {activeSection === 'monetization' && (

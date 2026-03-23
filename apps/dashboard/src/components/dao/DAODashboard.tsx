@@ -185,70 +185,8 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 </div>
             )}
 
-            {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Treasury Card */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-lime-500/10 rounded-lg">
-                            <WalletIcon className="w-4 h-4 text-lime-400" />
-                        </div>
-                        <div>
-                            <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Tesorería DAO</span>
-                            <div className="flex items-center gap-2">
-                                <a
-                                    href={`https://${isBaseMainnet ? 'basescan.org' : 'sepolia.etherscan.io'}/address/${treasuryAddress}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[10px] text-zinc-600 hover:text-lime-400 transition-colors flex items-center gap-1"
-                                >
-                                    {treasuryAddress?.slice(0, 6)}...{treasuryAddress?.slice(-4)}
-                                    <ArrowUpRightIcon className="w-2.5 h-2.5" />
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="space-y-1">
-                        <span className="text-xl font-bold text-white font-mono tracking-tight">{formattedBalance}</span>
-                        <p className="text-[10px] text-zinc-600 font-medium">
-                            {isBaseMainnet ? 'USDC (Base Mainnet)' : 'Balance Nativo (Sepolia)'}
-                        </p>
-                    </div>
-                </div>
-
-                {/* DAO Members Metric */}
-                <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative overflow-hidden group hover:border-zinc-700 transition-colors">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-purple-500/10 rounded-lg">
-                            <UsersIcon className="w-4 h-4 text-purple-400" />
-                        </div>
-                        <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Miembros del DAO</span>
-                    </div>
-                    {licenseContract ? (
-                        <DAOMetrics licenseContract={licenseContract} />
-                    ) : (
-                        <div>
-                            <h3 className="text-xl font-bold text-white font-mono tracking-tight">--</h3>
-                            <p className="text-[10px] text-zinc-600 font-medium mt-1">Holders de Access Cards</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Rewards Metric */}
-                <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative overflow-hidden group hover:border-zinc-700 transition-colors">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-blue-500/10 rounded-lg">
-                            <TrendingUpIcon className="w-4 h-4 text-blue-400" />
-                        </div>
-                        <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Recompensas</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-white font-mono tracking-tight">Dinámico</h3>
-                    <div className="mt-1 flex items-center text-[10px] text-blue-400/80 font-medium">
-                        <ArrowUpRightIcon className="w-2.5 h-2.5 mr-1" />
-                        Basado en participación
-                    </div>
-                </div>
-            </div>
+            {/* Key Metrics Dashboard (Unified) */}
+            <DAOMetrics projectId={Number(project.id)} />
 
             {/* Admin Payouts Section (Owner Only, outside metric cards to keep them compact) */}
             {isOwner && !licenseContract && (
@@ -530,6 +468,33 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                             Crear Propuesta de Fondos
                         </button>
                     </div>
+
+                    {/* Sincronización de Datos */}
+                    <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-blue-500/30 transition-colors">
+                        <h4 className="font-bold text-white mb-4 flex items-center gap-2">
+                             Sincronización de Datos
+                        </h4>
+                        <p className="text-sm text-zinc-400 mb-4">
+                            Recalcula miembros y poder de voto desde el historial de eventos. Útil para backfills.
+                        </p>
+                        <button
+                            onClick={async () => {
+                                const res = await fetch('/api/admin/dao/reconcile', { 
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ projectId: project.id })
+                                });
+                                if (res.ok) {
+                                    toast.success("DAO Sincronizado correctamente", { description: "Los miembros y el poder de voto han sido actualizados." });
+                                } else {
+                                    toast.error("Error al sincronizar DAO");
+                                }
+                            }}
+                            className="w-full py-2 bg-blue-900/20 text-blue-400 border border-blue-500/30 hover:bg-blue-900/30 rounded-lg text-sm transition-colors font-bold"
+                        >
+                            Sincronizar Miembros Ahora
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl flex items-start gap-3">
@@ -717,7 +682,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     {activeView === 'docs' && <DAODocs />}
 
                     {activeView === 'members' && (
-                        <DAOMembersList licenseContract={licenseContract} projectId={project.id} />
+                        <DAOMembersList projectId={Number(project.id)} />
                     )}
                 </motion.div>
             </div>
