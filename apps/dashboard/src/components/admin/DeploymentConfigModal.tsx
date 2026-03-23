@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import type { DeploymentConfig, UtilityPhase, TokenomicsConfig, ArtifactConfig, ArtifactType, NetworkType } from '@/types/deployment';
+import type { DeploymentConfig, UtilityPhase, TokenomicsConfig, ArtifactConfig, ArtifactType, NetworkType, PackageConfig, PerkConfig } from '@/types/deployment';
 import { DEFAULT_PHASES, DEFAULT_TOKENOMICS, DEFAULT_ARTIFACT, ARTIFACT_TYPE_META } from '@/types/deployment';
 import { TrashIcon, PlusIcon, PhotoIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, InformationCircleIcon } from '@heroicons/react/24/solid';
@@ -86,7 +86,8 @@ export function DeploymentConfigModal({
         phase3APY: 2000,
         royaltyBPS: 500,
     });
-    const [activeTab, setActiveTab] = useState<'artifacts' | 'phases' | 'economics' | 'preview'>('artifacts');
+    const [packages, setPackages] = useState<PackageConfig[]>([]);
+    const [activeTab, setActiveTab] = useState<'artifacts' | 'phases' | 'progression' | 'economics' | 'preview'>('artifacts');
 
     if (!isOpen) return null;
 
@@ -155,6 +156,58 @@ export function DeploymentConfigModal({
         }));
     };
 
+    // ── Package/Tier Handlers ────────────────────────────────────────
+    const addPackage = () => {
+        const id = `tier-${Date.now()}`;
+        setPackages(prev => [...prev, {
+            id,
+            name: 'Nuevo Nivel',
+            description: '',
+            artifactCountThreshold: 10,
+            artifactIds: artifacts.filter(a => a.isPrimary).map(a => a.id),
+            perks: [],
+        }]);
+    };
+
+    const removePackage = (id: string) => setPackages(prev => prev.filter(p => p.id !== id));
+
+    const updatePackage = (id: string, field: keyof PackageConfig, value: any) => {
+        setPackages(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+    };
+
+    const addPerk = (packageId: string) => {
+        setPackages(prev => prev.map(p => {
+            if (p.id !== packageId) return p;
+            return {
+                ...p,
+                perks: [...p.perks, {
+                    id: `perk-${Date.now()}`,
+                    name: 'Nuevo Beneficio',
+                    description: '',
+                    type: 'discount',
+                    value: 0
+                }]
+            };
+        }));
+    };
+
+    const updatePerk = (packageId: string, perkId: string, field: keyof PerkConfig, value: any) => {
+        setPackages(prev => prev.map(p => {
+            if (p.id !== packageId) return p;
+            return {
+                ...p,
+                perks: p.perks.map(perk => perk.id === perkId ? { ...perk, [field]: value } : perk)
+            };
+        }));
+    };
+
+    const removePerk = (packageId: string, perkId: string) => {
+        setPackages(prev => prev.map(p => {
+            if (p.id !== packageId) return p;
+            return { ...p, perks: p.perks.filter(perk => perk.id !== perkId) };
+        }));
+    };
+
     // ── Submit ────────────────────────────────────────────────────────
     const handleSubmit = () => {
         onConfirm({
@@ -166,6 +219,7 @@ export function DeploymentConfigModal({
                 ...tokenomics,
                 initialSupply: tokenomics.totalSupply || 1000000,
             },
+            packages,
             w2eConfig: economicSchedule,
         });
     };
@@ -174,12 +228,15 @@ export function DeploymentConfigModal({
     const totalPhaseAllocation = phases.reduce((s, p) => s + (p.tokenAllocation || 0), 0);
     const totalSupply = tokenomics.totalSupply || 1000000;
 
-    const TABS = [
+    const TABS: { id: 'artifacts' | 'progression' | 'phases' | 'economics' | 'preview'; label: string; badge?: number }[] = [
         { id: 'artifacts', label: '🔌 Artefactos V2', badge: artifacts.length },
+        { id: 'progression', label: '⚡ Progression' },
         { id: 'phases', label: '📈 Fases de Venta' },
         { id: 'economics', label: '⚙️ Economía' },
         { id: 'preview', label: '🔭 Preview del Ecosistema' },
-    ] as const;
+    ];
+
+    type TabId = typeof TABS[number]['id'];
 
     return (
         <div className="fixed inset-0 z-[5000] flex flex-col bg-black/95 backdrop-blur-md">
@@ -287,14 +344,15 @@ export function DeploymentConfigModal({
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-all border-b-2 -mb-px ${activeTab === tab.id
-                                ? 'text-white border-indigo-500 bg-indigo-500/10'
-                                : 'text-gray-400 border-transparent hover:text-white hover:border-zinc-600'
-                                }`}
+                            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
+                                activeTab === tab.id
+                                    ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
+                                    : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50'
+                            }`}
                         >
                             {tab.label}
-                            {'badge' in tab && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">
+                            {tab.badge !== undefined && (
+                                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-zinc-700 text-[10px] text-zinc-400">
                                     {tab.badge}
                                 </span>
                             )}
@@ -515,6 +573,160 @@ export function DeploymentConfigModal({
                         </div>
                     )}
 
+                    {/* ── TAB: Progression Economy ── */}
+                    {activeTab === 'progression' && (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-semibold text-white flex items-center gap-2">
+                                        ⚡ Progression Economy & Membership Tiers
+                                        <InfoTooltip title="¿Qué es la Progression Economy?">
+                                            <p>No vendas solo certificados, programa <strong className="text-indigo-400">decisiones humanas</strong>.</p>
+                                            <p>Este sistema convierte las compras en <strong className="text-yellow-300">Niveles de Membresía</strong>. Crea identidad y tensión psicológica para incentivar el upsell.</p>
+                                            <p className="text-emerald-400">✓ Define niveles como Explorador, Residente o Embajador.</p>
+                                        </InfoTooltip>
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        Configura los niveles de lealtad y beneficios progresivos para los holders.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={addPackage}
+                                    className="flex items-center gap-1.5 text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                    <PlusIcon className="w-3.5 h-3.5" /> Agregar Nivel / Tier
+                                </button>
+                            </div>
+
+                            {packages.length === 0 && (
+                                <div className="p-8 border-2 border-dashed border-zinc-800 rounded-2xl text-center">
+                                    <StarIcon className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+                                    <p className="text-sm text-zinc-500">No hay niveles configurados. Comienza agregando el nivel base.</p>
+                                    <button onClick={addPackage} className="mt-4 text-xs text-indigo-400 hover:text-indigo-300 font-bold">Crear primer nivel →</button>
+                                </div>
+                            )}
+
+                            <div className="space-y-4">
+                                {packages.sort((a,b) => a.artifactCountThreshold - b.artifactCountThreshold).map((pkg, idx) => (
+                                    <div key={pkg.id} className="p-5 bg-zinc-800/30 rounded-2xl border border-zinc-700 hover:border-indigo-500/30 transition-all">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 block">Nombre del Nivel (Identidad)</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={pkg.name} 
+                                                        onChange={e => updatePackage(pkg.id, 'name', e.target.value)}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+                                                        placeholder="Ej: Explorador, Riviera Owner..."
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-gray-500 uppercase font-bold mb-1.5 block flex items-center">
+                                                        Threshold (Min. Certificados)
+                                                        <InfoTooltip title="Umbral de Activación">
+                                                            <p>Número mínimo de artefactos que el usuario debe poseer para alcanzar este nivel.</p>
+                                                            <p className="text-indigo-300">Ej: 10 certs = Residente.</p>
+                                                        </InfoTooltip>
+                                                    </label>
+                                                    <input 
+                                                        type="number" 
+                                                        value={pkg.artifactCountThreshold} 
+                                                        onChange={e => updatePackage(pkg.id, 'artifactCountThreshold', Number(e.target.value))}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-emerald-400 font-mono outline-none focus:border-indigo-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <button onClick={() => removePackage(pkg.id)} className="ml-4 p-1 text-zinc-600 hover:text-red-400 transition-colors">
+                                                <TrashIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        {/* Psychology Fields */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 pt-4 border-t border-zinc-700/50">
+                                            <div>
+                                                <label className="text-[10px] text-zinc-500 uppercase font-bold mb-1.5 block">Mensaje de Tensión (Casi ahí)</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={pkg.progressLabel || ''} 
+                                                    onChange={e => updatePackage(pkg.id, 'progressLabel', e.target.value)}
+                                                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none"
+                                                    placeholder="Ej: Te faltan {X} para ser Residente"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-zinc-500 uppercase font-bold mb-1.5 block">Mensaje de Desbloqueo</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={pkg.unlockMessage || ''} 
+                                                    onChange={e => updatePackage(pkg.id, 'unlockMessage', e.target.value)}
+                                                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none"
+                                                    placeholder="Ej: Desbloquea +5 noches y +1% rendimiento"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Perks Section */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-[10px] text-indigo-400 uppercase font-black tracking-widest">Beneficios del Tier (Perks)</h4>
+                                                <button onClick={() => addPerk(pkg.id)} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1">
+                                                    <PlusIcon className="w-3 h-3" /> Agregar Perk
+                                                </button>
+                                            </div>
+                                            
+                                            {pkg.perks.map(perk => (
+                                                <div key={perk.id} className="grid grid-cols-1 sm:grid-cols-4 gap-2 p-2 bg-black/20 rounded-lg border border-zinc-800">
+                                                    <input 
+                                                        type="text" 
+                                                        value={perk.name} 
+                                                        onChange={e => updatePerk(pkg.id, perk.id, 'name', e.target.value)}
+                                                        className="bg-transparent border-none text-xs text-white outline-none px-1"
+                                                        placeholder="Nombre (ej: Bono APY)"
+                                                    />
+                                                    <select 
+                                                        value={perk.type} 
+                                                        onChange={e => updatePerk(pkg.id, perk.id, 'type', e.target.value)}
+                                                        className="bg-zinc-900 text-[10px] text-zinc-400 rounded px-1 py-1"
+                                                    >
+                                                        <option value="discount">Descuento %</option>
+                                                        <option value="bonus_tokens">Bono Tokens</option>
+                                                        <option value="extra_apy">Extra APY</option>
+                                                        <option value="multiplier">Multiplicador</option>
+                                                    </select>
+                                                    <div className="flex items-center gap-2">
+                                                        <input 
+                                                            type="number" 
+                                                            value={perk.bonusMultiplier || 1} 
+                                                            step="0.1"
+                                                            onChange={e => updatePerk(pkg.id, perk.id, 'bonusMultiplier', Number(e.target.value))}
+                                                            className="w-16 bg-zinc-900 text-[10px] text-emerald-400 rounded px-1 py-1 text-center"
+                                                            placeholder="Mult x"
+                                                        />
+                                                        <span className="text-[10px] text-zinc-600">x</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <input 
+                                                            type="number" 
+                                                            value={perk.monetaryValue || 0} 
+                                                            onChange={e => updatePerk(pkg.id, perk.id, 'monetaryValue', Number(e.target.value))}
+                                                            className="w-20 bg-zinc-900 text-[10px] text-zinc-300 rounded px-1 py-1 text-right"
+                                                            placeholder="$ USD Valor"
+                                                        />
+                                                        <button onClick={() => removePerk(pkg.id, perk.id)} className="text-zinc-700 hover:text-red-400">
+                                                            <TrashIcon className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* ── TAB: Sale Phases ── */}
                     {activeTab === 'phases' && (
                         <div className="space-y-4">
@@ -596,7 +808,6 @@ export function DeploymentConfigModal({
                                     </div>
                                 </div>
                             ))}
-
                             {/* Reserve Supply */}
                             <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700">
                                 <h4 className="text-sm font-semibold text-gray-300 mb-3">Tokenomics General</h4>
@@ -891,8 +1102,7 @@ export function DeploymentConfigModal({
                         {activeTab !== 'preview' && (
                             <button
                                 onClick={() => {
-                                    type TabId = 'artifacts' | 'phases' | 'economics' | 'preview';
-                                    const tabOrder: TabId[] = ['artifacts', 'phases', 'economics', 'preview'];
+                                    const tabOrder: TabId[] = ['artifacts', 'progression', 'phases', 'economics', 'preview'];
                                     const nextIdx = tabOrder.indexOf(activeTab) + 1;
                                     if (nextIdx < tabOrder.length) setActiveTab(tabOrder[nextIdx]!);
                                 }}

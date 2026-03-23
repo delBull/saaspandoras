@@ -58,5 +58,30 @@ En el mercado actual de infraestructura Web3, los protocolos no buscan "herramie
 
 ---
 
-> [!IMPORTANT]
-> Nuestra misión es **convertir el tráfico de los protocolos en capital de inversión** de forma automática. Si el protocolo gana dinero, Pandoras gana dinero. Esa es la esencia del modelo Partner.
+## 🛠 5. Developer Integration (V2.0 Quickstart)
+
+### 🧩 Widget Injection (No-Code Loop)
+Copia y pega este snippet en el `<head>` de tu dApp para habilitar la captura de leads y el sistema de incentivos:
+
+```html
+<script 
+  src="https://pandoras.io/js/growth-v2.js" 
+  data-project-id="YOUR_PROJECT_ID" 
+  data-theme="premium"
+  async
+></script>
+```
+
+### 🛰 API Endpoints (Real-time State)
+Consume el estado del protocolo y la configuración de tiers directamente desde tus propios hooks o backend:
+
+- **GET /api/protocol/config**: Retorna el Tier System, Utility Phases y Treasury Address.
+- **GET /api/protocol/state**: Retorna el balance global de artefactos, usuarios activos e indicadores de escasez.
+
+### 💀 Headless Mode (Custom UI)
+Para integraciones personalizadas, utiliza nuestro `Headless Mode`. Deshabilita el widget visual y usa los endpoints anteriores para construir tu propia experiencia de progresión mientras Pandoras se encarga del **tracking, atribución y orquestación on-chain**.
+
+---
+
+> [!TIP]
+> Utiliza el **Growth Infrastructure Health** en tu Admin Dashboard para verificar que tu configuración es válida antes de habilitar el tráfico de producción.

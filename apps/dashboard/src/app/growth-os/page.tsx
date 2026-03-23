@@ -100,6 +100,130 @@ const TierCard = ({
   </motion.div>
 );
 
+const GrowthTicker = () => (
+    <div className="w-full bg-zinc-900/30 border-y border-zinc-800/50 py-3 overflow-hidden select-none whitespace-nowrap flex items-center gap-8 relative">
+        <div className="animate-marquee flex items-center gap-12 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">
+            {Array(10).fill(null).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span>Deploying Protocol #{1240 + i}</span>
+                    <span className="text-zinc-700">|</span>
+                    <span className="text-purple-400">+{(20 * (i + 1))} Artifacts Issued</span>
+                    <span className="text-zinc-700">|</span>
+                    <span className="text-emerald-400">Layer 4 Health: 100%</span>
+                </div>
+            ))}
+        </div>
+        <style jsx>{`
+            .animate-marquee {
+                display: flex;
+                animation: marquee 40s linear infinite;
+            }
+            @keyframes marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+            }
+        `}</style>
+    </div>
+);
+
+const ProgressionPreview = () => {
+    const [val, setVal] = useState(3);
+    const mockTiers = [
+        { name: 'Bronze', threshold: 0, perks: ['Basic Metrics'] },
+        { name: 'Silver', threshold: 5, perks: ['Governance Tracker'] },
+        { name: 'Gold', threshold: 15, perks: ['AI Nurturing', 'VIP Support'] },
+        { name: 'Diamond', threshold: 30, perks: ['SBT Reputation', 'Revenue Share'] },
+    ];
+    
+    const currentTier = [...mockTiers].reverse().find(t => val >= t.threshold) || mockTiers[0];
+    const nextTier = mockTiers.find(t => t.threshold > val);
+    const progress = nextTier ? Math.floor((val / nextTier.threshold) * 100) : 100;
+
+    return (
+        <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full" />
+            
+            <div className="flex flex-col md:flex-row gap-12 items-center">
+                <div className="flex-1 space-y-8 w-full">
+                    <div>
+                        <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 mb-4 font-black uppercase tracking-widest text-[9px]">Progression Engine Preview</Badge>
+                        <h3 className="text-4xl font-black tracking-tighter text-white uppercase italic">Visualiza tu Escala</h3>
+                        <p className="text-zinc-500 text-sm font-medium mt-2 max-w-sm">Mueve el slider para ver cómo el protocolo recompensa a los holders automáticamente.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center text-[10px] font-black text-zinc-600 uppercase tracking-widest px-2">
+                            <span>Balance de Artefactos</span>
+                            <span className="text-white text-lg">{val}</span>
+                        </div>
+                        <input 
+                            type="range" min="0" max="40" value={val} 
+                            onChange={(e) => setVal(parseInt(e.target.value))}
+                            className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-purple-500"
+                        />
+                    </div>
+                </div>
+
+                <div className="w-full md:w-[340px] bg-zinc-900/50 border border-zinc-800 p-8 rounded-[2rem] space-y-6 relative z-10">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Rango Actual</span>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-none text-[9px] font-black uppercase italic tracking-tighter">
+                            {currentTier?.name || 'Iniciando'}
+                        </Badge>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-[8px] font-black text-zinc-600 uppercase tracking-widest">
+                            <span>Progreso al siguiente nivel</span>
+                            <span>{progress}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden border border-white/5">
+                            <motion.div animate={{ width: `${progress}%` }} className="h-full bg-gradient-to-r from-purple-500 to-emerald-500" />
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 space-y-3">
+                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest block">Beneficios Activos</span>
+                        <div className="flex flex-wrap gap-2">
+                            {currentTier?.perks?.map((p, i) => (
+                                <div key={i} className="px-2 py-1 bg-zinc-800 rounded-lg text-[9px] font-bold text-zinc-400 border border-white/5">
+                                    {p}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const APIPreview = () => (
+    <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-1 shadow-2xl overflow-hidden group">
+        <div className="bg-zinc-900/50 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                <div className="w-2.5 h-2.5 rounded-full bg-orange-500/50" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50" />
+            </div>
+            <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Headless Integration (v2.0)</span>
+            <Cpu className="w-4 h-4 text-zinc-700" />
+        </div>
+        <div className="p-8 font-mono text-[11px] leading-relaxed text-zinc-400">
+            <div className="space-y-1">
+                <p><span className="text-purple-400">const</span> res = <span className="text-emerald-400">await</span> <span className="text-blue-400">fetch</span>(<span className="text-orange-300">'/api/public/project/alpha/state'</span>);</p>
+                <p><span className="text-purple-400">const</span> {`{ progression }`} = <span className="text-emerald-400">await</span> res.<span className="text-blue-400">json</span>();</p>
+                <p>&nbsp;</p>
+                <p><span className="text-zinc-600">// Desbloquea UI personalizada según el Tier</span></p>
+                <p><span className="text-purple-400">if</span> (progression.unlockDelta === <span className="text-orange-400">0</span>) {`{`}</p>
+                <p>&nbsp;&nbsp;<span className="text-blue-400">showGovenanceWidget</span>(progression.currentTier.perks);</p>
+                <p>{`}`}</p>
+            </div>
+        </div>
+    </div>
+);
+
 export default function GrowthOSLanding() {
   const [leadModal, setLeadModal] = useState(false);
   const [docModal, setDocModal] = useState(false);
@@ -139,6 +263,8 @@ export default function GrowthOSLanding() {
         </div>
       </nav>
 
+      <GrowthTicker />
+
       <main className="relative z-10 w-full max-w-7xl mx-auto px-8 py-20 lg:py-32">
         {/* HERO SECTION */}
         <div className="text-center max-w-5xl mx-auto mb-32">
@@ -165,7 +291,7 @@ export default function GrowthOSLanding() {
                 onClick={() => openConversion()}
                 className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-white text-black font-black text-xl hover:bg-zinc-200 transition-all shadow-[0_0_60px_rgba(255,255,255,0.15)] uppercase tracking-tighter italic"
               >
-                Pide tu Setup
+                Auditar mi Infraestructura (Layer 4)
               </Button>
               <Button 
                 onClick={() => setDocModal(true)}
@@ -178,22 +304,11 @@ export default function GrowthOSLanding() {
           </motion.div>
         </div>
 
-        {/* DEMAND ENGINE PREVIEW */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          className="relative mb-48 rounded-[3rem] border border-zinc-800 bg-zinc-900/50 p-1 lg:p-4 shadow-2xl overflow-hidden"
-        >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
-          <div className="aspect-video rounded-[2.5rem] bg-zinc-950 border border-zinc-800 flex items-center justify-center relative group">
-             <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-             <div className="text-center space-y-4 relative z-10">
-                <Rocket className="w-16 h-16 text-purple-500 mx-auto mb-6 animate-bounce" />
-                 <h3 className="text-3xl font-black tracking-tighter">⚡ DEMAND ENGINE + DAO GOVERNANCE</h3>
-                 <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Narrativa Dual Automática • GAC Tracking • Governance Concentrator</p>
-             </div>
-          </div>
-        </motion.div>
+         {/* DEMAND ENGINE PREVIEW */}
+        <div className="mb-48 space-y-24">
+            <ProgressionPreview />
+            <APIPreview />
+        </div>
 
         {/* STATS SECTION */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-40">
@@ -314,7 +429,7 @@ export default function GrowthOSLanding() {
             size="lg" 
             className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-emerald-500 text-black font-black text-xl md:text-2xl hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/30 relative z-10 uppercase italic tracking-tighter"
           >
-            Pide tu Setup ahora
+            Auditar mi Infraestructura ahora
           </Button>
           
           <p className="text-zinc-600 font-black uppercase tracking-[0.4em] text-[10px] mt-16 relative z-10 opacity-50">

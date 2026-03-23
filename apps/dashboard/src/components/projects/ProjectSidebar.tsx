@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState } from 'react';
-import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare, ArrowDown, ArrowRight } from "lucide-react";
+import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare, ArrowDown, ArrowRight, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
 import type { ProjectData } from "@/app/()/projects/types";
 import AccessCardPurchaseModal from "../modals/AccessCardPurchaseModal";
 import ArtifactPurchaseModal from "../modals/ArtifactPurchaseModal"; // Unified Modal
+import PerksModal from "../modals/PerksModal";
 import type { UtilityPhase } from '@/types/deployment';
 import { useActiveAccount, useReadContract, TransactionButton, useWalletBalance } from "thirdweb/react";
 import { getContract, defineChain, prepareContractCall } from "thirdweb";
@@ -21,6 +22,8 @@ interface ProjectSidebarProps {
 }
 
 export default function ProjectSidebar({ project, targetAmount }: ProjectSidebarProps) {
+  const [isPerksModalOpen, setIsPerksModalOpen] = useState(false);
+  const [initialPurchaseAmount, setInitialPurchaseAmount] = useState<string | undefined>(undefined);
   // Debug: Check status
   // console.log("ProjectSidebar Debug:", { id: project.id, status: project.deploymentStatus });
   // Robust Chain ID handling: Handle potential undefined/null/NaN/0 values from DB
@@ -339,6 +342,15 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <Shield className="w-3 h-3 text-sm text-lime-400" />
                     Ir al DAO
                   </Link>
+
+                  {/* Dynamic Perks Button */}
+                  <button
+                    onClick={() => setIsPerksModalOpen(true)}
+                    className="w-full bg-zinc-900/80 hover:bg-zinc-800 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 border border-white/10 transition-all active:scale-95 shadow-xl"
+                  >
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span>{hasAccess ? 'Tus Beneficios' : 'Ver Beneficios'}</span>
+                  </button>
                 </div>
               ) : isDeployed && licenseContract && account ? (
                 <div className="space-y-2 w-full mb-4">
@@ -348,6 +360,13 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   >
                     <Ticket className="w-4 h-4" />
                     <span>Obtener Acceso</span>
+                  </button>
+                  <button
+                    onClick={() => setIsPerksModalOpen(true)}
+                    className="w-full bg-zinc-900/80 hover:bg-zinc-800 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 border border-white/10 transition-all active:scale-95"
+                  >
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span>Ver Beneficios</span>
                   </button>
                   <button
                     onClick={scrollToPhases}
@@ -668,10 +687,34 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       {/* Unified Artifact Modal */}
       <ArtifactPurchaseModal
         isOpen={isArtifactModalOpen}
-        onClose={() => setIsArtifactModalOpen(false)}
+        onClose={() => {
+            setIsArtifactModalOpen(false);
+            setInitialPurchaseAmount(undefined);
+        }}
         project={project}
         utilityContract={{ address: project.utilityContractAddress }}
         phase={selectedPhase}
+        userArtifactCount={licenseBalance ? Number(licenseBalance) : 0}
+        initialAmount={initialPurchaseAmount}
+      />
+
+      <PerksModal 
+        isOpen={isPerksModalOpen}
+        onClose={() => setIsPerksModalOpen(false)}
+        project={project}
+        userArtifactCount={licenseBalance ? Number(licenseBalance) : 0}
+        onBuyMore={(amount) => {
+            setIsPerksModalOpen(false);
+            setInitialPurchaseAmount(String(amount));
+            const activePhase = phasesWithStats.find((p: any) => p.status === 'active');
+            if (activePhase) {
+                setSelectedPhase(activePhase);
+                setIsArtifactModalOpen(true);
+            } else {
+                scrollToPhases();
+                toast.info("Por favor selecciona una fase activa para continuar.");
+            }
+        }}
       />
     </>
   );

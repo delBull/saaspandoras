@@ -48,75 +48,12 @@ export function ProjectTableView({
   onCloneProject,
   actionsLoading
 }: ProjectTableViewProps) {
-  const [isConfigModalOpen, setIsConfigModalOpen] = React.useState(false);
-  const [selectedProjectForDeployment, setSelectedProjectForDeployment] = React.useState<{ id: string, title: string, slug: string, forceRedeploy?: boolean } | null>(null);
-
-  // Deployment Progress State
-  const [deploymentStatus, setDeploymentStatus] = React.useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
-  const [deploymentError, setDeploymentError] = React.useState<string | undefined>(undefined);
-  const [isProgressModalOpen, setIsProgressModalOpen] = React.useState(false);
-
   const handleDeployClick = (id: string, title: string, slug: string, forceRedeploy?: boolean) => {
-    setSelectedProjectForDeployment({ id, title, slug, forceRedeploy });
-    setIsConfigModalOpen(true);
-  };
-
-  const handleConfigConfirm = async (config: DeploymentConfig) => {
-    if (selectedProjectForDeployment && onDeployProtocol) {
-      setIsConfigModalOpen(false);
-
-      // Start Progress Modal
-      setDeploymentStatus('deploying');
-      setDeploymentError(undefined);
-      setIsProgressModalOpen(true);
-
-      try {
-        const result = await onDeployProtocol(
-          selectedProjectForDeployment.id,
-          selectedProjectForDeployment.title,
-          selectedProjectForDeployment.slug,
-          { ...config, forceRedeploy: selectedProjectForDeployment.forceRedeploy } as any
-        );
-
-        const jobId = (result as any)?.jobId;
-
-        if (jobId) {
-          // Start Polling
-          const pollStatus = async () => {
-            try {
-              const pollRes = await fetch(`/api/admin/deployment-job/${jobId}`);
-              if (!pollRes.ok) throw new Error("Failed to poll status");
-              const { job } = await pollRes.json();
-
-              if (job.status === 'completed') {
-                setDeploymentStatus('success');
-                return; // Stop polling
-              } else if (job.status === 'failed') {
-                setDeploymentStatus('error');
-                setDeploymentError(job.error || "Deployment failed in background");
-                return; // Stop polling
-              }
-
-              // Continue polling
-              setTimeout(pollStatus, 3000);
-            } catch (pollErr) {
-              console.error("Polling error:", pollErr);
-              setTimeout(pollStatus, 5000);
-            }
-          };
-          pollStatus();
-        } else {
-          // Fallback if no jobId returned (sync legacy)
-          setDeploymentStatus('success');
-        }
-      } catch (err) {
-
-        setDeploymentStatus('error');
-        setDeploymentError(err instanceof Error ? err.message : 'Error desconocido al desplegar');
-      }
-      // Note: We don't close modal automatically on success/error to let user see the result
+    if (onDeployProtocol) {
+      onDeployProtocol(id, title, slug, { forceRedeploy } as any);
     }
   };
+
 
   return (
     <>
@@ -680,31 +617,6 @@ export function ProjectTableView({
         </table>
       </div>
 
-      {/* Deployment Configuration Modal */}
-      <DeploymentConfigModal
-        isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
-        onConfirm={handleConfigConfirm}
-        projectTitle={selectedProjectForDeployment?.title || ''}
-        projectSlug={selectedProjectForDeployment?.slug}
-        applicantWalletAddress={projects.find(p => p.id === selectedProjectForDeployment?.id)?.applicantWalletAddress}
-        projectTotalTokens={projects.find(p => p.id === selectedProjectForDeployment?.id)?.totalTokens ?? undefined}
-        isLoading={false}
-      />
-
-      {/* Visual Deployment Progress Modal */}
-      < DeploymentProgressModal
-        isOpen={isProgressModalOpen}
-        onClose={() => {
-          setIsProgressModalOpen(false);
-          if (deploymentStatus === 'success') {
-            setSelectedProjectForDeployment(null);
-          }
-        }}
-        status={deploymentStatus}
-        error={deploymentError}
-        projectTitle={selectedProjectForDeployment?.title || ''}
-      />
     </>
   );
 }
