@@ -1705,6 +1705,34 @@ export const marketingLeadIntentEnum = pgEnum("marketing_lead_intent", [
   "other"
 ]);
 
+export const ownerContextEnum = pgEnum("owner_context", ["pandora", "client"]);
+
+export const marketingLeadScopeEnum = pgEnum("marketing_lead_scope", ["b2b", "b2c"]);
+export const marketingLeadQualityEnum = pgEnum("marketing_lead_quality", ["low", "medium", "high"]);
+
+
+/**
+ * marketing_identities — Unified identity layer to link fingerprints, wallets, and emails.
+ */
+export const marketingIdentities = pgTable("marketing_identities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id), // Link to core user if/when registered
+  
+  fingerprint: varchar("fingerprint", { length: 255 }), // Anonymous device ID
+  walletAddress: varchar("wallet_address", { length: 42 }), // Web3 ID
+  email: varchar("email", { length: 255 }), // Web2 ID
+  telegramId: varchar("telegram_id", { length: 255 }), // Social ID
+  
+  metadata: jsonb("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  fingerprintIdx: uniqueIndex("identities_fingerprint_idx").on(t.fingerprint),
+  walletIdx: index("identities_wallet_idx").on(t.walletAddress),
+  emailIdx: index("identities_email_idx").on(t.email),
+  telegramIdx: index("identities_telegram_idx").on(t.telegramId),
+}));
+
 /**
  * marketing_leads — Multi-tenant lead storage.
  * Links to global 'users' if already registered, otherwise identity is email-based.
@@ -1714,7 +1742,12 @@ export const marketingLeads = pgTable("marketing_leads", {
   userId: varchar("user_id", { length: 255 }).references(() => users.id),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   
-  email: varchar("email", { length: 255 }).notNull(),
+  ownerContext: ownerContextEnum("owner_context").default("client").notNull(),
+  scope: marketingLeadScopeEnum("scope").default("b2c").notNull(),
+  identityId: uuid("identity_id").references(() => marketingIdentities.id), // Unified ID
+  leadType: varchar("lead_type", { length: 100 }).default("user_prospect"), // e.g., founder, investor, buyer
+  
+  email: varchar("email", { length: 255 }), // Nullable for anonymous silent capture
   name: varchar("name", { length: 255 }),
   phoneNumber: varchar("phone_number", { length: 50 }), // Added for WhatsApp support
   walletAddress: varchar("wallet_address", { length: 42 }), // Web3 Identity
@@ -1726,6 +1759,7 @@ export const marketingLeads = pgTable("marketing_leads", {
   status: marketingLeadStatusEnum("status").default("active").notNull(),
   intent: marketingLeadIntentEnum("intent").default("explore").notNull(),
   score: integer("score").default(0).notNull(),
+  quality: marketingLeadQualityEnum("quality").default("low").notNull(),
   
   metadata: jsonb("metadata").default({}).notNull(),
   consent: boolean("consent").default(false).notNull(),
@@ -1733,8 +1767,8 @@ export const marketingLeads = pgTable("marketing_leads", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
-  // A lead is unique per Project + Email
-  projectEmailIdx: uniqueIndex("marketing_leads_project_email_idx").on(t.projectId, t.email),
+  // A lead is unique per Project + Identity (Email, Wallet or Fingerprint hash)
+  projectIdentityIdx: uniqueIndex("marketing_leads_project_identity_idx").on(t.projectId, t.identityHash),
 }));
 
 /**
@@ -1792,11 +1826,33 @@ export const marketingLeadAttributions = pgTable("marketing_lead_attributions", 
 }));
 
 
+/**
+ * marketing_attribution_touches — Multi-touch attribution log.
+ */
+export const marketingAttributionTouches = pgTable("marketing_attribution_touches", {
+  id: serial("id").primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  campaignId: uuid("campaign_id").references(() => campaigns.id), // Nullable for direct/organic
+  
+  touchType: varchar("touch_type", { length: 100 }).notNull(), // landing_page, whatsapp_click, form_submit...
+  weight: decimal("weight", { precision: 5, scale: 2 }).default("1.00").notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  leadIdx: index("touch_lead_idx").on(t.leadId),
+  campaignIdx: index("touch_campaign_idx").on(t.campaignId),
+}));
+
+
 export type DeploymentJob = typeof deploymentJobs.$inferSelect;
 export type MarketingLead = typeof marketingLeads.$inferSelect;
 export type MarketingLeadEvent = typeof marketingLeadEvents.$inferSelect;
 export type MarketingRewardLog = typeof marketingRewardLogs.$inferSelect;
 export type MarketingLeadAttribution = typeof marketingLeadAttributions.$inferSelect;
+export type MarketingIdentity = typeof marketingIdentities.$inferSelect;
+export type MarketingAttributionTouch = typeof marketingAttributionTouches.$inferSelect;
+
 
 
 export const governanceProposalsRelations = relations(governanceProposals, ({ many }) => ({
@@ -1810,9 +1866,13 @@ export const governanceVotesRelations = relations(governanceVotes, ({ one }) => 
   }),
 }));
 
-export const marketingLeadsRelations = relations(marketingLeads, ({ many }) => ({
+export const marketingLeadsRelations = relations(marketingLeads, ({ many, one }) => ({
   attributions: many(marketingLeadAttributions),
   events: many(marketingLeadEvents),
+  identity: one(marketingIdentities, {
+    fields: [marketingLeads.identityId],
+    references: [marketingIdentities.id],
+  }),
 }));
 
 export const marketingLeadAttributionsRelations = relations(marketingLeadAttributions, ({ one }) => ({
@@ -1823,6 +1883,25 @@ export const marketingLeadAttributionsRelations = relations(marketingLeadAttribu
   project: one(projects, {
     fields: [marketingLeadAttributions.projectId],
     references: [projects.id],
+  }),
+}));
+
+export const marketingIdentitiesRelations = relations(marketingIdentities, ({ one, many }) => ({
+  user: one(users, {
+    fields: [marketingIdentities.userId],
+    references: [users.id],
+  }),
+  leads: many(marketingLeads),
+}));
+
+export const marketingAttributionTouchesRelations = relations(marketingAttributionTouches, ({ one }) => ({
+  lead: one(marketingLeads, {
+    fields: [marketingAttributionTouches.leadId],
+    references: [marketingLeads.id],
+  }),
+  campaign: one(campaigns, {
+    fields: [marketingAttributionTouches.campaignId],
+    references: [campaigns.id],
   }),
 }));
 
@@ -1842,6 +1921,10 @@ export const campaignStatusEnum = pgEnum("campaign_status", [
   "completed",
   "archived"
 ]);
+
+export const campaignTypeEnum = pgEnum("campaign_type", ["protocol_acquisition", "user_acquisition"]);
+
+export const campaignScopeEnum = pgEnum("campaign_scope", ["b2b", "b2c"]);
 
 export const demandDrafts = pgTable("demand_drafts", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -1868,6 +1951,10 @@ export const campaigns = pgTable("campaigns", {
   id: uuid("id").defaultRandom().primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   draftId: uuid("draft_id").references(() => demandDrafts.id),
+  
+  ownerContext: ownerContextEnum("owner_context").default("client").notNull(),
+  campaignType: campaignTypeEnum("campaign_type").default("user_acquisition").notNull(),
+  scope: campaignScopeEnum("scope").default("b2c").notNull(),
   
   name: varchar("name", { length: 255 }).notNull(),
   source: campaignSourceEnum("source").default("manual").notNull(),
