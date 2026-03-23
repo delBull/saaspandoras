@@ -219,25 +219,6 @@ export default function ProjectReportPage() {
 
             /* CLASES DE DISEÑO COMPACTO Y PROFESIONAL */
             .print\\\\:hidden { display: none !important; }
-            .print-grid-container {
-              /* 3 columnas para mayor densidad, como la imagen de referencia */
-              display: grid;
-              grid-template-columns: 1fr 1fr 1fr;
-              gap: 8px;
-              margin-top: 10px;
-            }
-            .print-section {
-              padding: 6px;
-              border: 1px solid #ddd;
-              border-radius: 4px;
-              margin-bottom: 5px;
-            }
-            .print-full-width { grid-column: 1 / -1; }
-            .print-half-width { grid-column: span 1 / span 1; }
-            /* Secciones de 2/3 para el resumen ejecutivo */
-            .print-two-thirds-width { grid-column: span 2 / span 2; }
-            .print-one-third-width { grid-column: span 1 / span 1; }
-
             .print-header { border-bottom: 3px solid #7c3aed; padding-bottom: 5px; } /* COLOR PRINCIPAL: PURPLE */
             .print-title { font-size: 16px !important; font-weight: bold; color: #7c3aed; } /* COLOR PRINCIPAL: PURPLE */
             .print-subtitle {
@@ -249,285 +230,226 @@ export default function ProjectReportPage() {
               margin-bottom: 4px;
             }
             .print-metric-value { font-size: 18px !important; font-weight: bold; color: #6d28d9; } /* Color de Métrica: Darker Purple */
-            .print-placeholder-chart {
-                height: 50px;
-                background: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                text-align: center;
-                line-height: 50px;
-                font-size: 6px;
-                color: #888;
-                margin-top: 4px;
-            }
           }
         `
       }} />
 
-      <div className="absolute inset-x-0 min-h-screen pb-20 md:pb-6 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white print:bg-white print:text-black">
+      <div className="absolute inset-x-0 min-h-screen pb-20 md:pb-6 bg-[#030303] text-white print:bg-white print:text-black font-sans selection:bg-purple-500 selection:text-white">
+        {/* Background Gradients (Dynamic) */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30 print:hidden">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-emerald-600/10 rounded-full blur-[150px]"></div>
+        </div>
+
         {/* Header - Hidden in print */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-zinc-900 backdrop-blur-sm border-b border-zinc-800 print:hidden relative z-50"
+          className="bg-zinc-950/50 backdrop-blur-xl border-b border-zinc-800/50 sticky top-0 z-[100] print:hidden"
         >
-          <div className="max-w-7xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => router.back()}
-                  className="text-gray-400 hover:text-purple-400 transition-colors p-2 rounded-lg hover:bg-zinc-800"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                    One Pager Ejecutivo
-                  </h1>
-                  <p className="text-sm text-gray-400">Análisis completo del proyecto</p>
-                </div>
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => router.back()}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all shadow-xl"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-xl font-black uppercase italic tracking-tighter text-white">
+                  Executive <span className="text-purple-400">One Pager</span>
+                </h1>
+                <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500">Protocol Analysis v3.0</p>
               </div>
+            </div>
+            <div className="flex items-center gap-4">
               <Button
                 onClick={handleExportPDF}
-                className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-semibold mr-40 px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-purple-500/25"
+                className="bg-white text-black hover:bg-zinc-200 font-black uppercase italic tracking-tighter px-6 h-11 rounded-xl transition-all shadow-lg shadow-white/5"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Exportar PDF
+                Exportar Reporte
               </Button>
             </div>
           </div>
         </motion.div>
 
-        {/* PDF Header - Only visible in print */}
-        <div className="hidden print:block print:text-center print:py-2 print:border-b print:border-gray-300">
-          <h1 className="print:text-2xl print:font-bold print:text-black">One Pager Ejecutivo</h1>
-          <p className="print:text-sm print:text-gray-600">Análisis completo del proyecto</p>
-        </div>
-
-        <div id="one-pager-content" className="max-w-4xl mx-auto px-6 py-6 print:py-1 print:px-2 print:max-w-none">
-
-          {/* SECTION 1: HEADER Y METRICAS CLAVE */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-center mb-4 print:mb-2 print:p-1 print-header"
-          >
-            {/* Logo/Cover (Compactado) */}
-            {project.coverPhotoUrl && (
-              <Image
-                src={project.coverPhotoUrl}
-                alt={`${project.title} Logo`}
-                width={80}
-                height={80}
-                className="mx-auto rounded-lg mb-2 print:mb-1 print:w-[50px] print:h-[50px] print:rounded"
-              />
-            )}
-
-            {/* Title & Tagline */}
-            <h1 className="text-4xl font-extrabold tracking-tight mb-1 print:text-2xl print:text-black print-title">
-              {project.title}
-            </h1>
-            {project.tagline && (
-              <p className="text-xl text-lime-600 font-semibold mb-2 italic print:text-base print:text-gray-600">
-                \"{project.tagline}\"
-              </p>
-            )}
-
-            {/* Status & Category */}
-            <div className="flex flex-wrap justify-center gap-4 text-sm print:gap-2 print:text-xs print:mt-1">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-800/50 border border-zinc-700 rounded-full print:bg-gray-100 print:border-gray-300 print:text-gray-700">
-                <Calendar className="w-3 h-3 text-lime-400 print:text-gray-500" />
-                <span>Creado: {new Date(project.createdAt).toLocaleDateString('es-ES')}</span>
+        <div id="one-pager-content" className="max-w-5xl mx-auto px-6 py-10 print:p-0 relative z-10">
+          
+          {/* HERO SECTION: IDENTITY & GROWTH STATUS */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12 items-start">
+            <div className="lg:col-span-8 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest">
+                  Live Protocol
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
               </div>
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${project.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                project.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                  'bg-gray-500/20 text-gray-400'
-                } print:bg-gray-100 print:border-gray-300 print:text-gray-700 print:border`}>
-                {project.status?.toUpperCase()}
+              
+              <div className="space-y-2">
+                <h1 className="text-6xl md:text-7xl font-black tracking-tighter uppercase italic text-white leading-[0.9]">
+                  {project.title}
+                </h1>
+                <p className="text-2xl text-zinc-400 font-medium tracking-tight max-w-2xl">
+                  {project.tagline || project.description?.substring(0, 100) + '...'}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <div className="px-4 py-2 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <Building className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500 leading-none mb-1">Categoría</p>
+                    <p className="text-xs font-bold text-white uppercase">{project.businessCategory || 'General'}</p>
+                  </div>
+                </div>
+                <div className="px-4 py-2 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <Target className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500 leading-none mb-1">Status</p>
+                    <p className="text-xs font-bold text-white uppercase">{project.status}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </motion.div>
 
-          {/* Missing Fields Alert (Ancho completo) */}
-          {missingFields.length > 0 && (
-            <div className="print-section print-full-width bg-amber-500/10 border-amber-500/20 print:bg-yellow-50 print:border-yellow-300">
-              <h3 className="print-subtitle text-amber-500 flex items-center gap-2">
-                <AlertTriangle className="w-3 h-3" />
-                Validación: {missingFields.length} Campos Faltantes
-              </h3>
-              <p className="text-xs text-zinc-300 print:text-xs print:text-gray-600">
-                **REQUIERE ATENCIÓN:** {missingFields.join('; ')}.
-              </p>
-            </div>
-          )}
-
-          {/* Grilla de Contenido Principal (3 Columnas en Desktop, 3 en Print) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 print-grid-container">
-
-            {/* COLUMNA 1 - RESUMEN Y TOKENOMICS (Full Width en Mobile/Desktop, Half en Print) */}
-
-            {/* Visión General (2/3 de Ancho en Desktop, Full Width en Print) */}
-            <div className="md:col-span-2 print-section print-two-thirds-width bg-zinc-900/50 border-zinc-700 shadow-lg rounded-lg print:bg-gray-50 print:border-gray-200 print:shadow-none">
-              <h2 className="print-subtitle text-purple-400 flex items-center gap-2">
-                <Eye className="w-3 h-3" />
-                Resumen Ejecutivo
-              </h2>
-              <p className="text-sm text-zinc-300 leading-snug print:text-sm print:text-gray-700 line-clamp-4">
-                {project.description}
-              </p>
-            </div>
-
-            {/* Información Corporativa (1/3 de Ancho en Desktop, Half Width en Print) */}
-            <div className="md:col-span-1 print-section print-one-third-width bg-zinc-900/50 border-zinc-700 shadow-lg rounded-lg print:bg-gray-50 print:border-gray-200 print:shadow-none">
-              <h2 className="print-subtitle text-indigo-400 flex items-center gap-2">
-                <Building className="w-3 h-3" />
-                Detalles Corporativos
-              </h2>
-              <div className="space-y-1.5 print:space-y-1">
-                <p className="text-sm print:text-xs">
-                  <span className="text-zinc-400 print:text-gray-600 font-semibold">Categoría:</span>
-                  <span className="text-white font-medium ml-1 print:text-gray-800">{project.businessCategory ?? 'N/A'}</span>
-                </p>
-                <p className="text-sm print:text-xs">
-                  <span className="text-zinc-400 print:text-gray-600 font-semibold">Estatus Legal:</span>
-                  <span className="text-white font-medium ml-1 print:text-gray-800">{project.legalStatus ?? 'N/A'}</span>
-                </p>
-                <p className="text-sm print:text-xs">
-                  <span className="text-zinc-400 print:text-gray-600 font-semibold">Fiduciaria:</span>
-                  <span className="text-white font-medium ml-1 print:text-gray-800">{project.fiduciaryEntity ?? 'N/A'}</span>
-                </p>
-                {/* Espacio para la imagen / logo */}
-                {project.coverPhotoUrl && (
-                  <Image
-                    src={project.coverPhotoUrl}
-                    alt={`${project.title} Cover`}
-                    width={120}
-                    height={60}
-                    className="mx-auto rounded-md mt-2 print:mt-1 print:w-full print:h-[40px] object-cover"
-                  />
+            <div className="lg:col-span-4">
+              <div className="aspect-square rounded-[2rem] bg-zinc-900 border border-zinc-800 overflow-hidden shadow-2xl relative group">
+                {project.logoUrl ? (
+                  <img src={project.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900">
+                    <FileText className="w-16 h-16 text-zinc-700" />
+                  </div>
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
-
-            {/* 🎯 Métricas Financieras (1/3 de Ancho en Desktop, Half Width en Print) */}
-            <div className="print-section print-one-third-width bg-zinc-900/50 border-zinc-700 shadow-lg rounded-lg print:bg-gray-50 print:border-gray-200 print:shadow-none">
-              <h2 className="print-subtitle text-fuchsia-400 flex items-center gap-2">
-                <DollarSign className="w-3 h-3" />
-                Financiamiento
-              </h2>
-              <div className="space-y-2 print:space-y-1">
-                <div className="flex justify-between items-center text-sm print:text-xs border-b border-zinc-700/50 print:border-gray-200 pb-1">
-                  <span className="text-zinc-400 font-medium print:text-gray-600">Total Value Locked (TVL):</span>
-                  <span className="print-metric-value text-white print:text-purple-700">
-                    {formatCurrency(project.totalValuationUsd || project.targetAmount)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm print:text-xs">
-                  <div>
-                    <span className="text-zinc-400 font-medium print:text-gray-600 block">Tipo de Token:</span>
-                    <span className="font-semibold text-white print:text-gray-800">ERC20</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400 font-medium print:text-gray-600 block">Suministro:</span>
-                    <span className="font-semibold text-white print:text-gray-800">
-                      N/A
-                    </span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center text-sm print:text-xs pt-1 border-t border-zinc-700/50 print:border-gray-200">
-                  <span className="text-zinc-400 font-medium print:text-gray-600 flex items-center gap-1">
-                    <TrendingUp className='w-3 h-3' /> Annual Return (APR):
-                  </span>
-                  <span className="font-semibold text-purple-400 print:text-purple-700">{project.estimatedApy || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 📊 Proyecciones (1/3 de Ancho en Desktop, Half Width en Print) */}
-            <div className="print-section print-one-third-width bg-zinc-900/50 border-zinc-700 shadow-lg rounded-lg print:bg-gray-50 print:border-gray-200 print:shadow-none">
-              <h2 className="print-subtitle text-pink-400 flex items-center gap-2">
-                <Target className="w-3 h-3" />
-                Proyecciones & Crecimiento
-              </h2>
-              <div className="space-y-2 print:space-y-1">
-                {/* Placeholder para Gráfico 1: Proyección de Rendimiento */}
-                <div className='print-placeholder-chart'>
-                  [Gráfico: Proyección de Rendimiento - PLACEHOLDER]
-                </div>
-                {/* Placeholder para Gráfico 2: Distribución de Token */}
-                <div className='print-placeholder-chart'>
-                  [Gráfico de Tarta: Distribución de Token - PLACEHOLDER]
-                </div>
-              </div>
-            </div>
-
-            {/* Documentación (Full Width en Desktop, pero en la grilla de 3) */}
-            <div className="md:col-span-3 print-section print-full-width bg-zinc-900/50 border-zinc-700 shadow-lg rounded-lg print:bg-gray-50 print:border-gray-200 print:shadow-none">
-              <h2 className="print-subtitle text-yellow-400 flex items-center gap-2">
-                <FileText className="w-3 h-3" />
-                Documentación & Compliance
-              </h2>
-              {/* Se usa grid-cols-5 para añadir Contacto en la grilla. */}
-              <div className="grid grid-cols-5 gap-3 print:gap-2 print:grid-cols-5">
-                {/* Whitepaper */}
-                <a href={project.whitepaperUrl} target="_blank" rel="noopener noreferrer" className={`col-span-1 flex items-center gap-2 p-1 rounded-md transition-colors print:p-0.5 print:border print:border-gray-300 ${project.whitepaperUrl ? 'bg-zinc-800/50 hover:bg-zinc-700/50' : 'bg-zinc-800/20'}`}>
-                  <FileText className="w-3 h-3 text-green-400" />
-                  <div>
-                    <div className="text-green-400 font-medium text-xs">White Paper</div>
-                    <div className="text-zinc-400 text-xs print:text-[6px] truncate">{project.whitepaperUrl ? 'Disponible' : 'Faltante'}</div>
-                  </div>
-                </a>
-                {/* Valuación */}
-                <a href={project.valuationDocumentUrl} target="_blank" rel="noopener noreferrer" className={`col-span-1 flex items-center gap-2 p-1 rounded-md transition-colors print:p-0.5 print:border print:border-gray-300 ${project.valuationDocumentUrl ? 'bg-zinc-800/50 hover:bg-zinc-700/50' : 'bg-zinc-800/20'}`}>
-                  <FileText className="w-3 h-3 text-purple-400" />
-                  <div>
-                    <div className="text-purple-400 font-medium text-xs">Valuación</div>
-                    <div className="text-zinc-400 text-xs print:text-[6px] truncate">{project.valuationDocumentUrl ? 'Disponible' : 'Faltante'}</div>
-                  </div>
-                </a>
-                {/* Due Diligence */}
-                <a href={project.dueDiligenceReportUrl} target="_blank" rel="noopener noreferrer" className={`col-span-1 flex items-center gap-2 p-1 rounded-md transition-colors print:p-0.5 print:border print:border-gray-300 ${project.dueDiligenceReportUrl ? 'bg-zinc-800/50 hover:bg-zinc-700/50' : 'bg-zinc-800/20'}`}>
-                  <FileText className="w-3 h-3 text-cyan-400" />
-                  <div>
-                    <div className="text-cyan-400 font-medium text-xs">Due Diligence</div>
-                    <div className="text-zinc-400 text-xs print:text-[6px] truncate">{project.dueDiligenceReportUrl ? 'Disponible' : 'Faltante'}</div>
-                  </div>
-                </a>
-                {/* Equipo Principal y Contacto (2/5 del ancho) */}
-                <div className="col-span-2 print-section bg-zinc-800/50 border-zinc-700 print:bg-gray-100 print:border-gray-300 print:p-1.5 print:shadow-none">
-                  <h3 className="print-subtitle text-orange-400 flex items-center gap-2 mb-0">
-                    <Users className="w-3 h-3" /> Equipo Principal
-                  </h3>
-                  <div className="flex justify-between items-center text-xs print:text-[7px]">
-                    <span className="text-white print:text-gray-800 font-medium">{project.applicantName ?? 'N/A'}</span>
-                    <a href={project.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline flex items-center gap-1">
-                      <Globe className="w-3 h-3" /> LinkedIn
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
           </div>
 
-          {/* Footer (Ancho completo, compacto) */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2.4 }}
-            className="md:col-span-3 text-center py-4 border-t border-zinc-800 mt-6 print:py-2 print:mt-4 print:border-gray-300 print-full-width"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full print:bg-gray-100 print:border-gray-300 print:text-gray-600 print:px-2 print:py-0.5 print:mb-1">
-              <Crown className="w-3 h-3 text-purple-400 print:text-gray-500" />
-              <span className="text-xs font-medium print:text-xs">Pandoras Platform</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* LEFT COLUMN: MECHANICS & ROI */}
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* Executive Summary */}
+              <div className="p-8 rounded-[2.5rem] bg-zinc-900/30 border border-zinc-800 backdrop-blur-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-3xl rounded-full" />
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500 mb-6 flex items-center gap-3">
+                  <div className="w-12 h-[1px] bg-zinc-800" /> Tesis de Valor
+                </h3>
+                <p className="text-xl text-zinc-300 font-medium leading-relaxed italic">
+                  "{project.description}"
+                </p>
+              </div>
+
+              {/* Protocol Mechanics Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-6 rounded-[2rem] bg-zinc-900/50 border border-zinc-800">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4">Mecánica del Protocolo</h4>
+                  <p className="text-sm text-zinc-400 leading-relaxed font-medium">
+                    {project.protoclMecanism || 'Configuración pendiente de validación técnica.'}
+                  </p>
+                </div>
+                <div className="p-6 rounded-[2rem] bg-zinc-900/50 border border-zinc-800">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-4">Utilidad del Artefacto</h4>
+                  <p className="text-sm text-zinc-400 leading-relaxed font-medium">
+                    {project.artefactUtility || 'Los beneficios de holding se activan tras el Deployment.'}
+                  </p>
+                </div>
+                <div className="p-6 rounded-[2rem] bg-zinc-900/50 border border-zinc-800 md:col-span-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">Mecanismo Work-to-Earn</h4>
+                  <p className="text-sm text-zinc-300 leading-relaxed font-bold">
+                    {project.worktoearnMecanism || 'Participación activa recompensada vía Smart Contracts.'}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className="text-zinc-400 text-xs mt-1 print:text-[6px] print:text-gray-500">
-              Reporte generado el {new Date().toLocaleDateString('es-ES')} • ID: {project.id} • Esta información es estrictamente **CONFIDENCIAL**.
+
+            {/* RIGHT COLUMN: NUMBERS & COMPLIANCE */}
+            <div className="space-y-8">
+              {/* Economic Block */}
+              <div className="p-8 rounded-[2.5rem] bg-zinc-950 border border-zinc-800 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 blur-3xl rounded-full" />
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-8">Economic Snapshot</h3>
+                
+                <div className="space-y-8">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 mb-1">Target Valuation (TVL)</p>
+                    <p className="text-4xl font-black text-white italic tracking-tighter">
+                      {formatCurrency(project.targetAmount)}
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1">Token Price</p>
+                      <p className="text-xl font-bold text-emerald-400">$ {(project as any).tokenPriceUsd || '0.00'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1">Yield (APR)</p>
+                      <p className="text-xl font-bold text-purple-400">{project.estimatedApy || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-zinc-800">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">
+                      <span>Progreso de Fondos</span>
+                      <span className="text-white">0%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-emerald-500 w-[5%]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Compliance & Links */}
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 px-4">Compliance & Links</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <a href={project.whitepaperUrl} target="_blank" className="flex items-center justify-between p-4 rounded-2xl bg-zinc-900/30 border border-zinc-800 hover:bg-zinc-800/50 transition-all group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-zinc-400" />
+                      </div>
+                      <span className="text-xs font-bold text-zinc-300">Whitepaper</span>
+                    </div>
+                    <Eye className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+                  </a>
+                  <div className="p-4 rounded-2xl bg-zinc-900/30 border border-zinc-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                        <Users className="w-4 h-4 text-zinc-400" />
+                      </div>
+                      <span className="text-xs font-bold text-zinc-300">Representante</span>
+                    </div>
+                    <p className="text-sm font-black text-white px-1">{project.applicantName || 'Confidencial'}</p>
+                    <p className="text-[10px] font-medium text-zinc-600 px-1 mt-1">{project.applicantPosition || 'Founder'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FOOTER */}
+          <div className="mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-6 print:mt-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-xl">
+                 <img src="/images/logo_green.png" alt="Pandora" className="w-7 h-7 object-contain" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-white">Pandoras Growth Engine</p>
+                <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Institutional Infrastructure</p>
+              </div>
+            </div>
+            <p className="text-[10px] font-medium text-zinc-700 uppercase tracking-widest">
+              Generated {new Date().toLocaleDateString('es-ES')} • Private & Confidential
             </p>
-          </motion.div>
+          </div>
         </div>
       </div>
     </>

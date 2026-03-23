@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
-import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail } from "lucide-react";
+import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter } from "lucide-react";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
 import { DAOMetrics } from "../dao/DAOMetrics";
@@ -262,7 +262,6 @@ export default function GrowthOSSubTab() {
   const [publicKey, setPublicKey] = useState<string>('pk_grow_test_xxxxxxx');
   const [secretKey, setSecretKey] = useState<string>('sk_grow_test_xxxxxxx');
   const [copied, setCopied] = useState(false);
-  const [showDevHub, setShowDevHub] = useState(false);
 
   // Real Domain Management State
   const [newDomain, setNewDomain] = useState('');
@@ -281,7 +280,7 @@ export default function GrowthOSSubTab() {
   const [isTogglingCourse, setIsTogglingCourse] = useState<string | null>(null);
 
   // Section Navigation
-  const [activeSection, setActiveSection] = useState<'overview' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence' | 'developers'>('overview');
 
   // States for testing live data
   const [isTestingData, setIsTestingData] = useState(false);
@@ -776,42 +775,43 @@ export default function GrowthOSSubTab() {
           </div>
 
           <div className="flex flex-col md:flex-row items-end gap-6 w-full md:w-auto">
-            {/* Context Selector */}
-            <div className="flex flex-col items-start gap-1 w-full md:w-auto">
-              <label htmlFor="context-selector" className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Contexto</label>
-              <select
-                id="context-selector"
-                value={selectedProjectId === 'all' ? 'pandora' : 'client'}
-                onChange={(e) => {
-                  if (e.target.value === 'pandora') {
-                    setSelectedProjectId('all');
-                  } else if (projects && projects.length > 0) {
-                    setSelectedProjectId(String(projects[0]?.id));
-                  }
-                }}
-                className="bg-zinc-950 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-purple-500/50 outline-none w-full md:w-48 shadow-xl hover:border-zinc-700 transition-all cursor-pointer h-10"
-              >
-                <option value="pandora">🛡️ Pandora Ecosystem</option>
-                <option value="client">🚀 Active Project</option>
-              </select>
-            </div>
-
-            {/* Project Selector (if Active Project) */}
-            {selectedProjectId !== 'all' && (
-              <div className="flex flex-col items-start gap-1 w-full md:w-auto animate-in fade-in slide-in-from-left-2 duration-300">
-                <label className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Protocolo</label>
+            {/* Context & Project Selectors (Compact Vertical Stack) */}
+            <div className="flex flex-col gap-2 w-full md:w-auto">
+              <div className="flex flex-col items-start gap-1">
+                <label htmlFor="context-selector" className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Contexto</label>
                 <select
-                  id="project-selector"
-                  value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="bg-zinc-950 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-purple-500/50 outline-none w-full md:w-64 shadow-xl hover:border-zinc-700 transition-all cursor-pointer h-10"
+                  id="context-selector"
+                  value={selectedProjectId === 'all' ? 'pandora' : 'client'}
+                  onChange={(e) => {
+                    if (e.target.value === 'pandora') {
+                      setSelectedProjectId('all');
+                    } else if (projects && projects.length > 0) {
+                      setSelectedProjectId(String(projects[0]?.id));
+                    }
+                  }}
+                  className="bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-1 text-xs focus:ring-1 focus:ring-purple-500/50 outline-none w-full md:w-44 shadow-lg hover:border-zinc-700 transition-all cursor-pointer h-8"
                 >
-                  {projects.map(p => (
-                    <option key={p.id} value={p.id}>{p.title}</option>
-                  ))}
+                  <option value="pandora">🛡️ Pandora Ecosystem</option>
+                  <option value="client">🚀 Active Project</option>
                 </select>
               </div>
-            )}
+
+              {selectedProjectId !== 'all' && (
+                <div className="flex flex-col items-start gap-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                  <label className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Protocolo</label>
+                  <select
+                    id="project-selector"
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    className="bg-zinc-950 border border-zinc-800 text-white rounded-lg px-3 py-1 text-xs focus:ring-1 focus:ring-purple-500/50 outline-none w-full md:w-44 shadow-lg hover:border-zinc-700 transition-all cursor-pointer h-8"
+                  >
+                    {projects.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
             {/* Scope / Mode Selector */}
             <div className="flex flex-col items-start gap-1 w-full md:w-auto border-l border-zinc-800/50 pl-6">
@@ -850,6 +850,7 @@ export default function GrowthOSSubTab() {
             { id: 'content', label: 'Content', icon: <PenTool className="w-4 h-4" /> },
             { id: 'market-attack', label: 'Market Attack', icon: <Flame className="w-4 h-4 text-orange-500" /> },
             { id: 'performance', label: 'Performance', icon: <BarChart3 className="w-4 h-4 text-emerald-500" /> },
+            { id: 'developers', label: 'Developers', icon: <Monitor className="w-4 h-4 text-indigo-400" /> },
           ].map((section) => (
             <button
               key={section.id}
@@ -1381,8 +1382,239 @@ export default function GrowthOSSubTab() {
         {activeSection === 'performance' && (
           <CampaignPerformanceDashboard projectId={Number(selectedProjectId)} />
         )}
-        {/* Growth Infrastructure Health (Layer 4 - Deployment Integrity) */}
-        {selectedProjectId !== 'all' && (
+        {activeSection === 'developers' && selectedProjectId !== 'all' && (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Developer Hub Header */}
+            <div className="bg-gradient-to-r from-zinc-900/40 to-indigo-950/20 p-8 rounded-[2.5rem] border border-indigo-500/20">
+              <h3 className="text-2xl font-black text-white italic flex items-center gap-3 mb-2">
+                <Monitor className="w-7 h-7 text-indigo-400" />
+                Developer Hub
+              </h3>
+              <p className="text-zinc-400 text-sm max-w-2xl font-medium">
+                Configuración técnica, integración de webhooks y gestión de dominios autorizados para el Growth Widget v2.0.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Keys & Webhooks */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Integration Keys */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6">
+                  <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                    <Fingerprint className="w-4 h-4 text-purple-400" />
+                    API Credentials
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Public Key</label>
+                      <div className="flex bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-400 font-mono items-center justify-between">
+                        <span className="truncate mr-4">{publicKey}</span>
+                        <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {
+                          navigator.clipboard.writeText(publicKey);
+                          toast.success("Public Key copiada");
+                        }}>COPY</UIButton>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Secret Key</label>
+                      <div className="flex bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-400 font-mono items-center justify-between">
+                        <span className="truncate mr-4 italic">*********************</span>
+                        <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {
+                          navigator.clipboard.writeText(secretKey);
+                          toast.success("Secret Key copiada");
+                        }}>COPY</UIButton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Webhook Configuration */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6">
+                  <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-blue-400" />
+                    Notifications / Webhooks
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Discord Webhook URL</label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="https://discord.com/api/webhooks/..."
+                          value={discordWebhookUrl}
+                          onChange={(e) => setDiscordWebhookUrl(e.target.value)}
+                          className="bg-zinc-950 border-zinc-800 text-white rounded-xl h-10 text-xs"
+                        />
+                        <UIButton
+                          onClick={() => saveProjectSettings({ discordWebhookUrl })}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6 h-10"
+                        >
+                          Guardar
+                        </UIButton>
+                      </div>
+                      <p className="text-[9px] text-zinc-500 mt-1 italic">Recibe alertas automáticas en Discord cuando se capture un nuevo lead.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Domain Management */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-emerald-400" />
+                      Authorized Domains
+                    </h4>
+                    <Dialog open={isAddingDomain} onOpenChange={setIsAddingDomain}>
+                      <DialogTrigger asChild>
+                        <UIButton size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg h-8 px-4 text-[10px]">
+                          + ADD DOMAIN
+                        </UIButton>
+                      </DialogTrigger>
+                      <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                        <DialogHeader>
+                          <DialogTitle>Autorizar Nuevo Dominio</DialogTitle>
+                          <DialogDescription>El widget solo funcionará en los dominios que agregues a esta lista.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <Input
+                            placeholder="ejemplo.com"
+                            value={newDomain}
+                            onChange={(e) => setNewDomain(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
+                            className="bg-zinc-900 border-zinc-800"
+                          />
+                        </div>
+                        <DialogFooter>
+                          <UIButton onClick={handleAddDomain} className="bg-emerald-600 hover:bg-emerald-700">Guardar Dominio</UIButton>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  <div className="space-y-2">
+                    {allowedDomains.length === 0 ? (
+                      <div className="py-8 text-center border-2 border-dashed border-zinc-800 rounded-2xl">
+                        <p className="text-xs text-zinc-600 font-medium">No hay dominios autorizados</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {allowedDomains.map((domain) => (
+                          <div key={domain} className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-800 rounded-xl group hover:border-emerald-500/30 transition-all">
+                            <span className="text-xs text-zinc-300 font-medium">{domain}</span>
+                            <button
+                              onClick={() => removeDomain(domain)}
+                              className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Reference & Quick Start */}
+              <div className="space-y-6">
+                {/* Lead Attributes Table */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6">
+                  <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                    <ListFilter className="w-4 h-4 text-orange-400" />
+                    Lead Attributes
+                  </h4>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'email', type: 'string', desc: 'Correo principal' },
+                      { key: 'name', type: 'string', desc: 'Nombre del titular' },
+                      { key: 'intent', type: 'enum', desc: 'whitelist, invest, earn' },
+                      { key: 'score', type: 'number', desc: 'Quality Score (0-100)' },
+                      { key: 'origin', type: 'string', desc: 'URL de captación' },
+                    ].map((attr) => (
+                      <div key={attr.key} className="flex justify-between items-start pb-2 border-b border-zinc-800/50 last:border-0">
+                        <div className="flex flex-col">
+                          <code className="text-[10px] text-orange-400 font-bold">{attr.key}</code>
+                          <span className="text-[9px] text-zinc-500">{attr.desc}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[8px] bg-zinc-950 font-mono border-zinc-800 text-zinc-600">{attr.type}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Infrastructure Quick Health */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6">
+                   <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                      Technical Health
+                   </h4>
+                   <UIButton
+                      onClick={async () => {
+                        setIsTestingData(true);
+                        setShowTestModal(true);
+                        try {
+                          const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                          if (!project) return;
+                          const [configRes, stateRes] = await Promise.all([
+                            fetch(`/api/public/project/${project.slug}/config?apiKey=${publicKey}`),
+                            fetch(`/api/public/project/${project.slug}/state?apiKey=${publicKey}`)
+                          ]);
+                          const config = await configRes.json();
+                          const state = await stateRes.json();
+                          setTestResult({ config, state });
+                        } catch (error) {
+                          console.error('Error testing live data:', error);
+                          toast.error("Error al recuperar datos en tiempo real");
+                        } finally {
+                          setIsTestingData(false);
+                        }
+                      }}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-10 text-xs shadow-lg shadow-indigo-600/20"
+                   >
+                     VERIFICAR ENDPOINTS
+                   </UIButton>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Section: Injection Snippet */}
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 border border-indigo-500/20">
+                    <Monitor className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                      Quick Widget Injection
+                      <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-400">SDK v2.0</Badge>
+                    </h4>
+                    <p className="text-sm text-zinc-500">Copia este snippet en el {'<body>'} de la landing page de tu protocolo.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-950 rounded-3xl p-8 font-mono text-sm text-zinc-400 border border-zinc-800 relative group overflow-hidden">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <UIButton className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6" onClick={() => {
+                    navigator.clipboard.writeText(`<script src="${window.location.origin}/js/growth-v2.js" data-project-id="${selectedProjectId}" data-theme="premium"></script>`);
+                    toast.success("Snippet copiado");
+                  }}>COPY SNIPPET</UIButton>
+                </div>
+                <code>
+                  <span className="text-zinc-600">{'<!-- Pandoras Growth OS Widget -->'}</span><br/>
+                  <span className="text-indigo-400">{'<script'}</span><br/>
+                  {'  src="'}<span className="text-emerald-400">{window.location.origin}/js/growth-v2.js</span>{'"'}<br/>
+                  {'  data-project-id="'}<span className="text-purple-400">{selectedProjectId}</span>{'"'}<br/>
+                  {'  data-theme="'}<span className="text-purple-400">premium</span>{'"'}<br/>
+                  <span className="text-indigo-400">{'>'}{'</script>'}</span>
+                </code>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Growth Infrastructure Health (Hidden in Tabs, shown in Developers) */}
+        {activeSection === 'overview' && selectedProjectId !== 'all' && (
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
               <div className="flex items-center gap-4">
@@ -1430,7 +1662,7 @@ export default function GrowthOSSubTab() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Validation Cards */}
+              {/* Validation Cards (Keep in Overview for quick status, but fragments moved to Developers) */}
               <div className={cn(
                 "p-5 rounded-2xl border transition-all",
                 (testResult?.config?.tiers?.length || 0) > 0 ? "bg-zinc-950/50 border-zinc-800" : "bg-orange-500/5 border-orange-500/20"
@@ -1446,8 +1678,8 @@ export default function GrowthOSSubTab() {
                 <h5 className="font-bold text-sm text-white">Tier System</h5>
                 <p className="text-[10px] text-zinc-500 mt-1">
                   {(testResult?.config?.tiers?.length || 0) > 0 
-                    ? `${testResult.config.tiers.length} Tiers configurados correctamente.`
-                    : "No se detectaron Tiers. El sistema de beneficios está inactivo."}
+                    ? `${testResult.config.tiers.length} Tiers configurados.`
+                    : "No se detectaron Tiers."}
                 </p>
               </div>
 
@@ -1466,8 +1698,8 @@ export default function GrowthOSSubTab() {
                 <h5 className="font-bold text-sm text-white">Utility Phases</h5>
                 <p className="text-[10px] text-zinc-500 mt-1">
                   {(testResult?.config?.phases?.length || 0) > 0 
-                    ? `${testResult.config.phases.length} Fases de distribución activas.`
-                    : "No hay fases configuradas. No se pueden realizar compras."}
+                    ? `${testResult.config.phases.length} Fases activas.`
+                    : "No hay fases configuradas."}
                 </p>
               </div>
 
@@ -1486,8 +1718,8 @@ export default function GrowthOSSubTab() {
                 <h5 className="font-bold text-sm text-white">Treasury Sync</h5>
                 <p className="text-[10px] text-zinc-500 mt-1 truncate">
                   {testResult?.config?.treasuryAddress 
-                    ? `Treasury: ${testResult.config.treasuryAddress}`
-                    : "Falta dirección de tesorería. El recaudo está detenido."}
+                    ? "Sincronizado"
+                    : "Falta dirección tesorería."}
                 </p>
               </div>
 
@@ -1506,49 +1738,10 @@ export default function GrowthOSSubTab() {
                 <h5 className="font-bold text-sm text-white">Supply Integrity</h5>
                 <p className="text-[10px] text-zinc-500 mt-1">
                   {(testResult?.config?.totalAllocation || 0) > 0 
-                    ? `${testResult.config.totalAllocation} Artefactos en pool de distribución.`
-                    : "Pool vacío. Configura el allocation para habilitar ventas."}
+                    ? "Allocation verificado."
+                    : "Pool vacío."}
                 </p>
               </div>
-            </div>
-
-            {/* Developer Snippets Section (Simplified V2.0 Integration) */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-950/30 p-6 rounded-3xl border border-zinc-800/50">
-               <div>
-                  <h6 className="text-[10px] font-black uppercase text-zinc-400 mb-3 tracking-widest flex items-center gap-2">
-                    <FileText className="w-3 h-3" /> Quick Widget Injection
-                  </h6>
-                  <div className="bg-zinc-900 rounded-xl p-4 font-mono text-[9px] text-zinc-500 border border-zinc-800 relative group overflow-hidden">
-                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {
-                          navigator.clipboard.writeText(`<script src="${window.location.origin}/sdk/growth.js" data-project="${selectedProjectId}"></script>`);
-                          toast.success("Snippet copiado");
-                        }}>COPY</UIButton>
-                     </div>
-                     <code>
-                        {`<script src="${window.location.origin}/js/growth-v2.js"`}<br/>
-                        {`  data-project-id="${selectedProjectId}"`}<br/>
-                        {`  data-theme="premium"`}<br/>
-                        {`></script>`}
-                     </code>
-                  </div>
-               </div>
-               
-               <div>
-                  <h6 className="text-[10px] font-black uppercase text-zinc-400 mb-3 tracking-widest flex items-center gap-2">
-                    <RefreshCw className="w-3 h-3" /> Live API Endpoints (v2.0)
-                  </h6>
-                  <div className="space-y-2">
-                    <div className="bg-zinc-900/50 p-2 rounded-lg border border-zinc-800 flex justify-between items-center group">
-                       <span className="text-[9px] font-mono text-zinc-500">GET /api/protocol/config</span>
-                       <UIButton variant="link" size="sm" className="h-4 text-[8px] p-0 text-indigo-400 opacity-0 group-hover:opacity-100" onClick={() => window.open(`/api/protocol/config?projectId=${selectedProjectId}`, '_blank')}>OPEN</UIButton>
-                    </div>
-                    <div className="bg-zinc-900/50 p-2 rounded-lg border border-zinc-800 flex justify-between items-center group">
-                       <span className="text-[9px] font-mono text-zinc-500">GET /api/protocol/state</span>
-                       <UIButton variant="link" size="sm" className="h-4 text-[8px] p-0 text-emerald-400 opacity-0 group-hover:opacity-100" onClick={() => window.open(`/api/protocol/state?projectId=${selectedProjectId}`, '_blank')}>OPEN</UIButton>
-                    </div>
-                  </div>
-               </div>
             </div>
           </div>
         )}
