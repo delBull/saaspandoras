@@ -54,10 +54,11 @@ export const ALLOWED_TRANSITIONS: Record<LeadState, LeadState[]> = {
 
 export interface LeadContextPayload {
   id: string; // The UUID of the lead
-  email: string;
+  email: string | null;
   name?: string | null;
   intent: string;
   projectId: number;
+  scope?: 'b2b' | 'b2c';
   score?: number;
   metadata?: any;
 }

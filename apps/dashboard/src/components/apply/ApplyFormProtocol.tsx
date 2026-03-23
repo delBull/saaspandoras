@@ -71,6 +71,18 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [isRejected, setIsRejected] = useState(false);
+    const [fingerprint, setFingerprint] = useState("");
+
+    useState(() => {
+        if (typeof window !== "undefined") {
+            let fp = localStorage.getItem("growth_fp");
+            if (!fp) {
+                fp = crypto.randomUUID();
+                localStorage.setItem("growth_fp", fp);
+            }
+            setFingerprint(fp);
+        }
+    });
 
     const totalSteps = 7;
     const progress = ((step + 1) / totalSteps) * 100;
@@ -127,16 +139,29 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
 
         setIsSubmitting(true);
         try {
-            // POST to our new backend API
-            const response = await fetch('/api/leads/process', {
+            // POST to unified registration API
+            const response = await fetch('/api/v1/marketing/leads/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify({
+                    email: data.contactEmail,
+                    name: data.projectName,
+                    intent: 'invest',
+                    consent: true,
+                    projectId: 1, // Pandoras
+                    scope: 'b2b',
+                    fingerprint,
+                    origin: window.location.href,
+                    metadata: {
+                        ...data,
+                        type: 'protocol_application_form',
+                        dna: 'B2B_HUNTER',
+                        tags: ['B2B_FOUNDER', 'APPLICATION_PENDING']
+                    }
+                })
             });
 
             if (!response.ok) throw new Error('Submission failed');
-
-            const result = await response.json();
 
             setIsSuccess(true);
             setTimeout(() => {

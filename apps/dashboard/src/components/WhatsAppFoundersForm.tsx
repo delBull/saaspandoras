@@ -1,25 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getWhatsAppUrl } from "@/lib/whatsapp/config/landingConfig";
 
 export default function WhatsAppFoundersForm() {
   const [loading, setLoading] = useState(false);
+  const [fingerprint, setFingerprint] = useState("");
 
-  const handleStartFoundersFlow = () => {
+  useEffect(() => {
+    let fp = localStorage.getItem("growth_fp");
+    if (!fp) {
+      fp = crypto.randomUUID();
+      localStorage.setItem("growth_fp", fp);
+    }
+    setFingerprint(fp);
+  }, []);
+
+  const trackSilentLead = async () => {
+    try {
+      await fetch("/api/v1/marketing/leads/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fingerprint,
+          origin: window.location.href,
+          intent: "invest",
+          consent: true,
+          metadata: { 
+            type: "whatsapp_click_founders", 
+            silent: true,
+            tags: ["B2B_FOUNDER", "HIGH_TICKET"] 
+          },
+          scope: "b2b",
+          projectId: 1
+        }),
+      });
+    } catch (e) {
+      console.warn("[Growth OS] Silent track founders failed:", e);
+    }
+  };
+
+  const handleStartFoundersFlow = async () => {
     setLoading(true);
 
     try {
-      // Usar configuración específica para landing /founders (high_ticket flow)
+      // 1. Silent Lead Capture
+      trackSilentLead();
+
+      // 2. WhatsApp Redirection
       const whatsappUrl = getWhatsAppUrl('founders');
-
-      console.log("🔗 WhatsApp Founders URL:", whatsappUrl);
-
-      // Redirigir directamente a WhatsApp
       window.location.href = whatsappUrl;
     } catch (error) {
       console.error("Error iniciando flujo founders WhatsApp:", error);
-      alert("Error al abrir WhatsApp. Verifica tu conexión.");
+      alert("Error al abrir WhatsApp.");
       setLoading(false);
     }
   };
