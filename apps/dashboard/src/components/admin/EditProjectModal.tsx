@@ -240,47 +240,114 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
             </TabsContent>
 
             {/* TAB: VISUALS */}
-            <TabsContent value="visuals" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="grid grid-cols-1 gap-6">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-lime-400" /> URL del Logo (Square)
+            <TabsContent value="visuals" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="grid grid-cols-1 gap-8">
+                
+                {/* Logo Upload Section */}
+                <div className="space-y-4">
+                  <Label className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-500">
+                    <ImageIcon className="w-4 h-4 text-emerald-400" /> Logo del Protocolo (1:1)
                   </Label>
-                  <Input 
-                    {...register('logoUrl')} 
-                    className="bg-zinc-900 border-zinc-800 focus:ring-lime-500"
-                    placeholder="https://..."
-                  />
-                  {watch('logoUrl') && (
-                    <div className="mt-2 w-16 h-16 rounded-lg border border-zinc-800 overflow-hidden">
-                      <img src={watch('logoUrl')} alt="Logo Preview" className="w-full h-full object-cover" />
+                  <div className="flex items-center gap-6 p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl group hover:border-emerald-500/30 transition-all">
+                    <div className="relative w-24 h-24 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden shadow-2xl">
+                      {watch('logoUrl') ? (
+                        <img src={watch('logoUrl')} alt="Logo Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-zinc-700" />
+                      )}
                     </div>
-                  )}
+                    <div className="flex-1 space-y-3">
+                      <Input 
+                        type="file"
+                        accept="image/*"
+                        className="bg-zinc-900 border-zinc-800 text-xs text-zinc-400 file:bg-emerald-500 file:text-black file:border-0 file:rounded-lg file:mr-4 file:px-3 file:py-1 file:font-black file:uppercase file:text-[10px] cursor-pointer"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const toastId = toast.loading("Subiendo logo...");
+                          try {
+                            const formDataUpload = new FormData();
+                            formDataUpload.append('file', file);
+                            const res = await fetch('/api/v1/core/upload', {
+                              method: 'POST',
+                              body: formDataUpload
+                            });
+                            const data = await res.json();
+                            if (data.url) {
+                              setValue('logoUrl', data.url);
+                              toast.success("Logo actualizado", { id: toastId });
+                            }
+                          } catch (err) {
+                            toast.error("Error al subir logo", { id: toastId });
+                          }
+                        }}
+                      />
+                      <div className="relative">
+                        <Input 
+                          {...register('logoUrl')} 
+                          className="bg-zinc-950 border-zinc-800 focus:ring-emerald-500 text-[10px] h-8" 
+                          placeholder="O pega una URL directa aquí..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cover Photo Upload Section */}
+                <div className="space-y-4">
+                  <Label className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-500">
+                    <ImageIcon className="w-4 h-4 text-purple-400" /> Imagen de Portada (Banner)
+                  </Label>
+                  <div className="space-y-4 p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl group hover:border-purple-500/30 transition-all">
+                    <div className="relative w-full h-32 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden shadow-2xl">
+                      {watch('coverPhotoUrl') ? (
+                        <img src={watch('coverPhotoUrl')} alt="Cover Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-12 h-12 text-zinc-700" />
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input 
+                        type="file"
+                        accept="image/*"
+                        className="bg-zinc-900 border-zinc-800 text-xs text-zinc-400 file:bg-purple-500 file:text-white file:border-0 file:rounded-lg file:mr-4 file:px-3 file:py-1 file:font-black file:uppercase file:text-[10px] cursor-pointer"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const toastId = toast.loading("Subiendo portada...");
+                          try {
+                            const formDataUpload = new FormData();
+                            formDataUpload.append('file', file);
+                            const res = await fetch('/api/v1/core/upload', {
+                              method: 'POST',
+                              body: formDataUpload
+                            });
+                            const data = await res.json();
+                            if (data.url) {
+                              setValue('coverPhotoUrl', data.url);
+                              toast.success("Portada actualizada", { id: toastId });
+                            }
+                          } catch (err) {
+                            toast.error("Error al subir portada", { id: toastId });
+                          }
+                        }}
+                      />
+                      <Input 
+                        {...register('coverPhotoUrl')} 
+                        className="bg-zinc-950 border-zinc-800 focus:ring-purple-500 text-[10px] h-8" 
+                        placeholder="O pega una URL directa aquí..."
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-lime-400" /> URL Imagen de Portada (Hero)
-                  </Label>
-                  <Input 
-                    {...register('coverPhotoUrl')} 
-                    className="bg-zinc-900 border-zinc-800 focus:ring-lime-500"
-                    placeholder="https://..."
-                  />
-                  {watch('coverPhotoUrl') && (
-                    <div className="mt-2 w-full h-32 rounded-lg border border-zinc-800 overflow-hidden">
-                      <img src={watch('coverPhotoUrl')} alt="Cover Preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Video className="w-4 h-4 text-lime-400" /> URL Video de Pitch (YT/Vimeo)
+                  <Label className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-500">
+                    <Video className="w-4 h-4 text-zinc-400" /> URL Video de Pitch (YT/Vimeo)
                   </Label>
                   <Input 
                     {...register('videoPitch')} 
-                    className="bg-zinc-900 border-zinc-800 focus:ring-lime-500"
+                    className="bg-zinc-900 border-zinc-800 focus:ring-emerald-500 h-10"
                     placeholder="https://youtube.com/watch?v=..."
                   />
                 </div>
