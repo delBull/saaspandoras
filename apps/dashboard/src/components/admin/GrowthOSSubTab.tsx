@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
-import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3 } from "lucide-react";
+import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail } from "lucide-react";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
 import { DAOMetrics } from "../dao/DAOMetrics";
@@ -49,6 +49,8 @@ interface Lead {
   userId: string | null;
   origin: string | null;
   fingerprint: string | null;
+  identityId: string | null;
+  quality: string | null;
 }
 
 interface Course {
@@ -238,8 +240,11 @@ const StrategyContent = ({ type = 'monetization' }: { type?: 'monetization' | 'r
 export default function GrowthOSSubTab() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+  const [ownerContext, setOwnerContext] = useState<'pandora' | 'client'>('pandora');
+  const [scope, setScope] = useState<'b2b' | 'b2c'>('b2b');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
+
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -377,13 +382,19 @@ export default function GrowthOSSubTab() {
     }
   };
 
-  const fetchLeads = async (projectId: string) => {
+  const fetchLeads = async (projectId: string, currentScope: string) => {
     setLoadingLeads(true);
     try {
-      const url = projectId === 'all'
-        ? '/api/admin/marketing/leads'
-        : `/api/admin/marketing/leads?projectId=${projectId}`;
-      const response = await fetch(url);
+      const context = projectId === 'all' ? 'pandora' : 'client';
+      const url = new URL(projectId === 'all' 
+        ? '/api/admin/marketing/leads' 
+        : `/api/admin/marketing/leads`, window.location.origin);
+      
+      if (projectId !== 'all') url.searchParams.append('projectId', projectId);
+      url.searchParams.append('scope', currentScope);
+      url.searchParams.append('ownerContext', context);
+
+      const response = await fetch(url.toString());
       const result = await response.json();
       setLeads(result.data || []);
     } catch (error) {
@@ -455,7 +466,7 @@ export default function GrowthOSSubTab() {
         toast.success(`¡Éxito! ${result.attributedCount} leads unificados`);
         setShowUnifyModal(false);
         fetchSuggestions(selectedProjectId);
-        fetchLeads(selectedProjectId);
+        fetchLeads(selectedProjectId, scope);
       } else {
         toast.error("Error al unificar leads");
       }
@@ -527,14 +538,19 @@ export default function GrowthOSSubTab() {
 
   useEffect(() => {
     fetchProjects();
-    fetchLeads('all');
+    fetchLeads('all', 'b2b');
   }, []);
 
   useEffect(() => {
-    fetchLeads(selectedProjectId);
+    const isPandora = selectedProjectId === 'all';
+    setOwnerContext(isPandora ? 'pandora' : 'client');
+    
+    // Auto-scope logic: Pandora usually works B2B (Hunter), Clients usually B2C (Growth)
+    // But we allow manual override via the selector
+    fetchLeads(selectedProjectId, scope);
     setAiInsights(null); 
 
-    if (selectedProjectId !== 'all') {
+    if (!isPandora) {
       const project = projects.find(p => p.id === Number(selectedProjectId));
       setAllowedDomains(project?.allowedDomains || []);
       setDiscordWebhookUrl(project?.discordWebhookUrl || '');
@@ -549,7 +565,7 @@ export default function GrowthOSSubTab() {
       setDiscordWebhookUrl('');
       setProjectCourses([]);
     }
-  }, [selectedProjectId, projects]);
+  }, [selectedProjectId, projects, scope]);
 
   useEffect(() => {
     setStats({
@@ -561,11 +577,20 @@ export default function GrowthOSSubTab() {
 
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'whitelisted': return 'text-green-400 bg-green-400/10 border-green-400/20';
-      case 'active': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'converted': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
-      default: return 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20';
+    switch (status?.toLowerCase()) {
+      case 'whitelisted': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'active': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'converted': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      default: return 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30';
+    }
+  };
+
+  const getQualityColor = (quality: string) => {
+    switch (quality?.toLowerCase()) {
+      case 'high': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+      case 'medium': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      case 'low': return 'bg-zinc-500/20 text-zinc-500 border-zinc-500/30';
+      default: return 'bg-zinc-500/10 text-zinc-600 border-zinc-800/50';
     }
   };
 
@@ -742,19 +767,67 @@ export default function GrowthOSSubTab() {
             <p className="text-sm text-zinc-500 mt-1">Gestión de audiencia y captación de demanda para protocolos del ecosistema.</p>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <label htmlFor="project-selector" className="text-xs font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">Proyecto:</label>
-            <select
-              id="project-selector"
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-zinc-950 border border-zinc-700 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none w-full md:w-72 shadow-xl hover:border-zinc-500 transition-all cursor-pointer"
-            >
-              <option value="all">🌐 Todos los Proyectos</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.title}</option>
-              ))}
-            </select>
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            {/* Context Selector */}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <label htmlFor="context-selector" className="text-xs font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">Contexto:</label>
+              <select
+                id="context-selector"
+                value={selectedProjectId === 'all' ? 'pandora' : 'client'}
+                onChange={(e) => {
+                  if (e.target.value === 'pandora') {
+                    setSelectedProjectId('all');
+                  } else if (projects && projects.length > 0) {
+                    setSelectedProjectId(String(projects[0]?.id));
+                  }
+                }}
+                className="bg-zinc-950 border border-zinc-700 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none w-full md:w-48 shadow-xl hover:border-zinc-500 transition-all cursor-pointer"
+              >
+                <option value="pandora">🛡️ Pandora Ecosystem</option>
+                <option value="client">🚀 Active Project</option>
+              </select>
+            </div>
+
+            {/* Project Selector (if Active Project) */}
+            {selectedProjectId !== 'all' && (
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <select
+                  id="project-selector"
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="bg-zinc-950 border border-zinc-700 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none w-full md:w-64 shadow-xl hover:border-zinc-500 transition-all cursor-pointer"
+                >
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Scope / Mode Selector */}
+            <div className="flex items-center gap-3 w-full md:w-auto border-l border-zinc-800 pl-4 ml-2">
+              <label htmlFor="scope-selector" className="text-xs font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">Modo:</label>
+              <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+                <button
+                  onClick={() => setScope('b2b')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                    scope === 'b2b' ? "bg-purple-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                >
+                  Hunter (B2B)
+                </button>
+                <button
+                  onClick={() => setScope('b2c')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                    scope === 'b2c' ? "bg-blue-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                >
+                  Growth (B2C)
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1091,6 +1164,105 @@ export default function GrowthOSSubTab() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Lead List Table (New Section) */}
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+          <div className="p-8 border-b border-zinc-800 flex justify-between items-center">
+            <div>
+              <h3 className="text-xl font-black text-white flex items-center gap-3">
+                <Users className="text-blue-500" />
+                {scope === 'b2b' ? 'Hunter Leads (B2B)' : 'Growth Leads (B2C)'}
+              </h3>
+              <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mt-1">
+                {selectedProjectId === 'all' ? 'Pandora Ecosystem' : 'Project Specific'} • {leads.length} Records
+              </p>
+            </div>
+            <Badge className={cn("px-3 py-1 border-none font-black text-[10px]", 
+              scope === 'b2b' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+            )}>
+              {scope === 'b2b' ? 'B2B ENGINE' : 'B2C ENGINE'}
+            </Badge>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-zinc-950/50 text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-zinc-800">
+                  <th className="px-8 py-4">Lead Identity</th>
+                  <th className="px-8 py-4">Persona</th>
+                  <th className="px-8 py-4">Source / Origin</th>
+                  <th className="px-8 py-4">Quality / Score</th>
+                  <th className="px-8 py-4">Status</th>
+                  <th className="px-8 py-4 text-right">Captured</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {leads.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-8 py-20 text-center">
+                      <div className="flex flex-col items-center justify-center opacity-30">
+                        <Users className="w-12 h-12 mb-4" />
+                        <p className="text-sm font-bold italic">No leads found in this {scope.toUpperCase()} context.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  leads.map((l) => (
+                    <tr key={l.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="px-8 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">{l.email || (l as any).walletAddress || 'Anonymous'}</span>
+                          <span className="text-[10px] text-zinc-600 font-mono mt-0.5">Hash: {l.id.split('-')[0]}</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-2">
+                          {l.email && <Mail className="w-3 h-3 text-blue-400/50" />}
+                          {(l as any).walletAddress && <Wallet className="w-3 h-3 text-purple-400/50" />}
+                          {(l as any).identityId ? (
+                            <Badge variant="outline" className="text-[8px] bg-green-500/5 text-green-400 border-green-500/20">UNIFIED</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[8px] bg-zinc-500/5 text-zinc-500 border-zinc-500/20">FRAGMENTED</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-zinc-400">{l.projectName || 'Pandora Global'}</span>
+                          <span className="text-[9px] text-zinc-600 truncate max-w-[150px]" title={l.origin || ''}>{l.origin || 'Direct Capture'}</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-3">
+                          <Badge className={cn("text-[9px] font-black uppercase border-none", getQualityColor((l as any).quality))}>
+                            {(l as any).quality || 'LOW'}
+                          </Badge>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-white">{(l as any).score || 0}</span>
+                            <div className="w-12 h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
+                              <div 
+                                className="h-full bg-purple-500 transition-all" 
+                                style={{ width: `${Math.min(((l as any).score || 0), 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <Badge className={cn("text-[9px] font-black uppercase border-none", getStatusColor(l.status))}>
+                          {l.status}
+                        </Badge>
+                      </td>
+                      <td className="px-8 py-5 text-right font-mono text-[10px] text-zinc-500">
+                        {new Date(l.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
           </div>

@@ -17,10 +17,17 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId');
+    const scope = searchParams.get('scope');
+    const ownerContext = searchParams.get('ownerContext');
     const limit = Math.min(Number(searchParams.get('limit') || 50), 100);
     const offset = Number(searchParams.get('offset') || 0);
 
-    const whereClause = projectId ? eq(marketingLeads.projectId, Number(projectId)) : undefined;
+    const conditions = [];
+    if (projectId && projectId !== 'all') conditions.push(eq(marketingLeads.projectId, Number(projectId)));
+    if (scope) conditions.push(eq(marketingLeads.scope, scope as any));
+    if (ownerContext) conditions.push(eq(marketingLeads.ownerContext, ownerContext as any));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const data = await db
       .select({
@@ -30,7 +37,11 @@ export async function GET(req: NextRequest) {
         status: marketingLeads.status,
         intent: marketingLeads.intent,
         score: marketingLeads.score,
+        scope: marketingLeads.scope,
+        ownerContext: marketingLeads.ownerContext,
         metadata: marketingLeads.metadata,
+        identityId: marketingLeads.identityId,
+        quality: marketingLeads.quality,
         createdAt: marketingLeads.createdAt,
         projectName: projects.title
       })
