@@ -152,11 +152,22 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
 
   // If user has access, render children immediately OR redirect if stuck on root layout
   if (user?.hasAccess) {
-    // If the gate is somehow showing "Get Free Key" but they have access, 
-    // force a router refresh and render children.
     if (gateStatus === "has_key") {
       router.refresh();
       router.push("/");
+    }
+    return <>{children}</>;
+  }
+
+  // ── Admin bypass ──────────────────────────────────────────────────────────
+  // Staging: full open. Prod/staging: super admin wallet bypasses NFT gate.
+  const isStaging = process.env.NEXT_PUBLIC_APP_ENV === "staging";
+  const superAdminWallet = process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET?.toLowerCase();
+  const isAdmin = !!account && !!superAdminWallet && account.address.toLowerCase() === superAdminWallet;
+  if ((isStaging || isAdmin) && account) {
+    if (onVerified && !showSuccessAnimation) {
+      setShowSuccessAnimation(true);
+      onVerified();
     }
     return <>{children}</>;
   }

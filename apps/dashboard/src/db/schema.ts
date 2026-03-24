@@ -71,9 +71,24 @@ export const administrators = pgTable("administrators", {
   role: varchar("role", { length: 50 }).default('admin').notNull(),
   addedBy: varchar("added_by", { length: 42 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  availability: jsonb("availability"), // Configuración de agenda (días, horas, etc)
-  allowedDomains: jsonb("allowed_domains").default([]).notNull(), // URLs permitidas para el widget
-  secretKey: varchar("secret_key", { length: 255 }), // Para firmas de API (Growth Infra)
+  availability: jsonb("availability"),
+  allowedDomains: jsonb("allowed_domains").default([]).notNull(),
+  secretKey: varchar("secret_key", { length: 255 }),
+});
+
+// ── Single Source of Truth: Genesis / Waitlist Access Requests ───────────────
+// Populated from: /v2/waitlist (nextjs), /access (dashboard), or any future surface.
+export const accessRequests = pgTable("access_requests", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  walletAddress: varchar("wallet_address", { length: 100 }),         // Optional on signup
+  intent: varchar("intent", { length: 100 }),                         // "capital" | "deals" | "genesis" | ...
+  source: varchar("source", { length: 100 }).default("landing_v2"),   // Which surface submitted
+  status: varchar("status", { length: 50 }).default("pending"),        // pending | approved | rejected
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by", { length: 42 }),                  // Admin wallet
+  metadata: jsonb("metadata"),                                          // utm, referrer, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Tabla users existente en la base de datos
