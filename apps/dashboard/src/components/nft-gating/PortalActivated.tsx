@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PortalActivatedProps {
   tier: 'genesis' | 'standard' | string | null | undefined;
@@ -9,111 +9,233 @@ interface PortalActivatedProps {
 }
 
 /**
- * 🌀 Portal Activated Component
+ * 🌀 Portal Activated — Post-Mint Ritual (Optimized)
  * ============================================================================
- * The "Post-Login Threshold". This is the final stage of activation.
- * It provides psychological confirmation of entry into the ecosystem.
+ * Orden emocional: Confirmación → Revelación → Capital
+ * Aplicando feedback psicológico: Contundencia, Exclusividad, Encuadre Financiero.
  * ============================================================================
  */
 export default function PortalActivated({ tier, onEnter }: PortalActivatedProps) {
+  const [phase, setPhase] = useState<'confirm' | 'reveal' | 'capital'>('confirm');
   const [visible, setVisible] = useState(false);
+  const isGenesis = tier === 'genesis';
 
   useEffect(() => {
-    // 🔊 Bonus: Activation Sound (Protected - Browser Policy Safety)
-    const hasInteracted = typeof window !== "undefined" && (window.navigator as any).userActivation?.hasBeenActive;
-
+    // Activation sound
+    const hasInteracted = typeof window !== 'undefined' && (window.navigator as any).userActivation?.hasBeenActive;
     if (hasInteracted) {
       try {
         const audio = new Audio('/sounds/activation.mp3');
         audio.volume = 0.3;
         audio.play().catch(() => {});
-      } catch (e) {
-        // Silent fail for audio
-      }
+      } catch { /* silent */ }
     }
-    const timer = setTimeout(() => setVisible(true), 300);
-    return () => clearTimeout(timer);
+    setTimeout(() => setVisible(true), 300);
   }, []);
+
+  const handleNextPhase = (next: 'reveal' | 'capital') => {
+    // Strategic delay for emotional weight
+    setTimeout(() => setPhase(next), 800);
+  };
 
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center overflow-hidden z-[1000]">
-
-      {/* 🔮 Glow Core - Pulse Animation */}
-      <motion.div 
-        animate={{ 
-          scale: [1, 1.2, 1],
-          opacity: [0.1, 0.2, 0.1]
-        }}
-        transition={{ 
-          duration: 4, 
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute w-[400px] h-[400px] bg-blue-500/10 blur-[120px] rounded-full" 
-      />
-
-      {/* 📺 CRT Scan Lines Effect */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(transparent_95%,rgba(255,255,255,0.05)_100%)] bg-[size:100%_4px] pointer-events-none" />
-
-      {/* 📄 Content Container */}
+      {/* Glow */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
-        animate={{ 
-          opacity: visible ? 1 : 0, 
-          scale: visible ? 1 : 0.95,
-          filter: visible ? "blur(0px)" : "blur(10px)"
-        }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-        className="relative z-10 text-center max-w-lg px-6"
-      >
+        animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.18, 0.08] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        className={`absolute w-[500px] h-[500px] blur-[140px] rounded-full ${isGenesis ? 'bg-lime-400/8' : 'bg-blue-500/8'}`}
+      />
+      {/* Scanlines */}
+      <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
+        style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.3) 1px, rgba(255,255,255,0.3) 2px)', backgroundSize: '100% 4px' }} />
 
-        <h1 className="text-[10px] tracking-[0.8em] text-gray-500 mb-8 uppercase animate-pulse">
-          Access Protocol // Active
-        </h1>
+      <AnimatePresence mode="wait">
 
-        {/* 🏢 Dynamic Tier-Based Messaging */}
-        {tier === "genesis" ? (
-          <div className="space-y-6">
-            <h2 className="text-4xl md:text-5xl font-thin tracking-[0.2em] text-white leading-tight uppercase">
-              PORTAL <span className="text-lime-400">ACTIVADO</span>
-            </h2>
+        {/* ── FASE 1: CONFIRMACIÓN (Contundente) ─────────────────────────── */}
+        {phase === 'confirm' && (
+          <motion.div
+            key="confirm"
+            initial={{ opacity: 0, scale: 0.92, filter: 'blur(12px)' }}
+            animate={{ opacity: visible ? 1 : 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 1.04, filter: 'blur(8px)' }}
+            transition={{ duration: 1.4, ease: 'easeOut' }}
+            className="relative z-10 text-center max-w-md px-6 space-y-10"
+          >
+            <div className="space-y-2">
+              <p className="text-[9px] tracking-[1em] text-zinc-600 uppercase animate-pulse">
+                Access Protocol // Active
+              </p>
+              <p className="text-[8px] font-mono text-zinc-700 tracking-[0.2em] opacity-40">
+                ACCESS ID: #A7F3-9{isGenesis ? '1' : '0'}
+              </p>
+            </div>
 
-            <p className="text-gray-400 text-lg font-light tracking-wide leading-relaxed max-w-xs mx-auto">
-              Entraste en la <span className="text-white">primera ventana</span>.<br />
-              Tu posición fue registrada en el bloque.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <h2 className="text-4xl md:text-5xl font-thin tracking-[0.2em] text-white leading-tight uppercase">
-              ACCESO <span className="text-blue-400">HABILITADO</span>
-            </h2>
+            {isGenesis ? (
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-lime-500/30 bg-lime-500/5 rounded-full mx-auto">
+                  <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+                  <span className="text-[9px] font-bold tracking-[0.3em] text-lime-400 uppercase">Genesis Access</span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-thin tracking-[0.15em] text-white leading-tight uppercase">
+                  Acceso confirmado.
+                </h2>
+                <p className="text-xl font-light text-lime-400 tracking-wide">
+                  Entraste antes de que esto se abra.
+                </p>
+                <p className="text-zinc-500 text-sm font-light leading-loose border-t border-white/5 pt-6">
+                  Tu posición ya fue registrada.<br />
+                  <span className="text-zinc-400">No es replicable después.</span>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-blue-500/30 bg-blue-500/5 rounded-full mx-auto">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  <span className="text-[9px] font-bold tracking-[0.3em] text-blue-400 uppercase">Early Access</span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-thin tracking-[0.15em] text-white leading-tight uppercase">
+                  Acceso confirmado.
+                </h2>
+                <p className="text-xl font-light text-blue-400 tracking-wide">
+                  Tu posición ha sido registrada.
+                </p>
+                <p className="text-zinc-500 text-sm font-light leading-loose border-t border-white/5 pt-6">
+                  No todos avanzan a la siguiente fase.<br />
+                  <span className="text-zinc-400">Tu nivel define lo que puedes operar.</span>
+                </p>
+              </div>
+            )}
 
-            <p className="text-gray-400 text-lg font-light tracking-wide leading-relaxed max-w-xs mx-auto">
-              Tu identidad ha sido <span className="text-white">validada</span>.<br />
-              El terminal está listo para operar.
-            </p>
-          </div>
+            <motion.button
+              onClick={() => handleNextPhase('reveal')}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="group relative inline-flex items-center gap-3 border border-white/20 bg-white/5 px-10 py-4 text-[10px] font-black tracking-[0.4em] uppercase text-white transition-all duration-500 hover:bg-white hover:text-black"
+            >
+              Explorar tu acceso
+              <span className="opacity-40 group-hover:opacity-100 transition-opacity">→</span>
+            </motion.button>
+          </motion.div>
         )}
 
-        {/* 🚀 Final CTA - Enters System */}
-        <div className="mt-12 group relative inline-block">
-          <button
-            onClick={onEnter}
-            className="relative z-10 border border-white/20 bg-white/5 px-12 py-5 text-[10px] font-black tracking-[0.4em] uppercase hover:bg-white hover:text-black transition-all duration-700 transform hover:scale-[1.05]"
+        {/* ── FASE 2: REVELACIÓN (Exclusividad) ──────────────────────────── */}
+        {phase === 'reveal' && (
+          <motion.div
+            key="reveal"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.9 }}
+            className="relative z-10 text-center max-w-md px-6 space-y-10"
           >
-            ENTRAR AL SISTEMA
-          </button>
-          {/* Reflection Effect */}
-          <div className="absolute inset-0 bg-white/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        </div>
+            <p className="text-[9px] tracking-[0.8em] text-zinc-600 uppercase">Lo que hay adentro</p>
 
-      </motion.div>
+            <div className="space-y-4">
+              <p className="text-3xl font-thin text-white tracking-wide leading-snug">
+                No todo es visible<br />desde el inicio.
+              </p>
+              <p className="text-zinc-500 text-xs tracking-widest uppercase font-light">
+                Esto no aparece para todos los usuarios.
+              </p>
+            </div>
 
-      {/* 🔢 Micro Decoration */}
-      <div className="absolute top-12 left-12 flex flex-col space-y-2 opacity-20">
-         <div className="text-[8px] font-mono">NODE_SEQ: 0xFD21</div>
-         <div className="w-12 h-[1px] bg-white" />
+            <div className="border border-zinc-800 bg-zinc-950/80 backdrop-blur-xl rounded-2xl p-8 text-left space-y-4 text-sm text-zinc-400 font-light">
+              {[
+                'Pools internos con ventajas acumulativas',
+                'Protocolos en fase temprana',
+                'Distribuciones no públicas',
+              ].map((item, i) => (
+                <motion.p
+                  key={item}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + i * 0.15 }}
+                  className="flex items-center gap-3"
+                >
+                  <span className="text-zinc-700 font-mono">—</span>
+                  {item}
+                </motion.p>
+              ))}
+            </div>
+
+            <motion.button
+              onClick={() => handleNextPhase('capital')}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="group inline-flex items-center gap-3 border border-white/20 bg-white/5 px-10 py-4 text-[10px] font-black tracking-[0.4em] uppercase text-white transition-all duration-500 hover:bg-white hover:text-black"
+            >
+              Continuar
+              <span className="opacity-40 group-hover:opacity-100 transition-opacity">→</span>
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* ── FASE 3: CAPITAL (Financiero) ────────────────────────────────── */}
+        {phase === 'capital' && (
+          <motion.div
+            key="capital"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.9 }}
+            className="relative z-10 text-center max-w-md px-6 space-y-10"
+          >
+            <div className="space-y-3">
+              <p className="text-[9px] tracking-[0.8em] text-zinc-600 uppercase">Decide</p>
+              <p className="text-3xl font-thin text-white tracking-wide">
+                Los primeros no solo<br />entran antes.
+              </p>
+              <p className="text-2xl font-thin text-zinc-400">
+                Definen dónde se mueve el capital.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Opción A */}
+              <div className="space-y-2">
+                <motion.button
+                  onClick={onEnter}
+                  whileHover={{ backgroundColor: '#a3e635', color: '#000', scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-5 text-[10px] tracking-[0.4em] uppercase border border-white/20 bg-transparent text-white transition-all duration-300 font-bold"
+                >
+                  Entrar al sistema
+                </motion.button>
+                <p className="text-[9px] text-zinc-500 tracking-wide uppercase px-4">
+                  Acceso preferente. Condiciones no públicas.
+                </p>
+              </div>
+
+              {/* Separador */}
+              <div className="flex items-center gap-4 py-2">
+                <div className="flex-1 h-px bg-zinc-900" />
+                <span className="text-[8px] text-zinc-800 tracking-widest uppercase">o</span>
+                <div className="flex-1 h-px bg-zinc-900" />
+              </div>
+
+              {/* Opción B */}
+              <div className="space-y-2">
+                <button
+                  onClick={onEnter}
+                  className="w-full py-4 text-[10px] tracking-[0.3em] uppercase border border-zinc-900 text-zinc-600 hover:text-zinc-300 hover:border-zinc-700 transition-all"
+                >
+                  Entender cómo funciona
+                </button>
+                <p className="text-[9px] text-zinc-700 tracking-wide uppercase px-4">
+                  Documentación del protocolo. Sin intermediarios.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+      </AnimatePresence>
+
+      {/* Decoración técnica */}
+      <div className="absolute top-10 left-10 opacity-15">
+        <div className="text-[7px] font-mono text-zinc-600">NODE_SEQ: 0xFD21</div>
+        <div className="w-10 h-[1px] bg-zinc-700 mt-1" />
       </div>
     </div>
   );

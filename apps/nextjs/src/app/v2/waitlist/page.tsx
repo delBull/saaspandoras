@@ -26,17 +26,9 @@ export default function WaitlistPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, wallet: wallet || null, intent: intent || null }),
       });
-
       const data = await res.json().catch(() => ({})) as { success?: boolean; existing?: boolean };
-
-      if (data.existing) {
-        setSubmitState('success_existing');
-      } else {
-        setSubmitState('success_new');
-      }
-    } catch (err: any) {
-      console.error('[Waitlist]', err);
-      // On network error, still show new success to not block the user
+      setSubmitState(data.existing ? 'success_existing' : 'success_new');
+    } catch {
       setSubmitState('success_new');
     } finally {
       setLoading(false);
@@ -45,14 +37,9 @@ export default function WaitlistPage() {
 
   return (
     <main className="relative min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-24 overflow-hidden">
-      {/* Glow */}
       <div className="pointer-events-none absolute top-[-20%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-blue-600/6 blur-[120px]" />
 
-      {/* Back */}
-      <Link
-        href="/v2"
-        className="absolute top-8 left-8 text-[8px] tracking-[0.5em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors"
-      >
+      <Link href="/v2" className="absolute top-8 left-8 text-[8px] tracking-[0.5em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors">
         ← Volver
       </Link>
 
@@ -64,7 +51,7 @@ export default function WaitlistPage() {
           className="w-full max-w-md"
         >
           <p className="text-[9px] tracking-[0.7em] text-zinc-600 uppercase mb-6 text-center">
-            Solicitud de Acceso
+            Acceso Anticipado
           </p>
           <h1 className="text-4xl font-thin tracking-wide text-center mb-2">
             Tu perfil determina<br />si entras.
@@ -117,9 +104,7 @@ export default function WaitlistPage() {
               </select>
             </div>
 
-            {error && (
-              <p className="text-red-500/80 text-[10px] tracking-wider">{error}</p>
-            )}
+            {error && <p className="text-red-500/80 text-[10px] tracking-wider">{error}</p>}
 
             <motion.button
               type="submit"
@@ -128,43 +113,37 @@ export default function WaitlistPage() {
               whileTap={{ scale: 0.97 }}
               className="w-full mt-4 py-4 text-[10px] tracking-[0.5em] uppercase border border-white/20 bg-transparent text-white transition-all duration-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? 'Procesando...' : 'Solicitar Acceso'}
+              {loading ? 'Evaluando acceso...' : 'Solicitar Acceso Anticipado'}
             </motion.button>
 
             <p className="text-[7px] tracking-[0.3em] text-zinc-700 text-center mt-4 leading-loose">
               Al continuar aceptas nuestros{' '}
-              <Link href="/v2/legal/terms" className="underline hover:text-zinc-500 transition-colors">
-                Términos
-              </Link>{' '}
+              <Link href="/v2/legal/terms" className="underline hover:text-zinc-500 transition-colors">Términos</Link>{' '}
               y{' '}
-              <Link href="/v2/legal/privacy" className="underline hover:text-zinc-500 transition-colors">
-                Privacidad
-              </Link>.
+              <Link href="/v2/legal/privacy" className="underline hover:text-zinc-500 transition-colors">Privacidad</Link>.
             </p>
           </form>
         </motion.div>
 
       ) : submitState === 'success_existing' ? (
-        /* ── Ya registrado ─────────────────────────────────────────────────── */
+        /* ── Ya en el sistema ─────────────────────────────────────────────── */
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
           className="text-center max-w-sm"
         >
-          <div className="w-px h-16 bg-gradient-to-b from-transparent via-blue-500 to-transparent mx-auto mb-8" />
+          <div className="w-px h-16 bg-gradient-to-b from-transparent via-blue-400 to-transparent mx-auto mb-8" />
           <p className="text-[9px] tracking-[0.7em] text-blue-400 uppercase mb-6">Ya en el sistema</p>
-          <h2 className="text-3xl font-thin tracking-wide mb-4">Tu solicitud sigue activa.</h2>
-          <p className="text-zinc-500 text-sm leading-relaxed font-light">
-            Este acceso ya fue registrado.<br />
-            Tu posición en la lista está siendo evaluada.<br />
-            Si calificas, el sistema te notificará.
+          <h2 className="text-3xl font-thin tracking-wide mb-4">Ya estás dentro del sistema.</h2>
+          <p className="text-zinc-500 text-sm leading-loose font-light">
+            Tu solicitud sigue activa.<br />
+            No todos avanzan a la siguiente fase.<br />
+            <br />
+            <span className="text-zinc-400">Revisa tu correo.</span>
           </p>
           <div className="mt-10 w-px h-16 bg-gradient-to-b from-transparent via-zinc-800 to-transparent mx-auto" />
-          <Link
-            href="/v2"
-            className="text-[8px] tracking-[0.4em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors"
-          >
+          <Link href="/v2" className="text-[8px] tracking-[0.4em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors">
             Volver al inicio
           </Link>
         </motion.div>
@@ -178,17 +157,16 @@ export default function WaitlistPage() {
           className="text-center max-w-sm"
         >
           <div className="w-px h-16 bg-gradient-to-b from-transparent via-lime-500 to-transparent mx-auto mb-8" />
-          <p className="text-[9px] tracking-[0.7em] text-lime-500 uppercase mb-6">Solicitud recibida</p>
-          <h2 className="text-3xl font-thin tracking-wide mb-4">Tu acceso fue registrado.</h2>
-          <p className="text-zinc-500 text-sm leading-relaxed font-light">
-            El sistema revisará tu perfil.<br />
-            Si calificas, recibirás instrucciones.
+          <p className="text-[9px] tracking-[0.7em] text-lime-500 uppercase mb-6">Acceso en revisión</p>
+          <h2 className="text-3xl font-thin tracking-wide mb-4">Tu acceso está en revisión.</h2>
+          <p className="text-zinc-500 text-sm leading-loose font-light">
+            Esto no es automático.<br />
+            No todos van a pasar.<br />
+            <br />
+            <span className="text-zinc-400">Recibirás instrucciones si avanzas.</span>
           </p>
           <div className="mt-10 w-px h-16 bg-gradient-to-b from-transparent via-zinc-800 to-transparent mx-auto" />
-          <Link
-            href="/v2"
-            className="text-[8px] tracking-[0.4em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors"
-          >
+          <Link href="/v2" className="text-[8px] tracking-[0.4em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors">
             Volver al inicio
           </Link>
         </motion.div>

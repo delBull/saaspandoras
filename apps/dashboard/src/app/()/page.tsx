@@ -19,10 +19,9 @@ import { waitForSession } from "@/lib/session";
 import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Loader2 } from "lucide-react";
 import { ComingSoon } from "@/components/marketing/ComingSoon";
-
-const ADMIN_WALLETS = (process.env.NEXT_PUBLIC_ADMIN_WALLETS || "").toLowerCase().split(",");
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -250,8 +249,7 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 
 export default function DashboardPage() {
   const { user, state } = useAuth();
-  const isAdmin = user?.address && ADMIN_WALLETS.includes(user.address.toLowerCase());
-  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
+  const { isAdmin } = useAdmin();
 
   // 🛡️ BARRERA PRINCIPAL (NIVEL PRODUCCIÓN - GENESIS)
   // En Main, si el usuario no tiene acceso (o está en mantenimiento), forzamos Genesis.
