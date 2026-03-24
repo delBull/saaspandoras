@@ -72,7 +72,7 @@ const TierCard = ({
     <div className="mb-6">
       <div className="flex items-baseline gap-1">
         <span className="text-4xl font-black text-white tracking-tighter">{price}</span>
-        {price !== 'Free' && price !== 'Rev Share' && <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest">/ mes</span>}
+        {price.includes('$') && <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest">/ mes</span>}
       </div>
       <p className="text-zinc-400 text-sm mt-3 leading-relaxed font-medium">
         {description}
@@ -94,7 +94,7 @@ const TierCard = ({
       onClick={onCTA}
       className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] bg-white text-black hover:bg-zinc-200 border-none transition-all flex items-center justify-center gap-2`}
     >
-      {price === 'Free' ? 'Empezar Gratis' : price === 'Rev Share' ? 'Aplicar como Partner' : 'Contactar Ventas'}
+      {price === 'Gratis' ? 'Empezar Gratis' : price === 'Partnership' ? 'Aplicar como Partner' : 'Contactar Ventas'}
       <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
     </Button>
   </motion.div>
@@ -274,23 +274,23 @@ export default function GrowthOSLanding() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             <Badge className="bg-zinc-900 text-purple-400 border-zinc-800 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-10 shadow-xl">
-              Asymmetric Advantage Infrastructure
+              Infraestructura de Ventaja Asimétrica
             </Badge>
             <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] mb-10">
-              ACCESS IS <br/>
+              EL ACCESO <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-zinc-100 to-emerald-400 uppercase">
-                NOT EQUAL
+                NO ES IGUAL
               </span>
             </h1>
             <p className="text-lg md:text-2xl text-zinc-500 font-bold leading-relaxed max-w-3xl mx-auto mb-16 uppercase tracking-tight">
-              Growth OS determines who gets in early — <span className="text-white">and who captures the upside</span>. A closed system that tracks, classifies and activates early participants into real financial opportunities.
+              Growth OS determina quién entra primero — <span className="text-white">y quién captura la mayor ventaja</span>. Un sistema cerrado que rastrea, clasifica y activa a participantes tempranos en oportunidades financieras reales.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4">
               <Button 
                 onClick={() => openConversion()}
                 className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-white text-black font-black text-xl hover:bg-zinc-200 transition-all shadow-[0_0_60px_rgba(255,255,255,0.15)] uppercase tracking-tighter italic"
               >
-                Enter Early
+                Entrar Temprano
               </Button>
               <Button 
                 onClick={() => setDocModal(true)}
@@ -305,19 +305,19 @@ export default function GrowthOSLanding() {
 
          {/* NARRATIVE BREAK */}
         <div className="mb-48 text-center max-w-4xl mx-auto">
-          <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tighter uppercase italic">Growth OS is not a dashboard.</h2>
+          <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tighter uppercase italic">Growth OS no es un dashboard.</h2>
           <p className="text-xl text-zinc-500 font-bold uppercase tracking-tight">
-            It’s the infrastructure behind:
+            Es la infraestructura detrás de:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
             <div className="p-8 rounded-3xl border border-zinc-900 bg-zinc-950/50">
-              <span className="text-white font-black text-xl uppercase italic">Early access to deals</span>
+              <span className="text-white font-black text-xl uppercase italic">Acceso temprano a preventas</span>
             </div>
             <div className="p-8 rounded-3xl border border-zinc-900 bg-zinc-950/50">
-              <span className="text-white font-black text-xl uppercase italic">Preferential allocation</span>
+              <span className="text-white font-black text-xl uppercase italic">Asignación Preferencial</span>
             </div>
             <div className="p-8 rounded-3xl border border-zinc-900 bg-zinc-950/50">
-              <span className="text-white font-black text-xl uppercase italic">Compounded upside</span>
+              <span className="text-white font-black text-xl uppercase italic">Ventaja Acumulativa</span>
             </div>
           </div>
         </div>
@@ -325,16 +325,16 @@ export default function GrowthOSLanding() {
          {/* HOW IT WORKS - 4 STEP PROCESS */}
         <div className="mb-48">
           <div className="text-center mb-16">
-            <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 mb-4 font-black uppercase tracking-widest text-[9px]">The Process</Badge>
-            <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic">How it works</h2>
+            <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 mb-4 font-black uppercase tracking-widest text-[9px]">El Proceso</Badge>
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic">Cómo funciona</h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
-              { step: "01", title: "Enter the system early", desc: "Secure your position in the Genesis window." },
-              { step: "02", title: "Get classified automatically", desc: "Our engine determines your benefit tier on-chain." },
-              { step: "03", title: "Unlock access others won't see", desc: "Private dealflow and exclusive governance rights." },
-              { step: "04", title: "Participate before the market does", desc: "Capture the full upside of the ecosystem." }
+              { step: "01", title: "Entra temprano al sistema", desc: "Asegura tu posición en la ventana Genesis." },
+              { step: "02", title: "Clasifícate automáticamente", desc: "Nuestro motor determina tu tier de beneficios on-chain." },
+              { step: "03", title: "Desbloquea acceso exclusivo", desc: "Flujo de tratos privados y derechos de gobernanza." },
+              { step: "04", title: "Participa antes que el mercado", desc: "Captura la ventaja total del ecosistema." }
             ].map((s, i) => (
               <div key={i} className="p-10 rounded-[2.5rem] border border-zinc-800 bg-zinc-900/30 relative group overflow-hidden">
                 <div className="text-6xl font-black text-zinc-800 absolute -top-2 -right-2 italic group-hover:text-purple-500/20 transition-colors">{s.step}</div>
@@ -349,10 +349,10 @@ export default function GrowthOSLanding() {
         <div className="mb-48 py-24 border-y border-zinc-900 relative overflow-hidden">
           <div className="absolute inset-0 bg-purple-500/5 blur-[120px]" />
           <div className="max-w-4xl mx-auto text-center relative z-10">
-            <p className="text-zinc-500 font-black uppercase tracking-[0.3em] mb-8">Why it exists</p>
-            <h3 className="text-4xl md:text-6xl font-black mb-10 tracking-tighter uppercase italic">Most people discover opportunities <span className="text-purple-400 underline decoration-emerald-500 underline-offset-8">too late</span>.</h3>
+            <p className="text-zinc-500 font-black uppercase tracking-[0.3em] mb-8">Por qué existe</p>
+            <h3 className="text-4xl md:text-6xl font-black mb-10 tracking-tighter uppercase italic">La mayoría descubre las oportunidades <span className="text-purple-400 underline decoration-emerald-500 underline-offset-8">demasiado tarde</span>.</h3>
             <p className="text-2xl text-white font-black uppercase italic tracking-tight">
-              Growth OS exists to reward <span className="text-emerald-400">timing</span>, not noise.
+              Growth OS existe para recompensar el <span className="text-emerald-400">tiempo</span>, no el ruido.
             </p>
           </div>
         </div>
@@ -360,10 +360,10 @@ export default function GrowthOSLanding() {
         {/* STATS SECTION */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-40">
           {[
-            { label: 'Early Allocation', value: 'Guaranteed' },
-            { label: 'Time to Genesis', value: 'Instant' },
-            { label: 'Allocation Accuracy', value: '100%' },
-            { label: 'Asset Upside', value: '+Asym' },
+            { label: 'Asignación Temprana', value: 'Garantizada' },
+            { label: 'Tiempo a Genesis', value: 'Instante' },
+            { label: 'Precisión de Reparto', value: '100%' },
+            { label: 'Ventaja de Activo', value: '+Asim' },
           ].map((stat, i) => (
             <div key={i} className="text-center p-10 rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 backdrop-blur-md group hover:border-zinc-700 transition-colors">
               <div className="text-5xl font-black text-white mb-2 tracking-tighter group-hover:scale-110 transition-transform">{stat.value}</div>
@@ -381,55 +381,55 @@ export default function GrowthOSLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-stretch">
             <TierCard 
-              tier="ENTRY LEVEL"
-              title="System Access"
-              price="Free"
-              description="Basic entry point to the ecosystem. Tracking and baseline reputation."
+              tier="NIVEL DE ENTRADA"
+              title="Acceso al Sistema"
+              price="Gratis"
+              description="Punto de entrada básico al ecosistema. Seguimiento y reputación base."
               accentColor="purple"
               icon={Zap}
               onCTA={() => openConversion('ENTRY: System Access')}
               features={[
-                'Identity Identification',
-                'Status Monitoring',
-                'Access Dashboard',
-                'Community Entry',
-                'Standard Support'
+                'Identificación de Identidad',
+                'Monitoreo de Estatus',
+                'Dashboard de Acceso',
+                'Entrada a la Comunidad',
+                'Soporte Estándar'
               ]}
             />
             
             <TierCard 
-              tier="PRO LAYER"
-              title="Allocation Engine"
+              tier="CAPA PRO"
+              title="Motor de Asignación"
               price="$599"
               popular={true}
-              description="Advanced classification for serious participants seeking preferential allocation."
+              description="Clasificación avanzada para participantes serios que buscan asignación preferencial."
               accentColor="emerald"
               icon={Rocket}
               onCTA={() => openConversion('PRO: Allocation Engine')}
               features={[
-                'Preferential Allocation',
-                'Early Access Deals',
-                'Identity Resolution',
-                'Reputation Staking',
-                'AI Activation Nurturing',
-                'Priority Support'
+                'Asignación Preferencial',
+                'Acceso Temprano a Tratos',
+                'Resolución de Identidad',
+                'Staking de Reputación',
+                'Activación IA (Nurturing)',
+                'Soporte Prioritario'
               ]}
             />
             
             <TierCard 
-              tier="ELITE ACCESS"
-              title="Genesis Fortress"
+              tier="ACCESO ELITE"
+              title="Fortaleza Genesis"
               price="Partnership"
-              description="Maximum advantage and custom infrastructure for high-upside participants."
+              description="Máxima ventaja e infraestructura personalizada para participantes de alto impacto."
               accentColor="indigo"
               icon={Key}
               onCTA={() => openConversion('ELITE: Genesis Fortress')}
               features={[
-                'Genesis Allocation Rights',
-                'Direct SDK Integration',
-                'Custom Identity Layer',
-                'Upside Compounding',
-                'Strategic Counseling'
+                'Derechos Genesis de Asignación',
+                'Integración Directa SDK',
+                'Capa de Identidad Custom',
+                'Interés Compuesto de Ventaja',
+                'Asesoría Estratégica'
               ]}
             />
           </div>
@@ -441,22 +441,22 @@ export default function GrowthOSLanding() {
             <div className="w-16 h-16 rounded-[1.5rem] bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-8 group-hover:rotate-12 transition-transform">
               <Globe className="w-8 h-8 text-purple-400" />
             </div>
-            <h4 className="text-3xl font-black tracking-tight">Access Thresholds</h4>
-            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Infrastructure that filters noise and prioritizes participants based on timing and alignment.</p>
+            <h4 className="text-3xl font-black tracking-tight">Umbrales de Acceso</h4>
+            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Infraestructura que filtra el ruido y prioriza a los participantes según tiempo y alineación.</p>
           </div>
           <div className="space-y-6 group">
             <div className="w-16 h-16 rounded-[1.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-8 group-hover:rotate-12 transition-transform">
               <ShieldCheck className="w-8 h-8 text-emerald-400" />
             </div>
-            <h4 className="text-3xl font-black tracking-tight">Identity Intelligence</h4>
-            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Resolution of high-intent participants (Wallet + Access Metadata) to secure the upside.</p>
+            <h4 className="text-3xl font-black tracking-tight">Inteligencia de Identidad</h4>
+            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Resolución de participantes de alta intención (Wallet + Metadata) para asegurar la ventaja.</p>
           </div>
           <div className="space-y-6 group">
             <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-8 group-hover:rotate-12 transition-transform">
               <Key className="w-8 h-8 text-indigo-400" />
             </div>
-            <h4 className="text-3xl font-black tracking-tight">Genesis Reputation</h4>
-            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Create true leverage with our non-transferable reputation layer and preference allocation system.</p>
+            <h4 className="text-3xl font-black tracking-tight">Reputación Genesis</h4>
+            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Crea palanca real con nuestra capa de reputación intransferible y sistema de asignación preferente.</p>
           </div>
         </div>
 
@@ -474,7 +474,7 @@ export default function GrowthOSLanding() {
             size="lg" 
             className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-emerald-500 text-black font-black text-xl md:text-2xl hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/30 relative z-10 uppercase italic tracking-tighter"
           >
-            Enter Early
+            Entrar Temprano
           </Button>
           
           <p className="text-zinc-600 font-black uppercase tracking-[0.4em] text-[10px] mt-16 relative z-10 opacity-50">
