@@ -69,7 +69,21 @@ export function ComingSoon() {
               className="space-y-12 text-center"
             >
               <div className="space-y-6">
-                <h1 className="text-[10px] tracking-[0.8em] text-gray-500 uppercase animate-pulse">
+                <h1 
+                  className="text-[10px] tracking-[0.8em] text-gray-500 uppercase animate-pulse cursor-pointer select-none"
+                  onClick={() => {
+                    const now = Date.now();
+                    const clicks = JSON.parse(localStorage.getItem('admin_clicks') || '[]');
+                    const recentClicks = [...clicks, now].filter(t => now - t < 2000);
+                    localStorage.setItem('admin_clicks', JSON.stringify(recentClicks));
+                    
+                    if (recentClicks.length >= 3) {
+                      localStorage.setItem('pandoras_bypass', 'true');
+                      localStorage.removeItem('admin_clicks');
+                      window.location.reload();
+                    }
+                  }}
+                >
                   PROTOCOLO DE ACCESO // v1.0
                 </h1>
                 
