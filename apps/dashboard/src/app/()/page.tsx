@@ -15,11 +15,12 @@ import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
+import { waitForSession } from "@/lib/session";
 import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Loader2 } from "lucide-react";
-import AccessPage from "../access/page";
+import { ComingSoon } from "@/components/marketing/ComingSoon";
 
 const ADMIN_WALLETS = (process.env.NEXT_PUBLIC_ADMIN_WALLETS || "").toLowerCase().split(",");
 
@@ -263,9 +264,10 @@ export default function DashboardPage() {
     );
   }
 
-  // 2. Si no tiene acceso (o mantenimiento) y no es admin, forzamos la página de acceso Genesis.
-  if ((isMaintenance || !user?.hasAccess) && !isAdmin) {
-    return <AccessPage />;
+  // 🛡️ BARRERA PRINCIPAL (NIVEL PRODUCCIÓN - NARRATIVA)
+  // En Main, mostramos la landing de anticipación (ComingSoon) como primera barrera.
+  if (isMaintenance && !isAdmin && !user?.hasAccess) {
+    return <ComingSoon />;
   }
   const [leadModal, setLeadModal] = useState(false);
 

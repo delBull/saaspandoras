@@ -8,8 +8,8 @@ import { useRouter } from 'next/navigation';
 /**
  * 🛰️ Coming Soon Landing - Sci-Fi Minimalist
  * ============================================================================
- * High-conversion psychological barrier with blue-glow aesthetic.
- * Focuses on selectivity, scarcity, and intent-based filtering.
+ * Barrera psicológica de alta conversión con estética "Blue Glow".
+ * Enfocada en selectividad, escasez y filtrado por intención.
  * ============================================================================
  */
 export function ComingSoon() {
@@ -81,7 +81,7 @@ export function ComingSoon() {
             >
               <div className="space-y-6">
                 <h1 className="text-[10px] tracking-[0.8em] text-gray-500 uppercase animate-pulse">
-                  ACCESS PROTOCOL // v1.0
+                  PROTOCOLO DE ACCESO // v1.0
                 </h1>
                 
                 <h2 className="text-4xl md:text-6xl font-thin tracking-[0.2em] text-white leading-tight uppercase">
@@ -126,7 +126,7 @@ export function ComingSoon() {
                 <div className="space-y-1">
                   <Input 
                     required
-                    placeholder="NOMBRE"
+                    placeholder="NOMBRE COMPLETO"
                     className="bg-zinc-950/50 border-white/10 rounded-none h-14 !text-[10px] tracking-[0.2em] focus:border-blue-500/50 transition-all placeholder:text-gray-700 text-white"
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
@@ -164,9 +164,9 @@ export function ComingSoon() {
                      onChange={e => setFormData({...formData, horizon: e.target.value})}
                    >
                      <option value="" className="bg-black">HORIZONTE</option>
-                     <option value="Corto" className="bg-black">CORTO</option>
-                     <option value="Medio" className="bg-black">MEDIO</option>
-                     <option value="Largo" className="bg-black">LARGO</option>
+                     <option value="Corto" className="bg-black">CORTO PLAZO</option>
+                     <option value="Medio" className="bg-black">MEDIO PLAZO</option>
+                     <option value="Largo" className="bg-black">LARGO PLAZO</option>
                    </select>
                 </div>
 
@@ -177,9 +177,9 @@ export function ComingSoon() {
                   onChange={e => setFormData({...formData, interest: e.target.value})}
                 >
                   <option value="" className="bg-black">INTERÉS PRINCIPAL</option>
-                  <option value="Early Access" className="bg-black">EARLY ACCESS</option>
-                  <option value="Yield" className="bg-black">YIELD / PROTOCOLO</option>
-                  <option value="Equity" className="bg-black">EQUITY / PROYECTO</option>
+                  <option value="Early Access" className="bg-black">ACCESO TEMPRANO</option>
+                  <option value="Yield" className="bg-black">RENDIMIENTO / PROTOCOLO</option>
+                  <option value="Equity" className="bg-black">EQUIDAD / PROYECTO</option>
                 </select>
 
                 <button 
