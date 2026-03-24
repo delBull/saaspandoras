@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { marketingLeads, projects } from '@/db/schema';
-import { desc, eq, and } from 'drizzle-orm';
+import { marketingLeads, projects, growthActionsLog } from '@/db/schema';
+import { desc, eq, and, sql } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
         identityId: marketingLeads.identityId,
         quality: marketingLeads.quality,
         createdAt: marketingLeads.createdAt,
+        updatedAt: marketingLeads.updatedAt,
         projectName: projects.title
       })
       .from(marketingLeads)
@@ -53,15 +54,42 @@ export async function GET(req: NextRequest) {
       .orderBy(desc(marketingLeads.createdAt));
 
     const totalCount = await db
-      .select({ count: marketingLeads.id })
+      .select({ count: sql<number>`count(*)` })
       .from(marketingLeads)
       .where(whereClause);
 
+    const { calculateDecayedScore, classifyIntent } = await import("@/lib/marketing/growth-engine/engine");
+
+    // Enhancement: Fetch latest growth action & Calculate Elite Metrics
+    const dataWithActions = await Promise.all(data.map(async (l) => {
+      const lastAction = await db.query.growthActionsLog.findFirst({
+        where: eq(growthActionsLog.leadId, l.id),
+        orderBy: (logs, { desc }) => [desc(logs.executedAt)]
+      });
+
+      const lastUpdateDate = (l.updatedAt as any) || l.createdAt;
+      const baseIntent = classifyIntent(l.score || 0, l.status as any, l.metadata, lastUpdateDate);
+      
+      const processedScore = calculateDecayedScore(
+        l.score || 0, 
+        lastUpdateDate, 
+        baseIntent,
+        l.metadata
+      );
+
+      return {
+        ...l,
+        lastAction: lastAction?.actionType || null,
+        decayedScore: processedScore,
+        intentBucket: baseIntent
+      };
+    }));
+
     return NextResponse.json({
       success: true,
-      data,
+      data: dataWithActions,
       pagination: {
-        total: totalCount.length,
+        total: Number(totalCount[0]?.count || 0),
         limit,
         offset
       }

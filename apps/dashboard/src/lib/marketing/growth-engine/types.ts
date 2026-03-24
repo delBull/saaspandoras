@@ -16,10 +16,15 @@ export type GrowthEvent =
   | 'COURSE_COMPLETED'
   | 'CLICKED_PROJECT'
   | 'WALLET_CONNECTED'
+  | 'VIEW_PRICING'
+  | 'SELECT_TIER'
   | 'BOOKING_CREATED'
   | 'BOOKING_CONFIRMED'
   | 'BOOKING_CANCELLED'
   | 'BOOKING_NO_SHOW'
+  | 'CALL_COMPLETED'
+  | 'SOW_EXPIRED'
+  | 'EMAIL_BOUNCED'
   | 'PURCHASED';
 
 export type GrowthActionType = 
@@ -35,12 +40,18 @@ export type GrowthActionType =
   | 'UNLOCK_REWARD'
   | 'SEND_OFFER'
   | 'SEND_BOOKING_CONFIRMED'
-  | 'SEND_NO_SHOW_RECOVERY';
+  | 'SEND_NO_SHOW_RECOVERY'
+  | 'GENERATE_LEAD_BRIEF'
+  | 'SEND_SOW';
 
 export interface GrowthEngineResult {
   nextState: LeadState;
   actions: GrowthActionType[];
-  delay?: number | null; // e.g. delay until executing
+  scoreChange?: number; // Automated scoring (+10, +50, etc)
+  priority?: number; // Added for rule orchestration (0-100)
+  delay?: number | null; 
+  ruleId?: string; // For audit traceability
+  ruleCondition?: string; // Human-readable reason
 }
 
 export interface GrowthHistoryEntry {
@@ -52,7 +63,7 @@ export interface GrowthMetadata {
   state: LeadState;
   updatedAt: number;
   history: GrowthHistoryEntry[];
-  executedActions: Record<string, boolean>; // O(1) map for scalability
+  executedActions: Record<string, boolean | number>; // Stores boolean or timestamp
   failedActions?: Record<string, { error: string; at: number }>; // Error history
   executingActions?: Record<string, boolean>; // Action locking
 }
@@ -78,6 +89,7 @@ export interface LeadContextPayload {
   projectId: number;
   scope?: 'b2b' | 'b2c';
   score?: number;
+  lastAction?: string | null;
   metadata?: any;
 }
 
