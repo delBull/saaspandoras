@@ -68,7 +68,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
             <div className="hidden sm:block">
               <div className="rounded-xl border-2 md:border-4 border-zinc-900 bg-zinc-800 w-[80px] h-[80px] md:w-[100px] md:h-[100px] flex items-center justify-center p-3 overflow-hidden">
                 <Image
-                  src={logoUrl as string}
+                  src={(logoUrl as string) || '/images/default-logo.jpg'}
                   alt={`${project.title} logo`}
                   width={100}
                   height={100}

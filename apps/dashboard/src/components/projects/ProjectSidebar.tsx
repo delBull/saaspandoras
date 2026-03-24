@@ -94,7 +94,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const { data: treasuryBalance } = useWalletBalance({
     client,
     chain: defineChain(safeChainId),
-    address: project.treasuryAddress || "",
+    address: project.treasuryAddress && project.treasuryAddress.startsWith('0x') ? project.treasuryAddress : undefined,
   });
 
   const { data: totalSupply } = useReadContract({

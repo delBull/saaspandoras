@@ -146,12 +146,14 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   const { data: treasuryBalance } = useWalletBalance({
     client,
     chain: defineChain(safeChainId),
-    address: project.treasuryAddress || "",
+    address: project.treasuryAddress?.startsWith('0x') ? project.treasuryAddress : undefined,
   });
 
   const fundsRaised = treasuryBalance ? Number(treasuryBalance.displayValue) : 0;
   const targetAmount = getTargetAmount(project);
-  const progressPercent = Math.min((fundsRaised / targetAmount) * 100, 100);
+  const progressPercent = targetAmount > 0
+    ? Math.min((fundsRaised / targetAmount) * 100, 100)
+    : 0;
 
   // Fallback contract to fix TS error when licenseContract is undefined
   const dummyContract = getContract({
@@ -172,9 +174,14 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   // --- Calculate Phase Stats ---
   const getPhases = () => {
     try {
-      const config = typeof project.w2eConfig === 'string'
-        ? JSON.parse(project.w2eConfig)
-        : (project.w2eConfig || {});
+      let config: Record<string, any> = {};
+      try {
+        config = typeof project.w2eConfig === 'string'
+          ? JSON.parse(project.w2eConfig)
+          : (project.w2eConfig || {});
+      } catch {
+        config = {};
+      }
 
       // 1. Direct phases in config (V1 style)
       let phases = config.phases || (project as any).phases || [];
@@ -300,7 +307,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                   "{project.tagline}"
                 </h2>
               )}
-              {project.business_category && (
+              {project.business_category && typeof project.business_category === 'string' && (
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-500/10 border border-lime-500/20 text-lime-400 text-xs font-bold uppercase tracking-wider">
                   <TagIcon category={project.business_category} />
                   {project.business_category.replace(/_/g, ' ')}
@@ -611,6 +618,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             project={project}
             utilityContract={{ address: project.utilityContractAddress }}
             phase={selectedPhase}
+            userArtifactCount={0}
           />
 
           {/* AGORA Market: Phase-Aware Preview */}
