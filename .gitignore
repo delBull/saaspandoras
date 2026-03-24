@@ -32,11 +32,19 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# local env files
-.env.local
-.env
-.env.staging
-.env.*.local
+# temp scripts (root only)
+apps/**/tmp/
+apps/**/scratch/
+apps/**/experiments/
+
+# one-off scripts
+**/*.local.ts
+**/*.test.ts
+**/*.dev.ts
+
+# envs
+.env*
+!.env.example
 
 # vercel
 .vercel
@@ -51,9 +59,6 @@ yarn.lock
 package-lock.json
 
 .idea/
-
-.env
-
 # Internal documentation with sensitive information
 DOCUMENTACIÓN/
 README-DATA-SYNC.md
