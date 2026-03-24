@@ -274,24 +274,23 @@ export default function GrowthOSLanding() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             <Badge className="bg-zinc-900 text-purple-400 border-zinc-800 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-10 shadow-xl">
-              Instant Execution Hub for Web3
+              Asymmetric Advantage Infrastructure
             </Badge>
             <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] mb-10">
-              INSIGHTS &rarr; <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-zinc-100 to-emerald-400">
-                EXECUTION
+              ACCESS IS <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-zinc-100 to-emerald-400 uppercase">
+                NOT EQUAL
               </span>
-              <br/> IN 60 SECONDS
             </h1>
             <p className="text-lg md:text-2xl text-zinc-500 font-bold leading-relaxed max-w-3xl mx-auto mb-16 uppercase tracking-tight">
-              Diseña, Ejecuta y Escala. No solo te traemos leads… <span className="text-white">construimos gobernanza</span>. Atribución absoluta del "Governance Acquisition Cost" (GAC).
+              Growth OS determines who gets in early — <span className="text-white">and who captures the upside</span>. A closed system that tracks, classifies and activates early participants into real financial opportunities.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4">
               <Button 
                 onClick={() => openConversion()}
                 className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-white text-black font-black text-xl hover:bg-zinc-200 transition-all shadow-[0_0_60px_rgba(255,255,255,0.15)] uppercase tracking-tighter italic"
               >
-                Auditar mi Infraestructura (Layer 4)
+                Enter Early
               </Button>
               <Button 
                 onClick={() => setDocModal(true)}
@@ -304,19 +303,67 @@ export default function GrowthOSLanding() {
           </motion.div>
         </div>
 
-         {/* DEMAND ENGINE PREVIEW */}
-        <div className="mb-48 space-y-24">
-            <ProgressionPreview />
-            <APIPreview />
+         {/* NARRATIVE BREAK */}
+        <div className="mb-48 text-center max-w-4xl mx-auto">
+          <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tighter uppercase italic">Growth OS is not a dashboard.</h2>
+          <p className="text-xl text-zinc-500 font-bold uppercase tracking-tight">
+            It’s the infrastructure behind:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <div className="p-8 rounded-3xl border border-zinc-900 bg-zinc-950/50">
+              <span className="text-white font-black text-xl uppercase italic">Early access to deals</span>
+            </div>
+            <div className="p-8 rounded-3xl border border-zinc-900 bg-zinc-950/50">
+              <span className="text-white font-black text-xl uppercase italic">Preferential allocation</span>
+            </div>
+            <div className="p-8 rounded-3xl border border-zinc-900 bg-zinc-950/50">
+              <span className="text-white font-black text-xl uppercase italic">Compounded upside</span>
+            </div>
+          </div>
+        </div>
+
+         {/* HOW IT WORKS - 4 STEP PROCESS */}
+        <div className="mb-48">
+          <div className="text-center mb-16">
+            <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 mb-4 font-black uppercase tracking-widest text-[9px]">The Process</Badge>
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic">How it works</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[
+              { step: "01", title: "Enter the system early", desc: "Secure your position in the Genesis window." },
+              { step: "02", title: "Get classified automatically", desc: "Our engine determines your benefit tier on-chain." },
+              { step: "03", title: "Unlock access others won't see", desc: "Private dealflow and exclusive governance rights." },
+              { step: "04", title: "Participate before the market does", desc: "Capture the full upside of the ecosystem." }
+            ].map((s, i) => (
+              <div key={i} className="p-10 rounded-[2.5rem] border border-zinc-800 bg-zinc-900/30 relative group overflow-hidden">
+                <div className="text-6xl font-black text-zinc-800 absolute -top-2 -right-2 italic group-hover:text-purple-500/20 transition-colors">{s.step}</div>
+                <h4 className="text-xl font-black text-white mb-4 relative z-10">{s.title}</h4>
+                <p className="text-zinc-500 text-sm font-bold uppercase tracking-tight relative z-10">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* WHY IT EXISTS */}
+        <div className="mb-48 py-24 border-y border-zinc-900 relative overflow-hidden">
+          <div className="absolute inset-0 bg-purple-500/5 blur-[120px]" />
+          <div className="max-w-4xl mx-auto text-center relative z-10">
+            <p className="text-zinc-500 font-black uppercase tracking-[0.3em] mb-8">Why it exists</p>
+            <h3 className="text-4xl md:text-6xl font-black mb-10 tracking-tighter uppercase italic">Most people discover opportunities <span className="text-purple-400 underline decoration-emerald-500 underline-offset-8">too late</span>.</h3>
+            <p className="text-2xl text-white font-black uppercase italic tracking-tight">
+              Growth OS exists to reward <span className="text-emerald-400">timing</span>, not noise.
+            </p>
+          </div>
         </div>
 
         {/* STATS SECTION */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-40">
           {[
-            { label: 'Governance GAC', value: 'Tracker' },
-            { label: 'Time to First DAO', value: '< 2m' },
-            { label: 'Narrative Accuracy', value: '98%' },
-            { label: 'Conversion Lift', value: '+45%' },
+            { label: 'Early Allocation', value: 'Guaranteed' },
+            { label: 'Time to Genesis', value: 'Instant' },
+            { label: 'Allocation Accuracy', value: '100%' },
+            { label: 'Asset Upside', value: '+Asym' },
           ].map((stat, i) => (
             <div key={i} className="text-center p-10 rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 backdrop-blur-md group hover:border-zinc-700 transition-colors">
               <div className="text-5xl font-black text-white mb-2 tracking-tighter group-hover:scale-110 transition-transform">{stat.value}</div>
@@ -334,57 +381,55 @@ export default function GrowthOSLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-stretch">
             <TierCard 
-              tier="GGE: CORE"
-              title="DAO Monitor"
-              price="$300"
-              description="La base para cualquier protocolo serio. Métricas on-chain y atribución básica de miembros."
+              tier="ENTRY LEVEL"
+              title="System Access"
+              price="Free"
+              description="Basic entry point to the ecosystem. Tracking and baseline reputation."
               accentColor="purple"
               icon={Zap}
-              onCTA={() => openConversion('CORE: DAO Monitor')}
+              onCTA={() => openConversion('ENTRY: System Access')}
               features={[
-                'DAO Metrics Dashboard',
-                'Poder de Voto (Real)',
-                'Miembros Únicos Tracker',
-                'Atribución Básica',
-                'Setup Asistido',
-                'Soporte Estándar'
+                'Identity Identification',
+                'Status Monitoring',
+                'Access Dashboard',
+                'Community Entry',
+                'Standard Support'
               ]}
             />
             
             <TierCard 
-              tier="GGE: PRO"
-              title="Growth Optimizer"
+              tier="PRO LAYER"
+              title="Allocation Engine"
               price="$599"
               popular={true}
-              description="Atribución avanzada y tracking de GAC para optimizar la toma de poder."
+              description="Advanced classification for serious participants seeking preferential allocation."
               accentColor="emerald"
               icon={Rocket}
-              onCTA={() => openConversion('PRO: Growth Optimizer')}
+              onCTA={() => openConversion('PRO: Allocation Engine')}
               features={[
-                'Governance Attribution',
-                'GAC (Governance Acq Cost)',
-                'Campaign Influence Score',
-                'Treasury Intelligence',
-                'Educación IA Automática',
-                'Prioridad en Soporte'
+                'Preferential Allocation',
+                'Early Access Deals',
+                'Identity Resolution',
+                'Reputation Staking',
+                'AI Activation Nurturing',
+                'Priority Support'
               ]}
             />
             
             <TierCard 
-              tier="GGE: ELITE"
-              title="Strategic Fortress"
-              price="Rev Share"
-              description="Protección total y optimización automática del crecimiento de gobernanza."
+              tier="ELITE ACCESS"
+              title="Genesis Fortress"
+              price="Partnership"
+              description="Maximum advantage and custom infrastructure for high-upside participants."
               accentColor="indigo"
               icon={Key}
-              onCTA={() => openConversion('ELITE: Strategic Fortress')}
+              onCTA={() => openConversion('ELITE: Genesis Fortress')}
               features={[
-                'Alertas de Centralización',
-                'Anti-Manipulation Model',
-                'Auto-Optimization Loop',
-                'SBT Reputation Layer',
-                'Partner Global Listing',
-                'Consejería Estratégica'
+                'Genesis Allocation Rights',
+                'Direct SDK Integration',
+                'Custom Identity Layer',
+                'Upside Compounding',
+                'Strategic Counseling'
               ]}
             />
           </div>
@@ -396,22 +441,22 @@ export default function GrowthOSLanding() {
             <div className="w-16 h-16 rounded-[1.5rem] bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-8 group-hover:rotate-12 transition-transform">
               <Globe className="w-8 h-8 text-purple-400" />
             </div>
-            <h4 className="text-3xl font-black tracking-tight">Multitenant Hub</h4>
-            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Gestiona múltiples protocolos desde una sola infraestructura, separando audiencias de forma soberana.</p>
+            <h4 className="text-3xl font-black tracking-tight">Access Thresholds</h4>
+            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Infrastructure that filters noise and prioritizes participants based on timing and alignment.</p>
           </div>
           <div className="space-y-6 group">
             <div className="w-16 h-16 rounded-[1.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-8 group-hover:rotate-12 transition-transform">
-              <Target className="w-8 h-8 text-emerald-400" />
+              <ShieldCheck className="w-8 h-8 text-emerald-400" />
             </div>
-            <h4 className="text-3xl font-black tracking-tight">Lead Intelligence</h4>
-            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Resolución de identidad digital (Fingerprint + Wallet) para saber exactamente quién es tu audiencia.</p>
+            <h4 className="text-3xl font-black tracking-tight">Identity Intelligence</h4>
+            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Resolution of high-intent participants (Wallet + Access Metadata) to secure the upside.</p>
           </div>
           <div className="space-y-6 group">
             <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-8 group-hover:rotate-12 transition-transform">
-              <Users className="w-8 h-8 text-indigo-400" />
+              <Key className="w-8 h-8 text-indigo-400" />
             </div>
-            <h4 className="text-3xl font-black tracking-tight">Protocol Loyalty</h4>
-            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Crea incentivos reales con nuestro motor de cupones y reputación on-chain intransferible.</p>
+            <h4 className="text-3xl font-black tracking-tight">Genesis Reputation</h4>
+            <p className="text-zinc-500 leading-relaxed font-bold uppercase text-xs tracking-wide">Create true leverage with our non-transferable reputation layer and preference allocation system.</p>
           </div>
         </div>
 
@@ -429,7 +474,7 @@ export default function GrowthOSLanding() {
             size="lg" 
             className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-emerald-500 text-black font-black text-xl md:text-2xl hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/30 relative z-10 uppercase italic tracking-tighter"
           >
-            Auditar mi Infraestructura ahora
+            Enter Early
           </Button>
           
           <p className="text-zinc-600 font-black uppercase tracking-[0.4em] text-[10px] mt-16 relative z-10 opacity-50">
