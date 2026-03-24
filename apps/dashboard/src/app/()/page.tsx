@@ -18,6 +18,9 @@ import { GovernanceParticipationModal } from "@/components/governance/Governance
 import { waitForSession } from "@/lib/session";
 import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 import { Button } from "@/components/ui/button";
+import { ComingSoon } from "@/components/marketing/ComingSoon";
+
+const ADMIN_WALLETS = (process.env.NEXT_PUBLIC_ADMIN_WALLETS || "").toLowerCase().split(",");
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -245,6 +248,12 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 
 export default function DashboardPage() {
   const { account } = usePersistedAccount();
+  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
+  const isAdmin = account?.address && ADMIN_WALLETS.includes(account.address.toLowerCase());
+
+  if (isMaintenance && !isAdmin) {
+    return <ComingSoon />;
+  }
   const [leadModal, setLeadModal] = useState(false);
 
   // Hoist data fetching here to prevent layout shift/empty states

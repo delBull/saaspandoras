@@ -6,6 +6,98 @@ import B2BFollowupEmail from '@/emails/b2b-followup';
 import B2BCallReminderEmail from '@/emails/b2b-call-reminder';
 import B2BBookingConfirmedEmail from '@/emails/b2b-booking-confirmed';
 import B2BNoShowRecoveryEmail from '@/emails/b2b-no-show-recovery';
+import WaitlistEmail from '@/emails/WaitlistEmail';
+
+export async function sendWaitlistSequenceEmail(context: {
+  to: string;
+  step: 1 | 2 | 3 | 4;
+}) {
+  console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) to ${context.to}`);
+  
+  const isProd = process.env.NODE_ENV === 'production';
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+      if (isProd) {
+          throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
+      }
+      return { success: true, mocked: true };
+  }
+
+  const sequences = {
+    1: {
+      subject: "Tu acceso está en revisión.",
+      body: "Recibimos tu solicitud.\n\nNo estamos abriendo esto al público.\n\nEstamos seleccionando perfiles con visión y timing.\n\nEn los próximos días recibirás más contexto.\n\nSi estás dentro… lo sabrás antes que el resto."
+    },
+    2: {
+      subject: "Esto no se está explicando afuera.",
+      body: "La mayoría entra tarde porque espera claridad.\n\nPero la claridad llega cuando ya es caro.\n\nLo que estamos construyendo no es visible aún.\n\nPero ya está en movimiento.\n\nY los primeros no están esperando confirmación.\n\nEstán tomando posición.\n\nSi esto resuena contigo, mantente atento. Los siguientes pasos no serán públicos."
+    },
+    3: {
+      subject: "No todos van a pasar.",
+      body: "Estamos filtrando accesos.\n\nNo por volumen.\n\nPor criterio.\n\nLos que entienden:\n→ no preguntan “qué es”\n→ preguntan “cómo entro”\n\nSi ese eres tú, pronto tendrás acceso.\n\nSi esto resuena contigo, mantente atento."
+    },
+    4: {
+      subject: "Se está abriendo una ventana.",
+      body: "Estamos habilitando accesos limitados.\n\nNo es público.\n\nNo es masivo.\n\nSi recibes el siguiente correo, significa que estás dentro.\n\nPrepárate. El acceso no se repite dos veces."
+    }
+  };
+
+  const emailData = sequences[context.step];
+
+  try {
+    const data = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [context.to],
+      subject: emailData.subject,
+      react: WaitlistEmail({ 
+        subject: emailData.subject,
+        body: emailData.body,
+        step: context.step
+      }),
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error(`[Growth Engine] Resend Error (Waitlist Step ${context.step}):`, error);
+    throw error;
+  }
+}
+
+export async function sendGenesisWelcomeEmail(context: {
+  to: string;
+}) {
+  console.log(`[Growth Engine] Sending Genesis Welcome Email to ${context.to}`);
+  
+  const isProd = process.env.NODE_ENV === 'production';
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+      if (isProd) {
+          throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
+      }
+      return { success: true, mocked: true };
+  }
+
+  const subject = "Estás dentro antes que el resto.";
+  const body = "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Pandora";
+
+  try {
+    const data = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [context.to],
+      subject,
+      react: WaitlistEmail({ 
+        subject,
+        body,
+        step: "GENESIS"
+      }),
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error(`[Growth Engine] Resend Error (Genesis Welcome):`, error);
+    throw error;
+  }
+}
 
 export async function sendB2BFollowupEmail(context: {
   to: string;
