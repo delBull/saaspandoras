@@ -5,7 +5,15 @@ import { GrowthActionType, LeadContextPayload, ProjectContextPayload, GrowthMeta
 import { notificationService, ensureNotificationServiceConfigured } from '@/lib/notifications';
 
 // Stub for the actual email sender
-import { sendExploreWelcomeEmail, sendInvestWelcomeEmail } from '@/lib/marketing/growth-engine/email-senders';
+import { 
+  sendExploreWelcomeEmail, 
+  sendInvestWelcomeEmail, 
+  sendB2BWelcomeEmail, 
+  sendB2BFollowupEmail,
+  sendCallReminderEmail,
+  sendBookingConfirmedEmail,
+  sendNoShowRecoveryEmail
+} from '@/lib/marketing/growth-engine/email-senders';
 
 export async function executeGrowthActions(
   actions: GrowthActionType[],
@@ -26,6 +34,11 @@ export async function executeGrowthActions(
   }
 
   const { lead, project } = context;
+
+  if (!lead.email) {
+    console.warn(`[Growth Engine] Skipping actions for lead ${lead.id} because email is missing.`);
+    return;
+  }
 
   // 2. Metadata Initialization
   const currentMetadata = (freshLead.metadata || {}) as any;
@@ -90,6 +103,67 @@ export async function executeGrowthActions(
             projectName: project.name,
             projectSlug: project.slug,
             baseUrl: (project as any).baseUrl
+          });
+          success = res.success;
+          break;
+        }
+
+        case 'SEND_WELCOME_B2B_D1': {
+          const res = await sendB2BWelcomeEmail({
+            to: lead.email,
+            projectName: project.name,
+            source: lead.metadata?.source || 'direct',
+            subType: lead.metadata?.type || 'general'
+          });
+          success = res.success;
+          break;
+        }
+
+        case 'SEND_FOLLOWUP_B2B_D2': {
+          const res = await sendB2BFollowupEmail({
+            to: lead.email,
+            projectName: project.name,
+          });
+          success = res.success;
+          break;
+        }
+
+        case 'SEND_CALL_REMINDER_D3':
+        case 'SEND_CALL_REMINDER_D1':
+        case 'SEND_CALL_REMINDER_D0': {
+          // Extract meeting info from metadata if available
+          const typeMap = {
+            'SEND_CALL_REMINDER_D3': 'D-3',
+            'SEND_CALL_REMINDER_D1': 'D-1',
+            'SEND_CALL_REMINDER_D0': 'D-0'
+          } as const;
+
+          const res = await sendCallReminderEmail({
+            to: lead.email,
+            name: lead.name || 'Founder',
+            meetingDate: lead.metadata?.booking?.date || 'por confirmar',
+            meetingTime: lead.metadata?.booking?.time || 'por confirmar',
+            type: typeMap[action]
+          });
+          success = res.success;
+          break;
+        }
+
+        case 'SEND_BOOKING_CONFIRMED': {
+          const res = await sendBookingConfirmedEmail({
+            to: lead.email,
+            name: lead.name || 'Founder',
+            meetingDate: lead.metadata?.booking?.date || 'por confirmar',
+            meetingTime: lead.metadata?.booking?.time || 'por confirmar',
+          });
+          success = res.success;
+          break;
+        }
+
+        case 'SEND_NO_SHOW_RECOVERY': {
+          const res = await sendNoShowRecoveryEmail({
+            to: lead.email,
+            name: lead.name || 'Founder',
           });
           success = res.success;
           break;

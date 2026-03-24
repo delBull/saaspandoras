@@ -1,9 +1,10 @@
-
 'use server';
 
+import crypto from "crypto";
+
 import { db } from "@/db";
-import { schedulingSlots, schedulingBookings, users } from "@/db/schema";
-import { eq, and, gte, desc } from "drizzle-orm";
+import { schedulingSlots, schedulingBookings, users, marketingLeads, clients } from "@/db/schema";
+import { eq, and, gte, desc, lt, or, sql } from "drizzle-orm";
 import { Resend } from 'resend';
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -16,13 +17,20 @@ import { headers } from "next/headers";
 export async function getAvailableSlots(userId: string) {
     try {
         const now = new Date();
+        const bufferTime = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48h buffer
+        
         const slots = await db.select()
             .from(schedulingSlots)
             .where(
                 and(
                     eq(schedulingSlots.userId, userId),
                     eq(schedulingSlots.isBooked, false),
-                    gte(schedulingSlots.startTime, now)
+                    gte(schedulingSlots.startTime, bufferTime),
+                    // Check for active reservations
+                    or(
+                      lt(schedulingSlots.reservedUntil, now),
+                      sql`${schedulingSlots.reservedUntil} IS NULL`
+                    )
                 )
             )
             .orderBy(desc(schedulingSlots.startTime));
@@ -70,59 +78,176 @@ export async function getAdminSlots(userId: string) {
 /**
  * Public: Book a slot
  */
-export async function bookSlot(slotId: string, leadData: { name: string, email: string, phone: string, preference: 'email' | 'whatsapp' | 'both', notes?: string }) {
+export async function bookSlot(slotId: string, leadData: { name: string, email: string, phone: string, preference: 'email' | 'whatsapp' | 'both', notes?: string, fingerprint?: string }) {
     try {
-        // 1. Double check availability
-        const slot = await db.query.schedulingSlots.findFirst({
-            where: eq(schedulingSlots.id, slotId)
-        });
+        const now = new Date();
+        const normalizedEmail = leadData.email.toLowerCase().trim();
+        const projectId = 1; // TODO: Resolve from context in multi-tenant v2
 
-        if (!slot || slot.isBooked) {
-            return { success: false, error: "Slot no longer available" };
-        }
-
-        // 2. Create Booking
-        const bookingId = crypto.randomUUID();
-        await db.insert(schedulingBookings).values({
-            id: bookingId,
-            slotId: slotId,
-            leadName: leadData.name,
-            leadEmail: leadData.email,
-            leadPhone: leadData.phone,
-            notificationPreference: leadData.preference,
-            notes: leadData.notes,
-            status: "pending"
-        });
-
-        // 3. Mark Slot as Booked
-        await db.update(schedulingSlots)
-            .set({ isBooked: true })
-            .where(eq(schedulingSlots.id, slotId));
-
-        // 4. Trigger Notifications (Async)
-        // Import dynamically or at top. Using dynamic for now to circular deps safety if any across actions (unlikely here but clean)
-        const { sendSchedulerNotification } = await import("@/lib/discord/scheduler-notifier");
-        const { sendBookingPendingEmail } = await import("@/lib/email/scheduler-mailer");
-
-        await Promise.allSettled([
-            sendSchedulerNotification(bookingId, slot.startTime, {
-                name: leadData.name,
-                email: leadData.email,
-                notes: leadData.notes
-            }),
-            sendBookingPendingEmail(leadData.email, {
-                name: leadData.name,
-                date: slot.startTime.toLocaleDateString(),
-                time: slot.startTime.toLocaleTimeString()
+        // 1. ATOMIC TRANSACTION: Lock slot FIRST
+        return await db.transaction(async (tx) => {
+          const [updatedSlot] = await tx.update(schedulingSlots)
+            .set({ 
+              isBooked: true, 
+              reservedUntil: null, 
+              reservedBy: null 
             })
-        ]);
+            .where(
+              and(
+                eq(schedulingSlots.id, slotId),
+                eq(schedulingSlots.isBooked, false),
+                or(
+                  lt(schedulingSlots.reservedUntil, now),
+                  sql`${schedulingSlots.reservedUntil} IS NULL`,
+                  eq(schedulingSlots.reservedBy, leadData.fingerprint || normalizedEmail)
+                )
+              )
+            )
+            .returning();
 
-        return { success: true, bookingId };
+          if (!updatedSlot) {
+            return { success: false, error: "Slot no longer available or held by another person" };
+          }
+
+          // 2. Create Booking
+          const bookingId = crypto.randomUUID();
+          await tx.insert(schedulingBookings).values({
+              id: bookingId,
+              slotId: slotId,
+              leadName: leadData.name,
+              leadEmail: normalizedEmail,
+              leadPhone: leadData.phone,
+              notificationPreference: leadData.preference,
+              notes: leadData.notes,
+              status: "pending"
+          });
+
+          // 3. PIPELINE SYNC (Idempotent & Normalized)
+          try {
+            // A. Update Marketing Lead with Idempotent Scoring
+            await tx.insert(marketingLeads).values({
+              projectId: projectId,
+              email: normalizedEmail,
+              name: leadData.name,
+              phoneNumber: leadData.phone,
+              status: 'scheduled',
+              intent: 'other',
+              quality: 'high',
+              score: 50,
+              scope: 'b2b',
+              fingerprint: leadData.fingerprint || null,
+              identityHash: normalizedEmail
+            }).onConflictDoUpdate({
+              target: [marketingLeads.projectId, marketingLeads.identityHash],
+              set: {
+                status: 'scheduled',
+                quality: 'high',
+                // Idempotent Score: Only add if not already scheduled
+                score: sql`
+                  CASE 
+                    WHEN ${marketingLeads.status} != 'scheduled' 
+                    THEN ${marketingLeads.score} + 50 
+                    ELSE ${marketingLeads.score} 
+                  END`,
+                updatedAt: new Date(),
+                name: leadData.name, // Update metadata
+                phoneNumber: leadData.phone
+              }
+            });
+
+            // B. Sync to CRM (Clients)
+            await tx.insert(clients).values({
+              email: normalizedEmail,
+              name: leadData.name,
+              whatsapp: leadData.phone,
+              status: 'negotiating',
+              source: 'scheduling',
+              metadata: {
+                bookingId,
+                bookedAt: now.toISOString(),
+                notes: leadData.notes
+              }
+            }).onConflictDoUpdate({
+              target: [clients.email],
+              set: {
+                status: 'negotiating',
+                name: leadData.name,
+                whatsapp: leadData.phone,
+                metadata: sql`jsonb_set(
+                  COALESCE(${clients.metadata}, '{}'::jsonb), 
+                  '{lastBooking}', 
+                  ${JSON.stringify({ bookingId, bookedAt: now.toISOString() })}::jsonb
+                )`
+              }
+            });
+          } catch (syncErr) {
+            console.error("[Scheduler] Pipeline sync failed (non-blocking):", syncErr);
+          }
+
+          // 4. Trigger Notifications (Async - outside of transaction actually is better but we use it here for flow)
+          // We'll return success and the caller can handle notifications if needed, 
+          // but for consistency we keep them here.
+          const { sendSchedulerNotification } = await import("@/lib/discord/scheduler-notifier");
+          const { sendBookingPendingEmail } = await import("@/lib/email/scheduler-mailer");
+
+          await Promise.allSettled([
+              sendSchedulerNotification(bookingId, updatedSlot.startTime, {
+                  name: leadData.name,
+                  email: normalizedEmail,
+                  notes: leadData.notes
+              }),
+              sendBookingPendingEmail(normalizedEmail, {
+                  name: leadData.name,
+                  date: updatedSlot.startTime.toLocaleDateString(),
+                  time: updatedSlot.startTime.toLocaleTimeString()
+              })
+          ]);
+
+          return { success: true, bookingId };
+        });
 
     } catch (error) {
         console.error("[Scheduler] Booking failed:", error);
         return { success: false, error: "Failed to process booking" };
     }
+}
+
+/**
+ * Public: Temporarily lock a slot for 5 minutes
+ */
+export async function reserveSlot(slotId: string, reservePayload: { identifier: string }) {
+  try {
+    const now = new Date();
+    const expiry = new Date(now.getTime() + 5 * 60 * 1000); // 5 min
+    
+    // Atomically lock if not already locked or lock expired
+    const result = await db.update(schedulingSlots)
+      .set({ 
+        reservedUntil: expiry, 
+        reservedBy: reservePayload.identifier 
+      })
+      .where(
+        and(
+          eq(schedulingSlots.id, slotId),
+          eq(schedulingSlots.isBooked, false),
+          or(
+            lt(schedulingSlots.reservedUntil, now),
+            sql`${schedulingSlots.reservedUntil} IS NULL`,
+            eq(schedulingSlots.reservedBy, reservePayload.identifier)
+          )
+        )
+      )
+      .returning();
+
+    if (result.length === 0) {
+      return { success: false, error: "Slot already taken or locked" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Scheduler] Reserve slot failed:", error);
+    return { success: false, error: "Failed to reserve slot" };
+  }
 }
 
 /**
@@ -335,4 +460,132 @@ export async function resolveUserByAlias(alias: string) {
         console.error("Error resolving user:", error);
         return { success: false, error: "Resolver failed" };
     }
+}
+
+/**
+ * Action: Reschedule Booking
+ */
+export async function rescheduleBooking(oldBookingId: string, newSlotId: string) {
+  try {
+    const { session } = await getAuth(await headers());
+    // Can be done by user (self-service) or admin
+    // For now we assume the caller has valid context or we check session
+    
+    return await db.transaction(async (tx) => {
+      // 1. Get old booking
+      const oldBooking = await tx.query.schedulingBookings.findFirst({
+        where: eq(schedulingBookings.id, oldBookingId)
+      });
+      if (!oldBooking) throw new Error("Original booking not found");
+
+      // 2. Lock NEW slot
+      const [newSlot] = await tx.update(schedulingSlots)
+        .set({ isBooked: true })
+        .where(and(eq(schedulingSlots.id, newSlotId), eq(schedulingSlots.isBooked, false)))
+        .returning();
+      if (!newSlot) throw new Error("New slot is already taken");
+
+      // 3. Free OLD slot
+      await tx.update(schedulingSlots)
+        .set({ isBooked: false })
+        .where(eq(schedulingSlots.id, oldBooking.slotId));
+
+      // 4. Update Booking with new slot
+      await tx.update(schedulingBookings)
+        .set({ 
+          slotId: newSlotId,
+          updatedAt: new Date(),
+          status: 'pending' // Reset to pending for re-confirmation if needed
+        })
+        .where(eq(schedulingBookings.id, oldBookingId));
+
+      return { success: true };
+    });
+  } catch (error) {
+    console.error("[Scheduler] Reschedule failed:", error);
+    return { success: false, error: "Failed to reschedule" };
+  }
+}
+
+/**
+ * Action: Mark No-Show
+ */
+export async function markNoShow(bookingId: string) {
+  try {
+    const { session } = await getAuth(await headers());
+    if (!session?.userId || !await isAdmin(session.userId)) throw new Error("Unauthorized");
+
+    await db.transaction(async (tx) => {
+      // 1. Update Booking
+      const [booking] = await tx.update(schedulingBookings)
+        .set({ status: 'no_show' })
+        .where(eq(schedulingBookings.id, bookingId))
+        .returning();
+
+      if (booking) {
+        // 2. Sync to Marketing Lead
+        await tx.update(marketingLeads)
+          .set({ status: 'no_show', updatedAt: new Date() })
+          .where(eq(marketingLeads.email, booking.leadEmail));
+
+        // 3. Sync to Client
+        await tx.update(clients)
+          .set({ status: 'negotiating' }) // Keep as negotiating but update metadata?
+          .where(eq(clients.email, booking.leadEmail));
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Scheduler] Mark No-Show failed:", error);
+    return { success: false, error: "Failed to update record" };
+  }
+}
+
+/**
+ * Action: Complete Call (Outcome Recording)
+ */
+export async function completeCall(bookingId: string, outcome: 'interested' | 'not_ready' | 'lost', notes?: string) {
+  try {
+    const { session } = await getAuth(await headers());
+    if (!session?.userId || !await isAdmin(session.userId)) throw new Error("Unauthorized");
+
+    await db.transaction(async (tx) => {
+      // 1. Update Booking
+      const [booking] = await tx.update(schedulingBookings)
+        .set({ 
+          status: 'completed',
+          notes: sql`concat(${schedulingBookings.notes}, '\n\n[Outcome: ', ${outcome}, ']\n', ${notes || ''})`
+        })
+        .where(eq(schedulingBookings.id, bookingId))
+        .returning();
+
+      if (booking) {
+        const leadStatus = outcome === 'interested' ? 'converted' : (outcome === 'lost' ? 'archived' : 'nurturing');
+        const clientStatus = outcome === 'interested' ? 'active' : (outcome === 'lost' ? 'archived' : 'negotiating');
+
+        // 2. Sync to Marketing Lead
+        await tx.update(marketingLeads)
+          .set({ 
+            status: leadStatus as any, 
+            updatedAt: new Date(),
+            score: outcome === 'interested' ? sql`${marketingLeads.score} + 100` : marketingLeads.score
+          })
+          .where(eq(marketingLeads.email, booking.leadEmail));
+
+        // 3. Sync to Client
+        await tx.update(clients)
+          .set({ 
+            status: clientStatus as any,
+            updatedAt: new Date()
+          })
+          .where(eq(clients.email, booking.leadEmail));
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Scheduler] Complete Call failed:", error);
+    return { success: false, error: "Failed to save call outcome" };
+  }
 }

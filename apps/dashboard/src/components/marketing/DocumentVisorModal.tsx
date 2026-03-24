@@ -130,7 +130,7 @@ export function DocumentVisorModal({ isOpen, onClose }: DocumentVisorModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[800px] w-[95vw] h-[90vh] bg-zinc-950 border-zinc-800 text-white p-0 overflow-hidden flex flex-col rounded-[2.5rem]">
+      <DialogContent hideCloseButton={true} className="max-w-[800px] w-[95vw] h-[90vh] bg-zinc-950 border-zinc-800 text-white p-0 overflow-hidden flex flex-col rounded-[2.5rem]">
         {/* Superior Decorator */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 blur-[100px] pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/10 blur-[100px] pointer-events-none"></div>

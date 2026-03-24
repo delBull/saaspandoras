@@ -4,7 +4,10 @@ export type LeadState =
   | 'EDUCATING'
   | 'ENGAGED'
   | 'INVEST_READY'
-  | 'CONVERTED';
+  | 'SCHEDULED'
+  | 'CONVERTED'
+  | 'ARCHIVED'
+  | 'NURTURING';
 
 export type GrowthEvent =
   | 'LEAD_CAPTURED'
@@ -13,15 +16,26 @@ export type GrowthEvent =
   | 'COURSE_COMPLETED'
   | 'CLICKED_PROJECT'
   | 'WALLET_CONNECTED'
+  | 'BOOKING_CREATED'
+  | 'BOOKING_CONFIRMED'
+  | 'BOOKING_CANCELLED'
+  | 'BOOKING_NO_SHOW'
   | 'PURCHASED';
 
 export type GrowthActionType = 
   | 'SEND_WELCOME_EXPLORE_D1'
   | 'SEND_WELCOME_INVEST_D1'
+  | 'SEND_WELCOME_B2B_D1'
+  | 'SEND_FOLLOWUP_B2B_D2'
+  | 'SEND_CALL_REMINDER_D3'
+  | 'SEND_CALL_REMINDER_D1'
+  | 'SEND_CALL_REMINDER_D0'
   | 'ASSIGN_COURSE'
   | 'NOTIFY_TEAM'
   | 'UNLOCK_REWARD'
-  | 'SEND_OFFER';
+  | 'SEND_OFFER'
+  | 'SEND_BOOKING_CONFIRMED'
+  | 'SEND_NO_SHOW_RECOVERY';
 
 export interface GrowthEngineResult {
   nextState: LeadState;
@@ -47,15 +61,19 @@ export const ALLOWED_TRANSITIONS: Record<LeadState, LeadState[]> = {
   'NEW': ['EXPLORE', 'INVEST_READY', 'CONVERTED'],
   'EXPLORE': ['EDUCATING', 'INVEST_READY', 'CONVERTED'],
   'EDUCATING': ['ENGAGED', 'INVEST_READY', 'CONVERTED'],
-  'ENGAGED': ['INVEST_READY', 'CONVERTED'],
-  'INVEST_READY': ['CONVERTED'],
-  'CONVERTED': [] // Terminal state
+  'ENGAGED': ['INVEST_READY', 'SCHEDULED', 'CONVERTED'],
+  'INVEST_READY': ['SCHEDULED', 'CONVERTED'],
+  'SCHEDULED': ['INVEST_READY', 'CONVERTED', 'ARCHIVED', 'NURTURING'],
+  'CONVERTED': [],
+  'ARCHIVED': ['NURTURING', 'SCHEDULED'],
+  'NURTURING': ['SCHEDULED', 'CONVERTED', 'ARCHIVED']
 };
 
 export interface LeadContextPayload {
   id: string; // The UUID of the lead
   email: string | null;
   name?: string | null;
+  phoneNumber?: string | null;
   intent: string;
   projectId: number;
   scope?: 'b2b' | 'b2c';
