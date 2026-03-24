@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
-import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter } from "lucide-react";
+import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter, Phone, FileSignature, Calendar, XCircle, MoreVertical, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { recordCallOutcome, getLeadInsights } from "@/actions/growth-os";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
 import { DAOMetrics } from "../dao/DAOMetrics";
@@ -51,6 +52,12 @@ interface Lead {
   fingerprint: string | null;
   identityId: string | null;
   quality: string | null;
+  lastAction?: string;
+  conversionValue?: string | null;
+  probability?: number | null;
+  expectedCloseDate?: string | null;
+  decayedScore?: number;
+  intentBucket?: 'low' | 'medium' | 'high' | 'closing';
 }
 
 interface Course {
@@ -239,6 +246,165 @@ const StrategyContent = ({ type = 'monetization' }: { type?: 'monetization' | 'r
   );
 };
 
+
+/**
+ * Action Menu for Lead Management
+ */
+function LeadActionMenu({ lead, onActionComplete }: { lead: Lead, onActionComplete: () => void }) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [outcomeData, setOutcomeData] = useState({
+      outcome: 'warm' as 'hot'|'warm'|'cold'|'no_show',
+      notes: '',
+      dealValue: 0,
+      probability: 50,
+      expectedCloseDate: '',
+      nextStep: ''
+  });
+
+  const handleRecordCall = async () => {
+    setLoading(true);
+    try {
+        const res = await recordCallOutcome({
+            leadId: lead.id,
+            ...outcomeData
+        });
+        if (res.success) {
+            toast.success("Call outcome recorded & Engine triggered");
+            setIsRecording(false);
+            onActionComplete();
+        } else {
+            toast.error(res.error || "Failed to record outcome");
+        }
+    } catch (e) {
+        toast.error("Internal Error");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Dialog open={isRecording} onOpenChange={setIsRecording}>
+        <DialogTrigger asChild>
+          <UIButton variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800">
+            <Phone className="w-4 h-4 text-emerald-400" />
+          </UIButton>
+        </DialogTrigger>
+        <DialogContent className="bg-zinc-950 border border-zinc-800 rounded-[2rem] text-white sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-3">
+               <Phone className="text-emerald-500" />
+               Registrar Resultado de Llamada
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 font-medium">
+               Esto actualizará el score del lead y disparará la siguiente acción del Growth OS.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 pt-6">
+            <div className="grid grid-cols-2 gap-3">
+                {['hot', 'warm', 'cold', 'no_show'].map((o) => (
+                    <button
+                        key={o}
+                        onClick={() => setOutcomeData(prev => ({ ...prev, outcome: o as any }))}
+                        className={cn(
+                            "py-4 rounded-2xl border-2 font-black text-[10px] uppercase tracking-tighter transition-all",
+                            outcomeData.outcome === o 
+                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-500/10"
+                                : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                        )}
+                    >
+                        {o.replace('_', ' ')}
+                    </button>
+                ))}
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Notas del Deal</label>
+                <textarea 
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Resumen de la llamada..."
+                    value={outcomeData.notes}
+                    onChange={(e) => setOutcomeData(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={3}
+                />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Valor Estimado ($)</label>
+                    <Input 
+                        type="number"
+                        className="bg-zinc-900 border border-zinc-800 rounded-2xl h-12"
+                        value={outcomeData.dealValue}
+                        onChange={(e) => setOutcomeData(prev => ({ ...prev, dealValue: Number(e.target.value) }))}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Probabilidad (%)</label>
+                    <Input 
+                        type="number"
+                        min="0"
+                        max="100"
+                        className="bg-zinc-900 border border-zinc-800 rounded-2xl h-12"
+                        value={outcomeData.probability}
+                        onChange={(e) => setOutcomeData(prev => ({ ...prev, probability: Number(e.target.value) }))}
+                    />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Cierre Estimado</label>
+                    <Input 
+                        type="date"
+                        className="bg-zinc-900 border border-zinc-800 rounded-2xl h-12"
+                        value={outcomeData.expectedCloseDate}
+                        onChange={(e) => setOutcomeData(prev => ({ ...prev, expectedCloseDate: e.target.value }))}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Siguiente Paso</label>
+                    <Input 
+                        className="bg-zinc-900 border border-zinc-800 rounded-2xl h-12"
+                        placeholder="e.g. Enviar SOW"
+                        value={outcomeData.nextStep}
+                        onChange={(e) => setOutcomeData(prev => ({ ...prev, nextStep: e.target.value }))}
+                    />
+                </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-8">
+            <UIButton 
+              variant="outline" 
+              onClick={() => setIsRecording(false)}
+              className="rounded-xl border-zinc-800 text-zinc-400 hover:bg-zinc-900 h-10 px-6 font-bold"
+            >
+              Cancelar
+            </UIButton>
+            <UIButton 
+              onClick={handleRecordCall}
+              disabled={loading}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-10 px-8 font-black uppercase tracking-tighter"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar & Procesar'}
+            </UIButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <UIButton variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800 group">
+          <FileSignature className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+      </UIButton>
+      
+      <UIButton variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800 group">
+          <XCircle className="w-4 h-4 text-red-400/50 group-hover:text-red-400 transition-colors" />
+      </UIButton>
+    </div>
+  );
+}
 
 export default function GrowthOSSubTab() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -1202,9 +1368,11 @@ export default function GrowthOSSubTab() {
                   <th className="px-8 py-4">Lead Identity</th>
                   <th className="px-8 py-4">Persona</th>
                   <th className="px-8 py-4">Source / Origin</th>
-                  <th className="px-8 py-4">Quality / Score</th>
-                  <th className="px-8 py-4">Status</th>
-                  <th className="px-8 py-4 text-right">Captured</th>
+                   <th className="px-8 py-4">Quality / Score</th>
+                  <th className="px-8 py-4">Status / Intent</th>
+                  <th className="px-8 py-4">Forecast ($)</th>
+                  <th className="px-8 py-4">Activity Insights</th>
+                  <th className="px-8 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
@@ -1245,27 +1413,69 @@ export default function GrowthOSSubTab() {
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-3">
-                          <Badge className={cn("text-[9px] font-black uppercase border-none", getQualityColor((l as any).quality))}>
+                          <Badge className={cn("text-[8px] font-black uppercase border-zinc-700/50 bg-zinc-950 text-zinc-400")}>
                             {(l as any).quality || 'LOW'}
                           </Badge>
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-white">{(l as any).score || 0}</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className={cn("text-[11px] font-black", (l as any).decayedScore < (l as any).score ? "text-orange-400" : "text-white")}>
+                                    {(l as any).decayedScore ?? (l as any).score ?? 0}
+                                </span>
+                                {(l as any).decayedScore < (l as any).score && (
+                                    <div title="Natural Score Decay Active">
+                                        <Clock className="w-2.5 h-2.5 text-orange-500/50 animate-pulse" />
+                                    </div>
+                                )}
+                            </div>
                             <div className="w-12 h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
                               <div 
                                 className="h-full bg-purple-500 transition-all" 
-                                style={{ width: `${Math.min(((l as any).score || 0), 100)}%` }}
+                                style={{ width: `${Math.min(((l as any).decayedScore || (l as any).score || 0), 100)}%` }}
                               />
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-5">
-                        <Badge className={cn("text-[9px] font-black uppercase border-none", getStatusColor(l.status))}>
-                          {l.status}
-                        </Badge>
+                        <div className="flex flex-col gap-1.5">
+                          <Badge className={cn("text-[8px] font-black uppercase border-none w-fit px-2", 
+                            (l as any).intentBucket === 'closing' ? 'bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]' :
+                            (l as any).intentBucket === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                            (l as any).intentBucket === 'medium' ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-zinc-800/50 text-zinc-500'
+                          )}>
+                            {(l as any).intentBucket || 'NEW'}
+                          </Badge>
+                          <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">{l.intent || 'EXPLORE'}</span>
+                        </div>
                       </td>
-                      <td className="px-8 py-5 text-right font-mono text-[10px] text-zinc-500">
-                        {new Date(l.createdAt).toLocaleDateString()}
+                      <td className="px-8 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">
+                            ${(Number(l.conversionValue || 0)).toLocaleString()}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <div className="w-8 h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                              <div 
+                                className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" 
+                                style={{ width: `${l.probability || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-[9px] text-zinc-500 font-black">{l.probability || 0}%</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3 h-3 text-zinc-700" />
+                            <span className="text-[10px] font-bold text-zinc-400">{(l as any).lastAction || 'No recent automation'}</span>
+                          </div>
+                          <span className="text-[8px] font-mono text-zinc-600">{new Date(l.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <LeadActionMenu lead={l} onActionComplete={() => fetchLeads(selectedProjectId, scope)} />
                       </td>
                     </tr>
                   ))

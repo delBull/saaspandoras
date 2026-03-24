@@ -108,6 +108,29 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
     }
 }
 
+/**
+ * Universal resolver to find the correct project context for a lead/client.
+ * Ensures multi-tenant integrity across various identifier types.
+ */
+async function resolveProjectContext({ leadId, userId, email }: { leadId?: string, userId?: string, email?: string }) {
+    if (leadId) {
+        const l = await db.query.marketingLeads.findFirst({ where: eq(marketingLeads.id, leadId) });
+        if (l) return l;
+    }
+
+    if (email) {
+        const l = await db.query.marketingLeads.findFirst({ where: eq(marketingLeads.email, email) });
+        if (l) return l;
+    }
+
+    if (userId) {
+        const l = await db.query.marketingLeads.findFirst({ where: eq(marketingLeads.userId, userId) });
+        if (l) return l;
+    }
+
+    return null;
+}
+
 export async function processPaymentSuccess(linkId: string) {
     try {
         // Fetch Link & Client details
@@ -143,6 +166,15 @@ export async function processPaymentSuccess(linkId: string) {
 
         // 3. PIPELINE SYNC: Update Marketing Lead to 'converted'
         try {
+            // Use universal resolver to find the right lead/project context
+            // client.userId is the link to the platform user, client.id is the client record
+            const leadContext = await resolveProjectContext({ 
+                email: client.email.toLowerCase().trim(), 
+                userId: client.userId || undefined 
+            });
+            
+            const targetProjectId = leadContext?.projectId || 1; // Fallback to 1 only if resolve failed
+
             await db.update(marketingLeads)
                 .set({ 
                     status: 'converted',
@@ -155,17 +187,26 @@ export async function processPaymentSuccess(linkId: string) {
             const { executeGrowthActions } = await import("@/lib/marketing/growth-engine/actions");
             
             const results = resolveGrowthAction('PURCHASED', {
-                id: client.id, // Using client ID as lead proxy if they match
+                id: leadContext?.id || client.id, 
                 email: client.email,
                 intent: 'purchase',
-                projectId: 1, // Default Pandoras
+                projectId: targetProjectId,
                 score: 100
             });
 
             if (results) {
                 await executeGrowthActions(results.actions, {
-                    lead: { id: client.id, email: client.email, intent: 'purchase', projectId: 1 },
-                    project: { id: 1, name: "Pandora's Finance", slug: "pandoras" }
+                    lead: { 
+                        id: leadContext?.id || client.id, 
+                        email: client.email, 
+                        intent: 'purchase', 
+                        projectId: targetProjectId 
+                    },
+                    project: { 
+                        id: targetProjectId, 
+                        name: "Project Context", 
+                        slug: "resolved" 
+                    }
                 });
             }
         } catch (syncErr) {

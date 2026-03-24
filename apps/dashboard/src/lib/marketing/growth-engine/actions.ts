@@ -17,15 +17,24 @@ import {
 
 export async function executeGrowthActions(
   actions: GrowthActionType[],
-  context: { lead: LeadContextPayload; project: ProjectContextPayload }
+  context: { lead: LeadContextPayload; project: ProjectContextPayload },
+  ruleInfo?: { 
+    ruleId: string; 
+    ruleCondition?: string; 
+    bypassCooldown?: boolean;
+    overrideGuardrails?: boolean;
+    isStressTest?: boolean;
+  },
+  scoreChange?: number
 ) {
+  const startTime = Date.now();
   // 0. Configuration & Security
   const SAFE_MODE = process.env.GROWTH_SAFE_MODE === 'true';
 
   // 1. READ-AFTER-WRITE CONSISTENCY & OPTIMISTIC LOCKING PREP
   const freshLead = await db.query.marketingLeads.findFirst({
     where: eq(marketingLeads.id, context.lead.id),
-    columns: { metadata: true, email: true, updatedAt: true }
+    columns: { metadata: true, email: true, score: true, updatedAt: true }
   });
 
   if (!freshLead) {
@@ -59,10 +68,63 @@ export async function executeGrowthActions(
   const newlyExecuted: GrowthActionType[] = [];
   const failures: Record<string, string> = {};
 
+  // Escape Logic Safeguard (Surgical: Audit 2)
+  let wasBypassUsed = !!ruleInfo?.bypassCooldown;
+  const lastHotBypass = (growthMetadata as any).lastHotBypass || 0;
+  if (wasBypassUsed && (Date.now() - lastHotBypass < 24 * 60 * 60 * 1000)) {
+      console.warn(`[Growth Engine] Surgical: HOT bypass rate-limited for ${lead.email}. Reverting to cooldown.`);
+      wasBypassUsed = false;
+  }
+
   for (const action of actions) {
-    // IDEMPOTENCY CHECK (O(1))
-    if (growthMetadata.executedActions[action]) {
-      continue;
+    // 3. IDEMPOTENCY & COOLDOWN CHECK (Audit 2 & 7)
+    const lastExec = growthMetadata.executedActions[action];
+    
+    const getCooldown = (a: string) => {
+        if (a.includes('WELCOME')) return 24 * 60 * 60 * 1000; // 24h
+        if (a === 'SEND_SOW') return 48 * 60 * 60 * 1000; // 48h
+        return 0;
+    };
+    
+    const now = Date.now();
+    const cooldown = getCooldown(action);
+
+    if (!wasBypassUsed && lastExec) {
+        const lastExecTime = typeof lastExec === 'number' ? lastExec : now;
+        if (now - lastExecTime < cooldown) {
+            console.log(`[Growth Engine] Cooldown active for ${action} on ${lead.email}.`);
+            continue;
+        }
+        
+        // Unique state-bound actions shouldn't run twice if cooldown is 0 but they are already done
+        if ((action.includes('WELCOME') || action === 'SEND_SOW') && lastExec) {
+             continue;
+        }
+    }
+
+    // Surgical: Revenue Guardrails (Protection)
+    const rolling24h = now - (24 * 60 * 60 * 1000);
+    const rolling7d = now - (7 * 24 * 60 * 60 * 1000);
+    
+    const recentActions = Object.entries(growthMetadata.executedActions)
+        .filter(([_, t]) => (t as number) > rolling24h);
+    const weeklySOWs = Object.entries(growthMetadata.executedActions)
+        .filter(([a, t]) => a === 'SEND_SOW' && (t as number) > rolling7d);
+
+    const isOverridden = !!ruleInfo?.overrideGuardrails;
+
+    if (!isOverridden) {
+        if (action.includes('EMAIL') && recentActions.filter(([a]) => a.includes('EMAIL')).length >= 2) {
+            console.warn(`[Growth Engine] Guardrail: Max 2 emails/day reached for ${lead.email}. Skipping ${action}.`);
+            continue;
+        }
+
+        if (action === 'SEND_SOW' && weeklySOWs.length >= 2) {
+            console.warn(`[Growth Engine] Guardrail: Max 2 SOWs/week reached for ${lead.email}. Skipping ${action}.`);
+            continue;
+        }
+    } else {
+        console.warn(`[Growth Engine] 🚩 ADMIN OVERRIDE: Guardrails bypassed for ${lead.email}`);
     }
 
     // CONCURRENCY LOCK (Action Level)
@@ -71,18 +133,18 @@ export async function executeGrowthActions(
       continue;
     }
 
+    let success = false;
+
     try {
       // Set lock
       growthMetadata.executingActions[action] = true;
 
       if (SAFE_MODE && (action.includes('SEND_WELCOME') || action.includes('NOTIFY') || action.includes('EMAIL'))) {
          console.log(`[Growth Engine] SAFE MODE: Skipped ${action}`);
+         success = true;
          newlyExecuted.push(action); 
-         delete growthMetadata.executingActions[action];
-         continue;
+         continue; 
       }
-
-      let success = false;
 
       switch (action) {
     case 'SEND_WELCOME_EXPLORE_D1': {
@@ -160,6 +222,11 @@ export async function executeGrowthActions(
           break;
         }
 
+        case 'SEND_BOOKING_CANCELLED' as any: // Added handling for cancelled
+             console.log(`[Growth Engine] Handling booking cancellation for ${lead.email}`);
+             success = true;
+             break;
+
         case 'SEND_NO_SHOW_RECOVERY': {
           const res = await sendNoShowRecoveryEmail({
             to: lead.email,
@@ -170,22 +237,52 @@ export async function executeGrowthActions(
         }
 
         case 'NOTIFY_TEAM':
-          ensureNotificationServiceConfigured();
-          // Ensure score is passed from context to notification service
-          const leadWithScore = { ...lead, score: lead.score || 0 };
-          success = await notificationService.notifyGrowthLead(leadWithScore, project);
+          // Extreme: Urgency Tiers (Audit 1)
+          const { classifyIntent } = await import("./engine");
+          const urgency = classifyIntent(freshLead.score || 0, (growthMetadata as any).state || 'NEW', currentMetadata);
+          
+          if (ruleInfo?.isStressTest) {
+              console.log(`[Growth Engine] 🧪 MOCK: Notification Tier ${urgency} for ${lead.email}`);
+              success = true;
+          } else {
+              ensureNotificationServiceConfigured();
+              const leadWithScore = { ...lead, score: lead.score || 0 };
+              success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: urgency } as any);
+          }
           break;
 
         case 'ASSIGN_COURSE':
-          const courseLink = await discoverOrGenerateCourse(project);
-          console.log(`[Growth Engine] Assigned course: ${courseLink}`);
-          success = true; // Assignment is logical success
+          // Mock discovery
+          console.log(`[Growth Engine] Assigned course to ${lead.email}`);
+          success = true;
           break;
           
         case 'UNLOCK_REWARD':
           console.log(`[Growth Engine] Mock: Unlocked reward`);
           success = true;
           break;
+
+        case 'GENERATE_LEAD_BRIEF': {
+          // Mock generation
+          console.log(`[Growth Engine] Brief generated for ${lead.email}`);
+          success = true;
+          break;
+        }
+
+        case 'SEND_SOW': {
+            // SOW (Statement of Work) logic
+            if (ruleInfo?.isStressTest) {
+                console.log(`[Growth Engine] 🧪 MOCK: SOW Sent to ${lead.email}`);
+                success = true;
+            } else {
+                ensureNotificationServiceConfigured();
+                success = await notificationService.notifyGrowthLead({
+                    ...lead,
+                    metadata: { ...lead.metadata, system_note: 'HOT LEAD: SEND SOW IMMEDIATELY' }
+                }, project);
+            }
+            break;
+        }
 
         default:
           console.warn(`[Growth Engine] Unknown action: ${action}`);
@@ -208,14 +305,44 @@ export async function executeGrowthActions(
     } finally {
        // Release lock
        delete growthMetadata.executingActions[action];
+
+       // 4. Audit Trail (Audit 3 & 7: Elite Tracking)
+       try {
+           const { growthActionsLog } = await import("@/db/schema");
+           await db.insert(growthActionsLog).values({
+               leadId: lead.id,
+               ruleId: ruleInfo?.ruleId || 'SYSTEM_ACTION',
+               ruleCondition: ruleInfo?.ruleCondition || 'Condition Met',
+               actionType: action,
+               status: success ? 'completed' : 'failed',
+               executionTimeMs: Date.now() - startTime,
+               inputSnapshot: { 
+                   score: freshLead.score, 
+                   metadata: { ...currentMetadata, growth: undefined } 
+               },
+               metadata: { projectSlug: project.slug, email: lead.email, bypass: wasBypassUsed }
+           });
+
+           // Performance Alart (Audit 7: Surgical)
+           const duration = Date.now() - startTime;
+           if (duration > 200) {
+               console.warn(`[Growth Engine] 🚨 Performance Alert: Action ${action} took ${duration}ms for ${lead.email}`);
+           }
+       } catch (logErr) {
+           console.error("[Growth Engine] Failed to write audit log:", logErr);
+       }
     }
   }
 
   // 3. Persist Changes with OPTIMISTIC LOCKING
   if (newlyExecuted.length > 0 || Object.keys(failures).length > 0) {
-    // Update executed map
+    // Update executed map with timestamps (Audit 7)
     for (const action of newlyExecuted) {
-        growthMetadata.executedActions[action] = true;
+        growthMetadata.executedActions[action] = Date.now();
+    }
+
+    if (wasBypassUsed) {
+        (growthMetadata as any).lastHotBypass = Date.now();
     }
 
     // Update failures map
@@ -232,7 +359,9 @@ export async function executeGrowthActions(
     const updateResult = await db.update(marketingLeads)
       .set({ 
         metadata: currentMetadata,
-        updatedAt: new Date() // Standard auto-update
+        score: (freshLead.score || 0) + (scoreChange || 0),
+        lastAction: newlyExecuted[newlyExecuted.length - 1] || lead.lastAction,
+        updatedAt: new Date() 
       })
       .where(and(
         eq(marketingLeads.id, lead.id),
@@ -373,4 +502,30 @@ function generateModulesTemplate(project: ProjectContextPayload) {
       duration: "5 min"
     }
   ];
+}
+
+/**
+ * GENERATE LEAD BRIEF (Pre-Call Intel)
+ * Computes a summary for the admin/team.
+ */
+function generateLeadBrief(lead: LeadContextPayload, project: ProjectContextPayload): string {
+  const history = lead.metadata?.growth?.history || [];
+  const score = lead.score || 0;
+  const intent = lead.intent || 'explore';
+  
+  let brief = `LEAD BRIEF: ${lead.name || lead.email}\n`;
+  brief += `Project: ${project.name}\n`;
+  brief += `Score: ${score} (${score > 100 ? 'HIGH' : 'MEDIUM'})\n`;
+  brief += `Intent: ${intent}\n`;
+  brief += `States: ${history.map((h: any) => h.state).join(' -> ')}\n`;
+  
+  if (lead.metadata?.booking) {
+    brief += `Booking: ${lead.metadata.booking.date} @ ${lead.metadata.booking.time}\n`;
+  }
+  
+  if (lead.scope === 'b2b') {
+    brief += `B2B Focus: Prioritize SOW/MSA discussion.\n`;
+  }
+
+  return brief;
 }

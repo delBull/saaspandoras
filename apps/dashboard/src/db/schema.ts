@@ -1776,9 +1776,16 @@ export const marketingLeads = pgTable("marketing_leads", {
   
   metadata: jsonb("metadata").default({}).notNull(),
   consent: boolean("consent").default(false).notNull(),
+
+  // Financial Forecasting (Pro Scale)
+  conversionValue: decimal("conversion_value", { precision: 12, scale: 2 }),
+  probability: integer("probability"), // 0-100
+  expectedCloseDate: timestamp("expected_close_date", { withTimezone: true }),
   
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastAction: varchar("last_action", { length: 100 }), // Denormalized for performance
+  
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   // A lead is unique per Project + Identity (Email, Wallet or Fingerprint hash)
   projectIdentityIdx: uniqueIndex("marketing_leads_project_identity_idx").on(t.projectId, t.identityHash),
@@ -1792,9 +1799,13 @@ export const marketingLeadEvents = pgTable("marketing_lead_events", {
   id: uuid("id").defaultRandom().primaryKey(),
   leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
   type: varchar("type", { length: 100 }).notNull(), // signup, whitelist_approved, converted...
+  semanticHash: varchar("semantic_hash", { length: 64 }), // Content-based de-duplication hash
   payload: jsonb("payload").default({}).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => ({
+  leadIdx: index("event_lead_idx").on(t.leadId),
+  hashIdx: index("event_hash_idx").on(t.semanticHash),
+}));
 
 
 /**
@@ -1815,6 +1826,24 @@ export const marketingRewardLogs = pgTable("marketing_reward_logs", {
   // CRITICAL: Prevent double reward for the same event per user
   uniqueUserEventReward: uniqueIndex("marketing_reward_unique_idx").on(t.userId, t.eventId, t.rewardType),
 }));
+
+
+/**
+ * growth_actions_log — Audit log for growth engine decisions.
+ */
+export const growthActionsLog = pgTable("growth_actions_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  ruleId: varchar("rule_id", { length: 100 }).notNull(),
+  ruleCondition: text("rule_condition"), // The 'why' behind the decision
+  actionType: varchar("action_type", { length: 100 }).notNull(),
+  status: varchar("status", { length: 50 }).default('pending').notNull(), // pending, completed, failed
+  
+  inputSnapshot: jsonb("input_snapshot"), // State of lead at decision time
+  metadata: jsonb("metadata").default({}).notNull(),
+  executedAt: timestamp("executed_at", { withTimezone: true }).defaultNow().notNull(),
+  executionTimeMs: integer("execution_time_ms"),
+});
 
 
 /**
@@ -1882,6 +1911,11 @@ export const governanceVotesRelations = relations(governanceVotes, ({ one }) => 
 export const marketingLeadsRelations = relations(marketingLeads, ({ many, one }) => ({
   attributions: many(marketingLeadAttributions),
   events: many(marketingLeadEvents),
+  growthActions: many(growthActionsLog),
+  project: one(projects, {
+    fields: [marketingLeads.projectId],
+    references: [projects.id],
+  }),
   identity: one(marketingIdentities, {
     fields: [marketingLeads.identityId],
     references: [marketingIdentities.id],
