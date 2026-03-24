@@ -25,35 +25,23 @@ export function ComingSoon() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const trackEvent = async (event: string, metadata: any = {}) => {
-    try {
-      await fetch('/api/v1/marketing/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event,
-          projectId: 1, 
-          fingerprint: 'main-coming-soon-user',
-          metadata: {
-            ...metadata,
-            source: 'coming_soon_main'
-          }
-        }),
-      });
-    } catch (e) {
-      console.error('Tracking failed', e);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // 1. Capture Lead via Marketing API
-    await trackEvent('WAITLIST_JOIN', {
-      ...formData,
-      intent: 'whitelist'
-    });
+    try {
+      // 🧬 Unified Access Request Pipeline
+      await fetch('/api/access-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          source: 'dashboard_coming_soon'
+        }),
+      });
+    } catch (e) {
+      console.error('Waitlist submission failed', e);
+    }
 
     // 2. Redirect to Success Page (Controlled Psychology)
     router.push('/waitlist-success');

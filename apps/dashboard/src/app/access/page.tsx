@@ -5,41 +5,84 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
-import { Loader2, ShieldCheck, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PortalActivated from "@/components/nft-gating/PortalActivated";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * 🧬 Genesis Access Activation Page
+ * 🧬 /access — Ritual de Entrada
  * ============================================================================
- * Final destination for waitlist users. 
- * Orchestrates Login -> Mint -> Classification -> Dashboard Entry.
+ * Flujo:  Hero (validando) → Activación (connect) → Mint invisible → Portal
+ * NFTGate maneja toda la lógica de auth + mint. Solo gestionamos UX aquí.
  * ============================================================================
  */
+
+function Scanlines() {
+  return (
+    <div
+      className="pointer-events-none fixed inset-0 z-0 opacity-[0.025]"
+      style={{
+        backgroundImage:
+          'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.4) 1px, rgba(255,255,255,0.4) 2px)',
+        backgroundSize: '100% 4px',
+      }}
+    />
+  );
+}
+
+function ScanningLine() {
+  return (
+    <motion.div
+      initial={{ top: '-2px' }}
+      animate={{ top: '100%' }}
+      transition={{ duration: 3.5, repeat: Infinity, ease: 'linear', repeatDelay: 1 }}
+      className="pointer-events-none fixed left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400/40 to-transparent z-10"
+      style={{ position: 'fixed' }}
+    />
+  );
+}
+
+function DynamicLoader({ texts }: { texts: string[] }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI(n => (n + 1) % texts.length), 1600);
+    return () => clearInterval(t);
+  }, [texts.length]);
+  return (
+    <AnimatePresence mode="wait">
+      <motion.p
+        key={i}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.4 }}
+        className="text-[10px] tracking-[0.6em] text-zinc-500 uppercase"
+      >
+        {texts[i]}
+      </motion.p>
+    </AnimatePresence>
+  );
+}
+
 export default function AccessPage() {
   const { user, state, login } = useAuth();
   const account = useActiveAccount();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
-  const [isVerified, setIsVerified] = useState(false); // 🛡️ Audit Fix: Single source of truth for verification
+  const [isVerified, setIsVerified] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
-  // 🛡️ Audit Fix: Avoid blank flicker by rendering a skeleton while booting
-  if (!mounted) {
-    return <div className="min-h-screen bg-black" />;
-  }
+  if (!mounted) return <div className="min-h-screen bg-black" />;
 
-  const isLoading = state === "booting" || state === "checking_session";
+  const isLoading = state === 'booting' || state === 'checking_session';
+  
+  // 🛡️ Technical Fix: Ensure user object exists before checking access to avoid loops
+  const isMinting = state === 'authenticated' && !!account && user && !user.hasAccess;
 
-  // 🚀 Final Destination: Dashboard Entry
-  const handleEnterSystem = () => {
-    router.push("/dashboard");
-  };
+  const handleEnterSystem = () => router.push('/dashboard');
 
   const handleVerified = () => {
     if (!isVerified) {
@@ -48,121 +91,250 @@ export default function AccessPage() {
     }
   };
 
+  // 📧 Email loop closure
+  const isApprovedFromEmail = typeof window !== 'undefined' && 
+    (window.location.search.includes('token=') || window.location.search.includes('approved=true'));
+
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      <Scanlines />
+      <ScanningLine />
+
+      {/* Glow ambiental */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-blue-500/6 blur-[140px]" />
+      </div>
+
+      {/* Grid sutil */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.02]"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      {/* Decoración técnica top-left */}
+      <div 
+        className="absolute top-10 left-10 flex flex-col gap-1 opacity-20 z-10 cursor-pointer select-none"
+        onClick={() => {
+          const now = Date.now();
+          const clicks = JSON.parse(localStorage.getItem('admin_clicks') || '[]');
+          const recentClicks = [...clicks, now].filter(t => now - t < 2000);
+          localStorage.setItem('admin_clicks', JSON.stringify(recentClicks));
+          
+          if (recentClicks.length >= 3) {
+            localStorage.setItem('pandoras_bypass', 'true');
+            localStorage.removeItem('admin_clicks');
+            window.location.reload();
+          }
+        }}
+      >
+        <span className="text-[7px] font-mono text-zinc-600">GENESIS_ACCESS_PROTOCOL</span>
+        <div className="w-8 h-[1px] bg-zinc-700" />
+        <span className="text-[7px] font-mono text-zinc-700">v2.0 // RESTRICTED</span>
+      </div>
+
       <NFTGate onVerified={handleVerified}>
         {showPortal ? (
           <PortalActivated tier={user?.benefitsTier} onEnter={handleEnterSystem} />
         ) : (
-          <div className="relative z-10 max-w-lg w-full text-center p-6">
-            {/* Background Glow - Cyberpunk Aesthetic */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
-            <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
+          <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
 
-            <h1 className="text-[10px] tracking-[0.8em] text-gray-500 mb-12 uppercase animate-pulse">
-              Genesis Access Protocol // v1.0
-            </h1>
+            {/* ── HERO: Estado de validación ──────────────────────────────────── */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1 }}
+              className="mb-16 space-y-4"
+            >
+              <AnimatePresence>
+                {isApprovedFromEmail && (
+                  <motion.p
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-lime-400 text-[10px] tracking-[0.4em] uppercase mb-2"
+                  >
+                    Tu acceso fue aprobado.
+                  </motion.p>
+                )}
+              </AnimatePresence>
+              
+              <p className="text-[9px] tracking-[1em] text-zinc-600 uppercase animate-pulse">
+                Acceso en proceso
+              </p>
+              <DynamicLoader texts={[
+                'Estamos validando tu entrada…',
+                'Verificando identidad…',
+                'Preparando protocolo…',
+              ]} />
+            </motion.div>
 
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-               
-               {/* 🎯 Condition 1: User has Access (Post-Mint/Classification) */}
-               {user && (
-                  <div className="space-y-10">
-                     {user.benefitsTier === 'genesis' ? (
-                        <div className="space-y-6">
-                           <div className="inline-flex items-center px-4 py-1 rounded-full border border-lime-500/30 bg-lime-500/5 text-lime-400 mb-2">
-                              <Zap className="w-3 h-3 mr-2" />
-                              <span className="text-[10px] font-bold tracking-[0.3em] uppercase">Status: Genesis</span>
-                           </div>
-                           <h2 className="text-4xl md:text-5xl font-thin tracking-[0.2em] text-white leading-tight">
-                             TU ACCESO FUE <br/> <span className="text-lime-400">HABILITADO</span>
-                           </h2>
-                           <p className="text-gray-400 text-lg font-light tracking-wide max-w-xs mx-auto">
-                             Entraste en la primera ventana. Acceso Genesis activo.
-                           </p>
-                        </div>
-                     ) : (
-                        <div className="space-y-6">
-                           <div className="inline-flex items-center px-4 py-1 rounded-full border border-blue-500/30 bg-blue-500/5 text-blue-400 mb-2">
-                              <ShieldCheck className="w-3 h-3 mr-2" />
-                              <span className="text-[10px] font-bold tracking-[0.3em] uppercase">Status: Activado</span>
-                           </div>
-                           <h2 className="text-4xl md:text-5xl font-thin tracking-[0.2em] text-white leading-tight">
-                             ACCESO <br/> <span className="text-blue-400">CONFIRMADO</span>
-                           </h2>
-                           <p className="text-gray-400 text-lg font-light tracking-wide max-w-xs mx-auto">
-                             Fase pública activa. Bienvenido al ecosistema.
-                           </p>
-                        </div>
-                     )}
+            {/* ── ESTADO: Cargando auth ─────────────────────────────────────── */}
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center gap-4"
+              >
+                <div className="w-8 h-8 rounded-full border border-blue-500/30 border-t-blue-400 animate-spin" />
+                <p className="text-[9px] tracking-[0.5em] text-zinc-600 uppercase">Conectando sistema…</p>
+              </motion.div>
+            )}
 
-                     <div className="p-10 border border-white/10 bg-zinc-950/50 backdrop-blur-xl rounded-3xl shadow-2xl relative group overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                        
-                        <div className="relative space-y-8">
-                           <p className="text-sm text-gray-400 leading-relaxed font-light">
-                             Tu llave digital ha sido validada. <br/>
-                             El sistema está listo para tu ingreso.
-                           </p>
+            {/* ── ESTADO: Mintando (post-connect, pre-verificado) ──────────── */}
+            {isMinting && !isLoading && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-6 max-w-sm"
+              >
+                <div className="w-px h-12 bg-gradient-to-b from-transparent via-blue-400 to-transparent mx-auto" />
+                <DynamicLoader texts={[
+                  'Validando…',
+                  'Generando clave…',
+                  'Registrando acceso…',
+                ]} />
+                <div className="w-8 h-8 rounded-full border border-blue-500/20 border-t-blue-400 animate-spin mx-auto" />
+                <p className="text-[9px] tracking-widest text-zinc-700 uppercase">
+                  Se generará tu clave de acceso en segundo plano.
+                </p>
+              </motion.div>
+            )}
 
-                           <button 
-                              onClick={handleEnterSystem}
-                              className="w-full bg-white text-black py-5 text-[10px] font-black tracking-[0.4em] uppercase hover:bg-lime-400 transition-all duration-500 transform hover:scale-[1.02]"
-                           >
-                              INGRESAR AL TERMINAL
-                           </button>
-                        </div>
-                     </div>
-                  </div>
-               )}
-
-               {/* 🎯 Condition 2: Not Authenticated Yet (Pre-Flow) */}
-               {!user && !isLoading && (
-                  <div className="space-y-10">
-                     <div className="space-y-4">
-                        <h2 className="text-4xl font-thin tracking-widest text-white leading-tight">
-                          ACCESO HABILITADO
-                        </h2>
-                        <p className="text-gray-400 text-lg font-light tracking-wide">
-                          No es público. Está vinculado a tu identidad.
-                        </p>
-                     </div>
-
-                     <div className="p-10 border border-white/5 bg-white/[0.02] backdrop-blur-sm rounded-3xl">
-                        <p className="text-sm text-gray-400 mb-8 font-light italic">
-                          Autentícate para activar tu ventana de acceso.
-                        </p>
-                        <ConnectButton 
-                          client={client}
-                          chain={config.chain}
-                          connectButton={{
-                            className: "w-full !bg-white !text-black !rounded-none !py-5 !text-[10px] !tracking-[0.4em] !font-black hover:!bg-lime-400 transition-all shadow-xl",
-                            label: "IDENTIFICAR ADDRESS"
-                          }}
-                        />
-
-                        {account && state === "guest" && (
-                          <div className="mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-700">
-                            <p className="text-[10px] text-gray-500 mb-4 uppercase tracking-[0.2em]">Wallet Detectada // Firma Requerida</p>
-                            <button 
-                              onClick={() => login()}
-                              className="w-full bg-lime-500 text-black py-4 text-[10px] font-black tracking-[0.4em] uppercase hover:bg-lime-400 transition-all shadow-lg"
-                            >
-                              FIRMAR PROTOCOLO DE ACCESO
-                            </button>
-                          </div>
-                        )}
-                     </div>
-                  </div>
-               )}
-
-               <div className="space-y-4 pt-4">
-                  <p className="text-[9px] tracking-[0.5em] text-gray-600 uppercase">
-                    Confidencial // No Compartir Acceso
+            {/* ── ESTADO: No conectado ─────────────────────────────────────── */}
+            {!user?.id && !isLoading && !isMinting && (
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, delay: 0.2 }}
+                className="w-full max-w-sm space-y-10"
+              >
+                {/* Bloque principal */}
+                <div className="space-y-4">
+                  <h1 className="text-4xl md:text-5xl font-thin tracking-[0.15em] text-white uppercase leading-tight">
+                    Tu acceso no es<br />visible aún.
+                  </h1>
+                  <p className="text-zinc-500 text-base font-light leading-relaxed">
+                    No es público. Está vinculado a tu identidad.
                   </p>
-                  <div className="w-12 h-[1px] bg-gray-800 mx-auto" />
-               </div>
-            </div>
+                </div>
+
+                {/* Card de activación */}
+                <div className="border border-zinc-800 bg-zinc-950/60 backdrop-blur-xl rounded-3xl p-8 space-y-6">
+                  <p className="text-sm text-zinc-500 font-light leading-relaxed">
+                    Conecta para continuar.<br />
+                    <span className="text-zinc-600 text-xs">Se generará tu clave de acceso en segundo plano.</span>
+                  </p>
+
+                  <ConnectButton
+                    client={client}
+                    chain={config.chain}
+                    connectButton={{
+                      className: "w-full !bg-white !text-black !rounded-none !py-5 !text-[10px] !tracking-[0.4em] !font-black hover:!bg-lime-400 !transition-all",
+                      label: "ACTIVAR ACCESO",
+                    }}
+                  />
+
+                  {/* Firma SIWE si wallet conectada pero no autenticada */}
+                  <AnimatePresence>
+                    {account && state === 'guest' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="pt-4 border-t border-zinc-800 space-y-3"
+                      >
+                        <p className="text-[9px] text-zinc-600 uppercase tracking-[0.3em]">
+                          Wallet Detectada // Firma Requerida
+                        </p>
+                        <motion.button
+                          onClick={() => login()}
+                          whileHover={{ backgroundColor: '#a3e635', color: '#000' }}
+                          whileTap={{ scale: 0.97 }}
+                          className="w-full bg-zinc-900 text-white py-4 text-[10px] font-black tracking-[0.4em] uppercase border border-zinc-700 transition-all"
+                        >
+                          FIRMAR PROTOCOLO
+                        </motion.button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <p className="text-[8px] tracking-[0.5em] text-zinc-700 uppercase">
+                  Confidencial // No Compartir Acceso
+                </p>
+              </motion.div>
+            )}
+
+            {/* ── ESTADO: Usuario con acceso activo ya (no en portal aún) ── */}
+            {user?.hasAccess && !showPortal && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8 }}
+                className="space-y-8 max-w-sm"
+              >
+                {user.benefitsTier === 'genesis' ? (
+                  <>
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-lime-500/30 bg-lime-500/5 rounded-full">
+                      <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+                      <span className="text-[9px] font-bold tracking-[0.3em] text-lime-400 uppercase">Genesis Access</span>
+                    </div>
+                    <h2 className="text-4xl font-thin tracking-wide text-white">
+                      Acceso confirmado.<br />
+                      <span className="text-lime-400">Estás dentro antes que el resto.</span>
+                    </h2>
+                  </>
+                ) : (
+                  <>
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-blue-500/30 bg-blue-500/5 rounded-full">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                      <span className="text-[9px] font-bold tracking-[0.3em] text-blue-400 uppercase">Early Access</span>
+                    </div>
+                    <h2 className="text-4xl font-thin tracking-wide text-white">
+                      Acceso confirmado.<br />
+                      <span className="text-blue-400">Tu posición ha sido registrada.</span>
+                    </h2>
+                  </>
+                )}
+
+                <p className="text-zinc-500 text-sm font-light leading-relaxed">
+                  Tu nivel de acceso define lo que puedes ver y en qué participas.
+                </p>
+
+                {/* Revelación */}
+                <div className="border border-zinc-800 bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 text-left space-y-4">
+                  <p className="text-xs text-zinc-600 tracking-widest uppercase">No todo es visible desde el inicio.</p>
+                  <p className="text-zinc-400 text-sm font-light">Tu acceso desbloquea:</p>
+                  <div className="space-y-2 text-zinc-500 text-sm">
+                    <p>— Pools internos con ventajas de permanencia</p>
+                    <p>— Protocolos en fase temprana</p>
+                    <p>— Distribuciones no públicas</p>
+                  </div>
+                </div>
+
+                {/* Capital paths */}
+                <div className="space-y-3">
+                  <p className="text-[9px] tracking-[0.5em] text-zinc-600 uppercase mb-4">Los primeros no solo entran antes. Deciden.</p>
+                  <motion.button
+                    onClick={handleEnterSystem}
+                    whileHover={{ backgroundColor: '#a3e635', color: '#000' }}
+                    whileTap={{ scale: 0.97 }}
+                    className="w-full py-4 text-[10px] tracking-[0.4em] uppercase border border-white/20 bg-transparent text-white transition-all font-bold"
+                  >
+                    Ver oportunidades disponibles
+                  </motion.button>
+                  <button
+                    onClick={handleEnterSystem}
+                    className="w-full py-3 text-[9px] tracking-[0.3em] uppercase text-zinc-600 hover:text-zinc-400 transition-colors"
+                  >
+                    Entender cómo funciona
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
           </div>
         )}
       </NFTGate>

@@ -16,6 +16,7 @@ import { useToast } from "@saasfly/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 
 /**
  * 🚨 CRITICAL COMPONENT: NFT GATE (WELCOME / FREE MINT SCREEN) 🚨
@@ -160,11 +161,9 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
   }
 
   // ── Admin bypass ──────────────────────────────────────────────────────────
-  // Staging: full open. Prod/staging: super admin wallet bypasses NFT gate.
-  const isStaging = process.env.NEXT_PUBLIC_APP_ENV === "staging";
-  const superAdminWallet = process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET?.toLowerCase();
-  const isAdmin = !!account && !!superAdminWallet && account.address.toLowerCase() === superAdminWallet;
-  if ((isStaging || isAdmin) && account) {
+  const { isAdmin } = useAdmin();
+
+  if (isAdmin && account) {
     if (onVerified && !showSuccessAnimation) {
       setShowSuccessAnimation(true);
       onVerified();

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { accessRequests } from "~/db/schema";
 import { eq } from "drizzle-orm";
+import { sendWaitlistSequenceEmail } from "~/lib/marketing/growth-engine/email-senders";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +51,11 @@ export async function POST(request: Request) {
     });
 
     console.log(`✅ [access-requests] New: ${email} | source: ${source || "unknown"} | intent: ${intent || "-"}`);
+
+    // ── Step 1: Confirmation email (fire-and-forget, critical trigger) ────────
+    // "Tu acceso está en revisión. No es automático. No todos van a pasar."
+    sendWaitlistSequenceEmail({ to: email.toLowerCase().trim(), step: 1 })
+      .catch((e: unknown) => console.error(`[access-requests] Step 1 email failed for ${email}:`, e));
 
     // ── Fire Growth Engine via track-event (fire-and-forget) ─────────────────
     // track-event handles lead lookup/creation automatically
