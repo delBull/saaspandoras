@@ -6,9 +6,12 @@ import { eq } from 'drizzle-orm';
 import { withRetry } from '@/lib/database';
 import crypto from 'crypto';
 
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
+  const isProd = process.env.NODE_ENV === 'production';
   try {
-    const isProd = process.env.NODE_ENV === 'production';
     if (!isProd) {
       console.log('📥 Received utility application request');
     }
@@ -56,12 +59,14 @@ export async function POST(request: NextRequest) {
       discordUrl: body.discordUrl || null,
       telegramUrl: body.telegramUrl || null,
       linkedinUrl: body.linkedinUrl || null,
-      targetAmount: body.targetAmount?.toString() || "0.00",
-      totalValuationUsd: body.totalValuationUsd?.toString() || null,
+      
+      // ✅ TYPE SAFETY: Asegurar que los campos numéricos sean tratados correctamente
+      targetAmount: body.targetAmount ? Number(body.targetAmount).toString() : "0.00",
+      totalValuationUsd: body.totalValuationUsd ? Number(body.totalValuationUsd).toString() : null,
       tokenType: body.tokenType || null,
       totalTokens: safeNumber(body.totalTokens),
       tokensOffered: safeNumber(body.tokensOffered),
-      tokenPriceUsd: body.tokenPriceUsd?.toString() || null,
+      tokenPriceUsd: body.tokenPriceUsd ? Number(body.tokenPriceUsd).toString() : null,
       estimatedApy: body.estimatedApy || null,
       yieldSource: body.yieldSource || null,
       fundUsage: body.fundUsage || null,
@@ -98,6 +103,12 @@ export async function POST(request: NextRequest) {
       mitigationPlan: body.mitigationPlan || null,
       status: body.status || 'draft',
       featured: body.featured === true || body.featured === 'true',
+      
+      // ✅ FIX CRÍTICO: Columnas NOT NULL sin default garantizado en DB
+      allowedDomains: [],
+      isDeleted: false,
+      raisedAmount: "0.00",
+      returnsPaid: "0.00",
     };
 
     /**
@@ -185,10 +196,23 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     const isTimeout = error.message === 'TIMEOUT_LIMIT_REACHED';
-    console.error(`💥 ${isTimeout ? 'TIMEOUT' : 'CRASH'} creating utility application:`, error.message);
+    
+    // 🔍 ENHANCED LOGGING: Capturar detalles quirúrgicos del error de base de datos
+    console.error(`💥 ${isTimeout ? 'TIMEOUT' : 'CRASH'} creating utility application:`);
+    console.error(`   Message: ${error.message}`);
+    if (error.code) console.error(`   Code: ${error.code}`);
+    if (error.detail) console.error(`   Detail: ${error.detail}`);
+    if (error.stack) console.error(`   Stack: ${error.stack}`);
     
     return NextResponse.json(
-      { message: isTimeout ? 'La solicitud tardó demasiado, por favor intenta de nuevo.' : 'Error interno del servidor' },
+      { 
+        message: isTimeout ? 'La solicitud tardó demasiado, por favor intenta de nuevo.' : 'Error interno del servidor',
+        debug: !isProd ? { 
+          code: error.code, 
+          detail: error.detail, 
+          message: error.message 
+        } : undefined
+      },
       { status: isTimeout ? 504 : 500 }
     );
   }

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 /**
  * 🛰️ Coming Soon Landing - Sci-Fi Minimalist
@@ -94,19 +95,19 @@ export function ComingSoon() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-center gap-8 pt-4">
-                <button 
-                  onClick={() => setView('form')}
-                  className="group relative px-12 py-5 border border-white/20 bg-white/5 hover:bg-white hover:text-black transition-all duration-700 overflow-hidden"
-                >
-                  <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">Solicitar Acceso</span>
-                  <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                </button>
-                
-                <p className="text-[9px] uppercase tracking-[0.4em] text-gray-600 font-bold">
-                  No todos los accesos son aprobados.
-                </p>
-              </div>
+                <div className="flex flex-col items-center gap-8 pt-4">
+                  <button 
+                    onClick={() => setView('form')}
+                    className="group relative px-12 py-5 border border-white/20 bg-white/5 hover:bg-white hover:text-black transition-all duration-700 overflow-hidden"
+                  >
+                    <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">Solicitar Acceso</span>
+                    <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                  </button>
+                  
+                  <p className="text-[9px] uppercase tracking-[0.4em] text-gray-600 font-bold">
+                    No todos los accesos son aprobados.
+                  </p>
+                </div>
             </motion.div>
           )}
 
@@ -200,6 +201,12 @@ export function ComingSoon() {
 
       {/* Footer Disclaimer */}
       <footer className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-xs text-center space-y-4 opacity-30">
+        <Link 
+          href="/access"
+          className="block text-[7px] uppercase tracking-[0.4em] text-gray-500 hover:text-white transition-all opacity-20 hover:opacity-100 mb-6"
+        >
+          // Acceso Protocol_
+        </Link>
         <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-[0.4em] text-gray-500 px-2 font-mono">
            <span>Ventana Activa</span>
            <span className="text-white">17 / 50</span>
