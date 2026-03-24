@@ -30,6 +30,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { GamificationListener } from "@/components/gamification/GamificationListener";
 import { TourEngine } from "@/components/onboarding/TourEngine";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 
 // Removed: fetchUserName was a mock function for Vitalik's address
 // that was unsafe (hardcoded dependencies) and inefficient (300ms delay)
@@ -56,12 +57,13 @@ export function DashboardClientWrapper({
   const pathname = usePathname();
   const { account } = usePersistedAccount();
   const { user, state: authState } = useAuth();
+  const { isAdmin: isClientAdmin } = useAdmin();
   const { profile } = useProfile();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
 
-  // Determinar acceso consolidado
-  const hasAccess = isAdmin || isSuperAdmin || user?.hasAccess;
+  // Determinar acceso consolidado (Servidor + Cliente + Easter Egg)
+  const hasAccess = isAdmin || isSuperAdmin || user?.hasAccess || isClientAdmin;
 
   // Estados de loading para controlar UI
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
