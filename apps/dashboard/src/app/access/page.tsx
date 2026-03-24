@@ -2,7 +2,7 @@
 
 import { NFTGate } from "@/components/nft-gate";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ConnectButton } from "thirdweb/react";
+import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 import { Loader2, ShieldCheck, Zap } from "lucide-react";
@@ -18,7 +18,8 @@ import PortalActivated from "@/components/nft-gating/PortalActivated";
  * ============================================================================
  */
 export default function AccessPage() {
-  const { user, state } = useAuth();
+  const { user, state, login } = useAuth();
+  const account = useActiveAccount();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
@@ -139,6 +140,18 @@ export default function AccessPage() {
                             label: "IDENTIFICAR ADDRESS"
                           }}
                         />
+
+                        {account && state === "guest" && (
+                          <div className="mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-700">
+                            <p className="text-[10px] text-gray-500 mb-4 uppercase tracking-[0.2em]">Wallet Detectada // Firma Requerida</p>
+                            <button 
+                              onClick={() => login()}
+                              className="w-full bg-lime-500 text-black py-4 text-[10px] font-black tracking-[0.4em] uppercase hover:bg-lime-400 transition-all shadow-lg"
+                            >
+                              FIRMAR PROTOCOLO DE ACCESO
+                            </button>
+                          </div>
+                        )}
                      </div>
                   </div>
                )}
