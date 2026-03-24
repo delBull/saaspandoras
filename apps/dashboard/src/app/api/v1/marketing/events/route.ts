@@ -173,7 +173,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
         error: 'Internal Server Error', 
         details: error?.message || 'Unknown error',
-        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+        stack: error?.stack || 'No stack available',
+        db_url_exists: !!process.env.DATABASE_URL
     }, { status: 500 });
   }
 }
