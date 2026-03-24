@@ -142,6 +142,10 @@ export function DashboardClientWrapper({
     );
   }
 
+  // Determinar si debemos ocultar el sidebar (Narrativa Genesis en Root)
+  const isRoot = pathname === '/';
+  const hideSidebar = isRoot && !hasAccess;
+
   return (
     <TokenPriceProvider>
       <TermsModalProvider>
@@ -154,6 +158,7 @@ export function DashboardClientWrapper({
               isAdmin={isAdmin}
               isSuperAdmin={isSuperAdmin}
               sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
+              hideSidebar={hideSidebar}
             >
               {/* Mobile Header - Visible only on mobile */}
               <MobileHeader 
@@ -178,37 +183,29 @@ export function DashboardClientWrapper({
                 />
               </div>
 
-              {/* 🛡️ ACCESO GATED: Solo renderizamos el contenido con shell si tiene acceso */}
-              {hasAccess ? (
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={pathname || "root"}
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -20, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="pb-4 md:pb-0 h-full"
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname || "root"}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="pb-4 md:pb-0 h-full"
+                >
+                  {!isLoadingUserData && (
+                    <Suspense
+                      fallback={
+                        <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-100px)] p-8 animate-pulse space-y-6">
+                          <div className="h-8 w-64 rounded bg-zinc-800/50" />
+                          <div className="h-64 w-full max-w-4xl rounded-2xl bg-zinc-800/30 border border-zinc-800" />
+                        </div>
+                      }
                     >
-                      {!isLoadingUserData && (
-                        <Suspense
-                          fallback={
-                            <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-100px)] p-8 animate-pulse space-y-6">
-                              <div className="h-8 w-64 rounded bg-zinc-800/50" />
-                              <div className="h-64 w-full max-w-4xl rounded-2xl bg-zinc-800/30 border border-zinc-800" />
-                            </div>
-                          }
-                        >
-                          {children}
-                        </Suspense>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-              ) : (
-                /* 🛰️ GENESIS BARRIER: Renderizamos el ComingSoon (children de page.tsx) sin Sidebar ni Shell */
-                <div className="w-full h-full min-h-screen bg-black overflow-hidden">
-                   {!isLoadingUserData && children}
-                </div>
-              )}
+                      {children}
+                    </Suspense>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </DashboardShell>
           </AutoLoginGate>
 
