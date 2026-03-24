@@ -3,20 +3,20 @@ import type { NextRequest } from 'next/server';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { withRetry } from '@/lib/database';
+import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📥 Received utility application request');
+    const isProd = process.env.NODE_ENV === 'production';
+    if (!isProd) {
+      console.log('📥 Received utility application request');
+    }
 
     const body = await request.json();
-    console.log('📦 Request body keys:', Object.keys(body));
-    console.log('📦 Request body sample values:', {
-      title: body.title,
-      businessCategory: body.businessCategory,
-      applicantWalletAddress: body.applicantWalletAddress,
-      status: body.status,
-      featured: body.featured
-    });
+    if (!isProd) {
+      console.log('📦 Request body keys:', Object.keys(body));
+    }
 
     // Validar campos requeridos
     if (!body.title || !body.description || !body.businessCategory) {
@@ -27,29 +27,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generar slug automáticamente
+    // 1. Generar slug base y fallback
     const baseSlug = body.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single
-      .trim();
+      ?.toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim() || `project-${Date.now().toString().slice(-6)}`;
 
-    let slug = baseSlug;
-    let counter = 1;
+    const safeNumber = (val: any) => {
+      const n = Number(val);
+      return isNaN(n) ? null : n;
+    };
 
-    // Check if slug exists and generate unique one (max 100 attempts to avoid infinite loop)
-    while (counter < 100) {
-      const existingProject = await db.select().from(projects).where(eq(projects.slug, slug)).limit(1);
-      if (existingProject.length === 0) break;
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-
-    // Preparar datos para inserción
+    // 2. Preparar datos para inserción (Sanitización de tipos)
     const projectData = {
       title: body.title,
-      slug: slug,
+      slug: baseSlug, 
       description: body.description,
       businessCategory: body.businessCategory,
       tagline: body.tagline || null,
@@ -62,12 +56,12 @@ export async function POST(request: NextRequest) {
       discordUrl: body.discordUrl || null,
       telegramUrl: body.telegramUrl || null,
       linkedinUrl: body.linkedinUrl || null,
-      targetAmount: body.targetAmount ? body.targetAmount.toString() : "0.00",
-      totalValuationUsd: body.totalValuationUsd ? body.totalValuationUsd.toString() : null,
+      targetAmount: body.targetAmount?.toString() || "0.00",
+      totalValuationUsd: body.totalValuationUsd?.toString() || null,
       tokenType: body.tokenType || null,
-      totalTokens: body.totalTokens ? parseInt(body.totalTokens) : null,
-      tokensOffered: body.tokensOffered ? parseInt(body.tokensOffered) : null,
-      tokenPriceUsd: body.tokenPriceUsd ? body.tokenPriceUsd.toString() : null,
+      totalTokens: safeNumber(body.totalTokens),
+      tokensOffered: safeNumber(body.tokensOffered),
+      tokenPriceUsd: body.tokenPriceUsd?.toString() || null,
       estimatedApy: body.estimatedApy || null,
       yieldSource: body.yieldSource || null,
       fundUsage: body.fundUsage || null,
@@ -80,23 +74,22 @@ export async function POST(request: NextRequest) {
       fiduciaryEntity: body.fiduciaryEntity || null,
       valuationDocumentUrl: body.valuationDocumentUrl || null,
       dueDiligenceReportUrl: body.dueDiligenceReportUrl || null,
-      // Convertir campos booleanos de string a boolean
-      stakingRewardsEnabled: body.stakingRewardsEnabled === 'true' ? true : body.stakingRewardsEnabled === 'false' ? false : null,
-      revenueSharingEnabled: body.revenueSharingEnabled === 'true' ? true : body.revenueSharingEnabled === 'false' ? false : null,
-      workToEarnEnabled: body.workToEarnEnabled === 'true' ? true : body.workToEarnEnabled === 'false' ? false : null,
-      tieredAccessEnabled: body.tieredAccessEnabled === 'true' ? true : body.tieredAccessEnabled === 'false' ? false : null,
-      discountedFeesEnabled: body.discountedFeesEnabled === 'true' ? true : body.discountedFeesEnabled === 'false' ? false : null,
-      isMintable: body.isMintable === 'true' ? true : body.isMintable === 'false' ? false : null,
-      isMutable: body.isMutable === 'true' ? true : body.isMutable === 'false' ? false : null,
-      legalEntityHelp: body.legalEntityHelp === 'true' ? true : body.legalEntityHelp === 'false' ? false : null,
+      // Sanitización explícitamente booleana
+      stakingRewardsEnabled: body.stakingRewardsEnabled === true || body.stakingRewardsEnabled === 'true',
+      revenueSharingEnabled: body.revenueSharingEnabled === true || body.revenueSharingEnabled === 'true',
+      workToEarnEnabled: body.workToEarnEnabled === true || body.workToEarnEnabled === 'true',
+      tieredAccessEnabled: body.tieredAccessEnabled === true || body.tieredAccessEnabled === 'true',
+      discountedFeesEnabled: body.discountedFeesEnabled === true || body.discountedFeesEnabled === 'true',
+      isMintable: body.isMintable === true || body.isMintable === 'true',
+      isMutable: body.isMutable === true || body.isMutable === 'true',
+      legalEntityHelp: body.legalEntityHelp === true || body.legalEntityHelp === 'true',
       updateAuthorityAddress: body.updateAuthorityAddress || null,
       applicantName: body.applicantName || null,
       applicantPosition: body.applicantPosition || null,
       applicantEmail: body.applicantEmail || null,
       applicantPhone: body.applicantPhone || null,
       applicantWalletAddress: body.applicantWalletAddress || null,
-      verificationAgreement: body.verificationAgreement === 'true' || body.verificationAgreement === true,
-      // --- NUEVOS CAMPOS DE ESTRATEGIA Y MECÁNICA ---
+      verificationAgreement: body.verificationAgreement === true || body.verificationAgreement === 'true',
       protoclMecanism: body.protoclMecanism || null,
       artefactUtility: body.artefactUtility || null,
       worktoearnMecanism: body.worktoearnMecanism || null,
@@ -104,55 +97,84 @@ export async function POST(request: NextRequest) {
       adquireStrategy: body.adquireStrategy || null,
       mitigationPlan: body.mitigationPlan || null,
       status: body.status || 'draft',
-      featured: body.featured || false,
+      featured: body.featured === true || body.featured === 'true',
     };
 
-    console.log('💾 Inserting project data:', projectData);
-
-    // Insertar proyecto en la base de datos
-    const result = await db.insert(projects).values(projectData).returning();
-
-    if (!result || result.length === 0) {
-      console.error('❌ Failed to insert project');
-      return NextResponse.json(
-        { message: 'Error al crear el proyecto' },
-        { status: 500 }
+    /**
+     * 3. SOFT IDEMPOTENCY CHECK
+     * Evita duplicados si el cliente reintenta tras un 504 (timeout).
+     */
+    if (body.applicantEmail) {
+      const existing = await withRetry(() => 
+        db.select()
+          .from(projects)
+          .where(eq(projects.applicantEmail, body.applicantEmail))
+          .limit(1)
       );
+      if (existing.length > 0 && existing[0]) {
+        const proj = existing[0];
+        if (!isProd) console.log('🔄 Idempotency hit: Project already exists for', body.applicantEmail);
+        return NextResponse.json({
+          message: 'Proyecto ya registrado con este email',
+          project: proj,
+          id: proj.id
+        });
+      }
     }
 
-    const newProject = result[0];
+    /**
+     * 4. ATOMIC INSERT WITH WAR-LEVEL SLUG COLLISION HANDLING
+     * Triple retry inmutable con entropía criptográfica.
+     */
+    async function insertProjectAtomic(data: typeof projectData) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const [inserted] = await db.insert(projects).values(data).returning();
+          return inserted;
+        } catch (err: any) {
+          // Postgres 23505: unique_violation (Blindly assume slug if constraint unknown)
+          if (err.code === '23505') {
+            if (!isProd) console.warn(`⚠️ Slug collision (attempt ${attempt + 1}), retrying...`);
+            data = { 
+              ...data, 
+              slug: `${baseSlug}-${crypto.randomUUID().slice(0, 6)}` 
+            };
+            continue; 
+          }
+          throw err;
+        }
+      }
+      throw new Error('SLUG_GENERATION_FAILED');
+    }
+
+    /**
+     * 5. EXECUTION WITH RETRY & AGGRESSIVE TIMEOUT (6s)
+     */
+    const newProject = await Promise.race([
+      withRetry(() => insertProjectAtomic(projectData)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_LIMIT_REACHED')), 6000))
+    ]) as any;
+
     if (!newProject) {
-      console.error('❌ Project insertion returned empty result');
-      return NextResponse.json(
-        { message: 'Error al crear el proyecto' },
-        { status: 500 }
-      );
+      throw new Error('Failed to create project record');
     }
 
-    console.log('✅ Project created successfully:', newProject);
+    if (!isProd) console.log('✅ Project created successfully:', newProject.id);
 
-    // 🎮 TRIGGER GAMIFICATION EVENT FOR PROJECT APPLICATION
-    try {
-      const { trackGamificationEvent } = await import('@/lib/gamification/service');
-
-      if (body.applicantWalletAddress) {
-        await trackGamificationEvent(
+    // 6. GAMIFICATION: FIRE & FORGET (NON-BLOCKING)
+    if (body.applicantWalletAddress) {
+      import('@/lib/gamification/service').then(({ trackGamificationEvent }) => {
+        trackGamificationEvent(
           body.applicantWalletAddress,
           'project_application_submitted',
           {
             projectId: newProject.id.toString(),
             projectTitle: body.title,
-            businessCategory: body.businessCategory,
-            targetAmount: body.targetAmount,
             isPublicApplication: true,
             submissionType: 'utility_form_api'
           }
-        );
-        console.log('✅ Gamification event tracked for project application');
-      }
-    } catch (gamificationError) {
-      console.warn('⚠️ Failed to track gamification event:', gamificationError);
-      // Don't fail the project creation if gamification fails
+        ).catch(gErr => console.warn('⚠️ Gamification Fire&Forget failed:', gErr.message));
+      }).catch(impErr => console.warn('⚠️ Failed to import gamification service:', impErr));
     }
 
     return NextResponse.json({
@@ -161,13 +183,16 @@ export async function POST(request: NextRequest) {
       id: newProject.id
     });
 
-  } catch (error) {
-    console.error('💥 Error creating utility application:', error);
+  } catch (error: any) {
+    const isTimeout = error.message === 'TIMEOUT_LIMIT_REACHED';
+    console.error(`💥 ${isTimeout ? 'TIMEOUT' : 'CRASH'} creating utility application:`, error.message);
+    
     return NextResponse.json(
-      { message: 'Error interno del servidor' },
-      { status: 500 }
+      { message: isTimeout ? 'La solicitud tardó demasiado, por favor intenta de nuevo.' : 'Error interno del servidor' },
+      { status: isTimeout ? 504 : 500 }
     );
   }
+
 }
 
 export function GET() {

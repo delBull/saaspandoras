@@ -1,6 +1,6 @@
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/db';
-import { marketingLeads, courses } from '@/db/schema';
+import { marketingLeads, courses, growthActionsLog } from '@/db/schema';
 import { GrowthActionType, LeadContextPayload, ProjectContextPayload, GrowthMetadata, LeadState, GrowthHistoryEntry } from './types';
 import { notificationService, ensureNotificationServiceConfigured } from '@/lib/notifications';
 
@@ -44,8 +44,8 @@ export async function executeGrowthActions(
 
   const { lead, project } = context;
 
-  if (!lead.email) {
-    console.warn(`[Growth Engine] Skipping actions for lead ${lead.id} because email is missing.`);
+  if (!lead.email && !lead.id) {
+    console.warn(`[Growth Engine] Skipping actions for lead: incomplete identity.`);
     return;
   }
 
@@ -134,7 +134,6 @@ export async function executeGrowthActions(
     }
 
     let success = false;
-
     try {
       // Set lock
       growthMetadata.executingActions[action] = true;
@@ -147,102 +146,129 @@ export async function executeGrowthActions(
       }
 
       switch (action) {
-    case 'SEND_WELCOME_EXPLORE_D1': {
-          const res = await sendExploreWelcomeEmail({
-            to: lead.email,
-            projectName: project.name,
-            differentiator: project.differentiator || 'Innovando en la Web3',
-            projectSlug: project.slug,
-            baseUrl: (project as any).baseUrl
-          });
-          success = res.success;
+        case 'SEND_WELCOME_EXPLORE_D1': {
+          if (lead.email) {
+            const res = await sendExploreWelcomeEmail({
+              to: lead.email as string,
+              projectName: project.name,
+              differentiator: project.differentiator || 'Innovando en la Web3',
+              projectSlug: project.slug,
+              baseUrl: (project as any).baseUrl
+            });
+            success = res.success;
+          } else {
+            success = true; // Skip gracefully
+          }
           break;
         }
 
         case 'SEND_WELCOME_INVEST_D1': {
-          const res = await sendInvestWelcomeEmail({
-            to: lead.email,
-            projectName: project.name,
-            projectSlug: project.slug,
-            baseUrl: (project as any).baseUrl
-          });
-          success = res.success;
+          if (lead.email) {
+            const res = await sendInvestWelcomeEmail({
+              to: lead.email as string,
+              projectName: project.name,
+              projectSlug: project.slug,
+              baseUrl: (project as any).baseUrl
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
           break;
         }
 
         case 'SEND_WELCOME_B2B_D1': {
-          const res = await sendB2BWelcomeEmail({
-            to: lead.email,
-            projectName: project.name,
-            source: lead.metadata?.source || 'direct',
-            subType: lead.metadata?.type || 'general'
-          });
-          success = res.success;
+          if (lead.email) {
+            const res = await sendB2BWelcomeEmail({
+              to: lead.email as string,
+              projectName: project.name,
+              source: lead.metadata?.source || 'direct',
+              subType: lead.metadata?.type || 'general'
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
           break;
         }
 
         case 'SEND_FOLLOWUP_B2B_D2': {
-          const res = await sendB2BFollowupEmail({
-            to: lead.email,
-            projectName: project.name,
-          });
-          success = res.success;
+          if (lead.email) {
+            const res = await sendB2BFollowupEmail({
+              to: lead.email as string,
+              projectName: project.name,
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
           break;
         }
 
         case 'SEND_CALL_REMINDER_D3':
         case 'SEND_CALL_REMINDER_D1':
         case 'SEND_CALL_REMINDER_D0': {
-          // Extract meeting info from metadata if available
-          const typeMap = {
-            'SEND_CALL_REMINDER_D3': 'D-3',
-            'SEND_CALL_REMINDER_D1': 'D-1',
-            'SEND_CALL_REMINDER_D0': 'D-0'
-          } as const;
+          if (lead.email) {
+            const typeMap = {
+              'SEND_CALL_REMINDER_D3': 'D-3',
+              'SEND_CALL_REMINDER_D1': 'D-1',
+              'SEND_CALL_REMINDER_D0': 'D-0'
+            } as const;
 
-          const res = await sendCallReminderEmail({
-            to: lead.email,
-            name: lead.name || 'Founder',
-            meetingDate: lead.metadata?.booking?.date || 'por confirmar',
-            meetingTime: lead.metadata?.booking?.time || 'por confirmar',
-            type: typeMap[action]
-          });
-          success = res.success;
+            const res = await sendCallReminderEmail({
+              to: lead.email as string,
+              name: lead.name || 'Founder',
+              meetingDate: lead.metadata?.booking?.date || 'por confirmar',
+              meetingTime: lead.metadata?.booking?.time || 'por confirmar',
+              type: typeMap[action]
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
           break;
         }
 
         case 'SEND_BOOKING_CONFIRMED': {
-          const res = await sendBookingConfirmedEmail({
-            to: lead.email,
-            name: lead.name || 'Founder',
-            meetingDate: lead.metadata?.booking?.date || 'por confirmar',
-            meetingTime: lead.metadata?.booking?.time || 'por confirmar',
-          });
-          success = res.success;
+          if (lead.email) {
+            const res = await sendBookingConfirmedEmail({
+              to: lead.email as string,
+              name: lead.name || 'Founder',
+              meetingDate: lead.metadata?.booking?.date || 'por confirmar',
+              meetingTime: lead.metadata?.booking?.time || 'por confirmar',
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
           break;
         }
 
         case 'SEND_BOOKING_CANCELLED' as any: // Added handling for cancelled
-             console.log(`[Growth Engine] Handling booking cancellation for ${lead.email}`);
+             console.log(`[Growth Engine] Handling booking cancellation for ${lead.email || 'anonymous'}`);
              success = true;
              break;
 
         case 'SEND_NO_SHOW_RECOVERY': {
-          const res = await sendNoShowRecoveryEmail({
-            to: lead.email,
-            name: lead.name || 'Founder',
-          });
-          success = res.success;
+          if (lead.email) {
+            const res = await sendNoShowRecoveryEmail({
+              to: lead.email as string,
+              name: lead.name || 'Founder',
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
           break;
         }
 
         case 'NOTIFY_TEAM':
           // Extreme: Urgency Tiers (Audit 1)
           const { classifyIntent } = await import("./engine");
-          const urgency = classifyIntent(freshLead.score || 0, (growthMetadata as any).state || 'NEW', currentMetadata);
+          const urgency = classifyIntent(freshLead?.score || 0, (growthMetadata as any).state || 'NEW', currentMetadata);
           
           if (ruleInfo?.isStressTest) {
-              console.log(`[Growth Engine] 🧪 MOCK: Notification Tier ${urgency} for ${lead.email}`);
+              console.log(`[Growth Engine] 🧪 MOCK: Notification Tier ${urgency} for ${lead.email || 'anonymous'}`);
               success = true;
           } else {
               ensureNotificationServiceConfigured();
@@ -253,7 +279,7 @@ export async function executeGrowthActions(
 
         case 'ASSIGN_COURSE':
           // Mock discovery
-          console.log(`[Growth Engine] Assigned course to ${lead.email}`);
+          console.log(`[Growth Engine] Assigned course to ${lead.email || 'anonymous'}`);
           success = true;
           break;
           
@@ -264,7 +290,7 @@ export async function executeGrowthActions(
 
         case 'GENERATE_LEAD_BRIEF': {
           // Mock generation
-          console.log(`[Growth Engine] Brief generated for ${lead.email}`);
+          console.log(`[Growth Engine] Brief generated for ${lead.email || 'anonymous'}`);
           success = true;
           break;
         }
@@ -272,14 +298,16 @@ export async function executeGrowthActions(
         case 'SEND_SOW': {
             // SOW (Statement of Work) logic
             if (ruleInfo?.isStressTest) {
-                console.log(`[Growth Engine] 🧪 MOCK: SOW Sent to ${lead.email}`);
+                console.log(`[Growth Engine] 🧪 MOCK: SOW Sent to ${lead.email || 'anonymous'}`);
                 success = true;
-            } else {
+            } else if (lead.email) {
                 ensureNotificationServiceConfigured();
                 success = await notificationService.notifyGrowthLead({
                     ...lead,
                     metadata: { ...lead.metadata, system_note: 'HOT LEAD: SEND SOW IMMEDIATELY' }
                 }, project);
+            } else {
+                success = true;
             }
             break;
         }
@@ -298,7 +326,6 @@ export async function executeGrowthActions(
       } else {
         failures[action] = "Action returned false or skipped (check logs)";
       }
-      
     } catch (error: any) {
        console.error(`[Growth Engine] Error in ${action}:`, error);
        failures[action] = error.message || String(error);
@@ -317,10 +344,10 @@ export async function executeGrowthActions(
                status: success ? 'completed' : 'failed',
                executionTimeMs: Date.now() - startTime,
                inputSnapshot: { 
-                   score: freshLead.score, 
+                   score: freshLead?.score, 
                    metadata: { ...currentMetadata, growth: undefined } 
                },
-               metadata: { projectSlug: project.slug, email: lead.email, bypass: wasBypassUsed }
+               metadata: { projectSlug: project.slug, email: lead.email, isStress: ruleInfo?.isStressTest }
            });
 
            // Performance Alart (Audit 7: Surgical)
@@ -329,7 +356,6 @@ export async function executeGrowthActions(
                console.warn(`[Growth Engine] 🚨 Performance Alert: Action ${action} took ${duration}ms for ${lead.email}`);
            }
        } catch (logErr) {
-           console.error("[Growth Engine] Failed to write audit log:", logErr);
        }
     }
   }

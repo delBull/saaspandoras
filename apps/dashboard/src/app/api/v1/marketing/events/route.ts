@@ -57,10 +57,17 @@ export async function POST(req: NextRequest) {
     // 1.1 Create Lead if missing (Audit: Auto-Capture)
     if (!leadRecord) {
         const identityHash = createHash('sha256').update(`${parsedProjectId}-${fingerprint}`).digest('hex');
+        
+        // ELITE FIX: Capture email/name immediately if available in metadata
+        const initialEmail = metadata?.email;
+        const initialName = metadata?.name;
+
         const [newLead] = await db.insert(marketingLeads).values({
             projectId: parsedProjectId,
             fingerprint,
             identityHash,
+            email: initialEmail,
+            name: initialName,
             status: 'NEW' as any,
             intent: 'explore' as any,
             metadata: { first_origin: origin || "unknown" }
@@ -136,7 +143,29 @@ export async function POST(req: NextRequest) {
         throw new Error("Failed to log marketing event");
     }
 
-    // 4. Bridge to Growth Engine if lead identified
+    // 4.1. Identity Auto-Capture (Surgical: Audit 1)
+    // If we have an email/name in the metadata, and the lead is missing it, update it.
+    if (lead && (metadata?.email || metadata?.name)) {
+        const email = metadata?.email;
+        const name = metadata?.name;
+        
+        if ((email && lead.email !== email) || (name && lead.name !== name)) {
+            console.log(`[Growth OS] Identity updated for Lead ${lead.id}: ${email || 'no-email'}`);
+            await db.update(marketingLeads)
+                .set({ 
+                    email: email || lead.email, 
+                    name: name || lead.name,
+                    updatedAt: new Date() 
+                })
+                .where(eq(marketingLeads.id, lead.id));
+            
+            // Update local lead object for the engine
+            if (email) lead.email = email;
+            if (name) lead.name = name;
+        }
+    }
+
+    // 4.2. Bridge to Growth Engine if lead identified
     if (lead && eventRecord) {
         try {
             const { resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
@@ -147,7 +176,8 @@ export async function POST(req: NextRequest) {
                 metadata: lead.metadata as any
             });
 
-            if (engineResult && engineResult.actions.length > 0) {
+            // ELITE FIX: Call engine if there are actions OR if there is a score change
+            if (engineResult && (engineResult.actions.length > 0 || (engineResult.scoreChange && engineResult.scoreChange !== 0))) {
                 await executeGrowthActions(
                     engineResult.actions, 
                     { lead: lead as any, project: (lead as any).project },
