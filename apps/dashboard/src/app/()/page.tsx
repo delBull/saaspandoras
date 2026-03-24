@@ -265,8 +265,8 @@ export default function DashboardPage() {
   }
 
   // 🛡️ BARRERA PRINCIPAL (NIVEL PRODUCCIÓN - NARRATIVA)
-  // En Main, mostramos la landing de anticipación (ComingSoon) como primera barrera.
-  if (isMaintenance && !isAdmin && !user?.hasAccess) {
+  // En Main, mostramos la landing de anticipación (ComingSoon) como primera barrera para todos los que no tienen acceso.
+  if (!isAdmin && !user?.hasAccess) {
     return <ComingSoon />;
   }
   const [leadModal, setLeadModal] = useState(false);

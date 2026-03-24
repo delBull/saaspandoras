@@ -29,6 +29,7 @@ import { useProfile } from "@/hooks/useProfile";
 // import { useGamificationContext } from "@pandoras/gamification";
 import { GamificationListener } from "@/components/gamification/GamificationListener";
 import { TourEngine } from "@/components/onboarding/TourEngine";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 // Removed: fetchUserName was a mock function for Vitalik's address
 // that was unsafe (hardcoded dependencies) and inefficient (300ms delay)
@@ -54,9 +55,13 @@ export function DashboardClientWrapper({
 }) {
   const pathname = usePathname();
   const { account } = usePersistedAccount();
+  const { user, state: authState } = useAuth();
   const { profile } = useProfile();
-  const [userName, setUserName] = useState<string | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  // Determinar acceso consolidado
+  const hasAccess = isAdmin || isSuperAdmin || user?.hasAccess;
 
   // Estados de loading para controlar UI
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
@@ -173,33 +178,8 @@ export function DashboardClientWrapper({
                 />
               </div>
 
-              {/* Admin Bypass: Admins skip NFT Gate check only if wallet is connected */}
-              {(isAdmin || isSuperAdmin) && account?.address ? (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={pathname}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="pb-4 md:pb-0 h-full"
-                  >
-                    {!isLoadingUserData && (
-                      <Suspense
-                        fallback={
-                          <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-100px)] p-8 animate-pulse space-y-6">
-                            <div className="h-8 w-64 rounded bg-zinc-800/50" />
-                            <div className="h-64 w-full max-w-4xl rounded-2xl bg-zinc-800/30 border border-zinc-800" />
-                          </div>
-                        }
-                      >
-                        {children}
-                      </Suspense>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-              ) : (
-                <NFTGate>
+              {/* 🛡️ ACCESO GATED: Solo renderizamos el contenido con shell si tiene acceso */}
+              {hasAccess ? (
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={pathname || "root"}
@@ -223,7 +203,11 @@ export function DashboardClientWrapper({
                       )}
                     </motion.div>
                   </AnimatePresence>
-                </NFTGate>
+              ) : (
+                /* 🛰️ GENESIS BARRIER: Renderizamos el ComingSoon (children de page.tsx) sin Sidebar ni Shell */
+                <div className="w-full h-full min-h-screen bg-black overflow-hidden">
+                   {!isLoadingUserData && children}
+                </div>
               )}
             </DashboardShell>
           </AutoLoginGate>
