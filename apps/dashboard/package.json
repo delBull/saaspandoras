@@ -15,13 +15,13 @@
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:production": "node migrate-production.mjs",
     "db:create-users-table": "node create-users-table.mjs",
-    "db:fix-production": "node call-api.mjs",
+    "db:fix-production": "node scripts/db.bootstrap.mjs",
     "db:export-local": "node export-local-schema.mjs",
     "db:sync-production": "node sync-production.mjs",
     "db:full-sync": "node full-sync.mjs",
     "db:sync-local-to-staging": "node sync-local-to-staging.mjs",
     "db:push:pg": "drizzle-kit push",
-    "db:seed:narai": "node src/db/seeds/narai.mjs"
+    "db:seed:ecosystem": "node scripts/db.seed.ecosystem.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
