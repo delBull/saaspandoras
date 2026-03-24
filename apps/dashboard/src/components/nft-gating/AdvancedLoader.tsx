@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shadows_Into_Light } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -18,8 +18,9 @@ interface AdvancedLoaderProps {
 
 const words = [
   "Validando tu wallet",
-  "Estamos haciendo magia",
-  "Construyendo tu acceso",
+  "Activando acceso...",
+  "Asignando beneficios...",
+  "Sincronizando con el Growth OS",
   "Lugar asegurado.. casi listo",
 ];
 
@@ -31,6 +32,7 @@ export function AdvancedLoader({ onComplete, isMinting, alreadyOwned }: Advanced
   const [progress, setProgress] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [showAlreadyOwned, setShowAlreadyOwned] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (alreadyOwned) {
@@ -62,16 +64,28 @@ export function AdvancedLoader({ onComplete, isMinting, alreadyOwned }: Advanced
   }, [progress, isFinished, alreadyOwned]);
 
   useEffect(() => {
-    if (isFinished || alreadyOwned) return;
-    const interval = setInterval(() => {
-      setIndex(prevIndex => {
-        if (prevIndex < words.length - 1) {
-          return prevIndex + 1;
-        }
-        return prevIndex === 1 ? 2 : (prevIndex === 2 ? 3 : 1);
+    if (isFinished || alreadyOwned) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+
+    const loopSequence = [0, 1, 2, 3, 4]; // Indices of words array
+
+    // Cleanup existing interval before starting a new one
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      setIndex(prev => {
+        const currentIdxInLoop = loopSequence.indexOf(prev);
+        if (currentIdxInLoop === -1) return 0;
+        const nextVal = loopSequence[(currentIdxInLoop + 1) % loopSequence.length];
+        return typeof nextVal === 'number' ? nextVal : 0;
       });
     }, 3000);
-    return () => clearInterval(interval);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [isFinished, alreadyOwned]);
 
   const displayedText = showAlreadyOwned ? alreadyOwnedWord : (isFinished ? finalWord : words[index]) ?? '';

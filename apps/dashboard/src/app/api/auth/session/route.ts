@@ -38,7 +38,8 @@ export async function GET(_request: Request) {
     const users = await sql`
       SELECT "id", "name", "email", "image", "walletAddress",
              "connectionCount", "lastConnectionAt", "createdAt",
-             "kycLevel", "kycCompleted", "kycData"
+             "kycLevel", "kycCompleted", "kycData",
+             "access_cohort" as "accessCohort", "benefits_tier" as "benefitsTier"
       FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;

@@ -12,7 +12,9 @@ import {
   sendB2BFollowupEmail,
   sendCallReminderEmail,
   sendBookingConfirmedEmail,
-  sendNoShowRecoveryEmail
+  sendNoShowRecoveryEmail,
+  sendWaitlistSequenceEmail,
+  sendGenesisWelcomeEmail
 } from '@/lib/marketing/growth-engine/email-senders';
 
 export async function executeGrowthActions(
@@ -254,6 +256,70 @@ export async function executeGrowthActions(
             const res = await sendNoShowRecoveryEmail({
               to: lead.email as string,
               name: lead.name || 'Founder',
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
+          break;
+        }
+
+        case 'SEND_WAITLIST_WELCOME_D0': {
+          if (lead.email) {
+            const res = await sendWaitlistSequenceEmail({
+              to: lead.email as string,
+              step: 1
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
+          break;
+        }
+
+        case 'SEND_WAITLIST_NARRATIVE_D1': {
+          if (lead.email) {
+            const res = await sendWaitlistSequenceEmail({
+              to: lead.email as string,
+              step: 2
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
+          break;
+        }
+
+        case 'SEND_WAITLIST_STATUS_D2': {
+          if (lead.email) {
+            const res = await sendWaitlistSequenceEmail({
+              to: lead.email as string,
+              step: 3
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
+          break;
+        }
+
+        case 'SEND_WAITLIST_ACTIVATION_D3': {
+          if (lead.email) {
+            const res = await sendWaitlistSequenceEmail({
+              to: lead.email as string,
+              step: 4
+            });
+            success = res.success;
+          } else {
+            success = true;
+          }
+          break;
+        }
+
+        case 'SEND_GENESIS_WELCOME': {
+          if (lead.email) {
+            const res = await sendGenesisWelcomeEmail({
+              to: lead.email as string
             });
             success = res.success;
           } else {

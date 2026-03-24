@@ -163,7 +163,8 @@ export async function POST(request: Request) {
                     lastConnectionAt: now,
                     updatedAt: now,
                     connectionCount: currentCount + 1,
-                    hasPandorasKey: hasAccess
+                    hasPandorasKey: hasAccess,
+                    walletVerified: true // 🛡️ Audit Fix: Identity is verified via SIWE
                 })
                 .where(eq(users.id, userId));
         } else {
@@ -175,7 +176,9 @@ export async function POST(request: Request) {
                 lastConnectionAt: now,
                 createdAt: now,
                 updatedAt: now,
-                hasPandorasKey: hasAccess
+                hasPandorasKey: hasAccess,
+                walletVerified: true, // 🛡️ Audit Fix
+                acquisitionSource: "thirdweb_auth" // 🛡️ Audit Fix
             });
             console.log(`🆕 User created with unified ID: ${userId}`);
         }

@@ -108,6 +108,12 @@ export const users = pgTable("users", {
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+
+  // --- ACCESS RELEASE MANAGEMENT (GENESIS STRATEGY) ---
+  accessCohort: varchar("access_cohort", { length: 50 }).default('public'), // beta, public
+  benefitsTier: varchar("benefits_tier", { length: 50 }).default('standard'), // genesis, standard
+  accessGrantedAt: timestamp("access_granted_at"),
+  walletVerified: boolean("wallet_verified").default(false).notNull(),
 });
 
 export const sessions = pgTable("sessions", {

@@ -42,6 +42,8 @@ interface User {
     name?: string | null;
     image?: string | null;
     isAdmin?: boolean;
+    benefitsTier?: 'genesis' | 'standard' | null;
+    accessCohort?: 'beta' | 'public' | null;
 }
 
 interface AuthContextType {

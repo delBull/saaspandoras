@@ -37,7 +37,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
  * 
  * ============================================================================
  */
-export function NFTGate({ children }: { children: React.ReactNode }) {
+export function NFTGate({ children, onVerified }: { children: React.ReactNode; onVerified?: () => void }) {
   const account = useActiveAccount();
   const { user, login, state, refreshSession } = useAuth();
   const isAuthLoading = state !== "authenticated" && state !== "guest";
@@ -77,8 +77,21 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       setGateStatus("awaiting_confirmation");
 
       sendTransaction(transaction, {
-        onSuccess: (txResult) => {
+        onSuccess: async (txResult) => {
           console.log("✅ Mint Successful:", txResult);
+          
+          // 🧬 Genesis Access Classification
+          try {
+            console.log("🧬 [GATE] Assigning access benefits...");
+            await fetch("/api/access/assign", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: user?.id })
+            });
+          } catch (e) {
+            console.error("[GATE] Classification failed", e);
+          }
+
           setGateStatus("success");
           setShowSuccessAnimation(true);
 
@@ -225,6 +238,10 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
         onClose={() => {
           setGateStatus("idle");
           hasStartedProcessing.current = false;
+          // Trigger the portal transition if provided
+          if (gateStatus === "success" || gateStatus === "has_key") {
+            onVerified?.();
+          }
         }}
       />
     );

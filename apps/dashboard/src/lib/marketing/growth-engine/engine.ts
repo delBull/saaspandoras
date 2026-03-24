@@ -10,14 +10,30 @@ export function resolveGrowthAction(event: GrowthEvent, lead: LeadContextPayload
   let nextState: LeadState = currentLeadState;
   let actions: GrowthActionType[] = [];
 
-  // 2. Normalization for backward compatibility
+  // Normalization for backward compatibility
   const normalizedIntent = typeof lead.intent === 'string' ? lead.intent.toLowerCase() : 'explore';
 
   // 3. State Engine Logic
+  // --- TIME-BASED AUTO-TRIGGER (Nurturing Sequence) ---
+  const lastWaitlistWelcome = lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_WELCOME_D0'];
+  if (lastWaitlistWelcome && typeof lastWaitlistWelcome === 'number') {
+    const hoursSinceJoin = (Date.now() - lastWaitlistWelcome) / (1000 * 60 * 60);
+    const executed = lead.metadata?.growth?.executedActions || {};
+
+    if (hoursSinceJoin > 72 && !executed['SEND_WAITLIST_ACTIVATION_D3']) {
+      actions.push('SEND_WAITLIST_ACTIVATION_D3');
+    } else if (hoursSinceJoin > 48 && !executed['SEND_WAITLIST_STATUS_D2']) {
+      actions.push('SEND_WAITLIST_STATUS_D2');
+    } else if (hoursSinceJoin > 24 && !executed['SEND_WAITLIST_NARRATIVE_D1']) {
+      actions.push('SEND_WAITLIST_NARRATIVE_D1');
+    }
+  }
+
   // Special Rule: If lead is already SCHEDULED or CONVERTED, we block most passive events
   if (currentLeadState === 'SCHEDULED' && event === 'LEAD_CAPTURED') {
       return { nextState: 'SCHEDULED', actions: [], delay: null };
   }
+
   switch (event) {
     case 'LEAD_CAPTURED':
       if (lead.scope === 'b2b') {
@@ -168,6 +184,87 @@ export function resolveGrowthAction(event: GrowthEvent, lead: LeadContextPayload
           ruleId: 'FEEDBACK_BOUNCE',
           ruleCondition: 'Communication channel failed'
       };
+
+    case 'WAITLIST_JOIN': {
+      nextState = 'EXPLORE';
+      actions = ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'];
+      
+      // FINANCIAL SCORING MULTIPLIER (Psychology of Capital)
+      let scoreChange = 10;
+      const capital = Number(lead.metadata?.capital || 0);
+      const interest = lead.metadata?.interest;
+      const horizon = lead.metadata?.horizon;
+
+      if (capital >= 100000) scoreChange += 80;
+      else if (capital >= 50000) scoreChange += 40;
+
+      if (interest === 'Equity') scoreChange += 25;
+      else if (interest === 'Early Access') scoreChange += 15;
+
+      if (horizon === 'Largo') scoreChange += 20;
+
+      return { 
+        nextState, actions, scoreChange, priority: 50, delay: null,
+        ruleId: 'WAITLIST_QUALIFICATION',
+        ruleCondition: `Capital: ${capital}, Interest: ${interest}`
+      };
+    }
+
+    case 'WAITLIST_FAST_TRACK':
+      return { 
+        nextState: currentLeadState, 
+        actions: [], 
+        scoreChange: 30, 
+        priority: 60, 
+        delay: null,
+        ruleId: 'WAITLIST_ACCELERATION',
+        ruleCondition: 'User clicked Fast Track button'
+      };
+
+    case 'USER_CLASSIFIED_GENESIS':
+      return { 
+        nextState: 'ENGAGED', 
+        actions: ['SEND_GENESIS_WELCOME', 'NOTIFY_TEAM'], 
+        scoreChange: 50, 
+        priority: 70, 
+        delay: null,
+        ruleId: 'GENESIS_CLASSIFICATION',
+        ruleCondition: 'User categorized as Genesis (Early Window)'
+      };
+
+    case 'USER_CLASSIFIED_STANDARD':
+      return { 
+        nextState: currentLeadState, 
+        actions: [], 
+        scoreChange: 10, 
+        priority: 30, 
+        delay: null,
+        ruleId: 'STANDARD_CLASSIFICATION',
+        ruleCondition: 'User categorized as Standard (Public Phase)'
+      };
+
+    case 'ACCESS_ACTIVATION_COMPLETED':
+      return { 
+        nextState: 'ENGAGED', 
+        actions: ['NOTIFY_TEAM'], 
+        scoreChange: 20, 
+        priority: 50, 
+        delay: null,
+        ruleId: 'ACCESS_ACTIVATION',
+        ruleCondition: 'User successfully activated their access card'
+      };
+
+    case 'EMAIL_OPENED': {
+        const step = lead.metadata?.lastEmailStep || 0;
+        return {
+            nextState: currentLeadState,
+            actions: [],
+            scoreChange: 15,
+            delay: null,
+            ruleId: 'WAITLIST_ENGAGEMENT_OPEN',
+            ruleCondition: `Opened sequence email step ${step}`
+        };
+    }
 
     default:
       console.warn(`[Growth Engine] Unhandled event: ${event}`);
