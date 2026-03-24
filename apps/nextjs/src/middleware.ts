@@ -21,7 +21,7 @@ const noNeedProcessRoute = [
   "/en/__next_devtools__/client(.*)",
 ];
 
-const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card"];
+const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card", "/v2(.*)"];
 
 const publicRoute = [
   "/(\\w{2}/)?signin(.*)",
@@ -82,8 +82,18 @@ export default async function middleware(
     return NextResponse.next();
   }
 
-  // Check if the pathname is missing a locale
+
+  // ── /v2 is the new root ──────────────────────────────────────────────────
   const pathname = req.nextUrl.pathname;
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/v2", req.url));
+  }
+  // All /v2 routes are fully public — no auth, no locale injection
+  if (pathname.startsWith("/v2")) {
+    return NextResponse.next();
+  }
+
+  // Check if the pathname is missing a locale
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) =>
       !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`,
