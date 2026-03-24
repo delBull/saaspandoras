@@ -1251,7 +1251,9 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "confirmed",
   "rejected",
   "cancelled",
-  "rescheduled"
+  "rescheduled",
+  "no_show",
+  "completed"
 ]);
 
 export const schedulingSlots = pgTable("scheduling_slots", {
@@ -1260,6 +1262,8 @@ export const schedulingSlots = pgTable("scheduling_slots", {
   startTime: timestamp("start_time", { withTimezone: true }).notNull(),
   endTime: timestamp("end_time", { withTimezone: true }).notNull(),
   isBooked: boolean("is_booked").default(false).notNull(),
+  reservedUntil: timestamp("reserved_until", { withTimezone: true }),
+  reservedBy: varchar("reserved_by", { length: 255 }), // fingerprint or email
   type: varchar("type", { length: 50 }).default("30_min").notNull(), // '15_min', '30_min', '60_min'
 
   // Metadata
@@ -1306,7 +1310,9 @@ export const clientStatusEnum = pgEnum("client_status", [
   "negotiating",  // In conversation / Payment Link Sent
   "closed_won",   // Paid / Active
   "closed_lost",  // Rejected / Ghosted
-  "churned"       // Former client
+  "churned",       // Former client
+  "archived",      // Lost / Inactive
+  "nurturing"      // Not ready / Following up
 ]);
 
 export const paymentMethodEnum = pgEnum("payment_method", [
@@ -1386,7 +1392,9 @@ export const transactions = pgTable("transactions", {
   // Proof of Payment
   processedAt: timestamp("processed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => ({
+  linkStatusIdx: uniqueIndex("tx_link_status_idx").on(t.linkId, t.status)
+}));
 
 export const clientsRelations = relations(clients, ({ many }) => ({
   paymentLinks: many(paymentLinks),
@@ -1694,7 +1702,12 @@ export const marketingLeadStatusEnum = pgEnum("marketing_lead_status", [
   "whitelisted",
   "converted",
   "bounced",
-  "unsubscribed"
+  "unsubscribed",
+  "scheduled",
+  "no_show",
+  "cancelled",
+  "archived",
+  "nurturing"
 ]);
 
 export const marketingLeadIntentEnum = pgEnum("marketing_lead_intent", [

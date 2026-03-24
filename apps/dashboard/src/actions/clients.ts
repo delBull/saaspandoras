@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, paymentLinks, transactions, sowTemplates } from "@/db/schema";
+import { clients, paymentLinks, transactions, sowTemplates, marketingLeads } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
@@ -64,7 +64,7 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
 
         if (!link) return { success: false, error: "Link not found" };
 
-        // Insert Transaction Record
+        // Insert Transaction Record (Idempotent)
         await db.insert(transactions).values({
             linkId: link.id,
             clientId: link.clientId,
@@ -74,6 +74,8 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
             status: status === 'paid' ? 'completed' : 'pending',
             processedAt: new Date(),
             createdAt: new Date(),
+        }).onConflictDoNothing({ 
+            target: [transactions.linkId, transactions.status] 
         });
 
         // Trigger Business Logic if Paid
@@ -139,7 +141,38 @@ export async function processPaymentSuccess(linkId: string) {
                 .where(eq(clients.id, link.clientId));
         }
 
-        // 3. Send Receipt
+        // 3. PIPELINE SYNC: Update Marketing Lead to 'converted'
+        try {
+            await db.update(marketingLeads)
+                .set({ 
+                    status: 'converted',
+                    updatedAt: new Date()
+                })
+                .where(eq(marketingLeads.email, client.email.toLowerCase().trim()));
+            
+            // Trigger Growth Engine Event
+            const { resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
+            const { executeGrowthActions } = await import("@/lib/marketing/growth-engine/actions");
+            
+            const results = resolveGrowthAction('PURCHASED', {
+                id: client.id, // Using client ID as lead proxy if they match
+                email: client.email,
+                intent: 'purchase',
+                projectId: 1, // Default Pandoras
+                score: 100
+            });
+
+            if (results) {
+                await executeGrowthActions(results.actions, {
+                    lead: { id: client.id, email: client.email, intent: 'purchase', projectId: 1 },
+                    project: { id: 1, name: "Pandora's Finance", slug: "pandoras" }
+                });
+            }
+        } catch (syncErr) {
+            console.error("[Payments] Lead sync failed:", syncErr);
+        }
+
+        // 4. Send Receipt
         await sendReceiptEmail(client.email, client.name || "Builder", link.title, link.amount);
 
         return { success: true };

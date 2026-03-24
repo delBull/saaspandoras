@@ -1382,7 +1382,7 @@ export default function GrowthOSSubTab() {
         {activeSection === 'performance' && (
           <CampaignPerformanceDashboard projectId={Number(selectedProjectId)} />
         )}
-        {activeSection === 'developers' && selectedProjectId !== 'all' && (
+        {activeSection === 'developers' && (
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* Developer Hub Header */}
             <div className="bg-gradient-to-r from-zinc-900/40 to-indigo-950/20 p-8 rounded-[2.5rem] border border-indigo-500/20">
@@ -1391,7 +1391,9 @@ export default function GrowthOSSubTab() {
                 Developer Hub
               </h3>
               <p className="text-zinc-400 text-sm max-w-2xl font-medium">
-                Configuración técnica, integración de webhooks y gestión de dominios autorizados para el Growth Widget v2.0.
+                {selectedProjectId === 'all' 
+                  ? "Configuración global para integraciones externas y gestión del Pandora Growth Widget."
+                  : "Configuración técnica, integración de webhooks y gestión de dominios autorizados para el Growth Widget v2.0."}
               </p>
             </div>
 
@@ -1402,7 +1404,7 @@ export default function GrowthOSSubTab() {
                 <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6">
                   <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                     <Fingerprint className="w-4 h-4 text-purple-400" />
-                    API Credentials
+                    API Credentials {selectedProjectId === 'all' && <Badge variant="outline" className="text-[8px] border-zinc-700 text-zinc-500 uppercase">Global</Badge>}
                   </h4>
                   <div className="space-y-4">
                     <div className="space-y-1.5">
@@ -1432,7 +1434,7 @@ export default function GrowthOSSubTab() {
                 <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6">
                   <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                     <Mail className="w-4 h-4 text-blue-400" />
-                    Notifications / Webhooks
+                    Notifications / Webhooks {selectedProjectId === 'all' && <Badge variant="outline" className="text-[8px] border-zinc-700 text-zinc-500 uppercase">Default</Badge>}
                   </h4>
                   <div className="space-y-4">
                     <div className="space-y-1.5">
@@ -1443,15 +1445,21 @@ export default function GrowthOSSubTab() {
                           value={discordWebhookUrl}
                           onChange={(e) => setDiscordWebhookUrl(e.target.value)}
                           className="bg-zinc-950 border-zinc-800 text-white rounded-xl h-10 text-xs"
+                          disabled={selectedProjectId === 'all'}
                         />
                         <UIButton
                           onClick={() => saveProjectSettings({ discordWebhookUrl })}
                           className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6 h-10"
+                          disabled={selectedProjectId === 'all'}
                         >
                           Guardar
                         </UIButton>
                       </div>
-                      <p className="text-[9px] text-zinc-500 mt-1 italic">Recibe alertas automáticas en Discord cuando se capture un nuevo lead.</p>
+                      <p className="text-[9px] text-zinc-500 mt-1 italic">
+                        {selectedProjectId === 'all' 
+                          ? "Selecciona un protocolo específico para configurar notificaciones personalizadas de Discord."
+                          : "Recibe alertas automáticas en Discord cuando se capture un nuevo lead para este protocolo."}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1461,7 +1469,7 @@ export default function GrowthOSSubTab() {
                   <div className="flex justify-between items-center mb-6">
                     <h4 className="text-sm font-bold text-white flex items-center gap-2">
                       <Globe className="w-4 h-4 text-emerald-400" />
-                      Authorized Domains
+                      Authorized Domains {selectedProjectId === 'all' && <Badge variant="outline" className="text-[8px] border-zinc-700 text-zinc-500 uppercase">Global</Badge>}
                     </h4>
                     <Dialog open={isAddingDomain} onOpenChange={setIsAddingDomain}>
                       <DialogTrigger asChild>
@@ -1548,6 +1556,7 @@ export default function GrowthOSSubTab() {
                       Technical Health
                    </h4>
                    <UIButton
+                      disabled={selectedProjectId === 'all'}
                       onClick={async () => {
                         setIsTestingData(true);
                         setShowTestModal(true);
@@ -1568,9 +1577,14 @@ export default function GrowthOSSubTab() {
                           setIsTestingData(false);
                         }
                       }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-10 text-xs shadow-lg shadow-indigo-600/20"
+                      className={cn(
+                        "w-full font-bold rounded-xl h-10 text-xs shadow-lg",
+                        selectedProjectId === 'all' 
+                          ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                          : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20"
+                      )}
                    >
-                     VERIFICAR ENDPOINTS
+                     {selectedProjectId === 'all' ? "SELECCIONA PROTOCOLO" : "VERIFICAR ENDPOINTS"}
                    </UIButton>
                 </div>
               </div>
@@ -1588,7 +1602,7 @@ export default function GrowthOSSubTab() {
                       Quick Widget Injection
                       <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-400">SDK v2.0</Badge>
                     </h4>
-                    <p className="text-sm text-zinc-500">Copia este snippet en el {'<body>'} de la landing page de tu protocolo.</p>
+                    <p className="text-sm text-zinc-500">Copia este snippet en el {'<body>'} de la landing page {selectedProjectId === 'all' ? 'externa' : 'de tu protocolo'}.</p>
                   </div>
                 </div>
               </div>
@@ -1596,7 +1610,8 @@ export default function GrowthOSSubTab() {
               <div className="bg-zinc-950 rounded-3xl p-8 font-mono text-sm text-zinc-400 border border-zinc-800 relative group overflow-hidden">
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                   <UIButton className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6" onClick={() => {
-                    navigator.clipboard.writeText(`<script src="${window.location.origin}/js/growth-v2.js" data-project-id="${selectedProjectId}" data-theme="premium"></script>`);
+                    const snippet = `<script src="${window.location.origin}/js/growth-v2.js" data-project-id="${selectedProjectId === 'all' ? 'global' : selectedProjectId}" data-theme="premium"></script>`;
+                    navigator.clipboard.writeText(snippet);
                     toast.success("Snippet copiado");
                   }}>COPY SNIPPET</UIButton>
                 </div>
@@ -1604,7 +1619,7 @@ export default function GrowthOSSubTab() {
                   <span className="text-zinc-600">{'<!-- Pandoras Growth OS Widget -->'}</span><br/>
                   <span className="text-indigo-400">{'<script'}</span><br/>
                   {'  src="'}<span className="text-emerald-400">{window.location.origin}/js/growth-v2.js</span>{'"'}<br/>
-                  {'  data-project-id="'}<span className="text-purple-400">{selectedProjectId}</span>{'"'}<br/>
+                  {'  data-project-id="'}<span className="text-purple-400">{selectedProjectId === 'all' ? 'global' : selectedProjectId}</span>{'"'}<br/>
                   {'  data-theme="'}<span className="text-purple-400">premium</span>{'"'}<br/>
                   <span className="text-indigo-400">{'>'}{'</script>'}</span>
                 </code>

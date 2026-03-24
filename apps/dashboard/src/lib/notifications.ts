@@ -74,6 +74,7 @@ class NotificationService {
 
 👤 **Nombre**: ${lead.name || 'Anónimo'}
 📧 **Email**: ${lead.email}
+📱 **WhatsApp**: ${lead.phoneNumber || 'N/A'}
 🎯 **Intención**: ${lead.intent?.toUpperCase()}
 📊 **Score**: ${lead.score || 0}/100
 🚀 **Proyecto**: ${project.name}

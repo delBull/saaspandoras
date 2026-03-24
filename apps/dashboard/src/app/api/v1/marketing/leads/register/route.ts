@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
     // --- DUAL ENGINE AUTO-ROUTING ---
     // Detect Scope & Owner Context based on Origin or Explicit Body
-    const B2B_PATHWAYS = ['/founders', '/protocol', '/protocol-story', '/start', '/utility', '/help'];
+    const B2B_PATHWAYS = ['/founders', '/protocol', '/protocol-story', '/start', '/utility', '/help', '/growth-os'];
     const isB2BOrigin = origin && B2B_PATHWAYS.some(path => origin.includes(path));
     
     // Rule: If it's B2B origin OR explicitly b2b in body -> scope: b2b
@@ -254,9 +254,12 @@ export async function POST(req: NextRequest) {
       const engineResult = resolveGrowthAction('LEAD_CAPTURED', {
         id: result.id,
         email: result.email,
+        name: result.name,
+        phoneNumber: result.phoneNumber,
         intent: result.intent as string,
         projectId: result.projectId,
-        scope: result.scope as 'b2b' | 'b2c'
+        scope: result.scope as 'b2b' | 'b2c',
+        metadata: result.metadata
       });
       
       if (engineResult) {
