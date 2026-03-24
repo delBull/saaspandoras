@@ -15,10 +15,11 @@ import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
-import { waitForSession } from "@/lib/session";
 import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 import { Button } from "@/components/ui/button";
-import { ComingSoon } from "@/components/marketing/ComingSoon";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { Loader2 } from "lucide-react";
+import AccessPage from "../access/page";
 
 const ADMIN_WALLETS = (process.env.NEXT_PUBLIC_ADMIN_WALLETS || "").toLowerCase().split(",");
 
@@ -247,12 +248,24 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 }
 
 export default function DashboardPage() {
-  const { account } = usePersistedAccount();
+  const { user, state } = useAuth();
+  const isAdmin = user?.address && ADMIN_WALLETS.includes(user.address.toLowerCase());
   const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
-  const isAdmin = account?.address && ADMIN_WALLETS.includes(account.address.toLowerCase());
 
-  if (isMaintenance && !isAdmin) {
-    return <ComingSoon />;
+  // 🛡️ BARRERA PRINCIPAL (NIVEL PRODUCCIÓN - GENESIS)
+  // En Main, si el usuario no tiene acceso (o está en mantenimiento), forzamos Genesis.
+  // 1. Si está cargando auth, mostramos loader
+  if (state === "booting" || state === "checking_session") {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    );
+  }
+
+  // 2. Si no tiene acceso (o mantenimiento) y no es admin, forzamos la página de acceso Genesis.
+  if ((isMaintenance || !user?.hasAccess) && !isAdmin) {
+    return <AccessPage />;
   }
   const [leadModal, setLeadModal] = useState(false);
 
@@ -279,7 +292,7 @@ export default function DashboardPage() {
         // 🛡️ CRITICAL: Wait for session hydration to unlock (so we don't fetch prematurely as guest)
         await waitForSession();
 
-        const walletParam = account?.address ? `?wallet=${account.address}` : "";
+        const walletParam = user?.address ? `?wallet=${user.address}` : "";
         const res = await fetch(`/api/bootstrap${walletParam}`, {
           signal: controller.signal
         });
@@ -313,7 +326,7 @@ export default function DashboardPage() {
     load();
 
     return () => controller.abort();
-  }, [account?.address]);
+  }, [user?.address]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -324,7 +337,7 @@ export default function DashboardPage() {
           className="text-2xl md:text-3xl font-bold text-white tracking-tighter leading-tight"
           delay={500}
         />
-        {!account && (
+        {!user && (
           <div className="mt-4 flex gap-4">
             <Button 
               onClick={() => setLeadModal(true)}
