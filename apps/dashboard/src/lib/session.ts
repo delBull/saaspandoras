@@ -12,6 +12,7 @@ let sessionPromise: Promise<any> | null = null;
  * Útil en useEffects para evitar peticiones 401 mientras el AuthProvider hidrata.
  */
 export async function waitForSession(specificAddress?: string) {
+    // 🛡️ RISK #4: Strict SSR Guard to prevent cross-user session leakage on Vercel
     if (typeof window === 'undefined') return null;
 
     // Si ya hay una promesa en curso, la devolvemos para evitar múltiples fetches paralelos
