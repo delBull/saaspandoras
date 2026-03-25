@@ -8,33 +8,43 @@ import { useMemo } from "react";
  * In Account Abstraction (AA):
  * - The Smart Wallet is the "Execution" address.
  * - The EOA (Externally Owned Account) is the "Identity" / "Signer".
- * 
- * For logic like:
- * - "Does the user own this NFT?"
- * - "Is this the same user as before?"
- * We should check the EOA.
  */
 export function useEOAIdentity() {
-    const account = useActiveAccount();
+    // 🛡️ RISK #1: Safety guard for SSR hydration edges
+    const account = typeof window !== "undefined" ? useActiveAccount() : undefined;
 
-    return useMemo(() => {
+    const identityAddress = useMemo(() => {
         if (!account) return null;
 
-        // If it's a smart wallet, it might expose the EOA via getEOA() or we might need to rely on the signer.
-        // In Thirdweb v5 Account type, currently there isn't a direct `getEOA` property standard on the simplified `Account` interface 
-        // unless it's a specific SmartAccount implementation.
-        // However, for the purpose of this refactor, we will check if such a method exists or fallback to address if it's an EOA.
+        // 🛡️ RISK #3: Defensive check for smart wallet EOA extraction
+        const acc = account as any;
+        if (acc?.type === "smart" && typeof acc?.getEOA === "function") {
+            try {
+                // We attempt to get it synchronously if possible
+                const eoa = acc.getEOA();
 
-        // Note: The user snippet assumes `account.type === 'smart'` and `account.getEOA`. 
-        // We will cast/check safely.
+                if (eoa && typeof eoa === "object") {
+                    return eoa.address || acc.address;
+                }
 
-        // @ts-expect-error - 'type' and 'getEOA' might not be on the base Account interface but present on the runtime object for Smart Accounts
-        if (account.type === "smart" && typeof account.getEOA === "function") {
-            // @ts-expect-error - getEOA is not in the base type definition
-            return account.getEOA()?.address || account.getEOA();  // Adapt based on what getEOA returns (Address or Account)
+                // If it's just a string or fails to expose address
+                return (eoa as unknown as string) || acc.address;
+            } catch (e) {
+                console.warn("[useEOAIdentity] Error extracting EOA, falling back to account address:", e);
+                return acc.address;
+            }
         }
 
-        // Fallback: If we can't extract EOA, or it's already an EOA
-        return account.address;
+        return acc.address;
     }, [account]);
+
+    // 🛡️ RISK #2: Memoize getIdentity to prevent unstable references and loops in consumers
+    const getIdentity = useMemo(() => {
+        return () => identityAddress || account?.address || "";
+    }, [identityAddress, account?.address]);
+
+    return {
+        identityAddress,
+        getIdentity
+    };
 }
