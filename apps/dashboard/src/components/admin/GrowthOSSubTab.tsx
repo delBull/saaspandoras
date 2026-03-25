@@ -461,41 +461,58 @@ export default function GrowthOSSubTab() {
     }
 
     setLoadingKey(true);
+    // 🧹 Clear stale placeholder immediately so UI reflects loading state
+    setPublicKey('Cargando...');
+    setSecretKey('Cargando...');
+
     try {
       const project = projects.find(p => p.id === Number(projectId));
-      if (!project) return;
-
-      // If force is true, we skip the GET and go straight to POST
-      let data;
-      let response;
-
-      if (!force) {
-        response = await fetch(`/api/admin/projects/${project.slug}/keys`);
-        data = await response.json();
+      if (!project) {
+        setPublicKey('— Proyecto no encontrado —');
+        setSecretKey('— Proyecto no encontrado —');
+        return;
       }
 
-      if (!force && response?.ok && data.hasKeys) {
-        setPublicKey(data.publicKey);
-        setSecretKey(data.secretKey);
+      // Use slug if available, otherwise fallback to numeric ID (route handles both)
+      const routeKey = project.slug || String(project.id);
+
+      let data: any;
+      let response: Response;
+
+      if (!force) {
+        response = await fetch(`/api/admin/projects/${routeKey}/keys`);
+        data = await response.json().catch(() => ({}));
+      }
+
+      if (!force && response!?.ok && data?.hasKeys) {
+        // Existing keys: show fingerprints
+        setPublicKey(data.publicKey || '— Sin llave pública —');
+        setSecretKey(data.secretKey || '— Sin llave secreta —');
       } else {
-        // Generation/Regeneration
-        response = await fetch(`/api/admin/projects/${project.slug}/keys`, { method: 'POST' });
-        data = await response.json();
+        // Generate/Regenerate
+        response = await fetch(`/api/admin/projects/${routeKey}/keys`, { method: 'POST' });
+        data = await response.json().catch(() => ({}));
         if (response.ok) {
-          setPublicKey(data.publicKey);
-          setSecretKey(data.secretKey);
+          setPublicKey(data.publicKey || '— Error al obtener llave —');
+          setSecretKey(data.secretKey || '— Error al obtener llave —');
           if (force) toast.success("Nuevas llaves generadas exitosamente");
+          else toast.success("Llaves de API generadas para este proyecto");
         } else {
-          toast.error(data.message || "Error al generar llaves");
+          setPublicKey('— Error al generar —');
+          setSecretKey('— Error al generar —');
+          toast.error(data?.message || "Error al generar llaves");
         }
       }
     } catch (error) {
       console.error('Error fetching API Key:', error);
+      setPublicKey('— Error de conexión —');
+      setSecretKey('— Error de conexión —');
       toast.error("Fallo de conexión con el servicio de llaves");
     } finally {
       setLoadingKey(false);
     }
   };
+
 
   const handleAddDomain = () => {
     if (!newDomain) return;
