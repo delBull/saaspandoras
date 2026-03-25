@@ -261,17 +261,29 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
 }
 
 // ─── Main NFTGate ─────────────────────────────────────────────────────────
-export function NFTGate({ children }: { children: React.ReactNode }) {
+interface NFTGateProps {
+  children: React.ReactNode;
+  status?: string; // Optional context from parent
+  user?: any;      // Optional context from parent
+}
+
+export function NFTGate({ children, status: externalStatus, user: externalUser }: NFTGateProps) {
   const [visualState, setVisualState] = useState<GateVisualState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
   const [leadHydrated, setLeadHydrated] = useState(false);
 
-  const account = useActiveAccount();
+  // Hooks (Internal state if no props provided)
+  const internalAccount = useActiveAccount();
   const { connect } = useConnectModal();
-  const { user, status, triggerMint, refreshSession } = useAuth();
+  const { user: internalUser, status: internalStatus, triggerMint, refreshSession } = useAuth();
   const { isAdmin } = useAdmin();
+
+  // Use external context if available, else fallback to hooks
+  const status = externalStatus || internalStatus;
+  const user = externalUser || internalUser;
+  const account = internalAccount; // Wallet identity always comes from hook for now
   const router = useRouter();
   const { toast } = useToast();
   const ritualRunning = useRef(false);

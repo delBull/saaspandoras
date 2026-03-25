@@ -14,11 +14,12 @@ import { useState, useEffect } from "react";
  */
 export function useAdmin() {
   const account = useActiveAccount();
-  const [hasBypass, setHasBypass] = useState(false);
+  const [hasBypass, setHasBypass] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('pandoras_bypass') === 'true') {
-      setHasBypass(true);
+    if (typeof window !== 'undefined') {
+      const val = localStorage.getItem('pandoras_bypass') === 'true';
+      setHasBypass(val);
     }
   }, []);
 
@@ -30,7 +31,14 @@ export function useAdmin() {
   const isSuperAdmin = !!account && !!superAdminWallet && account.address.toLowerCase() === superAdminWallet;
   const isListedAdmin = !!account && adminWallets.includes(account.address.toLowerCase());
 
-  const isAdmin = isStaging || isSuperAdmin || isListedAdmin || hasBypass;
+  // ✅ ELITE DETERMINISTIC BYPASS (Level 11):
+  // 1. If bypass check is pending (null), it's false
+  // 2. Staging ONLY bypasses if wallet is connected
+  // 3. SuperAdmin/ListedAdmin require wallet
+  // 4. Easter Egg (hasBypass) ONLY bypasses if wallet is connected
+  const isAdmin = hasBypass === null 
+    ? false 
+    : ((!!account && isStaging) || isSuperAdmin || isListedAdmin || (hasBypass && !!account));
 
   return {
     isAdmin,
