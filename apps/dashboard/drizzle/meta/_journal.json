@@ -78,6 +78,13 @@
       "when": 1773988079963,
       "tag": "0010_free_silver_centurion",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1774408967874,
+      "tag": "0011_tired_barracuda",
+      "breakpoints": true
     }
   ]
 }
