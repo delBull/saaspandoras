@@ -56,7 +56,7 @@ export function DashboardClientWrapper({
 }) {
   const pathname = usePathname();
   const { account } = usePersistedAccount();
-  const { user, state: authState } = useAuth();
+  const { user, status } = useAuth();
   const { isAdmin: isClientAdmin } = useAdmin();
   const { profile } = useProfile();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);

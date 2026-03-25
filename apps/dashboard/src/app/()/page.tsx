@@ -15,13 +15,13 @@ import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
-import { waitForSession } from "@/lib/session";
 import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Loader2 } from "lucide-react";
 import { ComingSoon } from "@/components/marketing/ComingSoon";
+import { NFTGate } from "@/components/nft-gate";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -248,7 +248,7 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 }
 
 export default function DashboardPage() {
-  const { user, state } = useAuth();
+  const { user, status } = useAuth();
   const { isAdmin } = useAdmin();
 
   const [leadModal, setLeadModal] = useState(false);
@@ -267,7 +267,7 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (state !== "authenticated" || !user?.address) return;
+    if ((status !== "authenticated" && status !== "has_access") || !user?.address) return;
 
     const controller = new AbortController();
 
@@ -304,14 +304,11 @@ export default function DashboardPage() {
     load();
 
     return () => controller.abort();
-  }, [state, user?.address]);
+  }, [status, user?.address]);
 
   // ✅ FIX 1 — BARRERA CORRECTA EN DASHBOARD (CRÍTICO)
-  const isLoadingAuth =
-    state === "booting" ||
-    state === "wallet_ready" ||
-    state === "checking_session" ||
-    state === "authenticating";
+  const isLoadingAuth = status === "booting" || status === "checking_session" || status === "checking_access" || status === "signing" || (status === "authenticated" && !user?.hasAccess);
+  const hasEntranceAccess = isAdmin || status === "has_access";
 
   if (isLoadingAuth) {
     return (
@@ -321,21 +318,13 @@ export default function DashboardPage() {
     );
   }
 
-  // ⚠️ FIX 5 — PROTECCIÓN FINAL EN DASHBOARD
-  if (!user && state === "authenticated") {
+  // ⚠️ FINAL ACCESS GUARD (GENESIS RITUAL)
+  if (!isAdmin && status !== "has_access") {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
-      </div>
+      <NFTGate>
+         <ComingSoon /> 
+      </NFTGate>
     );
-  }
-
-  if (!isAdmin && state !== "authenticated") {
-    return <ComingSoon />;
-  }
-
-  if (!isAdmin && !user?.hasAccess) {
-    return <ComingSoon />;
   }
 
   return (

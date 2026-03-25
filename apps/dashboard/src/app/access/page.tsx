@@ -66,7 +66,7 @@ function DynamicLoader({ texts }: { texts: string[] }) {
 }
 
 export default function AccessPage() {
-  const { user, state, login } = useAuth();
+  const { user, status, runAuthFlow } = useAuth();
   const account = useActiveAccount();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -77,10 +77,16 @@ export default function AccessPage() {
 
   if (!mounted) return <div className="min-h-screen bg-black" />;
 
-  const isLoading = state === 'booting' || state === 'checking_session';
+  const isLoading = status === 'booting' || status === 'checking_session';
   
   // 🛡️ Technical Fix: Ensure user object exists before checking access to avoid loops
-  const isMinting = state === 'authenticated' && !!account && user && !user.hasAccess;
+  const isMinting = status === 'minting';
+
+  useEffect(() => {
+    if (status === "has_access" && !isVerified) {
+      handleVerified();
+    }
+  }, [status, isVerified]);
 
   const handleEnterSystem = () => router.push('/dashboard');
 
@@ -135,7 +141,7 @@ export default function AccessPage() {
         <span className="text-[7px] font-mono text-zinc-700">v2.0 // RESTRICTED</span>
       </div>
 
-      <NFTGate onVerified={handleVerified}>
+      <NFTGate>
         {showPortal ? (
           <PortalActivated tier={user?.benefitsTier} onEnter={handleEnterSystem} />
         ) : (
@@ -238,7 +244,7 @@ export default function AccessPage() {
 
                   {/* Firma SIWE si wallet conectada pero no autenticada */}
                   <AnimatePresence>
-                    {account && state === 'guest' && (
+                    {account && status === 'unauthenticated' && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -249,7 +255,7 @@ export default function AccessPage() {
                           Wallet Detectada // Firma Requerida
                         </p>
                         <motion.button
-                          onClick={() => login()}
+                          onClick={() => runAuthFlow()}
                           whileHover={{ backgroundColor: '#a3e635', color: '#000' }}
                           whileTap={{ scale: 0.97 }}
                           className="w-full bg-zinc-900 text-white py-4 text-[10px] font-black tracking-[0.4em] uppercase border border-zinc-700 transition-all"
