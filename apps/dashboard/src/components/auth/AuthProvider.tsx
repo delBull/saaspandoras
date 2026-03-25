@@ -92,6 +92,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [account?.address]);
 
     // 1. Core State Transition: React to wallet changes
+    // 🛡️ FIX 4: Booting Circuit Breaker
+    // If we're stuck in 'booting' for more than 20s, force guest state to unblock UI
+    useEffect(() => {
+        if (state !== "booting") return;
+
+        const timer = setTimeout(() => {
+            if (state === "booting") {
+                console.warn("[Auth] 🚨 Booting timed out (20s). Forcing guest state.");
+                setState("guest");
+            }
+        }, 20000);
+
+        return () => clearTimeout(timer);
+    }, [state]);
+
     useEffect(() => {
         if (isAutoConnecting) {
             console.log('[Auth] ⏳ Booting (waiting for wallet)...');

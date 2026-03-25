@@ -28,17 +28,23 @@ export async function waitForSession(walletAddress?: string): Promise<any> {
     }
 
     if (!sessionPromise || isNewWallet) {
+        // Update current wallet address if provided
         if (walletAddress) {
             currentWalletAddress = walletAddress;
         }
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s safety timeout
 
         sessionPromise = fetch("/api/auth/me", {
-            credentials: "include",
+            credentials: "include", // Keep credentials: "include" as it's important for session cookies
             headers: {
+                "x-thirdweb-address": currentWalletAddress || "", // Use currentWalletAddress
                 "Cache-Control": "no-store", // Prevent 304 stale cache during auth flow
-                "x-thirdweb-address": currentWalletAddress || "",
-            }
+            },
+            signal: controller.signal
         }).then(async (res) => {
+            clearTimeout(timeoutId);
             if (!res.ok) {
                 // If the session doesn't exist yet (401), resolve to null instead of throwing
                 // so we don't crash Promise.all() arrays. Let the caller handle the auth state.
@@ -46,8 +52,9 @@ export async function waitForSession(walletAddress?: string): Promise<any> {
             }
             return res.json();
         }).catch((err) => {
-            console.error("Session lock fetch failed:", err);
-            return null;
+            clearTimeout(timeoutId);
+            console.warn("⚠️ [Session] Fetch failed or timed out:", err.message);
+            return null; // Implicitly treat as unauthenticated/guest on failure
         });
     }
 
