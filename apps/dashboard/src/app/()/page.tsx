@@ -267,16 +267,15 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if ((status !== "authenticated" && status !== "has_access") || !user?.address) return;
-
+    const canBootstrap = !!user?.address && (status === "authenticated" || status === "has_access");
     const controller = new AbortController();
 
     const load = async () => {
+      if (!canBootstrap) return;
       try {
         const res = await fetch(`/api/bootstrap?wallet=${user.address}`, {
           signal: controller.signal
         });
-
         if (!res.ok) throw new Error("bootstrap failed");
 
         const data = await res.json();
@@ -304,11 +303,13 @@ export default function DashboardPage() {
     load();
 
     return () => controller.abort();
-  }, [status, user?.address]);
+  }, [status, user?.address, isAdmin]); // Re-run if user/status/admin changes
 
-  // ✅ FIX 1 — BARRERA CORRECTA EN DASHBOARD (CRÍTICO)
-  const isLoadingAuth = status === "booting" || status === "checking_session" || status === "checking_access" || status === "signing" || (status === "authenticated" && !user?.hasAccess);
-  const hasEntranceAccess = isAdmin || status === "has_access";
+  // ✅ FIX 1 — ELIMINATE AUTH-LOADER BLOCK (Surgical Fix)
+  const isLoadingAuth = status === "booting" || status === "checking_session" || status === "checking_access" || status === "signing";
+  
+  // ✅ FIX 2 — SECURE ENTRANCE ACCESS (Deadlock-Free)
+  const hasEntranceAccess = (isAdmin && !!user) || status === "has_access";
 
   if (isLoadingAuth) {
     return (
@@ -319,9 +320,9 @@ export default function DashboardPage() {
   }
 
   // ⚠️ FINAL ACCESS GUARD (GENESIS RITUAL)
-  if (!isAdmin && status !== "has_access") {
+  if (!hasEntranceAccess) {
     return (
-      <NFTGate>
+      <NFTGate status={status} user={user}>
          <ComingSoon /> 
       </NFTGate>
     );
