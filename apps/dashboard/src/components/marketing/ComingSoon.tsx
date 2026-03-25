@@ -51,13 +51,13 @@ export function ComingSoon() {
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 selection:bg-blue-500/30 font-sans relative overflow-hidden">
       
       {/* 🎨 ADN VISUAL: BLUE GLOW & SCI-FI DEPTH */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-blue-500/10 blur-[80px] md:blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl z-10"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-xl z-10 px-4"
       >
         <AnimatePresence mode="wait">
           {view === 'hero' && (
@@ -87,7 +87,7 @@ export function ComingSoon() {
                   PROTOCOLO DE ACCESO // v1.0
                 </h1>
                 
-                <h2 className="text-4xl md:text-6xl font-thin tracking-[0.2em] text-white leading-tight uppercase">
+                <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-[0.1em] md:tracking-[0.2em] text-white leading-tight uppercase">
                   NO ES <br/> PARA TODOS
                 </h2>
                 
