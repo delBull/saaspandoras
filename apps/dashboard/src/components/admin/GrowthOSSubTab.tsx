@@ -453,7 +453,7 @@ export default function GrowthOSSubTab() {
   const [testResult, setTestResult] = useState<any>(null);
   const [showTestModal, setShowTestModal] = useState(false);
 
-  const fetchApiKey = async (projectId: string) => {
+  const fetchApiKey = async (projectId: string, force?: boolean) => {
     if (projectId === 'all') {
       setPublicKey('pk_grow_test_xxxxxxx');
       setSecretKey('sk_grow_test_xxxxxxx');
@@ -465,22 +465,33 @@ export default function GrowthOSSubTab() {
       const project = projects.find(p => p.id === Number(projectId));
       if (!project) return;
 
-      let response = await fetch(`/api/admin/projects/${project.slug}/keys`);
-      let data = await response.json();
+      // If force is true, we skip the GET and go straight to POST
+      let data;
+      let response;
 
-      if (response.ok && data.hasKeys) {
+      if (!force) {
+        response = await fetch(`/api/admin/projects/${project.slug}/keys`);
+        data = await response.json();
+      }
+
+      if (!force && response?.ok && data.hasKeys) {
         setPublicKey(data.publicKey);
         setSecretKey(data.secretKey);
       } else {
+        // Generation/Regeneration
         response = await fetch(`/api/admin/projects/${project.slug}/keys`, { method: 'POST' });
         data = await response.json();
         if (response.ok) {
           setPublicKey(data.publicKey);
           setSecretKey(data.secretKey);
+          if (force) toast.success("Nuevas llaves generadas exitosamente");
+        } else {
+          toast.error(data.message || "Error al generar llaves");
         }
       }
     } catch (error) {
       console.error('Error fetching API Key:', error);
+      toast.error("Fallo de conexión con el servicio de llaves");
     } finally {
       setLoadingKey(false);
     }
@@ -1630,13 +1641,31 @@ export default function GrowthOSSubTab() {
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Secret Key</label>
                       <div className="flex bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-400 font-mono items-center justify-between">
-                        <span className="truncate mr-4 italic">*********************</span>
+                        <span className="truncate mr-4 italic text-zinc-500">{secretKey}</span>
                         <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {
                           navigator.clipboard.writeText(secretKey);
                           toast.success("Secret Key copiada");
                         }}>COPY</UIButton>
                       </div>
                     </div>
+
+                    {selectedProjectId !== 'all' && (
+                      <div className="pt-2">
+                        <UIButton 
+                          variant="outline" 
+                          size="sm" 
+                          disabled={loadingKey}
+                          onClick={() => fetchApiKey(selectedProjectId, true)}
+                          className="w-full rounded-xl border-dashed border-zinc-700 text-zinc-500 hover:text-white hover:border-zinc-500 text-[9px] h-8 font-black uppercase tracking-widest"
+                        >
+                          {loadingKey ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RefreshCw className="w-3 h-3 mr-2" />}
+                          Regenerar Credenciales (Rotar Llaves)
+                        </UIButton>
+                        <p className="text-[8px] text-zinc-600 mt-2 italic px-1">
+                          * Al regenerar, las llaves anteriores dejarán de funcionar instantáneamente.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
