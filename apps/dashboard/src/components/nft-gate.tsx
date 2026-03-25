@@ -46,20 +46,20 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ event, wallet: account?.address, data })
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   // 🚀 RITUAL FLOW (Animations + Triggering AuthMachine)
   const runRitual = async () => {
     if (visualState !== "idle" && visualState !== "error") return;
-    
+
     try {
       track("ritual_visual_start");
       setVisualState("checking");
-      
+
       // 1. Trigger the actual logic in AuthProvider (Machine Level 10)
       const mintPromise = triggerMint();
-      
+
       await wait(1800);
       setVisualState("minting");
       await wait(2000);
@@ -75,7 +75,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       await wait(1500);
 
       setVisualState("finalizing");
-      
+
       // 3. Final Sync with Machine
       await mintPromise;
 
@@ -96,19 +96,19 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
   // 🧬 Barrier Logic
   const isAuthLoading = ["booting", "checking_session", "checking_access"].includes(status);
-  
+
   // 🟢 CASE 1: Full Access (Bypass)
   if (status === "has_access" || (isAdmin && account)) {
     const hasSeenSuccess = sessionStorage.getItem("pandora_access_reward_seen");
     if (!hasSeenSuccess && status === "has_access") {
-       sessionStorage.setItem("pandora_access_reward_seen", "true");
-       return <SuccessNFTCard onAnimationComplete={() => router.replace("/")} />;
+      sessionStorage.setItem("pandora_access_reward_seen", "true");
+      return <SuccessNFTCard onAnimationComplete={() => router.replace("/")} />;
     }
     return <>{children}</>;
   }
 
   // ⏳ CASE 2: Identifying/Booting
-  if (!account || (isAuthLoading && account)) {
+  if (status === "booting" || (isAuthLoading && account)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-6">
         <div className="relative">
@@ -145,7 +145,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
         step={visualState as any}
         statusOverride={statusMap[visualState] || "Ejecutando protocolo..."}
         isMinting={visualState === "minting" || status === "minting"}
-        onClose={() => {}}
+        onClose={() => { }}
       />
     );
   }
@@ -176,12 +176,12 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-8">
       <div className="w-24 h-24 mb-10 relative">
-          <Image src="/images/pkey.png" alt="Key" width={120} height={120} className="relative z-10 animate-float" />
-          <div className="absolute inset-0 bg-purple-500/30 blur-3xl rounded-full animate-pulse" />
+        <Image src="/images/pkey.png" alt="Key" width={120} height={120} className="relative z-10 animate-float" />
+        <div className="absolute inset-0 bg-purple-500/30 blur-3xl rounded-full animate-pulse" />
       </div>
       <h2 className="text-3xl font-black mb-3 tracking-tighter">ACCESO REQUERIDO</h2>
       <p className="text-zinc-500 mb-12 max-w-sm text-center leading-relaxed font-medium">
-        Para entrar al Protocolo Pandora, necesitas validar tu identidad Genesis y reclamar tu slot.
+        Para entrar al Protocolo Pandora's, necesitas validar tu identidad Genesis y reclamar tu slot.
       </p>
       <button
         onClick={runRitual}
