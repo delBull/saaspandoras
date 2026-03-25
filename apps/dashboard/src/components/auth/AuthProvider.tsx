@@ -296,7 +296,7 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
      * Used exclusively after the `nft-gate` auto-mints to grant access without a second SIWE prompt.
      */
     const refreshSession = async () => {
-        if (!account) return;
+        if (!account) return null;
         try {
             console.log('[Auth] 🔄 Refreshing session state via API...');
             const res = await fetch(`/api/auth/refresh`);
@@ -308,12 +308,15 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
                     setUser(sessionData.user);
                     setState("authenticated");
                     console.log('[Auth] ✅ Session refreshed, access updated:', sessionData.user.hasAccess);
+                    return sessionData;
                 }
             } else {
                 console.log('[Auth] ❌ Refresh API returned error:', await res.text());
             }
+            return null;
         } catch (e) {
             console.error('[Auth] ❌ Failed to refresh session:', e);
+            return null;
         }
     };
 
