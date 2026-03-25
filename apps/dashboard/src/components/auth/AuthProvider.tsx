@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const trackTransition = (to: AuthStatus, data?: any) => {
       if (state.status === to) return;
-      console.log(`[AuthMachine] ⚡ ${state.status} -> ${to}`, data || "");
+      console.log(`[AuthMachine] ⚡ Transition: ${state.status} -> ${to}`, data || "");
       
       // Persist critical states
       if (to === "has_access" || to === "no_access" || to === "unauthenticated") {
@@ -149,8 +149,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const safeDispatch = (action: AuthAction, id: number) => {
-        if (flowId.current === id) {
+        if (flowId.current === id || action.type === "RESET") {
             if (action.type === "SET_STATUS") {
+                console.log(`[AuthMachine] 🟢 SET_STATUS: ${action.status} (Flow #${id})`);
                 trackTransition(action.status);
             }
             dispatch(action);
@@ -159,7 +160,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // 🛡️ REPLAY & BOOT
+    /**
+     * 🛡️ REPLAY & BOOT logic
+     */
     useEffect(() => {
         const persisted = loadPersistedState();
         if (persisted && persisted.address === account?.address) {
@@ -169,18 +172,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [account?.address, loadPersistedState]);
 
     const lastAccountRef = useRef<string | undefined>(undefined);
+    const hasBooted = useRef(false);
+
     useEffect(() => {
-        if (account?.address !== lastAccountRef.current) {
-            lastAccountRef.current = account?.address;
+        // 🔒 ORCHESTRATOR EFFECT
+        const address = account?.address;
+        
+        // Scenario A: First boot or Account changed
+        if (!hasBooted.current || address !== lastAccountRef.current) {
+            console.log(`[AuthMachine] 🔑 Context change: ${lastAccountRef.current} -> ${address}`);
+            hasBooted.current = true;
+            lastAccountRef.current = address;
+
             if (account) {
+                 console.log("[AuthMachine] 👤 Account detected, initiating unified flow...");
                  dispatch({ type: "RESET" });
                  runAuthFlow();
             } else {
+                 console.log("[AuthMachine] 👤 No account detected, reaching guest state.");
                  dispatch({ type: "SET_STATUS", status: "unauthenticated" });
                  persistState("unauthenticated");
             }
         }
     }, [account?.address]);
+
+    // 🛡️ RECOVERY TIMEOUT (Fix for Purple Spinner hangs)
+    useEffect(() => {
+        if (state.status === "booting") {
+            const timer = setTimeout(() => {
+                if (state.status === "booting") {
+                    console.warn("[AuthMachine] ⏳ Booting timeout (3s). Resolving to unauthenticated.");
+                    dispatch({ type: "SET_STATUS", status: "unauthenticated" });
+                }
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [state.status]);
 
     /**
      * FRACTURE #1: Pure refreshSession
@@ -191,7 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!res.ok) return null;
             return res.json();
         } catch (e) {
-            console.error("[AuthMachine] Refresh error:", e);
+            console.error("[AuthMachine] Session fetch error:", e);
             return null;
         }
     };
@@ -231,14 +258,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     /**
-     * UNIFIED ORCHESTRATOR (9.9/10)
+     * UNIFIED ORCHESTRATOR (Preemptive)
      */
     const runAuthFlow = async () => {
         const id = ++flowId.current;
-        if (flowInProgress.current) return;
-        flowInProgress.current = true;
-
-        console.log(`[AuthMachine] 🚀 Running auth flow #${id}...`);
+        console.log(`[AuthMachine] 🚀 Starting flow #${id} (latest)`);
 
         try {
             if (!account) {
@@ -248,15 +272,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             safeDispatch({ type: "SET_STATUS", status: "checking_session" }, id);
             
-            // ELITE OPTIMIZATION: One fetch, multiple usages
             const session = await refreshSession();
 
             if (!session?.authenticated) {
-                // FRACTURE #2: login(id)
+                console.log(`[AuthMachine] 🔐 Session stale in flow #${id}, triggering login...`);
                 await login(id);
-                // Re-validate after login
                 const postLogin = await refreshSession();
-                if (!postLogin?.authenticated) throw new Error("SIWE verification failed");
+                if (!postLogin?.authenticated) throw new Error("Verification failed after login");
                 safeDispatch({ type: "SET_STATUS", status: "authenticated", user: postLogin.user }, id);
             }
 
@@ -269,22 +291,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 safeDispatch({ type: "SET_USER", user: currentSession?.user || null }, id);
                 safeDispatch({ type: "SET_STATUS", status: "no_access" }, id);
             }
-
         } catch (err: any) {
-            console.error(`[AuthMachine] Flow #${id} Error:`, err);
+            console.error(`[AuthMachine] ❌ Flow #${id} failed:`, err);
             safeDispatch({ type: "SET_ERROR", error: err.message || "Error desconocido" }, id);
             safeDispatch({ type: "SET_STATUS", status: "error" }, id);
-        } finally {
-            flowInProgress.current = false;
         }
     };
 
+    /**
+     * MANUAL ACTIONS (Debounced)
+     */
     const triggerMint = async () => {
-        // FRACTURE #3: Isolated Flow
+        if (flowInProgress.current) return;
+        
         const id = ++flowId.current; 
         if (state.status !== "no_access" && state.status !== "ready_to_mint") return;
 
-        console.log(`[AuthMachine] 💍 Triggering isolated Mint Flow #${id}...`);
+        console.log(`[AuthMachine] 💍 Starting manual Mint Flow #${id}...`);
         flowInProgress.current = true;
         
         try {
@@ -303,10 +326,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
             });
 
-            console.log(`[AuthMachine] Transaction confirmed #${id}. Polling...`);
+            console.log(`[AuthMachine] Mint transaction confirmed. Polling for access...`);
             
             let attempts = 0;
-            // FRACTURE #6: Protected Polling
             while (attempts < 10 && flowId.current === id) {
                 const res = await refreshSession();
                 if (res?.user?.hasAccess) {
@@ -323,7 +345,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
         } catch (err: any) {
-            console.error(`[AuthMachine] Mint Error Flow #${id}:`, err);
+            console.error(`[AuthMachine] Minting error:`, err);
             
             const msg = err?.message?.toLowerCase() || "";
             if (msg.includes("already") || msg.includes("max per wallet")) {
@@ -338,7 +360,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             safeDispatch({ type: "SET_ERROR", error: err.message || "Error al solicitar acceso" }, id);
             safeDispatch({ type: "SET_STATUS", status: "error" }, id);
         } finally {
-            // FRACTURE #5: finally safety
             if (flowId.current === id) {
                 flowInProgress.current = false;
             }
@@ -358,7 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (
         <AuthContext.Provider value={{
             status: state.status === "unauthenticated" ? "guest" as AuthStatus : state.status,
-            state: state.status === "unauthenticated" ? "guest" as AuthStatus : state.status, // 🛠️ Legacy compatibility alias
+            state: state.status === "unauthenticated" ? "guest" as AuthStatus : state.status, 
             user: state.user,
             isAuthenticated: state.status === "has_access" || state.status === "authenticated",
             login,
