@@ -10,6 +10,10 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
+import { ConnectButton } from "thirdweb/react";
+import { client } from "@/lib/thirdweb-client";
+import { config } from "@/config";
+import { createWallet } from "thirdweb/wallets";
 
 /**
  * 🛰️ NFT GATE: PURE VIEW ORCHESTRATOR
@@ -79,12 +83,21 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       // 3. Final Sync with Machine
       await mintPromise;
 
-      if (status === "has_access" || user?.hasAccess) {
+      // 4. Double check access (Wait for state to propagate)
+      let finalHasAccess = status === "has_access" || user?.hasAccess;
+      
+      if (!finalHasAccess) {
+        // One final retry attempt to refresh session
+        const refreshed = await triggerMint(); 
+        finalHasAccess = status === "has_access" || user?.hasAccess;
+      }
+
+      if (finalHasAccess) {
         setVisualState("success");
         setShowSuccessAnimation(true);
         toast({ title: "Acceso Concedido", description: "Identidad Genesis sincronizada." });
-      } else if (status === "error") {
-        throw new Error("El Protocolo de Acceso falló. Verifique su conexión.");
+      } else {
+        throw new Error("No se detectó el NFT de acceso en esta wallet. Si lo acabas de mintear, espera unos segundos y reintenta.");
       }
 
     } catch (err: any) {
@@ -183,13 +196,37 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       <p className="text-zinc-500 mb-12 max-w-sm text-center leading-relaxed font-medium">
         Para entrar al Protocolo Pandora's, necesitas validar tu identidad Genesis y reclamar tu slot.
       </p>
-      <button
-        onClick={runRitual}
-        className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
-      >
-        <span className="relative z-10">Iniciar Ritual</span>
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 opacity-0 group-hover:opacity-10 transition-opacity" />
-      </button>
+      {!account ? (
+        <div className="flex flex-col items-center">
+           <ConnectButton
+            client={client}
+            theme="dark"
+            chain={config.chain}
+            appMetadata={{
+              name: "Pandora's Dashboard",
+              url: "https://dash.pandoras.finance",
+            }}
+            wallets={[
+              createWallet("io.metamask"),
+              createWallet("com.coinbase.wallet"),
+              createWallet("me.rainbow"),
+            ]}
+            connectButton={{
+                className: "bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95",
+                label: "Conectar Wallet"
+            }}
+          />
+          <p className="text-[10px] text-zinc-600 mt-4 uppercase tracking-widest font-black">Requerido para Identidad Genesis</p>
+        </div>
+      ) : (
+        <button
+          onClick={runRitual}
+          className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
+        >
+          <span className="relative z-10">Iniciar Ritual</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 opacity-0 group-hover:opacity-10 transition-opacity" />
+        </button>
+      )}
     </div>
   );
 }

@@ -42,6 +42,7 @@ export async function GET(request: Request) {
 
         // --- GLOBAL QUERIES ---
         const globalPromise = async () => {
+            console.log("🚀 [Bootstrap] Starting Global Queries");
             // 1. Fetch Featured Projects (Allow 'approved' or 'live', even if not deployed yet)
             const featuredProjectsRaw = await db.select({
                 id: projects.id,
@@ -56,6 +57,7 @@ export async function GET(request: Request) {
                 eq(projects.isDeleted, false),
                 inArray(projects.status, ['approved', 'live', 'completed'])
             ));
+            console.log(`🚀 [Bootstrap] Found ${featuredProjectsRaw.length} featured projects`);
 
             // 2. Fetch Strictly LIVE & DEPLOYED projects for Access/Artifacts
             const liveProjects = await db.select({
@@ -79,6 +81,7 @@ export async function GET(request: Request) {
                     sql`(${projects.utilityContractAddress} IS NOT NULL OR ${projects.businessCategory} != 'infrastructure' OR ${projects.businessCategory} IS NULL)`
                 )
             );
+            console.log(`🚀 [Bootstrap] Found ${liveProjects.length} live projects`);
 
             const featuredProjects = featuredProjectsRaw.map(p => ({
                 id: String(p.id),
@@ -132,16 +135,22 @@ export async function GET(request: Request) {
 
         // --- USER QUERIES ---
         const userPromise = async () => {
-            if (!walletAddress) return { profile: null, notifications: [] };
+            if (!walletAddress) {
+                console.log("🚀 [Bootstrap] No wallet provided, skipping user queries");
+                return { profile: null, notifications: [] };
+            }
+            console.log(`🚀 [Bootstrap] Starting User Queries for ${walletAddress}`);
 
             const notifications: any[] = [];
 
-            const [userRecords, eventRecords] = await Promise.all([
-                db.select().from(users).where(eq(users.walletAddress, walletAddress)).limit(1),
-                db.select().from(gamificationEvents).where(eq(gamificationEvents.userId, walletAddress)).orderBy(desc(gamificationEvents.createdAt)).limit(5)
-            ]);
+            try {
+                const [userRecords, eventRecords] = await Promise.all([
+                    db.select().from(users).where(eq(users.walletAddress, walletAddress)).limit(1),
+                    db.select().from(gamificationEvents).where(eq(gamificationEvents.userId, walletAddress)).orderBy(desc(gamificationEvents.createdAt)).limit(5)
+                ]);
 
-            const profile = userRecords[0] || null;
+                const profile = userRecords[0] || null;
+                console.log(`🚀 [Bootstrap] User found: ${!!profile}`);
 
             if (profile && !profile.telegramId) {
                 notifications.push({
@@ -169,8 +178,13 @@ export async function GET(request: Request) {
             });
 
             return { profile, notifications };
+            } catch (err: any) {
+                console.error(`❌ [Bootstrap] User Query Error: ${err.message}`);
+                return { profile: null, notifications: [], error: err.message };
+            }
         };
 
+        console.log("🚀 [Bootstrap] Dispatching parallel promises");
         const [globalData, userData] = await Promise.all([globalPromise(), userPromise()]);
 
         return NextResponse.json({
