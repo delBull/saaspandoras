@@ -29,6 +29,7 @@ type AuthStatus =
     | "ready_to_mint"
     | "minting"
     | "has_access"
+    | "guest"
     | "error";
 
 interface AuthState {
@@ -71,6 +72,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 
 interface AuthContextType {
     status: AuthStatus;
+    state: AuthStatus; // 🛠️ Legacy compatibility alias
     user: User | null;
     isAuthenticated: boolean;
     login: (id: number) => Promise<void>;
@@ -355,7 +357,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <AuthContext.Provider value={{
-            status: state.status,
+            status: state.status === "unauthenticated" ? "guest" as AuthStatus : state.status,
+            state: state.status === "unauthenticated" ? "guest" as AuthStatus : state.status, // 🛠️ Legacy compatibility alias
             user: state.user,
             isAuthenticated: state.status === "has_access" || state.status === "authenticated",
             login,
