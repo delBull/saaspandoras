@@ -203,8 +203,10 @@ export default function AdminDashboardPage() {
         const address = user?.address;
 
         if (!address) {
-          // 🛡️ If state is guest but we haven't given it time, don't fail yet
-          // Wait for the AutoLoginGate or AuthProvider to settle.
+          if (state === "guest") {
+             console.log("👤 [AdminDashboard] User is guest, setting isAdmin to false");
+             setIsAdmin(false);
+          }
           return;
         }
 
@@ -231,6 +233,7 @@ export default function AdminDashboardPage() {
         setAuthError(null);
 
       } catch (error) {
+        console.error('❌ [AdminDashboard] Error verifying admin status:', error);
         setAuthError('Error al verificar permisos administrativos en la base de datos');
         setIsAdmin(false);
       }

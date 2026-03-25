@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
-import { accessRequests } from "~/db/schema";
-import { eq } from "drizzle-orm";
-import { sendWaitlistSequenceEmail } from "~/lib/marketing/growth-engine/email-senders";
+import { accessRequests, marketingLeads, marketingIdentities } from "~/db/schema";
+import { eq, and } from "drizzle-orm";
+import { processGrowthEvent } from "@/lib/marketing/growth-engine/engine-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const GENESIS_PROJECT_ID = 1;
 
 // Public endpoint — no auth required.
 // Called from: nextjs /api/waitlist, dashboard /access page, any future surface.
@@ -58,44 +60,96 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // Check for duplicate
-    const existing = await db.query.accessRequests.findFirst({
+    // ── Legacy Sync (Backward Compatibility) ────────────────────────────────
+    const existingLegacy = await db.query.accessRequests.findFirst({
       where: eq(accessRequests.email, cleanEmail),
     });
 
-    if (existing) {
-      if (walletAddress && !existing.walletAddress) {
+    if (existingLegacy) {
+      if (walletAddress && !existingLegacy.walletAddress) {
         await db
           .update(accessRequests)
-          .set({ walletAddress, metadata: { ...(existing.metadata as object || {}), ...(metadata || {}) } })
-          .where(eq(accessRequests.id, existing.id));
+          .set({ walletAddress, metadata: { ...(existingLegacy.metadata as object || {}), ...(metadata || {}) } })
+          .where(eq(accessRequests.id, existingLegacy.id));
       }
-      return NextResponse.json({ success: true, existing: true });
+      // return NextResponse.json({ success: true, existing: true });
+    } else {
+        const score = calculateSelectionScore(cleanEmail, !!walletAddress, metadata);
+        const delayMs = getApprovalDelay(score);
+        const eligibleAt = new Date(Date.now() + delayMs);
+
+        await db.insert(accessRequests).values({
+            email: cleanEmail,
+            walletAddress: walletAddress || null,
+            intent: intent || null,
+            source: source || "unknown",
+            status: "pending",
+            score: score,
+            eligibleAt: eligibleAt,
+            metadata: metadata || null,
+        });
     }
 
-    // ── PERCEIVED SELECTION ENGINE ──────────────────────────────────────────
-    const score = calculateSelectionScore(cleanEmail, !!walletAddress, metadata);
-    const delayMs = getApprovalDelay(score);
-    const eligibleAt = new Date(Date.now() + delayMs);
+    // ── NEW GROWTH OS INTEGRATION ───────────────────────────────────────────
+    try {
+        console.log(`🚀 [access-requests] Syncing to Growth OS for ${cleanEmail}`);
+        
+        // 1. Resolve Identity
+        let identity = await db.query.marketingIdentities.findFirst({
+            where: eq(marketingIdentities.email, cleanEmail)
+        });
 
-    await db.insert(accessRequests).values({
-      email: cleanEmail,
-      walletAddress: walletAddress || null,
-      intent: intent || null,
-      source: source || "unknown",
-      status: "pending",
-      score: score,
-      eligibleAt: eligibleAt,
-      metadata: metadata || null,
-    });
+        if (!identity) {
+            const [newIdentity] = await db.insert(marketingIdentities).values({
+                email: cleanEmail,
+                walletAddress: walletAddress || null,
+                metadata: { source: source || 'waitlist' }
+            }).returning();
+            identity = newIdentity;
+        }
 
-    console.log(`✅ [access-requests] Score: ${score} | EligibleAt: ${eligibleAt.toISOString()} | email: ${cleanEmail}`);
+        // 2. Resolve Lead for Project 1 (Genesis)
+        let lead = await db.query.marketingLeads.findFirst({
+            where: and(
+                eq(marketingLeads.projectId, GENESIS_PROJECT_ID),
+                eq(marketingLeads.identityId, identity!.id)
+            )
+        });
 
-    // ── Email Step 1 ────────────────────────────────────────────────────────
-    sendWaitlistSequenceEmail({ to: cleanEmail, step: 1 })
-      .catch((e: unknown) => console.error(`[access-requests] Step 1 email failed:`, e));
+        if (!lead) {
+            const [newLead] = await db.insert(marketingLeads).values({
+                projectId: GENESIS_PROJECT_ID,
+                identityId: identity!.id,
+                email: cleanEmail,
+                walletAddress: walletAddress || null,
+                intent: (intent || 'explore') as any,
+                origin: source || 'waitlist',
+                metadata: {
+                    source_api: '/api/access-requests',
+                    ...(metadata || {})
+                }
+            }).returning();
+            lead = newLead;
+        }
 
-    return NextResponse.json({ success: true, score });
+        // 3. Fire WAITLIST_JOIN Event (This triggers the New Email Sequence)
+        await processGrowthEvent('WAITLIST_JOIN', {
+            id: lead!.id,
+            email: cleanEmail,
+            projectId: GENESIS_PROJECT_ID,
+            intent: intent || lead!.intent,
+            metadata: {
+                ...metadata,
+                timestamp: Date.now()
+            }
+        });
+
+        console.log(`✅ [access-requests] Growth OS Event Processed for ${cleanEmail}`);
+    } catch (growthErr) {
+        console.error("❌ [access-requests] Growth OS Integration failed (non-blocking):", growthErr);
+    }
+
+    return NextResponse.json({ success: true, score: 50 }); // Generic success
   } catch (err) {
     console.error("[/api/access-requests]", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
