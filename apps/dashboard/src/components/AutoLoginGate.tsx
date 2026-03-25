@@ -4,8 +4,6 @@ import type { ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useEffect, useState } from "react";
-import { waitForSession } from "@/lib/session";
-
 import { useAuth } from "@/components/auth/AuthProvider";
 
 interface AutoLoginGateProps {
@@ -30,7 +28,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
 
   // ❌ Redirect guests away from protected routes automatically
   // This is safely declared at the top level to obey Rules of Hooks
-  const { state: authState } = useAuth();
+  const { status: authStatus } = useAuth();
 
   /* 
   // ❌ Redirect guests away from protected routes automatically
@@ -87,77 +85,9 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     );
   }
 
-  // ✅ Caso 1: ya hay sesión activa EN THIRDWEB
-  if (account?.address) {
-    // If logged out flag exists even if account exists (rare race), we might want to block, 
-    // but usually UsePersistedAccount handles disconnect. 
-    // If we are here, account is likely valid or reconnected manually.
-    // Ensure wallet information is properly set in cookies for server-side requests
-    if (typeof window !== 'undefined' && account.address) {
-      document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=lax`;
-      // Also set in localStorage for consistency
-      localStorage.setItem('wallet-address', account.address);
-    }
-    return <>{children}</>;
-  }
+  // ✅ ELITE FIX: Do NOT bypass the AuthProvider state machine.
+  // We let AuthProvider decide if the user has access.
+  // This component only serves as a visual barrier during initialization.
 
-  // ✅ Caso 2: hay sesión válida en servidor (dashboard) → PERMITIR ACCESO
-  // BLOQUEAR SI HUBO LOGOUT EXPLÍCITO
-  if (!isLoggedOut && serverSession?.hasSession && serverSession?.address) {
-    // Ensure wallet information is properly set in cookies for server-side requests
-    if (typeof window !== 'undefined' && serverSession.address) {
-      document.cookie = `wallet-address=${serverSession.address}; path=/; max-age=86400; samesite=lax`;
-      localStorage.setItem('wallet-address', serverSession.address);
-    }
-    return <>{children}</>;
-  }
-
-  // ✅ Caso 3: hay wallet guardada en localStorage pero no activa → intentar sincronizar
-  if (!isLoggedOut && savedWalletAddress && !account?.address) {
-    // Ensure wallet information is properly set in cookies for server-side requests
-    if (typeof window !== 'undefined' && savedWalletAddress) {
-      document.cookie = `wallet-address=${savedWalletAddress}; path=/; max-age=86400; samesite=lax`;
-    }
-
-    if (typeof window !== 'undefined') {
-      // (La lógica del fetch directo en el cliente se eliminó de aquí ya que el hook superior maneja la redirección final)
-      return (
-        <div className="flex items-center justify-center min-h-screen text-gray-400">
-          <div className="text-center">
-            <p>Verificando sesión...</p>
-            <p className="text-xs mt-2">Sincronizando con servidor</p>
-          </div>
-        </div>
-      );
-    }
-  }
-
-  // ⏳ Caso 4: hay wallet guardada → intentando reconectar thirdweb
-  if (!isLoggedOut && canAutoReconnect) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-gray-400">
-        <div className="text-center">
-          <p>Reconectando tu sesión...</p>
-          <p className="text-xs mt-2">Restaurando wallet anterior</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ❌ Caso 5: fallback personalizado
-  if (fallback) {
-    return <>{fallback}</>;
-  }
-
-  // Mientras ocurre la redirección o verificación final del hook superior, mostramos un estado de carga
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-      <div className="text-center">
-        <div className="animate-pulse flex flex-col items-center space-y-4">
-          <div className="h-4 w-48 bg-gray-700 rounded"></div>
-          <div className="h-3 w-32 bg-gray-800 rounded"></div>
-        </div>
-      </div>
-    </div>
-  );
+  return <>{children}</>;
 }

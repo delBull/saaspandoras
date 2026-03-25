@@ -1,50 +1,24 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useReducer } from "react";
-import {
-  useActiveAccount,
-  useSendTransaction
-} from "thirdweb/react";
-import { getContract, prepareContractCall } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
-import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
-import { config } from "@/config";
+import React, { useState, useEffect } from "react";
+import { useActiveAccount } from "thirdweb/react";
 import Image from "next/image";
 import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
 import { SuccessNFTCard } from "./nft-gating/success-nft-card";
 import { useToast } from "@saasfly/ui/use-toast";
 import { Loader2 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
 
 /**
- * 🚨 CRITICAL COMPONENT: NFT GATE (WELCOME / FREE MINT SCREEN) 🚨
+ * 🛰️ NFT GATE: PURE VIEW ORCHESTRATOR
  * ============================================================================
- * WARNING: CAUTION WHEN MODIFYING THIS COMPONENT.
- * 
- * This component is the bridge between a successful thirdweb login and entering
- * the dashboard. It checks if the user has the "Pandora's Key" NFT. If not,
- * it auto-mints it on component mount using `handleMint`.
- * 
- * ⚠️ KEY LOGIC TO PRESERVE ⚠️
- * 1. DO NOT call `login()` after a successful mint. This will cause the 
- *    application to prompt the user to sign a SIWE message AGAIN (UX Failure).
- * 2. ALWAYS call `refreshSession()` and then `router.push("/")`. This hits the
- *    silent backend refresh route to verify the chain and issue a new JWT.
- * 3. The `catch` block MUST catch "Max per wallet reached" and "Already owned",
- *    and treat it as a SUCCESS. This rescues users who already own the NFT
- *    but are stuck with a stale JWT cookie.
- * 
+ * Reactive layer for the Genesis Ritual.
+ * All business logic (minting/verification) is now in AuthProvider.
  * ============================================================================
  */
-/**
- * 🛰️ NFT GATE STATE MACHINE (DETERMINISTIC FLOW)
- * ============================================================================
- * Centralizes all access ritual logic to prevent race conditions and loops.
- * ============================================================================
- */
-type GateState =
+type GateVisualState =
   | "idle"
   | "checking"
   | "minting"
@@ -54,192 +28,86 @@ type GateState =
   | "success"
   | "error";
 
-type Action =
-  | { type: "START" }
-  | { type: "MINT_START" }
-  | { type: "RETRY" }
-  | { type: "FINALIZE" }
-  | { type: "IRREVERSIBLE" }
-  | { type: "SUCCESS" }
-  | { type: "ERROR"; message?: string }
-  | { type: "RESET" };
-
-function gateReducer(state: GateState, action: Action): GateState {
-  switch (action.type) {
-    case "START": return "checking";
-    case "MINT_START": return "minting";
-    case "RETRY": return "retrying";
-    case "IRREVERSIBLE": return "confirming_irreversible";
-    case "FINALIZE": return "finalizing";
-    case "SUCCESS": return "success";
-    case "ERROR": return "error";
-    case "RESET": return "idle";
-    default: return state;
-  }
-}
-
-export function NFTGate({ children, onVerified }: { children: React.ReactNode; onVerified?: () => void }) {
-  const [gateState, dispatch] = useReducer(gateReducer, "idle");
+export function NFTGate({ children }: { children: React.ReactNode }) {
+  const [visualState, setVisualState] = useState<GateVisualState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [isFirstVisit, setIsFirstVisit] = useState(true);
 
   const account = useActiveAccount();
-  const { user, state: authState, refreshSession } = useAuth();
+  const { user, status, triggerMint } = useAuth();
   const { isAdmin } = useAdmin();
   const router = useRouter();
-  const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
 
-  const hasRun = useRef(false);
-  const isAuthLoading = authState !== "authenticated" && authState !== "guest";
-
-  // 🏛️ ELITE UTILS
   const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
-  
-  const withTimeout = <T,>(promise: Promise<T>, ms = 20000): Promise<T> =>
-    Promise.race([
-      promise,
-      new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Timeout Protocolo")), ms))
-    ]);
 
   const track = (event: string, data?: any) => {
     fetch("/api/analytics/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ event, wallet: account?.address, data })
-    }).catch(() => {}); // Silent fail
+    }).catch(() => {});
   };
 
-  const contract = getContract({
-    client,
-    chain: config.chain,
-    address: config.nftContractAddress,
-    abi: PANDORAS_KEY_ABI,
-  });
-
-  // 🧬 Behavioral Memory & Ritual Persistence
-  useEffect(() => {
-    const visited = localStorage.getItem("has_visited_pandora");
-    if (visited) setIsFirstVisit(false);
-    else localStorage.setItem("has_visited_pandora", "true");
-
-    // Recover state if mid-ritual
-    const savedState = localStorage.getItem("gate_ritual_state") as GateState;
-    if (savedState === "minting" || savedState === "retrying") {
-      runFlow();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (["idle", "success", "error"].includes(gateState)) {
-      localStorage.removeItem("gate_ritual_state");
-    } else {
-      localStorage.setItem("gate_ritual_state", gateState);
-    }
-  }, [gateState]);
-
-  // 🚀 ENTRY POINT (Robust Trigger)
-  useEffect(() => {
-    const canRun = gateState === "idle" || gateState === "error";
-    if (!account || !canRun || user?.hasAccess || (isAdmin && account)) return;
+  // 🚀 RITUAL FLOW (Animations + Triggering AuthMachine)
+  const runRitual = async () => {
+    if (visualState !== "idle" && visualState !== "error") return;
     
-    runFlow();
-  }, [account?.address, user?.hasAccess, isAdmin]);
-
-  const runFlow = async () => {
     try {
-      track("ritual_start");
-      dispatch({ type: "START" });
+      track("ritual_visual_start");
+      setVisualState("checking");
       
-      // 1. Initial Access Check
-      const session = await withTimeout(refreshSession() as any) as any;
-      if (session?.hasAccess) {
-        track("ritual_bypass_already_owned");
-        dispatch({ type: "SUCCESS" });
-        return;
-      }
+      // 1. Trigger the actual logic in AuthProvider (Machine Level 10)
+      const mintPromise = triggerMint();
+      
+      await wait(1800);
+      setVisualState("minting");
+      await wait(2000);
 
-      // 2. Prepare Ritual
-      dispatch({ type: "MINT_START" });
-      await wait(1200);
-
-      const transaction = prepareContractCall({
-        contract,
-        method: "freeMint",
-        params: [],
-      });
-
-      // 3. Send Transaction (Promise Wrapped)
-      track("mint_initiated");
-      await withTimeout(new Promise((resolve, reject) => {
-        sendTransaction(transaction, {
-          onSuccess: resolve,
-          onError: reject
-        });
-      }), 60000); // 1 min timeout for TX
-
-      // 4. Ritual Tension (Deterministic Pseudo-Random)
+      // 2. Add Visual Tension (Pseudo-deterministic)
       const seed = account?.address?.slice(-4) || "0000";
-      const pseudoRandom = parseInt(seed, 16) / 65535;
-      const retryChance = isFirstVisit ? 0.35 : 0.15;
-
-      if (pseudoRandom < retryChance) {
-        track("ritual_tension_triggered");
-        dispatch({ type: "RETRY" });
-        await wait(2500);
+      if (parseInt(seed, 16) % 4 === 0) { // 25% chance of visual "retry"
+        setVisualState("retrying");
+        await wait(3000);
       }
 
-      // 5. Irreversible Moment
-      dispatch({ type: "IRREVERSIBLE" });
+      setVisualState("confirming_irreversible");
       await wait(1500);
 
-      dispatch({ type: "FINALIZE" });
-      await wait(800);
+      setVisualState("finalizing");
+      
+      // 3. Final Sync with Machine
+      await mintPromise;
 
-      // 6. Verification & Reward
-      const finalSession = await withTimeout(refreshSession() as any) as any;
-      if (finalSession?.hasAccess) {
-        track("ritual_success");
-        dispatch({ type: "SUCCESS" });
+      if (status === "has_access" || user?.hasAccess) {
+        setVisualState("success");
         setShowSuccessAnimation(true);
-        toast({ title: "Acceso Garantizado", description: "Slot Genesis asignado con éxito." });
-        
-        await wait(3500);
-        router.replace("/");
-      } else {
-        throw new Error("Acceso no detectado tras el ritual.");
+        toast({ title: "Acceso Concedido", description: "Identidad Genesis sincronizada." });
+      } else if (status === "error") {
+        throw new Error("El Protocolo de Acceso falló. Verifique su conexión.");
       }
 
     } catch (err: any) {
-      const msg = err?.message?.toLowerCase?.() || "";
-      
-      if (msg.includes("already") || msg.includes("max per wallet")) {
-        track("ritual_rescue_success");
-        await refreshSession();
-        dispatch({ type: "SUCCESS" });
-        router.replace("/");
-        return;
-      }
-
-      track("ritual_error", { message: err.message });
-      console.error("[NFTGate] Ritual failed:", err);
-      setErrorMessage(err.message || "Protocolo interrumpido.");
-      dispatch({ type: "ERROR" });
+      console.error("[NFTGate] Ritual interrupted:", err);
+      setErrorMessage(err.message || "Interrupción de señal.");
+      setVisualState("error");
     }
   };
 
-  // 🛡️ Soft Bypass Reward (Ensures Success Animation is seen at least once per session)
-  if ((user as any)?.hasAccess || (isAdmin && account)) {
+  // 🧬 Barrier Logic
+  const isAuthLoading = ["booting", "checking_session", "checking_access"].includes(status);
+  
+  // 🟢 CASE 1: Full Access (Bypass)
+  if (status === "has_access" || (isAdmin && account)) {
     const hasSeenSuccess = sessionStorage.getItem("pandora_access_reward_seen");
-    if (!hasSeenSuccess && (user as any)?.hasAccess) {
+    if (!hasSeenSuccess && status === "has_access") {
        sessionStorage.setItem("pandora_access_reward_seen", "true");
        return <SuccessNFTCard onAnimationComplete={() => router.replace("/")} />;
     }
     return <>{children}</>;
   }
 
-  // Loading while identifying wallet/session
+  // ⏳ CASE 2: Identifying/Booting
   if (!account || (isAuthLoading && account)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-6">
@@ -247,81 +115,81 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
           <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full animate-pulse" />
           <Loader2 className="w-10 h-10 animate-spin text-purple-500 relative z-10" />
         </div>
-        <p className="text-gray-400 font-mono text-xs tracking-widest uppercase">Identificando Señal de Acceso...</p>
+        <p className="text-gray-400 font-mono text-xs tracking-widest uppercase">Escaneando Identidad...</p>
       </div>
     );
   }
 
-  // 🎭 SUCCESS UI
-  if (gateState === "success" && showSuccessAnimation) {
+  // 🎭 CASE 3: Success Animation Overlay
+  if (visualState === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
       setShowSuccessAnimation(false);
       router.replace("/");
     }} />;
   }
 
-  // 🎭 RITUAL MODAL (MintingProgressModal)
-  const isInRitual = gateState !== "idle" && gateState !== "success" && gateState !== "error";
-  
-  if (isInRitual) {
+  // 🎭 CASE 4: The Ritual Modal
+  const isRitualInProgress = !["idle", "success", "error"].includes(visualState);
+
+  if (isRitualInProgress) {
     const statusMap: Record<string, string> = {
-      checking: "Validando señales de elegibilidad...",
-      minting: "Invocando slot Genesis...",
-      retrying: "Slot ocupado. Reintentando sincronización...",
-      confirming_irreversible: "Asignación confirmada. Entrada irreversible.",
-      finalizing: "Finalizando proceso de selección...",
+      checking: "Sincronizando con el Oracle...",
+      minting: "Invocando slot de acceso...",
+      retrying: "Señal débil. Reintentando enlace...",
+      confirming_irreversible: "Fijando identidad en el ledger...",
+      finalizing: "Abriendo compuertas Genesis...",
     };
 
     return (
       <MintingProgressModal
-        step={gateState as any}
-        statusOverride={statusMap[gateState] || "Procesando ritual..."}
-        isMinting={gateState === "minting"}
-        onClose={() => {
-           // Modal is usually non-closable during ritual unless error
-        }}
+        step={visualState as any}
+        statusOverride={statusMap[visualState] || "Ejecutando protocolo..."}
+        isMinting={visualState === "minting" || status === "minting"}
+        onClose={() => {}}
       />
     );
   }
 
-  // 🎭 ERROR UI
-  if (gateState === "error") {
-      return (
-          <div className="flex flex-col items-center justify-center min-h-screen bg-black text-center p-8">
-              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-                <span className="text-2xl">⚠️</span>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">Protocolo Interrumpido</h2>
-              <p className="text-gray-400 mb-8 max-w-xs">{errorMessage || "No se pudo validar el acceso."}</p>
-              <button
-                onClick={() => {
-                    hasRun.current = false;
-                    runFlow();
-                }}
-                className="bg-white text-black px-8 py-3 rounded-full font-bold uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all"
-              >
-                Reintentar Ritual
-              </button>
-          </div>
-      );
+  // 🎭 CASE 5: Error Screen
+  if (visualState === "error" || status === "error") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-center p-8">
+        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Señal Interrumpida</h2>
+        <p className="text-gray-400 mb-8 max-w-xs">{errorMessage || "Error de sincronización."}</p>
+        <button
+          onClick={() => {
+            setVisualState("idle");
+            runRitual();
+          }}
+          className="bg-white text-black px-8 py-3 rounded-full font-bold uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all shadow-xl shadow-white/5"
+        >
+          Reintentar Ritual
+        </button>
+      </div>
+    );
   }
 
-  // DEFAULT (Fallthrough)
+  // 🎭 CASE 6: Entry Screen (Idle)
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-8">
-      <div className="w-24 h-24 mb-6 relative">
-          <Image src="/images/pkey.png" alt="Key" width={120} height={120} className="relative z-10" />
-          <div className="absolute inset-0 bg-purple-500/30 blur-2xl rounded-full" />
+      <div className="w-24 h-24 mb-10 relative">
+          <Image src="/images/pkey.png" alt="Key" width={120} height={120} className="relative z-10 animate-float" />
+          <div className="absolute inset-0 bg-purple-500/30 blur-3xl rounded-full animate-pulse" />
       </div>
-      <h2 className="text-2xl font-bold mb-2">Acceso Requerido</h2>
-      <p className="text-gray-400 mb-8 max-w-sm text-center">Para entrar al Protocolo Pandora, necesitas validar tu identidad Genesis.</p>
+      <h2 className="text-3xl font-black mb-3 tracking-tighter">ACCESO REQUERIDO</h2>
+      <p className="text-zinc-500 mb-12 max-w-sm text-center leading-relaxed font-medium">
+        Para entrar al Protocolo Pandora, necesitas validar tu identidad Genesis y reclamar tu slot.
+      </p>
       <button
-        onClick={runFlow}
-        className="bg-gradient-to-r from-purple-600 to-blue-600 px-12 py-4 rounded-xl font-bold shadow-lg shadow-purple-500/20 hover:scale-[1.02] transition-all"
+        onClick={runRitual}
+        className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
       >
-        Iniciar Ritual de Acceso
+        <span className="relative z-10">Iniciar Ritual</span>
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 opacity-0 group-hover:opacity-10 transition-opacity" />
       </button>
     </div>
   );
 }
-
