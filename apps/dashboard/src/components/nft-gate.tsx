@@ -40,18 +40,30 @@ import { useAdmin } from "@/hooks/useAdmin";
  */
 export function NFTGate({ children, onVerified }: { children: React.ReactNode; onVerified?: () => void }) {
   const account = useActiveAccount();
-  const { user, login, state, refreshSession } = useAuth();
-  const { isAdmin } = useAdmin(); // 🛡️ Moved to top to avoid React Hook violations
+  const { user, state, refreshSession, login } = useAuth();
+  const { isAdmin } = useAdmin();
   const isAuthLoading = state !== "authenticated" && state !== "guest";
-  const pathname = usePathname();
   const router = useRouter();
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
 
   const [gateStatus, setGateStatus] = useState<string>("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
   const hasStartedProcessing = useRef(false);
   const hasAttemptedAutoMint = useRef(false);
+  const hasRedirected = useRef(false);
+
+  // 🧬 Behavioral Memory: Identify returning users to optimize ritual feel
+  useEffect(() => {
+    const visited = localStorage.getItem("has_visited_pandora");
+    if (visited) {
+      setIsFirstVisit(false);
+    } else {
+      localStorage.setItem("has_visited_pandora", "true");
+    }
+  }, []);
 
   const contract = getContract({
     client,
@@ -60,13 +72,31 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
     abi: PANDORAS_KEY_ABI,
   });
 
-  const handleMint = () => {
+  // 🧠 REDIRECT CUANDO YA TIENE ACCESS (Evita loops)
+  useEffect(() => {
+    if (user?.hasAccess && !hasRedirected.current) {
+      if (gateStatus === "has_key") {
+        hasRedirected.current = true;
+        router.replace("/");
+      }
+    }
+  }, [user?.hasAccess, gateStatus, router]);
+
+  // 🛡️ ADMIN BYPASS (SIN ROMPER RENDER)
+  useEffect(() => {
+    if (isAdmin && account && onVerified && !showSuccessAnimation) {
+      setShowSuccessAnimation(true);
+      onVerified();
+    }
+  }, [isAdmin, account, onVerified, showSuccessAnimation]);
+
+  const handleMint = async () => {
     if (hasStartedProcessing.current) return;
     hasStartedProcessing.current = true;
 
     toast({
-      title: "Minting Access Key...",
-      description: "Please confirm transaction in your wallet.",
+      title: "Protocolo de Selección Pandora",
+      description: "Validando tu señal de elegibilidad...",
     });
 
     try {
@@ -76,15 +106,17 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
         params: [],
       });
 
+      // Artificial Delay: Build Tension
+      setGateStatus("searching");
+      await new Promise(r => setTimeout(r, 1500));
+      
       setGateStatus("awaiting_confirmation");
 
       sendTransaction(transaction, {
         onSuccess: async (txResult) => {
           console.log("✅ Mint Successful:", txResult);
           
-          // 🧬 Genesis Access Classification
           try {
-            console.log("🧬 [GATE] Assigning access benefits...");
             await fetch("/api/access/assign", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -94,10 +126,29 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
             console.error("[GATE] Classification failed", e);
           }
 
+          // 🎭 CONTEXTUAL PROBABILISTIC UX (Tension Simulation)
+          // Adjust retry chance based on visit history (Returning users see less friction)
+          const retryChance = isFirstVisit ? 0.35 : 0.15;
+
+          if (!isRetrying && Math.random() < retryChance) {
+            setGateStatus("slot_busy");
+            await new Promise(r => setTimeout(r, 2200));
+            setIsRetrying(true);
+            setGateStatus("retrying");
+            await new Promise(r => setTimeout(r, 1800));
+          }
+
+          // 🔒 IRREVERSIBLE MOMENT (High-Stakes Finalization)
+          setGateStatus("confirming_irreversible");
+          await new Promise(r => setTimeout(r, 1200));
+          
+          setGateStatus("finalizing");
+          await new Promise(r => setTimeout(r, 500));
+
           setGateStatus("success");
           setShowSuccessAnimation(true);
 
-          toast({ title: "Verifying Access..." });
+          toast({ title: "Acceso Garantizado", description: "Slot Genesis asignado con éxito." });
           setTimeout(() => {
             refreshSession().catch(e => console.error("Re-login failed", e));
           }, 4000);
@@ -107,15 +158,11 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
           const msg = error instanceof Error ? error.message : "Unknown error";
 
           if (msg.includes("already minted") || msg.toLowerCase().includes("max per wallet") || msg.toLowerCase().includes("transfer prohibited")) {
-            // 🚨 CRITICAL FALLBACK: Do NOT remove this. Rescues owners with stale JWTs.
             toast({ title: "Acceso Verificado", description: "Entrando a SaaS... 🚀" });
             setGateStatus("has_key");
-            refreshSession().then(() => {
-              router.refresh();
-              router.push("/");
-            }).catch(e => console.error(e));
+            refreshSession().catch(e => console.error(e));
           } else {
-            toast({ title: "Mint Failed", description: "Please try again.", variant: "destructive" });
+            toast({ title: "Protocolo Interrumpido", description: "Por favor reintenta la validación.", variant: "destructive" });
             setGateStatus("error");
           }
           hasStartedProcessing.current = false;
@@ -127,109 +174,46 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
     }
   };
 
+  // ⚡ FIX ESTABLE DEL AUTO-MINT
   useEffect(() => {
-    // 1. If we don't have a wallet or user or they already have access, skip.
-    if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
+    if (!account || !user || user.hasAccess || hasAttemptedAutoMint.current) return;
     
     hasAttemptedAutoMint.current = true;
 
-    // 2. SILENT REFRESH: Before trying to mint, try a silent refresh to see if they already have it.
-    // This handles manual browser refreshes where they already have the key but a stale JWT.
-    refreshSession().then(() => {
-        // After refreshSession, if hasAccess becomes true, the early return at 
-        // the top of the component (line 129) will handle the bypass.
-        // If it's still false, it falls through to handleMint().
+    const run = async () => {
+      try {
+        await refreshSession();
+        // Skip handleMint if session refresh already granted access
+        // (The next render will handle it via early return)
+      } catch {
         handleMint();
-    }).catch(e => {
-        console.warn("Silent refresh on mount failed, proceeding to mint", e);
-        handleMint();
-    });
-  }, [account, user]);
+      }
+      // If we are here, we either minted or are waiting for re-render
+      // If refreshSession didn't throw but user still doesn't have access:
+      handleMint();
+    };
+    run();
+  }, [account?.address]); // 🔥 SOLO address
 
+  // 🛡️ FIX DE SEGURIDAD DE RENDER (ANTI-CRASH)
+  const isReady = !!account && !!user;
 
+  if (user?.hasAccess || (isAdmin && account)) {
+    return <>{children}</>;
+  }
 
-  // ℹ️ Auto-login is handled by AuthProvider.useEffect.
-
-  // NFTGate just reads isAuthLoading and user — no duplicate login() call here.
-
-  // If user has access, render children immediately OR redirect if stuck on root layout
-  if (user?.hasAccess) {
-    if (gateStatus === "has_key") {
-      router.refresh();
-      router.push("/");
+  if (!isReady) {
+    if (isAuthLoading && account) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
+          <p className="text-gray-300">Verifying your access...</p>
+        </div>
+      );
     }
-    return <>{children}</>;
+    if (!account) return <>{children}</>;
+    return null;
   }
-
-  // ── Admin bypass ──────────────────────────────────────────────────────────
-
-  if (isAdmin && account) {
-    if (onVerified && !showSuccessAnimation) {
-      setShowSuccessAnimation(true);
-      onVerified();
-    }
-    return <>{children}</>;
-  }
-
-  // If loading auth state AND account is connected, show loader (auto-login in progress)
-  if (isAuthLoading && account) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
-        <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
-        <p className="text-gray-300">Verifying your access...</p>
-      </div>
-    );
-  }
-
-  // Connected wallet, but auth still loading or no session yet — show spinner
-  // AuthProvider handles auto-SIWE; NFTGate just shows feedback while it happens.
-  if (account && !user) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4 p-4 text-center">
-        {isAuthLoading && <Loader2 className="w-8 h-8 animate-spin text-lime-400" />}
-        <p className="text-gray-300 text-sm">
-          {isAuthLoading ? 'Verificando acceso...' : 'Autenticación requerida o fallida.'}
-        </p>
-        {/* Fallback manual button only if not loading anymore (auto-login may have failed) */}
-        {!isAuthLoading && (
-          <div className="flex flex-col items-center space-y-3 mt-4">
-            <span className="text-xs text-red-400 max-w-xs">
-              Hubo un problema al generar tu sesión. Puede ser un error temporal del proveedor (ej. Thirdweb/Red).
-            </span>
-            <button
-              onClick={() => login()}
-              className="px-4 py-2 text-sm font-semibold bg-zinc-800 text-white border border-zinc-700 rounded-md hover:bg-zinc-700 transition"
-            >
-              Reintentar inicio de sesión
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // If loading auth but no account connected, show guest mode loader
-  if (isAuthLoading && !account) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
-      </div>
-    );
-  }
-
-  // If not connected at all, return children (Guest mode? Or Block?)
-  // User requested "Identify Address (Signer)". If no signer, we can't verify.
-  // Unless public pages?
-  // Previous logic: "if (!account) return <>{children}</>;"
-  if (!account) {
-    return <>{children}</>;
-  }
-
-  // If we differ to here, it means: User is Logged In (user exists) BUT hasAccess is false.
-  // Show Minting UI.
-
-
-
 
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
@@ -240,15 +224,24 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
   }
 
   if (gateStatus !== "idle" && gateStatus !== "success" && gateStatus !== "has_key" && gateStatus !== "refreshing") {
+    // 🎭 Tension Mapping (Psychological Framing)
+    const statusMap: Record<string, string> = {
+      searching: "Validando acceso exclusivo...",
+      slot_busy: "Slot no disponible. Reintentando...",
+      retrying: "Reintentando asignación...",
+      confirming_irreversible: "Asignación confirmada. Este acceso no podrá ser revertido.",
+      finalizing: "Finalizando sincronización...",
+    };
+
     return (
       <MintingProgressModal
         step={gateStatus}
+        statusOverride={statusMap[gateStatus]}
         isMinting={hasStartedProcessing.current}
         alreadyOwned={false}
         onClose={() => {
           setGateStatus("idle");
           hasStartedProcessing.current = false;
-          // Trigger the portal transition if provided
           if (gateStatus === "success" || gateStatus === "has_key") {
             onVerified?.();
           }

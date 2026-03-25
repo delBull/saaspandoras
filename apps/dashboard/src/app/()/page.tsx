@@ -251,25 +251,7 @@ export default function DashboardPage() {
   const { user, state } = useAuth();
   const { isAdmin } = useAdmin();
 
-  // 🛡️ BARRERA PRINCIPAL (NIVEL PRODUCCIÓN - GENESIS)
-  // En Main, si el usuario no tiene acceso (o está en mantenimiento), forzamos Genesis.
-  // 1. Si está cargando auth, mostramos loader
-  if (state === "booting" || state === "checking_session") {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-      </div>
-    );
-  }
-
-  // 🛡️ BARRERA PRINCIPAL (NIVEL PRODUCCIÓN - NARRATIVA)
-  // En Main, mostramos la landing de anticipación (ComingSoon) como primera barrera para todos los que no tienen acceso.
-  if (!isAdmin && !user?.hasAccess) {
-    return <ComingSoon />;
-  }
   const [leadModal, setLeadModal] = useState(false);
-
-  // Hoist data fetching here to prevent layout shift/empty states
   const [homeData, setHomeData] = useState<{
     featuredProjects: any[];
     accessCards: any[];
@@ -285,19 +267,19 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
+    if (state !== "authenticated" || !user?.address) return;
+
     const controller = new AbortController();
 
     const load = async () => {
       try {
-        // 🛡️ CRITICAL: Wait for session hydration to unlock (so we don't fetch prematurely as guest)
-        await waitForSession();
-
-        const walletParam = user?.address ? `?wallet=${user.address}` : "";
-        const res = await fetch(`/api/bootstrap${walletParam}`, {
+        const res = await fetch(`/api/bootstrap?wallet=${user.address}`, {
           signal: controller.signal
         });
-        const data = await res.json();
 
+        if (!res.ok) throw new Error("bootstrap failed");
+
+        const data = await res.json();
         const rawProjects = data.featuredProjects || [];
 
         setHomeData({
@@ -308,13 +290,9 @@ export default function DashboardPage() {
           profile: data.profile || null,
           loading: false
         });
-
       } catch (e: any) {
-        if (e.name === "AbortError") {
-          console.log("Bootstrap data fetch aborted (component unmounted)");
-          return;
-        }
-        console.error("Failed to fetch dashboard bootstrap data", e);
+        if (e.name === "AbortError") return;
+
         setHomeData(prev => ({
           ...prev,
           featuredProjects: FALLBACK_PROJECTS,
@@ -326,7 +304,39 @@ export default function DashboardPage() {
     load();
 
     return () => controller.abort();
-  }, [user?.address]);
+  }, [state, user?.address]);
+
+  // ✅ FIX 1 — BARRERA CORRECTA EN DASHBOARD (CRÍTICO)
+  const isLoadingAuth =
+    state === "booting" ||
+    state === "wallet_ready" ||
+    state === "checking_session" ||
+    state === "authenticating";
+
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    );
+  }
+
+  // ⚠️ FIX 5 — PROTECCIÓN FINAL EN DASHBOARD
+  if (!user && state === "authenticated") {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+      </div>
+    );
+  }
+
+  if (!isAdmin && state !== "authenticated") {
+    return <ComingSoon />;
+  }
+
+  if (!isAdmin && !user?.hasAccess) {
+    return <ComingSoon />;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">

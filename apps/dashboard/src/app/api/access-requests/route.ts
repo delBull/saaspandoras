@@ -9,6 +9,37 @@ export const dynamic = "force-dynamic";
 
 // Public endpoint — no auth required.
 // Called from: nextjs /api/waitlist, dashboard /access page, any future surface.
+function calculateSelectionScore(email: string, hasWallet: boolean, metadata?: any) {
+  let score = 50;
+  const normalizedEmail = email.toLowerCase();
+  
+  // 1. Keyword Boost (Anti-gaming: limit total boost)
+  const keywords = ["fund", "capital", "invest", "yield", "alpha", "vc", "family"];
+  const hasKeyword = keywords.some(k => normalizedEmail.includes(k));
+  if (hasKeyword) score += 15;
+
+  // 2. Technical Signal
+  if (hasWallet) score += 10;
+
+  // 3. Behavioral signals (from metadata)
+  if (metadata?.timeOnPage > 60) score += 5;
+  if (metadata?.returningUser) score += 5;
+
+  // 4. Spam Penalty (Disposable domains)
+  const disposable = ["tempmail.com", "10minutemail.com", "guerrillamail.com", "mailinator.com"];
+  if (disposable.some(d => normalizedEmail.endsWith(d))) score -= 30;
+
+  return Math.max(0, Math.min(score, 100));
+}
+
+function getApprovalDelay(score: number): number {
+  const ms = 60 * 1000;
+  if (score >= 85) return (Math.random() * 3 + 2) * ms;           // 2-5 min
+  if (score >= 70) return (Math.random() * 20 + 10) * ms;        // 10-30 min
+  if (score >= 50) return (Math.random() * 5 + 1) * 60 * ms;     // 1-6 hrs
+  return (Math.random() * 10 + 2) * 60 * ms;                    // 2-12 hrs (optimized from 48h)
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json() as {
@@ -25,13 +56,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email inválido." }, { status: 400 });
     }
 
-    // Check for duplicate — if same email already requested, update metadata but don't dupe
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Check for duplicate
     const existing = await db.query.accessRequests.findFirst({
-      where: eq(accessRequests.email, email.toLowerCase().trim()),
+      where: eq(accessRequests.email, cleanEmail),
     });
 
     if (existing) {
-      // Update wallet if provided now and wasn't before
       if (walletAddress && !existing.walletAddress) {
         await db
           .update(accessRequests)
@@ -41,37 +73,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, existing: true });
     }
 
+    // ── PERCEIVED SELECTION ENGINE ──────────────────────────────────────────
+    const score = calculateSelectionScore(cleanEmail, !!walletAddress, metadata);
+    const delayMs = getApprovalDelay(score);
+    const eligibleAt = new Date(Date.now() + delayMs);
+
     await db.insert(accessRequests).values({
-      email: email.toLowerCase().trim(),
+      email: cleanEmail,
       walletAddress: walletAddress || null,
       intent: intent || null,
       source: source || "unknown",
       status: "pending",
+      score: score,
+      eligibleAt: eligibleAt,
       metadata: metadata || null,
     });
 
-    console.log(`✅ [access-requests] New: ${email} | source: ${source || "unknown"} | intent: ${intent || "-"}`);
+    console.log(`✅ [access-requests] Score: ${score} | EligibleAt: ${eligibleAt.toISOString()} | email: ${cleanEmail}`);
 
-    // ── Step 1: Confirmation email (fire-and-forget, critical trigger) ────────
-    // "Tu acceso está en revisión. No es automático. No todos van a pasar."
-    sendWaitlistSequenceEmail({ to: email.toLowerCase().trim(), step: 1 })
-      .catch((e: unknown) => console.error(`[access-requests] Step 1 email failed for ${email}:`, e));
+    // ── Email Step 1 ────────────────────────────────────────────────────────
+    sendWaitlistSequenceEmail({ to: cleanEmail, step: 1 })
+      .catch((e: unknown) => console.error(`[access-requests] Step 1 email failed:`, e));
 
-    // ── Fire Growth Engine via track-event (fire-and-forget) ─────────────────
-    // track-event handles lead lookup/creation automatically
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3001";
-    fetch(`${baseUrl}/api/gamification/track-event`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventType: "waitlist_signup",
-        metadata: { email: email.toLowerCase().trim(), intent: intent || "unknown", source: source || "unknown" },
-      }),
-    }).catch((e: unknown) => console.error("[access-requests] track-event:", e));
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, score });
   } catch (err) {
     console.error("[/api/access-requests]", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

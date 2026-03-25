@@ -24,13 +24,24 @@ export function ComingSoon() {
     interest: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStep, setSubmissionStep] = useState<string>('');
+  const [stats, setStats] = useState({ label: 'Accesos limitados hoy', intensity: 'mid' });
+
+  React.useEffect(() => {
+    fetch('/api/marketing/stats')
+      .then(res => res.json())
+      .then(setStats)
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
+    // 🧬 Unified Access Request Pipeline
+    setSubmissionStep('Identificando perfil...');
+    
     try {
-      // 🧬 Unified Access Request Pipeline
       await fetch('/api/access-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -39,12 +50,18 @@ export function ComingSoon() {
           source: 'dashboard_coming_soon'
         }),
       });
+
+      // Psychology Delay: "Searching for eligibility signals"
+      await new Promise(r => setTimeout(r, 800));
+      setSubmissionStep('Detectando señales de elegibilidad...');
+      await new Promise(r => setTimeout(r, 1200));
+
+      // 2. Redirect to Success Page
+      router.push('/waitlist-success');
     } catch (e) {
       console.error('Waitlist submission failed', e);
+      setIsSubmitting(false);
     }
-
-    // 2. Redirect to Success Page (Controlled Psychology)
-    router.push('/waitlist-success');
   };
 
   return (
@@ -189,7 +206,7 @@ export function ComingSoon() {
                   disabled={isSubmitting}
                   className="w-full bg-white text-black hover:bg-blue-500 hover:text-white py-5 mt-6 text-[10px] font-black tracking-[0.4em] uppercase transition-all duration-500 disabled:opacity-50"
                 >
-                  {isSubmitting ? 'PROCESANDO...' : 'SOLICITAR ACCESO'}
+                  {isSubmitting ? (submissionStep || 'PROCESANDO...') : 'SOLICITAR ACCESO'}
                 </button>
 
                 <p className="text-[8px] tracking-[0.3em] text-gray-600 text-center pt-4 uppercase">
@@ -210,11 +227,12 @@ export function ComingSoon() {
           // Acceso Protocol_
         </Link>
         <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-[0.4em] text-gray-500 px-2 font-mono">
-           <span>Ventana Activa</span>
-           <span className="text-white">17 / 50</span>
+           <span>{stats.label}</span>
+           <span className="text-white opacity-40">{stats.intensity === 'ultra' ? '98%' : 'Activo'}</span>
         </div>
         <div className="w-full h-[1px] bg-white/10 relative">
-           <div className="absolute top-0 left-0 w-[34%] h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
+           <div className={`absolute top-0 left-0 h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-1000`} 
+             style={{ width: stats.intensity === 'low' ? '15%' : stats.intensity === 'mid' ? '40%' : stats.intensity === 'high' ? '75%' : '95%' }} />
         </div>
         <p className="text-[7px] text-zinc-500 font-bold uppercase tracking-[0.4em] pt-4">
           © 2026 Pandora&apos;s Finance // No es Crowdfunding.

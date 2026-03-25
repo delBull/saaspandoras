@@ -39,8 +39,8 @@ export default function WaitlistSuccessPage() {
            </h1>
            <div className="h-[1px] w-12 bg-gray-800 mx-auto" />
            <p className="text-gray-400 text-sm font-light tracking-wide leading-relaxed">
-             Tu solicitud ha sido registrada en el protocolo.<br/>
-             Estamos validando tu perfil y capital.
+             Tu acceso está siendo evaluado.<br/>
+             No todos van a pasar.
            </p>
         </div>
 

@@ -14,20 +14,21 @@ interface AdvancedLoaderProps {
   onComplete: () => void;
   isMinting: boolean;
   alreadyOwned?: boolean;
+  statusOverride?: string;
 }
 
 const words = [
-  "Validando tu wallet",
-  "Activando acceso...",
-  "Asignando beneficios...",
-  "Sincronizando con el Growth OS",
-  "Lugar asegurado.. casi listo",
+  "Validando acceso exclusivo...",
+  "Asignando slot Genesis...",
+  "Sincronizando identidad...",
+  "Verificando señales de elegibilidad...",
+  "Protocolo Pandora activo...",
 ];
 
 const finalWord = "Minteado con Éxito!";
 const alreadyOwnedWord = "Already Owned a Pandora's Key";
 
-export function AdvancedLoader({ onComplete, isMinting, alreadyOwned }: AdvancedLoaderProps) {
+export function AdvancedLoader({ onComplete, isMinting, alreadyOwned, statusOverride }: AdvancedLoaderProps) {
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
@@ -88,7 +89,9 @@ export function AdvancedLoader({ onComplete, isMinting, alreadyOwned }: Advanced
     };
   }, [isFinished, alreadyOwned]);
 
-  const displayedText = showAlreadyOwned ? alreadyOwnedWord : (isFinished ? finalWord : words[index]) ?? '';
+  const displayedText = showAlreadyOwned 
+    ? alreadyOwnedWord 
+    : (statusOverride || (isFinished ? finalWord : words[index])) ?? '';
   const isSpecialFont = displayedText === "Estamos haciendo magia" || showAlreadyOwned;
 
   const containerVariants = {
@@ -122,7 +125,7 @@ export function AdvancedLoader({ onComplete, isMinting, alreadyOwned }: Advanced
               showAlreadyOwned && "text-2xl md:text-3xl"
             )}
           >
-            {displayedText.split(' ').map((word, i) => (
+            {displayedText.split(' ').map((word: string, i: number) => (
               <motion.span
                 key={i}
                 variants={wordVariants}

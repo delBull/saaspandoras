@@ -84,6 +84,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const eoaIdentity = useEOAIdentity();
     const loginRequested = useRef<Record<string, boolean>>({});
+    const hasCheckedSession = useRef(false); // ✅ FIX 3
+
+    // 🛡️ RESET LOCK ON WALLET CHANGE (✅ FIX 1)
+    useEffect(() => {
+        hasCheckedSession.current = false;
+    }, [account?.address]);
 
     // 1. Core State Transition: React to wallet changes
     useEffect(() => {
@@ -108,6 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Action: When wallet is ready, check authorization cookies
     useEffect(() => {
         if (state !== "wallet_ready") return;
+        if (hasCheckedSession.current) return; // ✅ FIX 3: ADD LOCK
+
+        hasCheckedSession.current = true;
 
         const check = async () => {
             setState("checking_session");
@@ -275,7 +284,9 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             });
             setState("guest");
         } finally {
-            loginRequested.current[account.address] = false;
+            if (account?.address) { // ✅ FIX 4
+                loginRequested.current[account.address] = false;
+            }
         }
     };
 
