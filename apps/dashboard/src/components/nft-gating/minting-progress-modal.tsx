@@ -10,9 +10,10 @@ interface MintingProgressModalProps {
   onClose: () => void;
   isMinting?: boolean;
   alreadyOwned?: boolean;
+  statusOverride?: string;
 }
 
-export function MintingProgressModal({ step, onClose, isMinting = true, alreadyOwned = false }: MintingProgressModalProps) {
+export function MintingProgressModal({ step, onClose, isMinting = true, alreadyOwned = false, statusOverride }: MintingProgressModalProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -31,7 +32,12 @@ export function MintingProgressModal({ step, onClose, isMinting = true, alreadyO
           className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-[999]"
         >
           <div className="w-full max-w-lg p-4">
-            <AdvancedLoader onComplete={onClose} isMinting={isMinting} alreadyOwned={alreadyOwned} />
+            <AdvancedLoader 
+              onComplete={onClose} 
+              isMinting={isMinting} 
+              alreadyOwned={alreadyOwned} 
+              statusOverride={statusOverride}
+            />
           </div>
         </motion.div>
       )}

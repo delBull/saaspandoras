@@ -85,6 +85,8 @@ export const accessRequests = pgTable("access_requests", {
   intent: varchar("intent", { length: 100 }),                         // "capital" | "deals" | "genesis" | ...
   source: varchar("source", { length: 100 }).default("landing_v2"),   // Which surface submitted
   status: varchar("status", { length: 50 }).default("pending"),        // pending | approved | rejected
+  score: integer("score").default(50).notNull(),                       // ✅ Selection Score (0-100)
+  eligibleAt: timestamp("eligible_at"),                              // ✅ Perceived Selection Delay
   reviewedAt: timestamp("reviewed_at"),
   reviewedBy: varchar("reviewed_by", { length: 42 }),                  // Admin wallet
   metadata: jsonb("metadata"),                                          // utm, referrer, etc.

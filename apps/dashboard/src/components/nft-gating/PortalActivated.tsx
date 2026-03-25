@@ -81,11 +81,11 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
                   Acceso confirmado.
                 </h2>
                 <p className="text-xl font-light text-lime-400 tracking-wide">
-                  Entraste antes de que esto se abra.
+                  Estás dentro antes que el resto.
                 </p>
                 <p className="text-zinc-500 text-sm font-light leading-loose border-t border-white/5 pt-6">
                   Tu posición ya fue registrada.<br />
-                  <span className="text-zinc-400">No es replicable después.</span>
+                  <span className="text-zinc-400">No compartas esto.</span>
                 </p>
               </div>
             ) : (

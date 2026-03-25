@@ -164,8 +164,8 @@ export default function AccessPage() {
                 Acceso en proceso
               </p>
               <DynamicLoader texts={[
-                'Estamos validando tu entrada…',
-                'Verificando identidad…',
+                'Tu acceso está siendo evaluado…',
+                'No todos van a pasar…',
                 'Preparando protocolo…',
               ]} />
             </motion.div>
