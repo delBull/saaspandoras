@@ -1639,14 +1639,21 @@ export default function GrowthOSSubTab() {
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Secret Key</label>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">
+                        Secret Key {secretKey.includes('...') && <span className="text-orange-400/60 lowercase ml-2 font-normal italic">(fingerprint)</span>}
+                      </label>
                       <div className="flex bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-400 font-mono items-center justify-between">
-                        <span className="truncate mr-4 italic text-zinc-500">{secretKey}</span>
+                        <span className={`truncate mr-4 italic ${secretKey.includes('...') ? 'text-zinc-600' : 'text-purple-400 font-bold'}`}>
+                            {secretKey}
+                        </span>
                         <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {
                           navigator.clipboard.writeText(secretKey);
                           toast.success("Secret Key copiada");
                         }}>COPY</UIButton>
                       </div>
+                      {secretKey.includes('...') && (
+                        <p className="text-[9px] text-zinc-600 ml-1 italic">Para ver la llave completa por seguridad, debe regenerarla.</p>
+                      )}
                     </div>
 
                     {selectedProjectId !== 'all' && (

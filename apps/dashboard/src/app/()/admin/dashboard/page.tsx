@@ -240,6 +240,16 @@ export default function AdminDashboardPage() {
     };
 
     void checkAdminStatus();
+
+    // 🛡️ Safety timeout: If admin status takes more than 5s, assume false to unblock UI
+    const safetyTimer = setTimeout(() => {
+      if (isAdmin === null) {
+        console.warn("⚠️ [AdminDashboard] Admin check timed out (5s). Fallback to false.");
+        setIsAdmin(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(safetyTimer);
   }, [user, authLoading, isAdmin]);
 
   useEffect(() => {
