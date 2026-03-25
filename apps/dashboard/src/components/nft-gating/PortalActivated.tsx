@@ -44,7 +44,7 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
       <motion.div
         animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.18, 0.08] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute w-[500px] h-[500px] blur-[140px] rounded-full ${isGenesis ? 'bg-lime-400/8' : 'bg-blue-500/8'}`}
+        className={`absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] blur-[80px] md:blur-[140px] rounded-full ${isGenesis ? 'bg-lime-400/8' : 'bg-blue-500/8'}`}
       />
       {/* Scanlines */}
       <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
@@ -60,7 +60,7 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
             animate={{ opacity: visible ? 1 : 0, scale: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, scale: 1.04, filter: 'blur(8px)' }}
             transition={{ duration: 1.4, ease: 'easeOut' }}
-            className="relative z-10 text-center max-w-md px-6 space-y-10"
+            className="relative z-10 text-center max-w-md px-6 space-y-6 md:space-y-10"
           >
             <div className="space-y-2">
               <p className="text-[9px] tracking-[1em] text-zinc-600 uppercase animate-pulse">
@@ -77,7 +77,7 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
                   <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
                   <span className="text-[9px] font-bold tracking-[0.3em] text-lime-400 uppercase">Genesis Access</span>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-thin tracking-[0.15em] text-white leading-tight uppercase">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-[0.1em] md:tracking-[0.15em] text-white leading-tight uppercase">
                   Acceso confirmado.
                 </h2>
                 <p className="text-xl font-light text-lime-400 tracking-wide">
@@ -94,7 +94,7 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                   <span className="text-[9px] font-bold tracking-[0.3em] text-blue-400 uppercase">Early Access</span>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-thin tracking-[0.15em] text-white leading-tight uppercase">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-[0.1em] md:tracking-[0.15em] text-white leading-tight uppercase">
                   Acceso confirmado.
                 </h2>
                 <p className="text-xl font-light text-blue-400 tracking-wide">
@@ -127,12 +127,12 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.9 }}
-            className="relative z-10 text-center max-w-md px-6 space-y-10"
+            className="relative z-10 text-center max-w-md px-6 space-y-6 md:space-y-10"
           >
             <p className="text-[9px] tracking-[0.8em] text-zinc-600 uppercase">Lo que hay adentro</p>
 
             <div className="space-y-4">
-              <p className="text-3xl font-thin text-white tracking-wide leading-snug">
+              <p className="text-2xl sm:text-3xl font-thin text-white tracking-wide leading-snug">
                 No todo es visible<br />desde el inicio.
               </p>
               <p className="text-zinc-500 text-xs tracking-widest uppercase font-light">
@@ -140,7 +140,7 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
               </p>
             </div>
 
-            <div className="border border-zinc-800 bg-zinc-950/80 backdrop-blur-xl rounded-2xl p-8 text-left space-y-4 text-sm text-zinc-400 font-light">
+            <div className="border border-zinc-800 bg-zinc-950/80 backdrop-blur-xl rounded-2xl p-6 md:p-8 text-left space-y-4 text-sm text-zinc-400 font-light">
               {[
                 'Pools internos con ventajas acumulativas',
                 'Protocolos en fase temprana',
@@ -179,14 +179,14 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.9 }}
-            className="relative z-10 text-center max-w-md px-6 space-y-10"
+            className="relative z-10 text-center max-w-md px-6 space-y-6 md:space-y-10"
           >
             <div className="space-y-3">
               <p className="text-[9px] tracking-[0.8em] text-zinc-600 uppercase">Decide</p>
-              <p className="text-3xl font-thin text-white tracking-wide">
+              <p className="text-2xl sm:text-3xl font-thin text-white tracking-wide">
                 Los primeros no solo<br />entran antes.
               </p>
-              <p className="text-2xl font-thin text-zinc-400">
+              <p className="text-xl sm:text-2xl font-thin text-zinc-400">
                 Definen dónde se mueve el capital.
               </p>
             </div>
@@ -232,8 +232,8 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
 
       </AnimatePresence>
 
-      {/* Decoración técnica */}
-      <div className="absolute top-10 left-10 opacity-15">
+      {/* Decoración técnica - Hide on mobile */}
+      <div className="absolute top-10 left-10 opacity-15 hidden sm:block">
         <div className="text-[7px] font-mono text-zinc-600">NODE_SEQ: 0xFD21</div>
         <div className="w-10 h-[1px] bg-zinc-700 mt-1" />
       </div>

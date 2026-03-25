@@ -117,9 +117,9 @@ export function AdvancedLoader({ onComplete, isMinting, alreadyOwned }: Advanced
             animate="visible"
             exit="hidden"
             className={cn(
-              "text-2xl font-semibold text-white",
+              "text-lg sm:text-xl md:text-2xl font-semibold text-white",
               isSpecialFont ? shadowsIntoLight.className : "font-mono",
-              showAlreadyOwned && "text-3xl"
+              showAlreadyOwned && "text-2xl md:text-3xl"
             )}
           >
             {displayedText.split(' ').map((word, i) => (

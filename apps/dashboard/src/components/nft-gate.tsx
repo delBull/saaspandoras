@@ -41,6 +41,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 export function NFTGate({ children, onVerified }: { children: React.ReactNode; onVerified?: () => void }) {
   const account = useActiveAccount();
   const { user, login, state, refreshSession } = useAuth();
+  const { isAdmin } = useAdmin(); // 🛡️ Moved to top to avoid React Hook violations
   const isAuthLoading = state !== "authenticated" && state !== "guest";
   const pathname = usePathname();
   const router = useRouter();
@@ -161,7 +162,6 @@ export function NFTGate({ children, onVerified }: { children: React.ReactNode; o
   }
 
   // ── Admin bypass ──────────────────────────────────────────────────────────
-  const { isAdmin } = useAdmin();
 
   if (isAdmin && account) {
     if (onVerified && !showSuccessAnimation) {

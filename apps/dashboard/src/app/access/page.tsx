@@ -101,8 +101,8 @@ export default function AccessPage() {
       <ScanningLine />
 
       {/* Glow ambiental */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-blue-500/6 blur-[140px]" />
+      <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
+        <div className="w-[300px] h-[300px] md:w-[700px] md:h-[700px] rounded-full bg-blue-500/6 blur-[80px] md:blur-[140px]" />
       </div>
 
       {/* Grid sutil */}
@@ -114,9 +114,9 @@ export default function AccessPage() {
         }}
       />
 
-      {/* Decoración técnica top-left */}
+      {/* Decoración técnica top-left - Hidden on mobile */}
       <div 
-        className="absolute top-10 left-10 flex flex-col gap-1 opacity-20 z-10 cursor-pointer select-none"
+        className="absolute top-6 left-6 md:top-10 md:left-10 hidden sm:flex flex-col gap-1 opacity-20 z-10 cursor-pointer select-none"
         onClick={() => {
           const now = Date.now();
           const clicks = JSON.parse(localStorage.getItem('admin_clicks') || '[]');
@@ -211,8 +211,8 @@ export default function AccessPage() {
                 className="w-full max-w-sm space-y-10"
               >
                 {/* Bloque principal */}
-                <div className="space-y-4">
-                  <h1 className="text-4xl md:text-5xl font-thin tracking-[0.15em] text-white uppercase leading-tight">
+                <div className="space-y-4 px-2">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-[0.1em] md:tracking-[0.15em] text-white uppercase leading-tight">
                     Tu acceso no es<br />visible aún.
                   </h1>
                   <p className="text-zinc-500 text-base font-light leading-relaxed">
@@ -281,7 +281,7 @@ export default function AccessPage() {
                       <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
                       <span className="text-[9px] font-bold tracking-[0.3em] text-lime-400 uppercase">Genesis Access</span>
                     </div>
-                    <h2 className="text-4xl font-thin tracking-wide text-white">
+                    <h2 className="text-3xl md:text-4xl font-thin tracking-wide text-white">
                       Acceso confirmado.<br />
                       <span className="text-lime-400">Estás dentro antes que el resto.</span>
                     </h2>
@@ -292,7 +292,7 @@ export default function AccessPage() {
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                       <span className="text-[9px] font-bold tracking-[0.3em] text-blue-400 uppercase">Early Access</span>
                     </div>
-                    <h2 className="text-4xl font-thin tracking-wide text-white">
+                    <h2 className="text-3xl md:text-4xl font-thin tracking-wide text-white">
                       Acceso confirmado.<br />
                       <span className="text-blue-400">Tu posición ha sido registrada.</span>
                     </h2>
