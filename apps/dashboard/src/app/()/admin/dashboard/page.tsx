@@ -449,22 +449,25 @@ export default function AdminDashboardPage() {
             <div className="mt-2 p-2 bg-red-900/20 border border-red-500/20 rounded text-xs text-red-200">
               <p><strong>Admin Debug Info:</strong></p>
               <p>Wallet: {walletAddress?.substring(0, 10)}...{walletAddress?.slice(-8)}</p>
-              <p>Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
+              <p>Is Admin: {isAdmin === null ? 'Checking...' : isAdmin ? 'Yes' : 'No'}</p>
+              <p>Auth State: {state}</p>
               <p>Auth Error: {authError ?? 'None'}</p>
               <p>Projects: {projects.length}</p>
               <p>Users: {users.length}</p>
             </div>
           )}
         </div>
-        {/* <ProjectApplicationButton
-          buttonText="➕"
-          className="px-3 sm:px-4 py-2 mr-24 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-md font-semibold transition text-sm sm:text-base whitespace-nowrap"
-          variant="default"
-        /> */}
       </div>
 
       <Suspense fallback={<div className="h-8 w-full animate-pulse bg-zinc-800 rounded" />}>
-        {(!isAdmin && isAdmin !== null) ? (
+        {/* 🛡️ Only render tabs once isAdmin check is complete (not null) */}
+        {isAdmin === null ? (
+          <div className="space-y-4 mt-6">
+            <div className="h-10 w-full bg-zinc-800/50 animate-pulse rounded-lg" />
+            <div className="h-64 w-full bg-zinc-800/50 animate-pulse rounded-lg" />
+            <p className="text-center text-zinc-600 text-xs">Verificando permisos de administrador...</p>
+          </div>
+        ) : (!isAdmin && isAdmin !== null) ? (
           <UnauthorizedAccess authError={authError} />
         ) : (
           <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} currentUserId={currentUserId}>
