@@ -268,7 +268,9 @@ export async function executeGrowthActions(
           if (lead.email) {
             const res = await sendWaitlistSequenceEmail({
               to: lead.email as string,
-              step: 1
+              step: 1,
+              projectName: project.name,
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
             });
             success = res.success;
           } else {
@@ -281,7 +283,9 @@ export async function executeGrowthActions(
           if (lead.email) {
             const res = await sendWaitlistSequenceEmail({
               to: lead.email as string,
-              step: 2
+              step: 2,
+              projectName: project.name,
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
             });
             success = res.success;
           } else {
@@ -294,7 +298,9 @@ export async function executeGrowthActions(
           if (lead.email) {
             const res = await sendWaitlistSequenceEmail({
               to: lead.email as string,
-              step: 3
+              step: 3,
+              projectName: project.name,
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
             });
             success = res.success;
           } else {
@@ -307,7 +313,9 @@ export async function executeGrowthActions(
           if (lead.email) {
             const res = await sendWaitlistSequenceEmail({
               to: lead.email as string,
-              step: 4
+              step: 4,
+              projectName: project.name,
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
             });
             success = res.success;
           } else {
@@ -319,7 +327,9 @@ export async function executeGrowthActions(
         case 'SEND_GENESIS_WELCOME': {
           if (lead.email) {
             const res = await sendGenesisWelcomeEmail({
-              to: lead.email as string
+              to: lead.email as string,
+              projectName: project.name,
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
             });
             success = res.success;
           } else {
