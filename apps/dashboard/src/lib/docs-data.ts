@@ -645,12 +645,22 @@ Pandoras provides an institutional-grade **Growth Engine** that transforms casua
 
 Every lead captured via the Pandoras ecosystem (Widget or API) is managed by a deterministic state machine. This ensures that every user receives the right context at the right time.
 
-### Core States:
-- **🆕 NEW**: Initial capture, context collection.
-- **🔍 EXPLORE**: User navigating documentation or exploring utility.
-- **📚 EDUCATING**: Active consumption of educational courses or "moats".
-- **💎 INVEST_READY**: High-intent behavior detected (intent=invest + high score).
-- **✅ CONVERTED**: Successful conversion (minted license, joined DAO).
+### Core States (Psychological Funnel):
+- **CURIOUS**: Initial capture via landing or invite.
+- **AWARE**: Active exploration of documentation and value prop.
+- **ENGAGED**: High engagement (Wallet connected, Course started).
+- **HOT**: High-conviction threshold reached. **(Closing Target)**.
+- **INVESTOR**: Successfully converted into a partner/holder.
+
+## 💰 Phase 85: Deterministic Closing Machine
+
+The system now implements a **Strike Layer** that proactively converts high-priority leads.
+
+### AI Strike Logic
+When a lead reaches a **Priority Score > 120**, the system triggers:
+1.  **SALES_INTERVENTION**: Immediate alert to the protocol team.
+2.  **DYNAMIC_OFFER**: A risk-adjusted yield or equity offer based on the lead's behavioral profile.
+3.  **SCARCITY_ENFORCEMENT**: Injection of real-time units-remaining into all communications.
 
 ## 🚀 Performance Features
 
@@ -681,7 +691,8 @@ Our goal is to automate the growth of partner protocols through sovereign nurtur
 - ✅ **Deterministic State Machine**: 100% reliable lead transitions.
 - ✅ **Optimistic Locking**: Protection against high-concurrency race conditions.
 - ✅ **Project-Sovereign Alerts**: Real-time Discord webhooks for founders.
-- ✅ **AI Course Bridge**: Proactive creation of project-specific education drafts.
+- ✅ **Phase 85: Deterministic Closing**: Automated strike-logic for high-value leads.
+- ✅ **Phase 86: Institutional Branding**: Elite acquisition machine aesthetics.
 
 ## 🚀 Phase 2: Dynamic Education & Auto-Expansion (NEXT)
 - ⏳ **Widget-Course Synchronization**: Real-time enrollment link delivery after lead capture.

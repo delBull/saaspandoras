@@ -1,8 +1,8 @@
 import { db } from '@/db';
 import { marketingLeadEvents, marketingLeads } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { GrowthEvent } from './types';
-import { resolveGrowthAction } from './engine';
+import { computeBehavioralMetrics, resolveGrowthAction } from './engine';
 import { executeGrowthActions } from './actions';
 
 /**
@@ -16,10 +16,16 @@ export async function processGrowthEvent(
   ruleInfo?: { ruleId?: string; ruleCondition?: string; isStressTest?: boolean }
 ) {
   try {
-    // 1. Fetch full lead to ensure context is correct (including project)
+    // 1. Fetch full lead with events and project
     const lead = await db.query.marketingLeads.findFirst({
         where: eq(marketingLeads.id, leadContext.id),
-        with: { project: true }
+        with: { 
+          project: true,
+          events: {
+            orderBy: (events, { desc }) => [desc(events.createdAt)],
+            limit: 50
+          }
+        }
     });
 
     if (!lead) {
@@ -27,7 +33,7 @@ export async function processGrowthEvent(
       return;
     }
 
-    // 2. Log Event (Immutable Audit Trail)
+    // 2. Log NEW Event
     await db.insert(marketingLeadEvents).values({
         leadId: lead.id,
         type: event,
@@ -37,11 +43,16 @@ export async function processGrowthEvent(
         }
     });
 
+    // 2.5 Compute Behavioral Layer (REAL-TIME)
+    const { intentScore, engagementLevel } = computeBehavioralMetrics(lead as any, lead.events);
+    
     // 3. Resolve Logic via Pure Engine
     const engineResult = resolveGrowthAction(event, {
         ...lead as any,
+        intentScore,
+        engagementLevel,
         metadata: lead.metadata as any
-    });
+    }, (lead as any).project);
 
     // 4. Execute Side Effects (Emails, Notifications, Score Changes)
     if (engineResult) {

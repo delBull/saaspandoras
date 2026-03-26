@@ -144,7 +144,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 4.1. Identity Auto-Capture (Surgical: Audit 1)
-    // If we have an email/name in the metadata, and the lead is missing it, update it.
     if (lead && (metadata?.email || metadata?.name)) {
         const email = metadata?.email;
         const name = metadata?.name;
@@ -160,33 +159,59 @@ export async function POST(req: NextRequest) {
                 .where(eq(marketingLeads.id, lead.id));
             
             // Update local lead object for the engine
-            if (email) lead.email = email;
-            if (name) lead.name = name;
+            if (email) (lead as any).email = email;
+            if (name) (lead as any).name = name;
         }
     }
 
     // 4.2. Bridge to Growth Engine if lead identified
     if (lead && eventRecord) {
         try {
-            const { resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
+            const { computeBehavioralMetrics, resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
             const { executeGrowthActions } = await import("@/lib/marketing/growth-engine/actions");
 
-            const engineResult = resolveGrowthAction(eventType as any, {
-                ...lead,
-                metadata: lead.metadata as any
+            // Fetch recent events to compute metrics
+            const leadWithEvents = await db.query.marketingLeads.findFirst({
+                where: eq(marketingLeads.id, lead.id),
+                with: { 
+                  events: {
+                    orderBy: (events, { desc }) => [desc(events.createdAt)],
+                    limit: 20
+                  }
+                }
             });
 
-            // ELITE FIX: Call engine if there are actions OR if there is a score change
-            if (engineResult && (engineResult.actions.length > 0 || (engineResult.scoreChange && engineResult.scoreChange !== 0))) {
+            const { 
+              intentScore, 
+              priorityScore, 
+              engagementLevel, 
+              profile 
+            } = computeBehavioralMetrics(lead as any, leadWithEvents?.events || []);
+
+            const engineResult = resolveGrowthAction(eventType as any, {
+                ...lead as any,
+                intentScore,
+                priorityScore,
+                engagementLevel,
+                profile,
+                metadata: lead.metadata as any
+            }, (lead as any).project);
+
+            // ELITE: Trigger actions if ruleId starts with PH80 or actions exist
+            if (engineResult && (engineResult.actions.length > 0 || (engineResult.ruleId?.startsWith('PH80')))) {
                 await executeGrowthActions(
                     engineResult.actions, 
-                    { lead: lead as any, project: (lead as any).project },
+                    { 
+                        lead: { ...lead as any, intentScore, priorityScore, engagementLevel, profile }, 
+                        project: (lead as any).project 
+                    },
                     { 
                         ruleId: engineResult.ruleId || `EVENT_${eventType}`, 
                         ruleCondition: engineResult.ruleCondition,
                         isStressTest
                     },
-                    engineResult.scoreChange
+                    engineResult.scoreChange,
+                    engineResult
                 );
             }
         } catch (engineErr) {

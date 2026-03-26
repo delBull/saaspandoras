@@ -68,16 +68,21 @@ class NotificationService {
   /**
    * Send notification for a high-intent Growth Lead (Phase 1.5)
    */
-  async notifyGrowthLead(lead: any, project: any): Promise<boolean> {
-    const notificationText = `
-💎 **NUEVO LEAD DE ALTA INTENCIÓN**
+  async notifyGrowthLead(lead: any, project: any, isClosingStrike = false): Promise<boolean> {
+    const title = isClosingStrike ? "🚨 **PH85: STRIKE DE CIERRE DETECTADO**" : "💎 **NUEVO LEAD DE ALTA INTENCIÓN**";
+    const color = isClosingStrike ? 16711680 : 3447003; // Red for strike, Blue for high intent
 
-👤 **Nombre**: ${lead.name || 'Anónimo'}
-📧 **Email**: ${lead.email}
-📱 **WhatsApp**: ${lead.phoneNumber || 'N/A'}
+    const notificationText = `
+${title}
+
+👤 **Nombre**: ${lead.name || lead.email || 'Anónimo'}
+📧 **Email**: ${lead.email || 'N/A'}
 🎯 **Intención**: ${lead.intent?.toUpperCase()}
 📊 **Score**: ${lead.score || 0}/100
+⚖️ **Prioridad**: ${lead.priorityScore || 0}
 🚀 **Proyecto**: ${project.name}
+
+${isClosingStrike ? "⚠️ **ACCION REQUERIDA**: Intervención de ventas inmediata sugerida." : ""}
 
 🔗 **Ver Lead**: /admin/dashboard?tab=marketing&subtab=growth-os
 `.trim();
@@ -85,7 +90,7 @@ class NotificationService {
     // Route to project-specific webhook if provided, else fallback to default
     const targetWebhook = project.discordWebhookUrl || this.config?.discord?.webhookUrl;
     
-    return await this.sendDiscord(notificationText, true, 3447003, targetWebhook, "Growth OS Alert");
+    return await this.sendDiscord(notificationText, isClosingStrike, color, targetWebhook, isClosingStrike ? "Closing Machine Alert" : "Growth OS Alert");
   }
 
   /**
@@ -197,7 +202,7 @@ export function configureNotifications(config: NotificationConfig) {
 // Auto-configure from environment (support both naming variants)
 // Auto-configure from environment - LAZY LOADED, NOT TOP LEVEL
 // Auto-configure from environment - LAZY LOADED, NOT TOP LEVEL
-const discordWebhook = process.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_ALERTS;
+const discordWebhook = process.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_ALERTS || process.env.PANDORAS_ALERTS_WEBHOOK;
 const discordApplyWebhook = process.env.DISCORD_APPLY_WEBHOOK_URL;
 
 export function ensureNotificationServiceConfigured() {

@@ -55,8 +55,13 @@ interface Lead {
   lastAction?: string;
   conversionValue?: string | null;
   probability?: number | null;
-  expectedCloseDate?: string | null;
-  decayedScore?: number;
+  priorityScore?: number;
+  engagementLevel?: 'low' | 'mid' | 'high' | 'critical';
+  profile?: {
+    riskProfile: 'low' | 'medium' | 'high';
+    investmentStyle: 'yield' | 'flip' | 'speculative';
+    convictionScore: number;
+  };
   intentBucket?: 'low' | 'medium' | 'high' | 'closing';
 }
 
@@ -777,11 +782,20 @@ export default function GrowthOSSubTab() {
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'whitelisted': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'active': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'converted': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case 'curious': return 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30';
+      case 'aware': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'engaged': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      case 'hot': return 'bg-red-500/20 text-red-400 border-red-500/30 shadow-lg shadow-red-500/10';
+      case 'investor': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+      case 'evangelist': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
       default: return 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30';
     }
+  };
+
+  const getPriorityBadge = (score: number = 0) => {
+    if (score >= 150) return { label: 'ULTRA', color: 'text-red-500', bg: 'bg-red-500/20' };
+    if (score >= 100) return { label: 'PRIORITY', color: 'text-orange-500', bg: 'bg-orange-500/20' };
+    return { label: 'STANDARD', color: 'text-zinc-500', bg: 'bg-zinc-500/20' };
   };
 
   const getQualityColor = (quality: string) => {
@@ -1130,7 +1144,96 @@ export default function GrowthOSSubTab() {
                     <p className="text-xs text-zinc-400">Guía rápida para maximizar el crecimiento de tus protocolos.</p>
                   </div>
                 </div>
-                {showGuide ? <ChevronUp className="text-zinc-500" /> : <ChevronDown className="text-zinc-500" />}
+                
+                <div className="flex items-center gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <UIButton variant="outline" size="sm" className="bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20 text-[10px] font-black uppercase tracking-widest h-8 px-4 rounded-xl">
+                                <Zap className="w-3 h-3 mr-2" />
+                                Acquisition Playbook
+                            </UIButton>
+                        </DialogTrigger>
+                        <DialogContent className="bg-zinc-950 border border-zinc-800 text-zinc-300 max-w-2xl max-h-[80vh] overflow-y-auto rounded-[2.5rem] selection:bg-purple-500/30">
+                            <DialogHeader>
+                                <DialogTitle className="text-2xl font-black text-white flex items-center gap-3">
+                                    <Target className="text-purple-500" />
+                                    Institutional Acquisition Playbook
+                                </DialogTitle>
+                                <DialogDescription className="text-zinc-500 uppercase text-[10px] font-bold tracking-[0.2em]">
+                                    Phase 85: Deterministic Closing Machine
+                                </DialogDescription>
+                            </DialogHeader>
+                            
+                            <div className="space-y-8 py-6">
+                                <section className="space-y-3">
+                                    <h3 className="text-purple-400 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                                        <Fingerprint className="w-4 h-4" />
+                                        1. El Funnel Psicológico
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                                        {[
+                                            { s: 'CURIOUS', d: 'Interés inicial, navegando.' },
+                                            { s: 'AWARE', d: 'Entiende el valor, consume docs.' },
+                                            { s: 'ENGAGED', d: 'Wallet conectada, comportamiento activo.' },
+                                            { s: 'HOT', d: 'Umbral de convicción alcanzado. (TARGET)' }
+                                        ].map(item => (
+                                            <div key={item.s} className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                                                <span className="block font-black text-white mb-1">{item.s}</span>
+                                                <span className="text-zinc-500">{item.d}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <h3 className="text-emerald-400 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                                        <Flame className="w-4 h-4" />
+                                        2. Cómo Cerrar (Closing Strike)
+                                    </h3>
+                                    <div className="bg-emerald-500/5 border border-emerald-500/20 p-4 rounded-2xl space-y-3">
+                                        <p className="text-sm font-medium text-zinc-300 italic">"El sistema identifica oportunidades de strike basadas en el Priority Score (Intent × Wallet × Decay)."</p>
+                                        <ul className="space-y-2 text-xs text-zinc-400">
+                                            <li className="flex gap-2">
+                                                <span className="text-emerald-500 font-bold">1.</span>
+                                                <span>Busca leads en estado <strong className="text-white">HOT</strong> con <strong className="text-white">Priority {'>'} 120</strong>.</span>
+                                            </li>
+                                            <li className="flex gap-2">
+                                                <span className="text-emerald-500 font-bold">2.</span>
+                                                <span>El sistema dispara <strong className="text-white">SALES_INTERVENTION</strong> (Alerta Discord + Pitch personalizado).</span>
+                                            </li>
+                                            <li className="flex gap-2">
+                                                <span className="text-emerald-500 font-bold">3.</span>
+                                                <span>Usa el <strong className="text-white">Lead Brief</strong> generado para el toque humano final.</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <h3 className="text-blue-400 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                                        <Coins className="w-4 h-4" />
+                                        3. Oferta Dinámica & Escasez
+                                    </h3>
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl">
+                                            <h4 className="text-[10px] font-black text-zinc-500 uppercase mb-2">Resolución de Hook</h4>
+                                            <p className="text-xs">El motor elige entre <strong className="text-white">Fixed Yield Tier</strong> (Perfil Conservador) o <strong className="text-white">Equity Upside</strong> (Perfil Especulativo).</p>
+                                        </div>
+                                        <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl">
+                                            <h4 className="text-[10px] font-black text-zinc-500 uppercase mb-2">Escasez Pro</h4>
+                                            <p className="text-xs">Usa el contador de <strong className="text-white">Slots Remaining</strong> en tus seguimientos manuales para crear urgencia real.</p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <div className="pt-6 border-t border-zinc-800">
+                                    <p className="text-[9px] uppercase font-black tracking-[0.3em] text-zinc-600 text-center">Protocol Confidential // Acquisition Machine v3.0</p>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    {showGuide ? <ChevronUp className="text-zinc-500" /> : <ChevronDown className="text-zinc-500" />}
+                </div>
               </button>
 
               {showGuide && (
@@ -1394,10 +1497,10 @@ export default function GrowthOSSubTab() {
                   <th className="px-8 py-4">Lead Identity</th>
                   <th className="px-8 py-4">Persona</th>
                   <th className="px-8 py-4">Source / Origin</th>
-                   <th className="px-8 py-4">Quality / Score</th>
-                  <th className="px-8 py-4">Status / Intent</th>
+                   <th className="px-8 py-4">Status / Funnel</th>
+                  <th className="px-8 py-4">Priority / Score</th>
+                  <th className="px-8 py-4">Behavioral Profile</th>
                   <th className="px-8 py-4">Forecast ($)</th>
-                  <th className="px-8 py-4">Activity Insights</th>
                   <th className="px-8 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -1438,66 +1541,60 @@ export default function GrowthOSSubTab() {
                         </div>
                       </td>
                       <td className="px-8 py-5">
-                        <div className="flex items-center gap-3">
-                          <Badge className={cn("text-[8px] font-black uppercase border-zinc-700/50 bg-zinc-950 text-zinc-400")}>
-                            {(l as any).quality || 'LOW'}
-                          </Badge>
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5">
-                                <span className={cn("text-[11px] font-black", (l as any).decayedScore < (l as any).score ? "text-orange-400" : "text-white")}>
-                                    {(l as any).decayedScore ?? (l as any).score ?? 0}
-                                </span>
-                                {(l as any).decayedScore < (l as any).score && (
-                                    <div title="Natural Score Decay Active">
-                                        <Clock className="w-2.5 h-2.5 text-orange-500/50 animate-pulse" />
-                                    </div>
-                                )}
-                            </div>
-                            <div className="w-12 h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
-                              <div 
-                                className="h-full bg-purple-500 transition-all" 
-                                style={{ width: `${Math.min(((l as any).decayedScore || (l as any).score || 0), 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5">
                         <div className="flex flex-col gap-1.5">
-                          <Badge className={cn("text-[8px] font-black uppercase border-none w-fit px-2", 
-                            (l as any).intentBucket === 'closing' ? 'bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]' :
-                            (l as any).intentBucket === 'high' ? 'bg-orange-500/20 text-orange-400' :
-                            (l as any).intentBucket === 'medium' ? 'bg-blue-500/20 text-blue-400' :
-                            'bg-zinc-800/50 text-zinc-500'
-                          )}>
-                            {(l as any).intentBucket || 'NEW'}
+                          <Badge className={cn("text-[9px] font-black uppercase border-none w-fit px-3 py-1", getStatusColor(l.status))}>
+                            {l.status}
                           </Badge>
-                          <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">{l.intent || 'EXPLORE'}</span>
+                          <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest leading-none">{l.intent || 'EXPLORE'}</span>
                         </div>
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white">
-                            ${(Number(l.conversionValue || 0)).toLocaleString()}
-                          </span>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <div className="w-8 h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
-                              <div 
-                                className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" 
-                                style={{ width: `${l.probability || 0}%` }}
-                              />
-                            </div>
-                            <span className="text-[9px] text-zinc-500 font-black">{l.probability || 0}%</span>
-                          </div>
+                           <div className="flex items-center gap-2">
+                              <span className={cn("text-base font-black", l.priorityScore && l.priorityScore > 100 ? "text-red-500" : "text-white")}>
+                                {l.priorityScore || 0}
+                              </span>
+                              {l.priorityScore && l.priorityScore > 120 && (
+                                <Flame className="w-4 h-4 text-red-500 animate-pulse" />
+                              )}
+                           </div>
+                           <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] text-zinc-500 font-bold uppercase">QS: {l.score || 0}</span>
+                              <div className="w-12 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-purple-500" style={{ width: `${Math.min(l.score || 0, 100)}%` }} />
+                              </div>
+                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-5">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-3 h-3 text-zinc-700" />
-                            <span className="text-[10px] font-bold text-zinc-400">{(l as any).lastAction || 'No recent automation'}</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {l.profile?.riskProfile && (
+                            <Badge variant="outline" className="text-[8px] bg-zinc-950 border-zinc-800 text-zinc-400">
+                              {l.profile.riskProfile.toUpperCase()} RISK
+                            </Badge>
+                          )}
+                          {l.profile?.investmentStyle && (
+                            <Badge variant="outline" className={cn("text-[8px] border-none uppercase px-2 py-0.5", 
+                               l.profile.investmentStyle === 'yield' ? 'bg-emerald-500/10 text-emerald-400' :
+                               l.profile.investmentStyle === 'speculative' ? 'bg-orange-500/10 text-orange-400' :
+                               'bg-blue-500/10 text-blue-400'
+                            )}>
+                              {l.profile.investmentStyle}
+                            </Badge>
+                          )}
+                          {l.engagementLevel === 'critical' && (
+                            <Badge className="bg-red-500/20 text-red-500 text-[8px] animate-pulse border-none">CRITICAL</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white">
+                            ${(Number(l.conversionValue || 0)).toLocaleString()}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[9px] text-zinc-500 font-black">{l.probability || 0}% CLOSED</span>
                           </div>
-                          <span className="text-[8px] font-mono text-zinc-600">{new Date(l.createdAt).toLocaleDateString()}</span>
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right">

@@ -75,7 +75,24 @@ export default function AccessPage() {
   const [showPortal, setShowPortal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true); 
+    // 🧠 Phase 87: Deterministic Lead Tracking (Dogfooding)
+    if (typeof window !== 'undefined') {
+      fetch('/api/v1/marketing/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'VIEW_ACCESS',
+          projectSlug: 'pandoras_access', // External identity for this flow
+          metadata: { 
+            entry_path: window.location.pathname,
+            referrer: document.referrer
+          }
+        })
+      }).catch(console.error);
+    }
+  }, []);
 
   const isLoading = status === 'booting' || status === 'checking_session';
   

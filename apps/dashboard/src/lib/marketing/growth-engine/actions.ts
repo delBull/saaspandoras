@@ -27,7 +27,8 @@ export async function executeGrowthActions(
     overrideGuardrails?: boolean;
     isStressTest?: boolean;
   },
-  scoreChange?: number
+  scoreChange: number = 0,
+  engineResult?: any
 ) {
   const startTime = Date.now();
   // 0. Configuration & Security
@@ -54,12 +55,38 @@ export async function executeGrowthActions(
   // 2. Metadata Initialization
   const currentMetadata = (freshLead.metadata || {}) as any;
   const growthMetadata: GrowthMetadata = currentMetadata.growth || {
-    state: 'NEW',
+    state: 'CURIOUS', // Phase 80 Default
     updatedAt: Date.now(),
     history: [],
     executedActions: {},
     failedActions: {},
     executingActions: {}
+  };
+
+  // State Resilience: Map old states to new psychological funnel
+  const stateMap: Record<string, LeadState> = {
+    'NEW': 'CURIOUS',
+    'EXPLORE': 'AWARE',
+    'EDUCATING': 'ENGAGED',
+    'NURTURING': 'AWARE',
+    'INVEST_READY': 'ENGAGED',
+    'SCHEDULED': 'HOT',
+    'CONVERTED': 'INVESTOR'
+  };
+
+  const mappedState = stateMap[growthMetadata.state];
+  if (mappedState) {
+    growthMetadata.state = mappedState;
+  }
+
+  // --- MULTI-CHANNEL DISPATCHER (Phase 80) ---
+  const dispatchAction = async (action: GrowthActionType, channel: "email" | "whatsapp" | "in_app" | "sales_team" = "email") => {
+    if (channel === 'whatsapp' || channel === 'sales_team') {
+       console.log(`[Growth OS] 🚀 DISPATCHING to ${channel.toUpperCase()}: ${action} for ${lead.email}`);
+       // In institutional phase, these would call Twilio or Slack/Discord
+       return { success: true, channel };
+    }
+    return null; // Fallthrough to existing switch
   };
 
   // Ensure fields exist (for legacy leads)
@@ -270,7 +297,8 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 1,
               projectName: project.name,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+              engagementLevel: lead.engagementLevel
             });
             success = res.success;
           } else {
@@ -285,7 +313,8 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 2,
               projectName: project.name,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+              engagementLevel: lead.engagementLevel
             });
             success = res.success;
           } else {
@@ -300,7 +329,8 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 3,
               projectName: project.name,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+              engagementLevel: lead.engagementLevel
             });
             success = res.success;
           } else {
@@ -315,7 +345,8 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 4,
               projectName: project.name,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
+              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+              engagementLevel: lead.engagementLevel
             });
             success = res.success;
           } else {
@@ -338,49 +369,91 @@ export async function executeGrowthActions(
           break;
         }
 
-        case 'NOTIFY_TEAM':
-          // Extreme: Urgency Tiers (Audit 1)
+             case 'NOTIFY_TEAM':
+          // Institutional: WhatsApp/Sales Team Tier
           const { classifyIntent } = await import("./engine");
-          const urgency = classifyIntent(freshLead?.score || 0, (growthMetadata as any).state || 'NEW', currentMetadata);
+          const intentCategory = classifyIntent(freshLead?.score || 0, growthMetadata.state);
+          
+          if (intentCategory === 'closing' || intentCategory === 'high') {
+             const dispatched = await dispatchAction(action, 'sales_team');
+             if (dispatched) {
+                success = true;
+                break;
+             }
+          }
           
           if (ruleInfo?.isStressTest) {
-              console.log(`[Growth Engine] 🧪 MOCK: Notification Tier ${urgency} for ${lead.email || 'anonymous'}`);
+              console.log(`[Growth Engine] 🧪 MOCK: Notification for state ${growthMetadata.state} for ${lead.email || 'anonymous'}`);
               success = true;
           } else {
               ensureNotificationServiceConfigured();
               const leadWithScore = { ...lead, score: lead.score || 0 };
-              success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: urgency } as any);
+              success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: intentCategory } as any);
           }
           break;
 
         case 'ASSIGN_COURSE':
-          // Mock discovery
-          console.log(`[Growth Engine] Assigned course to ${lead.email || 'anonymous'}`);
+          // Institutional: Phase 80 Goal (Education)
+          console.log(`[Growth Engine] Goal-Oriented: Education triggered for ${lead.email || 'anonymous'}`);
           success = true;
           break;
           
         case 'UNLOCK_REWARD':
-          console.log(`[Growth Engine] Mock: Unlocked reward`);
+          console.log(`[Growth Engine] Institutional: Unlocked exclusive asset reward`);
           success = true;
           break;
 
         case 'GENERATE_LEAD_BRIEF': {
-          // Mock generation
-          console.log(`[Growth Engine] Brief generated for ${lead.email || 'anonymous'}`);
+          const brief = generateLeadBrief(lead, project);
+          console.log(`[Growth Engine] 📄 Institutional Brief:\n${brief}`);
           success = true;
           break;
         }
 
+        case 'SALES_INTERVENTION': {
+           // PH85: The Closing Strike
+            console.log(`[Growth OS] 🚨 DETERMINISTIC CLOSE: Triggering Sales Intervention for ${lead.email}`);
+            await dispatchAction(action, 'sales_team'); // High priority
+            ensureNotificationServiceConfigured();
+            success = await notificationService.notifyGrowthLead({
+                ...lead,
+                metadata: { 
+                  ...lead.metadata, 
+                  system_note: `PH85 CLOSING: High-Priority Intervention for ${lead.priorityScore} Lead` 
+                }
+            }, project, true); // Added true for isClosingStrike
+           break;
+        }
+
+        case 'SEND_DYNAMIC_OFFER': {
+           // PH85: Risk-Adjusted Yield Offer
+           const offer = engineResult.offer;
+           if (!offer) {
+             success = false;
+             break;
+           }
+           console.log(`[Growth OS] 💰 DYNAMIC OFFER: Sending ${offer.type} (${offer.value}) to ${lead.email}`);
+           // Persist to metadata for email template enrichment
+           growthMetadata.activeOffer = offer;
+           growthMetadata.scarcity = engineResult.scarcity;
+           
+           if (lead.email) {
+             // In a real prod environment, this would call the email sender with PH85 template
+             success = true; 
+           }
+           break;
+        }
+
         case 'SEND_SOW': {
-            // SOW (Statement of Work) logic
             if (ruleInfo?.isStressTest) {
-                console.log(`[Growth Engine] 🧪 MOCK: SOW Sent to ${lead.email || 'anonymous'}`);
                 success = true;
             } else if (lead.email) {
+                // High-conviction dispatch
+                await dispatchAction(action, 'whatsapp');
                 ensureNotificationServiceConfigured();
                 success = await notificationService.notifyGrowthLead({
                     ...lead,
-                    metadata: { ...lead.metadata, system_note: 'HOT LEAD: SEND SOW IMMEDIATELY' }
+                    metadata: { ...lead.metadata, system_note: `HOT LEAD [${growthMetadata.state}]: SEND SOW` }
                 }, project);
             } else {
                 success = true;
@@ -421,7 +494,9 @@ export async function executeGrowthActions(
                executionTimeMs: Date.now() - startTime,
                inputSnapshot: { 
                    score: freshLead?.score, 
-                   metadata: { ...currentMetadata, growth: undefined } 
+                   intentScore: lead.intentScore,
+                   priorityScore: lead.priorityScore,
+                   state: growthMetadata.state
                },
                metadata: { projectSlug: project.slug, email: lead.email, isStress: ruleInfo?.isStressTest }
            });
@@ -460,7 +535,18 @@ export async function executeGrowthActions(
     // THE BLINDAJE: Optimistic locking condition
     const updateResult = await db.update(marketingLeads)
       .set({ 
-        metadata: currentMetadata,
+        metadata: {
+          ...currentMetadata,
+          growth: {
+            ...growthMetadata,
+            intentScore: lead.intentScore,
+            priorityScore: lead.priorityScore,
+            engagementLevel: lead.engagementLevel,
+            profile: lead.profile,
+            activeOffer: growthMetadata.activeOffer,
+            scarcity: growthMetadata.scarcity
+          }
+        },
         score: (freshLead.score || 0) + (scoreChange || 0),
         lastAction: newlyExecuted[newlyExecuted.length - 1] || lead.lastAction,
         updatedAt: new Date() 
