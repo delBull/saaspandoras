@@ -19,7 +19,8 @@ import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Loader2 } from "lucide-react";
+import { resolveAccessState, AccessState } from "@/lib/access/state-machine";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { ComingSoon } from "@/components/marketing/ComingSoon";
 import { NFTGate } from "@/components/nft-gate";
 
@@ -248,7 +249,7 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 }
 
 export default function DashboardPage() {
-  const { user, status } = useAuth();
+  const { user, status, isAuthenticated, hasAccess, remoteState, ux } = useAuth();
   const { isAdmin } = useAdmin();
 
   const [leadModal, setLeadModal] = useState(false);
@@ -266,8 +267,15 @@ export default function DashboardPage() {
     loading: true
   });
 
+  const accessState = resolveAccessState({
+    status,
+    user,
+    isAdmin,
+    remoteState
+  });
+
   useEffect(() => {
-    const canBootstrap = !!user?.address && (status === "authenticated" || status === "has_access");
+    const canBootstrap = !!user?.address && (isAuthenticated || hasAccess);
     const controller = new AbortController();
 
     const load = async () => {
@@ -305,13 +313,15 @@ export default function DashboardPage() {
     return () => controller.abort();
   }, [status, user?.address, isAdmin]); // Re-run if user/status/admin changes
 
-  // ✅ FIX 1 — ELIMINATE AUTH-LOADER BLOCK (Surgical Fix)
-  const isLoadingAuth = status === "booting" || status === "checking_session" || status === "checking_access" || status === "signing";
-  
-  // ✅ FIX 2 — SECURE ENTRANCE ACCESS (Deadlock-Free)
-  const hasEntranceAccess = (isAdmin && !!user) || status === "has_access";
+  // ⚡ ELITE UX: Preload NFTGate component chunk when we detect a wallet without access
+  useEffect(() => {
+    if (accessState === AccessState.WALLET_NO_ACCESS) {
+      import("@/components/nft-gate").catch(() => {});
+    }
+  }, [accessState]);
 
-  if (isLoadingAuth) {
+  // 🟢 CASE 1: LOADING STATE
+  if (accessState === AccessState.LOADING) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
@@ -319,11 +329,61 @@ export default function DashboardPage() {
     );
   }
 
-  // ⚠️ FINAL ACCESS GUARD (GENESIS RITUAL)
-  if (!hasEntranceAccess) {
+  // 🟢 CASE 2: ERROR STATE (Safety First)
+  if (accessState === AccessState.ERROR) {
     return (
-      <NFTGate status={status} user={user}>
-         <ComingSoon /> 
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center">
+        <ShieldAlert className="w-12 h-12 text-red-500 mb-6 animate-pulse" />
+        <h2 className="text-2xl font-thin tracking-widest uppercase text-white mb-4">Error de Sincronización</h2>
+        <p className="text-zinc-500 text-sm max-w-xs mb-8">El protocolo no pudo verificar tu identidad. Esto puede deberse a la red o a una sesión expirada.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-8 py-3 bg-white text-black text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white transition-all"
+        >
+          Reintentar Conexión
+        </button>
+      </div>
+    );
+  }
+
+  // 🟢 CASE 3A: NO SESSION (Wallet connected but missing JWT)
+  if (accessState === AccessState.NO_SESSION) {
+    return (
+      <ComingSoon 
+        variant="lead-capture"
+        cta={ux?.cta || "Sign In to Access"}
+        customSubtitle={ux?.scarcityHint || "Tu sesión no ha sido verificada para esta wallet."}
+      />
+    );
+  }
+
+  // 🟢 CASE 3B: NO WALLET → Public Entrance / Lead Capture
+  if (accessState === AccessState.NO_WALLET) {
+    return (
+      <ComingSoon 
+        variant="lead-capture"
+        cta={ux?.cta || "Conectar Wallet"}
+        customSubtitle={ux?.scarcityHint}
+      />
+    );
+  }
+
+  // 🟢 CASE 3: WALLET NO ACCESS → NFTGate Ritual
+  if (accessState === AccessState.WALLET_NO_ACCESS) {
+    return (
+      <NFTGate 
+        initialState="RITUAL"
+        context={{
+          hasWallet: true,
+          status
+        }}
+        user={user}
+      >
+          <ComingSoon 
+            variant="lead-capture"
+            cta={ux?.cta}
+            customSubtitle={ux?.scarcityHint}
+          /> 
       </NFTGate>
     );
   }

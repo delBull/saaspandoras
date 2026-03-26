@@ -25,6 +25,8 @@ import { Badge } from "../../components/ui/badge";
 import NextImage from "next/image";
 import { LeadCaptureModal } from "../../components/marketing/LeadCaptureModal";
 import { DocumentVisorModal } from "../../components/marketing/DocumentVisorModal";
+import { useAccessState } from "@/hooks/use-access-state";
+import { useRouter } from "next/navigation";
 
 const TierCard = ({ 
   tier, 
@@ -228,8 +230,15 @@ export default function GrowthOSLanding() {
   const [leadModal, setLeadModal] = useState(false);
   const [docModal, setDocModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | undefined>(undefined);
+  
+  const router = useRouter();
+  const { isGenesisQualified, ux, isLoading } = useAccessState();
 
   const openConversion = (tier?: string) => {
+    if (isGenesisQualified) {
+        router.push("/admin");
+        return;
+    }
     setSelectedTier(tier);
     setLeadModal(true);
   };
@@ -282,15 +291,31 @@ export default function GrowthOSLanding() {
                 NO ES IGUAL
               </span>
             </h1>
+            
+            {/* 🛰️ Real-Time Scarcity Injected from Level 20 Backend */}
+            {ux?.scarcityHint && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-8 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 inline-block"
+              >
+                 <span className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 animate-pulse" />
+                    {ux.scarcityHint}
+                 </span>
+              </motion.div>
+            )}
+
             <p className="text-lg md:text-2xl text-zinc-500 font-bold leading-relaxed max-w-3xl mx-auto mb-16 uppercase tracking-tight">
               Growth OS determina quién entra primero — <span className="text-white">y quién captura la mayor ventaja</span>. Un sistema cerrado que rastrea, clasifica y activa a participantes tempranos en oportunidades financieras reales.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4">
               <Button 
                 onClick={() => openConversion()}
+                disabled={isLoading}
                 className="w-full sm:w-auto h-20 px-14 rounded-3xl bg-white text-black font-black text-xl hover:bg-zinc-200 transition-all shadow-[0_0_60px_rgba(255,255,255,0.15)] uppercase tracking-tighter italic"
               >
-                Entrar Temprano
+                {isLoading ? "Validando..." : isGenesisQualified ? "Ir al Dashboard" : "Entrar Temprano"}
               </Button>
               <Button 
                 onClick={() => setDocModal(true)}

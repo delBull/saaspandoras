@@ -8,7 +8,7 @@ import { SuccessNFTCard } from "./nft-gating/success-nft-card";
 import { useToast } from "@saasfly/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth, AuthStatus, User } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
 import { client } from "@/lib/thirdweb-client";
 import { wallets } from "@/lib/wallets";
@@ -263,16 +263,29 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
 // ─── Main NFTGate ─────────────────────────────────────────────────────────
 interface NFTGateProps {
   children: React.ReactNode;
-  status?: string; // Optional context from parent
-  user?: any;      // Optional context from parent
+  status?: AuthStatus; // Use strict type
+  user?: User | null; // Use strict type
+  initialState?: "HERO" | "FORM" | "RITUAL"; 
+  context?: {
+    hasWallet: boolean;
+    status: AuthStatus;
+  };
 }
 
-export function NFTGate({ children, status: externalStatus, user: externalUser }: NFTGateProps) {
+export function NFTGate({ 
+  children, 
+  status: externalStatus, 
+  user: externalUser,
+  initialState,
+  context 
+}: NFTGateProps) {
   const [visualState, setVisualState] = useState<GateVisualState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [leadCaptured, setLeadCaptured] = useState(false);
-  const [leadHydrated, setLeadHydrated] = useState(false);
+  
+  // ELITE: If initialState is RITUAL, we assume lead is already captured/verified
+  const [leadCaptured, setLeadCaptured] = useState(initialState === "RITUAL");
+  const [leadHydrated, setLeadHydrated] = useState(initialState === "RITUAL");
 
   // Hooks (Internal state if no props provided)
   const internalAccount = useActiveAccount();
@@ -281,9 +294,9 @@ export function NFTGate({ children, status: externalStatus, user: externalUser }
   const { isAdmin } = useAdmin();
 
   // Use external context if available, else fallback to hooks
-  const status = externalStatus || internalStatus;
+  const status = context?.status || externalStatus || internalStatus;
   const user = externalUser || internalUser;
-  const account = internalAccount; // Wallet identity always comes from hook for now
+  const account = internalAccount; // Wallet identity always comes from hook
   const router = useRouter();
   const { toast } = useToast();
   const ritualRunning = useRef(false);

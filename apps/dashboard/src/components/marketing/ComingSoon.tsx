@@ -13,7 +13,13 @@ import Link from 'next/link';
  * Enfocada en selectividad, escasez y filtrado por intención.
  * ============================================================================
  */
-export function ComingSoon() {
+interface ComingSoonProps {
+  variant?: 'marketing' | 'lead-capture';
+  cta?: string;
+  customSubtitle?: string;
+}
+
+export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: ComingSoonProps) {
   const [view, setView] = useState<'hero' | 'form'>('hero');
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -109,23 +115,45 @@ export function ComingSoon() {
                 </h2>
                 
                 <p className="text-gray-400 text-base md:text-lg font-light tracking-wide max-w-sm mx-auto leading-relaxed">
-                  El acceso no está abierto.<br />
-                  Está siendo habilitado selectivamente.
+                  {customSubtitle ? (
+                    <span className="text-blue-400 border-b border-blue-500/30 pb-1">{customSubtitle}</span>
+                  ) : (
+                    <>
+                      El acceso no está abierto.<br />
+                      Está siendo habilitado selectivamente.
+                    </>
+                  )}
                 </p>
               </div>
 
                 <div className="flex flex-col items-center gap-8 pt-4">
+                  {variant === 'lead-capture' ? (
+                    <button 
+                      onClick={() => {
+                        // Elite Trigger: Re-running the auth flow to force wallet connection
+                        window.location.reload(); 
+                      }}
+                      className="group relative px-12 py-5 border border-blue-500/50 bg-blue-500/10 hover:bg-blue-500 hover:text-white transition-all duration-700 overflow-hidden"
+                    >
+                      <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">{cta || 'Conectar Wallet'}</span>
+                      <div className="absolute inset-0 bg-blue-500 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setView('form')}
+                      className="group relative px-12 py-5 border border-white/20 bg-white/5 hover:bg-white hover:text-black transition-all duration-700 overflow-hidden"
+                    >
+                      <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">Solicitar Acceso</span>
+                      <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                    </button>
+                  )}
+                  
                   <button 
                     onClick={() => setView('form')}
-                    className="group relative px-12 py-5 border border-white/20 bg-white/5 hover:bg-white hover:text-black transition-all duration-700 overflow-hidden"
+                    className="text-[9px] uppercase tracking-[0.4em] text-gray-600 font-bold hover:text-gray-400 transition-colors"
                   >
-                    <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">Solicitar Acceso</span>
-                    <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                    {variant === 'lead-capture' ? 'O solicitar acceso tradicional' : 'No todos los accesos son aprobados.'}
                   </button>
-                  
-                  <p className="text-[9px] uppercase tracking-[0.4em] text-gray-600 font-bold">
-                    No todos los accesos son aprobados.
-                  </p>
                 </div>
             </motion.div>
           )}
