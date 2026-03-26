@@ -225,13 +225,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const controller = new AbortController();
             abortControllerRef.current = controller;
 
-            if (account) {
+            if (address) {
                  console.log("[AuthMachine] 👤 Account detected, initiating unified flow...");
                  runAuthFlow(controller.signal);
             } else {
-                 console.log("[AuthMachine] 👤 No account detected, reaching guest state.");
-                 dispatch({ type: "SET_STATUS", status: "unauthenticated" });
-                 persistState("unauthenticated");
+                 // SYMMETRIC RESILIENCE: 
+                 // If the account drops, wait 1s before falling back to guest.
+                 // This handles Thirdweb "re-attachments" without blinking.
+                 const timer = setTimeout(() => {
+                    if (!account?.address) {
+                        console.log("[AuthMachine] 👤 No account detected for 1s, reaching guest state.");
+                        dispatch({ type: "SET_STATUS", status: "unauthenticated" });
+                        persistState("unauthenticated");
+                    }
+                 }, 1000);
+                 return () => clearTimeout(timer);
             }
         }
     }, [account?.address]);
@@ -324,8 +332,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const id = ++flowId.current;
             console.log(`[AuthMachine] 🚀 Starting flow #${id} (latest)`);
             
-            // ELITE FIX: Atomic Reset inside the mutex to ensure encapsulation
-            dispatch({ type: "RESET" });
+            // ELITE STABILITY FIX: Only reset if we are not already in a transitional state.
+            // This prevents the "Blink" loop where the UI flashes back to the initial spinner.
+            const TRANSITIONAL_STATES: AuthStatus[] = ["booting", "checking_session", "checking_access", "signing"];
+            if (!TRANSITIONAL_STATES.includes(state.status)) {
+                dispatch({ type: "SET_STATUS", status: "checking_session" });
+            }
 
             try {
                 if (!account) {
@@ -333,8 +345,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return;
                 }
 
-                safeDispatch({ type: "SET_STATUS", status: "checking_session" }, id);
-                
+                // First attempt: Silent refresh
                 let currentSession = await refreshSession(account?.address, signal);
                 if (signal?.aborted) return;
 
