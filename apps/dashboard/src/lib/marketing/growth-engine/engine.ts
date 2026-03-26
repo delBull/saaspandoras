@@ -191,22 +191,30 @@ export function resolveGrowthAction(event: GrowthEvent, lead: LeadContextPayload
       
       // FINANCIAL SCORING MULTIPLIER (Psychology of Capital)
       let scoreChange = 10;
-      const capital = Number(lead.metadata?.capital || 0);
-      const interest = lead.metadata?.interest;
+      
+      // Resiliently resolve capital and interest from multiple possible sources
+      const capitalRaw = lead.metadata?.capital || (lead as any).capital || '0';
+      const capital = typeof capitalRaw === 'string' ? 
+        parseInt(capitalRaw.replace(/[^0-9]/g, '')) || 0 : 
+        Number(capitalRaw);
+        
+      const interest = lead.metadata?.interest || lead.intent || 'explore';
       const horizon = lead.metadata?.horizon;
 
-      if (capital >= 100000) scoreChange += 80;
-      else if (capital >= 50000) scoreChange += 40;
+      if (capital >= 100000 || capitalRaw === '100k+') scoreChange += 80;
+      else if (capital >= 25000 || capitalRaw === '25k-100k') scoreChange += 40;
+      else if (capital >= 5000 || capitalRaw === '5k-25k') scoreChange += 15;
 
-      if (interest === 'Equity') scoreChange += 25;
-      else if (interest === 'Early Access') scoreChange += 15;
+      const normalizedInterest = String(interest).toLowerCase();
+      if (normalizedInterest === 'equity' || normalizedInterest === 'deals') scoreChange += 25;
+      else if (normalizedInterest === 'early access' || normalizedInterest === 'genesis') scoreChange += 15;
 
       if (horizon === 'Largo') scoreChange += 20;
 
       return { 
         nextState, actions, scoreChange, priority: 50, delay: null,
         ruleId: 'WAITLIST_QUALIFICATION',
-        ruleCondition: `Capital: ${capital}, Interest: ${interest}`
+        ruleCondition: `Resolved Capital: ${capitalRaw}, Interest: ${interest}`
       };
     }
 

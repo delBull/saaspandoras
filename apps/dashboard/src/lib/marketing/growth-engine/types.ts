@@ -30,6 +30,7 @@ export type GrowthEvent =
   | 'USER_CLASSIFIED_GENESIS'
   | 'USER_CLASSIFIED_STANDARD'
   | 'ACCESS_ACTIVATION_COMPLETED'
+  | 'HEARTBEAT'
   | 'PURCHASED';
 
 export type GrowthActionType = 
