@@ -43,14 +43,21 @@ export function resolveAccessState({ status, user, isAdmin, remoteState }: Param
     return AccessState.ERROR;
   }
 
+  // 🛡️ SECURITY & ELITE BYPASS (Level 12):
+  // If the client explicitly detects an ADMIN bypass (Staging/SuperAdmin/EasterEgg),
+  // we grant it immediately, overriding any lagging or misconfigured remoteState.
+  const hasWallet = !!user?.address;
+  if (isAdmin && hasWallet) {
+    return AccessState.ADMIN;
+  }
+
   // 🛡️ RESILIENT REMOTE AUTHORITY: Only obey valid, non-error remote states
   // If backend is down/compromised, we fallback to local derived logic.
   if (remoteState && remoteState !== AccessState.ERROR) {
     return remoteState;
   }
 
-  // 3. Identification
-  const hasWallet = !!user?.address;
+  // 3. Identification (Already processed in Elite Bypass above)
 
   // 4. Genuine Access (NFT Present)
   // FIX: Prioritize has_access to preserve metrics/tiers even for admins.

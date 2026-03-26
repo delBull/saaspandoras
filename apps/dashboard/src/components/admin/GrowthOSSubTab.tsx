@@ -490,7 +490,8 @@ export default function GrowthOSSubTab() {
         setSecretKey(data.secretKey || '— Sin llave secreta —');
       } else {
         // Generate/Regenerate
-        response = await fetch(`/api/admin/projects/${routeKey}/keys`, { method: 'POST' });
+        const url = `/api/admin/projects/${routeKey}/keys${force ? '?rotate=true' : ''}`;
+        response = await fetch(url, { method: 'POST' });
         data = await response.json().catch(() => ({}));
         if (response.ok) {
           setPublicKey(data.publicKey || '— Error al obtener llave —');
@@ -1648,7 +1649,12 @@ export default function GrowthOSSubTab() {
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Public Key</label>
                       <div className="flex bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-400 font-mono items-center justify-between">
-                        <span className="truncate mr-4">{publicKey}</span>
+                        <span className={cn(
+                          "mr-4", 
+                          !publicKey.includes('...') && publicKey !== 'Cargando...' && "text-white font-bold"
+                        )}>
+                          {publicKey}
+                        </span>
                         <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {
                           navigator.clipboard.writeText(publicKey);
                           toast.success("Public Key copiada");
@@ -1660,7 +1666,10 @@ export default function GrowthOSSubTab() {
                         Secret Key {secretKey.includes('...') && <span className="text-orange-400/60 lowercase ml-2 font-normal italic">(fingerprint)</span>}
                       </label>
                       <div className="flex bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-400 font-mono items-center justify-between">
-                        <span className={`truncate mr-4 italic ${secretKey.includes('...') ? 'text-zinc-600' : 'text-purple-400 font-bold'}`}>
+                        <span className={cn(
+                          "mr-4 italic",
+                          secretKey.includes('...') ? 'text-zinc-600' : 'text-purple-400 font-bold not-italic'
+                        )}>
                             {secretKey}
                         </span>
                         <UIButton variant="ghost" size="sm" className="h-6 text-[8px]" onClick={() => {

@@ -128,20 +128,24 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ message: "No autorizado" }, { status: 403 });
         }
         
+        const rotate = (new URL(_request.url)).searchParams.get("rotate") === "true";
+        
         const env = (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_URL?.includes('staging')) ? 'staging' : 'production';
     
         const publicResult = await IntegrationKeyService.ensureKeyForProject(
             project.id, 
             env, 
             `Client: ${project.title} (Public)`,
-            'public'
+            'public',
+            { forceRotate: rotate }
         );
 
         const secretResult = await IntegrationKeyService.ensureKeyForProject(
             project.id, 
             env, 
             `Client: ${project.title} (Secret)`,
-            'secret'
+            'secret',
+            { forceRotate: rotate }
         );
     
         return NextResponse.json({
