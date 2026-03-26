@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { driver } from 'driver.js';
 import "driver.js/dist/driver.css";
 import "./tour.css";
-import { usePersistedAccount } from '@/hooks/usePersistedAccount';
+import { useActiveAccount } from 'thirdweb/react';
 import { useRealGamification } from '@/hooks/useRealGamification';
 
 // --- CONFIGURATION ---
@@ -87,7 +87,7 @@ export function useTour() {
 // --- ENGINE COMPONENT ---
 
 export function TourEngine({ children }: { children: ReactNode }) {
-    const { account } = usePersistedAccount();
+    const account = useActiveAccount();
     const { trackNewEvent } = useRealGamification(account?.address);
     const [isOpen, setIsOpen] = useState(false);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);

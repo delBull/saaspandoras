@@ -9,7 +9,7 @@ import { TermsModalProvider, useTermsModal } from "@/contexts/TermsModalContext"
 import { TermsModal } from "@/components/ui/terms-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from 'next/navigation';
-import { usePersistedAccount } from "@/hooks/usePersistedAccount";
+import { useActiveAccount } from "thirdweb/react";
 import { AutoLoginGate } from "@/components/AutoLoginGate";
 import { RewardModal } from "@/components/RewardModal";
 import type { Reward } from "@/components/RewardModal";
@@ -55,7 +55,7 @@ export function DashboardClientWrapper({
   serverSession?: { address?: string; hasSession: boolean } | null; // <- tipo de sesión server-side
 }) {
   const pathname = usePathname();
-  const { account } = usePersistedAccount();
+  const account = useActiveAccount();
   const { user, status } = useAuth();
   const { isAdmin: isClientAdmin } = useAdmin();
   const { profile } = useProfile();
@@ -235,7 +235,7 @@ interface ReferralData {
 function RewardModalManager() {
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [currentReward, setCurrentReward] = useState<Reward | null>(null);
-  const { account } = usePersistedAccount();
+  const account = useActiveAccount();
 
   const checkForMarketingRewards = React.useCallback(async () => {
     if (!account?.address) return;

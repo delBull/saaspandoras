@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from "react";
-import { useReadContract, TransactionButton } from "thirdweb/react";
-import { usePersistedAccount } from "@/hooks/usePersistedAccount";
+import { useReadContract, TransactionButton, useActiveAccount } from "thirdweb/react";
 import Link from "next/link";
 import { config } from "@/config";
 import { getContract, prepareContractCall } from "thirdweb";
@@ -250,6 +249,7 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 
 export default function DashboardPage() {
   const { user, status, isAuthenticated, hasAccess, remoteState, ux } = useAuth();
+  const account = useActiveAccount();
   const { isAdmin } = useAdmin();
 
   const [leadModal, setLeadModal] = useState(false);

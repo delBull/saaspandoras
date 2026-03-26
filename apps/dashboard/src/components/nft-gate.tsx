@@ -141,13 +141,23 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
           Está siendo habilitado selectivamente.<br />
           <span className="text-zinc-600 text-xs">Tu perfil determina si entras.</span>
         </p>
-        <button
-          onClick={() => setStep("form")}
-          className="bg-white text-black px-12 py-5 font-black uppercase text-[11px] tracking-[0.4em] hover:bg-lime-400 transition-all duration-500"
-        >
-          Solicitar Acceso
-        </button>
-        <p className="text-[9px] uppercase tracking-[0.4em] text-zinc-700 font-bold mt-5">
+        <div className="flex flex-col gap-4 w-full max-w-xs">
+          <button
+            onClick={() => setStep("form")}
+            className="w-full bg-white text-black py-5 font-black uppercase text-[11px] tracking-[0.4em] hover:bg-lime-400 transition-all duration-500"
+          >
+            Solicitar Acceso
+          </button>
+          
+          <button
+            onClick={handleConnect}
+            className="w-full bg-transparent border border-zinc-800 text-zinc-500 py-4 font-bold uppercase text-[9px] tracking-[0.3em] hover:border-zinc-600 hover:text-white transition-all duration-300"
+          >
+            Ya tengo acceso (Conectar)
+          </button>
+        </div>
+
+        <p className="text-[9px] uppercase tracking-[0.4em] text-zinc-800 font-bold mt-8">
           No todos los accesos son aprobados.
         </p>
         {/* Hidden admin bypass: triple-click */}
@@ -538,6 +548,28 @@ export function NFTGate({
         <p className="text-zinc-500 mb-8 max-w-sm text-sm leading-relaxed font-mono">
           {infraError}
         </p>
+
+        {process.env.NODE_ENV === 'development' && (user as any)?._dev_debug && (
+          <div className="mb-8 p-4 bg-zinc-900 border border-zinc-700/50 rounded-lg text-left max-w-md overflow-hidden">
+            <p className="text-[10px] text-zinc-400 font-mono mb-2 uppercase opacity-50">Local Dev Diagnostics:</p>
+            <pre className="text-[9px] text-red-400 font-mono whitespace-pre-wrap break-all">
+              {JSON.stringify((user as any)._dev_debug, null, 2)}
+            </pre>
+            <p className="text-[8px] text-zinc-600 mt-2 italic">
+              Tip: Check your local DATABASE_URL and Railway IP Whitelist.
+            </p>
+            
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="mt-4 w-full bg-red-500/10 text-red-500 py-2 rounded font-mono text-[9px] uppercase border border-red-500/20 hover:bg-red-500/20 transition-all"
+            >
+              ☢️ Nuclear Reset (Clear Storage)
+            </button>
+          </div>
+        )}
         <div className="flex flex-col gap-4 w-full max-w-xs">
           <button
             onClick={() => { 

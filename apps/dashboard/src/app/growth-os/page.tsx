@@ -27,6 +27,18 @@ import { LeadCaptureModal } from "../../components/marketing/LeadCaptureModal";
 import { DocumentVisorModal } from "../../components/marketing/DocumentVisorModal";
 import { useAccessState } from "@/hooks/use-access-state";
 import { useRouter } from "next/navigation";
+import { Metadata } from 'next';
+
+// 🌐 SEO & Social Graph
+export const metadata: Metadata = {
+  title: "Pandora's Growth OS | Asymmetric Advantage Infrastructure",
+  description: "The distributed operating system for high-intent financial access. Track, rank, and activate early-stage accumulation.",
+  openGraph: {
+    title: "Pandora's Growth OS",
+    description: "Distributed Access Orchestration for the Genesis Window.",
+    images: ["/images/og-founders.jpg"],
+  },
+};
 
 const TierCard = ({ 
   tier, 
@@ -162,7 +174,7 @@ const ProgressionPreview = () => {
                         <input 
                             type="range" min="0" max="40" value={val} 
                             onChange={(e) => setVal(parseInt(e.target.value))}
-                            className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-purple-500"
+                            className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-shadow"
                         />
                     </div>
                 </div>
@@ -501,6 +513,15 @@ export default function GrowthOSLanding() {
           >
             Entrar Temprano
           </Button>
+
+          <div className="mt-8 relative z-10">
+            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-4">O conecta tu identidad directamente</p>
+            <div className="flex justify-center">
+               <Link href="/admin" className="px-6 py-3 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] transition-all text-zinc-400 hover:text-white">
+                  Conectar Wallet EOA
+               </Link>
+            </div>
+          </div>
           
           <p className="text-zinc-600 font-black uppercase tracking-[0.4em] text-[10px] mt-16 relative z-10 opacity-50">
             © 2026 PANDORA'S GROWTH OPERATING SYSTEM

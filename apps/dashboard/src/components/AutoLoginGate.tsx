@@ -13,7 +13,7 @@ interface AutoLoginGateProps {
 }
 
 export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGateProps) {
-  const { account, canAutoReconnect, isBootstrapped, savedWalletAddress, isConnecting } = usePersistedAccount();
+  const { account, isBootstrapped, savedWalletAddress, isConnecting } = usePersistedAccount();
   const router = useRouter();
   const pathname = usePathname();
   const [isClientReady, setIsClientReady] = useState(false);
@@ -73,17 +73,10 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     }
   }
 
-  // 🟢 Esperar si Thirdweb está intentando conectar (evita race condition con localStorage)
-  if (isConnecting) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-gray-400">
-        <div className="text-center">
-          <p>Conectando wallet...</p>
-          <p className="text-xs mt-2">Sincronizando</p>
-        </div>
-      </div>
-    );
-  }
+  // 🔵 NOTE: We no longer return a loading screen here based on isConnecting.
+  // Unmounting children during connection resets hooks and causes infinite loops.
+  // The AuthProvider status machine and individual components (like NFTGate) 
+  // already handle the waiting state gracefully.
 
   // ✅ ELITE FIX: Do NOT bypass the AuthProvider state machine.
   // We let AuthProvider decide if the user has access.

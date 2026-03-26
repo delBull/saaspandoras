@@ -10,6 +10,7 @@ import { GamificationDebugger } from "@/components/debug/GamificationDebugger";
 import { WalletDebugger } from "@/components/debug/WalletDebugger";
 import { SmartWalletGuard } from "@/components/auth/SmartWalletGuard";
 import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
+import React, { useState, useEffect } from "react";
 
 function ConnectedProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -28,9 +29,12 @@ export function Providers({
 }: {
   children: React.ReactNode;
 }) {
-  const autoConnectDisabled =
-    typeof window !== "undefined" &&
-    localStorage.getItem("wallet-logged-out") === "true";
+  const [autoConnectDisabled, setAutoConnectDisabled] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setAutoConnectDisabled(localStorage.getItem("wallet-logged-out") === "true");
+    }
+  }, []);
 
   return (
     <ThemeProvider
