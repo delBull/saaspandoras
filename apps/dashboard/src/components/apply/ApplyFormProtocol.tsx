@@ -199,7 +199,7 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                         if (onClose) {
                             onClose();
                         } else {
-                            router.push('/dashboard'); // Or home if dashboard not accessible
+                            router.push('/'); // Or home if dashboard not accessible
                         }
                     }}
                     className="bg-white text-black hover:bg-zinc-200"

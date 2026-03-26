@@ -586,17 +586,18 @@ export default function GrowthOSSubTab() {
     }
   };
 
-  const fetchLeads = async (projectId: string, currentScope: string) => {
-    setLoadingLeads(true);
-    try {
-      const context = projectId === 'all' ? 'pandora' : 'client';
-      const url = new URL(projectId === 'all' 
-        ? '/api/admin/marketing/leads' 
-        : `/api/admin/marketing/leads`, window.location.origin);
-      
-      if (projectId !== 'all') url.searchParams.append('projectId', projectId);
-      url.searchParams.append('scope', currentScope);
-      url.searchParams.append('ownerContext', context);
+    const fetchLeads = async (projectId: string, currentScope: string) => {
+      setLoadingLeads(true);
+      try {
+        const url = new URL('/api/admin/marketing/leads', window.location.origin);
+        
+        if (projectId !== 'all') {
+          url.searchParams.append('projectId', projectId);
+          url.searchParams.append('ownerContext', 'client');
+        } else {
+          // Ecosystem view: show everything b2c
+        }
+        url.searchParams.append('scope', currentScope);
 
       const response = await fetch(url.toString());
       const result = await response.json();

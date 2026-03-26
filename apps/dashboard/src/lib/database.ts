@@ -18,13 +18,20 @@ const globalForPostgres = globalThis as unknown as {
   sqlInstance: ReturnType<typeof postgres> | undefined;
 };
 
+// Detect if we're on localhost to disable SSL requirement
+// Hardened to check for common local hostnames and allow explicit env override
+const isLocal = DATABASE_URL.includes("localhost") || 
+                DATABASE_URL.includes("127.0.0.1") || 
+                DATABASE_URL.includes("0.0.0.0") ||
+                process.env.DB_SSL === "false";
+
 // Use a more resilient configuration for serverless
 export const sqlInstance = globalForPostgres.sqlInstance || postgres(DATABASE_URL, {
   max: 10, // Recommended safe limit for serverless on Neon
   idle_timeout: 20, 
   connect_timeout: 5,
   prepare: false, 
-  ssl: { rejectUnauthorized: false },
+  ssl: isLocal ? false : { rejectUnauthorized: false },
 });
 
 // Shared singleton across ALL environments to prevent pool exhaustion

@@ -47,31 +47,35 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Check accessRequests table (primary lead table)
-    const conditions = [];
-    if (email) conditions.push(eq(accessRequests.email, email));
-    if (wallet) conditions.push(eq(accessRequests.walletAddress, wallet));
+    const { withRetry } = await import("@/lib/database");
 
-    const existing = await db.query.accessRequests.findFirst({
-      where: conditions.length === 1 ? conditions[0] : or(...conditions),
-      columns: { id: true },
+    return await withRetry(async () => {
+        // Check accessRequests table (primary lead table)
+        const conditions = [];
+        if (email) conditions.push(eq(accessRequests.email, email));
+        if (wallet) conditions.push(eq(accessRequests.walletAddress, wallet));
+
+        const existing = await db.query.accessRequests.findFirst({
+        where: conditions.length === 1 ? conditions[0] : or(...conditions),
+        columns: { id: true },
+        });
+
+        if (existing) {
+        return NextResponse.json({ exists: true });
+        }
+
+        // Fallback: check marketingIdentities (Growth OS)
+        const identityConditions = [];
+        if (email) identityConditions.push(eq(marketingIdentities.email, email));
+        if (wallet) identityConditions.push(eq(marketingIdentities.walletAddress, wallet));
+
+        const identity = await db.query.marketingIdentities.findFirst({
+        where: identityConditions.length === 1 ? identityConditions[0] : or(...identityConditions),
+        columns: { id: true },
+        });
+
+        return NextResponse.json({ exists: !!identity });
     });
-
-    if (existing) {
-      return NextResponse.json({ exists: true });
-    }
-
-    // Fallback: check marketingIdentities (Growth OS)
-    const identityConditions = [];
-    if (email) identityConditions.push(eq(marketingIdentities.email, email));
-    if (wallet) identityConditions.push(eq(marketingIdentities.walletAddress, wallet));
-
-    const identity = await db.query.marketingIdentities.findFirst({
-      where: identityConditions.length === 1 ? identityConditions[0] : or(...identityConditions),
-      columns: { id: true },
-    });
-
-    return NextResponse.json({ exists: !!identity });
 
   } catch (err) {
     console.error("[/api/lead-exists]", err);

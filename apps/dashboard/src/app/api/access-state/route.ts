@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import jwt from "jsonwebtoken";
 import { db } from "@/db";
-import { users, securityEvents } from "@/db/schema";
+import { users, securityEvents, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { config } from "@/config";
 import { isAdmin } from "@/lib/auth";
 import { AccessState } from "@/lib/access/state-machine";
 import { withTimeout, accessCache, isRateLimited, dbBreaker } from "@/lib/access/resilience";
@@ -29,7 +30,6 @@ export async function GET(req: Request): Promise<NextResponse> {
         const token = cookieStore.get("auth_token")?.value;
 
         // 🛡️ 2. NO TOKEN -> Adaptive Lead UX
-        // (Always prioritize explicit wallet context if present for UX hints)
         if (!token) {
             const ux = await resolveUXConfig(walletParam || undefined, AccessState.NO_WALLET, false);
             return NextResponse.json({ 
@@ -39,14 +39,24 @@ export async function GET(req: Request): Promise<NextResponse> {
             });
         }
 
-        // 🔐 3. HARDENED JWT VERIFICATION
-        const secret = process.env.JWT_SECRET;
-        if (!secret) throw new Error("Infrastructure Security Error: Secret Missing");
+        // 🔐 3. HARDENED JWT VERIFICATION (RS256 / HS256 Support)
+        const { reconstructPEM } = await import("@/lib/auth");
+        const publicKeyRaw = process.env.JWT_PUBLIC_KEY;
+        const secret = publicKeyRaw || process.env.JWT_SECRET;
+        
+        if (!secret) {
+             console.error("🔥 [StripeEngine] Critical: Mission-critical JWT key missing.");
+             throw new Error("Infrastructure Security Error: Secret Missing");
+        }
+
+        const algorithm = publicKeyRaw ? "RS256" : "HS256";
+        const finalSecret = algorithm === "RS256" ? reconstructPEM(publicKeyRaw!, 'PUBLIC') : secret;
 
         let payload: any;
         try {
-            payload = jwt.verify(token, secret, { algorithms: ["HS256"] });
-        } catch (e) {
+            payload = jwt.verify(token, finalSecret, { algorithms: [algorithm] });
+        } catch (e: any) {
+            console.warn(`🔒 [StripeEngine] Token Verification Failed (${algorithm}):`, e.message);
             return NextResponse.json({ state: AccessState.NO_SESSION, authenticated: false }, { status: 401 });
         }
 
@@ -69,24 +79,55 @@ export async function GET(req: Request): Promise<NextResponse> {
         }
 
         try {
-            const [isUserAdmin, dbUser] = await Promise.all([
-                withTimeout(isAdmin(address), 5000, false),
-                withTimeout(
-                    db.query.users.findFirst({ where: eq(users.walletAddress, address) }),
-                    5000,
-                    null
-                )
-            ]);
+            const { withRetry } = await import("@/lib/database");
+
+            const [isUserAdmin, dbUser] = await withRetry(async () => {
+                return await Promise.all([
+                    withTimeout(isAdmin(address), 5000, false),
+                    withTimeout(
+                        db.query.users.findFirst({ where: eq(users.walletAddress, address) }),
+                        5000,
+                        null
+                    )
+                ]);
+            });
 
             const isStaging = process.env.NEXT_PUBLIC_APP_ENV === "staging";
             const userIsAdmin = !!isUserAdmin || isStaging;
 
             const hasNFTPermission = dbUser?.hasPandorasKey || false;
 
+            // 🛡️ 5.b FETCH GLOBAL CONFIG (Phase 89)
+            // Project #15 is the Source of Truth for Global Engine Settings
+            const globalProject = await withTimeout(
+                db.select({ w2eConfig: projects.w2eConfig }).from(projects).where(eq(projects.id, 15)).limit(1),
+                2000,
+                []
+            );
+            const globalMetadata = (globalProject[0]?.w2eConfig as any) || {};
+            
+            // Dynamic flags (Database overrides Environment)
+            const isBetaOpen = globalMetadata.betaOpen ?? config.betaOpen;
+            const isRitualEnabled = globalMetadata.ritualEnabled ?? true;
+
             // 🧠 6. RESOLVE STATE & BEHAVIORAL SCORING
             let resolvedState = AccessState.WALLET_NO_ACCESS;
-            if (userIsAdmin) resolvedState = AccessState.ADMIN;
-            else if (hasNFTPermission) resolvedState = AccessState.HAS_ACCESS;
+            
+            if (userIsAdmin) {
+                resolvedState = AccessState.ADMIN;
+            } else if (hasNFTPermission) {
+                // If Beta is CLOSED, even NFT holders are kept in the Ritual (WALLET_NO_ACCESS)
+                if (isBetaOpen) {
+                    resolvedState = AccessState.HAS_ACCESS;
+                } else {
+                    resolvedState = AccessState.WALLET_NO_ACCESS;
+                }
+            }
+
+            // If Ritual is disabled, we bypass WALLET_NO_ACCESS for anyone with NFT or Admin
+            if (!isRitualEnabled && hasNFTPermission && !userIsAdmin) {
+                resolvedState = AccessState.HAS_ACCESS;
+            }
 
             // Growth Weapon: Adaptive Scarcity & Social Pressure
             const ux = await resolveUXConfig(address, resolvedState, !!userIsAdmin);
@@ -102,6 +143,8 @@ export async function GET(req: Request): Promise<NextResponse> {
                 authenticated: true,
                 isAdmin: !!userIsAdmin,
                 hasAccess: hasNFTPermission,
+                betaOpen: isBetaOpen,
+                ritualEnabled: isRitualEnabled,
                 user: {
                     address,
                     hasAccess: hasNFTPermission,

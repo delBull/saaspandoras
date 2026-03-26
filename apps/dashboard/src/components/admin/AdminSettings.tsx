@@ -95,6 +95,51 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   const [riskLogs, setRiskLogs] = useState<any[]>([]);
   const [isGamificationLoading, setIsGamificationLoading] = useState(false);
 
+  // --- GLOBAL CONFIG STATE (Phase 89) ---
+  const [globalConfig, setGlobalConfig] = useState<{ betaOpen: boolean; ritualEnabled: boolean }>({
+    betaOpen: false,
+    ritualEnabled: true,
+  });
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+
+  const fetchGlobalConfig = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/global-config");
+      if (res.ok) {
+        const data = await res.json();
+        setGlobalConfig(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch global config", err);
+    }
+  }, []);
+
+  const handleUpdateGlobalConfig = async (updates: Partial<{ betaOpen: boolean; ritualEnabled: boolean }>) => {
+    if (!effectiveIsSuperAdmin) {
+      toast.error("Solo el Super Admin puede cambiar la configuración global.");
+      return;
+    }
+    const newConfig = { ...globalConfig, ...updates };
+    setIsGlobalLoading(true);
+    try {
+      const res = await fetch("/api/admin/global-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newConfig),
+      });
+      if (res.ok) {
+        setGlobalConfig(newConfig);
+        toast.success("Configuración global actualizada");
+      } else {
+        toast.error("Error al actualizar la configuración global");
+      }
+    } catch (err) {
+      toast.error("Error de red al actualizar configuración");
+    } finally {
+      setIsGlobalLoading(false);
+    }
+  };
+
   const handleAddAdmin = async () => {
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
       toast.error("Por favor, introduce una dirección de wallet válida.");
@@ -203,7 +248,8 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
 
   useEffect(() => {
     fetchGamificationData();
-  }, [fetchGamificationData]);
+    fetchGlobalConfig();
+  }, [fetchGamificationData, fetchGlobalConfig]);
 
   const handleSeedRules = async () => {
     if (!walletAddress) return;
@@ -282,6 +328,74 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
 
   return (
     <div className="space-y-8">
+      {/* --- GLOBAL ACCESS CONTROL (Phase 89) --- */}
+      <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-lime-900/10 border border-zinc-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10">
+            <ShieldCheck className="w-24 h-24 text-lime-400" />
+        </div>
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center">
+              <Key className="w-6 h-6 text-lime-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white tracking-tight">Global Access Control</h3>
+              <p className="text-xs text-zinc-400 font-medium">Controla la entrada al sistema y el estado de la Beta.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            {/* Beta Trigger */}
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 flex items-center gap-4 min-w-[200px]">
+              <div className="flex-1">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Status Beta</p>
+                <p className={`text-sm font-bold ${globalConfig.betaOpen ? 'text-lime-400' : 'text-zinc-500'}`}>
+                  {globalConfig.betaOpen ? 'BETA ABIERTA' : 'BETA CERRADA'}
+                </p>
+              </div>
+              <button
+                disabled={isGlobalLoading || !effectiveIsSuperAdmin}
+                onClick={() => handleUpdateGlobalConfig({ betaOpen: !globalConfig.betaOpen })}
+                className={`w-12 h-6 rounded-full transition-all relative ${globalConfig.betaOpen ? 'bg-lime-500' : 'bg-zinc-700'} ${isGlobalLoading ? 'opacity-50' : ''}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${globalConfig.betaOpen ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+            {/* Ritual Trigger */}
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 flex items-center gap-4 min-w-[200px]">
+              <div className="flex-1">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Access Ritual</p>
+                <p className={`text-sm font-bold ${globalConfig.ritualEnabled ? 'text-blue-400' : 'text-orange-400'}`}>
+                  {globalConfig.ritualEnabled ? 'OBLIGATORIO' : 'BYPASS ACTIVO'}
+                </p>
+              </div>
+              <button
+                disabled={isGlobalLoading || !effectiveIsSuperAdmin}
+                onClick={() => handleUpdateGlobalConfig({ ritualEnabled: !globalConfig.ritualEnabled })}
+                className={`w-12 h-6 rounded-full transition-all relative ${globalConfig.ritualEnabled ? 'bg-blue-500' : 'bg-zinc-700'} ${isGlobalLoading ? 'opacity-50' : ''}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${globalConfig.ritualEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-zinc-800/50 flex items-center gap-2">
+            <Info className="w-3 h-3 text-zinc-500" />
+            <p className="text-[10px] text-zinc-500 italic">
+                {globalConfig.betaOpen 
+                    ? "✓ Los poseedores del Genesis NFT pueden entrar libremente." 
+                    : "⚠️ Solo los Administradores pueden entrar al sistema actualmente."}
+                {" "}
+                {globalConfig.ritualEnabled 
+                    ? "• El Ritual de acceso es obligatorio para nuevos usuarios." 
+                    : "• Los usuarios pueden entrar directo sin pasar por el ritual."}
+            </p>
+        </div>
+      </div>
+
       {/* --- ADMIN MANAGEMENT SECTION --- */}
       <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 mb-8">
         <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">

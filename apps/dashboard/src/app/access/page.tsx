@@ -112,7 +112,7 @@ export default function AccessPage() {
     }
   };
 
-  const handleEnterSystem = () => router.push('/dashboard');
+  const handleEnterSystem = () => router.push('/');
 
   // 📧 Email loop closure
   const isApprovedFromEmail = typeof window !== 'undefined' && 
