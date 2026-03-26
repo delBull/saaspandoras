@@ -48,11 +48,13 @@ interface AuthState {
     error: string | null;
     remoteState: AccessState | null;
     ux: UXData | null;
+    betaOpen: boolean;
+    ritualEnabled: boolean;
 }
 
 type AuthAction =
-    | { type: "SET_STATUS"; status: AuthStatus; user?: User | null; error?: string | null; remoteState?: AccessState | null; ux?: UXData | null }
-    | { type: "SET_USER"; user: User | null; remoteState?: AccessState | null; ux?: UXData | null }
+    | { type: "SET_STATUS"; status: AuthStatus; user?: User | null; error?: string | null; remoteState?: AccessState | null; ux?: UXData | null; betaOpen?: boolean; ritualEnabled?: boolean }
+    | { type: "SET_USER"; user: User | null; remoteState?: AccessState | null; ux?: UXData | null; betaOpen?: boolean; ritualEnabled?: boolean }
     | { type: "SET_ERROR"; error: string | null }
     | { type: "RESET" };
 
@@ -61,7 +63,9 @@ const initialState: AuthState = {
     user: null,
     error: null,
     remoteState: null,
-    ux: null
+    ux: null,
+    betaOpen: false,
+    ritualEnabled: true
 };
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
@@ -99,6 +103,8 @@ interface AuthContextType {
     hasAccess: boolean;
     remoteState: AccessState | null; // 🛰️ Backend authority
     ux: UXData | null; // 💎 Adaptive UX metadata
+    betaOpen: boolean;
+    ritualEnabled: boolean;
     login: (id: number) => Promise<void>;
     logout: () => Promise<void>;
     refreshSession: (wallet?: string) => Promise<any>;
@@ -483,10 +489,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             status: state.status,
             state: state.status, 
             user: state.user,
-            isAuthenticated: state.status === "authenticated",
-            hasAccess: state.status === "has_access",
+            isAuthenticated: state.status === "authenticated" || state.status === "has_access" || state.status === "ready_to_mint" || state.status === "minting",
+            hasAccess: state.remoteState === AccessState.HAS_ACCESS || state.remoteState === AccessState.ADMIN,
             remoteState: state.remoteState,
             ux: state.ux,
+            betaOpen: state.betaOpen,
+            ritualEnabled: state.ritualEnabled,
             login,
             logout,
             refreshSession,

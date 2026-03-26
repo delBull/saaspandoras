@@ -6,6 +6,7 @@
  */
 
 import { AuthStatus, User } from "@/components/auth/AuthProvider";
+import { config } from "@/config";
 
 export enum AccessState {
   LOADING = "LOADING",                  // Initial boot / checking session
@@ -62,8 +63,13 @@ export function resolveAccessState({ status, user, isAdmin, remoteState }: Param
   // 4. Genuine Access (NFT Present)
   // FIX: Prioritize has_access to preserve metrics/tiers even for admins.
   if (status === "has_access") {
-    // If they have the NFT, they are HAS_ACCESS (or ADMIN if they are also admins)
-    // but the key is recognizing the HAS_ACCESS first.
+    // 🛡️ BETA CONTROL (Phase 88):
+    // Even if they have the NFT, if beta is NOT open and they are NOT admin, 
+    // we keep them in WALLET_NO_ACCESS (The Ritual).
+    if (!config.betaOpen && !isAdmin) {
+      return AccessState.WALLET_NO_ACCESS;
+    }
+    
     return isAdmin ? AccessState.ADMIN : AccessState.HAS_ACCESS;
   }
 

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { SUPER_ADMIN_WALLET } from "./constants";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 interface JWTPayload {
   userId?: string;
@@ -176,3 +177,47 @@ export const authConfig = {
 if (typeof window === 'undefined') {
   console.log(`🛡️ [Auth] Cookie Domain Configuration: ${authConfig.cookieOptions.domain || 'UNSET (Browser Default)'}`);
 }
+/**
+ * Function to forcibly reconstruct a valid PEM string from various environment formats.
+ * Handles: Base64, literals with \n, and missing wrappers.
+ */
+export const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
+  if (!keyString) return keyString;
+  
+  // 0. Preliminary cleanup (remove quotes and literal \n)
+  let cleanKey = keyString.trim().replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
+
+  // 1. Decode Base64 if it's base64 encoded
+  if (cleanKey.trim().startsWith('LS0tLS1')) {
+      cleanKey = Buffer.from(cleanKey.trim(), 'base64').toString('utf-8');
+  }
+
+  // 2. Remove all headers, footers, spaces, and newlines to get pure base64 core
+  const base64Core = cleanKey
+      .replace(/-----BEGIN.*?-----/g, '')
+      .replace(/-----END.*?-----/g, '')
+      .replace(/\s+/g, ''); 
+
+  // 3. Chunk into 64-character lines (RFC 1421 standard)
+  const chunks = base64Core.match(/.{1,64}/g) || [];
+  const formattedCore = chunks.join('\n');
+
+  // 4. Try PKCS#1 wrapper first
+  const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+  try {
+      if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
+      else crypto.createPublicKey(pkcs1);
+      return pkcs1; 
+  } catch (e1) {
+      // 5. Fallback to PKCS#8 (PRIVATE) or SPKI (PUBLIC) wrapper
+      const pkcs8 = `-----BEGIN ${type} KEY-----\n${formattedCore}\n-----END ${type} KEY-----\n`;
+      try {
+          if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
+          else crypto.createPublicKey(pkcs8);
+          return pkcs8; 
+      } catch (e2: any) {
+          console.error(`❌ [AuthUtils] RSA_FORMAT_ERROR for ${type} KEY:`, e2.message);
+          throw new Error(`RSA_FORMAT_ERROR: Rejecting key. Both PKCS1 and PKCS8 wrappers failed validation.`);
+      }
+  }
+};

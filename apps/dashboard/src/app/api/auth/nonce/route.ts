@@ -23,25 +23,26 @@ export async function GET(request: Request) {
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
         // 2. Invalidate previous nonces for this address (upsert/delete logic)
-        // Since we have a unique index on 'address', we can use insert().onConflictDoUpdate()
-        // But for cleaner logic vs potential race conditions, we'll try to delete first or use onConflict directly.
-        // Drizzle's onConflictDoUpdate is best.
-
-        await db
-            .insert(authChallenges)
-            .values({
-                address: normalizedAddress,
-                nonce: nonce,
-                expiresAt: expiresAt,
-            })
-            .onConflictDoUpdate({
-                target: authChallenges.address,
-                set: {
+        // Wrapped in withRetry to handle transient DB connectivity issues (ECONNRESET)
+        const { withRetry } = await import("@/lib/database");
+        
+        await withRetry(async () => {
+            await db
+                .insert(authChallenges)
+                .values({
+                    address: normalizedAddress,
                     nonce: nonce,
                     expiresAt: expiresAt,
-                    createdAt: new Date(),
-                },
-            });
+                })
+                .onConflictDoUpdate({
+                    target: authChallenges.address,
+                    set: {
+                        nonce: nonce,
+                        expiresAt: expiresAt,
+                        createdAt: new Date(),
+                    },
+                });
+        });
 
         return NextResponse.json({ nonce });
     } catch (error) {

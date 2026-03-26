@@ -81,4 +81,5 @@ export const config = {
   applyPassNftAddress: applyPassNftAddress,
   domain: expectedDomain,
   origin: expectedOrigin,
+  betaOpen: process.env.NEXT_PUBLIC_BETA_OPEN === "true",
 };

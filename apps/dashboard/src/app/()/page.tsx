@@ -21,6 +21,8 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { resolveAccessState, AccessState } from "@/lib/access/state-machine";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { NFTGate } from "@/components/nft-gate";
+import { useIsAutoConnecting } from "thirdweb/react";
+import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useRouter } from "next/navigation";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -251,6 +253,8 @@ export default function DashboardPage() {
   const { status, user, ux, isAuthenticated, hasAccess, remoteState } = useAuth();
   const account = useActiveAccount();
   const { isAdmin } = useAdmin();
+  const isAutoConnecting = useIsAutoConnecting();
+  const { isConnecting: isManualConnecting } = usePersistedAccount();
   const router = useRouter();
 
   const [leadModal, setLeadModal] = useState(false);
@@ -324,6 +328,13 @@ export default function DashboardPage() {
   // 🟢 CASE 3 (LOGIC): UNAUTHORIZED → Redirect to Specialized Ritual (/access)
   // This eliminates the "double landing" problem and ensures users enter through the unified funnel.
   useEffect(() => {
+    // 🛡️ HYDRATION GUARD (Phase 88):
+    // Do not redirect while the wallet is auto-connecting or manually connecting.
+    // This prevents the "Ritual Loop" where the user is kicked to /access before the wallet wakes up.
+    if (isAutoConnecting || isManualConnecting) {
+      return;
+    }
+
     const UNAUTHORIZED_STATES = [
       AccessState.NO_WALLET,
       AccessState.NO_SESSION,
@@ -334,7 +345,7 @@ export default function DashboardPage() {
       console.log(`🛡️ [DashboardRoot] Unauthorized state (${accessState}), redirecting to /access...`);
       router.push("/access");
     }
-  }, [accessState, router]);
+  }, [accessState, router, isAutoConnecting, isManualConnecting]);
 
   // 🟢 CASE 1: LOADING STATE
   if (accessState === AccessState.LOADING) {
