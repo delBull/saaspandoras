@@ -96,7 +96,8 @@ export class IntegrationKeyService {
         projectId: number, 
         env: 'staging' | 'production', 
         clientName?: string,
-        type: 'public' | 'secret' = 'public'
+        type: 'public' | 'secret' = 'public',
+        options: { forceRotate?: boolean } = {}
     ) {
         const prefix = type === 'public' ? 'pk_%' : 'sk_%';
 
@@ -111,12 +112,19 @@ export class IntegrationKeyService {
             )
         });
 
-        if (existing) {
+        if (existing && !options.forceRotate) {
             return {
                 id: existing.id,
                 fingerprint: existing.keyFingerprint,
                 isNew: false
             };
+        }
+
+        if (existing && options.forceRotate) {
+            // Security Protocol: Revoke existing key immediately
+            await db.update(integrationClients)
+                .set({ isActive: false, revokedAt: new Date() })
+                .where(eq(integrationClients.id, existing.id));
         }
 
         // 2. Generate new key

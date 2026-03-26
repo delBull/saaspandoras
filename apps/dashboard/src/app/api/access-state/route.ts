@@ -78,17 +78,18 @@ export async function GET(req: Request): Promise<NextResponse> {
                 )
             ]);
 
-            dbBreaker.recordSuccess();
+            const isStaging = process.env.NEXT_PUBLIC_APP_ENV === "staging";
+            const userIsAdmin = !!isUserAdmin || isStaging;
 
             const hasNFTPermission = dbUser?.hasPandorasKey || false;
 
             // 🧠 6. RESOLVE STATE & BEHAVIORAL SCORING
             let resolvedState = AccessState.WALLET_NO_ACCESS;
-            if (isUserAdmin) resolvedState = AccessState.ADMIN;
+            if (userIsAdmin) resolvedState = AccessState.ADMIN;
             else if (hasNFTPermission) resolvedState = AccessState.HAS_ACCESS;
 
             // Growth Weapon: Adaptive Scarcity & Social Pressure
-            const ux = await resolveUXConfig(address, resolvedState, !!isUserAdmin);
+            const ux = await resolveUXConfig(address, resolvedState, !!userIsAdmin);
             
             // Inject dynamic scarcity if in ritual
             if (resolvedState === AccessState.WALLET_NO_ACCESS) {
@@ -99,12 +100,12 @@ export async function GET(req: Request): Promise<NextResponse> {
             const responseData = {
                 state: resolvedState,
                 authenticated: true,
-                isAdmin: !!isUserAdmin,
+                isAdmin: !!userIsAdmin,
                 hasAccess: hasNFTPermission,
                 user: {
                     address,
                     hasAccess: hasNFTPermission,
-                    isAdmin: !!isUserAdmin,
+                    isAdmin: !!userIsAdmin,
                     tier: dbUser?.benefitsTier || 'standard',
                     pressureLevel: resolvedState === AccessState.WALLET_NO_ACCESS ? 0.72 : 0
                 },
