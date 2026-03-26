@@ -18,9 +18,9 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   // Acceso seguro a propiedades opcionales
   const projectObj = project as unknown as Record<string, unknown>;
   const coverPhotoUrl = projectObj.coverPhotoUrl || projectObj.cover_photo_url || '/images/default-project.jpg';
-  const logoUrl = projectObj.logoUrl || projectObj.logo_url || '/images/default-logo.jpg';
-  const tagline = projectObj.tagline || projectObj.description || 'Sin descripción';
-  const businessCategory = projectObj.business_category as string | undefined;
+  const logoUrl = String(projectObj.logoUrl || projectObj.logo_url || '/images/default-logo.jpg');
+  const tagline = String(projectObj.tagline || projectObj.description || 'Sin descripción');
+  const businessCategory = projectObj.business_category;
 
   // Check ownership
   const account = useActiveAccount();
@@ -83,7 +83,9 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
               </div>
               <p className="text-sm md:text-xl text-lime-400 mt-1">{tagline as string}</p>
               <div className="mt-1 text-[10px] md:text-sm text-zinc-400">
-                {businessCategory ? businessCategory.toUpperCase().replace(/_/g, ' ') : 'Sin Categoría'}
+                {businessCategory && typeof businessCategory === 'string' 
+                  ? businessCategory.toUpperCase().replace(/_/g, ' ') 
+                  : 'Sin Categoría'}
               </div>
             </div>
           </div>

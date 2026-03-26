@@ -42,8 +42,8 @@ export default function MobileInvestmentCard({ project, targetAmount }: MobileIn
           </div>
 
           <div className="flex justify-between text-sm mb-6">
-            <span className="text-gray-400">{project.status === 'live' ? 'En Vivo' : 'Próximamente'}</span>
-            <span className="text-gray-400">{project.w2eConfig?.phases?.[0]?.limit ? `${project.w2eConfig.phases[0].limit} días/USD` : 'Tiempo Limitado'}</span>
+            <span className="text-gray-400">{String(project.status || '') === 'live' ? 'En Vivo' : 'Próximamente'}</span>
+            <span className="text-gray-400">{project.w2eConfig?.phases?.[0]?.limit ? `${String(project.w2eConfig.phases[0].limit)} días/USD` : 'Tiempo Limitado'}</span>
           </div>
 
           <button className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-6 rounded-lg transition-colors mb-4 uppercase tracking-wider">

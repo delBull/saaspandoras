@@ -396,10 +396,6 @@ function LeadActionMenu({ lead, onActionComplete }: { lead: Lead, onActionComple
       </Dialog>
 
       <UIButton variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800 group">
-          <FileSignature className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
-      </UIButton>
-      
-      <UIButton variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800 group">
           <XCircle className="w-4 h-4 text-red-400/50 group-hover:text-red-400 transition-colors" />
       </UIButton>
     </div>
@@ -452,6 +448,7 @@ export default function GrowthOSSubTab() {
   const [isTestingData, setIsTestingData] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
   const [showTestModal, setShowTestModal] = useState(false);
+  const [showDocsModal, setShowDocsModal] = useState(false);
 
   const fetchApiKey = async (projectId: string, force?: boolean) => {
     if (projectId === 'all') {
@@ -1624,16 +1621,26 @@ export default function GrowthOSSubTab() {
         {activeSection === 'developers' && (
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* Developer Hub Header */}
-            <div className="bg-gradient-to-r from-zinc-900/40 to-indigo-950/20 p-8 rounded-[2.5rem] border border-indigo-500/20">
-              <h3 className="text-2xl font-black text-white italic flex items-center gap-3 mb-2">
-                <Monitor className="w-7 h-7 text-indigo-400" />
-                Developer Hub
-              </h3>
-              <p className="text-zinc-400 text-sm max-w-2xl font-medium">
-                {selectedProjectId === 'all' 
-                  ? "Configuración global para integraciones externas y gestión del Pandora Growth Widget."
-                  : "Configuración técnica, integración de webhooks y gestión de dominios autorizados para el Growth Widget v2.0."}
-              </p>
+            <div className="bg-gradient-to-r from-zinc-900/40 to-indigo-950/20 p-8 rounded-[2.5rem] border border-indigo-500/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <h3 className="text-2xl font-black text-white italic flex items-center gap-3 mb-2">
+                  <Monitor className="w-7 h-7 text-indigo-400" />
+                  Developer Hub
+                </h3>
+                <p className="text-zinc-400 text-sm max-w-2xl font-medium">
+                  {selectedProjectId === 'all' 
+                    ? "Configuración global para integraciones externas y gestión del Pandora Growth Widget."
+                    : "Configuración técnica, integración de webhooks y gestión de dominios autorizados para el Growth Widget v2.0."}
+                </p>
+              </div>
+
+              <UIButton 
+                onClick={() => setShowDocsModal(true)}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white font-black uppercase text-[10px] tracking-widest px-8 h-12 rounded-2xl shadow-lg shadow-indigo-500/20 shrink-0"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Guía de Integración
+              </UIButton>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2084,6 +2091,116 @@ export default function GrowthOSSubTab() {
               </p>
               <UIButton variant="outline" className="rounded-xl border-zinc-800 font-bold text-xs" onClick={() => setShowTestModal(false)}>
                 Cerrar Verificación
+              </UIButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Developer Documentation Modal */}
+        <Dialog open={showDocsModal} onOpenChange={setShowDocsModal}>
+          <DialogContent className="bg-zinc-950 border border-zinc-800 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-0 overflow-hidden">
+            <div className="sticky top-0 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 p-8 flex items-center justify-between z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black uppercase italic tracking-tight">Growth Widget v2.0</h2>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Guía de Integración Técnica</p>
+                </div>
+              </div>
+              <UIButton variant="ghost" size="icon" onClick={() => setShowDocsModal(false)} className="rounded-full hover:bg-white/5">
+                <X className="w-5 h-5 text-zinc-500" />
+              </UIButton>
+            </div>
+
+            <div className="p-8 space-y-12">
+              {/* Step 1: Client-Side Installation */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-indigo-500 text-black font-black text-[10px]">PASO 01</Badge>
+                  <h3 className="text-lg font-black uppercase italic">Inyección del Widget</h3>
+                </div>
+                <p className="text-zinc-400 text-sm font-medium">Agrega el siguiente script antes del cierre de la etiqueta <code className="text-indigo-400">&lt;/body&gt;</code> en tu aplicación web.</p>
+                
+                <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-xs border border-zinc-800 relative group">
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <UIButton size="sm" variant="outline" className="h-7 text-[8px] uppercase tracking-widest font-black" onClick={() => {
+                      navigator.clipboard.writeText(`<script\n  src="${getDashboardDomain()}/api/widget/loader.js"\n  data-public-key="${publicKey}"\n  async\n></script>`);
+                      toast.success("Script copiado");
+                    }}>Copiar</UIButton>
+                  </div>
+                  <pre className="text-zinc-300 leading-relaxed">
+{`<script
+  src="${getDashboardDomain()}/api/widget/loader.js"
+  data-public-key="${publicKey}"
+  async
+></script>`}
+                  </pre>
+                </div>
+                <p className="text-[10px] text-zinc-600 italic">* Reemplaza data-public-key con tu llave pública actual si no estás en un proyecto específico.</p>
+              </section>
+
+              {/* Step 2: Custom Attributes */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-emerald-500 text-black font-black text-[10px]">PASO 02</Badge>
+                  <h3 className="text-lg font-black uppercase italic">Manejo de Atributos (Data-Layer)</h3>
+                </div>
+                <p className="text-zinc-400 text-sm font-medium">El widget captura automáticamente el email, pero puedes enriquecer el lead enviando metadatos adicionales desde tu aplicación.</p>
+                
+                <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-xs border border-zinc-800">
+                  <pre className="text-zinc-300 leading-relaxed">
+{`window.PandoraWidget.identify({
+  email: "user@example.com",
+  metadata: {
+    capital: "100k+",      // Signal para Scoring
+    intent: "invest",      // 'whitelist', 'invest', 'earn'
+    source: "landing_v2"   // Origen de captura
+  }
+});`}
+                  </pre>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-900/50">
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Atributo: intent</span>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Determina la automatización que se dispara (D1, D2, D3). Valores sugeridos: <code className="text-emerald-400">whitelist</code>, <code className="text-emerald-400">invest</code>, <code className="text-emerald-400">earn</code>.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-900/50">
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Atributo: capital</span>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Ajusta el multiplicador de score. Formatos aceptados: <code className="text-emerald-400">5k-25k</code>, <code className="text-emerald-400">25k-100k</code>, <code className="text-emerald-400">100k+</code>.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Step 3: Server-Side Webhooks */}
+              <section className="space-y-4 pb-8">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-purple-500 text-black font-black text-[10px]">PASO 03</Badge>
+                  <h3 className="text-lg font-black uppercase italic">Webhooks & Eventos</h3>
+                </div>
+                <p className="text-zinc-400 text-sm font-medium">Configura el webhook de Discord en el panel anterior para recibir alertas en tiempo real de cada conversión.</p>
+                
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <RefreshCw className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white">Event: WAITLIST_JOIN</h4>
+                    <p className="text-[9px] text-zinc-500">Se dispara inmediatamente al capturar un lead.</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+            
+            <div className="bg-zinc-900/50 p-8 border-t border-zinc-800 flex justify-center">
+              <UIButton onClick={() => setShowDocsModal(false)} className="bg-white text-black font-black uppercase text-[10px] tracking-widest px-12 h-12 rounded-2xl">
+                Entendido
               </UIButton>
             </div>
           </DialogContent>

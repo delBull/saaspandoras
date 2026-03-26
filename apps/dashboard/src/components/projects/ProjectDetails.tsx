@@ -29,7 +29,7 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
           </h3>
           <div className="bg-zinc-800/50 rounded-lg p-4">
             <h4 className="font-semibold text-white mb-2">Sistema de Recompensas</h4>
-            <p className="text-white text-sm whitespace-pre-line">{project.recurring_rewards}</p>
+            <p className="text-white text-sm whitespace-pre-line">{String(project.recurring_rewards || '')}</p>
             <p className="text-zinc-400 text-sm mt-2">Cómo se traducirá la utilidad en valor recurrente para los holders</p>
           </div>
         </div>
@@ -43,7 +43,7 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
           </h3>
           <div className="bg-zinc-800/50 rounded-lg p-4">
             <h4 className="font-semibold text-white mb-2">Planes de Integración</h4>
-            <p className="text-white text-sm">{project.integration_details}</p>
+            <p className="text-white text-sm">{String(project.integration_details || '')}</p>
             <p className="text-zinc-400 text-sm">Cómo se conectará con otras plataformas y herramientas</p>
           </div>
         </div>

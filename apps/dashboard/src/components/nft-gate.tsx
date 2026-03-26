@@ -474,7 +474,7 @@ export function NFTGate({
   const isVerifiedAdmin = isAdmin === true && !!account;
   const shouldBypass = hasAccess || isVerifiedAdmin;
 
-  // 🟢 CASE 1: Full Access
+  // 🟢 CASE 1: Full Access (Bypass everything except wallet requirement)
   if (shouldBypass) {
     const hasSeenSuccess = sessionStorage.getItem("pandora_access_reward_seen");
     if (!hasSeenSuccess && hasAccess) {
