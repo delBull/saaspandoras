@@ -524,21 +524,39 @@ export function NFTGate({
     );
   }
 
-  // 🎭 CASE 5: Error
+  // 🎭 CASE 5: Error (Stripe-Tier Stability Fix)
   if (visualState === "error" || status === "error") {
+    // If the error comes from the AuthProvider status, we look for the last error message
+    const infraError = status === "error" ? "Error de Infraestructura: La Capa de Resiliencia está activada. Verifica la conexión a Redis o Secrets (JWT)." : (errorMessage || "Señal interrumpida.");
+
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-center p-8">
-        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md text-center p-8">
+        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
           <span className="text-2xl">⚠️</span>
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Señal Interrumpida</h2>
-        <p className="text-gray-400 mb-8 max-w-xs">{errorMessage || "Error de sincronización."}</p>
-        <button
-          onClick={() => { setVisualState("idle"); ritualRunning.current = false; }}
-          className="bg-white text-black px-8 py-3 rounded-full font-bold uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all"
-        >
-          Reintentar
-        </button>
+        <h2 className="text-xl font-bold text-white mb-2 tracking-widest uppercase">Protocolo Interrumpido</h2>
+        <p className="text-zinc-500 mb-8 max-w-sm text-sm leading-relaxed font-mono">
+          {infraError}
+        </p>
+        <div className="flex flex-col gap-4 w-full max-w-xs">
+          <button
+            onClick={() => { 
+                setVisualState("idle"); 
+                ritualRunning.current = false; 
+                refreshSession(); // Force re-validation
+            }}
+            className="w-full bg-white text-black px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.2em] hover:bg-lime-400 transition-all active:scale-95"
+          >
+            Sincronizar Señal
+          </button>
+          
+          <button
+            onClick={() => router.push('/')}
+            className="w-full bg-zinc-900 text-zinc-500 px-8 py-3 rounded-full font-bold uppercase text-[9px] tracking-[0.2em] border border-zinc-800 hover:text-white transition-all"
+          >
+            Volver al Inicio
+          </button>
+        </div>
       </div>
     );
   }

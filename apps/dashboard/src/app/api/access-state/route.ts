@@ -112,7 +112,8 @@ export async function GET(req: Request): Promise<NextResponse> {
             };
 
             // 💾 7. DISTRIBUTED SYNC & AUDIT
-            await accessCache.set(cacheKey, responseData, 30);
+            // Non-blocking catch to ensure API response regardless of Redis/Audit health
+            await accessCache.set(cacheKey, responseData, 30).catch(() => {});
 
             db.insert(securityEvents).values({
                 userId: dbUser?.id || null,
@@ -131,15 +132,22 @@ export async function GET(req: Request): Promise<NextResponse> {
 
         } catch (e) {
             dbBreaker.recordFailure();
+            console.error("🚫 [StripeEngine] Critical Resilience Failure:", e);
             throw e;
         }
 
     } catch (error: any) {
-        console.error("🔥 [StripeEngine] Distributed Error:", error);
+        console.error("🔥 [StripeEngine] Distributed Error Trace:", error);
+        
+        // PRINCIPAL STABILITY FIX: 
+        // Return 200 with ERROR state instead of 500 Internal Server Error.
+        // This prevents the SPA from crashing and allows for graceful UI retries.
         return NextResponse.json({ 
             state: AccessState.ERROR,
-            error: "Distributed Resilience Layer Engaged",
+            authenticated: false,
+            error: error.message || "Distributed Resilience Layer Engaged",
+            infrastructure: true,
             latency: Date.now() - start
-        }, { status: 500 });
+        }, { status: 200 }); // "Soft Error" for UI stability
     }
 }

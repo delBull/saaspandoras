@@ -87,10 +87,32 @@ export const rpcBreaker = new CircuitBreaker(5, 30000);
 class GlobalCache {
   private local = new Map<string, { data: any; expires: number }>();
   private redis: Redis | null = null;
+  private isRedisHealthy = true;
 
   constructor() {
+    this.initRedis();
+  }
+
+  private initRedis() {
     if (process.env.REDIS_URL) {
-        this.redis = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 1 });
+        try {
+            this.redis = new Redis(process.env.REDIS_URL, { 
+                maxRetriesPerRequest: 1,
+                connectTimeout: 500, // Fail fast if unreachable
+                commandTimeout: 500,
+                lazyConnect: true // Don't block startup
+            });
+            this.redis.on('error', (err) => {
+                console.error("🚫 [Redis] Connection Error:", err.message);
+                this.isRedisHealthy = false;
+            });
+            this.redis.on('connect', () => {
+                this.isRedisHealthy = true;
+                console.log("✅ [Redis] Connected to Resilience Layer");
+            });
+        } catch (e) {
+            console.error("🚫 [Redis] Initialization Failed:", e);
+        }
     }
   }
 
@@ -100,13 +122,13 @@ class GlobalCache {
     if (entry && Date.now() < entry.expires) return entry.data as T;
 
     // 2. Try Redis (L2)
-    if (this.redis) {
+    if (this.redis && this.isRedisHealthy) {
         try {
             const val = await this.redis.get(key);
             if (val) return JSON.parse(val) as T;
         } catch (e) { 
             console.error("Redis Cache Get Error", e);
-            this.redis = null; // Fault tolerance
+            // Don't kill the instance, just skip for this request
         }
     }
     return null;
@@ -114,14 +136,14 @@ class GlobalCache {
 
   async set(key: string, data: any, ttlSeconds: number = 30): Promise<void> {
     this.local.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
-    if (this.redis) {
+    if (this.redis && this.isRedisHealthy) {
        try { await this.redis.set(key, JSON.stringify(data), 'EX', ttlSeconds); }
-       catch (e) { 
-           console.error("Redis Cache Set Error", e);
-           this.redis = null;
-       }
+       catch (e) { console.error("Redis Cache Set Error", e); }
     }
   }
+
+  // Exposed for rate-limiting to reuse the same singleton connection
+  getRedis() { return (this.redis && this.isRedisHealthy) ? this.redis : null; }
 }
 
 const globalForCache = globalThis as unknown as { accessCache: GlobalCache };
@@ -129,21 +151,23 @@ export const accessCache = globalForCache.accessCache || new GlobalCache();
 if (process.env.NODE_ENV !== "production") globalForCache.accessCache = accessCache;
 
 /**
- * 🚫 Distributed Rate Limiter
+ * 🚫 Distributed Rate Limiter (Stripe Grade Singleton)
  */
-export async function isRateLimited(key: string, limit: number = 10, windowMs: number = 60000): Promise<boolean> {
-  const redisUrl = process.env.REDIS_URL;
-  if (!redisUrl) {
+export async function isRateLimited(key: string, limit: number = 20, windowMs: number = 60000): Promise<boolean> {
+  const redis = accessCache.getRedis();
+  
+  // FALLBACK TO LOCAL if Redis is unreachable or unconfigured
+  if (!redis) {
     return isRateLimitedLocal(key, limit, windowMs);
   }
 
   try {
-     const redis = new Redis(redisUrl, { maxRetriesPerRequest: 1 });
-     const count = await redis.incr(key);
+     // Use the shared Singleton instance (No new connections per request)
+     const count = await withTimeout(redis.incr(key), 300, 1);
      if (count === 1) await redis.expire(key, Math.ceil(windowMs / 1000));
-     await redis.quit(); // Short-lived connection for stateless limiter
      return count > limit;
-  } catch {
+  } catch (err) {
+     console.error("⚠️ [RateLimit] Redis Error, falling back to Local:", err);
      return isRateLimitedLocal(key, limit, windowMs);
   }
 }
