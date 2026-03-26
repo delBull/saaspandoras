@@ -70,10 +70,10 @@ export async function GET(req: Request): Promise<NextResponse> {
 
         try {
             const [isUserAdmin, dbUser] = await Promise.all([
-                withTimeout(isAdmin(address), 300, false),
+                withTimeout(isAdmin(address), 5000, false),
                 withTimeout(
                     db.query.users.findFirst({ where: eq(users.walletAddress, address) }),
-                    500,
+                    5000,
                     null
                 )
             ]);
