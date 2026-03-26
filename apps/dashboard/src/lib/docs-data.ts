@@ -765,7 +765,7 @@ If the widget is on a page specifically for investors, use the \`invest\` intent
 If the widget is in a "Learn More" section, use the \`explore\` intent:
 \`\`\`html
 <script 
-  src="https://dash.pandoras.finance/api/v1/widget/v1.js" 
+  src="https://dash.pandoras.finance/api/widget/v1.js" 
   data-project-id="your-project-slug"
   data-intent="explore"
   defer
