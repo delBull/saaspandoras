@@ -687,7 +687,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 rewardsData = null;
               }
 
-              if (rewardsData) {
+              if (rewardsData && typeof rewardsData === 'object') {
                 // Formato JSON: mostrar estructura detallada
                 return (
                   <div className="space-y-3">
@@ -695,10 +695,14 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                       if (key.includes('Enabled') && value === true) {
                         const detailKey = key.replace('Enabled', 'Details');
                         const detailValue = (rewardsData as any)[detailKey];
+                        
+                        // Safety: ensure detailValue is a string or number before rendering
+                        if (typeof detailValue === 'object') return null;
+
                         return (
                           <div key={key} className="p-3 bg-zinc-700/50 rounded-lg">
                             <p className="font-semibold text-white text-sm">{key.replace('Enabled', '')}</p>
-                            <p className="text-zinc-300 text-sm mt-1">{detailValue}</p>
+                            <p className="text-zinc-300 text-sm mt-1">{String(detailValue || '')}</p>
                           </div>
                         )
                       }
@@ -708,7 +712,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 );
               } else if (project.recurring_rewards) {
                 // Formato string simple (legacy)
-                return <p className="text-zinc-300 whitespace-pre-line">{project.recurring_rewards}</p>;
+                return <p className="text-zinc-300 whitespace-pre-line">{String(project.recurring_rewards)}</p>;
               } else {
                 // No hay datos
                 return <p className="text-zinc-400">No hay recompensas recurrentes definidas en esta Creación.</p>;

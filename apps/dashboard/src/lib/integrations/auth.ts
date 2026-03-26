@@ -25,8 +25,8 @@ export class IntegrationKeyService {
         // Hash using SHA256
         const hash = crypto.createHash('sha256').update(key).digest('hex');
 
-        // Fingerprint: first char sets + ellipsis (safe to log)
-        const fingerprint = key.substring(0, 12) + '...';
+        // Fingerprint: full key for public keys, ellipsis for secret keys (safe to log)
+        const fingerprint = (type === 'public') ? key : (key.substring(0, 12) + '...');
 
         return { key, hash, fingerprint };
     }
