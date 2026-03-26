@@ -321,6 +321,21 @@ export default function DashboardPage() {
     }
   }, [accessState]);
 
+  // 🟢 CASE 3 (LOGIC): UNAUTHORIZED → Redirect to Specialized Ritual (/access)
+  // This eliminates the "double landing" problem and ensures users enter through the unified funnel.
+  useEffect(() => {
+    const UNAUTHORIZED_STATES = [
+      AccessState.NO_WALLET,
+      AccessState.NO_SESSION,
+      AccessState.WALLET_NO_ACCESS
+    ];
+    
+    if (UNAUTHORIZED_STATES.includes(accessState)) {
+      console.log(`🛡️ [DashboardRoot] Unauthorized state (${accessState}), redirecting to /access...`);
+      router.push("/access");
+    }
+  }, [accessState, router]);
+
   // 🟢 CASE 1: LOADING STATE
   if (accessState === AccessState.LOADING) {
     return (
@@ -347,20 +362,6 @@ export default function DashboardPage() {
     );
   }
 
-  // 🟢 CASE 3: UNAUTHORIZED → Redirect to Specialized Ritual (/access)
-  // This eliminates the "double landing" problem and ensures users enter through the unified funnel.
-  useEffect(() => {
-    const UNAUTHORIZED_STATES = [
-      AccessState.NO_WALLET,
-      AccessState.NO_SESSION,
-      AccessState.WALLET_NO_ACCESS
-    ];
-    
-    if (UNAUTHORIZED_STATES.includes(accessState)) {
-      console.log(`🛡️ [DashboardRoot] Unauthorized state (${accessState}), redirecting to /access...`);
-      router.push("/access");
-    }
-  }, [accessState, router]);
 
   if (
     accessState === AccessState.NO_WALLET || 
