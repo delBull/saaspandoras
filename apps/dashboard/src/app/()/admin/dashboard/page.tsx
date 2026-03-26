@@ -8,6 +8,7 @@ import { EditProjectModal } from "@/components/admin/EditProjectModal";
 import WhatsAppLeadsTab from "@/components/admin/WhatsAppLeadsTab";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useAdmin } from "@/hooks/useAdmin";
 
 import { useProjectActions } from "@/hooks/useProjectActions";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
@@ -186,9 +187,11 @@ export default function AdminDashboardPage() {
   // Sidebars can show based on initial server props, but this endpoint requires API verification
 
   const { user, state } = useAuth();
-  // 🔥 FIX: Loading is TRUE unless we securely reach a definitive conclusion ('authenticated' or 'unauthenticated')
-  // This explicitly catches intermediate rendering bridges like 'wallet_ready' that otherwise slipped through
-  const authLoading = state !== "authenticated" && state !== "unauthenticated";
+  const { isAdmin: isClientAdmin, isSuperAdmin: isClientSuperAdmin } = useAdmin();
+  
+  // 🔥 FIX (Phase 51): Fast-Path for Admins
+  // If the client-side hook (env-based) confirms admin status, we unblock the UI immediately.
+  const authLoading = state !== "authenticated" && state !== "unauthenticated" && !isClientAdmin;
 
   // Check admin status strictly linked to the Next.js AuthProvider state
   useEffect(() => {
@@ -196,14 +199,18 @@ export default function AdminDashboardPage() {
     if (authLoading) return;
 
     const checkAdminStatus = async () => {
-      // If already determined, don't check again
-      if (isAdmin !== null) return;
+      // 🛡️ FAST-PATH (Phase 51): If client-side check is positive, pre-approve
+      if (isClientAdmin && isAdmin === null) {
+         console.log("⚡ [AdminDashboard] Client-side bypass engaged (Fast-Path).");
+         setIsAdmin(true);
+         setIsSuperAdminState(isClientSuperAdmin);
+      }
 
       try {
         const address = user?.address;
 
         if (!address) {
-          if (state === "unauthenticated") {
+          if (state === "unauthenticated" && !isClientAdmin) {
              console.log("👤 [AdminDashboard] User is unauthenticated, setting isAdmin to false");
              setIsAdmin(false);
           }
@@ -234,8 +241,11 @@ export default function AdminDashboardPage() {
 
       } catch (error) {
         console.error('❌ [AdminDashboard] Error verifying admin status:', error);
-        setAuthError('Error al verificar permisos administrativos en la base de datos');
-        setIsAdmin(false);
+        // Only set error if we don't have a client-side bypass
+        if (!isClientAdmin) {
+          setAuthError('Error al verificar permisos administrativos en la base de datos');
+          setIsAdmin(false);
+        }
       }
     };
 

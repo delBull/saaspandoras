@@ -20,8 +20,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
 import { resolveAccessState, AccessState } from "@/lib/access/state-machine";
 import { Loader2, ShieldAlert } from "lucide-react";
-import { ComingSoon } from "@/components/marketing/ComingSoon";
 import { NFTGate } from "@/components/nft-gate";
+import { useRouter } from "next/navigation";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -248,9 +248,10 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 }
 
 export default function DashboardPage() {
-  const { user, status, isAuthenticated, hasAccess, remoteState, ux } = useAuth();
+  const { status, user, ux, isAuthenticated, hasAccess, remoteState } = useAuth();
   const account = useActiveAccount();
   const { isAdmin } = useAdmin();
+  const router = useRouter();
 
   const [leadModal, setLeadModal] = useState(false);
   const [homeData, setHomeData] = useState<{
@@ -346,45 +347,30 @@ export default function DashboardPage() {
     );
   }
 
-  // 🟢 CASE 3A: NO SESSION (Wallet connected but missing JWT)
-  if (accessState === AccessState.NO_SESSION) {
-    return (
-      <ComingSoon 
-        variant="lead-capture"
-        cta={ux?.cta || "Sign In to Access"}
-        customSubtitle={ux?.scarcityHint || "Tu sesión no ha sido verificada para esta wallet."}
-      />
-    );
-  }
+  // 🟢 CASE 3: UNAUTHORIZED → Redirect to Specialized Ritual (/access)
+  // This eliminates the "double landing" problem and ensures users enter through the unified funnel.
+  useEffect(() => {
+    const UNAUTHORIZED_STATES = [
+      AccessState.NO_WALLET,
+      AccessState.NO_SESSION,
+      AccessState.WALLET_NO_ACCESS
+    ];
+    
+    if (UNAUTHORIZED_STATES.includes(accessState)) {
+      console.log(`🛡️ [DashboardRoot] Unauthorized state (${accessState}), redirecting to /access...`);
+      router.push("/access");
+    }
+  }, [accessState, router]);
 
-  // 🟢 CASE 3B: NO WALLET → Public Entrance / Lead Capture
-  if (accessState === AccessState.NO_WALLET) {
+  if (
+    accessState === AccessState.NO_WALLET || 
+    accessState === AccessState.NO_SESSION || 
+    accessState === AccessState.WALLET_NO_ACCESS
+  ) {
     return (
-      <ComingSoon 
-        variant="lead-capture"
-        cta={ux?.cta || "Conectar Wallet"}
-        customSubtitle={ux?.scarcityHint}
-      />
-    );
-  }
-
-  // 🟢 CASE 3: WALLET NO ACCESS → NFTGate Ritual
-  if (accessState === AccessState.WALLET_NO_ACCESS) {
-    return (
-      <NFTGate 
-        initialState="RITUAL"
-        context={{
-          hasWallet: true,
-          status
-        }}
-        user={user}
-      >
-          <ComingSoon 
-            variant="lead-capture"
-            cta={ux?.cta}
-            customSubtitle={ux?.scarcityHint}
-          /> 
-      </NFTGate>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
     );
   }
 

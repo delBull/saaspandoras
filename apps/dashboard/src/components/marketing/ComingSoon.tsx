@@ -238,12 +238,8 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
 
       {/* Footer Disclaimer */}
       <footer className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-xs text-center space-y-4 opacity-30">
-        <Link 
-          href="/access"
-          className="block text-[7px] uppercase tracking-[0.4em] text-gray-500 hover:text-white transition-all opacity-20 hover:opacity-100 mb-6"
-        >
-          // Acceso Protocol_
-        </Link>
+        {/* ── FOOTER: Legal & Identity (Minimalist) ───────────────────── */}
+        <div className="mt-16 sm:mt-24 space-y-4 px-4"></div>
         <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-[0.4em] text-gray-500 px-2 font-mono">
            <span>{stats.label}</span>
            <span className="text-white opacity-40">{stats.intensity === 'ultra' ? '98%' : 'Activo'}</span>
