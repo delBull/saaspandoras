@@ -75,8 +75,6 @@ export default function AccessPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  if (!mounted) return <div className="min-h-screen bg-black" />;
-
   const isLoading = status === 'booting' || status === 'checking_session';
   
   // 🛡️ Technical Fix: Ensure user object exists before checking access to avoid loops
@@ -88,8 +86,6 @@ export default function AccessPage() {
     }
   }, [status, isVerified]);
 
-  const handleEnterSystem = () => router.push('/dashboard');
-
   const handleVerified = () => {
     if (!isVerified) {
       setIsVerified(true);
@@ -97,9 +93,14 @@ export default function AccessPage() {
     }
   };
 
+  const handleEnterSystem = () => router.push('/dashboard');
+
   // 📧 Email loop closure
   const isApprovedFromEmail = typeof window !== 'undefined' && 
     (window.location.search.includes('token=') || window.location.search.includes('approved=true'));
+
+  // 🛡️ HOOK RULE FIX: Move return below all hook declarations
+  if (!mounted) return <div className="min-h-screen bg-black" />;
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
