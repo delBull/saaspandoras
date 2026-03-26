@@ -1361,7 +1361,7 @@ Authorization: Bearer YOUR_API_KEY_HERE
 ## Base URL
 
 \`\`\`
-https://dashboard.pandoras.finance/api
+https://dash.pandoras.finance/api
 \`\`\`
 
 ## Rate Limits
@@ -1927,7 +1927,7 @@ Tenemos mecanismos de emergencia para proteger la plataforma:
 1. **Nunca compartas tu seed phrase** con nadie
 2. Usa hardware wallet (Ledger, Trezor) para grandes cantidades
 3. Confirma siempre la URL antes de firmar
-4. Revisa el dominio: debe ser \`pandoras.finance\` o \`dashboard.pandoras.finance\`
+4. Revisa el dominio: debe ser \`pandoras.finance\` o \`dash.pandoras.finance\`
 
 ### Tu Cuenta
 1. Usa API keys únicas para cada integración
@@ -1976,7 +1976,7 @@ Enlaces y herramientas para mantenerte seguro en Pandora's.
 ## 🔗 Enlaces Oficiales
 
 - 🌐 **Web Principal**: https://pandoras.finance
-- 📊 **Dashboard**: https://dashboard.pandoras.finance
+- 📊 **Dashboard**: https://dash.pandoras.finance
 - 📚 **Documentación**: https://pandoras.finance/whitepaper
 - 📧 **Contacto**: support@pandoras.finance
 

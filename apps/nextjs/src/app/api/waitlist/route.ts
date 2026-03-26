@@ -25,23 +25,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email inválido." }, { status: 400 });
     }
 
+    // 🌍 Multi-Environment URL Resolution
+    const host = request.headers.get("host") || "";
+    const isStaging = host.includes("staging") || host.includes("vercel.app");
+    
+    const defaultProd = "https://dash.pandoras.finance";
+    const defaultStaging = "https://staging.dash.pandoras.finance";
+
     const dashboardUrl =
       process.env.NEXT_PUBLIC_DASHBOARD_URL ??
       process.env.DASHBOARD_API_URL ??
-      "https://dashboard.pandoras.finance";
+      (isStaging ? defaultStaging : (process.env.NODE_ENV === 'development' ? "http://localhost:3000" : defaultProd));
 
-    const res = await fetch(`${dashboardUrl}/api/access-requests`, {
+    // 🧬 Phase 87: Unified Growth Engine Event Dispatch
+    const res = await fetch(`${dashboardUrl}/api/v1/marketing/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email,
-        walletAddress: wallet || null,
-        intent: intent || null,
-        source: "landing_v2_nextjs",
+        event: 'VIEW_ACCESS',
+        projectSlug: 'pandoras_access', // Unified catch-all for this landing
         metadata: {
-          ...body.metadata,
+          email: email.toLowerCase(),
+          wallet: wallet || null,
+          intent: intent || 'explore',
+          source: "landing_v2_nextjs",
           referrer: request.headers.get("referer") ?? null,
           userAgent: request.headers.get("user-agent") ?? null,
+          ...body.metadata,
         },
       }),
     });

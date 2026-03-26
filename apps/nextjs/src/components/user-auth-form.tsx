@@ -60,7 +60,12 @@ export function UserAuthForm({
     // 🧠 Phase 87: Deterministic Lead Capture (Cross-App Sync)
     // Captures the intent in the Growth OS even if they are in the secondary app
     if (data.email) {
-      const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dash.pandoras.finance';
+      // Dynamic resolution for client-side too
+      const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 
+        (typeof window !== 'undefined' && window.location.hostname.includes('staging') 
+          ? 'https://staging.dash.pandoras.finance' 
+          : 'https://dash.pandoras.finance');
+
       fetch(`${dashboardUrl}/api/v1/marketing/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
