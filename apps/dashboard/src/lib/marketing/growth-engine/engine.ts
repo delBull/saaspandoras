@@ -1,366 +1,268 @@
-import { LeadState, GrowthEvent, GrowthEngineResult, LeadContextPayload, ALLOWED_TRANSITIONS, GrowthActionType, ProjectContextPayload } from './types';
+import { 
+  LeadState, 
+  GrowthEvent, 
+  GrowthEngineResult, 
+  LeadContextPayload, 
+  ALLOWED_TRANSITIONS, 
+  GrowthActionType, 
+  ProjectContextPayload,
+  EngagementLevel,
+  BehavioralProfile
+} from './types';
 
 /**
- * PURE FUNCTION: Resolves the next state and actions based on an event.
- * Absolutely NO side effects (no db calls, no external apis).
+ * 🧠 INSTITUTIONAL BEHAVIORAL CORE (Phase 80)
+ * Calculates intent, priority, and behavioral profiling.
  */
-export function resolveGrowthAction(event: GrowthEvent, lead: LeadContextPayload, project?: ProjectContextPayload): GrowthEngineResult | null {
-  // 1. Current State Identification
-  const currentLeadState = (lead.metadata?.growth?.state as LeadState) || 'NEW';
+export function computeBehavioralMetrics(
+  lead: LeadContextPayload, 
+  events: any[] = []
+): { 
+  intentScore: number; 
+  priorityScore: number;
+  engagementLevel: EngagementLevel;
+  profile: BehavioralProfile;
+} {
+  let intentScore = 0;
+  
+  // 1. Institutional Event Weights
+  const eventWeights: Record<string, number> = {
+    'EMAIL_OPENED': 2,
+    'CLICKED_PROJECT': 10,
+    'WALLET_CONNECTED': 40, // High conviction
+    'VIEW_PRICING': 25,     // Strong intent
+    'SELECT_TIER': 30,
+    'CLICKED_WHITEPAPER': 15,
+    'STARTED_KYC': 50,      // Near conversion
+    'RETURN_SESSION': 20,   // Retention/Interest
+    'TIME_ON_PAGE_>_60S': 10,
+    'SCROLL_DEPTH_80': 15
+  };
+
+  events.forEach(e => {
+    intentScore += eventWeights[e.type] || 0;
+  });
+
+  // 2. Intent-based baseline
+  const intentBaselines: Record<string, number> = {
+    'invest': 30,
+    'whitelist': 20,
+    'explore': 5
+  };
+  intentScore += intentBaselines[lead.intent.toLowerCase()] || 0;
+  intentScore = Math.min(100, intentScore);
+
+  // 3. Institutional Priority Score (intent * value * decay)
+  // priorityScore = intentScore * (walletValue / 1000) * decay
+  const capitalRaw = lead.metadata?.capital || 0;
+  const capital = typeof capitalRaw === 'string' ? 
+    parseInt(capitalRaw.replace(/[^0-9]/g, '')) || 0 : 
+    Number(capitalRaw);
+  
+  const valueMultiplier = capital >= 100000 ? 2.0 : (capital >= 25000 ? 1.5 : 1.0);
+  
+  const lastUpdate = (lead as any).updatedAt ? new Date((lead as any).updatedAt).getTime() : Date.now();
+  const daysIdle = (Date.now() - lastUpdate) / (1000 * 60 * 60 * 24);
+  const timeDecay = Math.max(0.2, 1 - (daysIdle * 0.05)); // -5% per day idle
+
+  const priorityScore = Math.floor(intentScore * valueMultiplier * timeDecay);
+
+  // 4. Resolve Engagement Level
+  let engagementLevel: EngagementLevel = 'low';
+  if (intentScore >= 90 || priorityScore >= 150) engagementLevel = 'critical';
+  else if (intentScore >= 70 || priorityScore >= 100) engagementLevel = 'high';
+  else if (intentScore >= 40) engagementLevel = 'mid';
+
+  // 5. Behavioral Profiling (Psychological Overlay)
+  const profile: BehavioralProfile = {
+    riskProfile: capital >= 50000 ? 'medium' : 'low',
+    investmentStyle: events.some(e => e.type === 'CLICKED_WHITEPAPER') ? 'yield' : 'speculative',
+    convictionScore: intentScore,
+    tags: [] // Initialize tags as an empty array
+  };
+
+  // Add tags based on events
+  if (events.some(e => e.type === 'WALLET_CONNECTED')) profile.tags?.push('crypto_savvy');
+  if (events.some(e => e.type === 'VIEW_PRICING' || e.type === 'SELECT_TIER')) profile.tags?.push('price_sensitive');
+  if (events.some(e => e.type === 'STARTED_KYC')) profile.tags?.push('high_intent_action');
+
+  return { intentScore, priorityScore, engagementLevel, profile };
+}
+
+/**
+ * Phase 85: The Offer Engine
+ * Resolves the most persuasive yield/equity offer based on behavioral profile.
+ */
+export const resolveDynamicOffer = (profile: BehavioralProfile, niche: ProjectContextPayload['businessCategory']) => {
+  // Institutional Tier Logic
+  if (profile.riskProfile === 'low' || profile.investmentStyle === 'yield') {
+    return {
+      type: 'fixed_yield' as const,
+      value: niche === 'defi' ? '14% APY' : '11% Annually',
+      description: 'Capital-protected institutional yield with quarterly distributions.'
+    };
+  }
+  
+  if (profile.investmentStyle === 'speculative' || profile.riskProfile === 'high') {
+    return {
+      type: 'equity_upside' as const,
+      value: '3.5x Multiplier',
+      description: 'High-growth equity allocation with structured exit liquidity.'
+    };
+  }
+
+  return {
+    type: 'access_pass' as const,
+    value: 'VIP Genesis',
+    description: 'Exclusive tier-1 allocation access for founding partners.'
+  };
+};
+
+/**
+ * Phase 85: Scarcity Engine
+ * Computes dynamic time/unit pressure based on project volume.
+ */
+export const computeScarcity = (project: ProjectContextPayload) => {
+  // In a real system, this would query the DB for remaining allocation
+  // For Phase 85, we use a deterministic mock based on the day
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const slotsRemaining = Math.max(3, 15 - (dayOfYear % 12));
+  
+  return {
+    slotsRemaining,
+    deadlineAt: Date.now() + (24 * 60 * 60 * 1000) // 24h urgency
+  };
+};
+
+/**
+ * PURE FUNCTION: Resolves the next state and actions based on psychological funnel.
+ */
+export function resolveGrowthAction(
+  event: GrowthEvent, 
+  lead: LeadContextPayload, 
+  project?: ProjectContextPayload
+): GrowthEngineResult | null {
+  const currentLeadState = (lead.metadata?.growth?.state as LeadState) || 'CURIOUS';
   let nextState: LeadState = currentLeadState;
   let actions: GrowthActionType[] = [];
 
-  // Normalization for backward compatibility
-  const normalizedIntent = typeof lead.intent === 'string' ? lead.intent.toLowerCase() : 'explore';
-
-  // 3. State Engine Logic
-  // --- TIME-BASED AUTO-TRIGGER (Nurturing Sequence) ---
+  // --- ADAPTIVE TIMING RESOLVER (Institutional) ---
   const lastWaitlistWelcome = lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_WELCOME_D0'];
   if (lastWaitlistWelcome && typeof lastWaitlistWelcome === 'number') {
     const hoursSinceJoin = (Date.now() - lastWaitlistWelcome) / (1000 * 60 * 60);
-    const executed = lead.metadata?.growth?.executedActions || {};
+    const engagement = lead.engagementLevel || 'mid';
+    const intervals: Record<string, { d1: number; d2: number; d3: number }> = {
+      'tech_startup': { d1: 24, d2: 48, d3: 72 },
+      'real_estate': { d1: 24, d2: 72, d3: 168 },
+      'defi': { d1: 6, d2: 12, d3: 24 }, // DeFi is ultra-fast
+      'other': { d1: 24, d2: 48, d3: 72 }
+    };
+    const config = (project?.businessCategory && intervals[project.businessCategory]) 
+      ? intervals[project.businessCategory] 
+      : intervals['other'];
 
-    if (hoursSinceJoin > 72 && !executed['SEND_WAITLIST_ACTIVATION_D3']) {
+    const multiplier = engagement === 'critical' ? 0.3 : (engagement === 'high' ? 0.5 : (engagement === 'low' ? 2.0 : 1.0));
+    
+    if (config && hoursSinceJoin > (config.d3 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_ACTIVATION_D3']) {
       actions.push('SEND_WAITLIST_ACTIVATION_D3');
-    } else if (hoursSinceJoin > 48 && !executed['SEND_WAITLIST_STATUS_D2']) {
+    } else if (config && hoursSinceJoin > (config.d2 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_STATUS_D2']) {
       actions.push('SEND_WAITLIST_STATUS_D2');
-    } else if (hoursSinceJoin > 24 && !executed['SEND_WAITLIST_NARRATIVE_D1']) {
-      actions.push('SEND_WAITLIST_NARRATIVE_D1');
     }
   }
 
-  // Special Rule: If lead is already SCHEDULED or CONVERTED, we block most passive events
-  if (currentLeadState === 'SCHEDULED' && event === 'LEAD_CAPTURED') {
-      return { nextState: 'SCHEDULED', actions: [], delay: null };
+  // --- DETERMINISTIC CLOSING LAYER (Phase 85) ---
+  // This layer attempts to close high-priority leads immediately if conditions are met.
+  if (project && lead.metadata?.growth?.state === 'HOT' && (lead.priorityScore || 0) > 120) {
+    const scarcity = computeScarcity(project);
+    const offer = resolveDynamicOffer(lead.profile || { riskProfile: 'medium', investmentStyle: 'yield', convictionScore: 50 }, project.businessCategory);
+    
+    return {
+      nextState: 'HOT', // Remain HOT, but with a specific closing action
+      actions: ['SALES_INTERVENTION', 'SEND_DYNAMIC_OFFER'],
+      delay: null,
+      ruleId: 'PH85_CLOSING_STRIKE',
+      ruleCondition: `Deterministic Close: Priority ${lead.priorityScore} in HOT state`,
+      offer,
+      scarcity
+    };
   }
 
+  // Funnel Logic
   switch (event) {
     case 'LEAD_CAPTURED':
-      if (lead.scope === 'b2b') {
-        nextState = 'INVEST_READY';
-        actions = ['SEND_WELCOME_B2B_D1', 'NOTIFY_TEAM'];
-        return { 
-          nextState, actions, delay: null, 
-          ruleId: 'WELCOME_B2B', 
-          ruleCondition: 'Scope is B2B' 
-        };
-      } else if (normalizedIntent === 'explore') {
-        nextState = 'EXPLORE';
-        actions = ['SEND_WELCOME_EXPLORE_D1', 'NOTIFY_TEAM', 'ASSIGN_COURSE'];
-        return { 
-          nextState, actions, delay: null, 
-          ruleId: 'WELCOME_EXPLORE', 
-          ruleCondition: 'Intent is Explore' 
-        };
-      } else if (normalizedIntent === 'invest' || normalizedIntent === 'whitelist') {
-        nextState = 'INVEST_READY';
-        actions = ['SEND_WELCOME_INVEST_D1', 'NOTIFY_TEAM', 'ASSIGN_COURSE'];
-        return { 
-          nextState, actions, delay: null, 
-          ruleId: 'WELCOME_INVEST', 
-          ruleCondition: 'Intent is Invest/Whitelist' 
-        };
-      }
+      nextState = 'AWARE';
+      actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1'] : ['SEND_WAITLIST_WELCOME_D0'];
       break;
 
-    case 'COURSE_STARTED':
-      if (currentLeadState === 'EXPLORE') {
-          nextState = 'EDUCATING';
-      }
-      break;
-
-    case 'COURSE_COMPLETED':
-      if (currentLeadState === 'EXPLORE' || currentLeadState === 'EDUCATING') {
-          nextState = 'ENGAGED';
-          actions = ['UNLOCK_REWARD'];
+    case 'VIEW_PRICING':
+    case 'CLICKED_WHITEPAPER':
+      if (currentLeadState === 'CURIOUS' || currentLeadState === 'AWARE') {
+        nextState = 'ENGAGED';
       }
       break;
 
     case 'WALLET_CONNECTED':
-      nextState = 'INVEST_READY';
-      actions = ['SEND_OFFER'];
+    case 'STARTED_KYC':
+      nextState = 'HOT';
+      actions = ['NOTIFY_TEAM']; // Alert closer immediately
       break;
 
     case 'PURCHASED':
-      nextState = 'CONVERTED';
+      nextState = 'INVESTOR';
       actions = ['NOTIFY_TEAM'];
       break;
 
-    case 'VIEW_PRICING':
-      return { 
-          nextState: currentLeadState, 
-          actions: [], 
-          scoreChange: 10, 
-          priority: 10, 
-          delay: null,
-          ruleId: 'SCORE_VIEW_PRICING',
-          ruleCondition: 'User viewed pricing page'
-      };
-
-    case 'SELECT_TIER':
-      return { 
-          nextState: currentLeadState, 
-          actions: [], 
-          scoreChange: 25, 
-          priority: 25, 
-          delay: null,
-          ruleId: 'SCORE_SELECT_TIER',
-          ruleCondition: 'User selected a pricing tier'
-      };
-
     case 'BOOKING_CREATED':
-      nextState = 'SCHEDULED';
-      actions = ['SEND_CALL_REMINDER_D3', 'SEND_CALL_REMINDER_D1', 'NOTIFY_TEAM'];
-      return { nextState, actions, scoreChange: 50, priority: 80, delay: null };
-
-    case 'BOOKING_CONFIRMED':
-      if (currentLeadState === 'SCHEDULED' || currentLeadState === 'INVEST_READY') {
-          nextState = 'SCHEDULED';
-          actions = ['SEND_BOOKING_CONFIRMED', 'NOTIFY_TEAM'];
-      }
+      nextState = 'HOT';
+      actions = ['SEND_BOOKING_CONFIRMED', 'NOTIFY_TEAM'];
       break;
 
-    case 'BOOKING_CANCELLED':
-      if (currentLeadState === 'SCHEDULED') {
-        nextState = 'NURTURING';
-        actions = ['NOTIFY_TEAM'];
-      }
+    case 'EMAIL_OPENED':
+      if (currentLeadState === 'CURIOUS') nextState = 'AWARE';
       break;
 
-    case 'BOOKING_NO_SHOW':
-      if (currentLeadState === 'SCHEDULED') {
-        nextState = 'NURTURING';
-        actions = ['SEND_NO_SHOW_RECOVERY', 'NOTIFY_TEAM'];
-      }
+    case 'COURSE_COMPLETED':
+      if (currentLeadState === 'AWARE') nextState = 'ENGAGED';
+      actions = ['UNLOCK_REWARD'];
       break;
-
-    case 'CALL_COMPLETED': {
-        const outcome = lead.metadata?.call?.outcome || 'warm'; 
-        if (outcome === 'hot') {
-            nextState = 'INVEST_READY';
-            actions = ['SEND_SOW', 'NOTIFY_TEAM'];
-            return { 
-                nextState, actions, scoreChange: 100, priority: 100, delay: null,
-                ruleId: 'HOT_CALL_CLOSING',
-                ruleCondition: 'Call marked as HOT'
-            };
-        } else if (outcome === 'warm') {
-            nextState = 'NURTURING';
-            return { 
-                nextState, actions: ['NOTIFY_TEAM'], scoreChange: 20, priority: 50, delay: null,
-                ruleId: 'WARM_CALL_NURTURE',
-                ruleCondition: 'Call marked as WARM'
-            };
-        } else if (outcome === 'nocall' || outcome === 'no_show') {
-            nextState = 'NURTURING';
-            actions = ['SEND_NO_SHOW_RECOVERY', 'NOTIFY_TEAM'];
-            return {
-                nextState, actions, delay: null,
-                ruleId: 'NO_SHOW_RECOVERY',
-                ruleCondition: 'Call no-show'
-            };
-        }
-        break;
-    }
-
-    case 'SOW_EXPIRED':
-      return { 
-          nextState: 'NURTURING', 
-          actions: ['SEND_FOLLOWUP_B2B_D2'], 
-          scoreChange: -25, 
-          priority: 30, 
-          delay: null,
-          ruleId: 'FEEDBACK_SOW_EXPIRED',
-          ruleCondition: 'SOW not signed within window'
-      };
-
-    case 'EMAIL_BOUNCED':
-      return { 
-          nextState: 'ARCHIVED', 
-          actions: [], 
-          scoreChange: -100, 
-          priority: 90, 
-          delay: null,
-          ruleId: 'FEEDBACK_BOUNCE',
-          ruleCondition: 'Communication channel failed'
-      };
-
-    case 'WAITLIST_JOIN': {
-      nextState = 'EXPLORE';
-      actions = ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'];
-      
-      // FINANCIAL SCORING MULTIPLIER (Psychology of Capital)
-      let scoreChange = 10;
-      
-      // Resiliently resolve capital and interest from multiple possible sources
-      const capitalRaw = lead.metadata?.capital || (lead as any).capital || '0';
-      const capital = typeof capitalRaw === 'string' ? 
-        parseInt(capitalRaw.replace(/[^0-9]/g, '')) || 0 : 
-        Number(capitalRaw);
-        
-      const interest = lead.metadata?.interest || lead.intent || 'explore';
-      const horizon = lead.metadata?.horizon;
-
-      if (capital >= 100000 || capitalRaw === '100k+') scoreChange += 80;
-      else if (capital >= 25000 || capitalRaw === '25k-100k') scoreChange += 40;
-      else if (capital >= 5000 || capitalRaw === '5k-25k') scoreChange += 15;
-
-      const normalizedInterest = String(interest).toLowerCase();
-      if (normalizedInterest === 'equity' || normalizedInterest === 'deals') scoreChange += 25;
-      else if (normalizedInterest === 'early access' || normalizedInterest === 'genesis') scoreChange += 15;
-
-      if (horizon === 'Largo') scoreChange += 20;
-
-      return { 
-        nextState, actions, scoreChange, priority: 50, delay: null,
-        ruleId: 'WAITLIST_QUALIFICATION',
-        ruleCondition: `Resolved Capital: ${capitalRaw}, Interest: ${interest}`
-      };
-    }
-
-    case 'WAITLIST_FAST_TRACK':
-      return { 
-        nextState: currentLeadState, 
-        actions: [], 
-        scoreChange: 30, 
-        priority: 60, 
-        delay: null,
-        ruleId: 'WAITLIST_ACCELERATION',
-        ruleCondition: 'User clicked Fast Track button'
-      };
-
-    case 'USER_CLASSIFIED_GENESIS':
-      return { 
-        nextState: 'ENGAGED', 
-        actions: ['SEND_GENESIS_WELCOME', 'NOTIFY_TEAM'], 
-        scoreChange: 50, 
-        priority: 70, 
-        delay: null,
-        ruleId: 'GENESIS_CLASSIFICATION',
-        ruleCondition: 'User categorized as Genesis (Early Window)'
-      };
-
-    case 'USER_CLASSIFIED_STANDARD':
-      return { 
-        nextState: currentLeadState, 
-        actions: [], 
-        scoreChange: 10, 
-        priority: 30, 
-        delay: null,
-        ruleId: 'STANDARD_CLASSIFICATION',
-        ruleCondition: 'User categorized as Standard (Public Phase)'
-      };
-
-    case 'ACCESS_ACTIVATION_COMPLETED':
-      return { 
-        nextState: 'ENGAGED', 
-        actions: ['NOTIFY_TEAM'], 
-        scoreChange: 20, 
-        priority: 50, 
-        delay: null,
-        ruleId: 'ACCESS_ACTIVATION',
-        ruleCondition: 'User successfully activated their access card'
-      };
-
-    case 'EMAIL_OPENED': {
-        const step = lead.metadata?.lastEmailStep || 0;
-        return {
-            nextState: currentLeadState,
-            actions: [],
-            scoreChange: 15,
-            delay: null,
-            ruleId: 'WAITLIST_ENGAGEMENT_OPEN',
-            ruleCondition: `Opened sequence email step ${step}`
-        };
-    }
-
-    default:
-      console.warn(`[Growth Engine] Unhandled event: ${event}`);
   }
 
-  // 4. Final Transition Validation (Audit Fix 3)
+  // Behavioral State Upgrades (Override focus to HOT if score is massive)
+  if (nextState !== 'INVESTOR' && nextState !== 'ARCHIVED') {
+    if ((lead.priorityScore || 0) >= 120 || (lead.intentScore || 0) >= 85) {
+      nextState = 'HOT';
+      if (!actions.includes('NOTIFY_TEAM')) actions.push('NOTIFY_TEAM');
+    }
+  }
+
+  // Validation
   if (nextState !== currentLeadState) {
-      const allowed = ALLOWED_TRANSITIONS[currentLeadState] || [];
-      if (!allowed.includes(nextState)) {
-          console.warn(`[Growth Engine] Blocked invalid transition: ${currentLeadState} -> ${nextState} for ${lead.email}`);
-          return {
-              nextState: currentLeadState,
-              actions: [], 
-              delay: null
-          };
-      }
-  }
-
-  // 5. Intelligent Intent Automation (Surgical: Audit 5)
-  const currentIntent = classifyIntent(lead.score || 0, nextState, lead.metadata, (lead as any).updatedAt || (lead as any).createdAt);
-  if (currentIntent === 'closing' && !actions.includes('NOTIFY_TEAM')) {
-      actions.push('NOTIFY_TEAM');
-  }
-
-  return {
-    nextState,
-    actions,
-    delay: null
-  };
-}
-
-/**
- * ELITE: Natural Score Decay (Audit 3: Surgical Refinement)
- * Calculates the hypothetical decayed score based on inactivity, aware of intent.
- */
-export function calculateDecayedScore(
-    currentScore: number, 
-    lastUpdatedAt: Date | number,
-    intent: 'low' | 'medium' | 'high' | 'closing' = 'low',
-    metadata: any = {}
-): number {
-    const lastUpdate = typeof lastUpdatedAt === 'number' ? lastUpdatedAt : lastUpdatedAt.getTime();
-    const now = Date.now();
-    const daysSinceUpdate = (now - lastUpdate) / (1000 * 60 * 60 * 24);
-
-    // Extreme: Pause decay if lead engaged recently (Engagement-Based Protection)
-    const lastEngagedAt = metadata?.lastEngagedAt || metadata?.growth?.lastEngagedAt || 0;
-    const hoursSinceEngagement = (now - (typeof lastEngagedAt === 'string' ? new Date(lastEngagedAt).getTime() : lastEngagedAt)) / (1000 * 60 * 60);
-
-    if (hoursSinceEngagement < 72) {
-        // console.log(`[Growth OS] Decay paused due to activity within 72h`);
-        return currentScore;
+    const allowed = ALLOWED_TRANSITIONS[currentLeadState] || [];
+    if (!allowed.includes(nextState)) {
+      nextState = currentLeadState;
     }
-    
-    // Surgical Rates: Closing deals are protected
-    const rates = {
-        'closing': 2, // -2 every 3 days
-        'high': 3,    // -3 every 3 days
-        'medium': 5,  // -5 every 3 days
-        'low': 5
-    };
-    
-    const rate = rates[intent] || 5;
-    const decayIntervals = Math.floor(daysSinceUpdate / 3);
-    if (decayIntervals <= 0) return currentScore;
-    
-    const decayAmount = decayIntervals * rate;
-    return Math.max(0, currentScore - decayAmount);
+  }
+
+  return { nextState, actions, delay: null, ruleId: `PH80_${event}` };
 }
 
 /**
- * ELITE: Intent Classifier (Audit 8: Surgical Refincement)
- * Maps lead state to actionable intent buckets with Recency weighting.
+ * ELITE: Natural Score Decay (Institutional)
  */
-export function classifyIntent(score: number, status: LeadState, metadata: any, lastUpdatedAt?: Date | number): 'low' | 'medium' | 'high' | 'closing' {
-    const outcome = metadata?.lastCallOutcome || metadata?.call?.outcome;
-    
-    // Recency Weight (Elite Surgical)
-    const lastUpdate = lastUpdatedAt ? (typeof lastUpdatedAt === 'number' ? lastUpdatedAt : lastUpdatedAt.getTime()) : Date.now();
-    const daysIdle = (Date.now() - lastUpdate) / (1000 * 60 * 60 * 24);
-    
-    // Activity Bonus: Active today/yesterday gets +10 virtual intent score
-    const recencyBonus = daysIdle < 2 ? 10 : (daysIdle > 10 ? -20 : 0);
-    const intentScore = score + recencyBonus;
-    
-    // Dynamic Bucketization
-    if (status === 'INVEST_READY' || outcome === 'hot' || intentScore > 90) return 'closing';
-    if (status === 'SCHEDULED' || status === 'ENGAGED' || intentScore > 70) return 'high';
-    if (intentScore > 40 || status === 'EDUCATING') return 'medium';
-    return 'low';
+export function calculateDecayedScore(currentScore: number, lastUpdatedAt: Date | number): number {
+  const lastUpdate = typeof lastUpdatedAt === 'number' ? lastUpdatedAt : lastUpdatedAt.getTime();
+  const daysIdle = (Date.now() - lastUpdate) / (1000 * 60 * 60 * 24);
+  if (daysIdle < 3) return currentScore;
+  const decayRate = 5; // -5 points per 3-day window
+  return Math.max(0, currentScore - Math.floor(daysIdle / 3) * decayRate);
+}
+
+/**
+ * ELITE: Intent Classifier (Phase 80)
+ */
+export function classifyIntent(score: number, status: LeadState): 'low' | 'medium' | 'high' | 'closing' {
+  if (status === 'HOT' || score >= 85) return 'closing';
+  if (status === 'ENGAGED' || score >= 60) return 'high';
+  if (status === 'AWARE' || score >= 30) return 'medium';
+  return 'low';
 }

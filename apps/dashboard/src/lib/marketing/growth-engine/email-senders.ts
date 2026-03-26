@@ -8,11 +8,14 @@ import B2BBookingConfirmedEmail from '@/emails/b2b-booking-confirmed';
 import B2BNoShowRecoveryEmail from '@/emails/b2b-no-show-recovery';
 import WaitlistEmail from '@/emails/WaitlistEmail';
 
+import { EngagementLevel } from './types';
+
 export async function sendWaitlistSequenceEmail(context: {
   to: string;
   step: 1 | 2 | 3 | 4;
   projectName?: string;
   brandHeader?: string;
+  engagementLevel?: EngagementLevel;
 }) {
   const projectName = context.projectName || "Pandora";
   console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) for ${projectName} to ${context.to}`);
@@ -27,31 +30,58 @@ export async function sendWaitlistSequenceEmail(context: {
       return { success: true, mocked: true };
   }
 
-  // Determine the Copy based on the project
-  const isNarai = projectName.toLowerCase().includes('narai');
+  // Determine the Copy based on the project Niche and engagement
+  // Determine the Copy based on the project context
+  const niche = context.brandHeader?.toLowerCase().includes('narai') ? 'real_estate' : 
+                (context.projectName?.toLowerCase().includes('growth os') || context.projectName?.toLowerCase().includes('pandora') ? 'growth_os' : 'other');
+  const intent = context.engagementLevel || 'mid';
   
-  const sequences = {
-    1: {
-      subject: isNarai ? "Tu acceso a Narai está en revisión." : "Tu acceso está en revisión.",
-      body: isNarai 
-        ? "Recibimos tu solicitud para el ecosistema Narai.\n\nNo estamos abriendo esto al público de forma masiva.\n\nEstamos seleccionando perfiles que entienden el valor de la plusvalía real y el timing.\n\nEn los próximos días recibirás más contexto.\n\nSi estás dentro… lo sabrás antes que el resto."
-        : "Recibimos tu solicitud.\n\nNo estamos abriendo esto al público.\n\nEstamos seleccionando perfiles con visión y timing.\n\nEn los próximos días recibirás más contexto.\n\nSi estás dentro… lo sabrás antes que el resto."
+  const NICHE_COPIES: Record<string, Record<string, Record<number, { subject: string, body: string }>>> = {
+    'real_estate': {
+      'high': {
+        1: { subject: "Narai: Tu acceso prioritario.", body: "Detectamos tu interés de alto nivel.\n\nNo estamos perdiendo tiempo. La plusvalía no espera.\n\nTu perfil califica para las primeras unidades.\n\nMantente atento, esto se moverá rápido." },
+        2: { subject: "El activo real, digitalizado.", body: "Mientras otros analizan, los que saben están tomando posición.\n\nNarai es la digitalización de la confianza.\n\nEstamos listos para habilitar tu acceso." },
+        3: { subject: "Decisión Narai.", body: "Las ventanas de oportunidad en Bienes Raíces son cortas.\n\nSi estás viendo esto, es porque sigues en el filtro superior.\n\nSolo un paso más." }
+      },
+      'mid': {
+        1: { subject: "Bienvenido al Ecosistema Narai.", body: "Recibimos tu solicitud.\n\nNarai fusiona la seguridad del ladrillo con la liquidez de la red.\n\nEn los próximos días entenderás por qué somos diferentes." },
+        2: { subject: "Construyendo sobre roca.", body: "La mayoría busca retornos rápidos. Nosotros buscamos retornos sólidos.\n\nEl activo real es la base de todo lo que hacemos.\n\nSeguimos evaluando tu perfil." },
+        3: { subject: "Tu futuro en Narai.", body: "Estamos curando cada acceso.\n\nNo es masivo. Es exclusivo.\n\nPronto tendrás noticias definitivas." }
+      }
     },
-    2: {
-      subject: isNarai ? "Esto no se está explicando afuera de Narai." : "Esto no se está explicando afuera.",
-      body: "La mayoría entra tarde porque espera claridad.\n\nPero la claridad llega cuando ya es caro.\n\nLo que estamos construyendo no es visible aún.\n\nPero ya está en movimiento.\n\nY los primeros no están esperando confirmación.\n\nEstán tomando posición.\n\nSi esto resuena contigo, mantente atento. Los siguientes pasos no serán públicos."
+    'tech_startup': {
+      'high': {
+        1: { subject: "Pandora: Acceso Fast-Track.", body: "Vemos que estás listo para construir.\n\nLa infraestructura descentralizada no espera a nadie.\n\nEstás en la vía rápida." },
+        2: { subject: "Escalando la soberanía.", body: "Estamos desplegando el OS para la nueva economía.\n\nTu perfil es el que buscamos para el Genesis Drop." },
+        3: { subject: "Protocolo Activado.", body: "Estás a un paso de la Llave Maestra.\n\nLa red te reconoce.\n\nPrepárate." }
+      },
+      'mid': {
+        1: { subject: "Tu solicitud a Pandora OS.", body: "Recibimos tu interés.\n\nEstamos construyendo la infraestructura de la libertad financiera.\n\nTe mantendremos al tanto de la evolución." },
+        2: { subject: "El Nuevo Standard OS.", body: "Pandora no es una app. Es un sistema operativo para activos digitales.\n\nEstamos seleccionando a los primeros testers." },
+        3: { subject: "Filtro de Red.", body: "La red se fortalece con cada nodo.\n\nEstamos verificando tu elegibilidad para el acceso temprano." }
+      }
     },
-    3: {
-      subject: isNarai ? "Narai: No todos van a pasar." : "No todos van a pasar.",
-      body: "Estamos filtrando accesos.\n\nNo por volumen.\n\nPor criterio.\n\nLos que entienden:\n→ no preguntan “qué es”\n→ preguntan “cómo entro”\n\nSi ese eres tú, pronto tendrás acceso.\n\nSi esto resuena contigo, mantente atento."
-    },
-    4: {
-      subject: "Se está abriendo una ventana.",
-      body: "Estamos habilitando accesos limitados.\n\nNo es público.\n\nNo es masivo.\n\nSi recibes el siguiente correo, significa que estás dentro.\n\nPrepárate. El acceso no se repite dos veces."
+    'growth_os': {
+      'high': {
+        1: { subject: "Growth OS: Acceso Institutional.", body: "Detectamos un perfil de alta convicción.\n\nEstás en la cola de despliegue prioritario para el Sistema Operativo de Adquisición.\n\nLa ventaja es el tiempo." },
+        2: { subject: "Escalando con IA Determinística.", body: "El Growth OS está analizando tu ecosistema.\n\nEstamos listos para activar tu capa de cierre automático.\n\nSolo para partners seleccionados." },
+        3: { subject: "Protocolo de Cierre Activado.", body: "Tu instancia está lista.\n\nEl acceso Genesis al Growth OS es para quienes entienden que la infraestructura es el activo.\n\nEntra ahora." }
+      },
+      'mid': {
+        1: { subject: "Bienvenido al Growth OS.", body: "Has tomado el primer paso hacia la adquisición autónoma.\n\nEstamos validando tu proyecto para la integración del motor de cierre.\n\nRecibirás detalles técnicos pronto." },
+        2: { subject: "La Capa de Inteligencia.", body: "El Growth OS no es un CRM. Es un cerebro de conversión.\n\nEstamos preparando tu brief de integración.\n\nSiguiente paso: Activación." },
+        3: { subject: "Validación de Nodo Growth.", body: "Seguimos evaluando tu perfil.\n\nLa red de partners de Growth OS es limitada.\n\nTe notificaremos si eres seleccionado." }
+      }
     }
   };
 
-  const emailData = sequences[context.step];
+  // Fallback Logic
+  const nicheMap = NICHE_COPIES[niche] || NICHE_COPIES['tech_startup'];
+  const intentMap = nicheMap?.[intent === 'critical' ? 'high' : (intent === 'low' ? 'mid' : intent)] || nicheMap?.['mid'];
+  const emailData = intentMap?.[context.step] || {
+    subject: `Actualización de Acceso: Paso ${context.step}`,
+    body: "Seguimos procesando tu solicitud de acceso al ecosistema.\n\nRecibirás una confirmación en las próximas horas."
+  };
 
   try {
     const data = await resend.emails.send({

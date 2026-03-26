@@ -57,6 +57,27 @@ export function UserAuthForm({
       console.error("Error during sign in:", error);
     });
 
+    // 🧠 Phase 87: Deterministic Lead Capture (Cross-App Sync)
+    // Captures the intent in the Growth OS even if they are in the secondary app
+    if (data.email) {
+      const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dash.pandoras.finance';
+      fetch(`${dashboardUrl}/api/v1/marketing/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'VIEW_ACCESS',
+          userEmail: data.email.toLowerCase(),
+          projectSlug: 'pandoras_access', // Unified with /access portal
+          metadata: { 
+            app: 'nextjs_onboarding',
+            lang: lang,
+            intent: 'auth_sign_in',
+            source: 'nextjs_form'
+          }
+        })
+      }).catch(err => console.warn('Growth Engine Capture Skipped:', err));
+    }
+
     setIsLoading(false);
 
     if (!signInResult?.ok) {

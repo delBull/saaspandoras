@@ -18,7 +18,10 @@ import {
   ChevronRight,
   Sparkles,
   MousePointer2,
-  Lock
+  Lock,
+  Flame,
+  Gavel,
+  ShieldAlert
 } from 'lucide-react';
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -234,6 +237,28 @@ export default function GrowthOSLanding() {
   const router = useRouter();
   const { isGenesisQualified, ux, isLoading } = useAccessState();
 
+  // Phase 86: Dogfooding (Growth OS as an External Project)
+  React.useEffect(() => {
+    const trackArrival = async () => {
+      try {
+        await fetch('/api/v1/marketing/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            anonymousId: 'growth-os-visitor', 
+            type: 'VIEW_LANDING',
+            projectSlug: 'growth-os', // Treating itself as a project
+            metadata: { 
+              source: 'direct',
+              version: 'v86_institutional'
+            }
+          })
+        });
+      } catch (e) { /* silent */ }
+    };
+    trackArrival();
+  }, []);
+
   const openConversion = (tier?: string) => {
     if (isGenesisQualified) {
         router.push("/admin");
@@ -286,25 +311,31 @@ export default function GrowthOSLanding() {
               Infraestructura de Ventaja Asimétrica
             </Badge>
             <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] mb-10">
-              EL ACCESO <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-zinc-100 to-emerald-400 uppercase">
-                NO ES IGUAL
+              INSTITUTIONAL <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-zinc-100 to-rose-400 uppercase">
+                ACQUISITION MACHINE
               </span>
             </h1>
             
-            {/* 🛰️ Real-Time Scarcity Injected from Level 20 Backend */}
-            {ux?.scarcityHint && (
-              <motion.div 
+            {/* 🛰️ Phase 85: Deterministic Scarcity */}
+               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mb-8 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 inline-block"
+                className="mb-8 p-4 rounded-3xl bg-red-500/10 border border-red-500/20 inline-block shadow-[0_0_30px_rgba(239,68,68,0.1)]"
               >
-                 <span className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 animate-pulse" />
-                    {ux.scarcityHint}
-                 </span>
+                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                       <Flame className="w-4 h-4 text-red-500 animate-pulse" />
+                       <span className="text-red-500 font-black text-[11px] uppercase tracking-[0.2em]">
+                          STRIKE WINDOW ACTIVE
+                       </span>
+                    </div>
+                    <div className="h-4 w-px bg-red-500/30"></div>
+                    <span className="text-white/80 font-black text-[11px] uppercase tracking-[0.2em]">
+                       {ux?.scarcityHint || "7 SLOTS REMAINING FOR FIXED YIELD"}
+                    </span>
+                 </div>
               </motion.div>
-            )}
 
             <p className="text-lg md:text-2xl text-zinc-500 font-bold leading-relaxed max-w-3xl mx-auto mb-16 uppercase tracking-tight">
               Growth OS determina quién entra primero — <span className="text-white">y quién captura la mayor ventaja</span>. Un sistema cerrado que rastrea, clasifica y activa a participantes tempranos en oportunidades financieras reales.
