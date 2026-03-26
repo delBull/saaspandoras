@@ -66,25 +66,31 @@ export async function POST(req: NextRequest) {
     }
     
     // 1. Resolve Lead (via fingerprint + project)
+    // ELITE: Fallback fingerprint if missing to avoid DB errors
+    const effectiveFingerprint = fingerprint || `anon_${createHash('md5').update(req.headers.get('user-agent') || 'unknown').digest('hex')}`;
+    const leadEmail = metadata?.email;
+
     let leadRecord = await db.query.marketingLeads.findFirst({
         where: and(
             eq(marketingLeads.projectId, parsedProjectId),
-            eq(marketingLeads.fingerprint, fingerprint)
+            leadEmail 
+              ? sql`(${marketingLeads.fingerprint} = ${effectiveFingerprint} OR ${marketingLeads.email} = ${leadEmail})`
+              : eq(marketingLeads.fingerprint, effectiveFingerprint)
         ),
         with: { project: true }
     });
 
     // 1.1 Create Lead if missing (Audit: Auto-Capture)
     if (!leadRecord) {
-        const identityHash = createHash('sha256').update(`${parsedProjectId}-${fingerprint}`).digest('hex');
+        const identityHash = createHash('sha256').update(`${parsedProjectId}-${effectiveFingerprint}-${leadEmail || ''}`).digest('hex');
         
         // ELITE FIX: Capture email/name immediately if available in metadata
-        const initialEmail = metadata?.email;
+        const initialEmail = leadEmail;
         const initialName = metadata?.name;
 
         const [newLead] = await db.insert(marketingLeads).values({
             projectId: parsedProjectId,
-            fingerprint,
+            fingerprint: effectiveFingerprint,
             identityHash,
             email: initialEmail,
             name: initialName,
