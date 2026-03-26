@@ -91,9 +91,30 @@ export async function POST(req: NextRequest) {
 
     const { keyType = 'secret', keyEnv = 'production', projectId: clientProjectId } = client as any;
 
-    // 2. Parse & Validate Body
+    // 2. Parse & Validate Body (Greedy Capture)
     const body = await req.json();
-    let { email, name, phoneNumber, walletAddress, fingerprint, origin, intent, consent, metadata, projectId, scope: bodyScope } = body;
+    
+    // Support both flat (Narai) and structured (Pandoras) formats
+    let email = body.email || body.userEmail;
+    let name = body.name || body.userName;
+    let phoneNumber = body.phoneNumber || body.phone || body.whatsapp;
+    let walletAddress = body.walletAddress || body.wallet;
+    let fingerprint = body.fingerprint || body.fp;
+    let origin = body.origin || requestOrigin;
+    let intent = body.intent || 'explore';
+    let consent = body.consent ?? true; // Default to true if not provided but request reaches here
+    let bodyScope = body.scope;
+    let projectId = body.projectId;
+
+    // Collect everything else into metadata automatically
+    const knownKeys = ['email', 'userEmail', 'name', 'userName', 'phoneNumber', 'phone', 'whatsapp', 'walletAddress', 'wallet', 'fingerprint', 'fp', 'origin', 'intent', 'consent', 'metadata', 'projectId', 'scope'];
+    let metadata = { ...(body.metadata || {}) };
+    
+    Object.keys(body).forEach(key => {
+      if (!knownKeys.includes(key)) {
+        metadata[key] = body[key];
+      }
+    });
 
     if (!origin && requestOrigin) {
       origin = requestOrigin;
