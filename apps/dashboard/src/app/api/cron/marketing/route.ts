@@ -11,16 +11,20 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // 2. Run the Engine
-        console.log('🚀 [CRON] Starting Marketing Automation Check...');
+        // 2. Run Legacy Engine
+        console.log('🚀 [CRON] Starting Legacy Marketing Automation Check...');
         const result = await MarketingEngine.processDueExecutions();
 
-        console.log(`✅ [CRON] Completed. Processed: ${result.processed}, Errors: ${result.errors}`);
+        // 3. Run Growth OS Heartbeat (Phase 55 Integration)
+        const { processHeartbeat } = await import("@/lib/marketing/growth-engine/engine-service");
+        const growthResult = await processHeartbeat();
+
+        console.log(`✅ [CRON] Completed. Legacy: ${result.processed}, Growth OS: ${growthResult.processed}`);
 
         return NextResponse.json({
             ok: true,
-            processed: result.processed,
-            errors: result.errors
+            legacy: result,
+            growthOS: growthResult
         });
     } catch (error) {
         console.error('❌ [CRON] Critical Error:', error);

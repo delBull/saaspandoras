@@ -16,6 +16,7 @@ export async function POST(request: Request) {
       email?: string;
       wallet?: string;
       intent?: string;
+      metadata?: Record<string, any>;
     };
 
     const { email, wallet, intent } = body;
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
         intent: intent || null,
         source: "landing_v2_nextjs",
         metadata: {
+          ...body.metadata,
           referrer: request.headers.get("referer") ?? null,
           userAgent: request.headers.get("user-agent") ?? null,
         },

@@ -9,6 +9,7 @@ type SubmitState = 'idle' | 'success_new' | 'success_existing';
 export default function WaitlistPage() {
   const [email, setEmail] = useState('');
   const [wallet, setWallet] = useState('');
+  const [capital, setCapital] = useState('');
   const [intent, setIntent] = useState('');
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,12 @@ export default function WaitlistPage() {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, wallet: wallet || null, intent: intent || null }),
+        body: JSON.stringify({ 
+          email, 
+          wallet: wallet || null, 
+          intent: intent || null,
+          metadata: { capital: capital || null }
+        }),
       });
       const data = await res.json().catch(() => ({})) as { success?: boolean; existing?: boolean };
       setSubmitState(data.existing ? 'success_existing' : 'success_new');
@@ -84,6 +90,22 @@ export default function WaitlistPage() {
                 placeholder="0x..."
                 className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm px-4 py-3.5 rounded-none focus:outline-none focus:border-zinc-600 placeholder:text-zinc-700 font-mono transition-colors"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[8px] tracking-[0.4em] text-zinc-600 uppercase">
+                Capital estimado <span className="text-zinc-700">(opcional)</span>
+              </label>
+              <select
+                value={capital}
+                onChange={(e) => setCapital(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm px-4 py-3.5 rounded-none focus:outline-none focus:border-zinc-600 text-zinc-400 transition-colors appearance-none"
+              >
+                <option value="">Selecciona una opción</option>
+                <option value="5k-25k">$5k – $25k</option>
+                <option value="25k-100k">$25k – $100k</option>
+                <option value="100k+">$100k+</option>
+              </select>
             </div>
 
             <div className="space-y-1.5">

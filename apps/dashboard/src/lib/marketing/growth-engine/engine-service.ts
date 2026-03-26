@@ -63,3 +63,46 @@ export async function processGrowthEvent(
     throw error;
   }
 }
+
+/**
+ * 💓 HEARTBEAT - AUTOMATION TRIGGER
+ * Processes all active leads to trigger time-based actions.
+ * Recommended interval: Every 6-12 hours via Cron.
+ */
+export async function processHeartbeat() {
+    console.log("💓 [Growth OS] Starting Heartbeat Processing...");
+    let processed = 0;
+    let errors = 0;
+
+    try {
+        // Fetch leads in active/nurturing/scheduled states that aren't converted/archived
+        const activeLeads = await db.query.marketingLeads.findMany({
+            where: (leads, { inArray }) => inArray(leads.status, [
+                'active', 'nurturing', 'whitelisted', 'scheduled'
+            ])
+        });
+
+        console.log(`💓 [Growth OS] Evaluating ${activeLeads.length} active leads...`);
+
+        for (const lead of activeLeads) {
+            try {
+                await processGrowthEvent('HEARTBEAT', {
+                    id: lead.id,
+                    email: lead.email,
+                    projectId: lead.projectId,
+                    intent: lead.intent,
+                    metadata: lead.metadata
+                });
+                processed++;
+            } catch (err) {
+                console.error(`❌ [Growth OS] Heartbeat failed for lead ${lead.id}:`, err);
+                errors++;
+            }
+        }
+
+        return { processed, errors };
+    } catch (error) {
+        console.error("❌ [Growth OS] Heartbeat Critical Error:", error);
+        throw error;
+    }
+}
