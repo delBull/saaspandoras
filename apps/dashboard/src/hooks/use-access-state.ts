@@ -20,6 +20,11 @@ export interface AccessStateData {
         scarcityHint?: string;
     };
     error?: string;
+    _dev_debug?: {
+        message: string;
+        code?: string;
+        cause?: any;
+    };
     latency?: number;
 }
 

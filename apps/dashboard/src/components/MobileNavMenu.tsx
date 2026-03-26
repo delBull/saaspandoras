@@ -9,7 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { PackageCheckIcon, Hash } from "lucide-react"
 import { usePathname } from "next/navigation";
-import { usePersistedAccount } from "@/hooks/usePersistedAccount";
+import { useActiveAccount } from "thirdweb/react";
 
 interface NavItem {
   label: string;
@@ -31,7 +31,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
   const pathname = usePathname();
 
   // Don't render menu if no account connected
-  const account = usePersistedAccount().account;
+  const account = useActiveAccount();
   const hasWalletAddress = !!account?.address;
 
   if (!hasWalletAddress) {

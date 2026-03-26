@@ -56,6 +56,7 @@ const applyPassNftAddress = process.env.NEXT_PUBLIC_APPLY_PASS_NFT_ADDRESS || "0
 const getAppHostname = () => {
   if (process.env.NEXT_PUBLIC_DOMAIN) return process.env.NEXT_PUBLIC_DOMAIN;
   if (typeof window !== 'undefined') return window.location.host;
+  if (process.env.NODE_ENV === 'development') return 'localhost:3000';
   return isStaging ? 'staging.dash.pandoras.finance' : 'app.pandoras.org';
 };
 

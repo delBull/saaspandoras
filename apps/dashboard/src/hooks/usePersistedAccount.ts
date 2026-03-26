@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
-import { useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
+import { useEffect, useCallback, useState, useRef } from "react";
+import { useActiveAccount, useActiveWallet, useConnect, useDisconnect, useIsAutoConnecting } from "thirdweb/react";
 import { createWallet, type WalletId, smartWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 
@@ -27,6 +27,7 @@ export function usePersistedAccount() {
   const [isBootstrapped, setIsBootstrapped] = useState(false);
   const [lastReconnectAttempt, setLastReconnectAttempt] = useState<number | null>(null);
   const [isLogoutInProgress, setIsLogoutInProgress] = useState(false);
+  const passiveAttempted = useRef(false); // 🛡️ Mutex to prevent multiple attempts per mount
 
   // 🚀 Bootstrapping inicial desde localStorage
   useEffect(() => {
@@ -121,16 +122,25 @@ export function usePersistedAccount() {
     }
   }, [account?.address, activeWallet]);
 
-  // Force Disconnect Check
+  // 🛡️ GHOST LOGOUT FIX: Clear flag if we successfully have an account
   useEffect(() => {
-    if (typeof window !== "undefined" && account?.address && activeWallet) {
+    if (account?.address && typeof window !== "undefined") {
+      if (localStorage.getItem("wallet-logged-out") === "true") {
+        console.log("✨ Account detected - clearing explicit logout flag.");
+        localStorage.removeItem("wallet-logged-out");
+      }
+    }
+  }, [account?.address]);
+
+  // Force Disconnect Check (Only if NOT actively connecting)
+  useEffect(() => {
+    if (typeof window !== "undefined" && account?.address && activeWallet && !isConnecting) {
       if (localStorage.getItem("wallet-logged-out") === "true") {
         console.log("🚫 Enforcing explicit logout - Disconnecting...");
         disconnect(activeWallet);
-        // Do NOT clear the flag yet, wait until user manually connects (which should clear it)
       }
     }
-  }, [account, activeWallet, disconnect]);
+  }, [account, activeWallet, disconnect, isConnecting]);
 
   // Guardar sesión para social logins (cuando hay account pero no activeWallet)
   useEffect(() => {
@@ -164,8 +174,6 @@ export function usePersistedAccount() {
       }
     }
   }, [account?.address, activeWallet]);
-
-  // ... (Rehydration logic remains similar)
 
   // Logout - Limpia completamente la sesión
   const logout = useCallback(() => {
@@ -206,13 +214,13 @@ export function usePersistedAccount() {
     }
   }, [disconnect, activeWallet]);
 
-  return {
-    account,
-    logout,
-    savedWalletAddress: session?.address ?? null,
-    hasSavedWallet: !!session?.address,
-    canAutoReconnect: !account?.address && !!session?.shouldReconnect,
-    isBootstrapped,
-    isConnecting,  // 👈 Expose connection status
-  };
+    return {
+        account,
+        logout,
+        savedWalletAddress: session?.address ?? null,
+        hasSavedWallet: !!session?.address,
+        isBootstrapped,
+        isConnecting,
+        isAutoConnecting: useIsAutoConnecting(),
+    };
 }

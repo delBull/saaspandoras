@@ -141,12 +141,17 @@ export async function GET(req: Request): Promise<NextResponse> {
         
         // PRINCIPAL STABILITY FIX: 
         // Return 200 with ERROR state instead of 500 Internal Server Error.
-        // This prevents the SPA from crashing and allows for graceful UI retries.
         return NextResponse.json({ 
             state: AccessState.ERROR,
             authenticated: false,
             error: error.message || "Distributed Resilience Layer Engaged",
             infrastructure: true,
+            // 🛠️ DEV DIAGNOSTICS: expose raw error for local debugging
+            _dev_debug: process.env.NODE_ENV === 'development' ? {
+                message: error.message,
+                code: error.code,
+                cause: error.cause?.message || error.cause
+            } : undefined,
             latency: Date.now() - start
         }, { status: 200 }); // "Soft Error" for UI stability
     }

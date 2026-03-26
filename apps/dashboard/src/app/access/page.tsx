@@ -2,8 +2,9 @@
 
 import { NFTGate } from "@/components/nft-gate";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ConnectButton, useActiveAccount } from "thirdweb/react";
+import { useActiveAccount, useConnectModal } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
+import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -66,6 +67,7 @@ function DynamicLoader({ texts }: { texts: string[] }) {
 }
 
 export default function AccessPage() {
+  const { connect } = useConnectModal();
   const { user, status, runAuthFlow } = useAuth();
   const account = useActiveAccount();
   const router = useRouter();
@@ -234,14 +236,36 @@ export default function AccessPage() {
                     <span className="text-zinc-600 text-xs">Se generará tu clave de acceso en segundo plano.</span>
                   </p>
 
-                  <ConnectButton
-                    client={client}
-                    chain={config.chain}
-                    connectButton={{
-                      className: "w-full !bg-white !text-black !rounded-none !py-5 !text-[10px] !tracking-[0.4em] !font-black hover:!bg-lime-400 !transition-all",
-                      label: "ACTIVAR ACCESO",
+                  <button
+                    onClick={() => {
+                      // We stay on this page but let NFTGate handle it? 
+                      // Actually, if they are here, leadCaptured might be true.
+                      // If they want to "re-apply" or if they came here directly:
+                      window.location.reload(); 
                     }}
-                  />
+                    className="w-full bg-white text-black py-5 text-[10px] tracking-[0.4em] font-black hover:bg-lime-400 transition-all uppercase mb-4"
+                  >
+                    SOLICITAR ACCESO
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        localStorage.removeItem("wallet-logged-out");
+                      }
+                      connect({
+                        client,
+                        chain: config.chain,
+                        showThirdwebBranding: false,
+                        showAllWallets: false,
+                        size: "compact",
+                        wallets,
+                      });
+                    }}
+                    className="w-full bg-transparent border border-zinc-800 text-zinc-500 py-4 text-[9px] tracking-[0.3em] font-bold hover:border-zinc-600 hover:text-white transition-all uppercase"
+                  >
+                    CONECTAR WALLET (YA TENGO ACCESO)
+                  </button>
 
                   {/* Firma SIWE si wallet conectada pero no autenticada */}
                   <AnimatePresence>

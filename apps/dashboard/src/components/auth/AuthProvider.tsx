@@ -9,6 +9,7 @@ import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
 import { AccessState } from "@/lib/access/state-machine";
+import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 
 export interface UXData {
     segment: string;
@@ -111,6 +112,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const PERSIST_KEY = "pandora_auth_state_v1";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    useEffect(() => {
+        console.log("[AuthMachine] 🏗️ AuthProvider MOUNTED");
+        return () => console.log("[AuthMachine] 🗑️ AuthProvider UNMOUNTED");
+    }, []);
+
     const [state, dispatch] = useReducer(authReducer, initialState);
 
     const account = useActiveAccount();
@@ -119,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { toast } = useToast();
     const { getIdentity } = useEOAIdentity();
     const { mutate: sendTransaction } = useSendTransaction();
+    const { isConnecting: isManualConnecting, hasSavedWallet } = usePersistedAccount();
 
     const contract = getContract({
         client,
@@ -206,6 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         }
     }, [account?.address, loadPersistedState]);
+ 
 
 
     useEffect(() => {
@@ -218,6 +226,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             hasBooted.current = true;
             lastAccountRef.current = address;
 
+            // ELITE FIX (Phase 41): If we detect an account, we MUST clear any previous logout flags
+            // to prevent the "Login Return" loop where AutoLoginGate wipes cookies.
+            if (address && typeof window !== "undefined") {
+                localStorage.removeItem("wallet-logged-out");
+            }
+
             // ELITE FIX: Abort any previous flow context AND release the mutex lock
             abortControllerRef.current?.abort();
             runningFlow.current = null; // 🔓 Force unlock for new identity
@@ -228,34 +242,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (address) {
                  console.log("[AuthMachine] 👤 Account detected, initiating unified flow...");
                  runAuthFlow(controller.signal);
+            } else if (!isAutoConnecting && !isManualConnecting) {
+                 console.log("[AuthMachine] 👤 No account detected and not connecting. Settling as guest.");
+                 dispatch({ type: "SET_STATUS", status: "unauthenticated" });
             } else {
-                 // SYMMETRIC RESILIENCE: 
-                 // If the account drops, wait 1s before falling back to guest.
-                 // This handles Thirdweb "re-attachments" without blinking.
-                 const timer = setTimeout(() => {
-                    if (!account?.address) {
-                        console.log("[AuthMachine] 👤 No account detected for 1s, reaching guest state.");
-                        dispatch({ type: "SET_STATUS", status: "unauthenticated" });
-                        persistState("unauthenticated");
-                    }
-                 }, 1000);
-                 return () => clearTimeout(timer);
+                 console.log("[AuthMachine] ⏳ Connection in progress (Auto/Manual). Waiting...");
             }
         }
-    }, [account?.address]);
+    }, [account?.address, isAutoConnecting, isManualConnecting]);
 
-    // 🛡️ RECOVERY TIMEOUT (Fix for Purple Spinner hangs)
+    // 🛡️ TRACE LOGS (Phase 39)
     useEffect(() => {
-        if (state.status === "booting") {
-            const timer = setTimeout(() => {
-                if (state.status === "booting") {
-                    console.warn("[AuthMachine] ⏳ Booting timeout (3s). Resolving to unauthenticated.");
-                    dispatch({ type: "SET_STATUS", status: "unauthenticated" });
-                }
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [state.status]);
+        console.log(`[AuthMachine] 📡 RAW STATE: address=${account?.address?.slice(0,6)}... status=${state.status} auto=${isAutoConnecting} manual=${isManualConnecting}`);
+    }, [account?.address, state.status, isAutoConnecting, isManualConnecting]);
 
     /**
      * FRACTURE #1: Scoped refreshSession

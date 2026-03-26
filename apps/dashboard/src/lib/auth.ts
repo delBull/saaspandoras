@@ -161,7 +161,7 @@ export function validateWalletAddress(address: string | undefined | null): boole
 }
 
 export const authConfig = {
-  domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN!,
+  domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN || (typeof window !== "undefined" ? window.location.host : ""),
   authUrl: "/api/auth",
   cookieOptions: {
     // Configuración de cookies para desarrollo y producción
@@ -169,7 +169,7 @@ export const authConfig = {
     sameSite: "lax" as const,
     maxAge: 60 * 60 * 24 * 7, // 1 semana
     // Default to .pandoras.finance for both staging and production to support subdomains
-    domain: process.env.COOKIE_DOMAIN || ".pandoras.finance",
+    domain: process.env.NODE_ENV === "development" ? undefined : (process.env.COOKIE_DOMAIN || ".pandoras.finance"),
   },
 };
 

@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Bars3Icon } from '@heroicons/react/24/outline';
-import { usePersistedAccount } from '@/hooks/usePersistedAccount';
+import { useActiveAccount } from 'thirdweb/react';
 
 interface MobileHeaderProps {
   onMenuClick: () => void;
@@ -11,7 +11,7 @@ interface MobileHeaderProps {
 }
 
 export function MobileHeader({ onMenuClick, profileImage }: MobileHeaderProps) {
-  const { account } = usePersistedAccount();
+  const account = useActiveAccount();
 
   return (
     <header className="md:hidden flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-[60]">

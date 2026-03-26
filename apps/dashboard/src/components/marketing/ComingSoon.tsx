@@ -74,7 +74,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 selection:bg-blue-500/30 font-sans relative overflow-hidden">
       
       {/* 🎨 ADN VISUAL: BLUE GLOW & SCI-FI DEPTH */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-blue-500/10 blur-[80px] md:blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-lime-500/5 blur-[80px] md:blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
 
       <motion.div 
@@ -116,7 +116,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
                 
                 <p className="text-gray-400 text-base md:text-lg font-light tracking-wide max-w-sm mx-auto leading-relaxed">
                   {customSubtitle ? (
-                    <span className="text-blue-400 border-b border-blue-500/30 pb-1">{customSubtitle}</span>
+                    <span className="text-lime-400 border-b border-lime-500/30 pb-1">{customSubtitle}</span>
                   ) : (
                     <>
                       El acceso no está abierto.<br />
@@ -126,35 +126,25 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
                 </p>
               </div>
 
-                <div className="flex flex-col items-center gap-8 pt-4">
-                  {variant === 'lead-capture' ? (
+                  <div className="flex flex-col items-center gap-8 pt-4">
+                    <button 
+                      onClick={() => setView('form')}
+                      className="group relative px-12 py-5 bg-white text-black hover:bg-lime-400 hover:text-black transition-all duration-700 overflow-hidden"
+                    >
+                      <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">Solicitar Acceso</span>
+                      <div className="absolute inset-0 bg-lime-400 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                    </button>
+                  
                     <button 
                       onClick={() => {
                         // Elite Trigger: Re-running the auth flow to force wallet connection
                         window.location.reload(); 
                       }}
-                      className="group relative px-12 py-5 border border-blue-500/50 bg-blue-500/10 hover:bg-blue-500 hover:text-white transition-all duration-700 overflow-hidden"
+                      className="text-[9px] uppercase tracking-[0.4em] text-gray-500 font-bold hover:text-lime-400 transition-colors"
                     >
-                      <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">{cta || 'Conectar Wallet'}</span>
-                      <div className="absolute inset-0 bg-blue-500 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                      {variant === 'lead-capture' ? 'O conectar con wallet' : 'Ya tengo acceso (Conectar)'}
                     </button>
-                  ) : (
-                    <button 
-                      onClick={() => setView('form')}
-                      className="group relative px-12 py-5 border border-white/20 bg-white/5 hover:bg-white hover:text-black transition-all duration-700 overflow-hidden"
-                    >
-                      <span className="relative z-10 text-[10px] font-black tracking-[0.5em] uppercase">Solicitar Acceso</span>
-                      <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                    </button>
-                  )}
-                  
-                  <button 
-                    onClick={() => setView('form')}
-                    className="text-[9px] uppercase tracking-[0.4em] text-gray-600 font-bold hover:text-gray-400 transition-colors"
-                  >
-                    {variant === 'lead-capture' ? 'O solicitar acceso tradicional' : 'No todos los accesos son aprobados.'}
-                  </button>
-                </div>
+                  </div>
             </motion.div>
           )}
 
@@ -175,7 +165,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
                   <Input 
                     required
                     placeholder="NOMBRE COMPLETO"
-                    className="bg-zinc-950/50 border-white/10 rounded-none h-14 !text-[10px] tracking-[0.2em] focus:border-blue-500/50 transition-all placeholder:text-gray-700 text-white"
+                    className="bg-zinc-950/50 border-white/10 rounded-none h-14 !text-[10px] tracking-[0.2em] focus:border-lime-500/50 transition-all placeholder:text-gray-700 text-white"
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                   />
@@ -186,7 +176,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
                     required
                     type="email"
                     placeholder="EMAIL CORPORATIVO / WEB3"
-                    className="bg-zinc-950/50 border-white/10 rounded-none h-14 !text-[10px] tracking-[0.2em] focus:border-blue-500/50 transition-all placeholder:text-gray-700 text-white"
+                    className="bg-zinc-950/50 border-white/10 rounded-none h-14 !text-[10px] tracking-[0.2em] focus:border-lime-500/50 transition-all placeholder:text-gray-700 text-white"
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
                   />
@@ -195,7 +185,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                    <select 
                      required
-                     className="bg-zinc-950/50 border border-white/10 h-14 text-[10px] tracking-[0.2em] text-white px-4 outline-none focus:border-blue-500/50 appearance-none rounded-none"
+                     className="bg-zinc-950/50 border border-white/10 h-14 text-[10px] tracking-[0.2em] text-white px-4 outline-none focus:border-lime-500/50 appearance-none rounded-none"
                      value={formData.capital}
                      onChange={e => setFormData({...formData, capital: e.target.value})}
                    >
@@ -207,7 +197,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
 
                    <select 
                      required
-                     className="bg-zinc-950/50 border border-white/10 h-14 text-[10px] tracking-[0.2em] text-white px-4 outline-none focus:border-blue-500/50 appearance-none rounded-none"
+                     className="bg-zinc-950/50 border border-white/10 h-14 text-[10px] tracking-[0.2em] text-white px-4 outline-none focus:border-lime-500/50 appearance-none rounded-none"
                      value={formData.horizon}
                      onChange={e => setFormData({...formData, horizon: e.target.value})}
                    >
@@ -220,7 +210,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
 
                 <select 
                   required
-                  className="w-full bg-zinc-950/50 border border-white/10 h-14 text-[10px] tracking-[0.2em] text-white px-4 outline-none focus:border-blue-500/50 appearance-none rounded-none"
+                  className="w-full bg-zinc-950/50 border border-white/10 h-14 text-[10px] tracking-[0.2em] text-white px-4 outline-none focus:border-lime-500/50 appearance-none rounded-none"
                   value={formData.interest}
                   onChange={e => setFormData({...formData, interest: e.target.value})}
                 >
@@ -232,7 +222,7 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
 
                 <button 
                   disabled={isSubmitting}
-                  className="w-full bg-white text-black hover:bg-blue-500 hover:text-white py-5 mt-6 text-[10px] font-black tracking-[0.4em] uppercase transition-all duration-500 disabled:opacity-50"
+                  className="w-full bg-white text-black hover:bg-lime-400 hover:text-black py-5 mt-6 text-[10px] font-black tracking-[0.4em] uppercase transition-all duration-500 disabled:opacity-50"
                 >
                   {isSubmitting ? (submissionStep || 'PROCESANDO...') : 'SOLICITAR ACCESO'}
                 </button>
@@ -259,8 +249,8 @@ export function ComingSoon({ variant = 'marketing', cta, customSubtitle }: Comin
            <span className="text-white opacity-40">{stats.intensity === 'ultra' ? '98%' : 'Activo'}</span>
         </div>
         <div className="w-full h-[1px] bg-white/10 relative">
-           <div className={`absolute top-0 left-0 h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-1000`} 
-             style={{ width: stats.intensity === 'low' ? '15%' : stats.intensity === 'mid' ? '40%' : stats.intensity === 'high' ? '75%' : '95%' }} />
+         <div className={`absolute top-0 left-0 h-full bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.6)] transition-all duration-1000`} 
+              style={{ width: stats.intensity === 'low' ? '15%' : stats.intensity === 'mid' ? '40%' : stats.intensity === 'high' ? '75%' : '95%' }} />
         </div>
         <p className="text-[7px] text-zinc-500 font-bold uppercase tracking-[0.4em] pt-4">
           © 2026 Pandora&apos;s Finance // No es Crowdfunding.
