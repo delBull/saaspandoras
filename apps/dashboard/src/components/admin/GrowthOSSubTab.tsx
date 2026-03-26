@@ -2098,7 +2098,7 @@ export default function GrowthOSSubTab() {
 
         {/* Developer Documentation Modal */}
         <Dialog open={showDocsModal} onOpenChange={setShowDocsModal}>
-          <DialogContent className="bg-zinc-950 border border-zinc-800 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-0 overflow-hidden">
+          <DialogContent className="bg-zinc-950 border border-zinc-800 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-0">
             <div className="sticky top-0 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 p-8 flex items-center justify-between z-10">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center">

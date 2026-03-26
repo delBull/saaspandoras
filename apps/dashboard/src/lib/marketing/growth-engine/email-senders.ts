@@ -11,8 +11,11 @@ import WaitlistEmail from '@/emails/WaitlistEmail';
 export async function sendWaitlistSequenceEmail(context: {
   to: string;
   step: 1 | 2 | 3 | 4;
+  projectName?: string;
+  brandHeader?: string;
 }) {
-  console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) to ${context.to}`);
+  const projectName = context.projectName || "Pandora";
+  console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) for ${projectName} to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
   const apiKey = process.env.RESEND_API_KEY;
@@ -24,17 +27,22 @@ export async function sendWaitlistSequenceEmail(context: {
       return { success: true, mocked: true };
   }
 
+  // Determine the Copy based on the project
+  const isNarai = projectName.toLowerCase().includes('narai');
+  
   const sequences = {
     1: {
-      subject: "Tu acceso está en revisión.",
-      body: "Recibimos tu solicitud.\n\nNo estamos abriendo esto al público.\n\nEstamos seleccionando perfiles con visión y timing.\n\nEn los próximos días recibirás más contexto.\n\nSi estás dentro… lo sabrás antes que el resto."
+      subject: isNarai ? "Tu acceso a Narai está en revisión." : "Tu acceso está en revisión.",
+      body: isNarai 
+        ? "Recibimos tu solicitud para el ecosistema Narai.\n\nNo estamos abriendo esto al público de forma masiva.\n\nEstamos seleccionando perfiles que entienden el valor de la plusvalía real y el timing.\n\nEn los próximos días recibirás más contexto.\n\nSi estás dentro… lo sabrás antes que el resto."
+        : "Recibimos tu solicitud.\n\nNo estamos abriendo esto al público.\n\nEstamos seleccionando perfiles con visión y timing.\n\nEn los próximos días recibirás más contexto.\n\nSi estás dentro… lo sabrás antes que el resto."
     },
     2: {
-      subject: "Esto no se está explicando afuera.",
+      subject: isNarai ? "Esto no se está explicando afuera de Narai." : "Esto no se está explicando afuera.",
       body: "La mayoría entra tarde porque espera claridad.\n\nPero la claridad llega cuando ya es caro.\n\nLo que estamos construyendo no es visible aún.\n\nPero ya está en movimiento.\n\nY los primeros no están esperando confirmación.\n\nEstán tomando posición.\n\nSi esto resuena contigo, mantente atento. Los siguientes pasos no serán públicos."
     },
     3: {
-      subject: "No todos van a pasar.",
+      subject: isNarai ? "Narai: No todos van a pasar." : "No todos van a pasar.",
       body: "Estamos filtrando accesos.\n\nNo por volumen.\n\nPor criterio.\n\nLos que entienden:\n→ no preguntan “qué es”\n→ preguntan “cómo entro”\n\nSi ese eres tú, pronto tendrás acceso.\n\nSi esto resuena contigo, mantente atento."
     },
     4: {
@@ -53,7 +61,9 @@ export async function sendWaitlistSequenceEmail(context: {
       react: WaitlistEmail({ 
         subject: emailData.subject,
         body: emailData.body,
-        step: context.step
+        step: context.step,
+        projectName: projectName,
+        brandHeader: context.brandHeader
       }),
     });
     return { success: true, data };
@@ -65,8 +75,11 @@ export async function sendWaitlistSequenceEmail(context: {
 
 export async function sendGenesisWelcomeEmail(context: {
   to: string;
+  projectName?: string;
+  brandHeader?: string;
 }) {
-  console.log(`[Growth Engine] Sending Genesis Welcome Email to ${context.to}`);
+  const projectName = context.projectName || "Pandora";
+  console.log(`[Growth Engine] Sending Genesis Welcome Email for ${projectName} to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
   const apiKey = process.env.RESEND_API_KEY;
@@ -78,8 +91,11 @@ export async function sendGenesisWelcomeEmail(context: {
       return { success: true, mocked: true };
   }
 
-  const subject = "Estás dentro antes que el resto.";
-  const body = "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Pandora";
+  const isNarai = projectName.toLowerCase().includes('narai');
+  const subject = isNarai ? "Estás dentro de Narai." : "Estás dentro antes que el resto.";
+  const body = isNarai
+    ? "Entraste en la primera ventana de Narai.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Narai"
+    : "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Pandora";
 
   try {
     const data = await resend.emails.send({
@@ -89,7 +105,9 @@ export async function sendGenesisWelcomeEmail(context: {
       react: WaitlistEmail({ 
         subject,
         body,
-        step: "GENESIS"
+        step: "GENESIS",
+        projectName: projectName,
+        brandHeader: context.brandHeader
       }),
     });
     return { success: true, data };

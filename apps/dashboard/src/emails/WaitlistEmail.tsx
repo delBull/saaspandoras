@@ -16,12 +16,16 @@ interface WaitlistEmailProps {
   subject: string;
   body: string;
   step: number | string;
+  projectName?: string;
+  brandHeader?: string;
 }
 
 export default function WaitlistEmail({
   subject,
   body,
   step,
+  projectName = "Narai",
+  brandHeader = "PANDORA'S FINANCE // ACCESO EXCLUSIVO",
 }: WaitlistEmailProps) {
   return (
     <Html>
@@ -33,7 +37,7 @@ export default function WaitlistEmail({
             {/* Header / Brand */}
             <Section className="p-8 pb-4 text-center">
                <Text className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500 mb-2">
-                 PANDORA'S FINANCE // ACCESO EXCLUSIVO
+                 {brandHeader}
                </Text>
                <Hr className="border-zinc-800 my-4" />
             </Section>
@@ -55,7 +59,7 @@ export default function WaitlistEmail({
               {/* Signature */}
               <Section className="mt-10 pt-6 border-t border-zinc-900">
                  <Text className="text-zinc-400 font-bold">
-                   — Narai
+                   — {projectName}
                  </Text>
               </Section>
             </Section>
