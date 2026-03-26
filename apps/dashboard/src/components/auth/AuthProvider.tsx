@@ -8,8 +8,18 @@ import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
+import { AccessState } from "@/lib/access/state-machine";
 
-interface User {
+export interface UXData {
+    segment: string;
+    cta: string;
+    scarcityHint?: string;
+    flow?: string;
+    delay?: number;
+    copyVariant?: string;
+}
+
+export interface User {
     id: string;
     address: string;
     hasAccess: boolean;
@@ -17,7 +27,7 @@ interface User {
     benefitsTier?: string;
 }
 
-type AuthStatus =
+export type AuthStatus =
     | "idle"
     | "booting"
     | "checking_session"
@@ -29,25 +39,28 @@ type AuthStatus =
     | "ready_to_mint"
     | "minting"
     | "has_access"
-    | "guest"
     | "error";
 
 interface AuthState {
     status: AuthStatus;
     user: User | null;
     error: string | null;
+    remoteState: AccessState | null;
+    ux: UXData | null;
 }
 
 type AuthAction =
-    | { type: "SET_STATUS"; status: AuthStatus; user?: User | null; error?: string | null }
-    | { type: "SET_USER"; user: User | null }
+    | { type: "SET_STATUS"; status: AuthStatus; user?: User | null; error?: string | null; remoteState?: AccessState | null; ux?: UXData | null }
+    | { type: "SET_USER"; user: User | null; remoteState?: AccessState | null; ux?: UXData | null }
     | { type: "SET_ERROR"; error: string | null }
     | { type: "RESET" };
 
 const initialState: AuthState = {
     status: "booting",
     user: null,
-    error: null
+    error: null,
+    remoteState: null,
+    ux: null
 };
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
@@ -57,14 +70,21 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
                 ...state,
                 status: action.status,
                 user: action.user !== undefined ? action.user : state.user,
-                error: action.error !== undefined ? action.error : state.error
+                error: action.error !== undefined ? action.error : state.error,
+                remoteState: action.remoteState !== undefined ? action.remoteState : state.remoteState,
+                ux: action.ux !== undefined ? action.ux : state.ux
             };
         case "SET_USER":
-            return { ...state, user: action.user };
+            return { 
+                ...state, 
+                user: action.user,
+                remoteState: action.remoteState !== undefined ? action.remoteState : state.remoteState,
+                ux: action.ux !== undefined ? action.ux : state.ux
+            };
         case "SET_ERROR":
             return { ...state, error: action.error };
         case "RESET":
-            return { ...initialState, status: "idle" };
+            return { ...initialState, status: "booting" };
         default:
             return state;
     }
@@ -72,12 +92,15 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 
 interface AuthContextType {
     status: AuthStatus;
-    state: AuthStatus; // 🛠️ Legacy compatibility alias
+    state: AuthStatus; 
     user: User | null;
     isAuthenticated: boolean;
+    hasAccess: boolean;
+    remoteState: AccessState | null; // 🛰️ Backend authority
+    ux: UXData | null; // 💎 Adaptive UX metadata
     login: (id: number) => Promise<void>;
     logout: () => Promise<void>;
-    refreshSession: () => Promise<any>;
+    refreshSession: (wallet?: string) => Promise<any>;
     runAuthFlow: () => Promise<void>;
     setStatus: (status: AuthStatus) => void;
     triggerMint: () => Promise<void>;
@@ -105,7 +128,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const flowId = useRef(0);
+    const mintFlowId = useRef(0); // 🧊 Isolated ID for manual transactions
     const flowInProgress = useRef(false);
+    const runningFlow = useRef<Promise<void> | null>(null); // 🛠️ Mutex for runAuthFlow
+    const abortControllerRef = useRef<AbortController | null>(null); // 🛡️ For refreshSession
+    const lastAccountRef = useRef<string | undefined>(undefined);
+    const hasBooted = useRef(false);
 
     // 💾 STATE PERSISTENCE (Elite Level)
     const persistState = useCallback((status: AuthStatus, address?: string) => {
@@ -132,8 +160,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (state.status === to) return;
       console.log(`[AuthMachine] ⚡ Transition: ${state.status} -> ${to}`, data || "");
       
-      // Persist critical states
-      if (to === "has_access" || to === "no_access" || to === "unauthenticated") {
+      // Persist only safe, verified states (Symmetric Persistence)
+      if (to === "has_access" || to === "authenticated") {
           persistState(to, account?.address);
       }
 
@@ -160,22 +188,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    /**
-     * 🛡️ REPLAY & BOOT logic
-     */
+    // 🛡️ REPLAY & BOOT logic (Safe Rehydration)
     useEffect(() => {
         const persisted = loadPersistedState();
         if (persisted && persisted.address === account?.address) {
-            console.log("[AuthMachine] 🔄 Replaying persisted state:", persisted.status);
-            dispatch({ type: "SET_STATUS", status: persisted.status });
+            // ELITE FIX: Only rehydrate high-certainty states. 
+            const SAFE_STATES: AuthStatus[] = ["has_access", "authenticated"];
+            if (SAFE_STATES.includes(persisted.status)) {
+                console.log("[AuthMachine] 🔄 Replaying safe state:", persisted.status);
+                
+                // 🕵️ Forced Revalidation: If they had access, verify it again immediately
+                if (persisted.status === "has_access") {
+                    dispatch({ type: "SET_STATUS", status: "checking_access" });
+                } else {
+                    dispatch({ type: "SET_STATUS", status: persisted.status });
+                }
+            }
         }
     }, [account?.address, loadPersistedState]);
 
-    const lastAccountRef = useRef<string | undefined>(undefined);
-    const hasBooted = useRef(false);
 
     useEffect(() => {
-        // 🔒 ORCHESTRATOR EFFECT
+        // 🔒 ORCHESTRATOR EFFECT (Latest-Wins Strategy)
         const address = account?.address;
         
         // Scenario A: First boot or Account changed
@@ -184,10 +218,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             hasBooted.current = true;
             lastAccountRef.current = address;
 
+            // ELITE FIX: Abort any previous flow context AND release the mutex lock
+            abortControllerRef.current?.abort();
+            runningFlow.current = null; // 🔓 Force unlock for new identity
+            
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
             if (account) {
                  console.log("[AuthMachine] 👤 Account detected, initiating unified flow...");
-                 dispatch({ type: "RESET" });
-                 runAuthFlow();
+                 runAuthFlow(controller.signal);
             } else {
                  console.log("[AuthMachine] 👤 No account detected, reaching guest state.");
                  dispatch({ type: "SET_STATUS", status: "unauthenticated" });
@@ -210,16 +250,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [state.status]);
 
     /**
-     * FRACTURE #1: Pure refreshSession
+     * FRACTURE #1: Scoped refreshSession
      */
-    const refreshSession = async () => {
+    const refreshSession = async (wallet?: string, signal?: AbortSignal) => {
         try {
-            const res = await fetch("/api/auth/refresh", { credentials: "include", cache: "no-store" });
-            if (!res.ok) return null;
+            const url = wallet ? `/api/access-state?wallet=${wallet}` : "/api/access-state";
+            const res = await fetch(url, { 
+                signal,
+                credentials: "include", 
+                cache: "no-store" 
+            });
+            
+            // PRINCIPAL FIX: Differentiate between 401 (not logged in) and 500 (system error)
+            if (res.status === 401) return { authenticated: false };
+            if (!res.ok) throw new Error(`Session infrastructure error (${res.status})`);
+            
             return res.json();
-        } catch (e) {
+        } catch (e: any) {
+            if (e.name === "AbortError") {
+                console.log("[AuthMachine] 🛡️ Scoped refresh call aborted.");
+                return null;
+            }
             console.error("[AuthMachine] Session fetch error:", e);
-            return null;
+            throw e; // Bubble infrastructure errors to the flow handler
         }
     };
 
@@ -258,44 +311,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     /**
-     * UNIFIED ORCHESTRATOR (Preemptive)
+     * UNIFIED ORCHESTRATOR (Elite Level: Atomic Resets + Scoped Aborts)
      */
-    const runAuthFlow = async () => {
-        const id = ++flowId.current;
-        console.log(`[AuthMachine] 🚀 Starting flow #${id} (latest)`);
-
-        try {
-            if (!account) {
-                safeDispatch({ type: "SET_STATUS", status: "unauthenticated" }, id);
-                return;
-            }
-
-            safeDispatch({ type: "SET_STATUS", status: "checking_session" }, id);
-            
-            const session = await refreshSession();
-
-            if (!session?.authenticated) {
-                console.log(`[AuthMachine] 🔐 Session stale in flow #${id}, triggering login...`);
-                await login(id);
-                const postLogin = await refreshSession();
-                if (!postLogin?.authenticated) throw new Error("Verification failed after login");
-                safeDispatch({ type: "SET_STATUS", status: "authenticated", user: postLogin.user }, id);
-            }
-
-            const currentSession = session?.authenticated ? session : await refreshSession();
-            
-            if (currentSession?.user?.hasAccess) {
-                safeDispatch({ type: "SET_USER", user: currentSession.user }, id);
-                safeDispatch({ type: "SET_STATUS", status: "has_access" }, id);
-            } else {
-                safeDispatch({ type: "SET_USER", user: currentSession?.user || null }, id);
-                safeDispatch({ type: "SET_STATUS", status: "no_access" }, id);
-            }
-        } catch (err: any) {
-            console.error(`[AuthMachine] ❌ Flow #${id} failed:`, err);
-            safeDispatch({ type: "SET_ERROR", error: err.message || "Error desconocido" }, id);
-            safeDispatch({ type: "SET_STATUS", status: "error" }, id);
+    const runAuthFlow = async (signal?: AbortSignal) => {
+        // IDEMPOTENCY LOCK: Prevent multiple concurrent auth flows
+        if (runningFlow.current) {
+            console.log("[AuthMachine] 🛡️ Auth flow already in progress, skipping redundant call.");
+            return runningFlow.current;
         }
+
+        runningFlow.current = (async () => {
+            const id = ++flowId.current;
+            console.log(`[AuthMachine] 🚀 Starting flow #${id} (latest)`);
+            
+            // ELITE FIX: Atomic Reset inside the mutex to ensure encapsulation
+            dispatch({ type: "RESET" });
+
+            try {
+                if (!account) {
+                    safeDispatch({ type: "SET_STATUS", status: "unauthenticated" }, id);
+                    return;
+                }
+
+                safeDispatch({ type: "SET_STATUS", status: "checking_session" }, id);
+                
+                let currentSession = await refreshSession(account?.address, signal);
+                if (signal?.aborted) return;
+
+                // Patrón Ideal: Si no hay sesión, login y luego un solo refresh final
+                if (!currentSession || !currentSession.authenticated) {
+                    console.log(`[AuthMachine] 🔐 Session stale in flow #${id}, triggering login...`);
+                    await login(id);
+                    if (signal?.aborted) return;
+                    currentSession = await refreshSession(account?.address, signal);
+                    
+                    if (!currentSession?.authenticated && !signal?.aborted) {
+                        throw new Error("Verification failed after login");
+                    }
+                }
+                
+                if (signal?.aborted) return;
+
+                // At this point we have a valid currentSession
+                safeDispatch({ 
+                    type: "SET_STATUS", 
+                    status: currentSession.hasAccess ? "has_access" : "no_access",
+                    user: currentSession.user,
+                    remoteState: currentSession.state,
+                    ux: currentSession.ux
+                }, id);
+            } catch (err: any) {
+                if (err.name === "AbortError") return;
+                console.error(`[AuthMachine] ❌ Flow #${id} failed:`, err);
+                safeDispatch({ type: "SET_ERROR", error: err.message || "Error desconocido" }, id);
+                safeDispatch({ type: "SET_STATUS", status: "error" }, id);
+            }
+        })().finally(() => {
+            runningFlow.current = null;
+        });
+
+        return runningFlow.current;
     };
 
     /**
@@ -304,7 +379,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const triggerMint = async () => {
         if (flowInProgress.current) return;
         
-        const id = ++flowId.current; 
+        // PRINCIPAL FIX: Separate Transaction ID from Global Auth ID
+        const id = ++mintFlowId.current; 
         if (state.status !== "no_access" && state.status !== "ready_to_mint") return;
 
         console.log(`[AuthMachine] 💍 Starting manual Mint Flow #${id}...`);
@@ -319,28 +395,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 params: [],
             });
 
-            await new Promise((resolve, reject) => {
-                sendTransaction(transaction, {
-                    onSuccess: resolve,
-                    onError: reject
-                });
-            });
+            // Safe TX Execution with 60s timeout
+            await Promise.race([
+                new Promise((resolve, reject) => {
+                    sendTransaction(transaction, {
+                        onSuccess: resolve,
+                        onError: reject
+                    });
+                }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Transaction timed out (60s). Check your wallet UI.")), 60000)
+                )
+            ]);
 
             console.log(`[AuthMachine] Mint transaction confirmed. Polling for access...`);
             
             let attempts = 0;
-            while (attempts < 10 && flowId.current === id) {
-                const res = await refreshSession();
-                if (res?.user?.hasAccess) {
-                    safeDispatch({ type: "SET_USER", user: res.user }, id);
-                    safeDispatch({ type: "SET_STATUS", status: "has_access" }, id);
+            while (attempts < 10 && mintFlowId.current === id) {
+                const res = await refreshSession(account?.address);
+                if (res?.hasAccess) {
+                    safeDispatch({ 
+                        type: "SET_STATUS", 
+                        status: "has_access",
+                        user: res.user,
+                        remoteState: res.state,
+                        ux: res.ux
+                    }, flowId.current);
                     return;
                 }
                 attempts++;
                 await new Promise(r => setTimeout(r, 2000));
             }
             
-            if (flowId.current === id) {
+            if (mintFlowId.current === id) {
                 throw new Error("NFT minted but access not yet synced. Please refresh.");
             }
 
@@ -349,10 +436,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             const msg = err?.message?.toLowerCase() || "";
             if (msg.includes("already") || msg.includes("max per wallet")) {
-                const res = await refreshSession();
-                if (res?.user?.hasAccess) {
-                    safeDispatch({ type: "SET_USER", user: res.user }, id);
-                    safeDispatch({ type: "SET_STATUS", status: "has_access" }, id);
+                const res = await refreshSession(account?.address);
+                if (res?.hasAccess) {
+                    safeDispatch({ 
+                        type: "SET_STATUS", 
+                        status: "has_access",
+                        user: res.user,
+                        remoteState: res.state,
+                        ux: res.ux
+                    }, flowId.current);
                     return;
                 }
             }
@@ -360,7 +452,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             safeDispatch({ type: "SET_ERROR", error: err.message || "Error al solicitar acceso" }, id);
             safeDispatch({ type: "SET_STATUS", status: "error" }, id);
         } finally {
-            if (flowId.current === id) {
+            if (mintFlowId.current === id) {
                 flowInProgress.current = false;
             }
         }
@@ -378,10 +470,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <AuthContext.Provider value={{
-            status: state.status === "unauthenticated" ? "guest" as AuthStatus : state.status,
-            state: state.status === "unauthenticated" ? "guest" as AuthStatus : state.status, 
+            status: state.status,
+            state: state.status, 
             user: state.user,
-            isAuthenticated: state.status === "has_access" || state.status === "authenticated",
+            isAuthenticated: state.status === "authenticated",
+            hasAccess: state.status === "has_access",
+            remoteState: state.remoteState,
+            ux: state.ux,
             login,
             logout,
             refreshSession,

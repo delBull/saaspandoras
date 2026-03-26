@@ -15,7 +15,7 @@ function ConnectedProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   return (
-    <GamificationProvider userId={user?.address || "guest"} showHUD={!!user}>
+    <GamificationProvider userId={user?.address || "unauthenticated"} showHUD={!!user}>
       <GamificationDebugger />
       <WalletDebugger />
       {children}
