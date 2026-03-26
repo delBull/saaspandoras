@@ -46,7 +46,7 @@ export function LeadCaptureModal({ isOpen, onClose, tierName, source = 'growth-o
           ...formData,
           phoneNumber: formData.whatsapp,
           intent: tierName ? 'invest' : 'explore',
-          projectId: 'pandoras-protocol',
+          projectId: 'pandoras_access',
           scope: 'b2b',
           consent: true,
           origin: window.location.href,

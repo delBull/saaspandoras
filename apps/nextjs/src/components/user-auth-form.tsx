@@ -65,10 +65,10 @@ export function UserAuthForm({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          eventType: 'VIEW_ACCESS',
-          userEmail: data.email.toLowerCase(),
+          event: 'VIEW_ACCESS',
           projectSlug: 'pandoras_access', // Unified with /access portal
           metadata: { 
+            email: data.email.toLowerCase(), // Move to metadata for auto-capture
             app: 'nextjs_onboarding',
             lang: lang,
             intent: 'auth_sign_in',

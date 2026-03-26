@@ -17,14 +17,34 @@ import { createHash } from 'crypto';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { event, projectId, fingerprint, origin, metadata } = body;
+    const { event, projectId, projectSlug, fingerprint, origin, metadata } = body;
 
-    if (!event || !projectId) {
-        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const finalSlug = projectSlug || (isNaN(parseInt(projectId)) ? projectId : null);
+
+    if (!event || (!projectId && !finalSlug)) {
+        return NextResponse.json({ error: 'Missing required fields (event, projectId/projectSlug)' }, { status: 400 });
     }
 
     const eventType = event.toUpperCase();
-    const parsedProjectId = parseInt(projectId);
+    
+    // 0.5 Project Resolution (Audit: Multi-Tenant)
+    let project: any = null;
+    if (finalSlug) {
+        project = await db.query.projects.findFirst({
+            where: eq(sql`slug`, finalSlug)
+        });
+    } else if (projectId) {
+        project = await db.query.projects.findFirst({
+            where: eq(sql`id`, parseInt(projectId))
+        });
+    }
+
+    if (!project) {
+        console.warn(`[Growth Engine] ❌ Project not found: ${projectId || finalSlug}`);
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    const parsedProjectId = project.id;
 
     // 0. Stress Test Safeguards (Audit: Surgical)
     const isStressTest = req.headers.get('x-stress-test') === 'true';
@@ -195,7 +215,7 @@ export async function POST(req: NextRequest) {
                 engagementLevel,
                 profile,
                 metadata: lead.metadata as any
-            }, (lead as any).project);
+            }, project); // Use the pre-resolved project object
 
             // ELITE: Trigger actions if ruleId starts with PH80 or actions exist
             if (engineResult && (engineResult.actions.length > 0 || (engineResult.ruleId?.startsWith('PH80')))) {

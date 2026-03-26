@@ -189,6 +189,8 @@ export function resolveGrowthAction(
 
   // Funnel Logic
   switch (event) {
+    case 'VIEW_ACCESS' as any: 
+    case 'VIEW_ONBOARDING' as any:
     case 'LEAD_CAPTURED':
       nextState = 'AWARE';
       actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1'] : ['SEND_WAITLIST_WELCOME_D0'];

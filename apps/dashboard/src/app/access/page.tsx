@@ -83,7 +83,7 @@ export default function AccessPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          eventType: 'VIEW_ACCESS',
+          event: 'VIEW_ACCESS',
           projectSlug: 'pandoras_access', // External identity for this flow
           metadata: { 
             entry_path: window.location.pathname,
