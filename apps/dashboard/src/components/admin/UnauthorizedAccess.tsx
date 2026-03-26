@@ -13,7 +13,7 @@ export function UnauthorizedAccess({ authError }: UnauthorizedAccessProps) {
   const { logout } = usePersistedAccount();
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
       <div className="text-center p-8 bg-zinc-900/50 border border-zinc-700/50 rounded-2xl shadow-xl max-w-md w-full backdrop-blur-sm">
         <h1 className="text-2xl font-bold text-red-400 mb-4 flex items-center justify-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
