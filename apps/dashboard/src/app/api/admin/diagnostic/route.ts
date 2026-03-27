@@ -43,7 +43,7 @@ export async function GET() {
     // Intentar obtener información detallada solo si está autenticado
     try {
       const { session } = await getAuth(await headers());
-      _userIsAdmin = await isAdmin(session?.userId);
+      _userIsAdmin = await isAdmin(session?.address);
 
       if (_userIsAdmin) {
         console.log('🔍 Running detailed database diagnostic...');

@@ -19,7 +19,7 @@ interface RouteParams {
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.userId) || await isAdmin(session?.address);
+    const userIsAdmin = await isAdmin(session?.address) || await isAdmin(session?.address);
 
     const { slug } = await params;
     const projectIdRaw = Number(slug);
@@ -97,7 +97,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 export async function POST(_request: NextRequest, { params }: RouteParams) {
     try {
         const { session } = await getAuth(await headers());
-        const userIsAdmin = await isAdmin(session?.userId) || await isAdmin(session?.address);
+        const userIsAdmin = await isAdmin(session?.address) || await isAdmin(session?.address);
     
         const { slug } = await params;
         const projectIdRaw = Number(slug);

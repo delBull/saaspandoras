@@ -33,11 +33,12 @@ export default async function AdminDashboardLayout({
     // Note: We pass undefined for headers as we're explicitly using the cookie wallet logic
     // which is more reliable for our hybrid auth setup
     const { session } = await getAuth(undefined, walletFromCookies ?? undefined);
-    const userIsAdmin = await isAdmin(session?.userId);
+    
+    // 🔥 FIX: Use the verified wallet address for authorization, not the UUID userId.
+    const userIsAdmin = await isAdmin(session?.address);
 
     // Check super admin fallback
-    const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET ||
-        session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
+    const userIsSuperAdmin = session?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
     const isAuthorized = userIsAdmin || userIsSuperAdmin;
 

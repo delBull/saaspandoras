@@ -22,7 +22,7 @@ export async function PATCH(
 
     // Verify admin access
     const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.userId);
+    const userIsAdmin = await isAdmin(session?.address);
 
     if (!userIsAdmin) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });

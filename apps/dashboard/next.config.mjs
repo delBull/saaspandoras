@@ -40,6 +40,12 @@ const nextConfig = {
       { protocol: "https", hostname: "*.vercel.app" },
       { protocol: "https", hostname: "vercel-storage.com" },
       { protocol: "https", hostname: "vercel.app" },
+
+      // Pandoras Domains
+      { protocol: "https", hostname: "*.pandoras.finance" },
+      { protocol: "https", hostname: "pandoras.finance" },
+      { protocol: "https", hostname: "dash.pandoras.finance" },
+      { protocol: "https", hostname: "staging.dash.pandoras.finance" },
     ],
   },
 

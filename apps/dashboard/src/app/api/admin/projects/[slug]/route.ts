@@ -27,7 +27,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
 
   // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.userId) ||
+  const userIsAdmin = await isAdmin(session?.address) ||
     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
@@ -154,7 +154,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
 
   // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.userId) ||
+  const userIsAdmin = await isAdmin(session?.address) ||
     await isAdmin(session?.address);
 
   const { slug } = await params;
@@ -294,7 +294,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
 
   // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.userId) ||
+  const userIsAdmin = await isAdmin(session?.address) ||
     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
@@ -444,7 +444,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
 
   // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.userId) ||
+  const userIsAdmin = await isAdmin(session?.address) ||
     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
