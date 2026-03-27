@@ -27,7 +27,9 @@ export async function GET(req: Request): Promise<NextResponse> {
         }
 
         const cookieStore = await cookies();
-        const token = cookieStore.get("__pbox_sid")?.value || cookieStore.get("auth_token")?.value;
+        const token = cookieStore.get("__pbox_sid")?.value || 
+                      cookieStore.get("auth_token")?.value ||
+                      cookieStore.get("pbox_session_v3")?.value;
 
         // 🛡️ 2. NO TOKEN -> Adaptive Lead UX
         if (!token) {
@@ -83,7 +85,8 @@ export async function GET(req: Request): Promise<NextResponse> {
             const isStaging = process.env.NEXT_PUBLIC_APP_ENV === "staging";
             const userIsAdmin = !!isUserAdmin || isStaging;
 
-            const hasNFTPermission = dbUser?.hasPandorasKey || false;
+            let hasNFTPermission = dbUser?.hasPandorasKey || false;
+            if (userIsAdmin) hasNFTPermission = true;
 
             // 🛡️ 5.b FETCH GLOBAL CONFIG (Phase 89)
             // Project #15 is the Source of Truth for Global Engine Settings
@@ -103,6 +106,7 @@ export async function GET(req: Request): Promise<NextResponse> {
             
             if (userIsAdmin) {
                 resolvedState = AccessState.ADMIN;
+                hasNFTPermission = true; // Force access for Admin
             } else if (hasNFTPermission) {
                 // If Beta is CLOSED, even NFT holders are kept in the Ritual (WALLET_NO_ACCESS)
                 if (isBetaOpen) {
@@ -135,7 +139,7 @@ export async function GET(req: Request): Promise<NextResponse> {
                 ritualEnabled: isRitualEnabled,
                 user: {
                     address,
-                    hasAccess: hasNFTPermission,
+                    hasAccess: hasNFTPermission || !!userIsAdmin,
                     isAdmin: !!userIsAdmin,
                     tier: dbUser?.benefitsTier || 'standard',
                     pressureLevel: resolvedState === AccessState.WALLET_NO_ACCESS ? 0.72 : 0

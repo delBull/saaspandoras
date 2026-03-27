@@ -104,8 +104,10 @@ export async function getAuth(headersData?: any, userAddress?: string) {
       if (name) cookiesMap.set(name, rest.join('='));
     });
 
-    // Priority: Host-only cookie first (__pbox_sid), then domain-scoped (auth_token)
-    const authToken = cookiesMap.get('__pbox_sid') || cookiesMap.get('auth_token');
+    // Priority: 1. Host-only (__pbox_sid), 2. Domain (auth_token), 3. Legacy (pbox_session_v3)
+    const authToken = cookiesMap.get('__pbox_sid') || 
+                     cookiesMap.get('auth_token') || 
+                     cookiesMap.get('pbox_session_v3');
 
     if (authToken) {
       const decoded = await verifyJWT(authToken);
