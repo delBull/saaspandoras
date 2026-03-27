@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     // Auth check
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const showAllShortlinks = searchParams.get("show_all") === "true";
 
     // Log for debugging admin visibility issue - ALL ADMINS SEE ALL DATA
-    console.log(`🔍 [SHORTLINKS] Admin ${session.userId} accessing ALL shortlinks globally (show_all: ${showAllShortlinks})`);
+    console.log(`🔍 [SHORTLINKS] Admin ${session.address} accessing ALL shortlinks globally (show_all: ${showAllShortlinks})`);
 
     // Build query
     const conditions = [];
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   try {
     // Auth check
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         description: description || null,
         type: type || 'redirect',
         landingConfig: landingConfig || null,
-        createdBy: session.userId,
+        createdBy: session.address,
       })
       .returning();
 
@@ -162,7 +162,7 @@ export async function PATCH(req: NextRequest) {
   try {
     // Auth check
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -231,7 +231,7 @@ export async function DELETE(req: NextRequest) {
   try {
     // Auth check
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

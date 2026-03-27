@@ -17,7 +17,7 @@ export async function GET(
         const headersObj = await headers();
         const { session } = await getAuth(headersObj);
 
-        if (!session?.userId) {
+        if (!session?.address) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

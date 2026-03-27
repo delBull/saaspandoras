@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
   try {
     // Admin auth check
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -231,11 +231,11 @@ export async function GET(request: NextRequest) {
   try {
     // Admin auth check - ALL ADMINS see ALL marketing metrics globally
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // console.log(`📊 [MARKETING-METRICS] Admin ${session.userId} accessing marketing metrics globally`);
+    // console.log(`📊 [MARKETING-METRICS] Admin ${session.address} accessing marketing metrics globally`);
 
     const { searchParams } = new URL(request.url);
     const timeRange = (searchParams.get('range') as '24h' | '7d' | '30d') || '7d';

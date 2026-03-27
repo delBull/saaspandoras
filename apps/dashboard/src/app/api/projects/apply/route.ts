@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
     // Obtener wallet address del usuario conectado
     const { session } = await getAuth(await headers());
-    const applicantWalletAddress = session?.userId ?? null;
+    const applicantWalletAddress = session?.address ?? null;
 
     if (!parsedData.success) {
       return NextResponse.json(

@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
 
     // Auth check: Admin or Project Owner
-    const userWallet = (session?.address ?? session?.userId)?.toLowerCase();
+    const userWallet = (session?.address)?.toLowerCase();
     const isOwner = userWallet && project.applicantWalletAddress?.toLowerCase() === userWallet;
 
     if (!userIsAdmin && !isOwner) {
@@ -121,7 +121,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         }
     
         // Auth check: Admin or Project Owner
-        const userWallet = (session?.address ?? session?.userId)?.toLowerCase();
+        const userWallet = (session?.address)?.toLowerCase();
         const isOwner = userWallet && project.applicantWalletAddress?.toLowerCase() === userWallet;
     
         if (!userIsAdmin && !isOwner) {

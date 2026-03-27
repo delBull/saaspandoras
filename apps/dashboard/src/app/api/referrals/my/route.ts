@@ -9,7 +9,7 @@ import { eq, count, sql } from "drizzle-orm";
 export async function GET() {
   try {
     const { session } = await getAuth(await headers());
-    const walletAddress = session?.address?? session?.userId;
+    const walletAddress = session?.address?? session?.address;
 
     if (!walletAddress) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });

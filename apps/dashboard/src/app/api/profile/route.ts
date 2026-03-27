@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     } else {
       // Fallback to session auth (if no header provided)
       const { session } = await getAuth(requestHeaders);
-      walletAddress = session?.userId ?? undefined;
+      walletAddress = session?.address ?? undefined;
       authMethod = 'session';
 
       if (!walletAddress) {
@@ -219,7 +219,7 @@ export async function POST(request: Request) {
       requestHeaders.get('x-user-address');
 
     const { session } = await getAuth(requestHeaders);
-    if (!session?.userId && !headerWallet) {
+    if (!session?.address && !headerWallet) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
@@ -248,7 +248,7 @@ export async function POST(request: Request) {
     };
 
     const walletAddress = body.walletAddress.toLowerCase();
-    if (session.userId && walletAddress !== session.userId.toLowerCase()) {
+    if (session.address && walletAddress !== session.address.toLowerCase()) {
       return NextResponse.json({ message: "Wallet mismatch" }, { status: 403 });
     }
 

@@ -46,16 +46,16 @@ export default async function AdminDashboardLayout({
     console.log(`   - Environment: ${process.env.NODE_ENV}`);
     console.log(`   - Super Admin (Env): ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'NOT SET'}`);
     console.log(`   - Cookie Wallet: ${walletFromCookies ? walletFromCookies.substring(0, 10) + '...' : 'NULL'}`);
-    console.log(`   - User: ${session?.userId ?? 'NONE'} | Admin: ${userIsAdmin} | Super: ${userIsSuperAdmin}`);
+    console.log(`   - User: ${session?.address ?? 'NONE'} | Admin: ${userIsAdmin} | Super: ${userIsSuperAdmin}`);
     console.log(`   - Final Access: ${isAuthorized ? 'GRANTED' : 'DENIED'}`);
 
     // 3. Block unauthorized access
     if (!isAuthorized) {
         // If we have a session but no admin rights, showing specific error
         // If no session at all, might refer to login (but UnauthorizedAccess handles redirect)
-        const debugInfo = `[ENV: ${process.env.NODE_ENV}] [SA: ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'MISSING'}] [Wallet: ${walletFromCookies ? 'FOUND' : 'NULL'}] [Session: ${session?.userId ? 'ACTIVE' : 'NONE'}]`;
-        const errorMsg = session?.userId
-            ? `Tu cuenta (${session.userId}) no tiene permisos de administrador. ${debugInfo}`
+        const debugInfo = `[ENV: ${process.env.NODE_ENV}] [SA: ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'MISSING'}] [Wallet: ${walletFromCookies ? 'FOUND' : 'NULL'}] [Session: ${session?.address ? 'ACTIVE' : 'NONE'}]`;
+        const errorMsg = session?.address
+            ? `Tu cuenta (${session.address}) no tiene permisos de administrador. ${debugInfo}`
             : `No se detectó una sesión válida. Por favor conecta tu wallet. ${debugInfo}`;
 
         return <UnauthorizedAccess authError={errorMsg} />;

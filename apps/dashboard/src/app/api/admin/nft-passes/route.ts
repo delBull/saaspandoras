@@ -23,7 +23,7 @@ export async function GET(_request: Request) {
     try {
         // 1. Auth check
         const { session } = await getAuth(await headers());
-        const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
+        const userIsAdmin = await isAdmin(session?.address);
 
         if (!userIsAdmin) {
             return NextResponse.json({ message: "No autorizado" }, { status: 403 });

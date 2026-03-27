@@ -20,11 +20,11 @@ export async function POST(req: Request) {
         const headersObj = await headers();
         const { session } = await getAuth(headersObj);
 
-        if (!session?.userId) {
+        if (!session?.address) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const userIsSuperAdmin = session.userId.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+        const userIsSuperAdmin = session.address.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
         // Allow Super Admin OR verified admins (simplified here to Super Admin for critical actions, but can relax)
         // For now, strict check like deploy-protocol to be safe

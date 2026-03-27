@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
     
     let userId: string | undefined;
 
-    if (isVerified && session?.userId) {
-      userId = session.userId;
+    if (isVerified && session?.address) {
+      userId = session.address;
     } else if (walletAddressFromHeader) {
       const user = await db.query.users.findFirst({
         where: eq(users.walletAddress, walletAddressFromHeader)

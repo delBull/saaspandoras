@@ -8,7 +8,7 @@ export async function validateTelegramLinkAction(challenge: string): Promise<{ s
         const requestHeaders = await headers();
         const { session } = await getAuth(requestHeaders);
 
-        let walletAddress: string | null = session?.userId ?? null;
+        let walletAddress: string | null = session?.address ?? null;
         if (!walletAddress) {
             walletAddress = requestHeaders.get('x-thirdweb-address')
                 ?? requestHeaders.get('x-wallet-address')

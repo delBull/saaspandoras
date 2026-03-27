@@ -195,7 +195,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     // --- AUTHENTICATION & AUTHORIZATION ---
-    const userWallet = (session?.address ?? session?.userId)?.toLowerCase();
+    const userWallet = (session?.address)?.toLowerCase();
     const isAdminUser = userIsAdmin;
     const isOwner = userWallet && existingProject.applicantWalletAddress?.toLowerCase() === userWallet;
 

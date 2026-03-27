@@ -310,7 +310,7 @@ export async function POST(request: Request) {
     }
 
     // Get creator information for better project tracking
-    const creatorWallet = session?.address ?? session?.userId ?? 'system';
+    const creatorWallet = session?.address ?? 'system';
     const creatorInfo = await db.execute(sql`
       SELECT "name", "email" FROM "users" WHERE "walletAddress" = ${creatorWallet}
     `);
@@ -318,7 +318,7 @@ export async function POST(request: Request) {
 
     console.log(`🏗️ Project created by: ${creatorWallet} (${creatorName})`, {
       sessionAddress: session?.address?.substring(0, 10) + '...',
-      sessionUserId: session?.userId?.substring(0, 10) + '...',
+      sessionUserId: session?.address?.substring(0, 10) + '...',
       finalCreatorWallet: creatorWallet
     });
 

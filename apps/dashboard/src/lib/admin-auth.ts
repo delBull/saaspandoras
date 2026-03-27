@@ -19,7 +19,7 @@ export async function validateAdminSession(reqHeaders?: Headers): Promise<{ sess
   
   try {
     const { session, isVerified } = await getAuth(actualHeaders);
-    const address = session?.address || session?.userId;
+    const address = session?.address || session?.address;
 
     if (!isVerified || !address) {
       logger.warn({

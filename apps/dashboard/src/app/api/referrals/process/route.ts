@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // Also check session as fallback
     if (!walletAddress) {
       const { session } = await getAuth(request.headers);
-      walletAddress = session?.address ?? session?.userId;
+      walletAddress = session?.address;
     }
 
     if (!walletAddress) {
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
 export async function GET(_request: Request) {
   try {
     const { session } = await getAuth(await headers());
-    const walletAddress = session?.address ?? session?.userId;
+    const walletAddress = session?.address;
 
     if (!walletAddress) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });

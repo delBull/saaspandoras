@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   try {
     // Admin check - minimal validation
     const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
+    const userIsAdmin = await isAdmin(session?.address);
 
     if (!userIsAdmin) {
       console.log('❌ Admin Quick API: Access denied');
@@ -152,13 +152,13 @@ export async function POST(request: Request) {
 
       isMintable: Boolean(cleanData.isMintable ?? false),
       isMutable: Boolean(cleanData.isMutable ?? false),
-      updateAuthorityAddress: cleanData.updateAuthorityAddress ?? (session?.address ?? session?.userId) ?? null,
+      updateAuthorityAddress: cleanData.updateAuthorityAddress ?? (session?.address) ?? null,
 
       applicantName: cleanData.applicantName ?? 'Admin Created',
       applicantPosition: cleanData.applicantPosition ?? null,
       applicantEmail: cleanData.applicantEmail ?? null,
       applicantPhone: cleanData.applicantPhone ?? null,
-      applicantWalletAddress: (session?.address ?? session?.userId)?.toLowerCase() ?? 'unknown',
+      applicantWalletAddress: (session?.address)?.toLowerCase() ?? 'unknown',
       verificationAgreement: Boolean(cleanData.verificationAgreement ?? true),
 
       // Admin creates draft projects by default (for review)

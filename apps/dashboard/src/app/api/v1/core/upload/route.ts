@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
         // Any authenticated user can upload project assets for now
         // Sub-authorization is handled at the project-update level
-        if (!session?.userId) {
+        if (!session?.address) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

@@ -29,8 +29,8 @@ export async function POST(request: Request) {
 
     // Intentar múltiples fuentes para obtener la wallet address (mejorado)
     let applicantWalletAddress =
-      session?.address ??  // Usar session.address en lugar de session.userId
-      session?.userId ??
+      session?.address ??  // Usar session.address en lugar de session.address
+      session?.address ??
       headersList.get('x-thirdweb-address') ??
       headersList.get('x-wallet-address') ??
       headersList.get('x-user-address') ??
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     }
 
     console.log('🔍 DRAFT API: Wallet sources check:', {
-      sessionUserId: session?.userId?.substring(0, 10) + '...',
+      sessionUserId: session?.address?.substring(0, 10) + '...',
       sessionAddress: session?.address?.substring(0, 10) + '...',
       thirdwebHeader: headersList.get('x-thirdweb-address')?.substring(0, 10) + '...',
       walletHeader: headersList.get('x-wallet-address')?.substring(0, 10) + '...',
@@ -79,9 +79,9 @@ export async function POST(request: Request) {
       finalWallet: applicantWalletAddress?.substring(0, 10) + '...',
       hasSession: !!session,
       sessionDetails: session ? {
-        hasUserId: !!session.userId,
+        hasUserId: !!session.address,
         hasAddress: !!session.address,
-        userId: session.userId?.substring(0, 10) + '...',
+        userId: session.address?.substring(0, 10) + '...',
         address: session.address?.substring(0, 10) + '...'
       } : null
     });

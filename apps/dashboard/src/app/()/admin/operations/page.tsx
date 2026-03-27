@@ -12,7 +12,7 @@ export default async function OperationsPage() {
     // Server-side auth check
     const { session } = await getAuth(await headers());
 
-    if (!session?.userId || !isSuperAdmin(session.userId)) {
+    if (!session?.address || !isSuperAdmin(session.address)) {
         return <UnauthorizedAccess authError="Super Admin access required" />;
     }
 

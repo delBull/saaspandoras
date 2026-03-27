@@ -10,7 +10,7 @@ import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 export default async function ShortlinksManagementPage() {
   // 🛡️ Server-Side Check
   const { session } = await getAuth(await headers());
-  if (!session?.userId || !await isAdmin(session.userId)) {
+  if (!session?.address || !await isAdmin(session.address)) {
     return <UnauthorizedAccess authError="Server-Side Verification Failed" />;
   }
 

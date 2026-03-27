@@ -9,7 +9,7 @@ export async function PATCH(request: Request) {
   try {
     // Admin auth check
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -52,12 +52,12 @@ export async function GET(request: Request) {
   try {
     // Admin auth check - TUDOS los admins ven TODOS los leads
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     // Debug logging for admin visibility - ALL ADMINS SEE ALL WA LEADS
-    console.log(`🔍 [WA-LEADS] Admin ${session.userId} accessing ALL WA leads globally`);
+    console.log(`🔍 [WA-LEADS] Admin ${session.address} accessing ALL WA leads globally`);
 
     // El resto del código...
     console.log('📊 Fetching simplified WhatsApp data...');

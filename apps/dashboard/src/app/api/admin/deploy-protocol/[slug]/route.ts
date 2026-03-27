@@ -32,11 +32,11 @@ export async function POST(
         const headersObj = await headers();
         const { session } = await getAuth(headersObj);
 
-        if (!session?.userId) {
+        if (!session?.address) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const userIsSuperAdmin = session.userId.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+        const userIsSuperAdmin = session.address.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
         if (!userIsSuperAdmin) {
             return NextResponse.json({ error: "Forbidden: Super Admin access required" }, { status: 403 });

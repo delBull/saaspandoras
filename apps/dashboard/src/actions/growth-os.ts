@@ -19,7 +19,7 @@ export async function recordCallOutcome(data: {
 }) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -45,7 +45,7 @@ export async function recordCallOutcome(data: {
             expectedCloseDate,
             nextStep,
             recordedAt: new Date().toISOString(),
-            recordedBy: session.userId
+            recordedBy: session.address
         };
 
         const updatedMetadata = {
@@ -115,7 +115,7 @@ export async function recordCallOutcome(data: {
 export async function getLeadInsights(leadId: string) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
