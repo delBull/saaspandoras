@@ -190,7 +190,20 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
 
   const algorithm = publicKeyRaw ? "RS256" : "HS256";
   try {
-    const finalKey = (algorithm === "RS256" && publicKeyRaw) ? reconstructPEM(publicKeyRaw, 'PUBLIC') : secret;
+    let finalKey: string | crypto.KeyObject = secret;
+    
+    if (algorithm === "RS256") {
+        // Robust Extraction: Use the provided key to create a KeyObject.
+        // If it's a private key, createPublicKey() will extract the public part automatically.
+        const pem = reconstructPEM(secret, 'PUBLIC');
+        try {
+            finalKey = crypto.createPublicKey(pem);
+        } catch (pemErr) {
+            console.warn("⚠️ [Auth] Could not create public key from PRIMARY secret, trying SECRET fallback...");
+            finalKey = secret; // Fallback to raw string
+        }
+    }
+
     const verified = jwt.verify(token, finalKey, { algorithms: [algorithm] }) as JWTPayload;
     return verified;
   } catch (e: any) {
