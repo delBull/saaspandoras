@@ -228,17 +228,28 @@ export async function POST(request: Request) {
             
             // Apply formatting if using RS256
             let finalSecret: string;
+            const isRSA = !!privateKeyRaw && privateKeyRaw.length > 100;
+            const algorithmUsed = isRSA ? 'RS256' : 'HS256';
+
             try {
-                // EXTREME FIX: Handle Vercel escaped \n and quotes in signing key too!
-                const cleanPrivateKey = privateKeyRaw!
-                    .replace(/^["']|["']$/g, '')
-                    .replace(/\\n/g, '\n')
-                    .replace(/\r/g, '');
-                
-                finalSecret = algorithm === 'RS256' ? reconstructPEM(cleanPrivateKey, 'PRIVATE') : (process.env.JWT_SECRET || 'fallback');
-            } catch (pemError) {
-                console.warn("⚠️ [LOGIN] RS256 Reconstruction failed, falling back to HS256 with JWT_SECRET");
-                finalSecret = process.env.JWT_SECRET || 'fallback';
+                if (isRSA) {
+                    const cleanPrivateKey = privateKeyRaw!
+                        .replace(/^["']|["']$/g, '')
+                        .replace(/\\n/g, '\n')
+                        .replace(/\r/g, '');
+                    
+                    finalSecret = reconstructPEM(cleanPrivateKey, 'PRIVATE');
+                    console.log(`🔑 [LOGIN] Using RS256 (Key Length: ${finalSecret.length})`);
+                } else {
+                    finalSecret = process.env.JWT_SECRET || '';
+                    console.log(`🔑 [LOGIN] Using HS256 (Secret Length: ${finalSecret.length})`);
+                    if (!finalSecret) {
+                        throw new Error("CRITICAL_SECURITY_ERROR: JWT_SECRET is missing in production. Signing aborted.");
+                    }
+                }
+            } catch (pemError: any) {
+                console.error("❌ [LOGIN] Cryptographic Failure:", pemError.message);
+                throw pemError; // DO NOT fallback to insecure defaults
             }
 
             // Quick check
