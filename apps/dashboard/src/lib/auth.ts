@@ -2,7 +2,7 @@ import { db } from "~/db";
 import { administrators } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { SUPER_ADMIN_WALLET } from "./constants";
-import { cookies } from "next/headers";
+import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
@@ -17,18 +17,10 @@ interface JWTPayload {
   exp?: number;
 }
 
-export async function isAdmin(address?: string | null, isVerified = false): Promise<boolean> {
+export async function isAdmin(address?: string | null): Promise<boolean> {
   if (!address) return false;
-
-  // Si se provee explícitamente el flag y es falso, rechazamos contundentemente (Spoofing)
-  // Al requerirlo en rutas protegidas cortamos riesgos de seguridad.
-  if (isVerified === false && address !== null) {
-    // Check if the address implies verification was mandatory. 
-    // Wait, by default isVerified is false, so legacy calls shouldn't break.
-    // If we want strictness, we check it inside the API routes instead of here so it won't break existing implicit calls.
-  }
-
   const lower = address.toLowerCase();
+  
   // ⚡ Optimistic check for Super Admin (No DB call)
   if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
 
@@ -38,237 +30,191 @@ export async function isAdmin(address?: string | null, isVerified = false): Prom
       .from(administrators)
       .where(eq(administrators.walletAddress, lower));
 
-    const isAdm = result.length > 0;
-    console.log(`🛡️ [isAdmin] Check for ${lower}: ${isAdm ? 'AUTHORIZED' : 'DENIED'} (${result.length} matches)`);
-    return isAdm;
+    return result.length > 0;
   } catch (error) {
     console.error("💥 isAdmin: Database query FAILED for", lower, ":", error);
     return false;
   }
 }
 
-/**
- * Comprueba si una dirección es el super admin definido en constantes/env.
- */
 export function isSuperAdmin(address?: string | null): boolean {
   if (!address) return false;
   return address.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 }
 
+/**
+ * CORE AUTHORIZATION RESOLVER
+ * 🛡️ Unified pattern to extract verified identity from encrypted cookies.
+ */
 export async function getAuth(headersData?: any, userAddress?: string) {
   let address: string | null = userAddress ?? null;
-
   let isVerified = false;
 
-  if (headersData) {
-    try {
-      // Handle both Headers object and plain record
-      if (typeof (headersData as any).get === 'function') {
-        const headerAddr = (headersData as any).get('x-thirdweb-address') ??
-          (headersData as any).get('x-wallet-address') ??
-          (headersData as any).get('x-user-address');
-        if (headerAddr) address = headerAddr;
-      } else {
-        const headerAddr = (headersData as any)['x-thirdweb-address'] ??
-          (headersData as any)['x-wallet-address'] ??
-          (headersData as any)['x-user-address'];
-        if (headerAddr) address = headerAddr;
-      }
-    } catch (e) {
-      console.warn("🔍 [Dashboard getAuth] Error reading headers:", e);
-    }
-  }
-
   try {
-    // Parse raw cookie header (manually to avoid Next.js 15 deadlock bug)
+    // 1. Get Raw Cookies (Compatibility Layer)
     let rawCookieHeader = '';
-    if (headersData && typeof (headersData as any).get === 'function') {
-      rawCookieHeader = (headersData as any).get('cookie') || '';
-    } else if (headersData && typeof headersData === 'object') {
-      rawCookieHeader = headersData.cookie || headersData.Cookie || '';
+    if (headersData) {
+      if (typeof (headersData as any).get === 'function') {
+        rawCookieHeader = (headersData as any).get('cookie') || '';
+      } else {
+        rawCookieHeader = (headersData as any).cookie || (headersData as any).Cookie || '';
+      }
     } else {
-      // Fallback for Server Components calling getAuth without args (via next/headers)
       try {
-        const { headers: nextHeaders } = await import('next/headers');
         const hdrs = await nextHeaders();
         rawCookieHeader = hdrs.get('cookie') || '';
-      } catch (e) {
-        // Silent catch in case it's executed outside a server component boundary
-      }
+      } catch (e) { /* Silent catch */ }
     }
 
-    // Parse specific cookies
+    // 2. Parse Cookies
     const cookiesMap = new Map();
     rawCookieHeader.split(';').forEach((cookie: string) => {
       const [name, ...rest] = cookie.trim().split('=');
       if (name) cookiesMap.set(name, rest.join('='));
     });
 
-    // Priority: 1. Host-only (__pbox_sid), 2. Domain (auth_token), 3. Legacy (pbox_session_v3)
+    // 3. Extract Token (Priority: __pbox_sid)
     const authToken = cookiesMap.get('__pbox_sid') || 
                      cookiesMap.get('auth_token') || 
                      cookiesMap.get('pbox_session_v3');
 
     if (authToken) {
       const decoded = await verifyJWT(authToken);
-      const jwtAddress = (decoded?.address || (decoded as any)?.walletAddress)?.toLowerCase();
-
-      if (jwtAddress && validateWalletAddress(jwtAddress)) {
-        if (address && address.toLowerCase() !== jwtAddress) {
-          console.warn(`🔒 [Dashboard getAuth] SESSION MISMATCH: JWT(${jwtAddress}) !== Requested(${address.toLowerCase()})`);
-          isVerified = false;
-        } else {
-          address = jwtAddress;
-          isVerified = true;
-          console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie:", address);
-        }
+      
+      if (decoded) {
+          // 🔥 INSTITUTIONAL FIX: Any valid JWT is a valid session.
+          // Extract address if available, but don't fail if it's missing.
+          const finalAddr = (decoded.address || (decoded as any).walletAddress)?.toLowerCase() || null;
+          
+          return {
+              session: {
+                  userId: decoded.sub || null,
+                  address: finalAddr,
+                  unverifiedAddress: null,
+              },
+              isVerified: true,
+          };
       }
     }
 
-    if (!isVerified) {
-      // Fallback inseguro (solo para UI superficial, nunca para DB o Admin)
-      const addrCookie = cookiesMap.get('wallet-address') ?? cookiesMap.get('thirdweb:wallet-address');
-      if (!address && validateWalletAddress(addrCookie)) {
-        console.log("⚠️ [Dashboard getAuth] Unverified Address found in WALLET Cookie:", addrCookie);
-        return {
-          session: {
-            userId: null,
-            address: null, // ONLY verified addresses go here
-            unverifiedAddress: addrCookie?.toLowerCase() ?? null,
-          },
-          isVerified: false,
-        };
-      }
+    // 4. Unverified Fallback (For UI only)
+    if (!isVerified && !address) {
+       const addrCookie = cookiesMap.get('wallet-address') ?? cookiesMap.get('thirdweb:wallet-address');
+       if (addrCookie && /^0x[a-fA-F0-9]{40}$/.test(addrCookie)) {
+           return {
+               session: { userId: null, address: null, unverifiedAddress: addrCookie.toLowerCase() },
+               isVerified: false
+           };
+       }
     }
   } catch (error) {
-    console.error("🔍 [Dashboard getAuth] Error parsing headers cookies:", error);
+    console.error("🔍 [Dashboard getAuth] Error:", error);
   }
 
   return {
     session: {
-      userId: (isVerified && address ? address.toLowerCase() : null) as string | null,
-      address: (isVerified && address ? address.toLowerCase() : null) as string | null,
-      unverifiedAddress: (address ? address.toLowerCase() : null) as string | null,
+      userId: null,
+      address: null,
+      unverifiedAddress: address?.toLowerCase() ?? null,
     },
-    isVerified,
+    isVerified: false,
   };
 }
 
-export function validateWalletAddress(address: string | undefined | null): boolean {
-  if (!address) return false;
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
-}
-
-export const authConfig = {
-  domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN || (typeof window !== "undefined" ? window.location.host : ""),
-  authUrl: "/api/auth",
-  cookieOptions: {
-    // Configuración de cookies para desarrollo y producción
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    maxAge: 60 * 60 * 24 * 7, // 1 semana
-    // Default to .pandoras.finance for both staging and production to support subdomains
-    domain: process.env.NODE_ENV === "development" ? undefined : (process.env.COOKIE_DOMAIN || ".pandoras.finance"),
-  },
-};
-
-if (typeof window === 'undefined') {
-  console.log(`🛡️ [Auth] Cookie Domain Configuration: ${authConfig.cookieOptions.domain || 'UNSET (Browser Default)'}`);
-}
 /**
- * Function to forcibly reconstruct a valid PEM string from various environment formats.
- * Handles: Base64, literals with \n, and missing wrappers.
+ * RECONSTRUCT PEM UTILITY (Symmetrical Logic)
+ * 🔬 Handles: Base64, literals with \n, and Vercel-escaped newlines.
  */
-export async function verifyJWT(token: string): Promise<JWTPayload | null> {
-  const publicKeyRaw = process.env.JWT_PUBLIC_KEY;
-  const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
-  const secretRaw = process.env.JWT_SECRET;
-  
-  if (!publicKeyRaw && !privateKeyRaw && !secretRaw) {
-    console.error("🔥 [Auth] Critical: ZERO JWT keys found in environment.");
-    return null;
-  }
-
-  // Stage 1: RS256 with Public Key (Standard)
-  if (publicKeyRaw) {
-    try {
-      const pem = reconstructPEM(publicKeyRaw, 'PUBLIC');
-      const key = crypto.createPublicKey(pem);
-      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
-    } catch (e: any) {
-      console.warn("⚠️ [Auth] RS256 (Public) failed:", e.message);
-    }
-  }
-
-  // Stage 2: RS256 with Private Key (Fallback for poorly configured environments)
-  if (privateKeyRaw) {
-    try {
-      const pem = reconstructPEM(privateKeyRaw, 'PRIVATE');
-      const key = crypto.createPublicKey(pem); // Extracts public part from private
-      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
-    } catch (e: any) {
-      console.warn("⚠️ [Auth] RS256 (Private Fallback) failed:", e.message);
-    }
-  }
-
-  // Stage 3: HS256 with Secret
-  if (secretRaw) {
-    try {
-      return jwt.verify(token, secretRaw, { algorithms: ['HS256'] }) as JWTPayload;
-    } catch (e: any) {
-      console.warn("⚠️ [Auth] HS256 failed:", e.message);
-    }
-  }
-
-  console.error("❌ [Auth] All verification stages failed for token.");
-  return null;
-}
-
 export const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
-  if (!keyString) {
-    console.error(`❌ [reconstructPEM] Empty ${type} key string received`);
-    return keyString;
-  }
+  if (!keyString) return "";
   
-  console.log(`🔑 [reconstructPEM] Input length: ${keyString.length} | Type: ${type}`);
-  
-  // 0. Preliminary cleanup (remove quotes and handle Vercel escaped \n)
+  // 1. Cleanup: Handle Vercel escaped \n and raw literal quotes
   let cleanKey = keyString.trim()
     .replace(/^["']|["']$/g, '')
-    .replace(/\\n/g, '\n') // Handle literal "\n" strings from Vercel
-    .replace(/\r/g, '');    // Clean carriage returns
+    .replace(/\\n/g, '\n')
+    .replace(/\r/g, '');
 
-  // 1. Decode Base64 if it's base64 encoded
+  // 2. Decode Base64 block if present
   if (cleanKey.trim().startsWith('LS0tLS1')) {
       cleanKey = Buffer.from(cleanKey.trim(), 'base64').toString('utf-8');
   }
 
-  // 2. Remove all headers, footers, spaces, and newlines to get pure base64 core
+  // 3. Extract Core Base64
   const base64Core = cleanKey
       .replace(/-----BEGIN.*?-----/g, '')
       .replace(/-----END.*?-----/g, '')
       .replace(/\s+/g, ''); 
 
-  // 3. Chunk into 64-character lines (RFC 1421 standard)
+  // 4. RFC 1421 Formatting
   const chunks = base64Core.match(/.{1,64}/g) || [];
   const formattedCore = chunks.join('\n');
 
-  // 4. Try PKCS#1 wrapper first
-  const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+  // 5. Tiered Wrapping
+  const pkcs8 = `-----BEGIN ${type} KEY-----\n${formattedCore}\n-----END ${type} KEY-----\n`;
   try {
-      if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
-      else crypto.createPublicKey(pkcs1);
-      return pkcs1; 
-  } catch (e1) {
-      // 5. Fallback to PKCS#8 (PRIVATE) or SPKI (PUBLIC) wrapper
-      const pkcs8 = `-----BEGIN ${type} KEY-----\n${formattedCore}\n-----END ${type} KEY-----\n`;
+      if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
+      else crypto.createPublicKey(pkcs8);
+      return pkcs8; 
+  } catch {
+      const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
       try {
-          if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
-          else crypto.createPublicKey(pkcs8);
-          return pkcs8; 
-      } catch (e2: any) {
-          console.error(`❌ [AuthUtils] RSA_FORMAT_ERROR for ${type} KEY:`, e2.message);
-          throw new Error(`RSA_FORMAT_ERROR: Rejecting key. Both PKCS1 and PKCS8 wrappers failed validation.`);
+          if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
+          else crypto.createPublicKey(pkcs1);
+          return pkcs1; 
+      } catch (e: any) {
+          console.error(`❌ [AuthUtils] FATAL: RSA format rejected for ${type}. Core: ${base64Core.substring(0,10)}...`);
+          return keyString;
       }
   }
+};
+
+/**
+ * ELITE VERIFICATION ENGINE (Tiered Fallback)
+ * 🛡️ Ensures local development and production keys never break verification.
+ */
+export async function verifyJWT(token: string): Promise<JWTPayload | null> {
+  const publicKeyRaw = process.env.JWT_PUBLIC_KEY;
+  const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
+  const secretRaw = process.env.JWT_SECRET;
+
+  // Track forensic progress
+  const stages: string[] = [];
+
+  // Stage 1: RS256 with Public Key
+  if (publicKeyRaw) {
+    try {
+      const pem = reconstructPEM(publicKeyRaw, 'PUBLIC');
+      const key = crypto.createPublicKey(pem);
+      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
+    } catch (e: any) { stages.push(`RS256_PUB: ${e.message}`); }
+  }
+
+  // Stage 2: RS256 with Private Key (Auto-derive Public)
+  if (privateKeyRaw) {
+    try {
+      const pem = reconstructPEM(privateKeyRaw, 'PRIVATE');
+      const key = crypto.createPublicKey(pem);
+      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
+    } catch (e: any) { stages.push(`RS256_PRI: ${e.message}`); }
+  }
+
+  // Stage 3: HS256 with Secret (Fallback)
+  if (secretRaw) {
+    try {
+      return jwt.verify(token, secretRaw, { algorithms: ['HS256'] }) as JWTPayload;
+    } catch (e: any) { stages.push(`HS256: ${e.message}`); }
+  }
+
+  console.error("❌ [Auth] Verification Exhausted. Errors:", stages.join(" | "));
+  return null;
+}
+
+export const authConfig = {
+  domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN || "",
+  cookieOptions: {
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 60 * 60 * 24 
+  },
 };

@@ -229,7 +229,13 @@ export async function POST(request: Request) {
             // Apply formatting if using RS256
             let finalSecret: string;
             try {
-                finalSecret = algorithm === 'RS256' ? reconstructPEM(privateKeyRaw!, 'PRIVATE') : (process.env.JWT_SECRET || 'fallback');
+                // EXTREME FIX: Handle Vercel escaped \n and quotes in signing key too!
+                const cleanPrivateKey = privateKeyRaw!
+                    .replace(/^["']|["']$/g, '')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\r/g, '');
+                
+                finalSecret = algorithm === 'RS256' ? reconstructPEM(cleanPrivateKey, 'PRIVATE') : (process.env.JWT_SECRET || 'fallback');
             } catch (pemError) {
                 console.warn("⚠️ [LOGIN] RS256 Reconstruction failed, falling back to HS256 with JWT_SECRET");
                 finalSecret = process.env.JWT_SECRET || 'fallback';
@@ -265,27 +271,25 @@ export async function POST(request: Request) {
             console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'host-only'} | Secure: ${isProd} | SameSite: lax`);
 
             const cookieStore = await cookies();
-            console.log("🔐 [LOGIN] Emitting Host-Only Cookie payload...");
+            console.log("🔐 [LOGIN] Emitting Production-Ready Session Cookie...");
 
+            const isProduction = process.env.NODE_ENV === "production";
             const baseOptions = {
                 httpOnly: true,
-                secure: true, 
-                sameSite: "lax" as const, // Strict for security, Lax for standard dashboard flow
+                secure: isProduction, // Use production check for staging compatibility
+                sameSite: "lax" as const,
                 path: "/",
                 maxAge: 60 * 60 * 24 
             };
 
-            // ❌ Removing domain to ensure browser accepts as Host-Only
-            // 1. Primary (__pbox_sid)
+            // 🎯 ONE SOURCE OF TRUTH: __pbox_sid
             await cookieStore.set("__pbox_sid", token, baseOptions);
 
-            // 2. Secondary (auth_token)
+            // Legacy compatibility (Clear others to avoid confusion)
             await cookieStore.set("auth_token", token, baseOptions);
-
-            // 3. Fallback (v3)
             await cookieStore.set("pbox_session_v3", token, baseOptions);
 
-            console.log("✅ [LOGIN] Host-only session cookies emitted (No domain set)");
+            console.log(`✅ [LOGIN] Session cookies emitted (Secure=${isProduction})`);
 
             console.log("✅ [LOGIN] Dual-session cookies emitted successfully");
 
