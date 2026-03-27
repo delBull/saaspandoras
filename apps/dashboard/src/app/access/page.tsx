@@ -68,7 +68,7 @@ function DynamicLoader({ texts }: { texts: string[] }) {
 
 export default function AccessPage() {
   const { connect } = useConnectModal();
-  const { user, status, runAuthFlow } = useAuth();
+  const { user, status, runAuthFlow, hasAccess } = useAuth();
   const account = useActiveAccount();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -100,10 +100,10 @@ export default function AccessPage() {
   const isMinting = status === 'minting';
 
   useEffect(() => {
-    if (status === "has_access" && !isVerified) {
+    if ((status === "has_access" || hasAccess) && !isVerified) {
       handleVerified();
     }
-  }, [status, isVerified]);
+  }, [status, hasAccess, isVerified]);
 
   const handleVerified = () => {
     if (!isVerified) {
