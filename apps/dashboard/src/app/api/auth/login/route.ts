@@ -267,7 +267,16 @@ export async function POST(request: Request) {
             const cookieStore = await cookies();
             console.log("🔐 [LOGIN] Emitting Dual-Cookie payload...");
 
-            // 1. Primary Cookie (Domain-wide)
+            // 1. Host-Only (Highest Priority / Safest)
+            await cookieStore.set("__pbox_sid", token, {
+                httpOnly: true,
+                secure: isProd,
+                sameSite: "lax",
+                path: "/",
+                maxAge: 60 * 60 * 24 
+            });
+
+            // 2. Domain-wide (Secondary / Legacy)
             if (cookieDomain) {
                 await cookieStore.set("auth_token", token, {
                     httpOnly: true,
@@ -279,15 +288,7 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 2. Legacy/Fallback Cookie (Host-only - NO domain)
-            // This is safer for browsers with strict third-party/subdomain rules
-            await cookieStore.set("__pbox_sid", token, {
-                httpOnly: true,
-                secure: isProd,
-                sameSite: "lax",
-                path: "/",
-                maxAge: 60 * 60 * 24 
-            });
+            console.log("✅ [LOGIN] Dual-session cookies emitted (Host-Only priority)");
 
             console.log("✅ [LOGIN] Dual-session cookies emitted successfully");
 
