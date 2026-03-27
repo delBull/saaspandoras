@@ -16,7 +16,7 @@ export const metadata = {
 export default async function TelegramBridgePage() {
     const { session } = await getAuth(await headers());
 
-    if (!session?.userId || !isSuperAdmin(session.userId)) {
+    if (!session?.address || !isSuperAdmin(session.address)) {
         return <UnauthorizedAccess authError="Super Admin access required" />;
     }
 

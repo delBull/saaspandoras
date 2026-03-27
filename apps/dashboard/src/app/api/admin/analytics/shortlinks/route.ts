@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     // Auth check
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

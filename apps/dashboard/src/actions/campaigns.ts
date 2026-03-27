@@ -27,7 +27,7 @@ export async function createDemandDraft(data: {
 }) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.userId) throw new Error("Unauthorized");
+    if (!session?.address) throw new Error("Unauthorized");
 
     const fullContent = `HOOK: ${data.hook}\n\nSCRIPT: ${data.script}\n\nCTA: ${data.cta}`;
 
@@ -62,7 +62,7 @@ export async function launchCampaign(data: {
 }) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.userId) throw new Error("Unauthorized");
+    if (!session?.address) throw new Error("Unauthorized");
 
     // 1. Create Campaign
     const [campaign] = await db.insert(campaigns).values({
@@ -178,7 +178,7 @@ export async function trackCampaignEvent(data: {
 export async function getCampaignPerformance(projectId: number) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.userId) throw new Error("Unauthorized");
+    if (!session?.address) throw new Error("Unauthorized");
 
     const performance = await db.select({
       id: campaigns.id,
@@ -218,7 +218,7 @@ export async function getCampaignPerformance(projectId: number) {
 export async function getWinningPatterns(projectId: number) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.userId) throw new Error("Unauthorized");
+    if (!session?.address) throw new Error("Unauthorized");
 
     // Aggregate by Angle
     const anglePatterns = await db.select({

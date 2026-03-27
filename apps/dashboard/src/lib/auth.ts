@@ -21,6 +21,12 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
   if (!address) return false;
   const lower = address.toLowerCase();
   
+  // 🛡️ SECURITY GUARD: Strictly enforce Ethereum Address format (no UUIDs allowed)
+  if (!lower.startsWith("0x") || lower.length !== 42) {
+    console.error("🚨 [Auth] RBAC REJECTION: isAdmin requires a valid 0x wallet address. Received:", lower);
+    return false; 
+  }
+
   // ⚡ Optimistic check for Super Admin (No DB call)
   if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
 
@@ -88,7 +94,7 @@ export async function getAuth(headersData?: any, userAddress?: string) {
           
           return {
               session: {
-                  userId: decoded.sub || null,
+                  userId: null, // 🛡️ ELITE FIX: Kill UUID identity to prevent RBAC "crossover" bugs
                   address: finalAddr,
                   unverifiedAddress: null,
               },

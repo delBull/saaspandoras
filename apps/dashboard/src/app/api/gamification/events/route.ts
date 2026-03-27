@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
 
     // Verificar autenticación de admin
     const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
+    const userIsAdmin = await isAdmin(session?.address);
 
     // TEMPORAL: Permitir con token de bypass de Vercel para staging
     const url = new URL(request.url);

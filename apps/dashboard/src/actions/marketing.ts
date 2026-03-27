@@ -9,7 +9,7 @@ import { headers } from "next/headers";
 export async function getMarketingDashboardStats() {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -107,7 +107,7 @@ export async function getMarketingDashboardStats() {
 export async function createCampaign(data: { name: string; triggerType?: string }) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -130,7 +130,7 @@ export async function createCampaign(data: { name: string; triggerType?: string 
 export async function toggleCampaignStatus(id: number, isActive: boolean) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -147,7 +147,7 @@ export async function toggleCampaignStatus(id: number, isActive: boolean) {
 export async function deleteCampaign(id: number) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 

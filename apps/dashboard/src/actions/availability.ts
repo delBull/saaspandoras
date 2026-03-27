@@ -39,7 +39,7 @@ const MAP_DAYS: Record<string, number> = {
 export async function getAdminAvailability(userId: string) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -66,7 +66,7 @@ export async function getAdminAvailability(userId: string) {
 export async function saveAvailability(userId: string, config: AvailabilityConfig) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 

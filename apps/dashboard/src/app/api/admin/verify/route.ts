@@ -12,11 +12,11 @@ export async function GET(request: Request) {
     console.log(`🔍 [${requestId}] Admin API: Starting GET /api/admin/verify...`);
     const { session } = await getAuth(request.headers);
     console.log(`🔍 [${requestId}] Admin API: Session resolved:`, session?.address || 'no-session');
-    const userIsSuperAdmin = session?.userId === SUPER_ADMIN_WALLET.toLowerCase();
+    const userIsSuperAdmin = session?.address === SUPER_ADMIN_WALLET.toLowerCase();
 
     let userIsAdmin = false;
-    if (session?.userId) {
-      userIsAdmin = await isAdmin(session.userId);
+    if (session?.address) {
+      userIsAdmin = await isAdmin(session.address);
     }
 
     return NextResponse.json({ isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });

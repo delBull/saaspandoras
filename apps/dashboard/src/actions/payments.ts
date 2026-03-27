@@ -16,7 +16,7 @@ export async function createPaymentLink(data: {
 }) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -58,7 +58,7 @@ export async function createPaymentLink(data: {
 export async function getPaymentsDashboardStats() {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -114,7 +114,7 @@ export async function getPaymentsDashboardStats() {
 export async function deletePaymentLink(id: string) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -131,7 +131,7 @@ export async function deletePaymentLink(id: string) {
 export async function updateTransactionStatus(transactionId: string, status: 'completed' | 'rejected') {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 

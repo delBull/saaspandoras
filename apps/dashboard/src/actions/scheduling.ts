@@ -48,7 +48,7 @@ export async function getAvailableSlots(userId: string) {
 export async function getAdminSlots(userId: string) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -256,7 +256,7 @@ export async function reserveSlot(slotId: string, reservePayload: { identifier: 
 export async function createSlots(userId: string, slots: { start: Date, end: Date }[]) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -284,7 +284,7 @@ export async function createSlots(userId: string, slots: { start: Date, end: Dat
 export async function confirmBooking(bookingId: string) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -310,7 +310,7 @@ export async function confirmBooking(bookingId: string) {
 export async function rejectBooking(bookingId: string) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -360,7 +360,7 @@ export async function createAdminBooking(userId: string, data: {
 }) {
     try {
         const { session } = await getAuth(await headers());
-        if (!session?.userId || !await isAdmin(session.userId)) {
+        if (!session?.address || !await isAdmin(session.address)) {
             throw new Error("Unauthorized");
         }
 
@@ -513,7 +513,7 @@ export async function rescheduleBooking(oldBookingId: string, newSlotId: string)
 export async function markNoShow(bookingId: string) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) throw new Error("Unauthorized");
+    if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
     await db.transaction(async (tx) => {
       // 1. Update Booking
@@ -548,7 +548,7 @@ export async function markNoShow(bookingId: string) {
 export async function completeCall(bookingId: string, outcome: 'interested' | 'not_ready' | 'lost', notes?: string) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.userId || !await isAdmin(session.userId)) throw new Error("Unauthorized");
+    if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
     await db.transaction(async (tx) => {
       // 1. Update Booking
