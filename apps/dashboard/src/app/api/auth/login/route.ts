@@ -248,14 +248,15 @@ export async function POST(request: Request) {
                 expiresIn: '24h',
                 algorithm: algorithm as jwt.Algorithm
             });
-            console.log("✅ [LOGIN] JWT Signed successfully");
+            console.log("🔐 [LOGIN] JWT Signed successfully. Token length:", token?.length);
 
             const isProd = process.env.NODE_ENV === "production";
             const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
             console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
 
             const cookieStore = await cookies();
-            cookieStore.set("auth_token", token, {
+            console.log("🔐 [LOGIN] Attempting to set cookie...");
+            await cookieStore.set("auth_token", token, {
                 httpOnly: true,
                 secure: isProd,
                 sameSite: isProd ? "none" : "lax",
@@ -263,8 +264,9 @@ export async function POST(request: Request) {
                 path: "/",
                 maxAge: 60 * 60 * 24 // 24 hours
             });
+            console.log("✅ [LOGIN] Cookie set successfully");
 
-            console.log(`✅ [LOGIN] SUCCESS: Session created for ${walletAddress}`);
+            console.log(`✅ [LOGIN] SUCCESS: Session created and cookies set for ${walletAddress}`);
 
             return NextResponse.json({
                 success: true,
