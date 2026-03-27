@@ -39,24 +39,12 @@ export async function GET(req: Request): Promise<NextResponse> {
             });
         }
 
-        // 🔐 3. HARDENED JWT VERIFICATION (RS256 / HS256 Support)
-        const { reconstructPEM } = await import("@/lib/auth");
-        const publicKeyRaw = process.env.JWT_PUBLIC_KEY;
-        const secret = publicKeyRaw || process.env.JWT_SECRET;
-        
-        if (!secret) {
-             console.error("🔥 [StripeEngine] Critical: Mission-critical JWT key missing.");
-             throw new Error("Infrastructure Security Error: Secret Missing");
-        }
+        // 🔐 3. HARDENED JWT VERIFICATION (Consolidated)
+        const { verifyJWT } = await import("@/lib/auth");
+        const payload = await verifyJWT(token);
 
-        const algorithm = publicKeyRaw ? "RS256" : "HS256";
-        const finalSecret = algorithm === "RS256" ? reconstructPEM(publicKeyRaw!, 'PUBLIC') : secret;
-
-        let payload: any;
-        try {
-            payload = jwt.verify(token, finalSecret, { algorithms: [algorithm] });
-        } catch (e: any) {
-            console.warn(`🔒 [StripeEngine] Token Verification Failed (${algorithm}):`, e.message);
+        if (!payload) {
+            console.warn(`🔒 [StripeEngine] Token Verification Failed (Consolidated)`);
             return NextResponse.json({ state: AccessState.NO_SESSION, authenticated: false }, { status: 401 });
         }
 

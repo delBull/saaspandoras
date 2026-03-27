@@ -109,18 +109,15 @@ export async function getAuth(headersData?: any, userAddress?: string) {
     const authToken = cookiesMap.get('auth_token');
 
     if (authToken) {
-      // En un entorno Node, podríamos usar jwt.verify, pero asumimos que el middleware ya lo validó.
-      const decoded = jwt.decode(authToken) as JWTPayload | null;
-      const jwtAddress = (decoded?.address || decoded?.walletAddress)?.toLowerCase();
+      const decoded = await verifyJWT(authToken);
+      const jwtAddress = (decoded?.address || (decoded as any)?.walletAddress)?.toLowerCase();
 
       if (jwtAddress && validateWalletAddress(jwtAddress)) {
-        // Validation: If we already had an address (from headers/params), it MUST match the JWT address
-        // This prevents "Session Cross-Pollination" where a JWT for user A verifies a request for user B.
         if (address && address.toLowerCase() !== jwtAddress) {
           console.warn(`🔒 [Dashboard getAuth] SESSION MISMATCH: JWT(${jwtAddress}) !== Requested(${address.toLowerCase()})`);
           isVerified = false;
         } else {
-          address = jwtAddress; // JWT address is the source of truth for verified identity
+          address = jwtAddress;
           isVerified = true;
           console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie:", address);
         }
@@ -181,6 +178,34 @@ if (typeof window === 'undefined') {
  * Function to forcibly reconstruct a valid PEM string from various environment formats.
  * Handles: Base64, literals with \n, and missing wrappers.
  */
+export async function verifyJWT(token: string): Promise<JWTPayload | null> {
+  const publicKeyRaw = process.env.JWT_PUBLIC_KEY;
+  const secret = publicKeyRaw || process.env.JWT_SECRET;
+  
+  if (!secret) {
+    console.error("🔥 [Auth] Critical: JWT Secret missing.");
+    return null;
+  }
+
+  const algorithm = publicKeyRaw ? "RS256" : "HS256";
+  try {
+    const finalKey = algorithm === "RS256" ? reconstructPEM(publicKeyRaw!, 'PUBLIC') : secret;
+    return jwt.verify(token, finalKey, { algorithms: [algorithm] }) as JWTPayload;
+  } catch (e: any) {
+    console.warn(`🔒 [Auth] Token Verification Failed (${algorithm}):`, e.message);
+    // Fallback if RS256 fails (in case of misconfiguration during migration)
+    if (algorithm === "RS256" && process.env.JWT_SECRET) {
+      try {
+        console.log("🔄 [Auth] Retrying with HS256 fallback...");
+        return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] }) as JWTPayload;
+      } catch (e2) {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
 export const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
   if (!keyString) {
     console.error(`❌ [reconstructPEM] Empty ${type} key string received`);
