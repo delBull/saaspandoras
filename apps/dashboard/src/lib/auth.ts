@@ -232,8 +232,11 @@ export const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): s
   
   console.log(`🔑 [reconstructPEM] Input length: ${keyString.length} | Type: ${type}`);
   
-  // 0. Preliminary cleanup (remove quotes and literal \n)
-  let cleanKey = keyString.trim().replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
+  // 0. Preliminary cleanup (remove quotes and handle Vercel escaped \n)
+  let cleanKey = keyString.trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/\\n/g, '\n') // Handle literal "\n" strings from Vercel
+    .replace(/\r/g, '');    // Clean carriage returns
 
   // 1. Decode Base64 if it's base64 encoded
   if (cleanKey.trim().startsWith('LS0tLS1')) {
