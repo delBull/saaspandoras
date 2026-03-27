@@ -221,58 +221,70 @@ export async function POST(request: Request) {
             throw new Error("SERVER_CONFIG_ERROR");
         }
 
-        try {
-            console.log("🔐 [LOGIN] Attempting JWT Sign...");
-            const algorithm = privateKeyRaw ? 'RS256' : 'HS256';
-            console.log(`🔐 [LOGIN] JWT Algorithm: ${algorithm} | Version: ${process.env.JWT_VERSION || "2"}`);
-            
-            // Apply formatting if using RS256
-            let finalSecret: string;
-            const isRSA = !!privateKeyRaw && privateKeyRaw.length > 100;
-            const algorithmUsed = isRSA ? 'RS256' : 'HS256';
+            // 🔥 RESILIENT SIGNING ENGINE (Phase 89: Staging Stability)
+            let token = "";
+            let algorithmUsed: "RS256" | "HS256" = "HS256";
+            let signingError: any = null;
 
-            try {
-                if (isRSA) {
-                    const cleanPrivateKey = privateKeyRaw!
+            // Attempt 1: RS256 (Preferred)
+            if (privateKeyRaw && privateKeyRaw.length > 100) {
+                try {
+                    const cleanPrivateKey = privateKeyRaw
                         .replace(/^["']|["']$/g, '')
                         .replace(/\\n/g, '\n')
                         .replace(/\r/g, '');
                     
-                    finalSecret = reconstructPEM(cleanPrivateKey, 'PRIVATE');
-                    console.log(`🔑 [LOGIN] Using RS256 (Key Length: ${finalSecret.length})`);
-                } else {
-                    finalSecret = process.env.JWT_SECRET || '';
-                    console.log(`🔑 [LOGIN] Using HS256 (Secret Length: ${finalSecret.length})`);
-                    if (!finalSecret) {
-                        throw new Error("CRITICAL_SECURITY_ERROR: JWT_SECRET is missing in production. Signing aborted.");
+                    const pem = reconstructPEM(cleanPrivateKey, 'PRIVATE');
+                    
+                    if (pem.includes('-----BEGIN ')) {
+                        token = jwt.sign({
+                            sub: userId,
+                            sid: sid,
+                            address: walletAddress,
+                            scope: 'web',
+                            hasAccess,
+                            chainId: config.chain.id,
+                            v: parseInt(process.env.JWT_VERSION || "2"),
+                            iat: Math.floor(Date.now() / 1000),
+                            alg: "RS256",
+                        }, pem, { algorithm: 'RS256', expiresIn: '24h' });
+                        
+                        algorithmUsed = "RS256";
+                        console.log(`✅ [LOGIN] Signed with RS256 (Key Length: ${pem.length})`);
                     }
+                } catch (e: any) {
+                    console.warn(`⚠️ [LOGIN] RS256 Signing Failed, will attempt HS256: ${e.message}`);
+                    signingError = e;
                 }
-            } catch (pemError: any) {
-                console.error("❌ [LOGIN] Cryptographic Failure:", pemError.message);
-                throw pemError; // DO NOT fallback to insecure defaults
             }
 
-            // Quick check
-            if (algorithm === 'RS256' && !finalSecret.includes('-----BEGIN ')) {
-                  console.warn("⚠️ [LOGIN] Reconstructed key has no headers, falling back to HS256");
-                  finalSecret = process.env.JWT_SECRET || 'fallback';
+            // Attempt 2: HS256 (Fallback)
+            if (!token && process.env.JWT_SECRET) {
+                try {
+                    token = jwt.sign({
+                        sub: userId,
+                        sid: sid,
+                        address: walletAddress,
+                        scope: 'web',
+                        hasAccess,
+                        chainId: config.chain.id,
+                        v: parseInt(process.env.JWT_VERSION || "2"),
+                        iat: Math.floor(Date.now() / 1000),
+                        alg: "HS256",
+                    }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '24h' });
+                    
+                    algorithmUsed = "HS256";
+                    console.log(`✅ [LOGIN] Signed with HS256 Fallback (Secret Length: ${process.env.JWT_SECRET.length})`);
+                } catch (e: any) {
+                    console.error(`❌ [LOGIN] HS256 Signing Failed: ${e.message}`);
+                    signingError = e;
+                }
             }
 
-            console.log("🔐 [LOGIN] Payload:", { sub: userId, sid, address: walletAddress });
-
-            const token = jwt.sign({
-                sub: userId,
-                sid: sid,
-                address: walletAddress,
-                scope: 'web',
-                hasAccess,
-                chainId: config.chain.id,
-                v: parseInt(process.env.JWT_VERSION || "2"),
-                iat: Math.floor(Date.now() / 1000),
-            }, finalSecret, { 
-                expiresIn: '24h',
-            });
-            if (!token) throw new Error("JWT_GENERATION_EMPTY");
+            if (!token) {
+                console.error("❌ [LOGIN] All signing stages EXHAUSTED.");
+                throw signingError || new Error("JWT_GENERATION_FAILED");
+            }
 
             const isPreview = process.env.VERCEL_ENV === "preview";
             // IN DASH: We prefer HOST-ONLY cookies for stability unless we need cross-subdomain sharing.
@@ -316,15 +328,6 @@ export async function POST(request: Request) {
                     hasAccess
                 }
             });
-
-        } catch (jwtOrCookieError: any) {
-            console.error("💥 [LOGIN] SEVERE JWT/COOKIE FAILURE:", jwtOrCookieError);
-            return NextResponse.json({ 
-                error: "JWT_SIGNATURE_GENERATION_FAILED",
-                details: jwtOrCookieError?.message || String(jwtOrCookieError),
-                stack: isProd ? undefined : jwtOrCookieError?.stack
-            }, { status: 500 });
-        }
 
     } catch (error: any) {
         console.error("❌ [Dashboard /api/auth/login] CRITICAL FAILURE:", error);
