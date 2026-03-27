@@ -104,10 +104,8 @@ export async function getAuth(headersData?: any, userAddress?: string) {
       if (name) cookiesMap.set(name, rest.join('='));
     });
 
-    const authToken = cookiesMap.get('auth_token') || cookiesMap.get('__pbox_sid');
-    if (cookiesMap.has('__pbox_sid') && !cookiesMap.has('auth_token')) {
-        console.log("🔍 [Auth] Primary cookie missing, using legacy host-only cookie (__pbox_sid)");
-    }
+    // Priority: Host-only cookie first (__pbox_sid), then domain-scoped (auth_token)
+    const authToken = cookiesMap.get('__pbox_sid') || cookiesMap.get('auth_token');
 
     if (authToken) {
       const decoded = await verifyJWT(authToken);
