@@ -180,50 +180,48 @@ if (typeof window === 'undefined') {
  * Handles: Base64, literals with \n, and missing wrappers.
  */
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
-  const publicKeyRaw = process.env.JWT_PUBLIC_KEY || process.env.JWT_PRIVATE_KEY;
-  const secret = publicKeyRaw || process.env.JWT_SECRET;
+  const publicKeyRaw = process.env.JWT_PUBLIC_KEY;
+  const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
+  const secretRaw = process.env.JWT_SECRET;
   
-  if (!secret) {
-    console.error("🔥 [Auth] Critical: JWT Secret missing (Checked PUBLIC, PRIVATE, and SECRET).");
+  if (!publicKeyRaw && !privateKeyRaw && !secretRaw) {
+    console.error("🔥 [Auth] Critical: ZERO JWT keys found in environment.");
     return null;
   }
 
-  const algorithm = publicKeyRaw ? "RS256" : "HS256";
-  try {
-    let finalKey: string | crypto.KeyObject = secret;
-    
-    if (algorithm === "RS256") {
-        // Robust Extraction: Use the provided key to create a KeyObject.
-        // If it's a private key, createPublicKey() will extract the public part automatically.
-        const pem = reconstructPEM(secret, 'PUBLIC');
-        try {
-            finalKey = crypto.createPublicKey(pem);
-        } catch (pemErr) {
-            console.warn("⚠️ [Auth] Could not create public key from PRIMARY secret, trying SECRET fallback...");
-            finalKey = secret; // Fallback to raw string
-        }
+  // Stage 1: RS256 with Public Key (Standard)
+  if (publicKeyRaw) {
+    try {
+      const pem = reconstructPEM(publicKeyRaw, 'PUBLIC');
+      const key = crypto.createPublicKey(pem);
+      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
+    } catch (e: any) {
+      console.warn("⚠️ [Auth] RS256 (Public) failed:", e.message);
     }
-
-    const verified = jwt.verify(token, finalKey, { algorithms: [algorithm] }) as JWTPayload;
-    return verified;
-  } catch (e: any) {
-    console.warn(`🔒 [Auth] Token Verification Failed (${algorithm}):`, e.message);
-    if (e.message.includes('PEM')) {
-        console.error("❌ [Auth] PEM error might indicate invalid RSA key format. Key Length:", secret.length);
-    }
-    
-    // Fallback if RS256 fails (in case of misconfiguration during migration)
-    if (algorithm === "RS256" && process.env.JWT_SECRET) {
-      try {
-        console.log("🔄 [Auth] Retrying with HS256 fallback (JWT_SECRET)...");
-        return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] }) as JWTPayload;
-      } catch (e2: any) {
-        console.warn("❌ [Auth] HS256 Fallback failed too:", e2.message);
-        return null;
-      }
-    }
-    return null;
   }
+
+  // Stage 2: RS256 with Private Key (Fallback for poorly configured environments)
+  if (privateKeyRaw) {
+    try {
+      const pem = reconstructPEM(privateKeyRaw, 'PRIVATE');
+      const key = crypto.createPublicKey(pem); // Extracts public part from private
+      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
+    } catch (e: any) {
+      console.warn("⚠️ [Auth] RS256 (Private Fallback) failed:", e.message);
+    }
+  }
+
+  // Stage 3: HS256 with Secret
+  if (secretRaw) {
+    try {
+      return jwt.verify(token, secretRaw, { algorithms: ['HS256'] }) as JWTPayload;
+    } catch (e: any) {
+      console.warn("⚠️ [Auth] HS256 failed:", e.message);
+    }
+  }
+
+  console.error("❌ [Auth] All verification stages failed for token.");
+  return null;
 }
 
 export const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
