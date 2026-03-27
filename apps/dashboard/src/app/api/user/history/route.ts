@@ -21,11 +21,16 @@ export async function GET(request: Request) {
         // 1. Fetch Gamification Events (Only if user exists)
         let gEvents: any[] = [];
         if (userId) {
-            gEvents = await db.select()
-                .from(gamificationEvents)
-                .where(eq(gamificationEvents.userId, userId))
-                .orderBy(desc(gamificationEvents.createdAt))
-                .limit(limit);
+            try {
+                gEvents = await db.select()
+                    .from(gamificationEvents)
+                    .where(eq(gamificationEvents.userId, userId))
+                    .orderBy(desc(gamificationEvents.createdAt))
+                    .limit(limit);
+            } catch (eventError: any) {
+                console.warn(`[History] Gamification events query failed: ${eventError.message}`);
+                // Continue without events instead of 500ing
+            }
         }
 
         // 2. Fetch Action Logs (Purchases, Mints) - Can be by userId OR wallet

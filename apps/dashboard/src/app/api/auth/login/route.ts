@@ -28,6 +28,7 @@ export const runtime = "nodejs";
  * ============================================================================
  */
 export async function POST(request: Request) {
+    const isProd = process.env.NODE_ENV === "production";
     try {
         console.log("🔐 [LOGIN] ========== REQUEST RECEIVED ==========");
         const body = await request.json();
@@ -246,13 +247,13 @@ export async function POST(request: Request) {
                 iat: Math.floor(Date.now() / 1000),
             }, finalSecret, { 
                 expiresIn: '24h',
-                algorithm: algorithm as jwt.Algorithm
             });
-            console.log("🔐 [LOGIN] JWT Signed successfully. Token length:", token?.length);
+            if (!token) throw new Error("JWT_GENERATION_EMPTY");
 
-            const isProd = process.env.NODE_ENV === "production";
-            const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
-            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
+            const rawDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
+            const cookieDomain = (isProd && rawDomain !== "localhost") ? rawDomain : undefined;
+            
+            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'auto (localhost/preview)'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
 
             const cookieStore = await cookies();
             console.log("🔐 [LOGIN] Attempting to set cookie...");
@@ -283,7 +284,8 @@ export async function POST(request: Request) {
             console.error("💥 [LOGIN] SEVERE JWT/COOKIE FAILURE:", jwtOrCookieError);
             return NextResponse.json({ 
                 error: "JWT_SIGNATURE_GENERATION_FAILED",
-                details: jwtOrCookieError?.message || String(jwtOrCookieError)
+                details: jwtOrCookieError?.message || String(jwtOrCookieError),
+                stack: isProd ? undefined : jwtOrCookieError?.stack
             }, { status: 500 });
         }
 

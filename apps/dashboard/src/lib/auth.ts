@@ -182,7 +182,12 @@ if (typeof window === 'undefined') {
  * Handles: Base64, literals with \n, and missing wrappers.
  */
 export const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
-  if (!keyString) return keyString;
+  if (!keyString) {
+    console.error(`❌ [reconstructPEM] Empty ${type} key string received`);
+    return keyString;
+  }
+  
+  console.log(`🔑 [reconstructPEM] Input length: ${keyString.length} | Type: ${type}`);
   
   // 0. Preliminary cleanup (remove quotes and literal \n)
   let cleanKey = keyString.trim().replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
