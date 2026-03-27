@@ -47,7 +47,13 @@ export async function GET(req: Request): Promise<NextResponse> {
 
         if (!payload) {
             console.warn(`🔒 [StripeEngine] Token Verification Failed (Consolidated)`);
-            return NextResponse.json({ state: AccessState.NO_SESSION, authenticated: false }, { status: 401 });
+            return NextResponse.json({ 
+                state: AccessState.NO_SESSION, 
+                authenticated: false,
+                debug: "JWT_VERIFICATION_FAILED",
+                // Temporarily include reason for debugging
+                reason: "Check verifyJWT logs in Vercel" 
+            }, { status: 401 });
         }
 
         // AUTHORITY: Address MUST come from JWT, never from searchParams.
