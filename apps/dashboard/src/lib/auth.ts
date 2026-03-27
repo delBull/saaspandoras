@@ -11,6 +11,7 @@ interface JWTPayload {
   sub?: string;
   address?: string;
   walletAddress?: string; // Legacy fallback
+  alg?: "RS256" | "HS256";
   role?: string;
   aud?: string;
   iat?: number;
@@ -26,6 +27,8 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
     console.error("🚨 [Auth] RBAC REJECTION: isAdmin requires a valid 0x wallet address. Received:", lower);
     return false; 
   }
+
+  console.log("🔍 [Auth] ADMIN CHECK INPUT (Verified Address):", lower);
 
   // ⚡ Optimistic check for Super Admin (No DB call)
   if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
@@ -183,35 +186,52 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
   const secretRaw = process.env.JWT_SECRET;
 
-  // Track forensic progress
-  const stages: string[] = [];
+  try {
+      // 🕵️ DETERMINISTIC ENGINE: Extract Algorithm from Header
+      const parts = token.split('.');
+      if (parts.length !== 3) throw new Error("INVALID_TOKEN_STRUCTURE");
+      
+      const header = JSON.parse(Buffer.from(parts[0] as string, 'base64').toString());
+      const alg = header.alg as string;
 
-  // Stage 1: RS256 with Public Key
-  if (publicKeyRaw) {
-    try {
-      const pem = reconstructPEM(publicKeyRaw, 'PUBLIC');
-      const key = crypto.createPublicKey(pem);
-      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
-    } catch (e: any) { stages.push(`RS256_PUB: ${e.message}`); }
+      if (alg === 'RS256') {
+          // Attempt RS256 Stage 1: Public Key
+          if (publicKeyRaw) {
+              try {
+                  const pem = reconstructPEM(publicKeyRaw, 'PUBLIC');
+                  const key = crypto.createPublicKey(pem);
+                  return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
+              } catch (e: any) { /* proceed to private derive */ }
+          }
+          // Attempt RS256 Stage 2: Private Key Derive
+          if (privateKeyRaw) {
+              try {
+                  const pem = reconstructPEM(privateKeyRaw, 'PRIVATE');
+                  const key = crypto.createPublicKey(pem);
+                  return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
+              } catch (e: any) {
+                  console.error("❌ [Auth] RS256 Verification Failed:", e.message);
+              }
+          }
+      } else if (alg === 'HS256') {
+          // Attempt HS256 Stage: Secret
+          if (secretRaw) {
+              try {
+                  return jwt.verify(token, secretRaw, { algorithms: ['HS256'] }) as JWTPayload;
+              } catch (e: any) {
+                  console.error("❌ [Auth] HS256 Verification Failed:", e.message);
+              }
+          } else {
+            console.error("❌ [Auth] JWT uses HS256 but JWT_SECRET is missing.");
+          }
+      } else {
+          console.error(`❌ [Auth] UNKNOWN ALGORITHM: ${alg}`);
+      }
+
+  } catch (err: any) {
+      console.error("❌ [Auth] Determinstic Verification Trace Failed:", err.message);
   }
 
-  // Stage 2: RS256 with Private Key (Auto-derive Public)
-  if (privateKeyRaw) {
-    try {
-      const pem = reconstructPEM(privateKeyRaw, 'PRIVATE');
-      const key = crypto.createPublicKey(pem);
-      return jwt.verify(token, key, { algorithms: ['RS256'] }) as JWTPayload;
-    } catch (e: any) { stages.push(`RS256_PRI: ${e.message}`); }
-  }
-
-  // Stage 3: HS256 with Secret (Fallback)
-  if (secretRaw) {
-    try {
-      return jwt.verify(token, secretRaw, { algorithms: ['HS256'] }) as JWTPayload;
-    } catch (e: any) { stages.push(`HS256: ${e.message}`); }
-  }
-
-  console.error("❌ [Auth] Verification Exhausted. Errors:", stages.join(" | "));
   return null;
 }
 
