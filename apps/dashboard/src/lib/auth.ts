@@ -100,13 +100,14 @@ export async function getAuth(headersData?: any, userAddress?: string) {
     // Parse specific cookies
     const cookiesMap = new Map();
     rawCookieHeader.split(';').forEach((cookie: string) => {
-      const parts = cookie.trim().split('=');
-      if (parts.length >= 2) {
-        cookiesMap.set(parts[0], parts.slice(1).join('='));
-      }
+      const [name, ...rest] = cookie.trim().split('=');
+      if (name) cookiesMap.set(name, rest.join('='));
     });
 
-    const authToken = cookiesMap.get('auth_token');
+    const authToken = cookiesMap.get('auth_token') || cookiesMap.get('__pbox_sid');
+    if (cookiesMap.has('__pbox_sid') && !cookiesMap.has('auth_token')) {
+        console.log("🔍 [Auth] Primary cookie missing, using legacy host-only cookie (__pbox_sid)");
+    }
 
     if (authToken) {
       const decoded = await verifyJWT(authToken);

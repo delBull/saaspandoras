@@ -27,7 +27,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         }
 
         const cookieStore = await cookies();
-        const token = cookieStore.get("auth_token")?.value;
+        const token = cookieStore.get("auth_token")?.value || cookieStore.get("__pbox_sid")?.value;
 
         // 🛡️ 2. NO TOKEN -> Adaptive Lead UX
         if (!token) {
