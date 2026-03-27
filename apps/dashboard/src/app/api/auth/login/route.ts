@@ -265,36 +265,27 @@ export async function POST(request: Request) {
             console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'host-only'} | Secure: ${isProd} | SameSite: lax`);
 
             const cookieStore = await cookies();
-            console.log("🔐 [LOGIN] Emitting Ultra-Resilient Cookie payload...");
+            console.log("🔐 [LOGIN] Emitting Host-Only Cookie payload...");
 
             const baseOptions = {
                 httpOnly: true,
-                secure: true, // Force secure since we are ALWAYS on https in Vercel
-                sameSite: "lax" as const,
+                secure: true, 
+                sameSite: "lax" as const, // Strict for security, Lax for standard dashboard flow
                 path: "/",
                 maxAge: 60 * 60 * 24 
             };
 
-            // 1. Host-Only (Highest Priority)
+            // ❌ Removing domain to ensure browser accepts as Host-Only
+            // 1. Primary (__pbox_sid)
             await cookieStore.set("__pbox_sid", token, baseOptions);
 
-            // 2. Domain-wide (If configured)
-            if (cookieDomain) {
-                await cookieStore.set("auth_token", token, {
-                    ...baseOptions,
-                    domain: cookieDomain
-                });
-            }
+            // 2. Secondary (auth_token)
+            await cookieStore.set("auth_token", token, baseOptions);
 
-            // 3. Legacy compatibility (SameSite=None for older integrations if needed)
-            // Using a different name to avoid collisions but keep session
-            await cookieStore.set("pbox_session_v3", token, {
-                ...baseOptions,
-                sameSite: "none" as const,
-                secure: true
-            });
+            // 3. Fallback (v3)
+            await cookieStore.set("pbox_session_v3", token, baseOptions);
 
-            console.log("✅ [LOGIN] Ultra-resilient cookies emitted successfully");
+            console.log("✅ [LOGIN] Host-only session cookies emitted (No domain set)");
 
             console.log("✅ [LOGIN] Dual-session cookies emitted successfully");
 
