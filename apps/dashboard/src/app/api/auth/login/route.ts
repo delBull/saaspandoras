@@ -149,70 +149,71 @@ export async function POST(request: Request) {
         // 7. Upsert User & Session (Hardened with Retry to handle ECONNRESET)
         const { reconstructPEM } = await import("@/lib/auth");
         const { withRetry } = await import("@/lib/database");
+        console.log("🛠️ [LOGIN] Generating session IDs...");
         const sid = crypto.randomUUID();
         const ip = request.headers.get("x-forwarded-for") || "unknown";
         const userAgent = request.headers.get("user-agent") || "unknown";
         let userId = "";
         let walletAddress = address.toLowerCase();
 
-        await withRetry(async () => {
-            const existingUsers = await db.query.users.findMany({
-                where: (users, { eq }) => eq(users.walletAddress, walletAddress),
-                limit: 1
-            });
-
-            const userRecord = existingUsers[0];
-            if (userRecord) {
-                userId = userRecord.id;
-                const currentCount = userRecord.connectionCount || 0;
-                await db.update(users)
-                    .set({
-                        lastConnectionAt: now,
-                        updatedAt: now,
-                        connectionCount: currentCount + 1,
-                        hasPandorasKey: hasAccess,
-                        walletVerified: true 
-                    })
-                    .where(eq(users.id, userId));
-            } else {
-                userId = crypto.randomUUID();
-                await db.insert(users).values({
-                    id: userId,
-                    walletAddress,
-                    connectionCount: 1,
-                    lastConnectionAt: now,
-                    createdAt: now,
-                    updatedAt: now,
-                    hasPandorasKey: hasAccess,
-                    walletVerified: true,
-                    acquisitionSource: "thirdweb_auth"
-                });
-                console.log(`🆕 User created with unified ID: ${userId}`);
-            }
-
-            // Persistence
-            await db.insert(sessions).values({
-                id: sid,
-                userId,
-                scope: 'web',
-                ip,
-                userAgent,
-                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
-            });
-
-            await db.insert(securityEvents).values({
-                userId,
-                type: 'LOGIN',
-                ip,
-                userAgent,
-                metadata: { scope: 'web', sid }
-            });
+        // 7. Simplified User & Session Creation (Reliable Mode)
+        const existingUsers = await db.query.users.findMany({
+            where: (users, { eq }) => eq(users.walletAddress, walletAddress),
+            limit: 1
         });
 
-        console.log(`✅ Session ${sid} created for user ${userId}`);
+        const userRecord = existingUsers[0];
+        if (userRecord) {
+            userId = userRecord.id;
+            const currentCount = userRecord.connectionCount || 0;
+            await db.update(users)
+                .set({
+                    lastConnectionAt: now,
+                    updatedAt: now,
+                    connectionCount: currentCount + 1,
+                    hasPandorasKey: hasAccess,
+                    walletVerified: true 
+                })
+                .where(eq(users.id, userId));
+        } else {
+            userId = crypto.randomUUID();
+            await db.insert(users).values({
+                id: userId,
+                walletAddress,
+                connectionCount: 1,
+                lastConnectionAt: now,
+                createdAt: now,
+                updatedAt: now,
+                hasPandorasKey: hasAccess,
+                walletVerified: true,
+                acquisitionSource: "thirdweb_auth"
+            });
+            console.log(`🆕 User created with unified ID: ${userId}`);
+        }
+
+        // Persistence
+        await db.insert(sessions).values({
+            id: sid,
+            userId,
+            scope: 'web',
+            ip,
+            userAgent,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+        });
+
+        await db.insert(securityEvents).values({
+            userId,
+            type: 'LOGIN',
+            ip,
+            userAgent,
+            metadata: { scope: 'web', sid }
+        });
+
+        console.log(`✅ [LOGIN] Session ${sid} created for user ${userId}`);
 
         // 9. Issue Scoped JWT with sid - Support RS256 or HS256
         const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
+        console.log(`🔑 [LOGIN] Keys Check: PRIVATE=${!!privateKeyRaw} | SECRET=${!!process.env.JWT_SECRET}`);
         const secret = privateKeyRaw || process.env.JWT_SECRET;
         
         if (!secret) {
@@ -256,22 +257,39 @@ export async function POST(request: Request) {
             });
             if (!token) throw new Error("JWT_GENERATION_EMPTY");
 
-            const rawDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
-            const cookieDomain = (isProd && rawDomain !== "localhost") ? rawDomain : undefined;
+            const isPreview = process.env.VERCEL_ENV === "preview";
+            // IN DASH: We prefer HOST-ONLY cookies for stability unless we need cross-subdomain sharing.
+            // But since we use .pandoras.finance for shared state normally, let's try auto-domain first or no domain.
+            const cookieDomain = (isProd && !isPreview) ? ".pandoras.finance" : undefined;
             
-            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'auto (localhost/preview)'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
+            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'host-only'} | Secure: ${isProd} | SameSite: lax`);
 
             const cookieStore = await cookies();
-            console.log("🔐 [LOGIN] Attempting to set cookie...");
-            await cookieStore.set("auth_token", token, {
+            console.log("🔐 [LOGIN] Emitting Dual-Cookie payload...");
+
+            // 1. Primary Cookie (Domain-wide)
+            if (cookieDomain) {
+                await cookieStore.set("auth_token", token, {
+                    httpOnly: true,
+                    secure: isProd,
+                    sameSite: "lax",
+                    domain: cookieDomain,
+                    path: "/",
+                    maxAge: 60 * 60 * 24 
+                });
+            }
+
+            // 2. Legacy/Fallback Cookie (Host-only - NO domain)
+            // This is safer for browsers with strict third-party/subdomain rules
+            await cookieStore.set("__pbox_sid", token, {
                 httpOnly: true,
                 secure: isProd,
-                sameSite: isProd ? "none" : "lax",
-                ...(cookieDomain && { domain: cookieDomain }),
+                sameSite: "lax",
                 path: "/",
-                maxAge: 60 * 60 * 24 // 24 hours
+                maxAge: 60 * 60 * 24 
             });
-            console.log("✅ [LOGIN] Cookie set successfully");
+
+            console.log("✅ [LOGIN] Dual-session cookies emitted successfully");
 
             console.log(`✅ [LOGIN] SUCCESS: Session created and cookies set for ${walletAddress}`);
 
