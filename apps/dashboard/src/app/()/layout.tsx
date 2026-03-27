@@ -19,9 +19,8 @@ export default async function DashboardLayout({
     cookieStore.get('thirdweb:wallet-address')?.value ?? null;
 
   const { session } = await getAuth(undefined, walletFromCookies ?? undefined);
-  const userIsAdmin = await isAdmin(session?.userId);
-  const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET ||
-    session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
+  const userIsAdmin = await isAdmin(session?.address);
+  const userIsSuperAdmin = session?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
   return (
     <ProjectModalProvider>

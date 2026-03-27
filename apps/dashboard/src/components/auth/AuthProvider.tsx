@@ -77,14 +77,18 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
                 user: action.user !== undefined ? action.user : state.user,
                 error: action.error !== undefined ? action.error : state.error,
                 remoteState: action.remoteState !== undefined ? action.remoteState : state.remoteState,
-                ux: action.ux !== undefined ? action.ux : state.ux
+                ux: action.ux !== undefined ? action.ux : state.ux,
+                betaOpen: action.betaOpen !== undefined ? action.betaOpen : state.betaOpen,
+                ritualEnabled: action.ritualEnabled !== undefined ? action.ritualEnabled : state.ritualEnabled
             };
         case "SET_USER":
             return { 
                 ...state, 
                 user: action.user,
                 remoteState: action.remoteState !== undefined ? action.remoteState : state.remoteState,
-                ux: action.ux !== undefined ? action.ux : state.ux
+                ux: action.ux !== undefined ? action.ux : state.ux,
+                betaOpen: action.betaOpen !== undefined ? action.betaOpen : state.betaOpen,
+                ritualEnabled: action.ritualEnabled !== undefined ? action.ritualEnabled : state.ritualEnabled
             };
         case "SET_ERROR":
             return { ...state, error: action.error };
@@ -374,7 +378,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     status: currentSession.hasAccess ? "has_access" : "no_access",
                     user: currentSession.user,
                     remoteState: currentSession.state,
-                    ux: currentSession.ux
+                    ux: currentSession.ux,
+                    betaOpen: currentSession.betaOpen,
+                    ritualEnabled: currentSession.ritualEnabled
                 }, id);
             } catch (err: any) {
                 if (err.name === "AbortError") return;
@@ -435,7 +441,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         status: "has_access",
                         user: res.user,
                         remoteState: res.state,
-                        ux: res.ux
+                        ux: res.ux,
+                        betaOpen: res.betaOpen,
+                        ritualEnabled: res.ritualEnabled
                     }, flowId.current);
                     return;
                 }
@@ -459,7 +467,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         status: "has_access",
                         user: res.user,
                         remoteState: res.state,
-                        ux: res.ux
+                        ux: res.ux,
+                        betaOpen: res.betaOpen,
+                        ritualEnabled: res.ritualEnabled
                     }, flowId.current);
                     return;
                 }
