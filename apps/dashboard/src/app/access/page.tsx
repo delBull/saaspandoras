@@ -118,9 +118,13 @@ export default function AccessPage() {
 
   const handleEnterSystem = () => {
     if (hasAccess) {
-      // Mark ritual as seen for this specific wallet
+      // 🛡️ Phase 89: Persistent "Iniciado" Status
       if (typeof window !== 'undefined' && user?.address) {
+        // Local bypass (instant)
         localStorage.setItem(`pbox_ritual_seen_${user?.address}`, 'true');
+        
+        // Backend persistence (non-blocking legacy sync)
+        fetch('/api/v1/user/initiate', { method: 'POST' }).catch(console.error);
       }
       router.push("/admin");
     } else {

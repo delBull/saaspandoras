@@ -131,6 +131,7 @@ export const users = pgTable("users", {
   benefitsTier: varchar("benefits_tier", { length: 50 }).default('standard'), // genesis, standard
   accessGrantedAt: timestamp("access_granted_at"),
   walletVerified: boolean("wallet_verified").default(false).notNull(),
+  ritualCompletedAt: timestamp("ritual_completed_at"),
 });
 
 export const sessions = pgTable("sessions", {
@@ -937,7 +938,7 @@ export const authChallenges = pgTable("auth_challenges", {
 
 // Tabla para almacenar métricas de envío de emails desde Resend webhooks
 export const emailMetrics = pgTable("email_metrics", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: serial("id").primaryKey(),
   emailId: varchar("email_id", { length: 255 }).unique().notNull(),
   type: varchar("type", { length: 50 }).default('unknown').notNull(), // creator_welcome, founders, utility, etc.
   status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, delivered, opened, clicked, bounced, etc.
@@ -1038,14 +1039,14 @@ export const daoMembers = pgTable("dao_members", {
   wallet: varchar("wallet", { length: 42 }).notNull(),
   votingPower: decimal("voting_power", { precision: 18, scale: 6 }).default("0.000000").notNull(),
   artifactsCount: integer("artifacts_count").default(0).notNull(),
-  sourceCampaignId: integer("source_campaign_id").references(() => campaigns.id),
+  // sourceCampaignId: integer("source_campaign_id").references(() => campaigns.id),
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
   lastActiveAt: timestamp("last_active_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueProjectMember: uniqueIndex("unique_project_member").on(table.projectId, table.wallet),
   projectIndex: index("dao_member_project_idx").on(table.projectId),
   walletIndex: index("dao_member_wallet_idx").on(table.wallet),
-  campaignIndex: index("dao_member_campaign_idx").on(table.sourceCampaignId),
+  // campaignIndex: index("dao_member_campaign_idx").on(table.sourceCampaignId),
 }));
 
 export const daoTreasury = pgTable("dao_treasury", {
@@ -1724,6 +1725,8 @@ export const marketingLeadStatusEnum = pgEnum("marketing_lead_status", [
   "active",
   "whitelisted",
   "converted",
+  "new",
+  "NEW",
   "bounced",
   "unsubscribed",
   "scheduled",
@@ -1751,7 +1754,7 @@ export const marketingLeadQualityEnum = pgEnum("marketing_lead_quality", ["low",
  * marketing_identities — Unified identity layer to link fingerprints, wallets, and emails.
  */
 export const marketingIdentities = pgTable("marketing_identities", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: serial("id").primaryKey(),
   userId: varchar("user_id", { length: 255 }).references(() => users.id), // Link to core user if/when registered
   
   fingerprint: varchar("fingerprint", { length: 255 }), // Anonymous device ID
@@ -1774,13 +1777,13 @@ export const marketingIdentities = pgTable("marketing_identities", {
  * Links to global 'users' if already registered, otherwise identity is email-based.
  */
 export const marketingLeads = pgTable("marketing_leads", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: serial("id").primaryKey(),
   userId: varchar("user_id", { length: 255 }).references(() => users.id),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   
   ownerContext: ownerContextEnum("owner_context").default("client").notNull(),
   scope: marketingLeadScopeEnum("scope").default("b2c").notNull(),
-  identityId: uuid("identity_id").references(() => marketingIdentities.id), // Unified ID
+  identityId: integer("identity_id").references(() => marketingIdentities.id), // Unified ID
   leadType: varchar("lead_type", { length: 100 }).default("user_prospect"), // e.g., founder, investor, buyer
   
   email: varchar("email", { length: 255 }), // Nullable for anonymous silent capture
@@ -1819,8 +1822,8 @@ export const marketingLeads = pgTable("marketing_leads", {
  * Powers the Event System and Analytics.
  */
 export const marketingLeadEvents = pgTable("marketing_lead_events", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
   type: varchar("type", { length: 100 }).notNull(), // signup, whitelist_approved, converted...
   semanticHash: varchar("semantic_hash", { length: 64 }), // Content-based de-duplication hash
   payload: jsonb("payload").default({}).notNull(),
@@ -1836,10 +1839,10 @@ export const marketingLeadEvents = pgTable("marketing_lead_events", {
  * Prevents double-awarding XP/Credits for the same marketing event.
  */
 export const marketingRewardLogs = pgTable("marketing_reward_logs", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: serial("id").primaryKey(),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  leadId: uuid("lead_id").notNull().references(() => marketingLeads.id),
-  eventId: uuid("event_id").notNull().references(() => marketingLeadEvents.id),
+  leadId: integer("lead_id").notNull().references(() => marketingLeads.id),
+  eventId: integer("event_id").notNull().references(() => marketingLeadEvents.id),
   
   rewardType: varchar("reward_type", { length: 50 }).notNull(), // 'XP' | 'CREDITS' | 'PBOX'
   amount: integer("amount").notNull(),
@@ -1855,8 +1858,8 @@ export const marketingRewardLogs = pgTable("marketing_reward_logs", {
  * growth_actions_log — Audit log for growth engine decisions.
  */
 export const growthActionsLog = pgTable("growth_actions_log", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
   ruleId: varchar("rule_id", { length: 100 }).notNull(),
   ruleCondition: text("rule_condition"), // The 'why' behind the decision
   actionType: varchar("action_type", { length: 100 }).notNull(),
@@ -1874,8 +1877,8 @@ export const growthActionsLog = pgTable("growth_actions_log", {
  * Supports many-to-many attribution with confidence scoring.
  */
 export const marketingLeadAttributions = pgTable("marketing_lead_attributions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   
   attributionType: leadAttributionTypeEnum("attribution_type").default("shared").notNull(),
@@ -1896,8 +1899,8 @@ export const marketingLeadAttributions = pgTable("marketing_lead_attributions", 
  */
 export const marketingAttributionTouches = pgTable("marketing_attribution_touches", {
   id: serial("id").primaryKey(),
-  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
-  campaignId: uuid("campaign_id").references(() => campaigns.id), // Nullable for direct/organic
+  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
+  campaignId: integer("campaign_id").references(() => campaigns.id), // Nullable for direct/organic
   
   touchType: varchar("touch_type", { length: 100 }).notNull(), // landing_page, whatsapp_click, form_submit...
   weight: decimal("weight", { precision: 5, scale: 2 }).default("1.00").notNull(),
@@ -1997,7 +2000,7 @@ export const campaignTypeEnum = pgEnum("campaign_type", ["protocol_acquisition",
 export const campaignScopeEnum = pgEnum("campaign_scope", ["b2b", "b2c"]);
 
 export const demandDrafts = pgTable("demand_drafts", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   
   // Content DNA
@@ -2018,9 +2021,9 @@ export const demandDrafts = pgTable("demand_drafts", {
 });
 
 export const campaigns = pgTable("campaigns", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
-  draftId: uuid("draft_id").references(() => demandDrafts.id),
+  draftId: integer("draft_id").references(() => demandDrafts.id),
   
   ownerContext: ownerContextEnum("owner_context").default("client").notNull(),
   campaignType: campaignTypeEnum("campaign_type").default("user_acquisition").notNull(),
@@ -2040,8 +2043,8 @@ export const campaigns = pgTable("campaigns", {
 });
 
 export const demandEvents = pgTable("demand_events", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  campaignId: uuid("campaign_id").references(() => campaigns.id).notNull(),
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").references(() => campaigns.id).notNull(),
   
   eventType: varchar("event_type", { length: 50 }).notNull(), // impression, click, lead, purchase
   value: decimal("value", { precision: 18, scale: 2 }),      // Monetary value for ROI
@@ -2053,7 +2056,7 @@ export const demandEvents = pgTable("demand_events", {
 });
 
 export const campaignStats = pgTable("campaign_stats", {
-  campaignId: uuid("campaign_id").references(() => campaigns.id).primaryKey(),
+  campaignId: integer("campaign_id").references(() => campaigns.id).primaryKey(),
   
   impressions: integer("impressions").default(0).notNull(),
   clicks: integer("clicks").default(0).notNull(),
