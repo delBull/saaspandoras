@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PortalActivated from "@/components/nft-gating/PortalActivated";
 import { motion, AnimatePresence } from "framer-motion";
+import { X, Fingerprint, Box, Component, Compass } from "lucide-react";
 
 /**
  * 🧬 /access — Ritual de Entrada
@@ -38,7 +39,7 @@ function ScanningLine() {
       initial={{ top: '-2px' }}
       animate={{ top: '100%' }}
       transition={{ duration: 3.5, repeat: Infinity, ease: 'linear', repeatDelay: 1 }}
-      className="pointer-events-none fixed left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400/40 to-transparent z-10"
+      className="pointer-events-none fixed left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-lime-400/20 to-transparent z-10"
       style={{ position: 'fixed' }}
     />
   );
@@ -74,6 +75,7 @@ export default function AccessPage() {
   const [mounted, setMounted] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   useEffect(() => { 
     setMounted(true); 
@@ -128,7 +130,7 @@ export default function AccessPage() {
 
       {/* Glow ambiental */}
       <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
-        <div className="w-[300px] h-[300px] md:w-[700px] md:h-[700px] rounded-full bg-blue-500/6 blur-[80px] md:blur-[140px]" />
+        <div className="w-[300px] h-[300px] md:w-[700px] md:h-[700px] rounded-full bg-lime-500/5 blur-[80px] md:blur-[140px]" />
       </div>
 
       {/* Grid sutil */}
@@ -203,7 +205,7 @@ export default function AccessPage() {
                 animate={{ opacity: 1 }}
                 className="flex flex-col items-center gap-4"
               >
-                <div className="w-8 h-8 rounded-full border border-blue-500/30 border-t-blue-400 animate-spin" />
+                <div className="w-8 h-8 rounded-full border border-lime-500/20 border-t-lime-400 animate-spin" />
                 <p className="text-[9px] tracking-[0.5em] text-zinc-600 uppercase">Conectando sistema…</p>
               </motion.div>
             )}
@@ -215,13 +217,13 @@ export default function AccessPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="space-y-6 max-w-sm"
               >
-                <div className="w-px h-12 bg-gradient-to-b from-transparent via-blue-400 to-transparent mx-auto" />
+                <div className="w-px h-12 bg-gradient-to-b from-transparent via-lime-400/50 to-transparent mx-auto" />
                 <DynamicLoader texts={[
                   'Validando…',
                   'Generando clave…',
                   'Registrando acceso…',
                 ]} />
-                <div className="w-8 h-8 rounded-full border border-blue-500/20 border-t-blue-400 animate-spin mx-auto" />
+                <div className="w-8 h-8 rounded-full border border-lime-500/10 border-t-lime-400 animate-spin mx-auto" />
                 <p className="text-[9px] tracking-widest text-zinc-700 uppercase">
                   Se generará tu clave de acceso en segundo plano.
                 </p>
@@ -362,19 +364,40 @@ export default function AccessPage() {
                   </div>
                 </div>
 
+                {/* 🛡️ BETA CLOSED OVERRIDE (Phase 89 Refinement) */}
+                {!hasAccess && user?.id && (
+                  <div className="p-4 border border-orange-500/20 bg-orange-500/5 rounded-xl">
+                    <p className="text-[10px] text-orange-400 font-bold tracking-widest uppercase">
+                      ⚠️ Beta Privada // Acceso en Cola
+                    </p>
+                    <p className="text-zinc-500 text-[11px] mt-2 leading-relaxed">
+                      Tu wallet está verificada, pero el dashboard está en mantenimiento o la Beta está cerrada temporalmente. Pronto recibirás la señal para entrar.
+                    </p>
+                  </div>
+                )}
+
                 {/* Capital paths */}
                 <div className="space-y-3">
                   <p className="text-[9px] tracking-[0.5em] text-zinc-600 uppercase mb-4">Los primeros no solo entran antes. Deciden.</p>
                   <motion.button
-                    onClick={handleEnterSystem}
-                    whileHover={{ backgroundColor: '#a3e635', color: '#000' }}
+                    onClick={() => {
+                      if (hasAccess) {
+                        handleEnterSystem();
+                      } else {
+                        // Optimistic reload to check if admin just opened the gate
+                        window.location.reload();
+                      }
+                    }}
+                    whileHover={{ backgroundColor: hasAccess ? '#a3e635' : '#27272a', color: hasAccess ? '#000' : '#71717a' }}
                     whileTap={{ scale: 0.97 }}
-                    className="w-full py-4 text-[10px] tracking-[0.4em] uppercase border border-white/20 bg-transparent text-white transition-all font-bold"
+                    className={`w-full py-4 text-[10px] tracking-[0.4em] uppercase border transition-all font-bold ${
+                      hasAccess ? "border-white/20 bg-transparent text-white" : "border-zinc-800 bg-zinc-900/50 text-zinc-600"
+                    }`}
                   >
-                    Ver oportunidades disponibles
+                    {hasAccess ? "Ver oportunidades disponibles" : "Verificar Estado de Acceso"}
                   </motion.button>
                   <button
-                    onClick={handleEnterSystem}
+                    onClick={() => setShowHowItWorks(true)}
                     className="w-full py-3 text-[9px] tracking-[0.3em] uppercase text-zinc-600 hover:text-zinc-400 transition-colors"
                   >
                     Entender cómo funciona
@@ -386,6 +409,68 @@ export default function AccessPage() {
           </div>
         )}
       </NFTGate>
+
+      {/* ── MODAL: Cómo Funciona (Phase 89 Refinement) ───────────────────────── */}
+      <AnimatePresence>
+        {showHowItWorks && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-[2.5rem] overflow-hidden relative shadow-2xl shadow-lime-500/5"
+            >
+              <button 
+                onClick={() => setShowHowItWorks(false)}
+                className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="p-10 sm:p-12 space-y-10">
+                <div className="space-y-2">
+                  <p className="text-[10px] tracking-[.6em] text-lime-500 uppercase font-black italic">Protocolo Pandora's</p>
+                  <h2 className="text-4xl font-black tracking-tighter uppercase italic">Cómo funciona</h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {[
+                    { step: "01", icon: Fingerprint, title: "Sintonización", desc: "El Oracle analiza tu rastro en el ledger. Tu wallet no es solo una cuenta, es tu única llave de acceso al sistema." },
+                    { step: "02", icon: Box, title: "Artefactos", desc: "Participa y obtén artefactos digitales. Estas piezas certifican tu nivel de poder y permanencia en el protocolo." },
+                    { step: "03", icon: Component, title: "Prueba de Valor", desc: "Ejecuta actividades verificables. Tu actividad en los protocolos fluye directamente hacia recompensas tangibles." },
+                    { step: "04", icon: Compass, title: "Carga de Ventaja", desc: "Los primeros en entrar capturan la ventaja total. Tu reputación Genesis te posiciona antes que el resto del mercado." }
+                  ].map((s, i) => (
+                    <div key={i} className="p-6 rounded-3xl border border-zinc-900 bg-zinc-900/30 flex flex-col gap-4 group">
+                      <div className="flex items-center justify-between">
+                        <div className="p-2.5 rounded-xl bg-zinc-950 text-zinc-600 group-hover:bg-lime-500/10 group-hover:text-lime-400 transition-colors border border-zinc-900">
+                          <s.icon className="w-5 h-5" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-2xl font-black text-zinc-900 italic select-none">{s.step}</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-white mb-1 uppercase tracking-tight">{s.title}</h4>
+                        <p className="text-zinc-500 text-[11px] leading-relaxed">{s.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowHowItWorks(false)}
+                  className="w-full bg-white text-black py-5 text-[10px] tracking-[0.4em] font-black hover:bg-lime-400 transition-all uppercase"
+                >
+                  Entendido
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

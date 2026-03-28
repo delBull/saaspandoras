@@ -131,7 +131,7 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-8 text-center">
         <div className="w-24 h-24 mb-10 relative">
           <Image src="/images/pkey.png" alt="Key" width={120} height={120} className="relative z-10 animate-float" />
-          <div className="absolute inset-0 bg-purple-500/30 blur-3xl rounded-full animate-pulse" />
+          <div className="absolute inset-0 bg-lime-500/20 blur-3xl rounded-full animate-pulse" />
         </div>
         <p className="text-[9px] tracking-[1em] text-zinc-600 uppercase mb-4 animate-pulse">Protocolo Pandora's</p>
         <h2 className="text-4xl font-thin tracking-[0.12em] uppercase text-white mb-4 max-w-xs leading-tight">
@@ -489,8 +489,8 @@ export function NFTGate({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-6">
         <div className="relative">
-          <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full animate-pulse" />
-          <Loader2 className="w-10 h-10 animate-spin text-purple-500 relative z-10" />
+          <div className="absolute inset-0 bg-lime-500/10 blur-xl rounded-full animate-pulse" />
+          <Loader2 className="w-10 h-10 animate-spin text-lime-500 relative z-10" />
         </div>
         <p className="text-gray-400 font-mono text-xs tracking-widest uppercase">Escaneando Identidad...</p>
       </div>
@@ -603,7 +603,7 @@ export function NFTGate({
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-8">
       <div className="w-24 h-24 mb-10 relative">
         <Image src="/images/pkey.png" alt="Key" width={120} height={120} className="relative z-10 animate-float" />
-        <div className="absolute inset-0 bg-purple-500/30 blur-3xl rounded-full animate-pulse" />
+        <div className="absolute inset-0 bg-lime-500/20 blur-3xl rounded-full animate-pulse" />
       </div>
       <h2 className="text-3xl font-black mb-3 tracking-tighter">ACCESO REQUERIDO</h2>
       <p className="text-zinc-500 mb-12 max-w-sm text-center leading-relaxed font-medium">
@@ -611,10 +611,10 @@ export function NFTGate({
       </p>
       <button
         onClick={runRitual}
-        className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
+        className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 hover:bg-lime-400 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
       >
         <span className="relative z-10">Iniciar Ritual</span>
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 opacity-0 group-hover:opacity-10 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-r from-lime-500 to-lime-300 opacity-0 group-hover:opacity-10 transition-opacity" />
       </button>
       {account && (
         <p className="text-[10px] text-zinc-700 mt-6 uppercase tracking-widest font-mono">
