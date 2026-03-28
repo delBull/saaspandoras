@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import PortalActivated from "@/components/nft-gating/PortalActivated";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Fingerprint, Box, Component, Compass, ArrowRight, CheckCircle2 } from "lucide-react";
+import { AccessState } from "@/lib/access/state-machine";
+import { useAccessState } from "@/hooks/use-access-state";
 
 /**
  * 🧬 /access — Ritual de Entrada
@@ -69,7 +71,8 @@ function DynamicLoader({ texts }: { texts: string[] }) {
 
 export default function AccessPage() {
   const { connect } = useConnectModal();
-  const { user, status, runAuthFlow, hasAccess } = useAuth();
+  const { status: authStatus, runAuthFlow, user: authUser } = useAuth();
+  const { state, hasAccess, betaOpen, ritualEnabled, user, isLoading: isOracleLoading } = useAccessState();
   const account = useActiveAccount();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -97,25 +100,34 @@ export default function AccessPage() {
     }
   }, []);
 
-  const isLoading = status === 'booting' || status === 'checking_session';
-  
-  // 🛡️ Technical Fix: Ensure user object exists before checking access to avoid loops
-  const isMinting = status === 'minting';
+  const isMinting = authStatus === 'minting';
+  const isLoading = isOracleLoading || authStatus === 'booting' || authStatus === 'checking_session';
 
   useEffect(() => {
-    if ((status === "has_access" || hasAccess) && !isVerified) {
-      handleVerified();
+    // 🛡️ Ritual Bypass (Phase 89: Logic for returning users)
+    // Only trigger portal if we are in HAS_ACCESS or ADMIN state and haven't seen the ritual locally.
+    if ((state === AccessState.HAS_ACCESS || state === AccessState.ADMIN) && mounted && user?.address) {
+      const bypassRitual = localStorage.getItem(`pbox_ritual_seen_${user.address}`);
+      if (bypassRitual) {
+        router.push("/admin");
+      } else {
+        setShowPortal(true);
+      }
     }
-  }, [status, hasAccess, isVerified]);
+  }, [state, mounted, user?.address, router]);
 
-  const handleVerified = () => {
-    if (!isVerified) {
-      setIsVerified(true);
-      setShowPortal(true);
+  const handleEnterSystem = () => {
+    if (hasAccess) {
+      // Mark ritual as seen for this specific wallet
+      if (typeof window !== 'undefined' && user?.address) {
+        localStorage.setItem(`pbox_ritual_seen_${user?.address}`, 'true');
+      }
+      router.push("/admin");
+    } else {
+      // Beta closed logic
+      setShowPortal(false);
     }
   };
-
-  const handleEnterSystem = () => router.push('/');
 
   // 📧 Email loop closure
   const isApprovedFromEmail = typeof window !== 'undefined' && 
@@ -167,8 +179,8 @@ export default function AccessPage() {
       <NFTGate>
         {showPortal ? (
           <PortalActivated 
-            tier={user?.benefitsTier} 
-            hasAccess={hasAccess}
+            tier={user?.tier} 
+            hasAccess={!!hasAccess}
             onEnter={handleEnterSystem} 
             onShowHowItWorks={() => setShowHowItWorks(true)}
           />
@@ -237,7 +249,7 @@ export default function AccessPage() {
             )}
 
             {/* ── ESTADO: No conectado ─────────────────────────────────────── */}
-            {!user?.id && !isLoading && !isMinting && (
+            {!authUser?.id && !isLoading && !isMinting && (
               <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -331,7 +343,7 @@ export default function AccessPage() {
                 transition={{ duration: 0.8 }}
                 className="space-y-8 max-w-sm"
               >
-                {user.benefitsTier === 'genesis' ? (
+                {user?.tier === 'genesis' ? (
                   <>
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-lime-500/30 bg-lime-500/5 rounded-full">
                       <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
@@ -371,7 +383,7 @@ export default function AccessPage() {
                 </div>
 
                 {/* 🛡️ BETA CLOSED OVERRIDE (Phase 89 Refinement) */}
-                {!hasAccess && user?.id && (
+                {!hasAccess && authUser?.id && (
                   <div className="p-4 border border-orange-500/20 bg-orange-500/5 rounded-xl">
                     <p className="text-[10px] text-orange-400 font-bold tracking-widest uppercase">
                       ⚠️ Beta Privada // Acceso en Cola

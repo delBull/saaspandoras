@@ -29,7 +29,7 @@ export default function PortalActivated({ tier, hasAccess, onEnter, onShowHowItW
       try {
         const audio = new Audio('/sounds/activation.mp3');
         audio.volume = 0.3;
-        audio.play().catch(() => {});
+        audio.play().catch(() => { });
       } catch { /* silent */ }
     }
     setTimeout(() => setVisible(true), 300);
@@ -197,16 +197,16 @@ export default function PortalActivated({ tier, hasAccess, onEnter, onShowHowItW
               {/* Opción A */}
               <div className="space-y-2">
                 <motion.button
-                  onClick={onEnter}
-                  whileHover={{ backgroundColor: hasAccess ? '#a3e635' : '#27272a', color: hasAccess ? '#000' : '#71717a', scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  className={`w-full py-5 text-[10px] tracking-[0.4em] uppercase border transition-all duration-300 font-bold ${
-                    hasAccess ? "border-white/20 bg-transparent text-white" : "border-zinc-800 bg-zinc-900/50 text-zinc-600 cursor-not-allowed"
-                  }`}
+                  onClick={hasAccess ? onEnter : undefined}
+                  disabled={!hasAccess}
+                  whileHover={{ backgroundColor: hasAccess ? '#a3e635' : '#18181b', color: hasAccess ? '#000' : '#3f3f46', scale: hasAccess ? 1.02 : 1 }}
+                  whileTap={{ scale: hasAccess ? 0.97 : 1 }}
+                  className={`w-full py-5 text-[10px] tracking-[0.4em] uppercase border transition-all duration-300 font-bold ${hasAccess ? "border-white/20 bg-transparent text-white cursor-pointer" : "border-zinc-900 bg-zinc-950 text-zinc-700 cursor-not-allowed opacity-50"
+                    }`}
                 >
                   {hasAccess ? "Entrar al sistema" : "En cola de acceso"}
                 </motion.button>
-                <p className={`text-[9px] tracking-wide uppercase px-4 ${hasAccess ? 'text-zinc-500' : 'text-orange-500/60'}`}>
+                <p className={`text-[9px] tracking-wide uppercase px-4 ${hasAccess ? 'text-zinc-500' : 'text-lime-500/60'}`}>
                   {hasAccess ? "Acceso preferente. Condiciones no públicas." : "Tu rastro ha sido verificado. Espera la señal de apertura."}
                 </p>
               </div>
