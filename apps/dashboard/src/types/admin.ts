@@ -113,6 +113,7 @@ export interface UserData {
   kycCompleted: boolean;
   kycData?: KYCData | null;
   telegramId?: string | null;
+  ritualCompletedAt?: string | null;
 }
 
 export type UserRole = "applicant" | "pandorian" | "admin";

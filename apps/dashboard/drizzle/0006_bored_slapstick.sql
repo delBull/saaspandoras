@@ -1,1 +1,0 @@
-ALTER TYPE "public"."listing_status" ADD VALUE 'LOCKED' BEFORE 'SOLD';

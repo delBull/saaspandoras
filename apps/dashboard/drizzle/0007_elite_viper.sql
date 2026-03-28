@@ -1,2 +1,0 @@
-ALTER TABLE "protocol_config_queues" ADD COLUMN "proposed_early_exit_penalty" numeric(5, 4);--> statement-breakpoint
-ALTER TABLE "protocol_configs" ADD COLUMN "early_exit_penalty" numeric(5, 4) DEFAULT '0.1500' NOT NULL;

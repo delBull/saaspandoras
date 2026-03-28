@@ -11,6 +11,7 @@ export interface AccessStateData {
         hasAccess: boolean;
         isAdmin: boolean;
         tier: string;
+        ritualCompletedAt?: string | Date | null;
         pressureLevel: number;
     };
     ux?: {

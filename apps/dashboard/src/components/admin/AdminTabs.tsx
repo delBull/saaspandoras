@@ -96,7 +96,45 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
       {activeTab === 'projects' && children[0]}
 
       {activeTab === 'users' && showUsers && users && (
-        <UsersTable users={users} />
+        <div className="space-y-6">
+          {/* 🧬 Iniciado System Management (Phase 89) */}
+          <div className="bg-gradient-to-r from-cyan-900/20 to-zinc-900/40 border border-cyan-500/20 rounded-2xl p-6 backdrop-blur-sm">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
+                  🧬 Sistema de Iniciación Activo
+                  <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20">v1.0 Orbit</Badge>
+                </h3>
+                <p className="text-zinc-500 text-sm max-w-2xl">
+                  Los usuarios que completan el ritual son marcados como <span className="text-cyan-300 font-mono">INICIADO</span>. 
+                  Este atributo desbloquea el <strong>Artefacto Dinámico</strong> en su NFT y otorga acceso a beneficios exclusivos.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                 <div className="px-4 py-2 bg-zinc-800/50 rounded-xl border border-zinc-700 text-[10px] font-mono text-zinc-400 uppercase tracking-tighter">
+                    Status Path: /api/access-state
+                 </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+               <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                  <p className="text-[10px] text-zinc-500 uppercase font-black mb-1">Total Iniciados</p>
+                  <p className="text-xl font-bold text-white">{users.filter((u: any) => !!u.ritualCompletedAt).length}</p>
+               </div>
+               <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                  <p className="text-[10px] text-zinc-500 uppercase font-black mb-1">Metadata URL</p>
+                  <p className="text-[10px] font-mono text-cyan-500/70 truncate">/api/nft/metadata/[id]</p>
+               </div>
+               <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                  <p className="text-[10px] text-zinc-500 uppercase font-black mb-1">Perk System</p>
+                  <p className="text-[10px] text-zinc-400 italic">Synced with gamification_profiles</p>
+               </div>
+            </div>
+          </div>
+
+          <UsersTable users={users} />
+        </div>
       )}
 
       {activeTab === 'nft' && (

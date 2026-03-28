@@ -148,6 +148,7 @@ export async function GET(req: Request): Promise<NextResponse> {
                     hasAccess: hasNFTPermission || !!userIsAdmin,
                     isAdmin: !!userIsAdmin,
                     tier: dbUser?.benefitsTier || 'standard',
+                    ritualCompletedAt: dbUser?.ritualCompletedAt || null,
                     pressureLevel: resolvedState === AccessState.WALLET_NO_ACCESS ? 0.72 : 0
                 },
                 ux
