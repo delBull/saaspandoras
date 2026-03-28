@@ -56,7 +56,7 @@ export function DashboardClientWrapper({
 }) {
   const pathname = usePathname();
   const account = useActiveAccount();
-  const { user, status } = useAuth();
+  const { user, status: authStatus } = useAuth();
   const { isAdmin: isClientAdmin } = useAdmin();
   const { profile } = useProfile();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -64,6 +64,8 @@ export function DashboardClientWrapper({
 
   // Determinar acceso consolidado (Servidor + Cliente + Easter Egg)
   const hasAccess = isAdmin || isSuperAdmin || user?.hasAccess || isClientAdmin;
+  const isAuthorized = hasAccess && authStatus === "has_access";
+  const isAuthResolving = authStatus === "booting" || authStatus === "checking_session" || authStatus === "checking_access";
 
   // Estados de loading para controlar UI
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
@@ -91,56 +93,13 @@ export function DashboardClientWrapper({
     setUserName(null);
   }, [account?.address]);
 
-  // 🔴 PANTALLA COMPLETA DE LOADING - OCULTA TODO HASTA 300ms
-  if (isLoadingUserData && account?.address) {
+  // 🔴 PANTALLA COMPLETA DE LOADING - Oculta el dashboard hasta que auth esté resuelto
+  if ((isLoadingUserData && account?.address) || (isAuthResolving && account?.address)) {
     return (
-      <TokenPriceProvider>
-        <TermsModalProvider>
-          {/* LOADING FULLSCREEN PARA TODAS LAS PÁGINAS */}
-          <div className="min-h-screen bg-zinc-900 animate-pulse">
-            {/* HEADER SIMULADO */}
-            <div className="flex items-center justify-center p-4 border-b border-zinc-800">
-              <div className="max-w-7xl w-full flex items-center justify-between">
-                {/* SIDEBAR SIMULADA */}
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-zinc-700 rounded"></div>
-                  <div className="space-y-2">
-                    <div className="w-24 h-4 bg-zinc-700 rounded"></div>
-                    <div className="w-16 h-3 bg-zinc-700 rounded"></div>
-                  </div>
-                </div>
-                {/* TOPNAVBAR SIMULADA */}
-                <div className="w-32 h-8 bg-zinc-700 rounded"></div>
-              </div>
-            </div>
-            {/* CONTENIDO PRINCIPAL SIMULADO */}
-            <div className="max-w-7xl mx-auto px-4 py-6">
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div className="space-y-2">
-                    <div className="w-48 h-6 bg-zinc-700 rounded"></div>
-                    <div className="w-32 h-4 bg-zinc-700 rounded"></div>
-                  </div>
-                  <div className="w-24 h-8 bg-zinc-700 rounded"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="h-32 bg-zinc-700 rounded"></div>
-                  <div className="h-32 bg-zinc-700 rounded"></div>
-                  <div className="h-32 bg-zinc-700 rounded"></div>
-                </div>
-                {/* TABLA O CONTENIDO PRINCIPAL */}
-                <div className="space-y-4">
-                  <div className="w-full h-8 bg-zinc-700 rounded"></div>
-                  <div className="w-full h-64 bg-zinc-700 rounded"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <TermsModalRenderer />
-          <RewardModalManager />
-        </TermsModalProvider>
-      </TokenPriceProvider>
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-2 border-lime-500/20 border-t-lime-400 animate-spin rounded-full" />
+        <p className="text-[10px] tracking-[0.5em] text-zinc-600 uppercase animate-pulse">Sincronizando Protocolo...</p>
+      </div>
     );
   }
 
