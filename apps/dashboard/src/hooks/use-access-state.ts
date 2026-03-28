@@ -19,6 +19,8 @@ export interface AccessStateData {
         copyVariant: string;
         scarcityHint?: string;
     };
+    betaOpen: boolean;
+    ritualEnabled: boolean;
     error?: string;
     _dev_debug?: {
         message: string;
@@ -50,10 +52,10 @@ export function useAccessState() {
                 const json = await res.json();
                 setData(json);
             } else {
-                setData({ state: AccessState.ERROR, authenticated: false, isAdmin: false, hasAccess: false, error: 'API_UNREACHABLE' });
+                setData({ state: AccessState.ERROR, authenticated: false, isAdmin: false, hasAccess: false, betaOpen: false, ritualEnabled: true, error: 'API_UNREACHABLE' });
             }
         } catch (err) {
-            setData({ state: AccessState.ERROR, authenticated: false, isAdmin: false, hasAccess: false, error: 'NET_ERROR' });
+            setData({ state: AccessState.ERROR, authenticated: false, isAdmin: false, hasAccess: false, betaOpen: false, ritualEnabled: true, error: 'NET_ERROR' });
         } finally {
             setIsLoading(false);
         }
