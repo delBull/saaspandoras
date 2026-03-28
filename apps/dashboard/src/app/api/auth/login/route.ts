@@ -191,6 +191,34 @@ export async function POST(request: Request) {
             console.log(`🆕 User created with unified ID: ${userId}`);
         }
 
+        console.log(`✅ [LOGIN] Session ${sid} created for user ${userId}`);
+
+        // 🧬 Phase 89: Growth Engine - High Intent Capture
+        // Trigger a WALLET_CONNECTED event for the Growth OS immediately upon successful Ritual entrance.
+        try {
+            console.log(`📡 [LOGIN] Triggering WALLET_CONNECTED for ${walletAddress}...`);
+            // We use the internal events endpoint to notify the Growth Engine
+            // This happens in the background (fire and forget)
+            const origin = new URL(request.url).origin;
+            fetch(`${origin}/api/v1/marketing/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event: 'WALLET_CONNECTED',
+                    walletAddress: walletAddress,
+                    userId,
+                    metadata: {
+                        source: 'ritual_auth',
+                        hasAccess,
+                        ip,
+                        userAgent
+                    }
+                })
+            }).catch(e => console.warn("⚠️ [LOGIN] Growth Event Trigger Failed (Non-blocking):", e.message));
+        } catch (e) {
+            console.warn("⚠️ [LOGIN] Growth Event Trigger Setup Failed:", e);
+        }
+
         // Persistence
         await db.insert(sessions).values({
             id: sid,
@@ -208,8 +236,6 @@ export async function POST(request: Request) {
             userAgent,
             metadata: { scope: 'web', sid }
         });
-
-        console.log(`✅ [LOGIN] Session ${sid} created for user ${userId}`);
 
         // 9. Issue Scoped JWT with sid - Support RS256 or HS256
         const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
@@ -331,6 +357,11 @@ export async function POST(request: Request) {
 
     } catch (error: any) {
         console.error("❌ [Dashboard /api/auth/login] CRITICAL FAILURE:", error);
+
+        // 🚑 STABILITY FIX: If session insertion failed due to schema mismatch, log specific detail
+        if (error.message?.includes('invalid input syntax for type uuid')) {
+            console.error("🚨 SCHEMA DRIFT DETECTED: sessions.id expects UUID but DB rejected. Check migrations.");
+        }
 
         let detailedError = "Internal Server Error";
         const status = 500;
