@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PortalActivated from "@/components/nft-gating/PortalActivated";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Fingerprint, Box, Component, Compass } from "lucide-react";
+import { X, Fingerprint, Box, Component, Compass, ArrowRight, CheckCircle2 } from "lucide-react";
 
 /**
  * 🧬 /access — Ritual de Entrada
@@ -76,6 +76,7 @@ export default function AccessPage() {
   const [showPortal, setShowPortal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [iniciacionPhase, setIniciacionPhase] = useState(1);
 
   useEffect(() => { 
     setMounted(true); 
@@ -167,6 +168,7 @@ export default function AccessPage() {
         {showPortal ? (
           <PortalActivated 
             tier={user?.benefitsTier} 
+            hasAccess={hasAccess}
             onEnter={handleEnterSystem} 
             onShowHowItWorks={() => setShowHowItWorks(true)}
           />
@@ -414,62 +416,199 @@ export default function AccessPage() {
         )}
       </NFTGate>
 
-      {/* ── MODAL: Cómo Funciona (Phase 89 Refinement) ───────────────────────── */}
+      {/* ── MODAL: Iniciación (Phase 89 Overhaul) ─────────────────────────── */}
       <AnimatePresence>
         {showHowItWorks && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl"
+            className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-[2.5rem] overflow-hidden relative shadow-2xl shadow-lime-500/5"
+              exit={{ scale: 0.95, y: 20 }}
+              className="w-full max-w-lg bg-zinc-950 border border-zinc-900 rounded-[3rem] overflow-hidden relative shadow-2xl shadow-lime-500/10"
             >
               <button 
-                onClick={() => setShowHowItWorks(false)}
-                className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors"
+                onClick={() => {
+                  setShowHowItWorks(false);
+                  setIniciacionPhase(1);
+                }}
+                className="absolute top-8 right-8 text-zinc-700 hover:text-white transition-colors z-10"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
 
-              <div className="p-10 sm:p-12 space-y-10">
-                <div className="space-y-2">
-                  <p className="text-[10px] tracking-[.6em] text-lime-500 uppercase font-black italic">Protocolo Pandora's</p>
-                  <h2 className="text-4xl font-black tracking-tighter uppercase italic">Cómo funciona</h2>
-                </div>
+              <div className="p-10 sm:p-14 min-h-[500px] flex flex-col justify-between">
+                <AnimatePresence mode="wait">
+                  {iniciacionPhase === 1 && (
+                    <motion.div
+                      key="p1"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <p className="text-[10px] tracking-[.8em] text-lime-500 uppercase font-black italic">Fase 1 — Reconocimiento</p>
+                        <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-none">Esto no es<br/>una cuenta</h2>
+                      </div>
+                      <div className="space-y-6">
+                        <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                          Tu acceso no depende de un correo ni una contraseña.<br/>
+                          <span className="text-white font-medium">Aquí, tu identidad es tu llave.</span>
+                        </p>
+                        <p className="text-zinc-600 text-xs italic">
+                          El sistema reconoce tu presencia y decide cómo puedes entrar.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {[
-                    { step: "01", icon: Fingerprint, title: "Sintonización", desc: "El Oracle analiza tu rastro en el ledger. Tu wallet no es solo una cuenta, es tu única llave de acceso al sistema." },
-                    { step: "02", icon: Box, title: "Artefactos", desc: "Participa y obtén artefactos digitales. Estas piezas certifican tu nivel de poder y permanencia en el protocolo." },
-                    { step: "03", icon: Component, title: "Prueba de Valor", desc: "Ejecuta actividades verificables. Tu actividad en los protocolos fluye directamente hacia recompensas tangibles." },
-                    { step: "04", icon: Compass, title: "Carga de Ventaja", desc: "Los primeros en entrar capturan la ventaja total. Tu reputación Genesis te posiciona antes que el resto del mercado." }
-                  ].map((s, i) => (
-                    <div key={i} className="p-6 rounded-3xl border border-zinc-900 bg-zinc-900/30 flex flex-col gap-4 group">
-                      <div className="flex items-center justify-between">
-                        <div className="p-2.5 rounded-xl bg-zinc-950 text-zinc-600 group-hover:bg-lime-500/10 group-hover:text-lime-400 transition-colors border border-zinc-900">
-                          <s.icon className="w-5 h-5" strokeWidth={1.5} />
+                  {iniciacionPhase === 2 && (
+                    <motion.div
+                      key="p2"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <p className="text-[10px] tracking-[.8em] text-lime-500 uppercase font-black italic">Fase 2 — La Llave</p>
+                        <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-none">Tu acceso<br/>es único</h2>
+                      </div>
+                      <div className="space-y-6">
+                        <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                          Tu wallet no es solo un medio de pago.<br/>
+                          <span className="text-white font-medium">Es la única forma de entrar y permanecer.</span>
+                        </p>
+                        <p className="text-zinc-600 text-xs italic">
+                          Nada se comparte. Nada se replica. Todo empieza contigo.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {iniciacionPhase === 3 && (
+                    <motion.div
+                      key="p3"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <p className="text-[10px] tracking-[.8em] text-lime-500 uppercase font-black italic">Fase 3 — El Protocolo</p>
+                        <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-none">Esto es un<br/>protocolo</h2>
+                      </div>
+                      <div className="space-y-6">
+                        <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                          No compras acceso.<br/>
+                          <span className="text-white font-medium">Participas en un sistema que evoluciona.</span>
+                        </p>
+                        <p className="text-zinc-600 text-xs italic">
+                          Cada acción cuenta. Cada decisión define tu lugar.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {iniciacionPhase === 4 && (
+                    <motion.div
+                      key="p4"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <p className="text-[10px] tracking-[.8em] text-lime-500 uppercase font-black italic">Fase 4 — Artefactos</p>
+                        <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-none">Los artefactos<br/>definen tu nivel</h2>
+                      </div>
+                      <div className="space-y-6">
+                        <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                          Al participar, obtienes piezas únicas.<br/>
+                          <span className="text-white font-medium">No son objetos. Son prueba de tu avance.</span>
+                        </p>
+                        <div className="space-y-2 text-zinc-500 text-[11px] uppercase tracking-widest font-bold">
+                          <p>— Lo que puedes hacer</p>
+                          <p>— A qué puedes acceder</p>
+                          <p>— Cuánto permaneces dentro</p>
                         </div>
-                        <span className="text-2xl font-black text-zinc-900 italic select-none">{s.step}</span>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-black text-white mb-1 uppercase tracking-tight">{s.title}</h4>
-                        <p className="text-zinc-500 text-[11px] leading-relaxed">{s.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    </motion.div>
+                  )}
 
-                <button
-                  onClick={() => setShowHowItWorks(false)}
-                  className="w-full bg-white text-black py-5 text-[10px] tracking-[0.4em] font-black hover:bg-lime-400 transition-all uppercase"
-                >
-                  Entendido
-                </button>
+                  {iniciacionPhase === 5 && (
+                    <motion.div
+                      key="p5"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <p className="text-[10px] tracking-[.8em] text-lime-500 uppercase font-black italic">Fase 5 — Decisión</p>
+                        <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-none">Puedes<br/>entrar</h2>
+                      </div>
+                      <div className="space-y-6">
+                        <p className="text-zinc-400 text-sm font-light leading-relaxed">
+                          El sistema ya te reconoce.<br/>
+                          <span className="text-white font-medium">A partir de aquí, todo queda registrado.</span>
+                        </p>
+                        <p className="text-zinc-600 text-xs italic">
+                          Tu progreso depende de lo que hagas dentro.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="pt-12 space-y-4">
+                  {iniciacionPhase < 5 ? (
+                    <button
+                      onClick={() => setIniciacionPhase(prev => prev + 1)}
+                      className="w-full bg-white text-black py-5 text-[10px] tracking-[0.4em] font-black hover:bg-lime-400 transition-all uppercase flex items-center justify-center gap-3 group rounded-xl"
+                    >
+                      {iniciacionPhase === 4 ? "Ya lo entiendo" : iniciacionPhase === 3 ? "Seguir" : iniciacionPhase === 2 ? "Entendido" : "Continuar"}
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={() => {
+                          setShowHowItWorks(false);
+                          setIniciacionPhase(1);
+                          if (hasAccess) handleEnterSystem();
+                        }}
+                        className="w-full bg-lime-500 text-black py-5 text-[10px] tracking-[0.4em] font-black hover:bg-lime-400 transition-all uppercase rounded-xl"
+                      >
+                        Estoy listo
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowHowItWorks(false);
+                          setIniciacionPhase(1);
+                        }}
+                        className="w-full py-4 text-[9px] tracking-[0.3em] uppercase text-zinc-600 hover:text-zinc-400 transition-colors"
+                      >
+                        Aún no
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Progress dots */}
+                  <div className="flex justify-center gap-2 pt-4">
+                    {[1,2,3,4,5].map(p => (
+                      <div 
+                        key={p} 
+                        className={`w-1 h-1 rounded-full transition-all duration-500 ${iniciacionPhase === p ? 'bg-lime-500 w-4' : 'bg-zinc-800'}`} 
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>

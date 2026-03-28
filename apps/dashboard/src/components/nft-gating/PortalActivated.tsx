@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface PortalActivatedProps {
   tier: 'genesis' | 'standard' | string | null | undefined;
+  hasAccess: boolean;
   onEnter: () => void;
   onShowHowItWorks?: () => void;
 }
@@ -16,7 +17,7 @@ interface PortalActivatedProps {
  * Aplicando feedback psicológico: Contundencia, Exclusividad, Encuadre Financiero.
  * ============================================================================
  */
-export default function PortalActivated({ tier, onEnter, onShowHowItWorks }: PortalActivatedProps) {
+export default function PortalActivated({ tier, hasAccess, onEnter, onShowHowItWorks }: PortalActivatedProps) {
   const [phase, setPhase] = useState<'confirm' | 'reveal' | 'capital'>('confirm');
   const [visible, setVisible] = useState(false);
   const isGenesis = tier === 'genesis';
@@ -197,14 +198,16 @@ export default function PortalActivated({ tier, onEnter, onShowHowItWorks }: Por
               <div className="space-y-2">
                 <motion.button
                   onClick={onEnter}
-                  whileHover={{ backgroundColor: '#a3e635', color: '#000', scale: 1.02 }}
+                  whileHover={{ backgroundColor: hasAccess ? '#a3e635' : '#27272a', color: hasAccess ? '#000' : '#71717a', scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full py-5 text-[10px] tracking-[0.4em] uppercase border border-white/20 bg-transparent text-white transition-all duration-300 font-bold"
+                  className={`w-full py-5 text-[10px] tracking-[0.4em] uppercase border transition-all duration-300 font-bold ${
+                    hasAccess ? "border-white/20 bg-transparent text-white" : "border-zinc-800 bg-zinc-900/50 text-zinc-600 cursor-not-allowed"
+                  }`}
                 >
-                  Entrar al sistema
+                  {hasAccess ? "Entrar al sistema" : "En cola de acceso"}
                 </motion.button>
-                <p className="text-[9px] text-zinc-500 tracking-wide uppercase px-4">
-                  Acceso preferente. Condiciones no públicas.
+                <p className={`text-[9px] tracking-wide uppercase px-4 ${hasAccess ? 'text-zinc-500' : 'text-orange-500/60'}`}>
+                  {hasAccess ? "Acceso preferente. Condiciones no públicas." : "Tu rastro ha sido verificado. Espera la señal de apertura."}
                 </p>
               </div>
 
