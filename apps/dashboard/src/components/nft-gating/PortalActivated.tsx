@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface PortalActivatedProps {
   tier: 'genesis' | 'standard' | string | null | undefined;
   onEnter: () => void;
+  onShowHowItWorks?: () => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface PortalActivatedProps {
  * Aplicando feedback psicológico: Contundencia, Exclusividad, Encuadre Financiero.
  * ============================================================================
  */
-export default function PortalActivated({ tier, onEnter }: PortalActivatedProps) {
+export default function PortalActivated({ tier, onEnter, onShowHowItWorks }: PortalActivatedProps) {
   const [phase, setPhase] = useState<'confirm' | 'reveal' | 'capital'>('confirm');
   const [visible, setVisible] = useState(false);
   const isGenesis = tier === 'genesis';
@@ -44,7 +45,7 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
       <motion.div
         animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.18, 0.08] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] blur-[80px] md:blur-[140px] rounded-full ${isGenesis ? 'bg-lime-400/8' : 'bg-blue-500/8'}`}
+        className={`absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] blur-[80px] md:blur-[140px] rounded-full ${isGenesis ? 'bg-lime-400/8' : 'bg-lime-500/8'}`}
       />
       {/* Scanlines */}
       <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
@@ -90,14 +91,14 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-blue-500/30 bg-blue-500/5 rounded-full mx-auto">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                  <span className="text-[9px] font-bold tracking-[0.3em] text-blue-400 uppercase">Early Access</span>
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-lime-500/30 bg-lime-500/5 rounded-full mx-auto">
+                  <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+                  <span className="text-[9px] font-bold tracking-[0.3em] text-lime-400 uppercase">Early Access</span>
                 </div>
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-[0.1em] md:tracking-[0.15em] text-white leading-tight uppercase">
                   Acceso confirmado.
                 </h2>
-                <p className="text-xl font-light text-blue-400 tracking-wide">
+                <p className="text-xl font-light text-lime-400 tracking-wide">
                   Tu posición ha sido registrada.
                 </p>
                 <p className="text-zinc-500 text-sm font-light leading-loose border-t border-white/5 pt-6">
@@ -217,8 +218,8 @@ export default function PortalActivated({ tier, onEnter }: PortalActivatedProps)
               {/* Opción B */}
               <div className="space-y-2">
                 <button
-                  onClick={onEnter}
-                  className="w-full py-4 text-[10px] tracking-[0.3em] uppercase border border-zinc-900 text-zinc-600 hover:text-zinc-300 hover:border-zinc-700 transition-all"
+                  onClick={onShowHowItWorks || onEnter}
+                  className="w-full py-4 text-[10px] tracking-[0.3em] uppercase border border-zinc-900 text-zinc-600 hover:text-zinc-300 hover:border-zinc-700 transition-all font-bold"
                 >
                   Entender cómo funciona
                 </button>
