@@ -165,7 +165,11 @@ export default function AccessPage() {
 
       <NFTGate>
         {showPortal ? (
-          <PortalActivated tier={user?.benefitsTier} onEnter={handleEnterSystem} />
+          <PortalActivated 
+            tier={user?.benefitsTier} 
+            onEnter={handleEnterSystem} 
+            onShowHowItWorks={() => setShowHowItWorks(true)}
+          />
         ) : (
           <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
 
@@ -338,13 +342,13 @@ export default function AccessPage() {
                   </>
                 ) : (
                   <>
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-blue-500/30 bg-blue-500/5 rounded-full">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                      <span className="text-[9px] font-bold tracking-[0.3em] text-blue-400 uppercase">Early Access</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-lime-500/30 bg-lime-500/5 rounded-full">
+                      <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+                      <span className="text-[9px] font-bold tracking-[0.3em] text-lime-400 uppercase">Early Access</span>
                     </div>
                     <h2 className="text-3xl md:text-4xl font-thin tracking-wide text-white">
                       Acceso confirmado.<br />
-                      <span className="text-blue-400">Tu posición ha sido registrada.</span>
+                      <span className="text-lime-400">Tu posición ha sido registrada.</span>
                     </h2>
                   </>
                 )}
@@ -417,7 +421,7 @@ export default function AccessPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl"
+            className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
