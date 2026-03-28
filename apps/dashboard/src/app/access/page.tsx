@@ -109,7 +109,7 @@ export default function AccessPage() {
     if ((state === AccessState.HAS_ACCESS || state === AccessState.ADMIN) && mounted && user?.address) {
       const bypassRitual = localStorage.getItem(`pbox_ritual_seen_${user.address}`);
       if (bypassRitual) {
-        router.push("/admin");
+        router.push(state === AccessState.ADMIN ? "/admin" : "/applicants");
       } else {
         setShowPortal(true);
       }
@@ -126,7 +126,7 @@ export default function AccessPage() {
         // Backend persistence (non-blocking legacy sync)
         fetch('/api/v1/user/initiate', { method: 'POST' }).catch(console.error);
       }
-      router.push("/admin");
+      router.push(state === AccessState.ADMIN ? "/admin" : "/applicants");
     } else {
       // Beta closed logic
       setShowPortal(false);
@@ -340,7 +340,7 @@ export default function AccessPage() {
             )}
 
             {/* ── ESTADO: Usuario con acceso activo ya (no en portal aún) ── */}
-            {user?.hasAccess && !showPortal && (
+            {authUser?.id && user?.hasAccess && !showPortal && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
