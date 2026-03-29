@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { marketingLeadEvents, marketingLeads } from '@/db/schema';
-import { eq, and, gt, sql } from 'drizzle-orm';
+import { eq, and, gt, sql, or } from 'drizzle-orm';
 import { createHash } from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -90,16 +90,19 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 1.2 Resolve existing Lead record
-        let leadRecord = await db.query.marketingLeads.findFirst({
-            where: and(
+        // 1.2 Resolve existing Lead record (Bugfix: Avoid findFirst AST caching with dynamic OR array)
+        const orConditions = [eq(marketingLeads.fingerprint, effectiveFingerprint)];
+        if (leadEmail) orConditions.push(eq(marketingLeads.email, leadEmail));
+        if (walletAddress) orConditions.push(eq(marketingLeads.walletAddress, walletAddress));
+
+        const leadRecordArray = await db.select().from(marketingLeads).where(
+            and(
                 eq(marketingLeads.projectId, parsedProjectId),
-                sql`(${marketingLeads.fingerprint} = ${effectiveFingerprint} 
-                    OR (${leadEmail} IS NOT NULL AND ${marketingLeads.email} = ${leadEmail})
-                    OR (${walletAddress} IS NOT NULL AND ${marketingLeads.walletAddress} = ${walletAddress}))`
-            ),
-            with: { project: true }
-        });
+                or(...orConditions)
+            )
+        ).limit(1);
+
+        let leadRecord: any = leadRecordArray.length > 0 ? { ...leadRecordArray[0], project } : null;
 
         // 1.3 Create Lead if missing (Audit: Auto-Capture)
         if (!leadRecord) {
