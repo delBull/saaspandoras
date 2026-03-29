@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound } from "next/navigation";
-import { useState, useEffect, useRef, Suspense, useMemo } from "react";
+import { useState, useEffect, useRef, Suspense, useMemo, use } from "react";
 import type { ProjectData } from "../types";
 import ProjectVideoSection, { type ProjectVideoSectionRef } from "../../../../components/projects/ProjectVideoSection";
 import ProjectNavigationHeader from "../../../../components/projects/ProjectNavigationHeader";
@@ -110,9 +110,10 @@ function normalizeV1Project(p: ProjectData): ProjectData {
 }
 
 export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [project, setProject] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentSlug, setCurrentSlug] = useState<string>('');
+  const [isError, setIsError] = useState(false);
   const videoRef = useRef<ProjectVideoSectionRef>(null);
 
   const showVideoFromHeader = () => {
@@ -126,27 +127,26 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   }, []);
 
   useEffect(() => {
+    let active = true;
     const loadProject = async () => {
       try {
-        const resolvedParams = await params;
-        const slug = resolvedParams.slug;
-        setCurrentSlug(slug);
         const response = await fetch(`/api/projects/${slug}`);
         if (response.ok) {
           const projectData = await response.json() as ProjectData;
-          setProject(projectData);
+          if (active) setProject(projectData);
         } else {
-          notFound();
+          if (active) setIsError(true);
         }
       } catch (error) {
         console.error('Error loading project:', error);
-        notFound();
+        if (active) setIsError(true);
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
     void loadProject();
-  }, [params]);
+    return () => { active = false; };
+  }, [slug]);
 
   // ── Normalizer — must be above early returns (rules-of-hooks) ───────────
   // useMemo runs unconditionally; null-safe because project may not be loaded yet.
@@ -166,7 +166,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
     );
   }
 
-  if (!project) { notFound(); }
+  if (isError || !project) { notFound(); }
 
   // ── V2 Detection — explicit semantic signals ONLY ─────────────────────────
   // ❌ Do NOT check artifacts.length — V1 protocols can have partial w2eConfig
@@ -184,7 +184,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
           <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
         </div>
       }>
-        <ProtocolPageDispatcher project={project} currentSlug={currentSlug} />
+        <ProtocolPageDispatcher project={project} currentSlug={slug} />
       </Suspense>
     );
   }
@@ -209,7 +209,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
           </div>
           <MobileInvestmentCard project={normalizedProject!} targetAmount={targetAmount} />
         </div>
-        <RecommendedProjectsSection currentProjectSlug={currentSlug} />
+        <RecommendedProjectsSection currentProjectSlug={slug} />
       </div>
     </div>
   );
