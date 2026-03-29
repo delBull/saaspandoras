@@ -297,6 +297,7 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 1,
               projectName: project.name,
+              projectSlug: project.slug,
               brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
               engagementLevel: lead.engagementLevel
             });
@@ -313,6 +314,7 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 2,
               projectName: project.name,
+              projectSlug: project.slug,
               brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
               engagementLevel: lead.engagementLevel
             });
@@ -329,6 +331,7 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 3,
               projectName: project.name,
+              projectSlug: project.slug,
               brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
               engagementLevel: lead.engagementLevel
             });
@@ -345,6 +348,7 @@ export async function executeGrowthActions(
               to: lead.email as string,
               step: 4,
               projectName: project.name,
+              projectSlug: project.slug,
               brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
               engagementLevel: lead.engagementLevel
             });

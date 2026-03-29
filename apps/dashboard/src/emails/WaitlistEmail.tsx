@@ -10,6 +10,7 @@ import {
   Text,
   Link,
   Hr,
+  Button,
 } from '@react-email/components';
 
 interface WaitlistEmailProps {
@@ -18,6 +19,8 @@ interface WaitlistEmailProps {
   step: number | string;
   projectName?: string;
   brandHeader?: string;
+  ctaText?: string;
+  ctaUrl?: string;
 }
 
 export default function WaitlistEmail({
@@ -26,6 +29,8 @@ export default function WaitlistEmail({
   step,
   projectName = "Narai",
   brandHeader = "PANDORA'S FINANCE // ACCESO EXCLUSIVO",
+  ctaText,
+  ctaUrl,
 }: WaitlistEmailProps) {
   return (
     <Html>
@@ -55,6 +60,17 @@ export default function WaitlistEmail({
                   </Text>
                 ))}
               </Section>
+
+              {ctaText && ctaUrl && (
+                <Section className="text-center mt-12 mb-6">
+                  <Button 
+                    href={ctaUrl}
+                    className="bg-[#a3e635] text-black px-8 py-5 rounded-xl font-black text-[12px] tracking-[0.3em] uppercase w-full max-w-[400px]"
+                  >
+                    {ctaText}
+                  </Button>
+                </Section>
+              )}
 
               {/* Signature */}
               <Section className="mt-10 pt-6 border-t border-zinc-900">
