@@ -84,6 +84,17 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
     setError("");
 
     try {
+      // FIX 5: Pre-check to prevent duplicate registrations in the frontend
+      const checkRes = await fetch(`/api/lead-exists?email=${encodeURIComponent(formData.email)}`);
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        if (checkData.exists) {
+          setError("Este correo ya ha sido registrado previamente. Por favor, conecta tu wallet si ya tienes acceso.");
+          setLoading(false);
+          return;
+        }
+      }
+
       // FIX 3: Validate backend — no ghost leads
       const res = await fetch("/api/v1/marketing/leads/register", {
         method: "POST",
