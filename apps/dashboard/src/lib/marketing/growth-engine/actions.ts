@@ -46,6 +46,7 @@ export async function executeGrowthActions(
   }
 
   const { lead, project } = context;
+  console.log(`[Growth Engine] ⏯️ Starting Actions for Lead: ${lead.email || lead.id}, Context Project: ${project.name}`);
 
   if (!lead.email && !lead.id) {
     console.warn(`[Growth Engine] Skipping actions for lead: incomplete identity.`);
@@ -121,12 +122,13 @@ export async function executeGrowthActions(
     if (!wasBypassUsed && lastExec) {
         const lastExecTime = typeof lastExec === 'number' ? lastExec : now;
         if (now - lastExecTime < cooldown) {
-            console.log(`[Growth Engine] Cooldown active for ${action} on ${lead.email}.`);
+            console.log(`[Growth OS] 🛡️ COOLDOWN: Skipping ${action} for ${lead.email}. Last run: ${new Date(lastExecTime).toLocaleString()}`);
             continue;
         }
         
         // Unique state-bound actions shouldn't run twice if cooldown is 0 but they are already done
         if ((action.includes('WELCOME') || action === 'SEND_SOW') && lastExec) {
+             console.log(`[Growth OS] 🛡️ DUPLICATE: Skipping WELCOME for ${lead.email} — already executed once.`);
              continue;
         }
     }
@@ -158,9 +160,11 @@ export async function executeGrowthActions(
 
     // CONCURRENCY LOCK (Action Level)
     if (growthMetadata.executingActions[action]) {
-      console.warn(`[Growth Engine] Action ${action} is already executing for ${lead.email}. Skipping.`);
+      console.warn(`[Growth OS] 🔒 CONCURRENCY: Action ${action} already in progress for ${lead.email}.`);
       continue;
     }
+
+    console.log(`[Growth OS] 🛫 DISPATCHING ${action} for ${lead.email}...`);
 
     let success = false;
     try {

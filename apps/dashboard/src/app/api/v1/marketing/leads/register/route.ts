@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get('user-agent') || 'unknown';
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
 
+    console.log(`[Growth OS] ➡️  New Lead Registration attempt from IP: ${ip}, API Key: ${apiKey?.substring(0, 10)}...`);
+
     // Use request origin/referer as fallback for origin if not provided in body
     const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
 
@@ -144,6 +146,8 @@ export async function POST(req: NextRequest) {
       targetProjectId = Number(projectId);
       resolutionMethod = 'explicit_id';
     }
+
+    console.log(`[Growth OS] 🎯 Project Resolved: ID=${targetProjectId}, Method=${resolutionMethod}, Requested=${projectId}`);
 
     // --- DUAL ENGINE AUTO-ROUTING ---
     // Detect Scope & Owner Context based on Origin or Explicit Body
@@ -283,7 +287,10 @@ export async function POST(req: NextRequest) {
         metadata: result.metadata
       });
       
-      if (engineResult) {
+      console.log(`[Growth OS] 🧠 Engine Result: Actions=${JSON.stringify(engineResult?.actions || [])}, Rule=${engineResult?.ruleId}`);
+
+      if (engineResult && engineResult.actions.length > 0) {
+        console.log(`[Growth OS] 🚀 Triggering ${engineResult.actions.length} actions for ${result.email}...`);
         await executeGrowthActions(engineResult.actions, {
           lead: result as any,
           project: {
