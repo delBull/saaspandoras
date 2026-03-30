@@ -59,15 +59,15 @@ export default function PandorasSimpleWelcomeEmail({
                 Mientras tanto, puedes comenzar explorando nuestra plataforma en desarrollo. ¿Alguna pregunta? Responde a este email y te ayudaremos personalmente.
               </Text>
 
-              <Section className="bg-black text-center p-6 rounded-lg">
-                <Text className="text-white text-xl font-medium mb-2">
-                  © 2025 Pandora's Finance.
+              <Section className="bg-zinc-50 text-center p-6 rounded-lg border border-zinc-100">
+                <Text className="text-black text-xl font-medium mb-2">
+                  © 2026 Pandora's Finance.
                 </Text>
-                <Text className="text-gray-300 text-sm">
+                <Text className="text-zinc-500 text-sm">
                   Construyendo el futuro de las comunidades digitales.
                 </Text>
-                <Text className="text-gray-400 text-xs mt-4">
-                  Email enviado desde {source}
+                <Text className="text-zinc-400 text-xs mt-4 tracking-tighter">
+                  Email vinculado vía {source}
                 </Text>
               </Section>
             </Section>

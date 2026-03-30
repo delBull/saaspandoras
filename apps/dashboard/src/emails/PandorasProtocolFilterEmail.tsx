@@ -79,26 +79,26 @@ export default function PandorasProtocolFilterEmail({
             </Section>
 
             {/* DUAL CTA BLOCK (APPLY / 8 QUESTIONS) */}
-            <Section className="p-8 rounded-2xl bg-gray-900 my-4 text-center text-white">
-              <Heading className="text-3xl font-semibold text-white mb-4">
+            <Section className="p-8 rounded-2xl bg-zinc-50 my-4 text-center text-black border border-zinc-100">
+              <Heading className="text-3xl font-semibold text-black mb-4">
                 ¿Listo para dar el primer paso?
               </Heading>
 
-              <Text className="text-gray-400 text-base leading-6 mb-8">
+              <Text className="text-zinc-600 text-base leading-6 mb-8">
                 Creemos en la transparencia. Elige el camino que mejor se adapte a tu nivel de claridad actual.
               </Text>
 
               <Row>
                 <Column className="w-1/2 p-2">
-                  <Text className="text-xl font-bold text-yellow-400 mb-2">
+                  <Text className="text-xl font-bold text-yellow-600 mb-2">
                     1. Aplicar Directamente
                   </Text>
-                  <Text className="text-gray-400 text-sm mb-4">
+                  <Text className="text-zinc-500 text-sm mb-4">
                     Si ya tienes clara la visión y la estructura de tu W2E, inicia tu proceso de validación.
                   </Text>
                   <Link
                     href={applyLink}
-                    className="inline-block bg-yellow-500 text-black font-bold text-base rounded-full px-6 py-3 no-underline"
+                    className="inline-block bg-yellow-500 text-black font-bold text-base rounded-full px-6 py-3 no-underline shadow-sm"
                     style={{
                       backgroundColor: '#EAB308',
                       color: '#000',
@@ -111,15 +111,15 @@ export default function PandorasProtocolFilterEmail({
                   </Link>
                 </Column>
                 <Column className="w-1/2 p-2">
-                  <Text className="text-xl font-bold text-green-400 mb-2">
+                  <Text className="text-xl font-bold text-green-600 mb-2">
                     2. Ver 8 Preguntas Clave
                   </Text>
-                  <Text className="text-gray-400 text-sm mb-4">
+                  <Text className="text-zinc-500 text-sm mb-4">
                     Si prefieres entender mejor los requisitos de utilidad que buscamos, consúltalas vía WhatsApp.
                   </Text>
                   <Link
                     href={whatsappLink}
-                    className="inline-block bg-transparent border border-green-500 text-green-500 font-bold text-base rounded-full px-6 py-3 no-underline"
+                    className="inline-block bg-transparent border border-green-500 text-green-600 font-bold text-base rounded-full px-6 py-3 no-underline"
                     style={{
                       color: ACCENT_COLOR_GREEN,
                       padding: '12px 24px',

@@ -75,7 +75,7 @@ export const B2BBookingConfirmedEmail = ({
 export default B2BBookingConfirmedEmail;
 
 const main = {
-  backgroundColor: '#000000',
+  backgroundColor: '#ffffff',
   fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
 };
 
@@ -91,7 +91,7 @@ const logo = {
 };
 
 const h1 = {
-  color: '#ffffff',
+  color: '#000000',
   fontSize: '32px',
   fontWeight: 'bold',
   textAlign: 'center' as const,
@@ -106,16 +106,17 @@ const h2 = {
 };
 
 const text = {
-  color: '#cccccc',
+  color: '#374151',
   fontSize: '16px',
   lineHeight: '26px',
 };
 
 const detailsSection = {
-  background: '#111111',
+  background: '#f9fafb',
   padding: '20px',
   borderRadius: '8px',
   margin: '20px 0',
+  border: '1px solid #e5e7eb',
 };
 
 const detailsTitle = {
@@ -126,19 +127,19 @@ const detailsTitle = {
 };
 
 const detailsText = {
-  color: '#ffffff',
+  color: '#1f2937',
   fontSize: '16px',
   margin: '5px 0',
 };
 
 const list = {
-  color: '#cccccc',
+  color: '#374151',
   fontSize: '16px',
   paddingLeft: '20px',
 };
 
 const hr = {
-  borderColor: '#333333',
+  borderColor: '#e5e7eb',
   margin: '20px 0',
 };
 
@@ -165,7 +166,7 @@ const link = {
 };
 
 const footer = {
-  color: '#666666',
+  color: '#9ca3af',
   fontSize: '12px',
   textAlign: 'center' as const,
   marginTop: '40px',

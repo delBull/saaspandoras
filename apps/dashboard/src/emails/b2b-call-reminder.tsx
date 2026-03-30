@@ -66,45 +66,45 @@ export const B2BCallReminderEmail = ({
             <Head />
             <Preview>{content.title} — Pandora’s Foundation</Preview>
             <Tailwind>
-                <Body style={main} className="bg-black font-sans px-2">
+                <Body style={{ ...main, backgroundColor: "#ffffff" }} className="bg-white font-sans px-2">
                     <Container style={container} className="mx-auto py-10 max-w-[580px]">
                         <Section className="mb-8 text-center">
-                            <Text className="text-white text-[10px] tracking-[4px] font-bold uppercase">
+                            <Text className="text-black text-[10px] tracking-[4px] font-bold uppercase">
                                 PANDORA'S FINANCE
                             </Text>
                         </Section>
 
-                        <Heading className="text-white text-2xl font-bold text-left mb-6">
+                        <Heading className="text-black text-2xl font-bold text-left mb-6">
                             {content.title}
                         </Heading>
 
-                        <Text className="text-[#cccccc] text-base leading-relaxed mb-6">
+                        <Text className="text-zinc-700 text-base leading-relaxed mb-6">
                             {content.message}
                         </Text>
 
-                        <Section className="p-6 bg-[#111111] border border-[#333333] rounded-lg my-8">
-                            <Text className="text-white text-sm font-bold mb-2">
+                        <Section className="p-6 bg-zinc-50 border border-zinc-200 rounded-lg my-8">
+                            <Text className="text-black text-sm font-bold mb-2">
                                 📅 Cuándo: {meetingDate}
                             </Text>
-                            <Text className="text-white text-sm font-bold mb-6">
+                            <Text className="text-black text-sm font-bold mb-6">
                                 ⏰ Hora: {meetingTime}
                             </Text>
                             
                             <Button 
-                                className="bg-white text-black text-sm font-bold no-underline text-center px-10 py-4 rounded-lg w-full mb-3"
+                                className="bg-black text-white text-sm font-bold no-underline text-center px-10 py-4 rounded-lg w-full mb-3"
                                 href={agendaUrl}
                             >
                                 {content.cta}
                             </Button>
                         </Section>
 
-                        <Hr className="border-[#333333] my-8" />
+                        <Hr className="border-zinc-200 my-8" />
 
-                        <Text className="text-[#666666] text-xs leading-relaxed mb-6 italic">
+                        <Text className="text-zinc-400 text-xs leading-relaxed mb-6 italic text-center">
                             Si necesitas reprogramar, por favor hazlo con al menos 24h de anticipación para liberar el espacio para otro proyecto.
                         </Text>
 
-                        <Text className="text-white text-base font-bold mt-8">
+                        <Text className="text-black text-base font-bold mt-8">
                             — Equipo de Estrategia, Pandora’s
                         </Text>
                     </Container>
@@ -117,7 +117,7 @@ export const B2BCallReminderEmail = ({
 export default B2BCallReminderEmail;
 
 const main = {
-    backgroundColor: "#000000",
+    backgroundColor: "#ffffff",
 };
 
 const container = {

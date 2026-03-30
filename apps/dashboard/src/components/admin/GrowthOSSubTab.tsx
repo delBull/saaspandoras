@@ -411,7 +411,7 @@ export default function GrowthOSSubTab() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [ownerContext, setOwnerContext] = useState<'pandora' | 'client'>('pandora');
-  const [scope, setScope] = useState<'b2b' | 'b2c'>('b2b');
+  const [scope, setScope] = useState<'b2b' | 'b2c'>('b2c');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
 
@@ -743,7 +743,7 @@ export default function GrowthOSSubTab() {
 
   useEffect(() => {
     fetchProjects();
-    fetchLeads('all', 'b2b');
+    fetchLeads('all', 'b2c');
   }, []);
 
   useEffect(() => {

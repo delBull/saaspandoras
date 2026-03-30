@@ -64,7 +64,7 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
   const account = useActiveAccount();
 
   const [step, setStep] = useState<LeadStep>("hero");
-  const [formData, setFormData] = useState({ email: "", capital: "", interest: "" });
+  const [formData, setFormData] = useState({ email: "", walletAddress: "", capital: "", interest: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   // FIX 4: Separate flag — set only after backend confirms success
@@ -85,14 +85,23 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
 
     try {
       // FIX 3: Validate backend — no ghost leads
-      const res = await fetch("/api/access-requests", {
+      const res = await fetch("/api/v1/marketing/leads/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-internal-service": "pandoras-v2"
+        },
         body: JSON.stringify({
           email: formData.email,
+          walletAddress: formData.walletAddress || account?.address || null,
           intent: formData.interest || "explore",
-          metadata: { capital: formData.capital },
-          source: "nft_gate_dashboard",
+          projectId: "pandoras_access",
+          metadata: { 
+            capital: formData.capital,
+            interest: formData.interest 
+          },
+          consent: true,
+          origin: "nft_gate_dashboard",
         }),
       });
 
@@ -202,6 +211,15 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
                 type="email" required value={formData.email}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                 placeholder="tu@email.com"
+                className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm px-4 py-3.5 rounded-none focus:outline-none focus:border-zinc-600 placeholder:text-zinc-700 transition-colors"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[8px] tracking-[0.4em] text-zinc-600 uppercase">Wallet Address <span className="text-zinc-700">(opcional)</span></label>
+              <input
+                type="text" value={formData.walletAddress}
+                onChange={e => setFormData({ ...formData, walletAddress: e.target.value })}
+                placeholder="0x..."
                 className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm px-4 py-3.5 rounded-none focus:outline-none focus:border-zinc-600 placeholder:text-zinc-700 transition-colors"
               />
             </div>
