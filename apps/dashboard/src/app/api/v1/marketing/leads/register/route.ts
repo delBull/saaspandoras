@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get('user-agent') || 'unknown';
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
 
-    console.log(`[Growth OS] ➡️  New Lead Registration attempt from IP: ${ip}, API Key: ${apiKey?.substring(0, 10)}...`);
+    console.error(`[Growth OS] ➡️  New Lead Registration attempt from IP: ${ip}, API Key: ${apiKey?.substring(0, 10)}...`);
 
     // Use request origin/referer as fallback for origin if not provided in body
     const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
       resolutionMethod = 'explicit_id';
     }
 
-    console.log(`[Growth OS] 🎯 Project Resolved: ID=${targetProjectId}, Method=${resolutionMethod}, Requested=${projectId}`);
+    console.error(`[Growth OS] 🎯 Project Resolved: ID=${targetProjectId}, Method=${resolutionMethod}, Requested=${projectId}`);
 
     // --- DUAL ENGINE AUTO-ROUTING ---
     // Detect Scope & Owner Context based on Origin or Explicit Body
@@ -287,10 +287,12 @@ export async function POST(req: NextRequest) {
         metadata: result.metadata
       });
       
-      console.log(`[Growth OS] 🧠 Engine Result: Actions=${JSON.stringify(engineResult?.actions || [])}, Rule=${engineResult?.ruleId}`);
+      console.error(`[Growth OS] 🧠 Engine Result: Actions=${JSON.stringify(engineResult?.actions || [])}, Rule=${engineResult?.ruleId}`);
+      
+      const forceBypass = body.forceBypass === true || metadata?.forceBypass === true;
 
       if (engineResult && engineResult.actions.length > 0) {
-        console.log(`[Growth OS] 🚀 Triggering ${engineResult.actions.length} actions for ${result.email}...`);
+        console.error(`[Growth OS] 🚀 Triggering ${engineResult.actions.length} actions for ${result.email}... (ForceBypass: ${forceBypass})`);
         await executeGrowthActions(engineResult.actions, {
           lead: result as any,
           project: {
@@ -299,7 +301,7 @@ export async function POST(req: NextRequest) {
             name: projectContext?.title || 'Protocolo Ecosystem',
             discordWebhookUrl: projectContext?.discordWebhookUrl
           } as any
-        });
+        }, { bypassCooldown: forceBypass });
       }
     }
 
