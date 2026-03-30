@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound } from "next/navigation";
-import { useState, useEffect, useRef, Suspense, useMemo, use } from "react";
+import { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import type { ProjectData } from "../types";
 import ProjectVideoSection, { type ProjectVideoSectionRef } from "../../../../components/projects/ProjectVideoSection";
 import ProjectNavigationHeader from "../../../../components/projects/ProjectNavigationHeader";
@@ -110,7 +110,7 @@ function normalizeV1Project(p: ProjectData): ProjectData {
 }
 
 export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+  const [slug, setSlug] = useState<string>('');
   const [project, setProject] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -130,7 +130,11 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
     let active = true;
     const loadProject = async () => {
       try {
-        const response = await fetch(`/api/projects/${slug}`);
+        const resolvedParams = await params;
+        if (!active) return;
+        setSlug(resolvedParams.slug);
+
+        const response = await fetch(`/api/projects/${resolvedParams.slug}`);
         if (response.ok) {
           const projectData = await response.json() as ProjectData;
           if (active) setProject(projectData);
@@ -146,7 +150,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
     };
     void loadProject();
     return () => { active = false; };
-  }, [slug]);
+  }, [params]);
 
   // ── Normalizer — must be above early returns (rules-of-hooks) ───────────
   // useMemo runs unconditionally; null-safe because project may not be loaded yet.
@@ -154,6 +158,9 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
     () => (project ? normalizeV1Project(project) : project),
     [project]
   );
+
+  // ── targetAmount — MUST also be above all early returns (rules-of-hooks) ──
+  const targetAmount = useMemo(() => getTargetAmount(normalizedProject!), [normalizedProject]);
 
   if (isLoading) {
     return (
@@ -190,7 +197,6 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   }
 
   // ── V1 Legacy Layout ─────────────────────────────────────────────────────
-  const targetAmount = useMemo(() => getTargetAmount(normalizedProject!), [normalizedProject]);
 
   return (
     <div className="min-h-screen pb-20 md:pb-6 bg-black">
