@@ -41,7 +41,11 @@ export async function POST(request: Request) {
     // We call /leads/register to ensure a LEAD is created, which triggers the Welcome Email.
     const res = await fetch(`${dashboardUrl}/api/v1/marketing/leads/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Origin": host.includes("localhost") ? "http://localhost:3000" : `https://${host}`,
+        "x-internal-service": "pandoras-v2"
+      },
       body: JSON.stringify({
         email: email.toLowerCase(),
         walletAddress: wallet || null,
