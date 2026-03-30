@@ -37,6 +37,15 @@ export async function POST(request: Request) {
       process.env.DASHBOARD_API_URL ??
       (isStaging ? defaultStaging : (process.env.NODE_ENV === 'development' ? "http://localhost:3000" : defaultProd));
 
+    // FIX 5: Pre-check to avoid duplicate registration and trigger "success_existing" state
+    const checkRes = await fetch(`${dashboardUrl}/api/lead-exists?email=${encodeURIComponent(email)}`);
+    if (checkRes.ok) {
+      const checkData = await checkRes.json();
+      if (checkData.exists) {
+        return NextResponse.json({ success: true, existing: true });
+      }
+    }
+
     // 🧬 Phase 87: Unified Growth Engine Lead Registration
     // We call /leads/register to ensure a LEAD is created, which triggers the Welcome Email.
     const res = await fetch(`${dashboardUrl}/api/v1/marketing/leads/register`, {
