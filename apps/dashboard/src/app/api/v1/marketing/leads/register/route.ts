@@ -245,13 +245,26 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     };
 
-    const [result] = await db.insert(marketingLeads)
-      .values({ ...baseLeadData, createdAt: new Date() })
-      .onConflictDoUpdate({
-        target: [marketingLeads.projectId, marketingLeads.identityHash],
-        set: { ...baseLeadData, updatedAt: new Date() }
-      })
-      .returning();
+    const [result] = await (async () => {
+      try {
+        return await db.insert(marketingLeads)
+          .values({ ...baseLeadData, createdAt: new Date() })
+          .onConflictDoUpdate({
+            target: [marketingLeads.projectId, marketingLeads.identityHash],
+            set: { ...baseLeadData, updatedAt: new Date() }
+          })
+          .returning();
+      } catch (dbErr: any) {
+        console.error('🚨 [Postgres Fatal] Error during Lead Insert:', {
+          code: dbErr.code,
+          detail: dbErr.detail,
+          table: dbErr.table,
+          constraint: dbErr.constraint,
+          message: dbErr.message
+        });
+        throw dbErr;
+      }
+    })();
 
     // 4.5. Log Attribution Touch (Foundational SaaS)
     if (result) {
