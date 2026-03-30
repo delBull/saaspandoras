@@ -46,11 +46,17 @@ export async function POST(req: NextRequest) {
 
     // Use request origin/referer as fallback for origin if not provided in body
     const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
+    const xInternalService = req.headers.get('x-internal-service');
 
-    const isInternalDashboard = requestOrigin?.includes('pandoras.finance') || requestOrigin?.includes('localhost');
+    const isInternalDashboard = 
+      requestOrigin?.includes('pandoras.finance') || 
+      requestOrigin?.includes('localhost') ||
+      requestOrigin?.includes('saaspandoras') ||
+      xInternalService === 'pandoras-v2';
     
     let client;
     if (!apiKey && isInternalDashboard) {
+      console.error(`[Growth OS] Internal Service Bypass Detected. Origin: ${requestOrigin}, Service: ${xInternalService}`);
       // Use the core Pandora project for internal dashboard leads
       // Try by ID 1 first (Staging/Legacy) then by slug (Production-safe)
       client = await db.query.integrationClients.findFirst({
@@ -301,7 +307,10 @@ export async function POST(req: NextRequest) {
             name: projectContext?.title || 'Protocolo Ecosystem',
             discordWebhookUrl: projectContext?.discordWebhookUrl
           } as any
-        }, { bypassCooldown: forceBypass });
+        }, { 
+          ruleId: engineResult.ruleId || 'LEAD_CAPTURED',
+          bypassCooldown: forceBypass 
+        });
       }
     }
 
