@@ -163,10 +163,18 @@ export function resolveGrowthAction(
 
     const multiplier = engagement === 'critical' ? 0.3 : (engagement === 'high' ? 0.5 : (engagement === 'low' ? 2.0 : 1.0));
     
+    // Nurture Toggle Guard (Manual Override from Dashboard)
+    const canNurture = lead.metadata?.growth?.nurtureEnabled !== false;
+
     if (config && hoursSinceJoin > (config.d3 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_ACTIVATION_D3']) {
       actions.push('SEND_WAITLIST_ACTIVATION_D3');
     } else if (config && hoursSinceJoin > (config.d2 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_STATUS_D2']) {
       actions.push('SEND_WAITLIST_STATUS_D2');
+    } else if (canNurture && config && hoursSinceJoin > (0.5 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_EDUCATIONAL_NURTURE']) {
+      // PHASE 80: Education Nurturing (12h - 24h delay window)
+      if (engagement !== 'low') {
+        actions.push('SEND_EDUCATIONAL_NURTURE');
+      }
     }
   }
 

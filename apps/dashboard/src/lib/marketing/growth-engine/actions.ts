@@ -14,7 +14,8 @@ import {
   sendBookingConfirmedEmail,
   sendNoShowRecoveryEmail,
   sendWaitlistSequenceEmail,
-  sendGenesisWelcomeEmail
+  sendGenesisWelcomeEmail,
+  sendEducationalNurtureEmail
 } from '@/lib/marketing/growth-engine/email-senders';
 
 export async function executeGrowthActions(
@@ -428,6 +429,23 @@ export async function executeGrowthActions(
           console.log(`[Growth Engine] 📄 Institutional Brief:\n${brief}`);
           success = true;
           break;
+        }
+
+        case 'SEND_EDUCATIONAL_NURTURE': {
+           if (lead.email) {
+             const courseUrl = await discoverOrGenerateCourse(project);
+             const res = await sendEducationalNurtureEmail({
+               to: lead.email as string,
+               name: lead.name || 'Futuro Colaborador',
+               projectName: project.name,
+               courseUrl
+             });
+             success = res.success;
+           } else {
+             console.warn(`[Growth Engine] Skipping SEND_EDUCATIONAL_NURTURE: No email for lead ${lead.id}`);
+             success = true;
+           }
+           break;
         }
 
         case 'SALES_INTERVENTION': {

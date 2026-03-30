@@ -7,6 +7,7 @@ import B2BCallReminderEmail from '@/emails/b2b-call-reminder';
 import B2BBookingConfirmedEmail from '@/emails/b2b-booking-confirmed';
 import B2BNoShowRecoveryEmail from '@/emails/b2b-no-show-recovery';
 import WaitlistEmail from '@/emails/WaitlistEmail';
+import ProjectEducationalEmail from '@/emails/educational-nurture';
 
 import { EngagementLevel } from './types';
 
@@ -451,6 +452,42 @@ export async function sendNoShowRecoveryEmail(context: {
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (No-Show Recovery):`, error);
+    throw error;
+  }
+}
+
+export async function sendEducationalNurtureEmail(context: {
+  to: string;
+  name: string;
+  projectName: string;
+  courseUrl: string;
+}) {
+  console.log(`[Growth Engine] Sending Educational Nurture Email to ${context.to} for ${context.projectName}`);
+  
+  const isProd = process.env.NODE_ENV === 'production';
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+      if (isProd) {
+          throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
+      }
+      return { success: true, mocked: true };
+  }
+
+  try {
+    const data = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [context.to],
+      subject: `Paso siguiente: Tu Masterclass de ${context.projectName} está lista`,
+      react: ProjectEducationalEmail({ 
+        name: context.name,
+        projectName: context.projectName,
+        courseUrl: context.courseUrl
+      }),
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error(`[Growth Engine] Resend Error (Educational Nurture):`, error);
     throw error;
   }
 }

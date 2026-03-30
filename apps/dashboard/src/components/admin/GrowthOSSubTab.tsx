@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
 import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter, Phone, FileSignature, Calendar, XCircle, MoreVertical, CheckCircle2, AlertCircle, Clock } from "lucide-react";
-import { recordCallOutcome, getLeadInsights } from "@/actions/growth-os";
+import { recordCallOutcome, getLeadInsights, toggleLeadNurture } from "@/actions/growth-os";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
 import { DAOMetrics } from "../dao/DAOMetrics";
@@ -402,6 +402,34 @@ function LeadActionMenu({ lead, onActionComplete }: { lead: Lead, onActionComple
 
       <UIButton variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800 group">
           <XCircle className="w-4 h-4 text-red-400/50 group-hover:text-red-400 transition-colors" />
+      </UIButton>
+
+      {/* Manual Nurture Toggle */}
+      <UIButton 
+          variant="ghost" 
+          size="sm" 
+          disabled={loading}
+          onClick={async () => {
+              setLoading(true);
+              const isCurrentlyEnabled = lead.metadata?.growth?.nurtureEnabled !== false;
+              const res = await toggleLeadNurture(lead.id, !isCurrentlyEnabled);
+              if (res.success) {
+                  toast.success(`Nurturing ${!isCurrentlyEnabled ? 'activado' : 'desactivado'}`);
+                  onActionComplete();
+              } else {
+                  toast.error("Error al cambiar estado de nurturing");
+              }
+              setLoading(false);
+          }}
+          className={cn(
+              "h-8 w-8 p-0 rounded-full transition-all",
+              lead.metadata?.growth?.nurtureEnabled !== false 
+                  ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400" 
+                  : "hover:bg-zinc-800 text-zinc-600"
+          )}
+          title={lead.metadata?.growth?.nurtureEnabled !== false ? "Desactivar Nurturing Educativo" : "Activar Nurturing Educativo"}
+      >
+          {loading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <BookOpen className="w-4 h-4" />}
       </UIButton>
     </div>
   );
