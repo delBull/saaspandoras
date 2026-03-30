@@ -20,10 +20,16 @@ import { getTargetAmount } from "../../../../lib/project-utils";
  * This lets tabs, sidebar, and details components work off a single consistent object.
  */
 function normalizeV1Project(p: ProjectData): ProjectData {
+  if (!p) return {} as ProjectData;
+  
+  // Ensure w2eConfig is an object for safe property access
+  const safeConfig = typeof p.w2eConfig === 'string' 
+    ? (JSON.parse(p.w2eConfig || '{}')) 
+    : (p.w2eConfig || {});
+
   return {
     ...p,
     // ── Content tab fields (Campaña / Mecánica / Estrategia / etc.) ──
-    // Prefer the new optimized field; fall back on legacy snake_case / camelCase variants.
     fund_usage:
       p.fund_usage
       || (p as any).fundUsage
@@ -102,7 +108,7 @@ function normalizeV1Project(p: ProjectData): ProjectData {
     // ── Contract addresses: pre-resolve so sidebar can use a single field ──
     licenseContractAddress:
       p.licenseContractAddress
-      || p.w2eConfig?.licenseToken?.address
+      || safeConfig?.licenseToken?.address
       || (p as any).contractAddress
       || (p as any).contract_address
       || null,
@@ -176,12 +182,14 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   if (isError || !project) { notFound(); }
 
   // ── V2 Detection — explicit semantic signals ONLY ─────────────────────────
-  // ❌ Do NOT check artifacts.length — V1 protocols can have partial w2eConfig
-  // ✅ Only trust an explicit version/schema marker written at V2 deploy time
+  const safeConfig = typeof project.w2eConfig === 'string' 
+    ? (JSON.parse(project.w2eConfig || '{}')) 
+    : (project.w2eConfig || {});
+
   const isV2 =
     project.protocol_version === 2
-    || (project.w2eConfig as any)?.version === '2'
-    || (project.w2eConfig as any)?.schema === 'v2';
+    || safeConfig?.version === '2'
+    || safeConfig?.schema === 'v2';
 
   // ── V2 Route ──────────────────────────────────────────────────────────────
   if (isV2) {

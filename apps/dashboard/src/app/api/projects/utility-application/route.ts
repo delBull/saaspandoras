@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { db } from '@/db';
 import { projects, marketingLeads, marketingIdentities } from '@/db/schema';
@@ -175,68 +175,70 @@ export async function POST(request: NextRequest) {
 
     if (!isProd) console.log('✅ Project created successfully:', newProject.id);
 
-    // 6. GROWTH OS INTEGRATION (NEW)
+    // 6. GROWTH OS INTEGRATION (NEW) — Ejecutar en background tras la respuesta
     if (body.applicantEmail) {
-      try {
-        console.log(`🚀 [utility-application] Syncing to Growth OS for ${body.applicantEmail}`);
-        
-        // 1. Resolve Identity
-        let identity = await db.query.marketingIdentities.findFirst({
-            where: eq(marketingIdentities.email, body.applicantEmail.toLowerCase().trim())
-        });
+      after(async () => {
+        try {
+          console.log(`🚀 [utility-application] Syncing to Growth OS for ${body.applicantEmail}`);
+          
+          // 1. Resolve Identity
+          let identity = await db.query.marketingIdentities.findFirst({
+              where: eq(marketingIdentities.email, body.applicantEmail.toLowerCase().trim())
+          });
 
-        if (!identity) {
-            const [newIdentity] = await db.insert(marketingIdentities).values({
-                email: body.applicantEmail.toLowerCase().trim(),
-                walletAddress: body.applicantWalletAddress || null,
-                metadata: { source: 'utility_application' }
-            }).returning();
-            identity = newIdentity;
+          if (!identity) {
+              const [newIdentity] = await db.insert(marketingIdentities).values({
+                  email: body.applicantEmail.toLowerCase().trim(),
+                  walletAddress: body.applicantWalletAddress || null,
+                  metadata: { source: 'utility_application' }
+              }).returning();
+              identity = newIdentity;
+          }
+
+          // 2. Resolve Lead for Project 1 (Genesis)
+          let lead = await db.query.marketingLeads.findFirst({
+              where: and(
+                  eq(marketingLeads.projectId, GENESIS_PROJECT_ID),
+                  eq(marketingLeads.identityId, identity!.id)
+              )
+          });
+
+          if (!lead) {
+              const [newLead] = await db.insert(marketingLeads).values({
+                  projectId: GENESIS_PROJECT_ID,
+                  identityId: identity!.id,
+                  email: body.applicantEmail.toLowerCase().trim(),
+                  walletAddress: body.applicantWalletAddress || null,
+                  name: body.applicantName || null,
+                  scope: 'b2b',
+                  intent: 'explore',
+                  origin: 'utility_application',
+                  metadata: {
+                      source_api: '/api/projects/utility-application',
+                      application_id: newProject.id
+                  }
+              }).returning();
+              lead = newLead;
+          }
+
+          // 3. Fire LEAD_CAPTURED Event (This triggers the B2B Welcome Flow)
+          await processGrowthEvent('LEAD_CAPTURED', {
+              id: lead!.id,
+              email: body.applicantEmail.toLowerCase().trim(),
+              projectId: GENESIS_PROJECT_ID,
+              intent: 'explore',
+              metadata: {
+                  projectName: body.title,
+                  applicantName: body.applicantName,
+                  timestamp: Date.now()
+              }
+          });
+
+          console.log(`✅ [utility-application] Growth OS Event Processed for ${body.applicantEmail}`);
+        } catch (growthErr) {
+          console.error("❌ [utility-application] Growth OS Integration failed (non-blocking):", growthErr);
         }
-
-        // 2. Resolve Lead for Project 1 (Genesis)
-        let lead = await db.query.marketingLeads.findFirst({
-            where: and(
-                eq(marketingLeads.projectId, GENESIS_PROJECT_ID),
-                eq(marketingLeads.identityId, identity!.id)
-            )
-        });
-
-        if (!lead) {
-            const [newLead] = await db.insert(marketingLeads).values({
-                projectId: GENESIS_PROJECT_ID,
-                identityId: identity!.id,
-                email: body.applicantEmail.toLowerCase().trim(),
-                walletAddress: body.applicantWalletAddress || null,
-                name: body.applicantName || null,
-                scope: 'b2b',
-                intent: 'explore',
-                origin: 'utility_application',
-                metadata: {
-                    source_api: '/api/projects/utility-application',
-                    application_id: newProject.id
-                }
-            }).returning();
-            lead = newLead;
-        }
-
-        // 3. Fire LEAD_CAPTURED Event (This triggers the B2B Welcome Flow)
-        await processGrowthEvent('LEAD_CAPTURED', {
-            id: lead!.id,
-            email: body.applicantEmail.toLowerCase().trim(),
-            projectId: GENESIS_PROJECT_ID,
-            intent: 'explore',
-            metadata: {
-                projectName: body.title,
-                applicantName: body.applicantName,
-                timestamp: Date.now()
-            }
-        });
-
-        console.log(`✅ [utility-application] Growth OS Event Processed for ${body.applicantEmail}`);
-      } catch (growthErr) {
-        console.error("❌ [utility-application] Growth OS Integration failed (non-blocking):", growthErr);
-      }
+      });
     }
 
     // 7. GAMIFICATION: FIRE & FORGET (NON-BLOCKING)

@@ -497,7 +497,10 @@ export function NFTGate({
     const hasSeenSuccess = sessionStorage.getItem("pandora_access_reward_seen");
     if (!hasSeenSuccess && hasAccess) {
       sessionStorage.setItem("pandora_access_reward_seen", "true");
-      return <SuccessNFTCard onAnimationComplete={() => router.replace("/")} />;
+      return <SuccessNFTCard onAnimationComplete={() => {
+        router.replace("/");
+        window.location.href = "/"; // Force hard redirect to be sure
+      }} />;
     }
     return <>{children}</>;
   }
@@ -627,13 +630,29 @@ export function NFTGate({
       <p className="text-zinc-500 mb-12 max-w-sm text-center leading-relaxed font-medium">
         Para entrar al Protocolo Pandora's, necesitas reclamar tu slot Genesis en la blockchain.
       </p>
-      <button
-        onClick={runRitual}
-        className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 hover:bg-lime-400 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
-      >
-        <span className="relative z-10">Iniciar Ritual</span>
-        <div className="absolute inset-0 bg-gradient-to-r from-lime-500 to-lime-300 opacity-0 group-hover:opacity-10 transition-opacity" />
-      </button>
+      {/* Access Gate Button */}
+      {isAdmin ? (
+        <button
+          onClick={runRitual}
+          className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 hover:bg-lime-400 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
+        >
+          <span className="relative z-10">Iniciar Ritual de Acceso</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-lime-500 to-lime-300 opacity-0 group-hover:opacity-10 transition-opacity" />
+        </button>
+      ) : (
+        <div className="flex flex-col items-center gap-4">
+          <button
+            disabled
+            className="bg-zinc-900 text-zinc-600 px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] border border-zinc-800 cursor-not-allowed opacity-50"
+          >
+            Acceso Restringido
+          </button>
+          <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-bold">
+            Tu perfil está en lista de espera.
+          </p>
+        </div>
+      )}
+
       {account && (
         <p className="text-[10px] text-zinc-700 mt-6 uppercase tracking-widest font-mono">
           {account.address.slice(0, 6)}...{account.address.slice(-4)}
