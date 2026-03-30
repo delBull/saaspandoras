@@ -36,7 +36,7 @@ export async function executeGrowthActions(
 
   // 1. READ-AFTER-WRITE CONSISTENCY & OPTIMISTIC LOCKING PREP
   const freshLead = await db.query.marketingLeads.findFirst({
-    where: eq(marketingLeads.id, context.lead.id),
+    where: eq(marketingLeads.id, context.lead.id as any),
     columns: { metadata: true, email: true, score: true, updatedAt: true }
   });
 
@@ -186,6 +186,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_WELCOME_EXPLORE_D1: No email for lead ${lead.id}`);
             success = true; // Skip gracefully
           }
           break;
@@ -201,6 +202,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_WELCOME_INVEST_D1: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -216,6 +218,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_WELCOME_B2B_D1: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -229,6 +232,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_FOLLOWUP_B2B_D2: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -253,6 +257,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping ${action}: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -268,6 +273,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_BOOKING_CONFIRMED: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -286,6 +292,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_NO_SHOW_RECOVERY: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -303,6 +310,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_WELCOME_D0: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -320,6 +328,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_NARRATIVE_D1: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -337,6 +346,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_STATUS_D2: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -354,6 +364,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_ACTIVATION_D3: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -368,6 +379,7 @@ export async function executeGrowthActions(
             });
             success = res.success;
           } else {
+            console.warn(`[Growth Engine] Skipping SEND_GENESIS_WELCOME: No email for lead ${lead.id}`);
             success = true;
           }
           break;
@@ -490,7 +502,7 @@ export async function executeGrowthActions(
        try {
            const { growthActionsLog } = await import("@/db/schema");
            await db.insert(growthActionsLog).values({
-               leadId: lead.id,
+               leadId: lead.id as any,
                ruleId: ruleInfo?.ruleId || 'SYSTEM_ACTION',
                ruleCondition: ruleInfo?.ruleCondition || 'Condition Met',
                actionType: action,
@@ -543,20 +555,20 @@ export async function executeGrowthActions(
           ...currentMetadata,
           growth: {
             ...growthMetadata,
-            intentScore: lead.intentScore,
-            priorityScore: lead.priorityScore,
-            engagementLevel: lead.engagementLevel,
-            profile: lead.profile,
+            intentScore: (lead as any).intentScore,
+            priorityScore: (lead as any).priorityScore,
+            engagementLevel: (lead as any).engagementLevel,
+            profile: (lead as any).profile,
             activeOffer: growthMetadata.activeOffer,
             scarcity: growthMetadata.scarcity
           }
         },
         score: (freshLead.score || 0) + (scoreChange || 0),
-        lastAction: newlyExecuted[newlyExecuted.length - 1] || lead.lastAction,
+        lastAction: newlyExecuted[newlyExecuted.length - 1] || (lead as any).lastAction,
         updatedAt: new Date() 
       })
       .where(and(
-        eq(marketingLeads.id, lead.id),
+        eq(marketingLeads.id, lead.id as any),
         eq(marketingLeads.updatedAt, freshLead.updatedAt as any) // Guard against parallel updates
       ));
 

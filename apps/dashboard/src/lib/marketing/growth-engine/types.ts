@@ -120,7 +120,7 @@ export interface BehavioralProfile {
 }
 
 export interface LeadContextPayload {
-  id: string; // The UUID of the lead
+  id: string | number; // The unique ID of the lead (UUID or Serial)
   email: string | null;
   name?: string | null;
   phoneNumber?: string | null;
