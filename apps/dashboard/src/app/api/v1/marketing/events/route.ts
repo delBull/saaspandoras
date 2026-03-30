@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         
         // 1. Resolve Identity Context
         const walletAddress = body.walletAddress || metadata?.walletAddress || metadata?.wallet;
-        const leadEmail = body.email || metadata?.email;
+        const leadEmail = (body.email || metadata?.email)?.toLowerCase?.() || null;
         const effectiveFingerprint = fingerprint || `anon_${createHash('md5').update(req.headers.get('user-agent') || 'unknown').digest('hex')}`;
 
         // 1.1 Identity Enrichment from Users table (Phase 89: Institutional Hardening)
@@ -90,10 +90,15 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 1.2 Resolve existing Lead record (Bugfix: Avoid findFirst AST caching with dynamic OR array)
-        const orConditions = [eq(marketingLeads.fingerprint, effectiveFingerprint)];
+        // 1.2 Resolve existing Lead record (Bugfix: Avoid anonymous lead duplication)
+        // Priority: email > wallet > fingerprint — if we have an email, use it as primary key
+        const orConditions = [];
         if (leadEmail) orConditions.push(eq(marketingLeads.email, leadEmail));
         if (walletAddress) orConditions.push(eq(marketingLeads.walletAddress, walletAddress));
+        // Only use fingerprint in OR if it's a real fingerprint (not auto-generated anon_)
+        if (fingerprint) orConditions.push(eq(marketingLeads.fingerprint, fingerprint));
+        // If we have no real identifiers at all, fall back to the anon fingerprint
+        if (orConditions.length === 0) orConditions.push(eq(marketingLeads.fingerprint, effectiveFingerprint));
 
         const leadRecordArray = await db.select().from(marketingLeads).where(
             and(
@@ -104,13 +109,19 @@ export async function POST(req: NextRequest) {
 
         let leadRecord: any = leadRecordArray.length > 0 ? { ...leadRecordArray[0], project } : null;
 
-        // 1.3 Create Lead if missing (Audit: Auto-Capture)
+        // 1.3 Create Lead if missing (Audit: Auto-Capture) — only create if we have at least email or wallet
         if (!leadRecord) {
+            // Skip creating anonymous leads when we have no real identity anchor
+            if (!leadEmail && !walletAddress && !fingerprint) {
+                console.log(`[Growth OS] Skipping anonymous lead creation — no identity anchor available.`);
+                return NextResponse.json({ success: true, skipped: 'no_identity' });
+            }
+
             const identityHash = createHash('sha256').update(`${parsedProjectId}-${effectiveFingerprint}-${leadEmail || walletAddress || ''}`).digest('hex');
             
             const [newLead] = await db.insert(marketingLeads).values({
                 projectId: parsedProjectId,
-                fingerprint: effectiveFingerprint,
+                fingerprint: fingerprint || effectiveFingerprint,
                 identityHash,
                 email: leadEmail || capturedUserEmail,
                 name: metadata?.name || capturedUserName,
@@ -216,6 +227,19 @@ export async function POST(req: NextRequest) {
         }
 
         // 4.2. Bridge to Growth Engine
+        // Guard: Only trigger email actions if lead has a valid email
+        const effectiveLeadEmail = lead.email || leadEmail;
+        if (!effectiveLeadEmail) {
+            console.log(`[Growth OS] Skipping Growth Engine — lead has no email to send to.`);
+            console.log(`📊 [Growth OS] Event tracked (no email): ${eventType} for Project ${parsedProjectId}`);
+            return NextResponse.json({ success: true, eventId: eventRecord.id, skipped_engine: 'no_email' });
+        }
+
+        // Ensure in-memory lead object has the email for the engine
+        if (!lead.email && effectiveLeadEmail) {
+            (lead as any).email = effectiveLeadEmail;
+        }
+
         if (lead && eventRecord) {
             try {
                 const { computeBehavioralMetrics, resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
@@ -235,6 +259,7 @@ export async function POST(req: NextRequest) {
 
                 const engineResult = resolveGrowthAction(eventType as any, {
                     ...lead as any,
+                    email: effectiveLeadEmail, // Always pass the resolved email
                     intentScore,
                     priorityScore,
                     engagementLevel,
@@ -246,8 +271,11 @@ export async function POST(req: NextRequest) {
                     await executeGrowthActions(
                         engineResult.actions, 
                         { 
-                            lead: { ...lead as any, intentScore, priorityScore, engagementLevel, profile }, 
-                            project: project 
+                            lead: { ...lead as any, email: effectiveLeadEmail, intentScore, priorityScore, engagementLevel, profile }, 
+                            project: { 
+                                ...project,
+                                slug: (project as any).slug || finalSlug  // Ensure slug is present
+                            } as any
                         },
                         { 
                             ruleId: engineResult.ruleId || `EVENT_${eventType}`, 
