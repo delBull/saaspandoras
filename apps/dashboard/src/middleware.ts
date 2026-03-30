@@ -12,12 +12,15 @@ export function middleware(request: NextRequest) {
   // 0. Global OPTIONS Handling (CORS Preflight)
   if (request.method === "OPTIONS") {
     const origin = request.headers.get("origin") || "*";
+    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing');
     return new NextResponse(null, {
       status: 204,
       headers: {
-        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Origin": isPublicMarketingApi ? (origin) : (origin.endsWith(".pandoras.finance") || origin.endsWith(".pandoras.org") || origin.includes("localhost") ? origin : "https://dash.pandoras.finance"),
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, x-thirdweb-address, x-wallet-address",
+        "Access-Control-Allow-Headers": isPublicMarketingApi 
+          ? "Content-Type, Authorization, x-api-key, x-stress-test"
+          : "Content-Type, Authorization, x-thirdweb-address, x-wallet-address",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400",
       },
@@ -123,7 +126,17 @@ export function middleware(request: NextRequest) {
 
     // 0. Global CORS headers for API (Matches OPTIONS handling)
     const requestOrigin = request.headers.get("origin");
-    if (requestOrigin && (requestOrigin.endsWith(".pandoras.finance") || requestOrigin.endsWith(".pandoras.org") || requestOrigin.includes("localhost"))) {
+    
+    // Public marketing API: open to any origin — protected by API keys at app level
+    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing');
+    
+    if (isPublicMarketingApi) {
+      // Allow all external origins (Narai, other protocols, widgets)
+      response.headers.set('Access-Control-Allow-Origin', requestOrigin || '*');
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-stress-test');
+    } else if (requestOrigin && (requestOrigin.endsWith(".pandoras.finance") || requestOrigin.endsWith(".pandoras.org") || requestOrigin.includes("localhost"))) {
       response.headers.set('Access-Control-Allow-Origin', requestOrigin);
       response.headers.set('Access-Control-Allow-Credentials', 'true');
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
