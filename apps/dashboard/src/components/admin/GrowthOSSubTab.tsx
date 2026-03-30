@@ -1987,7 +1987,9 @@ export default function GrowthOSSubTab() {
               <div className="bg-zinc-950 rounded-3xl p-8 font-mono text-sm text-zinc-400 border border-zinc-800 relative group overflow-hidden">
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                   <UIButton className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6" onClick={() => {
-                    const snippet = `<script src="${window.location.origin}/js/growth-v2.js" data-project-id="${selectedProjectId === 'all' ? 'global' : selectedProjectId}" data-theme="premium"></script>`;
+                    const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                    const projectSlug = project?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId);
+                    const snippet = `<script \n  src="${window.location.origin}/api/widget/v1.js" \n  data-project-id="${projectSlug}" \n  data-api-key="${publicKey}" \n  data-theme="premium"\n></script>`;
                     navigator.clipboard.writeText(snippet);
                     toast.success("Snippet copiado");
                   }}>COPY SNIPPET</UIButton>
@@ -1995,8 +1997,9 @@ export default function GrowthOSSubTab() {
                 <code>
                   <span className="text-zinc-600">{'<!-- Pandoras Growth OS Widget -->'}</span><br/>
                   <span className="text-indigo-400">{'<script'}</span><br/>
-                  {'  src="'}<span className="text-emerald-400">{window.location.origin}/js/growth-v2.js</span>{'"'}<br/>
-                  {'  data-project-id="'}<span className="text-purple-400">{selectedProjectId === 'all' ? 'global' : selectedProjectId}</span>{'"'}<br/>
+                  {'  src="'}<span className="text-emerald-400">{window.location.origin}/api/widget/v1.js</span>{'"'}<br/>
+                  {'  data-project-id="'}<span className="text-purple-400">{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId)}</span>{'"'}<br/>
+                  {'  data-api-key="'}<span className="text-emerald-400">{publicKey}</span>{'"'}<br/>
                   {'  data-theme="'}<span className="text-purple-400">premium</span>{'"'}<br/>
                   <span className="text-indigo-400">{'>'}{'</script>'}</span>
                 </code>
