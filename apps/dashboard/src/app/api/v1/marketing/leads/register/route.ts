@@ -9,7 +9,7 @@ import {
   marketingLeadIntentEnum,
   projects
 } from '@/db/schema';
-import { eq, and, or, sql } from 'drizzle-orm';
+import { eq, and, or, sql, ilike } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { IdentityService } from '@/lib/marketing/identity-service';
 import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       // check if the main project exists at least.
       if (isInternalDashboard) {
         const mainProject = await db.query.projects.findFirst({
-          where: sql`LOWER(${projects.slug}) = 'pandoras-protocol'`
+          where: (projects, { ilike }) => ilike(projects.slug, 'pandoras-protocol')
         });
         
         if (mainProject) {
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       resolutionMethod = projectId === 'external' ? 'explicit_external' : 'client_default';
     } else if (isNaN(Number(projectId))) {
       const projectBySlug = await db.query.projects.findFirst({
-        where: sql`LOWER(${projects.slug}) = LOWER(${projectId})`,
+        where: (projects, { ilike }) => ilike(projects.slug, projectId),
         columns: { id: true }
       });
       

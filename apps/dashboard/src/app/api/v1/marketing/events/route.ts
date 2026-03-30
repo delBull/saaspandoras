@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { marketingLeadEvents, marketingLeads } from '@/db/schema';
-import { eq, and, gt, sql, or } from 'drizzle-orm';
+import { marketingLeadEvents, marketingLeads, projects } from '@/db/schema';
+import { eq, and, gt, sql, or, ilike } from 'drizzle-orm';
 import { createHash } from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -32,13 +32,13 @@ export async function POST(req: NextRequest) {
         let project: any = null;
         if (finalSlug) {
             project = await db.query.projects.findFirst({
-                where: sql`LOWER(slug) = LOWER(${finalSlug})`
+                where: (projects, { ilike }) => ilike(projects.slug, finalSlug)
             });
         } else if (projectId) {
             const idToQuery = parseInt(projectId);
             if (!isNaN(idToQuery)) {
                 project = await db.query.projects.findFirst({
-                    where: eq(sql`id`, idToQuery)
+                    where: (projects, { eq }) => eq(projects.id, idToQuery)
                 });
             }
         }
