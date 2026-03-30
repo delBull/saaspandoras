@@ -494,13 +494,26 @@ export function NFTGate({
 
   // 🟢 CASE 1: Full Access (Bypass everything except wallet requirement)
   if (shouldBypass) {
-    const hasSeenSuccess = sessionStorage.getItem("pandora_access_reward_seen");
+    const hasSeenSuccess = typeof window !== 'undefined' ? sessionStorage.getItem("pandora_access_reward_seen") : "true";
     if (!hasSeenSuccess && hasAccess) {
       sessionStorage.setItem("pandora_access_reward_seen", "true");
-      return <SuccessNFTCard onAnimationComplete={() => {
+      // Silent intercept: Hide the success card and redirect directly to the main system
+      if (typeof window !== 'undefined') {
         router.replace("/");
-        window.location.href = "/"; // Force hard redirect to be sure
-      }} />;
+        setTimeout(() => {
+          if (window.location.pathname !== "/") window.location.href = "/";
+        }, 100);
+      }
+      
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-lime-500/10 blur-xl rounded-full animate-pulse" />
+            <Loader2 className="w-10 h-10 animate-spin text-lime-500 relative z-10" />
+          </div>
+          <p className="text-lime-400 font-mono text-xs tracking-widest uppercase animate-pulse">Iniciando Sistema...</p>
+        </div>
+      );
     }
     return <>{children}</>;
   }

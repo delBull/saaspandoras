@@ -145,20 +145,37 @@ export default function ArtifactPurchaseModal({
     const totalCostWei = BigInt(safeAmount) * effectivePriceInWei;
     const totalCostDisplay = Number(totalCostWei) / Number(decimals);
 
-    // Unified Transaction Configuration
-    const txConfig = resolveExecution({
-        type: 'BUY_ARTIFACT',
-        payload: {
-            project,
-            phase,
-            utilityContract,
-            artifactType: (phase as any)?.artifactType || 'Access',
-            quantity: BigInt(safeAmount),
-            account: account?.address || "",
-            chainId: safeChainId,
-            priceInWei: effectivePriceInWei
+    // Unified Transaction Configuration (Safe wrapping to prevent render crashes on misconfigured projects)
+    const txConfig = useMemo(() => {
+        try {
+            if (!targetAddress || targetAddress === "0x0000000000000000000000000000000000000000") {
+                throw new Error("Missing target address");
+            }
+            return resolveExecution({
+                type: 'BUY_ARTIFACT',
+                payload: {
+                    project,
+                    phase,
+                    utilityContract,
+                    artifactType: (phase as any)?.artifactType || 'Access',
+                    quantity: BigInt(safeAmount),
+                    account: account?.address || "",
+                    chainId: safeChainId,
+                    priceInWei: effectivePriceInWei
+                }
+            });
+        } catch (e) {
+            console.warn("[ProtocolEngine] Artifact execution config could not be generated:", e);
+            return {
+                address: "",
+                method: "",
+                params: [],
+                value: 0n,
+                requiresApproval: false,
+                token: "ETH"
+            };
         }
-    });
+    }, [project, phase, utilityContract, safeAmount, account, safeChainId, effectivePriceInWei, targetAddress]);
 
     const handleSuccess = async () => {
         const sessionId = typeof window !== 'undefined' ? localStorage.getItem("growth_session_id") : null;
