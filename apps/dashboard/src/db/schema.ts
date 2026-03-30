@@ -1754,7 +1754,7 @@ export const marketingLeadQualityEnum = pgEnum("marketing_lead_quality", ["low",
  * marketing_identities — Unified identity layer to link fingerprints, wallets, and emails.
  */
 export const marketingIdentities = pgTable("marketing_identities", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   userId: varchar("user_id", { length: 255 }).references(() => users.id), // Link to core user if/when registered
   
   fingerprint: varchar("fingerprint", { length: 255 }), // Anonymous device ID
@@ -1783,7 +1783,7 @@ export const marketingLeads = pgTable("marketing_leads", {
   
   ownerContext: ownerContextEnum("owner_context").default("client").notNull(),
   scope: marketingLeadScopeEnum("scope").default("b2c").notNull(),
-  identityId: integer("identity_id").references(() => marketingIdentities.id), // Unified ID
+  identityId: uuid("identity_id").references(() => marketingIdentities.id), // Unified ID
   leadType: varchar("lead_type", { length: 100 }).default("user_prospect"), // e.g., founder, investor, buyer
   
   email: varchar("email", { length: 255 }), // Nullable for anonymous silent capture

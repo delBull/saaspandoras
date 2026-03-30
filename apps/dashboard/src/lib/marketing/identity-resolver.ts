@@ -15,7 +15,7 @@ export class IdentityResolver {
    * Resolves a unified identity based on available identifiers.
    * If an identity exists for any identifier, it returns it.
    */
-  static async resolveIdentity(identifiers: IdentityIdentifiers): Promise<number> {
+  static async resolveIdentity(identifiers: IdentityIdentifiers): Promise<string> {
     const { fingerprint, walletAddress, email, telegramId, userId } = identifiers;
 
     // 1. Check for existing identity by any identifier
@@ -101,7 +101,7 @@ export class IdentityResolver {
   /**
    * Link a core User to a marketing identity.
    */
-  static async linkUser(userId: string, marketingIdentityId: number) {
+  static async linkUser(userId: string, marketingIdentityId: string) {
     await db.update(marketingIdentities)
       .set({ userId, updatedAt: new Date() })
       .where(eq(marketingIdentities.id, marketingIdentityId));
