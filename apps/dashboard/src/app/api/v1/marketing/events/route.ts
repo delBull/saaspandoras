@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { marketingLeadEvents, marketingLeads, projects } from '@/db/schema';
+import { marketingLeadEvents, marketingLeads, marketingIdentities, projects } from '@/db/schema';
 import { eq, and, gt, sql, or, ilike } from 'drizzle-orm';
 import { createHash } from 'crypto';
 
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
         let leadRecord: any = leadRecordArray.length > 0 ? { ...leadRecordArray[0], project } : null;
 
-        // 2.2 Auto-Capture/Update (Phase 90: Identity Fusion)
+        // 2.2 Auto-Capture/Update or Create (Phase 90: Identity Fusion)
         if (leadRecord) {
             const updates: any = {};
             if (!leadRecord.email && leadEmail) updates.email = leadEmail;
@@ -100,6 +100,47 @@ export async function POST(req: NextRequest) {
                 await db.update(marketingLeads).set({ ...updates, updatedAt: new Date() }).where(eq(marketingLeads.id, leadRecord.id));
                 Object.assign(leadRecord, updates);
             }
+        } else {
+            console.log(`[Growth OS] 👻 Creating anonymous lead for Project ${parsedProjectId} (Event: ${eventType})`);
+            
+            // Resolve Unified Identity
+            const idQueryCondition = [];
+            if (leadEmail) idQueryCondition.push(eq(marketingIdentities.email, leadEmail));
+            if (walletAddress) idQueryCondition.push(eq(marketingIdentities.walletAddress, walletAddress));
+            if (effectiveFingerprint) idQueryCondition.push(eq(marketingIdentities.fingerprint, effectiveFingerprint));
+            
+            let resolvedIdentityId = null;
+            if (idQueryCondition.length > 0) {
+                const existingIdentities = await db.select().from(marketingIdentities).where(or(...idQueryCondition)).limit(1);
+                if (existingIdentities.length > 0) {
+                    resolvedIdentityId = existingIdentities[0]?.id;
+                } else {
+                    const [newId] = await db.insert(marketingIdentities).values({
+                        fingerprint: effectiveFingerprint,
+                        email: leadEmail,
+                        walletAddress: walletAddress,
+                        metadata: { source: "events_api_anonymous" }
+                    }).returning({ id: marketingIdentities.id });
+                    resolvedIdentityId = newId?.id || null;
+                }
+            }
+
+            // Create Contextual Lead
+            const [newLead] = await db.insert(marketingLeads).values({
+                projectId: parsedProjectId,
+                identityId: resolvedIdentityId,
+                email: leadEmail,
+                walletAddress: walletAddress,
+                fingerprint: effectiveFingerprint,
+                identityHash: leadEmail || walletAddress || effectiveFingerprint,
+                origin: origin || req.headers.get("referer"),
+                scope: "b2c",
+                intent: "explore",
+                status: "active",
+                metadata: { source: "events_api_anonymous" }
+            }).returning();
+            
+            leadRecord = { ...newLead, project };
         }
 
         const lead = leadRecord;

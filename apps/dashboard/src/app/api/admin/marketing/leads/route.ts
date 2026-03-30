@@ -22,10 +22,18 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(Number(searchParams.get('limit') || 50), 100);
     const offset = Number(searchParams.get('offset') || 0);
 
-    const conditions = [];
+    const conditions: any[] = [];
     if (projectId && projectId !== 'all') conditions.push(eq(marketingLeads.projectId, Number(projectId)));
     if (scope) conditions.push(eq(marketingLeads.scope, scope as any));
     if (ownerContext) conditions.push(eq(marketingLeads.ownerContext, ownerContext as any));
+
+    // Phase 90: Hide anonymous "ghost" leads (telemetry only) from the Growth OS overview
+    // A lead is only visible if it has an email OR a wallet address connected
+    const { isNotNull, or } = require('drizzle-orm');
+    conditions.push(or(
+      isNotNull(marketingLeads.email),
+      isNotNull(marketingLeads.walletAddress)
+    ));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -68,13 +76,11 @@ export async function GET(req: NextRequest) {
       });
 
       const lastUpdateDate = (l.updatedAt as any) || l.createdAt;
-      const baseIntent = classifyIntent(l.score || 0, l.status as any, l.metadata, lastUpdateDate);
+      const baseIntent = classifyIntent(l.score || 0, l.status as any);
       
       const processedScore = calculateDecayedScore(
         l.score || 0, 
-        lastUpdateDate, 
-        baseIntent,
-        l.metadata
+        lastUpdateDate
       );
 
       return {
