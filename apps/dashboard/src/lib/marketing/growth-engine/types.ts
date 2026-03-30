@@ -63,6 +63,7 @@ export type GrowthActionType =
   | 'SALES_INTERVENTION'    // Phase 85: Deterministic Close
   | 'SEND_DYNAMIC_OFFER'    // Phase 85: Risk-Adjusted Yield
   | 'GENERATE_LEAD_BRIEF'
+  | 'SEND_EDUCATIONAL_NURTURE'
   | 'SEND_SOW';
 
 export interface GrowthEngineResult {

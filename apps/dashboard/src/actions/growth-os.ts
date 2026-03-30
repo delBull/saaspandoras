@@ -138,3 +138,39 @@ export async function getLeadInsights(leadId: string) {
         return { success: false, error: String(error) };
     }
 }
+
+export async function toggleLeadNurture(leadId: string, enabled: boolean) {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            throw new Error("Unauthorized");
+        }
+
+        const lead = await db.query.marketingLeads.findFirst({
+            where: eq(marketingLeads.id, leadId)
+        });
+
+        if (!lead) return { success: false, error: "Lead not found" };
+
+        const currentMetadata = (lead.metadata as any) || {};
+        const updatedMetadata = {
+            ...currentMetadata,
+            growth: {
+                ...(currentMetadata.growth || {}),
+                nurtureEnabled: enabled
+            }
+        };
+
+        await db.update(marketingLeads)
+            .set({
+                metadata: updatedMetadata,
+                updatedAt: new Date()
+            })
+            .where(eq(marketingLeads.id, leadId));
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error toggling lead nurture:", error);
+        return { success: false, error: String(error) };
+    }
+}
