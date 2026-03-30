@@ -35,7 +35,7 @@ export async function activateClient(projectId: number, method: string, amount: 
         const html = await render(WelcomeEmail({
           name: project.applicantName || 'Founder',
           projectName: project.title,
-          dashboardLink: 'https://dash.pandoras.finance/dashboard'
+          dashboardLink: 'https://dash.pandoras.finance/'
         }));
 
         await fetch('https://api.resend.com/emails', {

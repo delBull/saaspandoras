@@ -118,27 +118,36 @@ export function calculateProjectCompletion(project: Record<string, unknown>): {
  */
 export function getTargetAmount(project: any): number {
   if (!project) return 10000;
+  
   try {
+    // Definitive parsing of w2eConfig
     const config = typeof project.w2eConfig === 'string'
-      ? JSON.parse(project.w2eConfig)
+      ? (JSON.parse(project.w2eConfig || '{}'))
       : (project.w2eConfig || {});
 
-    // V2 Structure
+    // V2 Structure (Optimized)
     const tokenomics = config.tokenomics || {};
     if (tokenomics.initialSupply && tokenomics.price) {
-      return Number(tokenomics.initialSupply) * Number(tokenomics.price);
+      const amount = Number(tokenomics.initialSupply) * Number(tokenomics.price);
+      if (!isNaN(amount) && amount > 0) return amount;
     }
 
-    // V1 Structure (Fallback)
+    // V1 Structure (Legacy Fallback)
     const tokenDetails = config.tokenDetails || {};
     if (tokenDetails.initialSupply && tokenDetails.price) {
-      return Number(tokenDetails.initialSupply) * Number(tokenDetails.price);
+      const amount = Number(tokenDetails.initialSupply) * Number(tokenDetails.price);
+      if (!isNaN(amount) && amount > 0) return amount;
     }
 
-    // Database Fallback
-    return Number(project.target_amount || project.targetAmount) || 10000;
+    // Database Fallback (Direct columns)
+    const dbAmount = Number(project.target_amount || project.targetAmount);
+    if (!isNaN(dbAmount) && dbAmount > 0) return dbAmount;
+
+    return 10000; // Final default
   } catch (e) {
-    return Number(project.target_amount || project.targetAmount) || 10000;
+    console.warn("[getTargetAmount] Parsing failed, using fallback:", e);
+    const fallbackAmount = Number(project.target_amount || project.targetAmount);
+    return (!isNaN(fallbackAmount) && fallbackAmount > 0) ? fallbackAmount : 10000;
   }
 }
 
