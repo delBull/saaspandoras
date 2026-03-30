@@ -140,6 +140,7 @@ export async function POST(req: NextRequest) {
         } else {
             // Update existing lead if new identity info arrived
             const updates: any = {};
+            if (!leadRecord.email && leadEmail) updates.email = leadEmail;
             if (!leadRecord.email && capturedUserEmail) updates.email = capturedUserEmail;
             if (!leadRecord.walletAddress && walletAddress) updates.walletAddress = walletAddress;
             if (!leadRecord.userId && capturedUserId) updates.userId = capturedUserId;

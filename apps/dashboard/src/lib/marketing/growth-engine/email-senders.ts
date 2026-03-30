@@ -136,6 +136,7 @@ export async function sendWaitlistSequenceEmail(context: {
         ctaUrl: resolvedCtaUrl
       }) as React.ReactElement,
     });
+    console.log(`[Growth Engine] Resend Success (Waitlist Step ${context.step}):`, data);
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Waitlist Step ${context.step}):`, error);
@@ -180,6 +181,7 @@ export async function sendGenesisWelcomeEmail(context: {
         brandHeader: context.brandHeader
       }),
     });
+    console.log(`[Growth Engine] Resend Success (Genesis Welcome):`, data);
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Genesis Welcome):`, error);
@@ -212,6 +214,7 @@ export async function sendB2BFollowupEmail(context: {
         projectName: context.projectName,
       }),
     });
+    console.log(`[Growth Engine] Resend Success (B2B Followup):`, data);
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (B2B Followup):`, error);
@@ -261,6 +264,7 @@ export async function sendB2BWelcomeEmail(context: {
         ctaUrl
       }),
     });
+    console.log(`[Growth Engine] Resend Success (B2B Welcome):`, data);
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (B2B Welcome):`, error);
