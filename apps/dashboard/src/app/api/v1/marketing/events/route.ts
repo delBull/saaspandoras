@@ -188,20 +188,19 @@ export async function POST(req: NextRequest) {
         const effectiveLeadEmail = lead?.email || leadEmail;
         if (effectiveLeadEmail && lead && eventRecord) {
             try {
+                console.error(`[Growth OS] 🔍 ENTERING Growth Engine for ${effectiveLeadEmail} (event: ${eventType}, leadId: ${lead.id})`);
+                
                 const { computeBehavioralMetrics, resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
                 const { executeGrowthActions } = await import("@/lib/marketing/growth-engine/actions");
 
-                const leadWithEvents = await db.query.marketingLeads.findFirst({
-                    where: eq(marketingLeads.id, lead.id),
-                    with: { 
-                        events: {
-                            orderBy: (events, { desc }) => [desc(events.createdAt)],
-                            limit: 20
-                        }
-                    }
-                });
+                // Use a simple direct query instead of relational query (avoids schema relation dependency)
+                const recentEvents = await db.select()
+                    .from(marketingLeadEvents)
+                    .where(eq(marketingLeadEvents.leadId, lead.id))
+                    .orderBy(sql`created_at DESC`)
+                    .limit(20);
 
-                const { intentScore, priorityScore, engagementLevel, profile } = computeBehavioralMetrics(lead as any, leadWithEvents?.events || []);
+                const { intentScore, priorityScore, engagementLevel, profile } = computeBehavioralMetrics(lead as any, recentEvents || []);
 
                 // IDENTIFY = widget user submitted their info → treat as LEAD_CAPTURED for engine
                 // This ensures welcome email + Discord webhook fire for external protocol widgets (Narai, etc.)
@@ -227,20 +226,22 @@ export async function POST(req: NextRequest) {
                     metadata: lead.metadata as any
                 }, project);
 
+                console.error(`[Growth OS] 🧠 Engine result: actions=${JSON.stringify(engineResult?.actions || [])} isNew=${isNewLead}`);
+
                 if (engineResult && engineResult.actions.length > 0) {
-                    console.error(`[Growth OS] 🚀 Event ${eventType} → Actions: ${JSON.stringify(engineResult.actions)} for ${effectiveLeadEmail} (isNew: ${isNewLead})`);
+                    console.error(`[Growth OS] 🚀 Event ${eventType} → Actions: ${JSON.stringify(engineResult.actions)} for ${effectiveLeadEmail}`);
                     await executeGrowthActions(
                         engineResult.actions, 
                         { 
                             lead: { ...lead as any, email: effectiveLeadEmail, intentScore, priorityScore, engagementLevel, profile }, 
                             project: {
                                 ...project as any,
-                                businessCategory: (project as any).businessCategory || project.business_category || 'other'
+                                businessCategory: (project as any).businessCategory || (project as any).business_category || 'other'
                             }
                         },
                         { 
                             ruleId: engineResult.ruleId || `EVENT_${eventType}`,
-                            bypassCooldown: isNewLead  // Always fire welcome email/webhook for new leads
+                            bypassCooldown: isNewLead
                         },
                         engineResult.scoreChange,
                         engineResult
@@ -251,6 +252,8 @@ export async function POST(req: NextRequest) {
             } catch (engineErr) {
                 console.error('❌ Growth Engine Execution Error:', engineErr);
             }
+        } else {
+            console.warn(`[Growth OS] ⚠️ Skipping Growth Engine: email=${effectiveLeadEmail}, lead=${!!lead}, event=${!!eventRecord}`);
         }
 
         console.log(`📊 [Growth OS] Event tracked: ${eventType} for Project ${parsedProjectId}`);
