@@ -1777,7 +1777,7 @@ export const marketingIdentities = pgTable("marketing_identities", {
  * Links to global 'users' if already registered, otherwise identity is email-based.
  */
 export const marketingLeads = pgTable("marketing_leads", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   userId: varchar("user_id", { length: 255 }).references(() => users.id),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   
@@ -1822,8 +1822,8 @@ export const marketingLeads = pgTable("marketing_leads", {
  * Powers the Event System and Analytics.
  */
 export const marketingLeadEvents = pgTable("marketing_lead_events", {
-  id: serial("id").primaryKey(),
-  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
   type: varchar("type", { length: 100 }).notNull(), // signup, whitelist_approved, converted...
   semanticHash: varchar("semantic_hash", { length: 64 }), // Content-based de-duplication hash
   payload: jsonb("payload").default({}).notNull(),
@@ -1839,10 +1839,10 @@ export const marketingLeadEvents = pgTable("marketing_lead_events", {
  * Prevents double-awarding XP/Credits for the same marketing event.
  */
 export const marketingRewardLogs = pgTable("marketing_reward_logs", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  leadId: integer("lead_id").notNull().references(() => marketingLeads.id),
-  eventId: integer("event_id").notNull().references(() => marketingLeadEvents.id),
+  leadId: uuid("lead_id").notNull().references(() => marketingLeads.id),
+  eventId: uuid("event_id").notNull().references(() => marketingLeadEvents.id),
   
   rewardType: varchar("reward_type", { length: 50 }).notNull(), // 'XP' | 'CREDITS' | 'PBOX'
   amount: integer("amount").notNull(),
@@ -1858,8 +1858,8 @@ export const marketingRewardLogs = pgTable("marketing_reward_logs", {
  * growth_actions_log — Audit log for growth engine decisions.
  */
 export const growthActionsLog = pgTable("growth_actions_log", {
-  id: serial("id").primaryKey(),
-  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
   ruleId: varchar("rule_id", { length: 100 }).notNull(),
   ruleCondition: text("rule_condition"), // The 'why' behind the decision
   actionType: varchar("action_type", { length: 100 }).notNull(),
@@ -1898,8 +1898,8 @@ export const marketingLeadAttributions = pgTable("marketing_lead_attributions", 
  * marketing_attribution_touches — Multi-touch attribution log.
  */
 export const marketingAttributionTouches = pgTable("marketing_attribution_touches", {
-  id: serial("id").primaryKey(),
-  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
   campaignId: integer("campaign_id").references(() => campaigns.id), // Nullable for direct/organic
   
   touchType: varchar("touch_type", { length: 100 }).notNull(), // landing_page, whatsapp_click, form_submit...
