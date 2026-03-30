@@ -201,7 +201,7 @@ export function resolveGrowthAction(
     case 'VIEW_ONBOARDING' as any:
     case 'LEAD_CAPTURED':
       nextState = 'AWARE';
-      actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1'] : ['SEND_WAITLIST_WELCOME_D0'];
+      actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1', 'NOTIFY_TEAM'] : ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'];
       break;
 
     case 'VIEW_PRICING':
