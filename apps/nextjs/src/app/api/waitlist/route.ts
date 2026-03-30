@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         walletAddress: wallet || null,
         intent: intent || 'explore',
         consent: true,
-        projectId: 'pandoras-protocol', // The slug for the main project
+        projectId: 'pandoras_access', // Correct slug for the main project
         origin: "landing_v2_nextjs",
         forceBypass: true, // Bypass 24h cooldown for testing
         metadata: {
