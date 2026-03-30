@@ -69,7 +69,7 @@ export const B2BNoShowRecoveryEmail = ({
 export default B2BNoShowRecoveryEmail;
 
 const main = {
-  backgroundColor: '#000000',
+  backgroundColor: '#ffffff',
   fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
 };
 
@@ -85,7 +85,7 @@ const logo = {
 };
 
 const h1 = {
-  color: '#ffffff',
+  color: '#000000',
   fontSize: '32px',
   fontWeight: 'bold',
   textAlign: 'center' as const,
@@ -93,17 +93,19 @@ const h1 = {
 };
 
 const text = {
-  color: '#cccccc',
+  color: '#374151',
   fontSize: '16px',
   lineHeight: '26px',
 };
 
 const highlightSection = {
-  background: '#111111',
+  background: '#f9fafb',
   padding: '20px',
   borderRadius: '8px',
   margin: '20px 0',
   borderLeft: '4px solid #84cc16',
+  border: '1px solid #e5e7eb',
+  borderLeftWidth: '4px',
 };
 
 const highlightText = {
@@ -114,7 +116,7 @@ const highlightText = {
 };
 
 const hr = {
-  borderColor: '#333333',
+  borderColor: '#e5e7eb',
   margin: '30px 0',
 };
 
@@ -136,7 +138,7 @@ const button = {
 };
 
 const footer = {
-  color: '#666666',
+  color: '#9ca3af',
   fontSize: '12px',
   textAlign: 'center' as const,
   marginTop: '40px',

@@ -37,25 +37,25 @@ export default function WaitlistEmail({
       <Tailwind>
         <Head />
         <Preview>{subject}</Preview>
-        <Body className="bg-black font-sans text-white">
-          <Container className="mx-auto w-full max-w-[600px] p-0 border border-zinc-800 rounded-lg overflow-hidden mt-10">
+        <Body className="bg-white font-sans text-black">
+          <Container className="mx-auto w-full max-w-[600px] p-0 border border-zinc-200 rounded-lg overflow-hidden mt-10 shadow-sm">
             {/* Header / Brand */}
             <Section className="p-8 pb-4 text-center">
-               <Text className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500 mb-2">
+               <Text className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-400 mb-2">
                  {brandHeader}
                </Text>
-               <Hr className="border-zinc-800 my-4" />
+               <Hr className="border-zinc-100 my-4" />
             </Section>
 
             {/* Main Content */}
             <Section className="px-10 pb-10">
-              <Heading className="my-6 text-3xl font-bold leading-tight text-white text-center">
+              <Heading className="my-6 text-3xl font-bold leading-tight text-black text-center">
                 {subject}
               </Heading>
 
               <Section className="space-y-6">
                 {body.split('\n\n').map((paragraph, i) => (
-                  <Text key={i} className="text-zinc-300 text-lg leading-relaxed">
+                  <Text key={i} className="text-zinc-700 text-lg leading-relaxed">
                     {paragraph}
                   </Text>
                 ))}
@@ -73,19 +73,19 @@ export default function WaitlistEmail({
               )}
 
               {/* Signature */}
-              <Section className="mt-10 pt-6 border-t border-zinc-900">
-                 <Text className="text-zinc-400 font-bold">
+              <Section className="mt-10 pt-6 border-t border-zinc-100">
+                 <Text className="text-zinc-600 font-bold">
                    — {projectName}
                  </Text>
               </Section>
             </Section>
 
             {/* Footer / Status */}
-            <Section className="bg-zinc-950 p-8 text-center border-t border-zinc-900">
-               <Text className="text-[10px] text-zinc-600 uppercase tracking-widest">
-                 {typeof step === 'number' ? `PASO ${step} DE 4 // SECUENCIA DE ACTIVACIÓN DE PROTOCOLO` : `ESTADO: ${step} // PANDORA GENESIS DROP`}
+            <Section className="bg-zinc-50 p-8 text-center border-t border-zinc-100">
+               <Text className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                 {typeof step === 'number' ? `[SINC_ID_00${step}] // SECUENCIA DE INICIACIÓN // IDENTIDAD EN REVISIÓN` : `ESTADO: GENESIS // PANDORA'S ACCESS // ACCESO CONFIRMADO`}
                </Text>
-               <Text className="text-[9px] text-zinc-700 mt-4 leading-relaxed">
+               <Text className="text-[9px] text-zinc-400 mt-4 leading-relaxed">
                  Este mensaje es confidencial y solo para perfiles en proceso de evaluación.<br />
                  No compartir el contenido de esta comunicación.
                </Text>

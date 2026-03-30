@@ -114,19 +114,19 @@ export default function PandorasHighTicketEmail({
               </Row>
             </Section>
 
-            {/* BLACK CTA BLOCK */}
-            <Section className="bg-black p-8 rounded-2xl text-center text-white">
-              <Heading className="text-3xl font-semibold text-yellow-400 mb-4">
+            {/* LIGHT CTA BLOCK */}
+            <Section className="bg-zinc-50 p-8 rounded-2xl text-center text-black border border-zinc-100">
+              <Heading className="text-3xl font-semibold text-zinc-900 mb-4">
                 ¿Listo para dar el paso?
               </Heading>
 
-              <Text className="text-gray-200 text-base leading-6 mb-6">
+              <Text className="text-zinc-600 text-base leading-6 mb-6">
                 El formulario inicial toma unos 15 minutos y nos ayuda a prepararte mejor. Te garantizamos respuesta en 24 horas.
               </Text>
 
               <Link
                 href="https://dash.pandoras.finance/apply"
-                className="inline-block bg-yellow-500 text-black font-bold text-lg rounded-full px-8 py-4 no-underline"
+                className="inline-block bg-yellow-500 text-black font-bold text-lg rounded-full px-8 py-4 no-underline shadow-sm"
                 style={{
                   backgroundColor: '#EAB308',
                   color: '#000',
@@ -138,21 +138,21 @@ export default function PandorasHighTicketEmail({
                 Aplicar Ahora - Inner Circle
               </Link>
 
-              <Text className="mt-4 text-gray-400 text-sm">
+              <Text className="mt-4 text-zinc-400 text-sm italic">
                 Sin compromiso. Solo founders serios. Nuestro equipo es igual de selectivo.
               </Text>
 
               {/* Secondary CTA */}
               <Link
                 href={whatsappLink}
-                className="mt-6 inline-block bg-transparent border border-white text-white font-bold text-sm rounded-full px-6 py-3 no-underline"
+                className="mt-6 inline-block bg-transparent border border-black text-black font-bold text-sm rounded-full px-6 py-3 no-underline"
                 style={{
                   backgroundColor: 'transparent',
-                  color: '#fff',
+                  color: '#000',
                   padding: '12px 24px',
                   textDecoration: 'none',
                   borderRadius: '50px',
-                  border: '1px solid #fff',
+                  border: '1px solid #000',
                   marginTop: '24px'
                 }}
               >

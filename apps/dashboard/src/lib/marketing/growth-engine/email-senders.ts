@@ -63,19 +63,19 @@ export async function sendWaitlistSequenceEmail(context: {
     },
     'tech_startup': {
       'high': {
-        1: { subject: "Pandora: Acceso Fast-Track.", body: "Vemos que estás listo para construir.\n\nLa infraestructura descentralizada no espera a nadie.\n\nEstás en la vía rápida." },
-        2: { subject: "Escalando la soberanía.", body: "Estamos desplegando el OS para la nueva economía.\n\nTu perfil es el que buscamos para el Genesis Drop." },
-        3: { subject: "Protocolo Activado.", body: "Estás a un paso de la Llave Maestra.\n\nLa red te reconoce.\n\nPrepárate." },
+        1: { subject: "Ritual de Acceso: Fase I — Iniciación", body: "Vemos que estás listo para construir.\n\nLa infraestructura descentralizada no espera a nadie.\n\nEl sistema ha detectado tu señal y te ha asignado una vía de validación prioritaria.\n\nMantén tu llave lista." },
+        2: { subject: "Fase II: El Registro en Sombra", body: "Estamos desplegando el OS para la nueva economía.\n\nTu perfil ha sido marcado para el Genesis Drop.\n\nNo estamos buscando usuarios, buscamos nodos fundadores." },
+        3: { subject: "Fase III: Validación por Proximidad", body: "Estás a un paso de la Llave Maestra.\n\nLa red te reconoce y el filtro se estrecha.\n\nPrepárate para la activación final." },
         4: { 
-          subject: "Protocolo de Iniciación: Ingresa ahora.", 
-          body: "Has pasado el filtro inicial.\n\nLa red de Pandora ha autorizado la creación de tu clave de acceso.\n\nA partir de este momento, dependes de tu llave criptográfica para probar tu identidad en el ecosistema.\n\nTu ventana de vinculación ha comenzado. Reclama tu lugar en la red antes de que las puertas se cierren.", 
+          subject: "Fase IV: El Despertar de la Llave", 
+          body: "Has pasado el filtro final.\n\nLa red de Pandora ha autorizado la creación de tu clave de acceso definitiva.\n\nA partir de este momento, tu identidad criptográfica es tu único rastro en el ecosistema.\n\nTu ventana de vinculación ha comenzado. Reclama tu lugar antes de que las compuertas se cierren.", 
           ctaText: "INICIAR RITUAL DE IDENTIDAD" 
         }
       },
       'mid': {
-        1: { subject: "Tu solicitud a Pandora OS.", body: "Recibimos tu interés.\n\nEstamos construyendo la infraestructura de la libertad financiera.\n\nTe mantendremos al tanto de la evolución." },
-        2: { subject: "El Nuevo Standard OS.", body: "Pandora no es una app. Es un sistema operativo para activos digitales.\n\nEstamos seleccionando a los primeros testers." },
-        3: { subject: "Filtro de Red.", body: "La red se fortalece con cada nodo.\n\nEstamos verificando tu elegibilidad para el acceso temprano." },
+        1: { subject: "Tu solicitud a Pandora OS.", body: "Recibimos tu interés.\n\nEstamos construyendo la infraestructura de la libertad financiera.\n\nEl sistema está evaluando tu perfil dentro de la cola de acceso restringido.\n\nTe mantendremos al tanto de la evolución." },
+        2: { subject: "El Nuevo Standard OS.", body: "Pandora no es una app. Es un sistema operativo para activos digitales.\n\nEstamos seleccionando a los primeros testers para la fase Beta.\n\nTu rastro digital sigue en proceso de validación." },
+        3: { subject: "Filtro de Red.", body: "La red se fortalece con cada nodo.\n\nEstamos verificando tu elegibilidad para el acceso temprano.\n\nEn los próximos días recibirás la señal definitiva." },
         4: { 
           subject: "Protocolo de Iniciación: Ingresa ahora.", 
           body: "Has sido seleccionado para la prueba estructural.\n\nLa red de Pandora ha autorizado tu clave de acceso.\n\nTu ventana de vinculación digital está disponible.", 

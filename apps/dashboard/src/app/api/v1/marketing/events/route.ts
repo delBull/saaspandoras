@@ -6,6 +6,13 @@ import { createHash } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
+const corsHeaders = (origin: string | null) => ({
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, x-api-key, x-stress-test",
+    "Access-Control-Allow-Credentials": "true",
+});
+
 /**
  * POST /api/v1/marketing/events
  * 
@@ -13,14 +20,20 @@ export const dynamic = 'force-dynamic';
  * Used by navigator.sendBeacon and fetch.
  */
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get("origin") || req.headers.get("referer");
+
   try {
     const body = await req.json();
-    const { event, projectId, projectSlug, fingerprint, origin, metadata } = body;
+    const { event, projectId, projectSlug, fingerprint, metadata } = body;
 
-    const finalSlug = projectSlug || (isNaN(parseInt(projectId)) ? projectId : null);
+    // Robust Resolution: Check slug, then numeric ID, then fallback from projectId string
+    const requestedProjectIdentifier = projectSlug || projectId;
 
-    if (!event || (!projectId && !finalSlug)) {
-        return NextResponse.json({ error: 'Missing required fields (event, projectId/projectSlug)' }, { status: 400 });
+    if (!event || !requestedProjectIdentifier) {
+        return NextResponse.json(
+            { error: 'Missing required fields (event, projectId/projectSlug)' }, 
+            { status: 400, headers: corsHeaders(origin) }
+        );
     }
 
     const { withRetry } = await import("@/lib/database");
@@ -28,76 +41,44 @@ export async function POST(req: NextRequest) {
     return await withRetry(async () => {
         const eventType = event.toUpperCase();
         
-        // 0.5 Project Resolution (Audit: Multi-Tenant)
+        // 1. Project Resolution (Audit: Multi-Tenant / Resilient)
         let project: any = null;
-        if (finalSlug) {
+        let resolutionMethod = 'unknown';
+
+        if (isNaN(Number(requestedProjectIdentifier))) {
             project = await db.query.projects.findFirst({
-                where: (projects, { ilike }) => ilike(projects.slug, finalSlug)
+                where: (projects, { ilike }) => ilike(projects.slug, requestedProjectIdentifier)
             });
-        } else if (projectId) {
-            const idToQuery = parseInt(projectId);
-            if (!isNaN(idToQuery)) {
-                project = await db.query.projects.findFirst({
-                    where: (projects, { eq }) => eq(projects.id, idToQuery)
-                });
-            }
+            resolutionMethod = 'slug_match';
+        } else {
+            project = await db.query.projects.findFirst({
+                where: (projects, { eq }) => eq(projects.id, Number(requestedProjectIdentifier))
+            });
+            resolutionMethod = 'id_match';
         }
 
         if (!project) {
-            console.warn(`[Growth Engine] ❌ Project not found: ${projectId || finalSlug}`);
-            return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+            console.error(`[Growth Engine] ❌ Project not found: ${requestedProjectIdentifier}. Resolution: ${resolutionMethod}`);
+            return NextResponse.json(
+                { error: 'Project not found' }, 
+                { status: 404, headers: corsHeaders(origin) }
+            );
         }
 
         const parsedProjectId = project.id;
-
-        // 0. Stress Test Safeguards (Audit: Surgical)
-        const isStressTest = req.headers.get('x-stress-test') === 'true';
-        if (isStressTest) {
-            console.log(`[Growth Engine] 🧪 Stress Test Mode Active for ${parsedProjectId}`);
-            const now = Date.now();
-            const throttleStore = (global as any).__stress_throttle || { count: 0, resetAt: now + 60000 };
-            if (now > throttleStore.resetAt) {
-                throttleStore.count = 1;
-                throttleStore.resetAt = now + 60000;
-            } else {
-                throttleStore.count++;
-                if (throttleStore.count > 120) {
-                    return NextResponse.json({ error: "Stress test throttle reached (120/min)" }, { status: 429 });
-                }
-            }
-            (global as any).__stress_throttle = throttleStore;
-        }
         
-        // 1. Resolve Identity Context
-        const walletAddress = body.walletAddress || metadata?.walletAddress || metadata?.wallet;
-        const leadEmail = (body.email || metadata?.email)?.toLowerCase?.() || null;
+        // 2. Resolve Identity Context
+        // Handle metadata structure flexibly (Support Narai's flatter structure)
+        const walletAddress = body.walletAddress || metadata?.walletAddress || metadata?.wallet || body.wallet;
+        const leadEmail = (body.email || metadata?.email || body.userEmail)?.toLowerCase?.() || null;
         const effectiveFingerprint = fingerprint || `anon_${createHash('md5').update(req.headers.get('user-agent') || 'unknown').digest('hex')}`;
 
-        // 1.1 Identity Enrichment from Users table (Phase 89: Institutional Hardening)
-        let capturedUserEmail = null;
-        let capturedUserName = null;
-        let capturedUserId = null;
-
-        if (walletAddress) {
-            const { users } = await import('@/db/schema');
-            const userRecord = await db.query.users.findFirst({
-                where: eq(users.walletAddress, walletAddress.toLowerCase())
-            });
-            if (userRecord) {
-                capturedUserEmail = userRecord.email;
-                capturedUserName = userRecord.name;
-                capturedUserId = userRecord.id;
-            }
-        }
-
-        // 1.2 Resolve existing Lead record (Bugfix: Avoid anonymous lead duplication)
-        // Priority: email > wallet > fingerprint — if we have an email, use it as primary key
+        // 2.1 Resolve existing Lead record (Avoiding duplication)
         const orConditions = [];
         if (leadEmail) orConditions.push(eq(marketingLeads.email, leadEmail));
         if (walletAddress) orConditions.push(eq(marketingLeads.walletAddress, walletAddress));
-        // Only use fingerprint in OR if it's a real fingerprint (not auto-generated anon_)
         if (fingerprint) orConditions.push(eq(marketingLeads.fingerprint, fingerprint));
-        // If we have no real identifiers at all, fall back to the anon fingerprint
+        
         if (orConditions.length === 0) orConditions.push(eq(marketingLeads.fingerprint, effectiveFingerprint));
 
         const leadRecordArray = await db.select().from(marketingLeads).where(
@@ -109,41 +90,11 @@ export async function POST(req: NextRequest) {
 
         let leadRecord: any = leadRecordArray.length > 0 ? { ...leadRecordArray[0], project } : null;
 
-        // 1.3 Create Lead if missing (Audit: Auto-Capture) — only create if we have at least email or wallet
-        if (!leadRecord) {
-            // Skip creating anonymous leads when we have no real identity anchor
-            if (!leadEmail && !walletAddress && !fingerprint) {
-                console.log(`[Growth OS] Skipping anonymous lead creation — no identity anchor available.`);
-                return NextResponse.json({ success: true, skipped: 'no_identity' });
-            }
-
-            const identityHash = createHash('sha256').update(`${parsedProjectId}-${effectiveFingerprint}-${leadEmail || walletAddress || ''}`).digest('hex');
-            
-            const [newLead] = await db.insert(marketingLeads).values({
-                projectId: parsedProjectId,
-                fingerprint: fingerprint || effectiveFingerprint,
-                identityHash,
-                email: leadEmail || capturedUserEmail,
-                name: metadata?.name || capturedUserName,
-                walletAddress: walletAddress || null,
-                userId: capturedUserId || null,
-                status: 'NEW' as any,
-                score: 50,
-                updatedAt: new Date(),
-                metadata: {
-                    initial_event: eventType,
-                    source: metadata?.source || 'direct',
-                    ...metadata
-                }
-            }).returning();
-            leadRecord = { ...newLead, project } as any;
-        } else {
-            // Update existing lead if new identity info arrived
+        // 2.2 Auto-Capture/Update (Phase 90: Identity Fusion)
+        if (leadRecord) {
             const updates: any = {};
             if (!leadRecord.email && leadEmail) updates.email = leadEmail;
-            if (!leadRecord.email && capturedUserEmail) updates.email = capturedUserEmail;
             if (!leadRecord.walletAddress && walletAddress) updates.walletAddress = walletAddress;
-            if (!leadRecord.userId && capturedUserId) updates.userId = capturedUserId;
             
             if (Object.keys(updates).length > 0) {
                 await db.update(marketingLeads).set({ ...updates, updatedAt: new Date() }).where(eq(marketingLeads.id, leadRecord.id));
@@ -153,7 +104,7 @@ export async function POST(req: NextRequest) {
 
         const lead = leadRecord;
 
-        // 2. Semantic Deduplication (Audit 1)
+        // 3. Semantic Deduplication
         const sortedMetadata = metadata ? Object.keys(metadata).sort().reduce((acc, key) => {
             acc[key] = metadata[key];
             return acc;
@@ -169,25 +120,10 @@ export async function POST(req: NextRequest) {
         });
 
         if (existingSemantic) {
-            console.log(`[Growth OS] Throttled semantic duplicate: ${eventType}`);
-            return NextResponse.json({ success: true, throttled: true, semantic: true });
-        }
-
-        // 3. Time-based Throttling (Safety Net)
-        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-        if (lead) {
-            const recentEvent = await db.query.marketingLeadEvents.findFirst({
-                where: and(
-                    eq(marketingLeadEvents.leadId, lead.id),
-                    eq(marketingLeadEvents.type, eventType),
-                    gt(marketingLeadEvents.createdAt, tenMinutesAgo)
-                )
-            });
-
-            if (recentEvent) {
-                console.log(`[Growth OS] Throttled duplicate time-window: ${eventType}`);
-                return NextResponse.json({ success: true, throttled: true });
-            }
+            return NextResponse.json(
+                { success: true, throttled: true, semantic: true },
+                { headers: corsHeaders(origin) }
+            );
         }
 
         // 4. Log Event
@@ -207,41 +143,9 @@ export async function POST(req: NextRequest) {
             throw new Error("Failed to log marketing event");
         }
 
-        // 4.1. Identity Auto-Capture (Surgical: Audit 1)
-        if (lead && (metadata?.email || metadata?.name)) {
-            const email = metadata?.email;
-            const name = metadata?.name;
-            
-            if ((email && lead.email !== email) || (name && lead.name !== name)) {
-                console.log(`[Growth OS] Identity updated for Lead ${lead.id}: ${email || 'no-email'}`);
-                await db.update(marketingLeads)
-                    .set({ 
-                        email: email || lead.email, 
-                        name: name || lead.name,
-                        updatedAt: new Date() 
-                    })
-                    .where(eq(marketingLeads.id, lead.id));
-                
-                if (email) (lead as any).email = email;
-                if (name) (lead as any).name = name;
-            }
-        }
-
-        // 4.2. Bridge to Growth Engine
-        // Guard: Only trigger email actions if lead has a valid email
-        const effectiveLeadEmail = lead.email || leadEmail;
-        if (!effectiveLeadEmail) {
-            console.log(`[Growth OS] Skipping Growth Engine — lead has no email to send to.`);
-            console.log(`📊 [Growth OS] Event tracked (no email): ${eventType} for Project ${parsedProjectId}`);
-            return NextResponse.json({ success: true, eventId: eventRecord.id, skipped_engine: 'no_email' });
-        }
-
-        // Ensure in-memory lead object has the email for the engine
-        if (!lead.email && effectiveLeadEmail) {
-            (lead as any).email = effectiveLeadEmail;
-        }
-
-        if (lead && eventRecord) {
+        // 5. Growth Engine Connectivity (Non-Blocking)
+        const effectiveLeadEmail = lead?.email || leadEmail;
+        if (effectiveLeadEmail && lead && eventRecord) {
             try {
                 const { computeBehavioralMetrics, resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
                 const { executeGrowthActions } = await import("@/lib/marketing/growth-engine/actions");
@@ -260,7 +164,7 @@ export async function POST(req: NextRequest) {
 
                 const engineResult = resolveGrowthAction(eventType as any, {
                     ...lead as any,
-                    email: effectiveLeadEmail, // Always pass the resolved email
+                    email: effectiveLeadEmail, 
                     intentScore,
                     priorityScore,
                     engagementLevel,
@@ -268,21 +172,14 @@ export async function POST(req: NextRequest) {
                     metadata: lead.metadata as any
                 }, project);
 
-                if (engineResult && (engineResult.actions.length > 0 || (engineResult.ruleId?.startsWith('PH80')))) {
+                if (engineResult && engineResult.actions.length > 0) {
                     await executeGrowthActions(
                         engineResult.actions, 
                         { 
                             lead: { ...lead as any, email: effectiveLeadEmail, intentScore, priorityScore, engagementLevel, profile }, 
-                            project: { 
-                                ...project,
-                                slug: (project as any).slug || finalSlug  // Ensure slug is present
-                            } as any
+                            project: project as any
                         },
-                        { 
-                            ruleId: engineResult.ruleId || `EVENT_${eventType}`, 
-                            ruleCondition: engineResult.ruleCondition,
-                            isStressTest
-                        },
+                        { ruleId: engineResult.ruleId || `EVENT_${eventType}` },
                         engineResult.scoreChange,
                         engineResult
                     );
@@ -293,7 +190,10 @@ export async function POST(req: NextRequest) {
         }
 
         console.log(`📊 [Growth OS] Event tracked: ${eventType} for Project ${parsedProjectId}`);
-        return NextResponse.json({ success: true, eventId: eventRecord.id });
+        return NextResponse.json(
+            { success: true, eventId: eventRecord.id },
+            { headers: corsHeaders(origin) }
+        );
     });
 
   } catch (error: any) {
@@ -301,7 +201,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
         error: 'Internal Server Error', 
         details: error?.message || 'Unknown error'
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders(origin) });
   }
 }
 
@@ -312,11 +212,6 @@ export async function OPTIONS(req: NextRequest) {
     const origin = req.headers.get("origin") || "*";
     return new NextResponse(null, {
       status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, x-api-key, x-stress-test",
-        "Access-Control-Allow-Credentials": "true",
-      },
+      headers: corsHeaders(origin),
     });
 }
