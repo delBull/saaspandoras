@@ -32,7 +32,7 @@ export default function DevelopersPage() {
   };
 
   const widgetSnippet = `<script 
-  src="https://${getDashboardDomain()}/api/v1/widget/v1.js" 
+  src="https://${getDashboardDomain()}/api/widget/v1.js" 
   data-project-id="YOUR_PROJECT_SLUG" 
   data-api-key="pk_grow_live_..."
   defer
@@ -221,10 +221,10 @@ const res = await window.PandorasGrowth.registerLead({
                         <span className="text-zinc-400">&lt;</span><span className="text-blue-400">script</span>
                       </div>
                       <div className="pl-6">
-                        <span className="text-indigo-400">src</span>=<span className="text-emerald-300">"https://${getDashboardDomain()}/api/v1/widget/v1.js"</span>
+                        <span className="text-indigo-400">src</span>=<span className="text-emerald-300">"https://${getDashboardDomain()}/api/widget/v1.js"</span>
                       </div>
                       <div className="pl-6">
-                        <span className="text-indigo-400">data-project-id</span>=<span className="text-emerald-300">"external"</span>
+                        <span className="text-indigo-400">data-project-id</span>=<span className="text-emerald-300">"narai"</span>
                       </div>
                       <div className="pl-6">
                         <span className="text-indigo-400">data-api-key</span>=<span className="text-emerald-300">"pk_grow_live_..."</span>
