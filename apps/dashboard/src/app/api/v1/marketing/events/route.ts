@@ -203,7 +203,21 @@ export async function POST(req: NextRequest) {
 
                 const { intentScore, priorityScore, engagementLevel, profile } = computeBehavioralMetrics(lead as any, leadWithEvents?.events || []);
 
-                const engineResult = resolveGrowthAction(eventType as any, {
+                // IDENTIFY = widget user submitted their info → treat as LEAD_CAPTURED for engine
+                // This ensures welcome email + Discord webhook fire for external protocol widgets (Narai, etc.)
+                const IDENTITY_EVENTS = ['IDENTIFY', 'FORM_SUBMIT', 'LEAD_SUBMIT', 'USER_IDENTIFIED'];
+                const engineEventType = IDENTITY_EVENTS.includes(eventType) ? 'LEAD_CAPTURED' : eventType;
+                
+                if (engineEventType !== eventType) {
+                    console.error(`[Growth OS] 🔀 Remapping event ${eventType} → LEAD_CAPTURED for Growth Engine trigger`);
+                }
+
+                // Detect if this lead is new (no prior growth executions) to bypass email cooldown
+                const existingGrowthMeta = (lead.metadata as any)?.growth;
+                const isNewLead = !existingGrowthMeta?.executedActions || 
+                    Object.keys(existingGrowthMeta.executedActions).length === 0;
+
+                const engineResult = resolveGrowthAction(engineEventType as any, {
                     ...lead as any,
                     email: effectiveLeadEmail, 
                     intentScore,
@@ -214,16 +228,25 @@ export async function POST(req: NextRequest) {
                 }, project);
 
                 if (engineResult && engineResult.actions.length > 0) {
+                    console.error(`[Growth OS] 🚀 Event ${eventType} → Actions: ${JSON.stringify(engineResult.actions)} for ${effectiveLeadEmail} (isNew: ${isNewLead})`);
                     await executeGrowthActions(
                         engineResult.actions, 
                         { 
                             lead: { ...lead as any, email: effectiveLeadEmail, intentScore, priorityScore, engagementLevel, profile }, 
-                            project: project as any
+                            project: {
+                                ...project as any,
+                                businessCategory: (project as any).businessCategory || project.business_category || 'other'
+                            }
                         },
-                        { ruleId: engineResult.ruleId || `EVENT_${eventType}` },
+                        { 
+                            ruleId: engineResult.ruleId || `EVENT_${eventType}`,
+                            bypassCooldown: isNewLead  // Always fire welcome email/webhook for new leads
+                        },
                         engineResult.scoreChange,
                         engineResult
                     );
+                } else {
+                    console.log(`[Growth OS] ℹ️ No actions for event ${engineEventType} (original: ${eventType}) for ${effectiveLeadEmail}`);
                 }
             } catch (engineErr) {
                 console.error('❌ Growth Engine Execution Error:', engineErr);
