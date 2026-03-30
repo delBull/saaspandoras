@@ -585,7 +585,10 @@ export async function executeGrowthActions(
     
     currentMetadata.growth = growthMetadata;
     
-    // THE BLINDAJE: Optimistic locking condition
+    const lockCondition = freshLead.updatedAt 
+        ? and(eq(marketingLeads.id, lead.id as any), eq(marketingLeads.updatedAt, freshLead.updatedAt as any))
+        : eq(marketingLeads.id, lead.id as any); // For new leads with updatedAt = null, skip timestamp lock
+
     const updateResult = await db.update(marketingLeads)
       .set({ 
         metadata: {
@@ -604,10 +607,7 @@ export async function executeGrowthActions(
         lastAction: newlyExecuted[newlyExecuted.length - 1] || (lead as any).lastAction,
         updatedAt: new Date() 
       })
-      .where(and(
-        eq(marketingLeads.id, lead.id as any),
-        eq(marketingLeads.updatedAt, freshLead.updatedAt as any) // Guard against parallel updates
-      ));
+      .where(lockCondition);
 
     if (updateResult.length === 0) {
         console.error(`[Growth Engine] OPTIMISTIC LOCK FAILURE for ${lead.email}. Another worker updated the lead. ${newlyExecuted.length} actions might be duplicated in next run.`);

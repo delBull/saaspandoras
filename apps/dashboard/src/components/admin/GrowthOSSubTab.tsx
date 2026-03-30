@@ -1479,7 +1479,7 @@ export default function GrowthOSSubTab() {
                   </div>
                 ))
               ) : (
-                aiInsights?.insights.map((insight, idx) => (
+                aiInsights?.insights?.map((insight, idx) => (
                   <div key={idx} className="bg-zinc-900/60 rounded-2xl p-6 border border-zinc-800 hover:border-purple-400/30 hover:bg-zinc-900/80 transition-all group">
                     <div className="flex justify-between items-start mb-4">
                       <div className={`p-2 rounded-xl text-white ${insight.type === 'strategy' ? 'bg-blue-500/20 text-blue-400' :
