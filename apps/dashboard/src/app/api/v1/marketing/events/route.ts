@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         let project: any = null;
         if (finalSlug) {
             project = await db.query.projects.findFirst({
-                where: eq(sql`slug`, finalSlug)
+                where: sql`LOWER(slug) = LOWER(${finalSlug})`
             });
         } else if (projectId) {
             const idToQuery = parseInt(projectId);

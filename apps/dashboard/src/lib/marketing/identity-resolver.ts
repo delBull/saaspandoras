@@ -1,7 +1,6 @@
 import { db } from "@/db";
 import { marketingIdentities, users } from "@/db/schema";
 import { eq, or, and } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
 
 export interface IdentityIdentifiers {
   fingerprint?: string | null;
@@ -15,9 +14,8 @@ export class IdentityResolver {
   /**
    * Resolves a unified identity based on available identifiers.
    * If an identity exists for any identifier, it returns it.
-   * If multiple identifiers point to different identities, it prioritizes and potentially merges (Log for future).
    */
-  static async resolveIdentity(identifiers: IdentityIdentifiers): Promise<string> {
+  static async resolveIdentity(identifiers: IdentityIdentifiers): Promise<number> {
     const { fingerprint, walletAddress, email, telegramId, userId } = identifiers;
 
     // 1. Check for existing identity by any identifier
@@ -30,14 +28,16 @@ export class IdentityResolver {
 
     if (conditions.length === 0) {
       // No identifiers provided, generate a new anonymous identity
-      const newIdentityId = uuidv4();
-      await db.insert(marketingIdentities).values({
-        id: newIdentityId,
+      const [newIdentity] = await db.insert(marketingIdentities).values({
         fingerprint: fingerprint || null,
-        createdAt: new Date(),
         updatedAt: new Date(),
-      });
-      return newIdentityId;
+      }).returning({ id: marketingIdentities.id });
+      
+      if (!newIdentity) {
+        throw new Error("Failed to create anonymous identity");
+      }
+      
+      return newIdentity.id;
     }
 
     const existingIdentities = await db
@@ -48,79 +48,60 @@ export class IdentityResolver {
     if (existingIdentities.length > 0) {
       // Found at least one. Use the most specific one (User > Wallet > Email > Fingerprint)
       const prioritized = existingIdentities.sort((a, b) => {
-        if (a.userId && !b.userId) return -1;
-        if (b.userId && !a.userId) return 1;
-        if (a.walletAddress && !b.walletAddress) return -1;
-        if (b.walletAddress && !a.walletAddress) return 1;
-        if (a.email && !b.email) return -1;
-        if (b.email && !a.email) return 1;
-        return 0;
+        const score = (id: typeof marketingIdentities.$inferSelect) => {
+          if (id.userId) return 100;
+          if (id.walletAddress) return 80;
+          if (id.email) return 60;
+          if (id.telegramId) return 40;
+          if (id.fingerprint) return 20;
+          return 0;
+        };
+        return score(b) - score(a);
       });
 
-      const primary = prioritized[0];
-      if (!primary || !primary.id) {
-          // Fallback if sort somehow returned empty array or missing ID
-          const fallback = existingIdentities[0];
-          if (!fallback) throw new Error("No identity found after lookup");
-          return fallback.id;
+      const primaryIdentity = prioritized[0];
+      if (!primaryIdentity) {
+        throw new Error("Identity resolution failure: no primary identity found");
+      }
+      
+      // Update primary identity with any new info
+      const updates: any = {};
+      if (!primaryIdentity.fingerprint && fingerprint) updates.fingerprint = fingerprint;
+      if (!primaryIdentity.walletAddress && walletAddress) updates.walletAddress = walletAddress.toLowerCase();
+      if (!primaryIdentity.email && email) updates.email = email.toLowerCase();
+      if (!primaryIdentity.telegramId && telegramId) updates.telegramId = telegramId;
+      if (!primaryIdentity.userId && userId) updates.userId = userId;
+
+      if (Object.keys(updates).length > 0) {
+        await db.update(marketingIdentities)
+          .set({ ...updates, updatedAt: new Date() })
+          .where(eq(marketingIdentities.id, primaryIdentity.id));
       }
 
-      // Update the primary identity with any new information
-      const updateData: any = { updatedAt: new Date() };
-      let needsUpdate = false;
-
-      if (fingerprint && primary.fingerprint !== fingerprint) {
-        updateData.fingerprint = fingerprint;
-        needsUpdate = true;
-      }
-      if (walletAddress && primary.walletAddress !== walletAddress.toLowerCase()) {
-        updateData.walletAddress = walletAddress.toLowerCase();
-        needsUpdate = true;
-      }
-      if (email && primary.email !== email.toLowerCase()) {
-        updateData.email = email.toLowerCase();
-        needsUpdate = true;
-      }
-      if (telegramId && primary.telegramId !== telegramId) {
-        updateData.telegramId = telegramId;
-        needsUpdate = true;
-      }
-      if (userId && primary.userId !== userId) {
-        updateData.userId = userId;
-        needsUpdate = true;
-      }
-
-      if (needsUpdate) {
-        await db
-          .update(marketingIdentities)
-          .set(updateData)
-          .where(eq(marketingIdentities.id, primary.id));
-      }
-
-      return primary.id;
+      return primaryIdentity.id;
     }
 
-    // 2. No existing identity found, create new one
-    const newId = uuidv4();
-    await db.insert(marketingIdentities).values({
-      id: newId,
-      userId: userId || null,
+    // 2. No match found, create new one
+    const [newIdentity] = await db.insert(marketingIdentities).values({
       fingerprint: fingerprint || null,
       walletAddress: walletAddress?.toLowerCase() || null,
       email: email?.toLowerCase() || null,
       telegramId: telegramId || null,
-      createdAt: new Date(),
+      userId: userId || null,
       updatedAt: new Date(),
-    });
+    }).returning({ id: marketingIdentities.id });
 
-    return newId;
+    if (!newIdentity) {
+      throw new Error("Failed to create new marketing identity");
+    }
+
+    return newIdentity.id;
   }
 
   /**
    * Link a core User to a marketing identity.
-   * Usually called after a user signs up or connects a wallet for the first time.
    */
-  static async linkUser(userId: string, marketingIdentityId: string) {
+  static async linkUser(userId: string, marketingIdentityId: number) {
     await db.update(marketingIdentities)
       .set({ userId, updatedAt: new Date() })
       .where(eq(marketingIdentities.id, marketingIdentityId));
