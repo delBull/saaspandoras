@@ -390,28 +390,43 @@ export async function executeGrowthActions(
           break;
         }
 
-             case 'NOTIFY_TEAM':
+             case 'NOTIFY_TEAM': {
           // Institutional: WhatsApp/Sales Team Tier
           const { classifyIntent } = await import("./engine");
           const intentCategory = classifyIntent(freshLead?.score || 0, growthMetadata.state);
+
+          if (ruleInfo?.isStressTest) {
+              console.log(`[Growth Engine] 🧪 MOCK: Notification for state ${growthMetadata.state} for ${lead.email || 'anonymous'}`);
+              success = true;
+              break;
+          }
+
+          // Project-specific webhook: ALWAYS fires regardless of score/intentCategory
+          // This ensures external protocols (Narai, etc.) always get notified on new leads
+          if (project.discordWebhookUrl) {
+              console.error(`[Growth Engine] 📣 Project-level Discord webhook firing for ${project.slug}`);
+              ensureNotificationServiceConfigured();
+              const leadWithScore = { ...lead, score: lead.score || 0 };
+              success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: intentCategory } as any);
+              break;
+          }
           
+          // Global Pandoras channel: only for high-intent / closing leads (avoid noise)
           if (intentCategory === 'closing' || intentCategory === 'high') {
              const dispatched = await dispatchAction(action, 'sales_team');
              if (dispatched) {
                 success = true;
                 break;
              }
-          }
-          
-          if (ruleInfo?.isStressTest) {
-              console.log(`[Growth Engine] 🧪 MOCK: Notification for state ${growthMetadata.state} for ${lead.email || 'anonymous'}`);
-              success = true;
+             ensureNotificationServiceConfigured();
+             const leadWithScore2 = { ...lead, score: lead.score || 0 };
+             success = await notificationService.notifyGrowthLead(leadWithScore2, { ...project, urgencyTier: intentCategory } as any);
           } else {
-              ensureNotificationServiceConfigured();
-              const leadWithScore = { ...lead, score: lead.score || 0 };
-              success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: intentCategory } as any);
+              console.log(`[Growth Engine] ℹ️ NOTIFY_TEAM skipped for ${lead.email} — score too low for global channel (${intentCategory}). No project webhook configured.`);
+              success = true; // Graceful skip — not a failure
           }
           break;
+        }
 
         case 'ASSIGN_COURSE':
           // Institutional: Phase 80 Goal (Education)

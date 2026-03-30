@@ -174,7 +174,9 @@ export async function POST(req: NextRequest) {
         slug: true, 
         title: true, 
         businessCategory: true,
-        discordWebhookUrl: true 
+        discordWebhookUrl: true,
+        description: true,
+        tagline: true
       }
     });
 
@@ -308,17 +310,28 @@ export async function POST(req: NextRequest) {
       
       console.error(`[Growth OS] 🧠 Engine Result: Actions=${JSON.stringify(engineResult?.actions || [])}, Rule=${engineResult?.ruleId}`);
       
-      const forceBypass = body.forceBypass === true || metadata?.forceBypass === true;
+      // A lead is "new" if it has no prior growth execution history
+      // This ensures welcome emails always fire for first-time registrations
+      const existingGrowthMeta = (result.metadata as any)?.growth;
+      const isNewLead = !existingGrowthMeta?.executedActions || Object.keys(existingGrowthMeta.executedActions).length === 0;
+      const forceBypass = body.forceBypass === true || metadata?.forceBypass === true || isNewLead;
+      
+      if (isNewLead) {
+        console.error(`[Growth OS] 🆕 New lead detected — bypassing cooldown to ensure welcome email & notifications fire.`);
+      }
 
       if (engineResult && engineResult.actions.length > 0) {
         console.error(`[Growth OS] 🚀 Triggering ${engineResult.actions.length} actions for ${result.email}... (ForceBypass: ${forceBypass})`);
+        console.error(`[Growth OS] 📩 Executing actions: ${JSON.stringify(engineResult.actions)} for Project: ${projectContext?.slug} (category: ${projectContext?.businessCategory})`);
         await executeGrowthActions(engineResult.actions, {
           lead: result as any,
           project: {
             id: targetProjectId,
             slug: projectContext.slug,
             name: projectContext?.title || 'Protocolo Ecosystem',
-            discordWebhookUrl: projectContext?.discordWebhookUrl
+            businessCategory: projectContext?.businessCategory || 'other',
+            differentiator: projectContext?.tagline || projectContext?.description || null,
+            discordWebhookUrl: projectContext?.discordWebhookUrl || null
           } as any
         }, { 
           ruleId: engineResult.ruleId || 'LEAD_CAPTURED',
