@@ -136,10 +136,10 @@ export async function sendWaitlistSequenceEmail(context: {
         ctaUrl: resolvedCtaUrl
       }) as React.ReactElement,
     });
-    console.log(`[Growth Engine] Resend Success (Waitlist Step ${context.step}):`, data);
+    console.error(`[Resend Engine] ✅ Success (Step ${context.step}):`, data);
     return { success: true, data };
   } catch (error) {
-    console.error(`[Growth Engine] Resend Error (Waitlist Step ${context.step}):`, error);
+    console.error(`[Resend Engine] ❌ Failure (Step ${context.step}):`, error);
     throw error;
   }
 }

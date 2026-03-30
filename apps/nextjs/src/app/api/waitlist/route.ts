@@ -37,18 +37,20 @@ export async function POST(request: Request) {
       process.env.DASHBOARD_API_URL ??
       (isStaging ? defaultStaging : (process.env.NODE_ENV === 'development' ? "http://localhost:3000" : defaultProd));
 
-    // 🧬 Phase 87: Unified Growth Engine Event Dispatch
-    const res = await fetch(`${dashboardUrl}/api/v1/marketing/events`, {
+    // 🧬 Phase 87: Unified Growth Engine Lead Registration
+    // We call /leads/register to ensure a LEAD is created, which triggers the Welcome Email.
+    const res = await fetch(`${dashboardUrl}/api/v1/marketing/leads/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        event: 'VIEW_ACCESS',
-        projectSlug: 'pandoras_access', // Unified catch-all for this landing
+        email: email.toLowerCase(),
+        walletAddress: wallet || null,
+        intent: intent || 'explore',
+        consent: true,
+        projectId: 'pandoras-protocol', // The slug for the main project
+        origin: "landing_v2_nextjs",
+        forceBypass: true, // Bypass 24h cooldown for testing
         metadata: {
-          email: email.toLowerCase(),
-          wallet: wallet || null,
-          intent: intent || 'explore',
-          source: "landing_v2_nextjs",
           referrer: request.headers.get("referer") ?? null,
           userAgent: request.headers.get("user-agent") ?? null,
           ...body.metadata,
@@ -59,10 +61,10 @@ export async function POST(request: Request) {
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       console.error("[/api/waitlist proxy] Dashboard error:", errData);
-      // Still return success to not expose internals
+      // Still return success to not expose internals to the user
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "Gracias por unirte. Pronto recibirás un correo de confirmación." });
   } catch (err) {
     console.error("[/api/waitlist]", err);
     // Fail gracefully
