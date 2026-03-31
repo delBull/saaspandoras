@@ -23,12 +23,31 @@ export async function GET(req: NextRequest) {
     const offset = Number(searchParams.get('offset') || 0);
 
     const conditions: any[] = [];
-    if (projectId && projectId !== 'all') conditions.push(eq(marketingLeads.projectId, Number(projectId)));
+    if (projectId && projectId !== 'all') {
+      conditions.push(eq(marketingLeads.projectId, Number(projectId)));
+      // If a specific project is chosen, we show its leads regardless of ownerContext
+    } else if (ownerContext === 'pandora') {
+      // THE ECOSYSTEM FILTER: Only Core Pandora projects
+      const { inArray } = require('drizzle-orm');
+      const coreProjectIds = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(inArray(projects.slug, ['pandoras_access', 'pbox_governance']));
+      
+      const ids = coreProjectIds.map(p => p.id);
+      if (ids.length > 0) {
+        conditions.push(inArray(marketingLeads.projectId, ids));
+      } else {
+        // Fallback to ID 1 if slugs not found
+        conditions.push(eq(marketingLeads.projectId, 1));
+      }
+    } else if (ownerContext) {
+      conditions.push(eq(marketingLeads.ownerContext, ownerContext as any));
+    }
+
     if (scope) conditions.push(eq(marketingLeads.scope, scope as any));
-    if (ownerContext) conditions.push(eq(marketingLeads.ownerContext, ownerContext as any));
 
     // Phase 90: Hide anonymous "ghost" leads (telemetry only) from the Growth OS overview
-    // A lead is only visible if it has an email OR a wallet address connected
     const { isNotNull, or } = require('drizzle-orm');
     conditions.push(or(
       isNotNull(marketingLeads.email),
