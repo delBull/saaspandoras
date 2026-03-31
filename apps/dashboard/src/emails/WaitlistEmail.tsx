@@ -11,6 +11,8 @@ import {
   Link,
   Hr,
   Button,
+  Row,
+  Column,
 } from '@react-email/components';
 
 interface WaitlistEmailProps {
@@ -38,7 +40,7 @@ export default function WaitlistEmail({
     { id: 1, label: "CONECTAR", desc: "Login en Pandoras Hub" },
     { id: 2, label: "ACCESO", desc: "Obtén tu Entry Pass" },
     { id: 3, label: "ACTIVAR", desc: "Participa y Decide" },
-    { id: 4, label: "ARTEFACTO", desc: "Recama tu Certificado" },
+    { id: 4, label: "ARTEFACTO", desc: "Reclama tu Certificado" },
   ];
 
   return (
@@ -62,34 +64,37 @@ export default function WaitlistEmail({
                 {subject}
               </Heading>
 
-              <Section className="space-y-6">
+              <Section className="space-y-6 text-center">
                 {body.split('\n\n').map((paragraph, i) => (
-                  <Text key={i} className="text-zinc-700 text-lg leading-relaxed">
+                  <Text key={i} className="text-zinc-700 text-lg leading-relaxed m-0 mb-4">
                     {paragraph}
                   </Text>
                 ))}
               </Section>
 
               {showPathway && (
-                <Section className="mt-12 p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
-                  <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6 text-center">
+                <Section className="mt-12 p-8 bg-zinc-50 rounded-[2rem] border border-zinc-100 text-center">
+                  <Text className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 mb-8">
                     PASAPORTE DE INICIACIÓN // 4 HITOS
                   </Text>
-                  <Section className="flex flex-row justify-between items-start gap-2">
+                  
+                  <Row>
                     {pathwaySteps.map((s, i) => (
-                      <Section key={s.id} className="text-center w-1/4">
-                        <Text className="text-[14px] font-black text-black mb-1">
-                          {s.id}. {s.label}
-                        </Text>
-                        <Text className="text-[10px] text-zinc-500 leading-tight">
+                      <Column key={s.id} className="text-center px-1" style={{ width: '25%' }}>
+                        <Section className="mb-2">
+                          <Text className="text-[22px] font-black text-black m-0 leading-none">
+                            {s.id}.
+                          </Text>
+                          <Text className="text-[12px] font-black text-black m-0 mt-1 uppercase tracking-tighter leading-tight">
+                            {s.label}
+                          </Text>
+                        </Section>
+                        <Text className="text-[9px] text-zinc-500 leading-tight uppercase font-bold m-0 px-1">
                           {s.desc}
                         </Text>
-                        {i < pathwaySteps.length - 1 && (
-                          <Section className="h-[1px] bg-zinc-200 mt-2 mx-auto w-1/2" />
-                        )}
-                      </Section>
+                      </Column>
                     ))}
-                  </Section>
+                  </Row>
                 </Section>
               )}
 
@@ -97,19 +102,19 @@ export default function WaitlistEmail({
                 <Section className="text-center mt-12 mb-6">
                   <Button 
                     href={ctaUrl}
-                    className="bg-[#a3e635] text-black px-8 py-5 rounded-xl font-black text-[12px] tracking-[0.3em] uppercase w-full max-w-[400px]"
+                    className="bg-[#a3e635] text-black px-10 py-5 rounded-xl font-black text-[12px] tracking-[0.3em] uppercase mx-auto block w-[280px]"
                   >
                     {ctaText}
                   </Button>
-                  <Text className="text-[9px] text-zinc-400 mt-4 uppercase tracking-widest font-bold">
+                  <Text className="text-[9px] text-zinc-400 mt-6 uppercase tracking-widest font-bold">
                     Enlace de un solo uso. No compartir.
                   </Text>
                 </Section>
               )}
 
               {/* Signature */}
-              <Section className="mt-10 pt-6 border-t border-zinc-100">
-                 <Text className="text-zinc-600 font-bold">
+              <Section className="mt-10 pt-6 border-t border-zinc-100 text-center">
+                 <Text className="text-zinc-600 font-bold m-0">
                    — {projectName}
                  </Text>
               </Section>
