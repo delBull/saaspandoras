@@ -173,4 +173,23 @@ export async function toggleLeadNurture(leadId: string, enabled: boolean) {
         console.error("Error toggling lead nurture:", error);
         return { success: false, error: String(error) };
     }
+}export async function archiveLead(leadId: string) {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            throw new Error("Unauthorized");
+        }
+
+        await db.update(marketingLeads)
+            .set({ 
+                status: 'archived',
+                updatedAt: new Date()
+            })
+            .where(eq(marketingLeads.id, leadId));
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error archiving lead:", error);
+        return { success: false, error: String(error) };
+    }
 }

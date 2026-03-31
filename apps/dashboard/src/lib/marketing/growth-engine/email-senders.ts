@@ -42,23 +42,23 @@ export async function sendWaitlistSequenceEmail(context: {
   const NICHE_COPIES: Record<string, Record<string, Record<number, { subject: string, body: string, ctaText?: string }>>> = {
     'real_estate': {
       'high': {
-        1: { subject: "Narai: Tu acceso prioritario.", body: "Detectamos tu interés de alto nivel.\n\nNo estamos perdiendo tiempo. La plusvalía no espera.\n\nTu perfil califica para las primeras unidades.\n\nMantente atento, esto se moverá rápido.", ctaText: "VER MARKET DE NARAI" },
-        2: { subject: "El activo real, digitalizado.", body: "Mientras otros analizan, los que saben están tomando posición.\n\nNarai es la digitalización de la confianza.\n\nEstamos listos para habilitar tu acceso.", ctaText: "ADQUIRIR ARTEFACTO NARAI" },
-        3: { subject: "Decisión Narai.", body: "Las ventanas de oportunidad en Bienes Raíces son cortas.\n\nSi estás viendo esto, es porque sigues en el filtro superior.\n\nSolo un paso más.", ctaText: "INGRESAR AL PROTOCOLO" },
+        1: { subject: "Narai: Activos Reales, Control Digital.", body: "Bienvenido al ecosistema Narai.\n\nHas sido seleccionado para evaluar proyectos inmobiliarios fraccionados de alto rendimiento.\n\nEn los próximos días recibirás tu invitación formal para reclamar tu Identidad Narai.", ctaText: "EXPLORAR ECOSISTEMA" },
+        2: { subject: "Narai Ritual: Fase de Validación.", body: "La plusvalía digital se construye sobre activos físicos.\n\nPara participar en la gobernanza de Narai y obtener recompensas, necesitarás conectar tu perfil en Pandoras Finance.\n\nEstamos preparando tu slot de acceso.", ctaText: "VER ESTADO DE VALIDACIÓN" },
+        3: { subject: "Artefactos y Utilidad Narai.", body: "En Narai, tu participación se traduce en 'Artefactos' (Licencias y Certificados).\n\nEstos no son solo documentos, son llaves operativas que calculan tus recompensas directas y tu poder de voto en decisiones del protocolo.\n\nTu acceso está casi listo.", ctaText: "SABER MÁS SOBRE ARTEFACTOS" },
         4: { 
-          subject: "Iniciación Narai: Tu acceso está listo.", 
-          body: "El tiempo de espera terminó.\n\nTodo está listo para tu entrada oficial a Narai.\n\nRecuerda: Tu billetera (wallet) será tu identidad criptográfica. No hay usuarios ni contraseñas, solo verificación en cadena.\n\nSi no te conectas pronto, tu lugar será reasignado al siguiente en la fila.", 
-          ctaText: "ADQUIRIR ACCESO DEFINITIVO" 
+          subject: "Acceso Narai: Tu Pasaporte está listo.", 
+          body: "Todo está listo para tu entrada oficial.\n\nSigue estos pasos para activar tu utilidad:\n1. Haz Login en Pandoras Finance.\n2. Reclama tu 'Entry Pass' gratuito de Narai.\n3. Participa en actividades para obtener tus primeros 'Artefactos'.\n\nTu billetera es tu llave. Si tardas demasiado, el sistema reasignará tu lugar.", 
+          ctaText: "ACTIVAR MI ACCESO" 
         }
       },
       'mid': {
-        1: { subject: "Bienvenido al Ecosistema Narai.", body: "Recibimos tu solicitud.\n\nNarai fusiona la seguridad del ladrillo con la liquidez de la red.\n\nEn los próximos días entenderás por qué somos diferentes.", ctaText: "VER MARKET DE NARAI" },
-        2: { subject: "Construyendo sobre roca.", body: "La mayoría busca retornos rápidos. Nosotros buscamos retornos sólidos.\n\nEl activo real es la base de todo lo que hacemos.\n\nSeguimos evaluando tu perfil.", ctaText: "VER ARTEFACTOS DISPONIBLES" },
-        3: { subject: "Tu futuro en Narai.", body: "Estamos curando cada acceso.\n\nNo es masivo. Es exclusivo.\n\nPronto tendrás noticias definitivas.", ctaText: "ADQUIRIR ARTEFACTO (FASE 1)" },
+        1: { subject: "Bienvenido a Narai.", body: "Recibimos tu interés en la tokenización inmobiliaria.\n\nNarai es el puente entre la seguridad física y la liquidez digital.\n\nEstamos evaluando tu perfil para el siguiente drop de accesos.", ctaText: "VER NARAI" },
+        2: { subject: "Bases Sólidas en Narai.", body: "Mientras el mercado especula, nosotros construimos sobre activos reales.\n\nPronto aprenderás cómo obtener tu Pase de Entrada para participar en las decisiones del ecosistema.", ctaText: "VER PORTAL" },
+        3: { subject: "Tu futuro en la Red Narai.", body: "La participación activa es premiada con Licencias de Operación.\n\nEstos artefactos te dan acceso a rendimientos preferenciales.\n\nEspera la señal final.", ctaText: "REVISAR CUOTA" },
         4: { 
-          subject: "Iniciación Narai: Tu acceso está listo.", 
-          body: "Tu perfil ha sido aprobado.\n\nTodo está listo para tu entrada oficial a Narai.\n\nRecuerda: Tu billetera será tu identidad criptográfica definitiva.\n\nSi no te presentas pronto, tu lugar será reasignado.", 
-          ctaText: "INGRESAR AL PROTOCOLO" 
+          subject: "Iniciación Narai: Acceso Confirmado.", 
+          body: "Has sido aprobado.\n\nIngresa ahora para obtener tu pase gratuito de Narai.\n\nEste pase te permite generar los Artefactos necesarios para reclamar recompensas y participar en la gobernanza.", 
+          ctaText: "INGRESAR AL PORTAL" 
         }
       }
     },
@@ -86,23 +86,23 @@ export async function sendWaitlistSequenceEmail(context: {
     },
     'growth_os': {
       'high': {
-        1: { subject: "Growth OS: Acceso Institutional.", body: "Detectamos un perfil de alta convicción.\n\nEstás en la cola de despliegue prioritario para el Sistema Operativo de Adquisición.\n\nLa ventaja es el tiempo." },
-        2: { subject: "Escalando con IA Determinística.", body: "El Growth OS está analizando tu ecosistema.\n\nEstamos listos para activar tu capa de cierre automático.\n\nSolo para partners seleccionados." },
-        3: { subject: "Protocolo de Cierre Activado.", body: "Tu instancia está lista.\n\nEl acceso Genesis al Growth OS es para quienes entienden que la infraestructura es el activo.\n\nEntra ahora." },
+        1: { subject: "Growth OS: Tu infraestructura está en cola.", body: "Hemos detectado un perfil de alto desempeño.\n\nEstás en la lista de prioritaria para el despliegue del Sistema Operativo de Adquisición.\n\nEl tiempo es el único activo que no se recupera, estamos agilizando tu proceso." },
+        2: { subject: "IA Determinística para tu Ecosistema.", body: "El motor de Growth OS está analizando tu modelo de negocio.\n\nEstamos preparando tu capa de cierre automático de leads.\n\nSolo abrimos estas instancias para partners con visión de escala." },
+        3: { subject: "Sistema de Cierre: Listo para Activar.", body: "Tu instancia personalizada está preparada.\n\nEl acceso Genesis al Growth OS es para quienes entienden que la infraestructura técnica es la base del crecimiento.\n\nTu dashboard te espera." },
         4: { 
-          subject: "Growth OS: Despliegue Autorizado.", 
-          body: "El motor está listo para tu integración.\n\nTu instancia institucional del Growth OS te espera.\n\nConecta tu identidad cripto para firmar el acceso a tu dashboard de conversión y activar la infraestructura.\n\nEl protocolo se bloqueará en 24 horas si no hay actividad.", 
+          subject: "Growth OS: Despliegue de Instancia Autorizado.", 
+          body: "El motor de conversión está listo para integrarse a tu flujo.\n\nConecta tu Wallet para firmar el acceso a tu dashboard y activar la infraestructura.\n\nA través de este acceso podrás obtener Artefactos de Certificación que validan tu capacidad de cierre.", 
           ctaText: "ACTIVAR GROWTH OS" 
         }
       },
       'mid': {
-        1: { subject: "Bienvenido al Growth OS.", body: "Has tomado el primer paso hacia la adquisición autónoma.\n\nEstamos validando tu proyecto para la integración del motor de cierre.\n\nRecibirás detalles técnicos pronto." },
-        2: { subject: "La Capa de Inteligencia.", body: "El Growth OS no es un CRM. Es un cerebro de conversión.\n\nEstamos preparando tu brief de integración.\n\nSiguiente paso: Activación." },
-        3: { subject: "Validación de Nodo Growth.", body: "Seguimos evaluando tu perfil.\n\nLa red de partners de Growth OS es limitada.\n\nTe notificaremos si eres seleccionado." },
+        1: { subject: "Bienvenido al Growth OS.", body: "Has dado el primer paso hacia la adquisición de leads de forma autónoma.\n\nEstamos validando tu proyecto para la integración del motor de cierre.\n\nRecibirás detalles técnicos en las próximas horas." },
+        2: { subject: "Capa de Inteligencia y Conversión.", body: "El Growth OS no es un CRM tradicional, es un cerebro de conversión.\n\nEstamos preparando tu brief de integración personalizado.\n\nSiguiente paso: Activación de Nodo." },
+        3: { subject: "Validación de Nodo en Proceso.", body: "Seguimos evaluando la compatibilidad de tu perfil con la red.\n\nLa red de partners de Growth OS es selectiva por diseño.\n\nTe notificaremos en cuanto el slot esté disponible." },
         4: { 
           subject: "Growth OS: Activación Autorizada.", 
-          body: "Has sido verificado.\n\nTu instancia core del Growth OS te espera.\n\nConecta tu identidad cripto para firmar tu contrato digital y encender tu dashboard.", 
-          ctaText: "ACTIVAR GROWTH OS" 
+          body: "Tu perfil ha sido verificado satisfactoriamente.\n\nTu instancia del Growth OS te espera.\n\nConecta tu identidad digital para firmar tu contrato y encender tu propio dashboard de marketing avanzado.", 
+          ctaText: "ENCENDER DASHBOARD" 
         }
       }
     }
@@ -121,7 +121,7 @@ export async function sendWaitlistSequenceEmail(context: {
   const queryParam = context.step === 4 ? "?approved=true" : "";
   const resolvedCtaUrl = isCoreRitual 
     ? `https://dash.pandoras.finance/access${queryParam}` 
-    : `https://dash.pandoras.finance/${context.projectSlug || 'default'}${queryParam}`;
+    : `https://dash.pandoras.finance/projects/${context.projectSlug || 'default'}${queryParam}`;
 
   try {
     const data = await resend.emails.send({
@@ -135,7 +135,8 @@ export async function sendWaitlistSequenceEmail(context: {
         projectName: projectName,
         brandHeader: context.brandHeader || `${projectName.toUpperCase()} // PROTOCOLO DE ESPERA`,
         ctaText: ('ctaText' in emailData) ? emailData.ctaText as string | undefined : undefined,
-        ctaUrl: resolvedCtaUrl
+        ctaUrl: resolvedCtaUrl,
+        showPathway: context.step === 4 || (context.step === 1 && !isPandora) // Show pathway on step 4 or step 1 (for external projects)
       }) as React.ReactElement,
     });
     console.error(`[Resend Engine] ✅ Success (Step ${context.step}):`, data);

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
 import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter, Phone, FileSignature, Calendar, XCircle, MoreVertical, CheckCircle2, AlertCircle, Clock } from "lucide-react";
-import { recordCallOutcome, getLeadInsights, toggleLeadNurture } from "@/actions/growth-os";
+import { recordCallOutcome, getLeadInsights, toggleLeadNurture, archiveLead } from "@/actions/growth-os";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
 import { DAOMetrics } from "../dao/DAOMetrics";
@@ -254,8 +254,7 @@ const StrategyContent = ({ type = 'monetization' }: { type?: 'monetization' | 'r
 
 /**
  * Action Menu for Lead Management
- */
-function LeadActionMenu({ lead, onActionComplete }: { lead: Lead, onActionComplete: () => void }) {
+ */function LeadActionMenu({ lead, onActionComplete }: { lead: Lead, onActionComplete: () => void }) {
   const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [outcomeData, setOutcomeData] = useState({
@@ -280,6 +279,23 @@ function LeadActionMenu({ lead, onActionComplete }: { lead: Lead, onActionComple
             onActionComplete();
         } else {
             toast.error(res.error || "Failed to record outcome");
+        }
+    } catch (e) {
+        toast.error("Internal Error");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    setLoading(true);
+    try {
+        const res = await archiveLead(lead.id);
+        if (res.success) {
+            toast.success("Lead archivado");
+            onActionComplete();
+        } else {
+            toast.error(res.error || "Failed to archive");
         }
     } catch (e) {
         toast.error("Internal Error");
@@ -400,8 +416,14 @@ function LeadActionMenu({ lead, onActionComplete }: { lead: Lead, onActionComple
         </DialogContent>
       </Dialog>
 
-      <UIButton variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800 group">
-          <XCircle className="w-4 h-4 text-red-400/50 group-hover:text-red-400 transition-colors" />
+      <UIButton 
+          variant="ghost" 
+          size="sm" 
+          disabled={loading}
+          onClick={handleArchive}
+          className="h-8 w-8 p-0 rounded-full hover:bg-zinc-800 group"
+      >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 text-red-500/50 group-hover:text-red-400 transition-colors" />}
       </UIButton>
 
       {/* Manual Nurture Toggle */}
