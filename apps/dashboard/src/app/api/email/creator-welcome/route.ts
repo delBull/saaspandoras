@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import PandorasWelcomeEmail from '@/emails/creator-email';
-import { syncLeadAsClient } from '@/actions/leads';
-import { notifyNewsletterSubscription } from '@/lib/discord';
-import { resend, FROM_EMAIL } from '@/lib/resend';
+import { executeGrowthActions } from '@/lib/marketing/growth-engine/actions';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(request: Request) {
     try {
@@ -13,58 +13,54 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Email required' }, { status: 400 });
         }
 
-        console.log(`📧 Processing Creator Welcome for: ${email}`);
+        console.log(`📧 [Creator OS] Delegating Welcome to Growth Engine: ${email}`);
 
-        // 1. Sync Lead as Client (unified - replaces whatsappPreapplyLeads insert)
-        try {
-            await syncLeadAsClient({
-                email,
-                name: name || 'Creator',
-                source: source || 'start_landing',
-                metadata: {
-                    tags,
-                    ...metadata,
-                }
-            });
-            console.log('✅ Lead synced to clients table');
-        } catch (dbError) {
-            console.warn('⚠️ Lead sync issue (non-blocking):', dbError);
+        // 1. Fetch Project Context (Pandora - ID 1)
+        const projectContext = await db.query.projects.findFirst({
+            where: eq(projects.id, 1)
+        });
+
+        if (!projectContext) {
+            throw new Error("Project context not found for Creator Lead");
         }
 
-        // 2. Send Email
-        try {
-            const { error } = await resend.emails.send({
-                from: FROM_EMAIL,
-                to: [email],
-                subject: 'Tu Dossier Técnico de Protocolos — Pandora\'s',
-                react: PandorasWelcomeEmail({
+        // 2. Execute via Growth Engine
+        // Creators usually get the Waitlist Welcome sequence (B2C-style but for Pandora)
+        await executeGrowthActions(
+            ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'], 
+            {
+                lead: {
                     email,
-                    name: name || 'Creador',
-                    source: source || 'landing-start'
-                }),
-                tags: [{ name: 'audience', value: 'creator_welcome' }]
-            });
-
-            if (error) {
-                console.error('❌ Resend Error:', error);
-                return NextResponse.json({ message: 'Error sending email', error }, { status: 500 });
+                    name: name || 'Creator',
+                    scope: 'b2c', // Creators are usually treated as waitlist leads
+                    intent: 'explore',
+                    metadata: { 
+                        tags,
+                        ...metadata,
+                        source: source || 'start_landing'
+                    }
+                } as any,
+                project: {
+                    id: projectContext.id,
+                    slug: projectContext.slug,
+                    name: projectContext.title || 'Pandora',
+                    businessCategory: projectContext.businessCategory || 'other',
+                    discordWebhookUrl: projectContext.discordWebhookUrl || null
+                } as any
+            },
+            { 
+                ruleId: 'CREATOR_MANUAL_REGISTRATION',
+                bypassCooldown: true
             }
-            console.log('✅ Email sent successfully');
-        } catch (emailError) {
-            console.error('❌ Email Logic Error:', emailError);
-            return NextResponse.json({ message: 'Error sending email' }, { status: 500 });
-        }
-
-        // 3. Notify Discord
-        try {
-            await notifyNewsletterSubscription(email, source || 'start_landing');
-        } catch (discordError) {
-            console.warn('⚠️ Discord notification issue (non-blocking):', discordError);
-        }
+        );
 
         return NextResponse.json({ success: true });
+
     } catch (error) {
-        console.error('❌ Server Error:', error);
-        return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+        console.error('❌ Creator Registration Error:', error);
+        return NextResponse.json({ 
+            message: 'Internal Server Error',
+            error: error instanceof Error ? error.message : 'Unknown'
+        }, { status: 500 });
     }
 }

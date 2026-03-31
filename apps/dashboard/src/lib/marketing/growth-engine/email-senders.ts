@@ -336,7 +336,7 @@ export async function sendGenesisWelcomeEmail(context: {
         step: "GENESIS",
         projectName: projectName,
         brandHeader: context.brandHeader
-      }),
+      }) as React.ReactElement,
     });
 
     // Log to metrics table
@@ -386,9 +386,10 @@ export async function sendB2BFollowupEmail(context: {
     });
 
     // Log to metrics table
-    if ('id' in data && data.id) {
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
       await trackEmailMetadata({
-        emailId: data.id,
+        emailId: String(resendId),
         recipient: context.to,
         subject: `¿Seguimos adelante con ${context.projectName}?`,
         type: 'b2b_followup'
@@ -504,9 +505,10 @@ export async function sendExploreWelcomeEmail(context: {
     });
 
     // Log to metrics table
-    if ('id' in data && data.id) {
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
       await trackEmailMetadata({
-        emailId: data.id,
+        emailId: String(resendId),
         recipient: context.to,
         subject: `Acceso rápido: Entendiendo ${context.projectName}`,
         type: 'explore_welcome'
@@ -556,9 +558,10 @@ export async function sendInvestWelcomeEmail(context: {
     });
 
     // Log to metrics table
-    if ('id' in data && data.id) {
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
       await trackEmailMetadata({
-        emailId: data.id,
+        emailId: String(resendId),
         recipient: context.to,
         subject: `Tu interés en ${context.projectName} - Siguientes Pasos`,
         type: 'invest_welcome'
@@ -609,9 +612,10 @@ export async function sendCallReminderEmail(context: {
     });
 
     // Log to metrics table
-    if ('id' in data && data.id) {
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
       await trackEmailMetadata({
-        emailId: data.id,
+        emailId: String(resendId),
         recipient: context.to,
         subject: context.type === 'D-0' ? "¡Hoy nos vemos!" : `Recordatorio de sesión: ${context.meetingDate}`,
         type: 'b2b_reminder'
@@ -658,8 +662,9 @@ export async function sendBookingConfirmedEmail(context: {
 
     // Log to metrics table
     if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
       await trackEmailMetadata({
-        emailId: String(data.id),
+        emailId: String(resendId),
         recipient: context.to,
         subject: "Sesión confirmada: Preparemos tu protocolo",
         type: 'b2b_booking_confirmed'
@@ -703,8 +708,9 @@ export async function sendNoShowRecoveryEmail(context: {
 
     // Log to metrics table
     if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
       await trackEmailMetadata({
-        emailId: String(data.id),
+        emailId: String(resendId),
         recipient: context.to,
         subject: "Te extrañamos en la sesión - ¿Agendamos de nuevo?",
         type: 'b2b_no_show'
@@ -751,8 +757,9 @@ export async function sendEducationalNurtureEmail(context: {
 
     // Log to metrics table
     if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
       await trackEmailMetadata({
-        emailId: String(data.id),
+        emailId: String(resendId),
         recipient: context.to,
         subject: `Evolucionando ${context.projectName}`,
         type: 'educational_nurture'

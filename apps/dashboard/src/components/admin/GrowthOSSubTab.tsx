@@ -63,6 +63,8 @@ interface Lead {
     convictionScore: number;
   };
   intentBucket?: 'low' | 'medium' | 'high' | 'closing';
+  phoneNumber?: string | null;
+  walletAddress?: string | null;
 }
 
 interface Course {
@@ -464,6 +466,11 @@ export default function GrowthOSSubTab() {
   const [scope, setScope] = useState<'b2b' | 'b2c'>('b2c');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
+
+  // Filtering States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [intentFilter, setIntentFilter] = useState('all');
 
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
@@ -878,6 +885,18 @@ export default function GrowthOSSubTab() {
       default: return 'Intención no especificada.';
     }
   };
+
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = searchTerm === '' || 
+      lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.walletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || lead.status?.toLowerCase() === statusFilter.toLowerCase();
+    const matchesIntent = intentFilter === 'all' || lead.intent?.toLowerCase() === intentFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus && matchesIntent;
+  });
 
   return (
     <TooltipProvider>
@@ -1525,8 +1544,8 @@ export default function GrowthOSSubTab() {
 
         {/* Lead List Table (New Section) */}
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-          <div className="p-8 border-b border-zinc-800 flex justify-between items-center">
-            <div>
+          <div className="p-8 border-b border-zinc-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex-1">
               <h3 className="text-xl font-black text-white flex items-center gap-3">
                 <Users className="text-blue-500" />
                 {scope === 'b2b' ? 'Hunter Leads (B2B)' : 'Growth Leads (B2C)'}
@@ -1535,15 +1554,54 @@ export default function GrowthOSSubTab() {
                 {selectedProjectId === 'all' ? 'Pandora Ecosystem' : 'Project Specific'} • {leads.length} Records
               </p>
             </div>
-            <Badge className={cn("px-3 py-1 border-none font-black text-[10px]", 
-              scope === 'b2b' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
-            )}>
-              {scope === 'b2b' ? 'B2B ENGINE' : 'B2C ENGINE'}
-            </Badge>
+
+            {/* Subtle Filters */}
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              <div className="relative flex-1 lg:flex-none lg:w-64 group">
+                <Target className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 group-focus-within:text-purple-400 transition-colors" />
+                <Input 
+                  placeholder="Buscar por email o wallet..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-zinc-950 border-zinc-800 h-9 pl-9 text-xs rounded-xl focus:ring-1 focus:ring-purple-500/50 outline-none transition-all"
+                />
+              </div>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-zinc-950 border border-zinc-800 text-zinc-400 rounded-xl px-4 h-9 text-[10px] font-black uppercase tracking-widest focus:ring-1 focus:ring-purple-500/50 outline-none cursor-pointer transition-all hover:border-zinc-700"
+              >
+                <option value="all">TODOS LOS ESTADOS</option>
+                <option value="curious">CURIOUS</option>
+                <option value="aware">AWARE</option>
+                <option value="engaged">ENGAGED</option>
+                <option value="hot">HOT</option>
+                <option value="whitelister">WHITELISTER</option>
+              </select>
+
+              <select
+                value={intentFilter}
+                onChange={(e) => setIntentFilter(e.target.value)}
+                className="bg-zinc-950 border border-zinc-800 text-zinc-400 rounded-xl px-4 h-9 text-[10px] font-black uppercase tracking-widest focus:ring-1 focus:ring-purple-500/50 outline-none cursor-pointer transition-all hover:border-zinc-700"
+              >
+                <option value="all">TODAS LAS INTENCIONES</option>
+                <option value="invest">INVEST</option>
+                <option value="whitelist">WHITELIST</option>
+                <option value="earn">EARN</option>
+                <option value="explore">EXPLORE</option>
+              </select>
+
+              <Badge className={cn("px-4 py-2 border-none font-black text-[10px] hidden sm:flex", 
+                scope === 'b2b' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+              )}>
+                {scope === 'b2b' ? 'B2B ENGINE' : 'B2C ENGINE'}
+              </Badge>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+            <table className="w-full text-left min-w-[1100px]">
               <thead>
                 <tr className="bg-zinc-950/50 text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-zinc-800">
                   <th className="px-8 py-4">Lead Identity</th>
@@ -1557,33 +1615,40 @@ export default function GrowthOSSubTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
-                {leads.length === 0 ? (
+                {filteredLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-8 py-20 text-center">
+                    <td colSpan={8} className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center justify-center opacity-30">
                         <Users className="w-12 h-12 mb-4" />
-                        <p className="text-sm font-bold italic">No leads found in this {scope.toUpperCase()} context.</p>
+                        <p className="text-sm font-bold italic">No leads found with current filters.</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  leads.map((l) => (
+                  filteredLeads.map((l) => (
                     <tr key={l.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">{l.email || (l as any).walletAddress || 'Anonymous'}</span>
-                          <span className="text-[10px] text-zinc-600 font-mono mt-0.5">Hash: {l.id.split('-')[0]}</span>
+                          <span className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">
+                            {l.name || (l.email ? l.email.split('@')[0] : 'Anonymous')}
+                          </span>
+                          <span className="text-[10px] text-zinc-600 font-mono mt-0.5" title={l.id}>Hash: {l.id.split('-')[0]}</span>
                         </div>
                       </td>
                       <td className="px-8 py-5">
-                        <div className="flex items-center gap-2">
-                          {l.email && <Mail className="w-3 h-3 text-blue-400/50" />}
-                          {(l as any).walletAddress && <Wallet className="w-3 h-3 text-purple-400/50" />}
-                          {(l as any).identityId ? (
-                            <Badge variant="outline" className="text-[8px] bg-green-500/5 text-green-400 border-green-500/20">UNIFIED</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[8px] bg-zinc-500/5 text-zinc-500 border-zinc-500/20">FRAGMENTED</Badge>
-                          )}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                             <Mail className={cn("w-3 h-3 transition-colors", l.email ? "text-blue-400" : "text-zinc-700")} />
+                             <span className={cn("text-[10px] font-medium", l.email ? "text-zinc-300" : "text-zinc-600")}>
+                               {l.email || 'Email missing'}
+                             </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <Wallet className={cn("w-3 h-3 transition-colors", l.walletAddress ? "text-purple-400" : "text-zinc-700")} />
+                             <span className={cn("text-[10px] font-mono", l.walletAddress ? "text-zinc-300" : "text-zinc-600")}>
+                               {l.walletAddress ? `${l.walletAddress.slice(0, 6)}...${l.walletAddress.slice(-4)}` : 'Wallet missing'}
+                             </span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-8 py-5">
@@ -1620,18 +1685,14 @@ export default function GrowthOSSubTab() {
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex flex-wrap gap-1.5">
+                          {l.quality && (
+                            <Badge className={cn("text-[8px] border-none uppercase px-2 py-0.5", getQualityColor(l.quality))}>
+                              {l.quality} QUALITY
+                            </Badge>
+                          )}
                           {l.profile?.riskProfile && (
                             <Badge variant="outline" className="text-[8px] bg-zinc-950 border-zinc-800 text-zinc-400">
                               {l.profile.riskProfile.toUpperCase()} RISK
-                            </Badge>
-                          )}
-                          {l.profile?.investmentStyle && (
-                            <Badge variant="outline" className={cn("text-[8px] border-none uppercase px-2 py-0.5", 
-                               l.profile.investmentStyle === 'yield' ? 'bg-emerald-500/10 text-emerald-400' :
-                               l.profile.investmentStyle === 'speculative' ? 'bg-orange-500/10 text-orange-400' :
-                               'bg-blue-500/10 text-blue-400'
-                            )}>
-                              {l.profile.investmentStyle}
                             </Badge>
                           )}
                           {l.engagementLevel === 'critical' && (

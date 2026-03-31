@@ -480,11 +480,37 @@ function ProtocolContent() {
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        // Simulacion de envio
-        await new Promise(r => setTimeout(r, 1000));
-        setIsSuccess(true);
-        setIsSubmitting(false);
-        trackEvent('protocol_lead', 'submit', 'email_modal');
+        
+        try {
+            const response = await fetch('/api/v1/marketing/leads/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    intent: 'invest',
+                    projectId: 'pandoras_protocol',
+                    scope: 'b2b',
+                    consent: true,
+                    origin: window.location.href,
+                    metadata: {
+                        source: 'protocol_landing_email_modal',
+                        tags: ['protocol', 'b2b', 'interested_in_breakdown']
+                    }
+                })
+            });
+
+            if (response.ok) {
+                setIsSuccess(true);
+                trackEvent('protocol_lead', 'submit', 'email_modal');
+            } else {
+                const error = await response.json();
+                console.error('Registration failed:', error);
+            }
+        } catch (error) {
+            console.error('Error submitting email:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (

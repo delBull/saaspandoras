@@ -10,7 +10,7 @@ const dbUrl = targetEnv === 'STAGING' ? process.env.DATABASE_URL_STAGING : proce
 
 const ADMIN_WALLETS = [
   "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9",
-  "0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba"
+  "0x96631d6c5295f1f08334888c5d6f3a246f9c3ba"
 ];
 
 const TABLES_TO_TRUNCATE = [

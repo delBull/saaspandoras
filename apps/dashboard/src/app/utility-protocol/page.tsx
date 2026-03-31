@@ -290,16 +290,21 @@ export default function UtilityProtocolPage() {
     if (!email?.trim()) return;
 
     try {
-      const response = await fetch('/api/email/protocol-filter-send', {
+      const response = await fetch('/api/v1/marketing/leads/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email,
-          name: name?.trim() || 'Creador de Protocolo',
-          source: 'utility-protocol-page',
-          answers: [], // Empty answers for direct email subscription
+          intent: 'invest',
+          scope: 'b2b',
+          projectId: 1, // Pandora
+          source: 'utility-protocol-filter',
+          metadata: {
+            answers: [],
+            subType: 'protocol_filter'
+          }
         }),
       });
 

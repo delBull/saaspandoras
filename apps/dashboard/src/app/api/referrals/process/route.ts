@@ -136,6 +136,34 @@ export async function POST(request: Request) {
         eq(userReferrals.referredWalletAddress, currentUserWallet)
       ));
 
+    // 📣 GROWTH ENGINE INTEGRATION: Register as Marketing Lead
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      await fetch(`${baseUrl}/api/v1/marketing/leads/register`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-internal-service': 'pandoras-v2' 
+        },
+        body: JSON.stringify({
+          walletAddress: currentUserWallet,
+          intent: 'earn',
+          projectId: 1, // Pandoras
+          scope: 'b2c',
+          origin: `${baseUrl}/join?ref=${referrerWalletNormalized}`,
+          metadata: {
+            type: 'referral_signup',
+            referrerWallet: referrerWalletNormalized,
+            referralSource: source,
+            isNewUser: !existingReferral
+          }
+        })
+      });
+      console.log(`🚀 [Growth Engine] Lead registered for referral: ${currentUserWallet.slice(0, 6)}...`);
+    } catch (growthError) {
+      console.error('⚠️ [Growth Engine] Failed to register referral lead:', growthError);
+    }
+
     return NextResponse.json({
       message: "Referido procesado exitosamente",
       referralBonus: 50,
