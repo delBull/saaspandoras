@@ -43,14 +43,29 @@ export function computeBehavioralMetrics(
     intentScore += eventWeights[e.type] || 0;
   });
 
-  // 2. Intent-based baseline
+  // 2. Intent-based baseline — invest should be high-conviction by default
   const intentBaselines: Record<string, number> = {
-    'invest': 30,
+    'invest': 75,     // Full purchase intent — should trigger VIP path
     'whitelist': 20,
     'explore': 5
   };
-  intentScore += intentBaselines[lead.intent.toLowerCase()] || 0;
+  intentScore += intentBaselines[lead.intent?.toLowerCase()] || 0;
   intentScore = Math.min(100, intentScore);
+
+  // 2.5. Auto-detect FULL_UNIT purchase intent from metadata keywords
+  const intentKeywords = [
+    lead.metadata?.interest, lead.metadata?.product, lead.metadata?.type,
+    lead.metadata?.purchaseType, lead.metadata?.notes
+  ].join(' ').toLowerCase();
+  const isFullUnitIntent = intentKeywords.includes('full_unit') || 
+    intentKeywords.includes('departamento completo') ||
+    intentKeywords.includes('adquirir departamento') ||
+    intentKeywords.includes('unidad completa');
+  if (isFullUnitIntent && !lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
+    if (!lead.metadata) lead.metadata = {};
+    if (!lead.metadata.tags) lead.metadata.tags = [];
+    lead.metadata.tags.push('B2C_FULL_UNIT');
+  }
 
   // 3. Institutional Priority Score (intent * value * decay)
   // priorityScore = intentScore * (walletValue / 1000) * decay
@@ -67,8 +82,9 @@ export function computeBehavioralMetrics(
 
   let priorityScore = Math.floor(intentScore * valueMultiplier * timeDecay);
 
-  // VIP TAG OVERRIDE - Boost manually tagged VIP leads
-  if (lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
+  // VIP TAG OVERRIDE - Boost manually tagged VIP leads OR auto-detected FULL_UNIT
+  const hasVipTag = lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'));
+  if (hasVipTag || isFullUnitIntent) {
     intentScore = Math.max(intentScore, 100);
     priorityScore = Math.max(priorityScore, 150); // Forces Critical Status
   }

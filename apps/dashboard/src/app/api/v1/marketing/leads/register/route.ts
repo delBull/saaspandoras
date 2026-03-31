@@ -324,11 +324,15 @@ export async function POST(req: NextRequest) {
     // 6. Growth Engine Trigger
     const GROWTH_ENGINE_V2 = true;
     if (GROWTH_ENGINE_V2 && result) {
+      // Re-resolve phone from body as last-resort (in case DB upsert didn't preserve it)
+      const resolvedPhone = result.phoneNumber || phoneNumber || 
+        body.metadata?.whatsapp || body.metadata?.phone || body.metadata?.phoneNumber || null;
+
       const engineResult = resolveGrowthAction('LEAD_CAPTURED', {
         id: result.id,
         email: result.email,
         name: result.name,
-        phoneNumber: result.phoneNumber,
+        phoneNumber: resolvedPhone,
         intent: result.intent as string,
         projectId: result.projectId,
         scope: result.scope as 'b2b' | 'b2c',
@@ -338,11 +342,21 @@ export async function POST(req: NextRequest) {
       console.error(`[Growth OS] 🧠 Engine Result: Actions=${JSON.stringify(engineResult?.actions || [])}, Rule=${engineResult?.ruleId}`);
       
       // A lead is "new" if it has no prior growth execution history
-      // This ensures welcome emails always fire for first-time registrations
       const existingGrowthMeta = (result.metadata as any)?.growth;
       const isNewLead = !existingGrowthMeta?.executedActions || Object.keys(existingGrowthMeta.executedActions).length === 0;
-      const forceBypass = body.forceBypass === true || metadata?.forceBypass === true || isNewLead;
       
+      // Force VIP bypass for high-intent invest leads regardless of prior registration
+      // (user may have re-submitted with a higher intent — always re-trigger VIP path)
+      const isVipIntent = result.intent === 'invest' || 
+        (result.metadata as any)?.tags?.some((t: string) => t?.toUpperCase?.().includes('FULL_UNIT'));
+      const forceBypass = body.forceBypass === true || metadata?.forceBypass === true || isNewLead || isVipIntent;
+      
+      if (isVipIntent && existingGrowthMeta?.executedActions?.['SEND_VIP_CONCIERGE_WELCOME']) {
+        // Reset VIP concierge flag so it can re-fire with correct project context
+        delete existingGrowthMeta.executedActions['SEND_VIP_CONCIERGE_WELCOME'];
+        console.error(`[Growth OS] 🎖️ VIP intent detected — resetting VIP concierge for re-fire.`);
+      }
+
       if (isNewLead) {
         console.error(`[Growth OS] 🆕 New lead detected — bypassing cooldown to ensure welcome email & notifications fire.`);
       }
@@ -351,7 +365,7 @@ export async function POST(req: NextRequest) {
         console.error(`[Growth OS] 🚀 Triggering ${engineResult.actions.length} actions for ${result.email}... (ForceBypass: ${forceBypass})`);
         console.error(`[Growth OS] 📩 Executing actions: ${JSON.stringify(engineResult.actions)} for Project: ${projectContext?.slug} (category: ${projectContext?.businessCategory})`);
         await executeGrowthActions(engineResult.actions, {
-          lead: result as any,
+          lead: { ...result, phoneNumber: resolvedPhone } as any,
           project: {
             id: targetProjectId,
             slug: projectContext.slug,
@@ -366,6 +380,7 @@ export async function POST(req: NextRequest) {
         });
       }
     }
+
 
     if (!result) {
         return NextResponse.json({ error: 'Failed to process lead' }, { status: 500 });
