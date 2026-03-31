@@ -341,8 +341,14 @@ export async function executeGrowthActions(
                 }
 
                 case 'NOTIFY_TEAM': {
-                    const { classifyIntent } = await import("./engine");
-                    const intentCategory = classifyIntent(lockedLead?.score || 0, growthMetadata.state);
+                    const { classifyIntent, computeBehavioralMetrics } = await import("./engine");
+                    
+                    // Re-run real-time metrics so VIP overrides appear instantly in the Discord Alert
+                    const realtimeMetrics = computeBehavioralMetrics(lead, []);
+                    const effectiveScore = Math.max(lockedLead?.score || 0, realtimeMetrics.intentScore);
+                    const effectivePriority = realtimeMetrics.priorityScore;
+
+                    const intentCategory = classifyIntent(effectiveScore, growthMetadata.state);
 
                     if (ruleInfo?.isStressTest) {
                         success = true;
@@ -357,11 +363,11 @@ export async function executeGrowthActions(
 
                     if (project.discordWebhookUrl) {
                         ensureNotificationServiceConfigured();
-                        const leadWithScore = { ...lead, score: lockedLead.score || 0 };
+                        const leadWithScore = { ...lead, score: effectiveScore, priorityScore: effectivePriority };
                         success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: intentCategory } as any);
                     } else if (intentCategory === 'closing' || intentCategory === 'high') {
                         ensureNotificationServiceConfigured();
-                        const leadWithScore2 = { ...lead, score: lockedLead.score || 0 };
+                        const leadWithScore2 = { ...lead, score: effectiveScore, priorityScore: effectivePriority };
                         success = await notificationService.notifyGrowthLead(leadWithScore2, { ...project, urgencyTier: intentCategory } as any);
                     } else {
                         success = true;
