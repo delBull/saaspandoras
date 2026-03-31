@@ -418,8 +418,41 @@ export async function executeGrowthActions(
               break;
           }
 
+          // --- SURGICAL RACE CONDITION GUARD (Audit 7.1) ---
+          // 1. Metadata check (Fastest)
+          if (lead.metadata?.growth?.executedActions?.[action]) {
+              console.log(`[Growth OS] 🛡️ Fast block: ${action} already executed for ${lead.email}`);
+              success = true;
+              break;
+          }
+
+          // 2. DB Lock check (Stronger)
+          const doubleCheck = await db.query.growthActionsLog.findFirst({
+            where: and(
+                eq(growthActionsLog.leadId, lead.id as any),
+                eq(growthActionsLog.actionType, action),
+                gt(growthActionsLog.executedAt, new Date(Date.now() - 60000)) // 60s window for deduplication
+            )
+          });
+
+          if (doubleCheck) {
+            console.error(`[Growth OS] 🛡️ Race condition blocked: ${action} for ${lead.email} already documented.`);
+            success = true; 
+            break;
+          }
+
+          // 3. Claim the execution IMMEDIATELY
+          await db.insert(growthActionsLog).values({
+            leadId: lead.id as any,
+            ruleId: ruleInfo?.ruleId || 'SYSTEM_ACTION',
+            ruleCondition: 'NOTIFY_TEAM_LOCK',
+            actionType: action,
+            status: 'pending',
+            executionTimeMs: 0,
+            metadata: { projectSlug: project.slug, email: lead.email, lock: true }
+          });
+
           // Project-specific webhook: ALWAYS fires regardless of score/intentCategory
-          // This ensures external protocols (Narai, etc.) always get notified on new leads
           if (project.discordWebhookUrl) {
               console.error(`[Growth Engine] 📣 Project-level Discord webhook firing for ${project.slug}`);
               ensureNotificationServiceConfigured();
@@ -440,7 +473,7 @@ export async function executeGrowthActions(
              success = await notificationService.notifyGrowthLead(leadWithScore2, { ...project, urgencyTier: intentCategory } as any);
           } else {
               console.log(`[Growth Engine] ℹ️ NOTIFY_TEAM skipped for ${lead.email} — score too low for global channel (${intentCategory}). No project webhook configured.`);
-              success = true; // Graceful skip — not a failure
+              success = true; // Graceful skip
           }
           break;
         }
