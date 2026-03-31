@@ -772,3 +772,58 @@ export async function sendEducationalNurtureEmail(context: {
     throw error;
   }
 }
+
+export async function sendVIPConciergeEmail(context: {
+  to: string;
+  projectName?: string;
+  brandHeader?: string;
+}) {
+  const projectName = context.projectName || "Pandora";
+  console.log(`[Growth Engine] Sending VIP Concierge Email for ${projectName} to ${context.to}`);
+  
+  const isProd = process.env.NODE_ENV === 'production';
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+      if (isProd) {
+          throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
+      }
+      return { success: true, mocked: true };
+  }
+
+  const subject = "Atención Prioritaria - Tu solicitud fue recibida";
+  const body = `Hemos recibido tu solicitud de acceso VIP para ${projectName}.\n\nTu perfil ha sido catalogado como de alta prioridad y ha sido asignado directamente a uno de nuestros directores.\n\nEn breve te contactaremos personalmente por WhatsApp o llamada para darte seguimiento uno a uno.\n\nNo requieres hacer nada más por el momento.\n\n— Equipo ${projectName}`;
+
+  try {
+    const data = await resend.emails.send({
+      from: `${projectName} <${FROM_EMAIL}>`,
+      to: [context.to],
+      subject,
+      tags: [{ name: 'audience', value: 'vip_concierge' }],
+      react: WaitlistEmail({
+        subject,
+        body,
+        step: "VIP",
+        projectName: projectName,
+        brandHeader: context.brandHeader || `${projectName.toUpperCase()} // CONJUNTO VIP`
+      }) as React.ReactElement,
+    });
+
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
+      await trackEmailMetadata({
+        emailId: String(resendId),
+        recipient: context.to,
+        subject,
+        type: 'vip_concierge'
+      });
+    }
+
+    console.log(`[Growth Engine] Resend Success (VIP Concierge):`, data);
+    return { success: true, data };
+  } catch (error) {
+    console.error(`[Growth Engine] Resend Error (VIP Concierge):`, error);
+    throw error;
+  }
+}
+
