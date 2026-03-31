@@ -88,6 +88,29 @@ export function DeploymentConfigModal({
     });
     const [packages, setPackages] = useState<PackageConfig[]>([]);
     const [activeTab, setActiveTab] = useState<'artifacts' | 'phases' | 'progression' | 'economics' | 'preview'>('artifacts');
+    const [validationError, setValidationError] = useState<string | null>(null);
+
+    // Reset state when modal opens for a new project to prevent stale data
+    useEffect(() => {
+        if (isOpen) {
+            setNetwork('sepolia');
+            setPageLayoutType('Access');
+            setArtifacts([DEFAULT_ARTIFACT(projectTitle, projectTitle.substring(0, 4).toUpperCase(), projectTotalTokens || 1000)]);
+            setPhases(DEFAULT_PHASES);
+            setTokenomics({
+                ...DEFAULT_TOKENOMICS,
+                totalSupply: projectTotalTokens || (DEFAULT_TOKENOMICS.totalSupply ?? 1000000),
+                teamAllocationBps: 1500, // 15% default
+                pandorasAllocationBps: 500, // 5% default
+                teamWallet: applicantWalletAddress || '',
+                pandorasWallet: '0xDEEb671dEda720a75B07E9874e4371c194e38919', // Default Pandoras Treasury
+            });
+            setEconomicSchedule({ phase1APY: 500, phase2APY: 1000, phase3APY: 2000, royaltyBPS: 500 });
+            setPackages([]);
+            setActiveTab('artifacts');
+            setValidationError(null);
+        }
+    }, [isOpen, projectTitle, projectTotalTokens, applicantWalletAddress]);
 
     if (!isOpen) return null;
 
@@ -210,6 +233,21 @@ export function DeploymentConfigModal({
 
     // ── Submit ────────────────────────────────────────────────────────
     const handleSubmit = () => {
+        setValidationError(null);
+
+        // Validation: Verify wallets if allocations exist
+        if ((tokenomics.teamAllocationBps || 0) > 0 && (!tokenomics.teamWallet || !/^0x[a-fA-F0-9]{40}$/.test(tokenomics.teamWallet))) {
+            setValidationError('Wallet del Equipo inválida o vacía (requerida por Team Allocation).');
+            setActiveTab('economics');
+            return;
+        }
+
+        if ((tokenomics.pandorasAllocationBps || 0) > 0 && (!tokenomics.pandorasWallet || !/^0x[a-fA-F0-9]{40}$/.test(tokenomics.pandorasWallet))) {
+            setValidationError('Wallet de Pandoras inválida o vacía (requerida por Pandoras Allocation).');
+            setActiveTab('economics');
+            return;
+        }
+
         onConfirm({
             network,
             pageLayoutType,
@@ -1110,6 +1148,11 @@ export function DeploymentConfigModal({
                             >
                                 Siguiente →
                             </button>
+                        )}
+                        {validationError && (
+                            <div className="px-3 py-1.5 rounded-lg bg-red-900/30 border border-red-500/50 flex items-center justify-center animate-pulse">
+                                <span className="text-red-400 text-xs font-bold leading-tight">{validationError}</span>
+                            </div>
                         )}
                         <button
                             onClick={handleSubmit}

@@ -67,6 +67,17 @@ export interface PerkConfig {
     monetaryValue?: number; // Tangible translation to USD
 }
 
+export interface PackageConfig {
+    id: string;
+    name: string;
+    description: string;
+    artifactCountThreshold: number;
+    artifactIds: string[];
+    perks: PerkConfig[];
+    progressLabel?: string;
+    unlockMessage?: string;
+}
+
 export interface TierConfig {
     id: string;
     name: string; // Explorador, Residente, VIP, etc.
@@ -104,7 +115,7 @@ export interface DeploymentConfig {
 
     // Progression Economy
     tiers?: TierConfig[];
-    packages?: TierConfig[]; // Keep for backward compatibility during transition
+    packages?: PackageConfig[]; // Keep for backward compatibility during transition
 
     // W2E Economic Schedule
     w2eConfig?: {
