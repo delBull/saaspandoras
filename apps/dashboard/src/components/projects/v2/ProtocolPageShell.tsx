@@ -7,6 +7,7 @@ import ProjectSidebar from '../ProjectSidebar';
 import MobileInvestmentCard from '../MobileInvestmentCard';
 import RecommendedProjectsSection from '../RecommendedProjectsSection';
 import { StatusAlert } from '../ProjectStatusIndicators';
+import { getTargetAmount } from '@/lib/project-utils';
 
 interface ProtocolPageShellProps {
     project: ProjectData;
@@ -15,7 +16,7 @@ interface ProtocolPageShellProps {
 }
 
 export default function ProtocolPageShell({ project, children, currentSlug }: ProtocolPageShellProps) {
-    const targetAmount = Number(project.target_amount ?? 1);
+    const targetAmount = getTargetAmount(project);
     return (
         <div className="min-h-screen pb-20 md:pb-6 bg-black">
             <ProjectNavigationHeader />

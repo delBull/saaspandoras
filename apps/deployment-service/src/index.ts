@@ -25,7 +25,7 @@ async function updateJob(jobId: string, data: Partial<typeof schema.deploymentJo
     try {
         await db.update(schema.deploymentJobs)
             .set({ ...data, updatedAt: new Date() })
-            .where(eq(schema.deploymentJobs.id, jobId));
+            .where(eq(schema.deploymentJobs.id, jobId as any));
     } catch (err) {
         console.error(`❌ Failed to update job ${jobId}:`, err);
     }
@@ -89,7 +89,7 @@ async function runDeploymentJob(jobId: string) {
         await updateJob(jobId, { step: 'finalizing' });
 
         // CRITICAL: Update the Project record
-        await db.update(schema.projects)
+        const updatedProject = await db.update(schema.projects)
             .set({
                 licenseContractAddress: result.licenseAddress || (result.artifacts?.[0]?.address),
                 utilityContractAddress: result.phiAddress,
@@ -111,7 +111,55 @@ async function runDeploymentJob(jobId: string) {
                     }
                 }
             })
-            .where(eq(schema.projects.slug, job.projectSlug));
+            .where(eq(schema.projects.slug, job.projectSlug))
+            .returning({ id: schema.projects.id });
+
+        // Phase 87 Integration: Inject Genesis Whales into Governance IQ instantly
+        const projectId = updatedProject[0]?.id;
+        
+        if (projectId && job.config && (job.config as any).utilityToken) {
+            const configUtil = (job.config as any).utilityToken;
+            const initSupply = Number(configUtil.initialSupply || 0);
+            
+            if (initSupply > 0) {
+                try {
+                    const teamBps = Number(configUtil.teamAllocationBps || 0);
+                    const panBps = Number(configUtil.pandorasAllocationBps || 0);
+                    
+                    const teamPower = Math.floor((initSupply * teamBps) / 10000);
+                    const panPower = Math.floor((initSupply * panBps) / 10000);
+                    
+                    const newMembers = [];
+                    
+                    if (teamPower > 0 && configUtil.teamWallet) {
+                        newMembers.push({
+                            projectId,
+                            wallet: configUtil.teamWallet,
+                            votingPower: teamPower.toString(),
+                            sourceCampaignId: 'FOUNDATION_TEAM',
+                            artifactsCount: 0
+                        });
+                    }
+                    
+                    if (panPower > 0 && configUtil.pandorasWallet) {
+                        newMembers.push({
+                            projectId,
+                            wallet: configUtil.pandorasWallet,
+                            votingPower: panPower.toString(),
+                            sourceCampaignId: 'PANDORAS_PROTOCOL',
+                            artifactsCount: 0
+                        });
+                    }
+                    
+                    if (newMembers.length > 0) {
+                        await db.insert(schema.daoMembers).values(newMembers).onConflictDoNothing();
+                        logEvent(jobId, "GGE_MEMBERS_INJECTED", { count: newMembers.length });
+                    }
+                } catch (memberErr: any) {
+                    console.error('⚠️ [Growth OS] Failed to inject DAO Genesis members non-lethal:', memberErr.message);
+                }
+            }
+        }
 
         // Finalize Job
         await updateJob(jobId, {

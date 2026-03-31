@@ -7,6 +7,7 @@ import { prepareContractCall, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Protocol Engine Imports
 import { resolveExecution } from "@/lib/protocol-engine/execute";
@@ -32,6 +33,7 @@ export default function ArtifactPurchaseModal({
     userArtifactCount,
     initialAmount 
 }: ArtifactPurchaseModalProps) {
+    const router = useRouter();
     const account = useActiveAccount();
     const [step, setStep] = useState<'review' | 'processing' | 'success'>('review');
     const [amount, setAmount] = useState<string>("1");
@@ -630,14 +632,16 @@ export default function ArtifactPurchaseModal({
                                         <Gift className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
                                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-center">Invitar & Ganar</span>
                                     </button>
-                                    <Link 
-                                        href={`/projects/${project.slug}/dao`}
-                                        onClick={onClose}
-                                        className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:border-emerald-500/50 transition-colors group"
+                                    <button 
+                                        onClick={() => {
+                                            onClose();
+                                            router.push(`/projects/${project.slug}/dao`);
+                                        }}
+                                        className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:border-emerald-500/50 transition-colors group w-full"
                                     >
                                         <PlusCircle className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
                                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-center">Unirse al DAO</span>
-                                    </Link>
+                                    </button>
                                 </div>
 
                                 <div className="space-y-3 pt-2">

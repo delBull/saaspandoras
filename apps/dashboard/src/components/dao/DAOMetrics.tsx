@@ -151,28 +151,38 @@ export function DAOMetrics({ projectId }: DAOMetricsProps) {
                         <Zap className="w-4 h-4 text-purple-400" /> Atribución de Gobernanza (Promotores)
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        {data.attribution.slice(0, 5).map((attr: any, idx: number) => (
-                            <div key={idx} className="bg-black/20 p-4 rounded-xl border border-zinc-800/50 hover:border-purple-500/30 transition-colors">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[10px] bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full font-bold">
-                                        #{attr.campaignId || 'Org'}
-                                    </span>
-                                    <span className="text-lg font-bold text-white font-mono">
-                                        {Math.round(attr.share * 100)}%
-                                    </span>
-                                </div>
+                        {data.attribution.slice(0, 5).map((attr: any, idx: number) => {
+                            const isTeam = attr.campaignId === 'FOUNDATION_TEAM';
+                            const isPandoras = attr.campaignId === 'PANDORAS_PROTOCOL';
+                            const label = isTeam ? 'Team Fundador' : isPandoras ? 'Pandoras (Core)' : `#${attr.campaignId || 'Orgánico'}`;
+                            const colorClass = isTeam 
+                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
+                                : isPandoras 
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-400/30' 
+                                : 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+
+                            return (
+                                <div key={idx} className="bg-black/20 p-4 rounded-xl border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${colorClass}`}>
+                                            {label}
+                                        </span>
+                                        <span className="text-lg font-bold text-white font-mono">
+                                            {Math.round(attr.share * 100)}%
+                                        </span>
+                                    </div>
                                 <div className="flex items-center justify-between text-[10px]">
                                     <span className="text-zinc-500 uppercase">Votos</span>
                                     <span className="font-bold text-zinc-300">{attr.votingPower}</span>
                                 </div>
                                 <div className="mt-3 h-1 bg-zinc-800 rounded-full overflow-hidden">
                                     <div 
-                                        className="h-full bg-purple-500" 
+                                        className={`h-full ${isTeam ? 'bg-amber-500' : isPandoras ? 'bg-blue-400' : 'bg-purple-500'}`} 
                                         style={{ width: `${attr.share * 100}%` }}
                                     />
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 </div>
             )}
