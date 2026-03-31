@@ -229,15 +229,16 @@ async function handleEmailDelivered(event: ResendWebhookEvent) {
  */
 async function handleEmailOpened(event: ResendWebhookEvent) {
   try {
-    const { email_id, to, user_agent, ip } = event.data;
+    const { email_id, to, user_agent, ip, tags } = event.data;
     const recipient: string = to ? to[0] || '' : '';
+    const audienceTag: string = tags?.find((tag: any) => tag.name === 'audience')?.value || 'unknown';
 
     console.log(`👁️ Email opened: ${email_id} by ${recipient} from ${ip}`);
 
-    // Assuming we fetch it to not override existing type or subject if they exist
     await db.insert(emailMetrics)
       .values({
         emailId: email_id,
+        type: audienceTag,
         status: 'opened',
         recipient: recipient,
         openedAt: new Date(),
@@ -248,6 +249,7 @@ async function handleEmailOpened(event: ResendWebhookEvent) {
       .onConflictDoUpdate({
         target: emailMetrics.emailId,
         set: {
+          status: 'opened', // Update status to reflect interaction
           openedAt: new Date(),
           updatedAt: new Date()
         }

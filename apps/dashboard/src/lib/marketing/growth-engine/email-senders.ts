@@ -10,6 +10,32 @@ import WaitlistEmail from '@/emails/WaitlistEmail';
 import ProjectEducationalEmail from '@/emails/educational-nurture';
 
 import { EngagementLevel } from './types';
+import { db } from '@/db';
+import { emailMetrics } from '@/db/schema';
+
+/**
+ * Tracks an email attempt in the local database for real-time metrics
+ */
+async function trackEmailMetadata(payload: {
+  emailId: string;
+  recipient: string;
+  subject: string;
+  type: string;
+}) {
+  try {
+    await db.insert(emailMetrics).values({
+      emailId: payload.emailId,
+      recipient: payload.recipient,
+      emailSubject: payload.subject,
+      type: payload.type,
+      status: 'sent',
+      createdAt: new Date(),
+    }).onConflictDoNothing();
+    console.log(`📊 [Metrics] Logged 'sent' status for ${payload.emailId}`);
+  } catch (error) {
+    console.error('❌ [Metrics] Error tracking email:', error);
+  }
+}
 
 export async function sendWaitlistSequenceEmail(context: {
   to: string;
@@ -238,6 +264,11 @@ export async function sendWaitlistSequenceEmail(context: {
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: emailData.subject,
+      tags: [
+        { name: 'audience', value: 'waitlist_sequence' },
+        { name: 'step', value: String(context.step) },
+        { name: 'project', value: context.projectSlug || 'pandora' }
+      ],
       react: WaitlistEmail({ 
         subject: emailData.subject,
         body: emailData.body,
@@ -246,10 +277,22 @@ export async function sendWaitlistSequenceEmail(context: {
         brandHeader: context.brandHeader || `${projectName.toUpperCase()} // PROTOCOLO DE ESPERA`,
         ctaText: ('ctaText' in emailData) ? emailData.ctaText as string | undefined : undefined,
         ctaUrl: resolvedCtaUrl,
-        showPathway: context.step === 4 || (context.step === 1 && !isPandora) // Show pathway on step 4 or step 1 (for external projects)
+        showPathway: context.step === 4 || (context.step === 1 && !isPandora) 
       }) as React.ReactElement,
     });
-    console.error(`[Resend Engine] ✅ Success (Step ${context.step}):`, data);
+
+    // Log to metrics table
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
+      await trackEmailMetadata({
+        emailId: String(resendId),
+        recipient: context.to,
+        subject: emailData.subject,
+        type: 'waitlist_sequence'
+      });
+    }
+
+    console.log(`[Resend Engine] ✅ Success (Step ${context.step}):`, data);
     return { success: true, data };
   } catch (error) {
     console.error(`[Resend Engine] ❌ Failure (Step ${context.step}):`, error);
@@ -286,6 +329,7 @@ export async function sendGenesisWelcomeEmail(context: {
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject,
+      tags: [{ name: 'audience', value: 'creator_welcome' }],
       react: WaitlistEmail({ 
         subject,
         body,
@@ -294,6 +338,18 @@ export async function sendGenesisWelcomeEmail(context: {
         brandHeader: context.brandHeader
       }),
     });
+
+    // Log to metrics table
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
+      await trackEmailMetadata({
+        emailId: String(resendId),
+        recipient: context.to,
+        subject,
+        type: 'creator_welcome'
+      });
+    }
+
     console.log(`[Growth Engine] Resend Success (Genesis Welcome):`, data);
     return { success: true, data };
   } catch (error) {
@@ -323,10 +379,22 @@ export async function sendB2BFollowupEmail(context: {
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `¿Seguimos adelante con ${context.projectName}?`,
+      tags: [{ name: 'audience', value: 'b2b_followup' }],
       react: B2BFollowupEmail({ 
         projectName: context.projectName,
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if ('id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: data.id,
+        recipient: context.to,
+        subject: `¿Seguimos adelante con ${context.projectName}?`,
+        type: 'b2b_followup'
+      });
+    }
+
     console.log(`[Growth Engine] Resend Success (B2B Followup):`, data);
     return { success: true, data };
   } catch (error) {
@@ -370,13 +438,26 @@ export async function sendB2BWelcomeEmail(context: {
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Confirmación de Solicitud: ${context.projectName}`,
+      tags: [{ name: 'audience', value: 'b2b_welcome' }],
       react: B2BWelcomeEmail({ 
         projectName: context.projectName,
         source: context.source,
         ctaText,
         ctaUrl
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
+      await trackEmailMetadata({
+        emailId: String(resendId),
+        recipient: context.to,
+        subject: `Confirmación de Solicitud: ${context.projectName}`,
+        type: 'b2b_welcome'
+      });
+    }
+
     console.log(`[Growth Engine] Resend Success (B2B Welcome):`, data);
     return { success: true, data };
   } catch (error) {
@@ -410,13 +491,28 @@ export async function sendExploreWelcomeEmail(context: {
       from: `${context.projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Acceso rápido: Entendiendo ${context.projectName}`,
+      tags: [
+        { name: 'audience', value: 'explore_welcome' },
+        { name: 'project', value: context.projectSlug || 'unknown' }
+      ],
       react: ExploreStep1Email({ 
         projectName: context.projectName,
         differentiator: context.differentiator,
         projectSlug: context.projectSlug,
         baseUrl: context.baseUrl
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if ('id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: data.id,
+        recipient: context.to,
+        subject: `Acceso rápido: Entendiendo ${context.projectName}`,
+        type: 'explore_welcome'
+      });
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Explore Step 1):`, error);
@@ -448,12 +544,27 @@ export async function sendInvestWelcomeEmail(context: {
       from: `${context.projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Tu interés en ${context.projectName} - Siguientes Pasos`,
+      tags: [
+        { name: 'audience', value: 'invest_welcome' },
+        { name: 'project', value: context.projectSlug || 'unknown' }
+      ],
       react: InvestStep1Email({ 
         projectName: context.projectName,
         projectSlug: context.projectSlug,
         baseUrl: context.baseUrl
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if ('id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: data.id,
+        recipient: context.to,
+        subject: `Tu interés en ${context.projectName} - Siguientes Pasos`,
+        type: 'invest_welcome'
+      });
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Invest Step 1):`, error);
@@ -485,13 +596,28 @@ export async function sendCallReminderEmail(context: {
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: context.type === 'D-0' ? "¡Hoy nos vemos!" : `Recordatorio de sesión: ${context.meetingDate}`,
+      tags: [
+        { name: 'audience', value: 'b2b_reminder' },
+        { name: 'reminder_type', value: context.type }
+      ],
       react: B2BCallReminderEmail({ 
         name: context.name,
         meetingDate: context.meetingDate,
         meetingTime: context.meetingTime,
         type: context.type,
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if ('id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: data.id,
+        recipient: context.to,
+        subject: context.type === 'D-0' ? "¡Hoy nos vemos!" : `Recordatorio de sesión: ${context.meetingDate}`,
+        type: 'b2b_reminder'
+      });
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Call Reminder ${context.type}):`, error);
@@ -522,12 +648,24 @@ export async function sendBookingConfirmedEmail(context: {
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: "Sesión confirmada: Preparemos tu protocolo",
+      tags: [{ name: 'audience', value: 'b2b_booking_confirmed' }],
       react: B2BBookingConfirmedEmail({ 
         name: context.name,
         meetingDate: context.meetingDate,
         meetingTime: context.meetingTime,
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if (data && 'id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: String(data.id),
+        recipient: context.to,
+        subject: "Sesión confirmada: Preparemos tu protocolo",
+        type: 'b2b_booking_confirmed'
+      });
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Booking Confirmation):`, error);
@@ -556,11 +694,23 @@ export async function sendNoShowRecoveryEmail(context: {
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: "Te extrañamos en la sesión - ¿Agendamos de nuevo?",
+      tags: [{ name: 'audience', value: 'b2b_no_show' }],
       react: B2BNoShowRecoveryEmail({ 
         name: context.name,
         rescheduleUrl: "https://dash.pandoras.finance/schedule/founders"
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if (data && 'id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: String(data.id),
+        recipient: context.to,
+        subject: "Te extrañamos en la sesión - ¿Agendamos de nuevo?",
+        type: 'b2b_no_show'
+      });
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (No-Show Recovery):`, error);
@@ -590,13 +740,25 @@ export async function sendEducationalNurtureEmail(context: {
     const data = await resend.emails.send({
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
-      subject: `Paso siguiente: Tu Masterclass de ${context.projectName} está lista`,
+      subject: `Evolucionando ${context.projectName}`,
+      tags: [{ name: 'audience', value: 'educational_nurture' }],
       react: ProjectEducationalEmail({ 
         name: context.name,
         projectName: context.projectName,
         courseUrl: context.courseUrl
-      }),
+      }) as React.ReactElement,
     });
+
+    // Log to metrics table
+    if (data && 'id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: String(data.id),
+        recipient: context.to,
+        subject: `Evolucionando ${context.projectName}`,
+        type: 'educational_nurture'
+      });
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Educational Nurture):`, error);
