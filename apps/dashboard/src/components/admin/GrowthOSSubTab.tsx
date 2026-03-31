@@ -1649,6 +1649,12 @@ export default function GrowthOSSubTab() {
                                {l.walletAddress ? `${l.walletAddress.slice(0, 6)}...${l.walletAddress.slice(-4)}` : 'Wallet missing'}
                              </span>
                           </div>
+                          <div className="flex items-center gap-2">
+                             <Phone className={cn("w-3 h-3 transition-colors", l.phoneNumber ? "text-emerald-400" : "text-zinc-700")} />
+                             <span className={cn("text-[10px] font-medium", l.phoneNumber ? "text-emerald-300" : "text-zinc-600")}>
+                               {l.phoneNumber || 'Phone missing'}
+                             </span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-8 py-5">
