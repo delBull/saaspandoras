@@ -153,9 +153,12 @@ export function resolveGrowthAction(
   let actions: GrowthActionType[] = [];
 
   // --- ADAPTIVE TIMING RESOLVER (Institutional) ---
-  const lastWaitlistWelcome = lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_WELCOME_D0'];
-  if (lastWaitlistWelcome && typeof lastWaitlistWelcome === 'number') {
-    const hoursSinceJoin = (Date.now() - lastWaitlistWelcome) / (1000 * 60 * 60);
+  const lastB2CWelcome = lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_WELCOME_D0'];
+  const lastB2BWelcome = lead.metadata?.growth?.executedActions?.['SEND_WELCOME_B2B_D1'];
+  const lastWelcome = lastB2CWelcome || lastB2BWelcome;
+  
+  if (lastWelcome && typeof lastWelcome === 'number') {
+    const hoursSinceJoin = (Date.now() - lastWelcome) / (1000 * 60 * 60);
     const engagement = lead.engagementLevel || 'mid';
     const intervals: Record<string, { d1: number; d2: number; d3: number }> = {
       'tech_startup': { d1: 24, d2: 48, d3: 72 },
@@ -172,14 +175,22 @@ export function resolveGrowthAction(
     // Nurture Toggle Guard (Manual Override from Dashboard)
     const canNurture = lead.metadata?.growth?.nurtureEnabled !== false;
 
-    if (config && hoursSinceJoin > (config.d3 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_ACTIVATION_D3']) {
-      actions.push('SEND_WAITLIST_ACTIVATION_D3');
-    } else if (config && hoursSinceJoin > (config.d2 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_STATUS_D2']) {
-      actions.push('SEND_WAITLIST_STATUS_D2');
-    } else if (canNurture && config && hoursSinceJoin > (0.5 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_EDUCATIONAL_NURTURE']) {
-      // PHASE 80: Education Nurturing (12h - 24h delay window)
-      if (engagement !== 'low') {
-        actions.push('SEND_EDUCATIONAL_NURTURE');
+    if (lead.scope === 'b2b') {
+      // B2B (Pandoras) Routing
+      if (config && hoursSinceJoin > (config.d2 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_FOLLOWUP_B2B_D2']) {
+        actions.push('SEND_FOLLOWUP_B2B_D2');
+      }
+    } else {
+      // B2C (Protocols) Routing
+      if (config && hoursSinceJoin > (config.d3 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_ACTIVATION_D3']) {
+        actions.push('SEND_WAITLIST_ACTIVATION_D3');
+      } else if (config && hoursSinceJoin > (config.d2 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_STATUS_D2']) {
+        actions.push('SEND_WAITLIST_STATUS_D2');
+      } else if (canNurture && config && hoursSinceJoin > (0.5 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_EDUCATIONAL_NURTURE']) {
+        // PHASE 80: Education Nurturing (12h - 24h delay window)
+        if (engagement !== 'low') {
+          actions.push('SEND_EDUCATIONAL_NURTURE');
+        }
       }
     }
   }
@@ -205,8 +216,13 @@ export function resolveGrowthAction(
   switch (event) {
     case 'VIEW_ACCESS' as any: 
     case 'VIEW_ONBOARDING' as any:
-    case 'LEAD_CAPTURED':
-      if (lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
+    case 'LEAD_CAPTURED': {
+      // Real-time VIP evaluation ensuring we don't miss high intent if priority hasn't synced
+      const isVip = 
+        lead.intent === 'invest' || 
+        lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'));
+
+      if (isVip) {
         nextState = 'HOT';
         actions = ['SEND_VIP_CONCIERGE_WELCOME', 'NOTIFY_TEAM'];
       } else {
@@ -214,6 +230,7 @@ export function resolveGrowthAction(
         actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1', 'NOTIFY_TEAM'] : ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'];
       }
       break;
+    }
 
     case 'VIEW_PRICING':
     case 'CLICKED_WHITEPAPER':
