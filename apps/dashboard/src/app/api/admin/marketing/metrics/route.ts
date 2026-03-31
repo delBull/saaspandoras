@@ -46,14 +46,23 @@ async function getEmailMetrics(timeRange: '24h' | '7d' | '30d' = '7d') {
           MAX(created_at) as last_email_at,
 
           -- By type breakdown
-          COUNT(*) FILTER (WHERE type = 'creator_welcome' AND status = 'sent') as creator_sent,
+          COUNT(*) FILTER (WHERE type = 'creator_welcome' AND (status = 'sent' OR status = 'delivered')) as creator_sent,
           COUNT(*) FILTER (WHERE type = 'creator_welcome' AND status = 'delivered') as creator_delivered,
           COUNT(*) FILTER (WHERE type = 'creator_welcome' AND status = 'opened') as creator_opened,
           COUNT(*) FILTER (WHERE type = 'creator_welcome' AND status = 'clicked') as creator_clicked,
 
-          COUNT(*) FILTER (WHERE type = 'founders' AND status = 'sent') as founders_sent,
-          COUNT(*) FILTER (WHERE type = 'founders' AND status = 'delivered') as founders_delivered,
-          COUNT(*) FILTER (WHERE type = 'utility' AND status = 'sent') as utility_sent
+          COUNT(*) FILTER (WHERE type = 'waitlist_sequence' AND (status = 'sent' OR status = 'delivered')) as waitlist_sent,
+          COUNT(*) FILTER (WHERE type = 'waitlist_sequence' AND status = 'delivered') as waitlist_delivered,
+          COUNT(*) FILTER (WHERE type = 'waitlist_sequence' AND status = 'opened') as waitlist_opened,
+          COUNT(*) FILTER (WHERE type = 'waitlist_sequence' AND status = 'clicked') as waitlist_clicked,
+
+          COUNT(*) FILTER (WHERE type LIKE 'b2b_%' AND (status = 'sent' OR status = 'delivered')) as b2b_sent,
+          COUNT(*) FILTER (WHERE type LIKE 'b2b_%' AND status = 'delivered') as b2b_delivered,
+          COUNT(*) FILTER (WHERE type LIKE 'b2b_%' AND status = 'opened') as b2b_opened,
+          COUNT(*) FILTER (WHERE type LIKE 'b2b_%' AND status = 'clicked') as b2b_clicked,
+
+          COUNT(*) FILTER (WHERE type = 'educational_nurture' AND (status = 'sent' OR status = 'delivered')) as educational_sent,
+          COUNT(*) FILTER (WHERE type = 'educational_nurture' AND status = 'delivered') as educational_delivered
         FROM email_metrics
         WHERE created_at >= ${startDate}
       ` as any[];
@@ -96,16 +105,23 @@ async function getEmailMetrics(timeRange: '24h' | '7d' | '30d' = '7d') {
               clicked: Number(metrics.creator_clicked) || 0,
               bounced: 0
             },
-            founders: {
-              sent: Number(metrics.founders_sent) || 0,
-              delivered: Number(metrics.founders_delivered) || 0,
-              opened: 0,
-              clicked: 0,
+            waitlist_sequence: {
+              sent: Number(metrics.waitlist_sent) || 0,
+              delivered: Number(metrics.waitlist_delivered) || 0,
+              opened: Number(metrics.waitlist_opened) || 0,
+              clicked: Number(metrics.waitlist_clicked) || 0,
               bounced: 0
             },
-            utility: {
-              sent: Number(metrics.utility_sent) || 0,
-              delivered: 0,
+            b2b_communications: {
+              sent: Number(metrics.b2b_sent) || 0,
+              delivered: Number(metrics.b2b_delivered) || 0,
+              opened: Number(metrics.b2b_opened) || 0,
+              clicked: Number(metrics.b2b_clicked) || 0,
+              bounced: 0
+            },
+            educational_nurture: {
+              sent: Number(metrics.educational_sent) || 0,
+              delivered: Number(metrics.educational_delivered) || 0,
               opened: 0,
               clicked: 0,
               bounced: 0

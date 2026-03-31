@@ -49,13 +49,22 @@ export default function ShortlinksSubTab() {
         const shortlinksData = data.data || [];
         setShortlinks(shortlinksData);
 
-        // Calculate stats
-        setStats({
-          total: shortlinksData.length,
-          active: shortlinksData.filter((s: Shortlink) => s.isActive).length,
-          totalClicks: 0, // Pending backend aggregation
-          uniqueVisitors: 0, // Pending backend aggregation
-        });
+        // Update stats from API response
+        if (data.stats) {
+          setStats({
+            total: shortlinksData.length,
+            active: shortlinksData.filter((s: Shortlink) => s.isActive).length,
+            totalClicks: data.stats.totalClicks || 0,
+            uniqueVisitors: data.stats.uniqueVisitors || 0,
+          });
+        } else {
+          // Fallback to manual count for total/active
+          setStats(prev => ({
+            ...prev,
+            total: shortlinksData.length,
+            active: shortlinksData.filter((s: Shortlink) => s.isActive).length,
+          }));
+        }
       } else {
         console.error('Failed to fetch shortlinks');
       }

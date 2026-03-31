@@ -151,25 +151,27 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
 
     console.log(`📊 Tracking shortlink click: ${slug} -> ${link.destinationUrl}`);
 
-    // Track the event (async, don't wait for it)
+    // Track the event (Await to ensure it completes before redirect in serverless)
     if (!isBot) {
-      db.insert(shortlinkEvents).values({
-        slug,
-        domain: host,
-        ip,
-        userAgent,
-        referer,
-        utmSource,
-        utmMedium,
-        utmCampaign,
-        utmTerm,
-        utmContent,
-        deviceType,
-        browser,
-        country,
-      }).catch(error => {
+      try {
+        await db.insert(shortlinkEvents).values({
+          slug,
+          domain: host,
+          ip,
+          userAgent,
+          referer,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          utmTerm,
+          utmContent,
+          deviceType,
+          browser,
+          country,
+        });
+      } catch (error) {
         console.error('Failed to track shortlink event:', error);
-      });
+      }
     }
 
     // 🚀 NEW: Smart QR Landing Page Logic

@@ -4,10 +4,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { eq, desc, and, or } from "drizzle-orm";
+import { eq, desc, and, or, sql } from "drizzle-orm";
 import { db } from "~/db";
 import { getAuth, isAdmin } from "@/lib/auth";
-import { shortlinks } from "~/db/schema";
+import { shortlinks, shortlinkEvents } from "~/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +43,28 @@ export async function GET(req: NextRequest) {
         isActive: shortlinks.isActive,
         createdAt: shortlinks.createdAt,
         updatedAt: shortlinks.updatedAt,
-        fullUrl: shortlinks.slug, // For frontend to construct full URL
+        fullUrl: shortlinks.slug,
       })
       .from(shortlinks)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(shortlinks.createdAt));
 
-    return NextResponse.json({ data: result });
+    // --- AGGREGATE GLOBAL STATS ---
+    const totalClicksResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(shortlinkEvents);
+
+    const uniqueVisitorsResult = await db
+      .select({ count: sql<number>`count(distinct ${shortlinkEvents.ip})` })
+      .from(shortlinkEvents);
+
+    return NextResponse.json({ 
+      data: result,
+      stats: {
+        totalClicks: Number(totalClicksResult[0]?.count || 0),
+        uniqueVisitors: Number(uniqueVisitorsResult[0]?.count || 0)
+      }
+    });
 
   } catch (error) {
     console.error("Shortlinks list API error:", error);
