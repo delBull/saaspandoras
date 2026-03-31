@@ -62,7 +62,6 @@ export async function POST(request: Request) {
         consent: true,
         projectId: 'pandoras_access', // Correct slug for the main project
         origin: "landing_v2_nextjs",
-        forceBypass: true, // Bypass 24h cooldown for testing
         metadata: {
           referrer: request.headers.get("referer") ?? null,
           userAgent: request.headers.get("user-agent") ?? null,
@@ -71,16 +70,23 @@ export async function POST(request: Request) {
       }),
     });
 
+    const dashResult = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      console.error("[/api/waitlist proxy] Dashboard error:", errData);
+      console.error("[/api/waitlist proxy] Dashboard error:", dashResult);
       // Still return success to not expose internals to the user
     }
 
-    return NextResponse.json({ success: true, message: "Gracias por unirte. Pronto recibirás un correo de confirmación." });
+    return NextResponse.json({ 
+      success: true, 
+      alreadyRegistered: !!dashResult.alreadyRegistered,
+      message: dashResult.alreadyRegistered 
+        ? "Ya estás en la lista. ¡Revisa tu correo!" 
+        : "Gracias por unirte. Pronto recibirás un correo de confirmación." 
+    });
   } catch (err) {
     console.error("[/api/waitlist]", err);
     // Fail gracefully
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "Solicitud recibida." });
   }
 }

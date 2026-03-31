@@ -224,13 +224,38 @@ export async function POST(req: NextRequest) {
 
     const identityHash = IdentityService.getIdentityHash(email, walletAddress, fingerprint);
 
-    // 4. Ingest Lead (Upsert)
+    if (!identityHash) {
+      return NextResponse.json({ error: 'Failed to resolve identity' }, { status: 400 });
+    }
+
+    // 4. Ingest Lead (Smart Upsert with Metadata Merge)
+    const existingLead = await db.query.marketingLeads.findFirst({
+      where: and(
+        eq(marketingLeads.projectId, targetProjectId),
+        eq(marketingLeads.identityHash, (identityHash as string))
+      ),
+      columns: { id: true, metadata: true }
+    });
+
+    const alreadyRegistered = !!existingLead;
+    let finalMetadata = processedMetadata;
+
+    if (existingLead) {
+      // Merge: Keep old growth data, update other fields
+      const oldMeta = (existingLead.metadata as any) || {};
+      finalMetadata = {
+        ...oldMeta,
+        ...processedMetadata,
+        growth: oldMeta.growth || processedMetadata.growth // Prioritize old growth history
+      };
+    }
+
     const baseLeadData = {
       userId: existingUser?.id || null,
       projectId: targetProjectId,
       ownerContext: ownerContext as any,
       scope: scope as any,
-      identityId: identityId, // NEW: Unified Identity ID
+      identityId: identityId,
       leadType,
       email: email?.toLowerCase() || null,
       name: name || null,
@@ -241,29 +266,26 @@ export async function POST(req: NextRequest) {
       origin: origin || null,
       intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
       consent: true,
-      metadata: processedMetadata,
+      metadata: finalMetadata,
       status: 'active' as any,
-      score: 50,
+      score: existingLead ? undefined : 50, // Don't reset score on re-reg
       updatedAt: new Date(),
     };
 
     const [result] = await (async () => {
       try {
-        return await db.insert(marketingLeads)
-          .values({ ...baseLeadData, createdAt: new Date() })
-          .onConflictDoUpdate({
-            target: [marketingLeads.projectId, marketingLeads.identityHash],
-            set: { ...baseLeadData, updatedAt: new Date() }
-          })
-          .returning();
+        if (existingLead) {
+          return await db.update(marketingLeads)
+            .set(baseLeadData)
+            .where(eq(marketingLeads.id, existingLead.id as any))
+            .returning();
+        } else {
+          return await db.insert(marketingLeads)
+            .values({ ...baseLeadData, createdAt: new Date() })
+            .returning();
+        }
       } catch (dbErr: any) {
-        console.error('🚨 [Postgres Fatal] Error during Lead Insert:', {
-          code: dbErr.code,
-          detail: dbErr.detail,
-          table: dbErr.table,
-          constraint: dbErr.constraint,
-          message: dbErr.message
-        });
+        console.error('🚨 [Postgres Fatal] Error during Lead Ingestion:', dbErr);
         throw dbErr;
       }
     })();
@@ -344,10 +366,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to process lead' }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `Lead registered as ${scope.toUpperCase()}`,
-      data: { id: result.id, scope: result.scope, ownerContext: result.ownerContext }
+    return NextResponse.json({ 
+      success: true, 
+      id: result.id, 
+      identityId,
+      alreadyRegistered,
+      message: alreadyRegistered ? 'Already on the list' : 'Lead captured successfully'
     });
 
   } catch (error) {

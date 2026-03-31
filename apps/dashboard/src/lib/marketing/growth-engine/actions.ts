@@ -107,7 +107,24 @@ export async function executeGrowthActions(
       wasBypassUsed = false;
   }
 
+  const { gt } = await import("drizzle-orm");
+
   for (const action of actions) {
+    // 2.5. ATOMIC IDEMPOTENCY GUARD (Safety: Audit 7)
+    // Prevents race conditions from concurrent API hits (Register + Identify)
+    const recentGlobalExec = await db.query.growthActionsLog.findFirst({
+        where: and(
+            eq(growthActionsLog.leadId, lead.id as any),
+            eq(growthActionsLog.actionType, action),
+            gt(growthActionsLog.executedAt, new Date(Date.now() - 10000)) // 10s safety window
+        )
+    });
+
+    if (recentGlobalExec) {
+        console.error(`[Growth OS] 🛡️ IDEMPOTENCY GUARD: ${action} already executed in last 10s for ${lead.email}. Skipping duplicate dispatch.`);
+        continue;
+    }
+
     // 3. IDEMPOTENCY & COOLDOWN CHECK (Audit 2 & 7)
     const lastExec = growthMetadata.executedActions[action];
     

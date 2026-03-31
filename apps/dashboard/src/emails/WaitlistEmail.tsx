@@ -82,9 +82,9 @@ export default function WaitlistEmail({
 
             {/* Footer / Status */}
             <Section className="bg-zinc-50 p-8 text-center border-t border-zinc-100">
-               <Text className="text-[10px] text-zinc-500 uppercase tracking-widest">
-                 {typeof step === 'number' ? `[SINC_ID_00${step}] // SECUENCIA DE INICIACIÓN // IDENTIDAD EN REVISIÓN` : `ESTADO: GENESIS // PANDORA'S ACCESS // ACCESO CONFIRMADO`}
-               </Text>
+                <Text className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                  {typeof step === 'number' ? `PASO ${step} DE 4 // SECUENCIA DE INICIACIÓN // IDENTIDAD EN REVISIÓN` : `ESTADO: GENESIS // PANDORA'S ACCESS // ACCESO CONFIRMADO`}
+                </Text>
                <Text className="text-[9px] text-zinc-400 mt-4 leading-relaxed">
                  Este mensaje es confidencial y solo para perfiles en proceso de evaluación.<br />
                  No compartir el contenido de esta comunicación.
