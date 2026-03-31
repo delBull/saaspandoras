@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Coins, CheckCircle, Loader2, HelpCircle, Copy, ExternalLink, AlertCircle, TrendingUp, ArrowRight, Gift, Sparkles, PlusCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,14 @@ export default function ArtifactPurchaseModal({
     // New Engine States
     const [contractPrice, setContractPrice] = useState<bigint | undefined>(undefined);
     const [isPriceLoading, setIsPriceLoading] = useState(true);
+
+    // Real-time scarcity: purchases in the last 10 minutes
+    const { data: activityData } = useSWR(
+        project?.id && isOpen ? `/api/dao/recent-activity?projectId=${project.id}&minutes=10` : null,
+        (url: string) => fetch(url).then(r => r.json()),
+        { refreshInterval: 30000, fallbackData: null }
+    );
+    const recentPurchaseCount = activityData?.count ?? null;
 
     // 0. Progression Engine Data
     const tiers: Tier[] = useMemo(() => {
@@ -207,9 +216,25 @@ export default function ArtifactPurchaseModal({
             console.error("Failed to track gamification event", e);
         }
 
+        // Register buyer as unique holder immediately — updates Holders count in real-time
+        try {
+            fetch('/api/dao/register-holder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    wallet: account?.address,
+                    projectId: project.id,
+                    artifactsAcquired: safeAmount,
+                })
+            }).catch(() => {});
+        } catch (e) {
+            // Fire-and-forget — non-critical
+        }
+
         setStep('success');
         toast.success("¡Artefactos adquiridos exitosamente!");
     };
+
 
     const handleFailure = async (error: any) => {
         const sessionId = typeof window !== 'undefined' ? localStorage.getItem("growth_session_id") : null;
@@ -345,7 +370,7 @@ export default function ArtifactPurchaseModal({
                                         <div className="flex items-center gap-1.5">
                                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                                            <span className="text-[10px] font-bold text-orange-400 uppercase tracking-tight">
-                                              {phase?.stats?.velocity || "+12"} adquiridos últ. 10 min
+                                              {recentPurchaseCount !== null ? `+${recentPurchaseCount}` : (phase?.stats?.velocity || "+0")} adquiridos últ. 10 min
                                            </span>
                                         </div>
                                         {phase?.stats?.timeRemaining && (

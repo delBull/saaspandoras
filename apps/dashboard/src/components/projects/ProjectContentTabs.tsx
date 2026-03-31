@@ -901,20 +901,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               </p>
             </SectionCard>
           )}
-
-          <SectionCard title="Información del Creador" icon={Crown}>
-            <p className="text-zinc-300"><span className="font-semibold text-white">Nombre del Solicitante:</span> {project.applicant_name ?? 'No especificado'}</p>
-            <p className="text-zinc-300"><span className="font-semibold text-white">Posición:</span> {project.applicant_position ?? 'No especificada'}</p>
-            {project.applicant_email && (
-              <p className="text-zinc-300"><span className="font-semibold text-white">Email:</span> {project.applicant_email}</p>
-            )}
-            {project.applicant_phone && (
-              <p className="text-zinc-300"><span className="font-semibold text-white">Teléfono:</span> {project.applicant_phone}</p>
-            )}
-            {project.applicant_wallet_address && (
-              <p className="text-zinc-300"><span className="font-semibold text-white">Wallet:</span> {project.applicant_wallet_address.slice(0, 6)}...{project.applicant_wallet_address.slice(-4)}</p>
-            )}
-          </SectionCard>
         </div>
       ),
     },
