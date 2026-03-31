@@ -125,7 +125,7 @@ export async function sendWaitlistSequenceEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: emailData.subject,
       react: WaitlistEmail({ 
@@ -172,7 +172,7 @@ export async function sendGenesisWelcomeEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject,
       react: WaitlistEmail({ 
@@ -209,7 +209,7 @@ export async function sendB2BFollowupEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `¿Seguimos adelante con ${context.projectName}?`,
       react: B2BFollowupEmail({ 
@@ -256,7 +256,7 @@ export async function sendB2BWelcomeEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Confirmación de Solicitud: ${context.projectName}`,
       react: B2BWelcomeEmail({ 
@@ -296,7 +296,7 @@ export async function sendExploreWelcomeEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `${context.projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Acceso rápido: Entendiendo ${context.projectName}`,
       react: ExploreStep1Email({ 
@@ -334,7 +334,7 @@ export async function sendInvestWelcomeEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `${context.projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Tu interés en ${context.projectName} - Siguientes Pasos`,
       react: InvestStep1Email({ 
@@ -371,7 +371,7 @@ export async function sendCallReminderEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: context.type === 'D-0' ? "¡Hoy nos vemos!" : `Recordatorio de sesión: ${context.meetingDate}`,
       react: B2BCallReminderEmail({ 
@@ -408,7 +408,7 @@ export async function sendBookingConfirmedEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: "Sesión confirmada: Preparemos tu protocolo",
       react: B2BBookingConfirmedEmail({ 
@@ -442,7 +442,7 @@ export async function sendNoShowRecoveryEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: "Te extrañamos en la sesión - ¿Agendamos de nuevo?",
       react: B2BNoShowRecoveryEmail({ 
@@ -477,7 +477,7 @@ export async function sendEducationalNurtureEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Paso siguiente: Tu Masterclass de ${context.projectName} está lista`,
       react: ProjectEducationalEmail({ 

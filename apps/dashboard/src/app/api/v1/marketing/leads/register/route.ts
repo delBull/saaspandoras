@@ -163,8 +163,6 @@ export async function POST(req: NextRequest) {
     // Rule: If it's B2B origin OR explicitly b2b in body -> scope: b2b
     // Rule: B2B is ALWAYS owner: pandora. B2C is usually owner: client unless it's Pandoras own B2C
     const scope = (bodyScope === 'b2b' || isB2BOrigin) ? 'b2b' : 'b2c';
-    const ownerContext = (scope === 'b2b' || targetProjectId === 1) ? 'pandora' : 'client';
-    const leadType = scope === 'b2b' ? 'founder_prospect' : 'user_prospect';
 
     // 1.5 Security Check: Allowed Domains (ONLY FOR PUBLIC KEYS)
     const projectContext = await db.query.projects.findFirst({
@@ -183,6 +181,13 @@ export async function POST(req: NextRequest) {
     if (!projectContext) {
       return NextResponse.json({ error: 'Invalid project context' }, { status: 404 });
     }
+
+    // --- REFINED ECOSYSTEM SEPARATION (Phase 2.1) ---
+    // Core Pandora projects: pandoras_access
+    // Everything else: 'client' protocol
+    const isCorePandora = projectContext.slug === 'pandoras_access';
+    const ownerContext = isCorePandora ? 'pandora' : 'client';
+    const leadType = scope === 'b2b' ? 'founder_prospect' : 'user_prospect';
 
     // ... (Keep existing domain verification logic)
     const isSecretKey = keyType === 'secret';
