@@ -42,7 +42,11 @@ export default function DevelopersPage() {
 const res = await window.PandorasGrowth.registerLead({
   email: 'user@example.com',
   name: 'John Doe',
-  intent: 'whitelist'
+  whatsapp: '+1234567890', // Automatically routes to CRM phone
+  intent: 'whitelist',
+  metadata: {
+    tags: ['FULL_UNIT'] // E.g. FULL_UNIT triggers bypass & VIP alert
+  }
 });`;
 
   const roadmapItems = [
@@ -207,10 +211,13 @@ const res = await window.PandorasGrowth.registerLead({
                         <span className="text-zinc-400">email</span>: <span className="text-emerald-300">'builder@example.com'</span>,
                       </div>
                       <div className="pl-6">
+                        <span className="text-zinc-400">whatsapp</span>: <span className="text-emerald-300">'+1234567890'</span>, <span className="text-zinc-600">// Native routing</span>
+                      </div>
+                      <div className="pl-6">
                         <span className="text-zinc-400">intent</span>: <span className="text-emerald-300">'whitelisting'</span>,
                       </div>
                       <div className="pl-6">
-                        <span className="text-zinc-400">metadata</span>: {'{'} protocol: <span className="text-emerald-300">'Narai'</span> {'}'}
+                        <span className="text-zinc-400">metadata</span>: {'{'} tags: [<span className="text-emerald-300">'FULL_UNIT'</span>] {'}'} <span className="text-zinc-600">// Triggers VIP Bypass</span>
                       </div>
                       <div>{'}'});</div>
                     </pre>

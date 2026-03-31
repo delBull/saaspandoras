@@ -15,7 +15,8 @@ import {
   sendNoShowRecoveryEmail,
   sendWaitlistSequenceEmail,
   sendGenesisWelcomeEmail,
-  sendEducationalNurtureEmail
+  sendEducationalNurtureEmail,
+  sendVIPConciergeEmail
 } from '@/lib/marketing/growth-engine/email-senders';
 
 export async function executeGrowthActions(
@@ -311,6 +312,26 @@ export async function executeGrowthActions(
                       to: lead.email as string,
                       projectName: project.name,
                       brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'SEND_VIP_CONCIERGE_WELCOME': {
+                  if (lead.email) {
+                    // --- DUAL LAYER GUARD ---
+                    if (growthMetadata.executedActions?.[action]) {
+                        console.log(`[Growth OS] 🛡️ Metadata block: ${action} for ${lead.email}`);
+                        success = true; break;
+                    }
+
+                    const res = await sendVIPConciergeEmail({
+                      to: lead.email as string,
+                      projectName: project.name,
+                      brandHeader: project.name?.toUpperCase() + " // ESTADO VIP"
                     });
                     success = res.success;
                   } else {

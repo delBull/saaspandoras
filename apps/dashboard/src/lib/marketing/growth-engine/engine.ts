@@ -65,7 +65,13 @@ export function computeBehavioralMetrics(
   const daysIdle = (Date.now() - lastUpdate) / (1000 * 60 * 60 * 24);
   const timeDecay = Math.max(0.2, 1 - (daysIdle * 0.05)); // -5% per day idle
 
-  const priorityScore = Math.floor(intentScore * valueMultiplier * timeDecay);
+  let priorityScore = Math.floor(intentScore * valueMultiplier * timeDecay);
+
+  // VIP TAG OVERRIDE - Boost manually tagged VIP leads
+  if (lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
+    intentScore = Math.max(intentScore, 100);
+    priorityScore = Math.max(priorityScore, 150); // Forces Critical Status
+  }
 
   // 4. Resolve Engagement Level
   let engagementLevel: EngagementLevel = 'low';
@@ -200,8 +206,13 @@ export function resolveGrowthAction(
     case 'VIEW_ACCESS' as any: 
     case 'VIEW_ONBOARDING' as any:
     case 'LEAD_CAPTURED':
-      nextState = 'AWARE';
-      actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1', 'NOTIFY_TEAM'] : ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'];
+      if (lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
+        nextState = 'HOT';
+        actions = ['SEND_VIP_CONCIERGE_WELCOME', 'NOTIFY_TEAM'];
+      } else {
+        nextState = 'AWARE';
+        actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1', 'NOTIFY_TEAM'] : ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'];
+      }
       break;
 
     case 'VIEW_PRICING':
