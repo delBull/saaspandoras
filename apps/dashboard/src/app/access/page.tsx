@@ -366,7 +366,9 @@ export default function AccessPage() {
                     </div>
                     <h2 className="text-3xl md:text-4xl font-thin tracking-wide text-white">
                       Acceso confirmado.<br />
-                      <span className="text-lime-400">Tu posición ha sido registrada.</span>
+                      <span className="text-lime-400">
+                        {isApprovedFromEmail ? "Tu clave VIP ha sido activada." : "Tu posición ha sido registrada."}
+                      </span>
                     </h2>
                   </>
                 )}

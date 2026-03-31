@@ -118,9 +118,10 @@ export async function sendWaitlistSequenceEmail(context: {
 
   // Determine dynamic CTA URL based on project/niche
   const isCoreRitual = niche === 'tech_startup' || niche === 'growth_os';
+  const queryParam = context.step === 4 ? "?approved=true" : "";
   const resolvedCtaUrl = isCoreRitual 
-    ? "https://dash.pandoras.finance/access" 
-    : `https://dash.pandoras.finance/projects/${context.projectSlug || 'default'}`;
+    ? `https://dash.pandoras.finance/access${queryParam}` 
+    : `https://dash.pandoras.finance/${context.projectSlug || 'default'}${queryParam}`;
 
   try {
     const data = await resend.emails.send({
