@@ -69,6 +69,9 @@ export async function GET(req: NextRequest) {
         metadata: marketingLeads.metadata,
         identityId: marketingLeads.identityId,
         quality: marketingLeads.quality,
+        phoneNumber: marketingLeads.phoneNumber,
+        walletAddress: marketingLeads.walletAddress,
+        origin: marketingLeads.origin,
         createdAt: marketingLeads.createdAt,
         updatedAt: marketingLeads.updatedAt,
         projectName: projects.title

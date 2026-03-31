@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from "@/db";
-import PandorasWelcomeEmail from '@/emails/creator-email';
-import { syncLeadAsClient } from '@/actions/leads';
-import { resend, FROM_EMAIL } from '@/lib/resend';
+import { executeGrowthActions } from '@/lib/marketing/growth-engine/actions';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(request: Request) {
     try {
@@ -13,52 +13,53 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Email required' }, { status: 400 });
         }
 
-        console.log(`📧 Processing Utility Protocol Filter for: ${email}`);
+        console.log(`📧 [Utility OS] Delegating Protocol Filter to Growth Engine: ${email}`);
 
-        // 1. Sync Lead
-        try {
-            await syncLeadAsClient({
-                email,
-                name: name || 'Architect',
-                source: source || 'utility_protocol_landing',
-                notes: `Interested in Utility Protocol Architecture. Answers: ${JSON.stringify(answers)}`,
-                metadata: { answers }
-            });
-            console.log('✅ Lead synced to DB');
-        } catch (e) {
-            console.warn('⚠️ DB Sync warning:', e);
+        // 1. Fetch Project Context (Pandora - ID 1)
+        const projectContext = await db.query.projects.findFirst({
+            where: eq(projects.id, 1)
+        });
+
+        if (!projectContext) {
+            throw new Error("Project context not found for Utility Lead");
         }
 
-        // 2. Send Email
-        try {
-            // Using the same template for now, but dynamic props could change content
-            const { error } = await resend.emails.send({
-                from: FROM_EMAIL,
-                to: [email],
-                subject: 'Confirmación: Filtro de Viabilidad Utility Protocol',
-                react: PandorasWelcomeEmail({
+        // 2. Execute via Growth Engine
+        await executeGrowthActions(
+            ['SEND_WELCOME_B2B_D1', 'NOTIFY_TEAM'], 
+            {
+                lead: {
                     email,
-                    name: name || 'Arquitecto',
-                    source: 'utility-protocol',
-                    // We can pass a specific prop here if the template supports it
-                }),
-                tags: [{ name: 'audience', value: 'utility' }]
-            });
-
-            if (error) throw error;
-            console.log('✅ Email sent successfully');
-        } catch (emailError) {
-            console.error('❌ Resend Error:', emailError);
-            return NextResponse.json({ message: 'Error sending email' }, { status: 500 });
-        }
-
-        // Discord notification is already handled by syncLeadAsClient
+                    name: name || 'Architect',
+                    scope: 'b2b',
+                    intent: 'invest',
+                    metadata: { 
+                        answers,
+                        subType: 'protocol_filter',
+                        source: source || 'utility_protocol_landing'
+                    }
+                } as any,
+                project: {
+                    id: projectContext.id,
+                    slug: projectContext.slug,
+                    name: projectContext.title || 'Pandora',
+                    businessCategory: projectContext.businessCategory || 'other',
+                    discordWebhookUrl: projectContext.discordWebhookUrl || null
+                } as any
+            },
+            { 
+                ruleId: 'PROTOCOL_FILTER_MANUAL_INQUIRY',
+                bypassCooldown: true
+            }
+        );
 
         return NextResponse.json({ success: true });
 
-
     } catch (error) {
-        console.error('❌ Server Error:', error);
-        return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+        console.error('❌ Utility Registration Error:', error);
+        return NextResponse.json({ 
+            message: 'Internal Server Error',
+            error: error instanceof Error ? error.message : 'Unknown'
+        }, { status: 500 });
     }
 }

@@ -28,6 +28,7 @@ import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { StaggerText } from "@/components/ui/stagger-text";
 import { cn } from "@/lib/utils";
 import { useGoogleAnalytics, trackEvent, trackPageView } from "@/lib/analytics";
+import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 
 // Support configuration
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_CONTACT || "521XXXXXXXXXXX";
@@ -41,7 +42,7 @@ const EMAIL_LINK = `mailto:support@pandoras.finance?subject=${encodeURIComponent
   "Hola,\n\nNecesito ayuda con: \n\n[Describe tu problema aquí]\n\nGracias.\n"
 )}`;
 
-function Hero() {
+function Hero({ onOpenLeadModal }: { onOpenLeadModal: () => void }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 24 }}
@@ -86,6 +87,20 @@ function Hero() {
               </span>
             </Button>
           </a>
+
+          <Button 
+            size="lg" 
+            onClick={() => {
+              trackEvent('help_cta', 'click', 'setup_request');
+              onOpenLeadModal();
+            }}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg shadow-purple-500/20"
+          >
+            <span className="flex items-center gap-3">
+              <Crown className="w-5 h-5 text-yellow-400" />
+              Solicitar Mi Setup
+            </span>
+          </Button>
 
           <a
             href={EMAIL_LINK}
@@ -253,7 +268,7 @@ function FAQ() {
   );
 }
 
-function ContactMethods() {
+function ContactMethods({ onOpenLeadModal }: { onOpenLeadModal: () => void }) {
   return (
     <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mb-12">
       <div className="max-w-4xl mx-auto px-4">
@@ -287,6 +302,22 @@ function ContactMethods() {
             </div>
           </div>
 
+          <div className="mb-8 p-6 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-2xl">
+            <h3 className="text-xl font-bold mb-2 flex items-center justify-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-400" />
+              ¿Listo para automatizar tu crecimiento?
+            </h3>
+            <p className="text-zinc-400 mb-4 text-sm">
+              Agenda una llamada con nuestro equipo de infraestructura para desplegar tu propio Growth Engine.
+            </p>
+            <Button 
+               onClick={onOpenLeadModal}
+               className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-8 shadow-xl shadow-purple-500/20"
+            >
+               Agendar Llamada Estratégica
+            </Button>
+          </div>
+
           <div className="pt-6 border-t border-zinc-700">
             <p className="text-sm text-zinc-500">
               <strong>Horario de respuesta:</strong> Lun-Vie 9:00-18:00 GMT-6 • Email: 24-48h • WhatsApp: 2-4h en horario laboral
@@ -307,6 +338,7 @@ export default function HelpPage() {
 }
 
 function HelpPageContent() {
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   // Google Analytics - Now wrapped in Suspense
   useGoogleAnalytics();
   trackPageView('Help Support Page');
@@ -316,10 +348,17 @@ function HelpPageContent() {
       <ModernBackground />
 
       <div className="relative max-w-7xl mx-auto px-4 py-16">
-        <Hero />
+        <Hero onOpenLeadModal={() => setIsLeadModalOpen(true)} />
         <QuickHelp />
         <FAQ />
-        <ContactMethods />
+        <ContactMethods onOpenLeadModal={() => setIsLeadModalOpen(true)} />
+
+        <LeadCaptureModal 
+          isOpen={isLeadModalOpen} 
+          onClose={() => setIsLeadModalOpen(false)} 
+          source="help-center" 
+          tierName="Help Center Strategy"
+        />
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-center mt-12">
           <Link href="/start" onClick={() => trackEvent('help_bottom', 'click', 'start')} className="inline-block">

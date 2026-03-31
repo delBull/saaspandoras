@@ -315,7 +315,7 @@ function FoundersPageContent() {
 
     setEmailSending(true);
     try {
-      const response = await fetch('/api/email/founders-send', {
+      const response = await fetch('/api/v1/marketing/leads/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -323,7 +323,12 @@ function FoundersPageContent() {
         body: JSON.stringify({
           email,
           source: 'founders-landing-modal',
-          name: 'Founder'
+          intent: 'invest',
+          scope: 'b2b',
+          projectId: 1, // Pandora
+          metadata: {
+            tier: 'founders_premium'
+          }
         }),
       });
 

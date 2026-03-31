@@ -130,7 +130,7 @@ function StartPageContent() {
     if (!email && !phone) return;
 
     try {
-      const response = await fetch('/api/email/creator-welcome', {
+      const response = await fetch('/api/v1/marketing/leads/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,9 +139,12 @@ function StartPageContent() {
           name,
           email: email || phone,
           source: 'landing-start',
-          tags: ['web3-creator', 'start-landing'],
-          language: 'es',
+          intent: 'explore',
+          scope: 'b2c',
+          projectId: 1, // Pandora
           metadata: {
+            tags: ['web3-creator', 'start-landing'],
+            language: 'es',
             page: 'dashboard/landing/start',
             timestamp: new Date().toISOString(),
             userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown'
