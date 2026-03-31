@@ -623,7 +623,8 @@ export default function GrowthOSSubTab() {
           url.searchParams.append('projectId', projectId);
           url.searchParams.append('ownerContext', 'client');
         } else {
-          // Ecosystem view: show everything b2c
+          // Ecosystem view: show everything owned by Pandora (B2B + Core B2C)
+          url.searchParams.append('ownerContext', 'pandora');
         }
         url.searchParams.append('scope', currentScope);
 
