@@ -236,6 +236,7 @@ export async function POST(req: NextRequest) {
                             lead: { ...lead as any, email: effectiveLeadEmail, intentScore, priorityScore, engagementLevel, profile }, 
                             project: {
                                 ...project as any,
+                                name: (project as any).title || 'Protocolo Ecosystem',
                                 businessCategory: (project as any).businessCategory || (project as any).business_category || 'other'
                             }
                         },
