@@ -1,7 +1,7 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import { db } from '@/db';
 import { marketingLeads, courses, growthActionsLog } from '@/db/schema';
-import { GrowthActionType, LeadContextPayload, ProjectContextPayload, GrowthMetadata, LeadState, GrowthHistoryEntry } from './types';
+import { GrowthActionType, LeadContextPayload, ProjectContextPayload, GrowthMetadata, LeadState } from './types';
 import { notificationService, ensureNotificationServiceConfigured } from '@/lib/notifications';
 
 // Stub for the actual email sender
@@ -32,635 +32,406 @@ export async function executeGrowthActions(
   engineResult?: any
 ) {
   const startTime = Date.now();
-  // 0. Configuration & Security
-  const SAFE_MODE = process.env.GROWTH_SAFE_MODE === 'true';
-
-  // 1. READ-AFTER-WRITE CONSISTENCY & OPTIMISTIC LOCKING PREP
-  const freshLead = await db.query.marketingLeads.findFirst({
-    where: eq(marketingLeads.id, context.lead.id as any),
-    columns: { metadata: true, email: true, score: true, updatedAt: true }
-  });
-
-  if (!freshLead) {
-    console.error(`[Growth Engine] ⚠️  Lead ${context.lead.id} disappeared.`);
-    return;
-  }
-
   const { lead, project } = context;
-  console.error(`[Growth Engine] ⏯️ Starting Actions for Lead: ${lead.email || lead.id}, Context Project: ${project.name}`);
 
   if (!lead.email && !lead.id) {
     console.warn(`[Growth Engine] Skipping actions for lead: incomplete identity.`);
     return;
   }
 
-  // 2. Metadata Initialization
-  const currentMetadata = (freshLead.metadata || {}) as any;
-  const growthMetadata: GrowthMetadata = currentMetadata.growth || {
-    state: 'CURIOUS', // Phase 80 Default
-    updatedAt: Date.now(),
-    history: [],
-    executedActions: {},
-    failedActions: {},
-    executingActions: {}
-  };
-
-  // State Resilience: Map old states to new psychological funnel
-  const stateMap: Record<string, LeadState> = {
-    'NEW': 'CURIOUS',
-    'EXPLORE': 'AWARE',
-    'EDUCATING': 'ENGAGED',
-    'NURTURING': 'AWARE',
-    'INVEST_READY': 'ENGAGED',
-    'SCHEDULED': 'HOT',
-    'CONVERTED': 'INVESTOR'
-  };
-
-  const mappedState = stateMap[growthMetadata.state];
-  if (mappedState) {
-    growthMetadata.state = mappedState;
-  }
-
-  // --- MULTI-CHANNEL DISPATCHER (Phase 80) ---
-  const dispatchAction = async (action: GrowthActionType, channel: "email" | "whatsapp" | "in_app" | "sales_team" = "email") => {
-    if (channel === 'whatsapp' || channel === 'sales_team') {
-       console.log(`[Growth OS] 🚀 DISPATCHING to ${channel.toUpperCase()}: ${action} for ${lead.email}`);
-       // In institutional phase, these would call Twilio or Slack/Discord
-       return { success: true, channel };
-    }
-    return null; // Fallthrough to existing switch
-  };
-
-  // Ensure fields exist (for legacy leads)
-  if (!growthMetadata.failedActions) growthMetadata.failedActions = {};
-  if (!growthMetadata.executingActions) growthMetadata.executingActions = {};
-  if (!growthMetadata.executedActions) growthMetadata.executedActions = {};
-
-  const newlyExecuted: GrowthActionType[] = [];
-  const failures: Record<string, string> = {};
-
-  // Escape Logic Safeguard (Surgical: Audit 2)
-  let wasBypassUsed = !!ruleInfo?.bypassCooldown;
-  const lastHotBypass = (growthMetadata as any).lastHotBypass || 0;
-  if (wasBypassUsed && (Date.now() - lastHotBypass < 24 * 60 * 60 * 1000)) {
-      console.warn(`[Growth Engine] Surgical: HOT bypass rate-limited for ${lead.email}. Reverting to cooldown.`);
-      wasBypassUsed = false;
-  }
-
-  const { gt } = await import("drizzle-orm");
-
-  for (const action of actions) {
-    // 2.5. ATOMIC IDEMPOTENCY GUARD (Safety: Audit 7.5 - UNIVERSAL)
-    // Prevents race conditions from concurrent API hits (Register + Identify, etc)
-    // We check for AND insert a pending log *before* entered the switch to ensure atomicity.
-    const recentGlobalExec = await db.query.growthActionsLog.findFirst({
-        where: and(
-            eq(growthActionsLog.leadId, lead.id as any),
-            eq(growthActionsLog.actionType, action),
-            gt(growthActionsLog.executedAt, new Date(Date.now() - 30000)) // 30s safety window for all actions
-        )
-    });
-
-    if (recentGlobalExec) {
-        console.error(`[Growth OS] 🛡️ IDEMPOTENCY GUARD: ${action} already executed or in progress (status: ${recentGlobalExec.status}) in last 30s for ${lead.email}. Skipping duplicate.`);
-        continue;
+  // 1. SERIALIZED EXECUTION LOCK (Safety: Audit 8 - HIGH CONCURRENCY)
+  // We use a transaction with FOR UPDATE on the lead record to serialize parallel runs for the SAME user.
+  return await db.transaction(async (tx) => {
+    // Acquire exclusive lock on the lead record
+    const [lockedLead] = await tx.select()
+        .from(marketingLeads)
+        .where(eq(marketingLeads.id, lead.id as any))
+        .for('update');
+    
+    if (!lockedLead) {
+        console.error(`[Growth Engine] ❌ CRITICAL: Could not acquire lock for lead ${lead.id}`);
+        return { success: false, error: 'Lock acquisition failed' };
     }
 
-    // Pre-claim the execution IMMEDIATELY (Atomic Lock)
-    try {
-        await db.insert(growthActionsLog).values({
+    // Refresh context from locked record to get the most recent state
+    const freshMetadata = (lockedLead.metadata || {}) as any;
+    const growthMetadata: GrowthMetadata = freshMetadata.growth || {
+      state: 'CURIOUS',
+      updatedAt: Date.now(),
+      history: [],
+      executedActions: {},
+      failedActions: {},
+      executingActions: {}
+    };
+
+    for (const action of actions) {
+        // 2.5. ATOMIC IDEMPOTENCY GUARD (Safety: Audit 7.5 - UNIVERSAL)
+        // Since we are inside a FOR UPDATE transaction, this check is now 100% atomic across processes.
+        const recentGlobalExec = await tx.query.growthActionsLog.findFirst({
+            where: and(
+                eq(growthActionsLog.leadId, lead.id as any),
+                eq(growthActionsLog.actionType, action),
+                gt(growthActionsLog.executedAt, new Date(Date.now() - 60000)) // 60s safety window
+            )
+        });
+
+        if (recentGlobalExec) {
+            console.error(`[Growth OS] 🛡️ IDEMPOTENCY GUARD: ${action} already executed or in progress for ${lead.email}. Skipping.`);
+            continue;
+        }
+
+        // Pre-claim the execution IMMEDIATELY
+        await tx.insert(growthActionsLog).values({
             leadId: lead.id as any,
             ruleId: ruleInfo?.ruleId || 'SYSTEM_ACTION',
-            ruleCondition: 'DEDUPLICATION_LOCK',
+            ruleCondition: ruleInfo?.ruleCondition || 'UPGRADE_LOCK',
             actionType: action,
             status: 'pending',
             executionTimeMs: 0,
             metadata: { projectSlug: project.slug, email: lead.email, lock: true }
         });
-    } catch (lockErr) {
-        // If DB uniqueness constraint had been added, this would catch it. 
-        // For now, let's just log and continue if the above check somehow failed.
-        console.warn(`[Growth Engine] Lock insert collision for ${action} on ${lead.email}. Another worker likely won.`);
-        continue;
-    }
 
-    // 3. IDEMPOTENCY & COOLDOWN CHECK (Audit 2 & 7)
-    const lastExec = growthMetadata.executedActions[action];
-    
-    const getCooldown = (a: string) => {
-        if (a.includes('WELCOME')) return 24 * 60 * 60 * 1000; // 24h
-        if (a === 'SEND_SOW') return 48 * 60 * 60 * 1000; // 48h
-        return 0;
-    };
-    
-    const now = Date.now();
-    const cooldown = getCooldown(action);
+        let success = false;
+        const actionStartTime = Date.now();
 
-    if (!wasBypassUsed && lastExec) {
-        const lastExecTime = typeof lastExec === 'number' ? lastExec : now;
-        if (now - lastExecTime < cooldown) {
-            console.error(`[Growth OS] 🛡️ COOLDOWN: Skipping ${action} for ${lead.email}. Last run: ${new Date(lastExecTime).toLocaleString()}`);
-            continue;
-        }
-        
-        // Unique state-bound actions shouldn't run twice if cooldown is 0 but they are already done
-        if ((action.includes('WELCOME') || action === 'SEND_SOW') && lastExec) {
-             console.error(`[Growth OS] 🛡️ DUPLICATE: Skipping WELCOME for ${lead.email} — already executed once.`);
-             continue;
-        }
-    }
-
-    // Surgical: Revenue Guardrails (Protection)
-    const rolling24h = now - (24 * 60 * 60 * 1000);
-    const rolling7d = now - (7 * 24 * 60 * 60 * 1000);
-    
-    const recentActions = Object.entries(growthMetadata.executedActions)
-        .filter(([_, t]) => (t as number) > rolling24h);
-    const weeklySOWs = Object.entries(growthMetadata.executedActions)
-        .filter(([a, t]) => a === 'SEND_SOW' && (t as number) > rolling7d);
-
-    const isOverridden = !!ruleInfo?.overrideGuardrails;
-
-    if (!isOverridden) {
-        if (action.includes('EMAIL') && recentActions.filter(([a]) => a.includes('EMAIL')).length >= 2) {
-            console.warn(`[Growth Engine] Guardrail: Max 2 emails/day reached for ${lead.email}. Skipping ${action}.`);
-            continue;
-        }
-
-        if (action === 'SEND_SOW' && weeklySOWs.length >= 2) {
-            console.warn(`[Growth Engine] Guardrail: Max 2 SOWs/week reached for ${lead.email}. Skipping ${action}.`);
-            continue;
-        }
-    } else {
-        console.warn(`[Growth Engine] 🚩 ADMIN OVERRIDE: Guardrails bypassed for ${lead.email}`);
-    }
-
-    // CONCURRENCY LOCK (Action Level)
-    if (growthMetadata.executingActions[action]) {
-      console.error(`[Growth OS] 🔒 CONCURRENCY: Action ${action} already in progress for ${lead.email}.`);
-      continue;
-    }
-
-    console.error(`[Growth OS] 🛫 DISPATCHING ${action} for ${lead.email}...`);
-
-    let success = false;
-    try {
-      // Set lock
-      growthMetadata.executingActions[action] = true;
-
-      if (SAFE_MODE && (action.includes('SEND_WELCOME') || action.includes('NOTIFY') || action.includes('EMAIL'))) {
-         console.log(`[Growth Engine] SAFE MODE: Skipped ${action}`);
-         success = true;
-         newlyExecuted.push(action); 
-         continue; 
-      }
-
-      switch (action) {
-        case 'SEND_WELCOME_EXPLORE_D1': {
-          if (lead.email) {
-            const res = await sendExploreWelcomeEmail({
-              to: lead.email as string,
-              projectName: project.name,
-              differentiator: project.differentiator || 'Innovando en la Web3',
-              projectSlug: project.slug,
-              baseUrl: (project as any).baseUrl
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_WELCOME_EXPLORE_D1: No email for lead ${lead.id}`);
-            success = true; // Skip gracefully
-          }
-          break;
-        }
-
-        case 'SEND_WELCOME_INVEST_D1': {
-          if (lead.email) {
-            const res = await sendInvestWelcomeEmail({
-              to: lead.email as string,
-              projectName: project.name,
-              projectSlug: project.slug,
-              baseUrl: (project as any).baseUrl
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_WELCOME_INVEST_D1: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_WELCOME_B2B_D1': {
-          if (lead.email) {
-            const res = await sendB2BWelcomeEmail({
-              to: lead.email as string,
-              projectName: project.name,
-              source: lead.metadata?.source || 'direct',
-              subType: lead.metadata?.type || 'general'
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_WELCOME_B2B_D1: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_FOLLOWUP_B2B_D2': {
-          if (lead.email) {
-            const res = await sendB2BFollowupEmail({
-              to: lead.email as string,
-              projectName: project.name,
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_FOLLOWUP_B2B_D2: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_CALL_REMINDER_D3':
-        case 'SEND_CALL_REMINDER_D1':
-        case 'SEND_CALL_REMINDER_D0': {
-          if (lead.email) {
-            const typeMap = {
-              'SEND_CALL_REMINDER_D3': 'D-3',
-              'SEND_CALL_REMINDER_D1': 'D-1',
-              'SEND_CALL_REMINDER_D0': 'D-0'
-            } as const;
-
-            const res = await sendCallReminderEmail({
-              to: lead.email as string,
-              name: lead.name || 'Founder',
-              meetingDate: lead.metadata?.booking?.date || 'por confirmar',
-              meetingTime: lead.metadata?.booking?.time || 'por confirmar',
-              type: typeMap[action]
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping ${action}: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_BOOKING_CONFIRMED': {
-          if (lead.email) {
-            const res = await sendBookingConfirmedEmail({
-              to: lead.email as string,
-              name: lead.name || 'Founder',
-              meetingDate: lead.metadata?.booking?.date || 'por confirmar',
-              meetingTime: lead.metadata?.booking?.time || 'por confirmar',
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_BOOKING_CONFIRMED: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_BOOKING_CANCELLED' as any: // Added handling for cancelled
-             console.log(`[Growth Engine] Handling booking cancellation for ${lead.email || 'anonymous'}`);
-             success = true;
-             break;
-
-        case 'SEND_NO_SHOW_RECOVERY': {
-          if (lead.email) {
-            const res = await sendNoShowRecoveryEmail({
-              to: lead.email as string,
-              name: lead.name || 'Founder',
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_NO_SHOW_RECOVERY: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_WAITLIST_WELCOME_D0': {
-          if (lead.email) {
-            const res = await sendWaitlistSequenceEmail({
-              to: lead.email as string,
-              step: 1,
-              projectName: project.name,
-              projectSlug: project.slug,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-              engagementLevel: lead.engagementLevel
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_WELCOME_D0: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_WAITLIST_NARRATIVE_D1': {
-          if (lead.email) {
-            const res = await sendWaitlistSequenceEmail({
-              to: lead.email as string,
-              step: 2,
-              projectName: project.name,
-              projectSlug: project.slug,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-              engagementLevel: lead.engagementLevel
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_NARRATIVE_D1: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_WAITLIST_STATUS_D2': {
-          if (lead.email) {
-            const res = await sendWaitlistSequenceEmail({
-              to: lead.email as string,
-              step: 3,
-              projectName: project.name,
-              projectSlug: project.slug,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-              engagementLevel: lead.engagementLevel
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_STATUS_D2: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_WAITLIST_ACTIVATION_D3': {
-          if (lead.email) {
-            const res = await sendWaitlistSequenceEmail({
-              to: lead.email as string,
-              step: 4,
-              projectName: project.name,
-              projectSlug: project.slug,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-              engagementLevel: lead.engagementLevel
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_WAITLIST_ACTIVATION_D3: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-        case 'SEND_GENESIS_WELCOME': {
-          if (lead.email) {
-            const res = await sendGenesisWelcomeEmail({
-              to: lead.email as string,
-              projectName: project.name,
-              brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
-            });
-            success = res.success;
-          } else {
-            console.warn(`[Growth Engine] Skipping SEND_GENESIS_WELCOME: No email for lead ${lead.id}`);
-            success = true;
-          }
-          break;
-        }
-
-             case 'NOTIFY_TEAM': {
-          // Institutional: WhatsApp/Sales Team Tier
-          const { classifyIntent } = await import("./engine");
-          const intentCategory = classifyIntent(freshLead?.score || 0, growthMetadata.state);
-
-          if (ruleInfo?.isStressTest) {
-              console.log(`[Growth Engine] 🧪 MOCK: Notification for state ${growthMetadata.state} for ${lead.email || 'anonymous'}`);
-              success = true;
-              break;
-          }
-
-          // --- SURGICAL RACE CONDITION GUARD (Audit 7.1) ---
-          // 1. Metadata check (Fastest)
-          if (lead.metadata?.growth?.executedActions?.[action]) {
-              console.log(`[Growth OS] 🛡️ Fast metadata block: ${action} already executed for ${lead.email}`);
-              success = true;
-              break;
-          }
-
-          // Note: The universal DB-lock above already covered the global log check.
-          // We proceed with the notification logic.
-
-          // Project-specific webhook: ALWAYS fires regardless of score/intentCategory
-          if (project.discordWebhookUrl) {
-              console.error(`[Growth Engine] 📣 Project-level Discord webhook firing for ${project.slug}`);
-              ensureNotificationServiceConfigured();
-              const leadWithScore = { ...lead, score: lead.score || 0 };
-              success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: intentCategory } as any);
-              break;
-          }
-          
-          // Global Pandoras channel: only for high-intent / closing leads (avoid noise)
-          if (intentCategory === 'closing' || intentCategory === 'high') {
-             const dispatched = await dispatchAction(action, 'sales_team');
-             if (dispatched) {
-                success = true;
-                break;
-             }
-             ensureNotificationServiceConfigured();
-             const leadWithScore2 = { ...lead, score: lead.score || 0 };
-             success = await notificationService.notifyGrowthLead(leadWithScore2, { ...project, urgencyTier: intentCategory } as any);
-          } else {
-              console.log(`[Growth Engine] ℹ️ NOTIFY_TEAM skipped for ${lead.email} — score too low for global channel (${intentCategory}). No project webhook configured.`);
-              success = true; // Graceful skip
-          }
-          break;
-        }
-
-        case 'ASSIGN_COURSE':
-          // Institutional: Phase 80 Goal (Education)
-          console.log(`[Growth Engine] Goal-Oriented: Education triggered for ${lead.email || 'anonymous'}`);
-          success = true;
-          break;
-          
-        case 'UNLOCK_REWARD':
-          console.log(`[Growth Engine] Institutional: Unlocked exclusive asset reward`);
-          success = true;
-          break;
-
-        case 'GENERATE_LEAD_BRIEF': {
-          const brief = generateLeadBrief(lead, project);
-          console.log(`[Growth Engine] 📄 Institutional Brief:\n${brief}`);
-          success = true;
-          break;
-        }
-
-        case 'SEND_EDUCATIONAL_NURTURE': {
-           if (lead.email) {
-             const courseUrl = await discoverOrGenerateCourse(project);
-             const res = await sendEducationalNurtureEmail({
-               to: lead.email as string,
-               name: lead.name || 'Futuro Colaborador',
-               projectName: project.name,
-               courseUrl
-             });
-             success = res.success;
-           } else {
-             console.warn(`[Growth Engine] Skipping SEND_EDUCATIONAL_NURTURE: No email for lead ${lead.id}`);
-             success = true;
-           }
-           break;
-        }
-
-        case 'SALES_INTERVENTION': {
-           // PH85: The Closing Strike
-            console.log(`[Growth OS] 🚨 DETERMINISTIC CLOSE: Triggering Sales Intervention for ${lead.email}`);
-            await dispatchAction(action, 'sales_team'); // High priority
-            ensureNotificationServiceConfigured();
-            success = await notificationService.notifyGrowthLead({
-                ...lead,
-                metadata: { 
-                  ...lead.metadata, 
-                  system_note: `PH85 CLOSING: High-Priority Intervention for ${lead.priorityScore} Lead` 
+        try {
+            switch (action) {
+                case 'SEND_WELCOME_EXPLORE_D1': {
+                    if (lead.email) {
+                        const res = await sendExploreWelcomeEmail({
+                            to: lead.email as string,
+                            projectName: project.name,
+                            differentiator: project.differentiator || 'Innovando en la Web3',
+                            projectSlug: project.slug,
+                            baseUrl: (project as any).baseUrl
+                        });
+                        success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
                 }
-            }, project, true); // Added true for isClosingStrike
-           break;
-        }
 
-        case 'SEND_DYNAMIC_OFFER': {
-           // PH85: Risk-Adjusted Yield Offer
-           const offer = engineResult.offer;
-           if (!offer) {
-             success = false;
-             break;
-           }
-           console.log(`[Growth OS] 💰 DYNAMIC OFFER: Sending ${offer.type} (${offer.value}) to ${lead.email}`);
-           // Persist to metadata for email template enrichment
-           growthMetadata.activeOffer = offer;
-           growthMetadata.scarcity = engineResult.scarcity;
-           
-           if (lead.email) {
-             // In a real prod environment, this would call the email sender with PH85 template
-             success = true; 
-           }
-           break;
-        }
+                case 'SEND_WELCOME_INVEST_D1': {
+                    if (lead.email) {
+                        const res = await sendInvestWelcomeEmail({
+                            to: lead.email as string,
+                            projectName: project.name,
+                            projectSlug: project.slug,
+                            baseUrl: (project as any).baseUrl
+                        });
+                        success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
 
-        case 'SEND_SOW': {
-            if (ruleInfo?.isStressTest) {
-                success = true;
-            } else if (lead.email) {
-                // High-conviction dispatch
-                await dispatchAction(action, 'whatsapp');
-                ensureNotificationServiceConfigured();
-                success = await notificationService.notifyGrowthLead({
-                    ...lead,
-                    metadata: { ...lead.metadata, system_note: `HOT LEAD [${growthMetadata.state}]: SEND SOW` }
-                }, project);
-            } else {
-                success = true;
+                case 'SEND_WELCOME_B2B_D1': {
+                    if (lead.email) {
+                        const res = await sendB2BWelcomeEmail({
+                            to: lead.email as string,
+                            projectName: project.name,
+                            source: lead.metadata?.source || 'direct',
+                            subType: lead.metadata?.type || 'general'
+                        });
+                        success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
+
+                case 'SEND_FOLLOWUP_B2B_D2': {
+                    if (lead.email) {
+                        const res = await sendB2BFollowupEmail({
+                            to: lead.email as string,
+                            projectName: project.name,
+                        });
+                        success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
+
+                case 'SEND_CALL_REMINDER_D3':
+                case 'SEND_CALL_REMINDER_D1':
+                case 'SEND_CALL_REMINDER_D0': {
+                    if (lead.email) {
+                        const typeMap = {
+                            'SEND_CALL_REMINDER_D3': 'D-3',
+                            'SEND_CALL_REMINDER_D1': 'D-1',
+                            'SEND_CALL_REMINDER_D0': 'D-0'
+                        } as const;
+
+                        const res = await sendCallReminderEmail({
+                            to: lead.email as string,
+                            name: lead.name || 'Founder',
+                            meetingDate: lead.metadata?.booking?.date || 'por confirmar',
+                            meetingTime: lead.metadata?.booking?.time || 'por confirmar',
+                            type: typeMap[action]
+                        });
+                        success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
+
+                case 'SEND_BOOKING_CONFIRMED': {
+                  if (lead.email) {
+                    // --- DUAL LAYER GUARD ---
+                    if (growthMetadata.executedActions?.[action]) {
+                        console.log(`[Growth OS] 🛡️ Metadata block: ${action} for ${lead.email}`);
+                        success = true; break;
+                    }
+
+                    const res = await sendBookingConfirmedEmail({
+                      to: lead.email as string,
+                      name: lead.name || 'Founder',
+                      meetingDate: lead.metadata?.booking?.date || 'por confirmar',
+                      meetingTime: lead.metadata?.booking?.time || 'por confirmar',
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'SEND_NO_SHOW_RECOVERY': {
+                  if (lead.email) {
+                    const res = await sendNoShowRecoveryEmail({
+                      to: lead.email as string,
+                      name: lead.name || 'Founder',
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'SEND_WAITLIST_WELCOME_D0': {
+                  if (lead.email) {
+                    // --- DUAL LAYER GUARD ---
+                    if (growthMetadata.executedActions?.[action]) {
+                        console.log(`[Growth OS] 🛡️ Metadata block: ${action} for ${lead.email}`);
+                        success = true; break;
+                    }
+
+                    const res = await sendWaitlistSequenceEmail({
+                      to: lead.email as string,
+                      step: 1,
+                      projectName: project.name,
+                      projectSlug: project.slug,
+                      brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+                      engagementLevel: lead.engagementLevel
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'SEND_WAITLIST_NARRATIVE_D1': {
+                  if (lead.email) {
+                    // --- DUAL LAYER GUARD ---
+                    if (growthMetadata.executedActions?.[action]) {
+                        console.log(`[Growth OS] 🛡️ Metadata block: ${action} for ${lead.email}`);
+                        success = true; break;
+                    }
+
+                    const res = await sendWaitlistSequenceEmail({
+                      to: lead.email as string,
+                      step: 2,
+                      projectName: project.name,
+                      projectSlug: project.slug,
+                      brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+                      engagementLevel: lead.engagementLevel
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'SEND_WAITLIST_STATUS_D2': {
+                  if (lead.email) {
+                    // --- DUAL LAYER GUARD ---
+                    if (growthMetadata.executedActions?.[action]) {
+                        console.log(`[Growth OS] 🛡️ Metadata block: ${action} for ${lead.email}`);
+                        success = true; break;
+                    }
+
+                    const res = await sendWaitlistSequenceEmail({
+                      to: lead.email as string,
+                      step: 3,
+                      projectName: project.name,
+                      projectSlug: project.slug,
+                      brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+                      engagementLevel: lead.engagementLevel
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'SEND_WAITLIST_ACTIVATION_D3': {
+                  if (lead.email) {
+                    // --- DUAL LAYER GUARD ---
+                    if (growthMetadata.executedActions?.[action]) {
+                        console.log(`[Growth OS] 🛡️ Metadata block: ${action} for ${lead.email}`);
+                        success = true; break;
+                    }
+
+                    const res = await sendWaitlistSequenceEmail({
+                      to: lead.email as string,
+                      step: 4,
+                      projectName: project.name,
+                      projectSlug: project.slug,
+                      brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+                      engagementLevel: lead.engagementLevel
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'SEND_GENESIS_WELCOME': {
+                  if (lead.email) {
+                    const res = await sendGenesisWelcomeEmail({
+                      to: lead.email as string,
+                      projectName: project.name,
+                      brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
+                }
+
+                case 'NOTIFY_TEAM': {
+                    const { classifyIntent } = await import("./engine");
+                    const intentCategory = classifyIntent(lockedLead?.score || 0, growthMetadata.state);
+
+                    if (ruleInfo?.isStressTest) {
+                        success = true;
+                        break;
+                    }
+
+                    // --- DUAL LAYER GUARD ---
+                    if (growthMetadata.executedActions?.[action]) {
+                        console.log(`[Growth OS] 🛡️ Metadata block: ${action} for ${lead.email}`);
+                        success = true; break;
+                    }
+
+                    if (project.discordWebhookUrl) {
+                        ensureNotificationServiceConfigured();
+                        const leadWithScore = { ...lead, score: lockedLead.score || 0 };
+                        success = await notificationService.notifyGrowthLead(leadWithScore, { ...project, urgencyTier: intentCategory } as any);
+                    } else if (intentCategory === 'closing' || intentCategory === 'high') {
+                        ensureNotificationServiceConfigured();
+                        const leadWithScore2 = { ...lead, score: lockedLead.score || 0 };
+                        success = await notificationService.notifyGrowthLead(leadWithScore2, { ...project, urgencyTier: intentCategory } as any);
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
+
+                case 'SEND_EDUCATIONAL_NURTURE': {
+                    if (lead.email) {
+                        const courseUrl = await discoverOrGenerateCourse(project);
+                        const res = await sendEducationalNurtureEmail({
+                            to: lead.email as string,
+                            name: lead.name || 'Futuro Colaborador',
+                            projectName: project.name,
+                            courseUrl
+                        });
+                        success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
+
+                default:
+                    console.warn(`[Growth Engine] Unknown action: ${action}`);
+                    success = true; // Avoid infinite loop/block
             }
-            break;
+
+            // Update log result within the same transaction
+            await tx.update(growthActionsLog)
+                .set({
+                    status: success ? 'completed' : 'failed',
+                    executionTimeMs: Date.now() - actionStartTime
+                })
+                .where(and(
+                    eq(growthActionsLog.leadId, lead.id as any),
+                    eq(growthActionsLog.actionType, action),
+                    eq(growthActionsLog.status, 'pending')
+                ));
+
+            // Update local and DB metadata if successful
+            if (success) {
+                growthMetadata.executedActions[action] = Date.now();
+                await tx.update(marketingLeads)
+                    .set({ 
+                        metadata: { ...freshMetadata, growth: growthMetadata },
+                        score: (lockedLead.score || 0) + (scoreChange || 0),
+                        updatedAt: new Date()
+                    })
+                    .where(eq(marketingLeads.id, lead.id as any));
+            }
+
+        } catch (error) {
+            console.error(`[Growth Engine] Error executing ${action}:`, error);
+            await tx.update(growthActionsLog)
+                .set({ status: 'failed', metadata: { error: String(error) } })
+                .where(and(eq(growthActionsLog.leadId, lead.id as any), eq(growthActionsLog.actionType, action), eq(growthActionsLog.status, 'pending')));
         }
-
-        default:
-          console.warn(`[Growth Engine] Unknown action: ${action}`);
-          success = false;
-      }
-
-      if (success) {
-        newlyExecuted.push(action);
-        // Remove from failed if it was there before
-        if (growthMetadata.failedActions[action]) {
-            delete growthMetadata.failedActions[action];
-        }
-      } else {
-        failures[action] = "Action returned false or skipped (check logs)";
-      }
-    } catch (error: any) {
-       console.error(`[Growth Engine] Error in ${action}:`, error);
-       failures[action] = error.message || String(error);
-    } finally {
-       // Release lock
-       delete growthMetadata.executingActions[action];
-
-       // 4. Audit Trail (Audit 3 & 7: Elite Tracking)
-       try {
-           const { growthActionsLog } = await import("@/db/schema");
-           await db.insert(growthActionsLog).values({
-               leadId: lead.id as any,
-               ruleId: ruleInfo?.ruleId || 'SYSTEM_ACTION',
-               ruleCondition: ruleInfo?.ruleCondition || 'Condition Met',
-               actionType: action,
-               status: success ? 'completed' : 'failed',
-               executionTimeMs: Date.now() - startTime,
-               inputSnapshot: { 
-                   score: freshLead?.score, 
-                   intentScore: lead.intentScore,
-                   priorityScore: lead.priorityScore,
-                   state: growthMetadata.state
-               },
-               metadata: { projectSlug: project.slug, email: lead.email, isStress: ruleInfo?.isStressTest }
-           });
-
-           // Performance Alart (Audit 7: Surgical)
-           const duration = Date.now() - startTime;
-           if (duration > 200) {
-               console.warn(`[Growth Engine] 🚨 Performance Alert: Action ${action} took ${duration}ms for ${lead.email}`);
-           }
-       } catch (logErr) {
-       }
-    }
-  }
-
-  // 3. Persist Changes with OPTIMISTIC LOCKING
-  if (newlyExecuted.length > 0 || Object.keys(failures).length > 0) {
-    // Update executed map with timestamps (Audit 7)
-    for (const action of newlyExecuted) {
-        growthMetadata.executedActions[action] = Date.now();
     }
 
-    if (wasBypassUsed) {
-        (growthMetadata as any).lastHotBypass = Date.now();
-    }
+    return { success: true, actionsExecuted: actions.length };
+  });
+}
 
-    // Update failures map
-    for (const [action, err] of Object.entries(failures)) {
-        growthMetadata.failedActions[action] = {
-            error: err,
-            at: Date.now()
-        };
-    }
+async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise<string> {
+    const baseUrl = (project as any).baseUrl || 'https://dash.pandoras.finance';
+    const draftId = `draft-${project.slug}`;
     
-    currentMetadata.growth = growthMetadata;
-    
-    const lockCondition = freshLead.updatedAt 
-        ? and(eq(marketingLeads.id, lead.id as any), eq(marketingLeads.updatedAt, freshLead.updatedAt as any))
-        : eq(marketingLeads.id, lead.id as any); // For new leads with updatedAt = null, skip timestamp lock
+    const existing = await db.query.courses.findFirst({
+        where: (courses, { eq, or, ilike, and }) => 
+            and(
+                eq(courses.isActive, true),
+                or(ilike(courses.title, `%${project.name}%`), eq(courses.category, project.businessCategory || 'Web3'))
+            )
+    });
 
-    const updateResult = await db.update(marketingLeads)
-      .set({ 
-        metadata: {
-          ...currentMetadata,
-          growth: {
-            ...growthMetadata,
-            intentScore: (lead as any).intentScore,
-            priorityScore: (lead as any).priorityScore,
-            engagementLevel: (lead as any).engagementLevel,
-            profile: (lead as any).profile,
-            activeOffer: growthMetadata.activeOffer,
-            scarcity: growthMetadata.scarcity
-          }
-        },
-        score: (freshLead.score || 0) + (scoreChange || 0),
-        lastAction: newlyExecuted[newlyExecuted.length - 1] || (lead as any).lastAction,
-        updatedAt: new Date() 
-      })
-      .where(lockCondition);
+    if (existing) return `${baseUrl}/en/education/course/${existing.id}`;
 
-    if (updateResult.length === 0) {
-        console.error(`[Growth Engine] OPTIMISTIC LOCK FAILURE for ${lead.email}. Another worker updated the lead. ${newlyExecuted.length} actions might be duplicated in next run.`);
-    } else {
-        console.log(`[Growth Engine] Successfully persisted ${newlyExecuted.length} actions for ${lead.email}`);
-    }
-  }
+    try {
+        await db.insert(courses).values({
+            id: draftId,
+            title: `Masterclass: ${project.name}`,
+            description: `Curso personalizado para ${project.name}.`,
+            category: project.businessCategory || 'Web3',
+            isActive: false, 
+            createdAt: new Date(),
+            updatedAt: new Date()
+        } as any);
+    } catch (e) {}
+
+    return `${baseUrl}/en/education/course/${draftId}`;
 }
 
 /**
@@ -699,120 +470,4 @@ export function computeNextGrowthMetadata(
   if (!growth.executingActions) growth.executingActions = {};
 
   return growth;
-}
-
-/**
- * PHASE 2: Moat Bridge - Finds an existing course or triggers AI generation
- */
-async function discoverOrGenerateCourse(project: ProjectContextPayload): Promise<string> {
-    const activeCondition = (courses: any, { eq, or, ilike, and }: any) => 
-        and(
-            eq(courses.isActive, true),
-            or(
-                ilike(courses.title, `%${project.name}%`),
-                eq(courses.category, project.businessCategory || 'Web3'),
-                ilike(courses.description, `%${project.name}%`)
-            )
-        );
-
-    const baseUrl = (project as any).baseUrl || 'https://dash.pandoras.finance';
-
-    const existing = await db.query.courses.findFirst({
-        where: activeCondition
-    });
-
-    if (existing) {
-        return `${baseUrl}/en/education/course/${existing.id}`;
-    }
-
-    const draftId = `draft-${project.slug}`;
-    const existingDraft = await db.query.courses.findFirst({
-        where: (courses, { eq }) => eq(courses.id, draftId)
-    });
-
-    if (existingDraft) {
-        return `${baseUrl}/en/education/course/${existingDraft.id}`;
-    }
-
-    // 3. Create NEW Project-Specific Course Draft with Generated Modules
-    try {
-        const modules = generateModulesTemplate(project);
-        
-        // Idempotent Insert using prefix-based ID
-        await db.insert(courses).values({
-            id: draftId,
-            title: `Masterclass: ${project.name}`,
-            description: `Curso personalizado para profundizar en ${project.name} y el ecosistema Pandoras.`,
-            category: project.businessCategory || 'Web3',
-            difficulty: 'beginner',
-            duration: '15 min',
-            isActive: false, 
-            instructor: "Pandora's AI Architect",
-            modules: modules,
-            skillsCovered: ['Quick Onboarding', project.name, 'RWA & Tokenization'],
-            createdAt: new Date(),
-            updatedAt: new Date()
-        } as any);
-
-        return `${baseUrl}/en/education/course/${draftId}`;
-    } catch (insertErr) {
-        // If someone else inserted it between our check and now, just ignore and return the link
-        console.warn(`[Growth Engine] Course draft insertion conflict for ${project.name}. Probably already exists.`);
-        return `${baseUrl}/en/education/course/${draftId}`;
-    }
-}
-
-/**
- * Option B: Template-based Module Generator (Guided AI approach)
- * Mixes Project Niche + Pandoras Infrastructure
- */
-function generateModulesTemplate(project: ProjectContextPayload) {
-  const niche = project.businessCategory || 'Tecnología';
-  
-  return [
-    {
-      id: "mod-1",
-      title: `Bienvenida a ${project.name}`,
-      content: `Hola! En este primer paso conocerás cómo ${project.name} está simplificando el acceso a ${niche}. Olvida lo complicado: aquí descubrirás cómo participar en este ecosistema de forma directa y transparente.`,
-      duration: "5 min"
-    },
-    {
-      id: "mod-2",
-      title: `Protocolos de Utilidad con Pandoras`,
-      content: `Usamos la tecnología de Pandoras Finance para crear "Protocolos de Utilidad". Esto significa que ${project.name} ahora ofrece beneficios reales y tangibles que puedes usar desde el primer día, sin necesidad de ser un experto en finanzas avanzadas.`,
-      duration: "5 min"
-    },
-    {
-      id: "mod-3",
-      title: `Tus Primeros Pasos`,
-      content: `Aprende cómo aprovechar las recompensas y servicios que ${project.name} tiene para ti. Todo está diseñado para que sea tan fácil como usar tu aplicación favorita, permitiéndote ser parte del crecimiento del proyecto de forma segura.`,
-      duration: "5 min"
-    }
-  ];
-}
-
-/**
- * GENERATE LEAD BRIEF (Pre-Call Intel)
- * Computes a summary for the admin/team.
- */
-function generateLeadBrief(lead: LeadContextPayload, project: ProjectContextPayload): string {
-  const history = lead.metadata?.growth?.history || [];
-  const score = lead.score || 0;
-  const intent = lead.intent || 'explore';
-  
-  let brief = `LEAD BRIEF: ${lead.name || lead.email}\n`;
-  brief += `Project: ${project.name}\n`;
-  brief += `Score: ${score} (${score > 100 ? 'HIGH' : 'MEDIUM'})\n`;
-  brief += `Intent: ${intent}\n`;
-  brief += `States: ${history.map((h: any) => h.state).join(' -> ')}\n`;
-  
-  if (lead.metadata?.booking) {
-    brief += `Booking: ${lead.metadata.booking.date} @ ${lead.metadata.booking.time}\n`;
-  }
-  
-  if (lead.scope === 'b2b') {
-    brief += `B2B Focus: Prioritize SOW/MSA discussion.\n`;
-  }
-
-  return brief;
 }
