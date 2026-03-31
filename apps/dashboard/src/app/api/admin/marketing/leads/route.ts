@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       .from(marketingLeads)
       .where(whereClause);
 
-    const { calculateDecayedScore, classifyIntent } = await import("@/lib/marketing/growth-engine/engine");
+    const { calculateDecayedScore, classifyIntent, computeBehavioralMetrics } = await import("@/lib/marketing/growth-engine/engine");
 
     // Enhancement: Fetch latest growth action & Calculate Elite Metrics
     const dataWithActions = await Promise.all(data.map(async (l) => {
@@ -98,17 +98,31 @@ export async function GET(req: NextRequest) {
       });
 
       const lastUpdateDate = (l.updatedAt as any) || l.createdAt;
-      const baseIntent = classifyIntent(l.score || 0, l.status as any);
+      
+      // Compute Behavioral Metrics instantly 
+      const metrics = computeBehavioralMetrics(l as any, []);
       
       const processedScore = calculateDecayedScore(
-        l.score || 0, 
+        Math.max(l.score || 0, metrics.intentScore), 
         lastUpdateDate
       );
+      
+      const baseIntent = classifyIntent(processedScore, l.status as any);
+
+      // Map raw string capital into a forecast value if present
+      const capitalRaw = (l.metadata as any)?.capital || 0;
+      const parsedCapital = typeof capitalRaw === 'string' ? parseInt(capitalRaw.replace(/[^0-9]/g, '')) || 0 : Number(capitalRaw);
 
       return {
         ...l,
         lastAction: lastAction?.actionType || null,
         decayedScore: processedScore,
+        score: processedScore, // Overwrite the raw DB score with the accurately decayed/boosted metric
+        priorityScore: metrics.priorityScore,
+        engagementLevel: metrics.engagementLevel,
+        profile: metrics.profile,
+        conversionValue: parsedCapital > 0 ? parsedCapital : (metrics.priorityScore > 100 ? 150000 : 0), // Base speculative forecast
+        probability: Math.min(100, Math.max(l.score || 0, metrics.intentScore)),
         intentBucket: baseIntent
       };
     }));
