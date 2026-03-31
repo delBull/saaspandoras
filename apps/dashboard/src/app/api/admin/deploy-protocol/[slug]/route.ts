@@ -83,8 +83,15 @@ export async function POST(
         const totalSupply = tokenomics?.totalSupply || 1000000;
         const teamBps = tokenomics?.teamAllocationBps || 0;
         const pandorasBps = tokenomics?.pandorasAllocationBps || 0;
-        const teamWallet = tokenomics?.teamWallet;
-        const pandorasWallet = tokenomics?.pandorasWallet;
+        // Use Treasury Address or fallback to Applicant Wallet (Founder)
+        const treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
+
+        if (!treasuryAddress) {
+            return NextResponse.json({ error: "Project Treasury Address is missing (Advisor/Founder Wallet required)" }, { status: 400 });
+        }
+
+        const teamWallet = tokenomics?.teamWallet || treasuryAddress;
+        const pandorasWallet = tokenomics?.pandorasWallet || SUPER_ADMIN_WALLET;
 
         if (teamBps + pandorasBps > 10000) {
             return NextResponse.json({ error: "Total allocation (Team + Pandoras) cannot exceed 100%" }, { status: 400 });
@@ -99,14 +106,7 @@ export async function POST(
         }
 
         if (teamBps > 0 && pandorasBps > 0 && teamWallet?.toLowerCase() === pandorasWallet?.toLowerCase()) {
-            return NextResponse.json({ error: "Team and Pandoras wallets must be different" }, { status: 400 });
-        }
-
-        // Use Treasury Address or fallback to Applicant Wallet (Founder)
-        const treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
-
-        if (!treasuryAddress) {
-            return NextResponse.json({ error: "Project Treasury Address is missing (Advisor/Founder Wallet required)" }, { status: 400 });
+            return NextResponse.json({ error: "Tema y Pandoras wallets deben ser diferentes. Verifica que el fundador no sea el mismo que el Super Admin." }, { status: 400 });
         }
 
         // 2. Prepare Configuration
