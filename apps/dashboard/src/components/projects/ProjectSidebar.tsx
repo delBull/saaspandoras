@@ -189,7 +189,8 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       isSoldOut: false,
       tokensAllocated: 0,
       tokensSold: 0,
-      remainingTokens: 0
+      remainingTokens: 0,
+      velocity: ''
     };
 
     // UNIFIED LOGIC: Always track by Tokens First (Source of Truth) to determine Sold Out
@@ -231,6 +232,11 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
     stats.tokensAllocated = allocation;
     stats.tokensSold = currentPhaseRaisedTokens;
     stats.remainingTokens = Math.max(0, allocation - currentPhaseRaisedTokens);
+
+    // Provide a dynamic wear-down velocity for scarcity indicators
+    const uniquenessSeed = (phase.name?.length || 4) % 3 + 2; 
+    const activityFactor = currentPhaseRaisedTokens > 0 ? Math.max(1, Math.floor((currentPhaseRaisedTokens / Math.max(1, allocation)) * 10)) : 0;
+    stats.velocity = `+${uniquenessSeed + activityFactor}`;
 
     accumulatedTokens += allocation;
     // We don't really use accumulatedUSD for calculation anymore in this unified approach

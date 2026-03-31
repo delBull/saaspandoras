@@ -104,12 +104,12 @@ export async function POST(req: NextRequest) {
     
     // Support both flat (Narai) and structured (Pandoras) formats
     let email = body.email || body.userEmail;
-    let name = body.name || body.userName;
-    let phoneNumber = body.phoneNumber || body.phone || body.whatsapp;
-    let walletAddress = body.walletAddress || body.wallet;
+    let name = body.name || body.userName || body.metadata?.name;
+    let phoneNumber = body.phoneNumber || body.phone || body.whatsapp || body.metadata?.whatsapp || body.metadata?.phone || body.metadata?.phoneNumber;
+    let walletAddress = body.walletAddress || body.wallet || body.metadata?.wallet;
     let fingerprint = body.fingerprint || body.fp;
     let origin = body.origin || requestOrigin;
-    let intent = body.intent || 'explore';
+    let intent = (body.intent || body.metadata?.intent || 'explore').toLowerCase();
     let consent = body.consent ?? true; // Default to true if not provided but request reaches here
     let bodyScope = body.scope;
     let projectId = body.projectId;

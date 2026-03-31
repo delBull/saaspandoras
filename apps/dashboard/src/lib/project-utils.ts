@@ -146,7 +146,7 @@ export function getTargetAmount(project: any): number {
     return 10000; // Final default
   } catch (e) {
     console.warn("[getTargetAmount] Parsing failed, using fallback:", e);
-    const fallbackAmount = Number(project.target_amount || project.targetAmount);
+    const fallbackAmount = Number(project?.target_amount || project?.targetAmount || 10000);
     return (!isNaN(fallbackAmount) && fallbackAmount > 0) ? fallbackAmount : 10000;
   }
 }

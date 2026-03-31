@@ -11,6 +11,9 @@ import { ExternalLink, Copy, CheckCircle, Users, Shield, Zap, Lock, ArrowRight }
 import { getContract, defineChain } from 'thirdweb';
 import { useReadContract } from 'thirdweb/react';
 import { client } from '@/lib/thirdweb-client';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 // ── Access Protocol Page ─────────────────────────────────────────────────────
 // Primary artifact type: 🔑 Access Pass
@@ -40,20 +43,6 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
 
     const dummyContract = getContract({ client, chain: defineChain(safeChainId), address: '0x0000000000000000000000000000000000000000' });
 
-    const { data: totalSupplyERC721 } = useReadContract({
-        contract: licenseContract || dummyContract,
-        queryOptions: { enabled: !!licenseContract, retry: 0 },
-        method: 'function totalSupply() view returns (uint256)',
-        params: []
-    });
-
-    const { data: totalSupplyERC1155 } = useReadContract({
-        contract: licenseContract || dummyContract,
-        queryOptions: { enabled: !!licenseContract && !totalSupplyERC721, retry: 0 },
-        method: 'function totalSupply(uint256) view returns (uint256)',
-        params: [0n]
-    });
-
     const { data: maxSupplyERC721 } = useReadContract({
         contract: licenseContract || dummyContract,
         queryOptions: { enabled: !!licenseContract, retry: 0 },
@@ -61,8 +50,10 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
         params: []
     });
 
-    const totalSupplyBN = totalSupplyERC721 ?? totalSupplyERC1155;
-    const holdersCount = totalSupplyBN ? Number(totalSupplyBN) : 0;
+    const { data: metrics } = useSWR(project.id ? `/api/dao/metrics?projectId=${project.id}` : null, fetcher);
+
+    // Holders count is unique wallets via DAO tracking as prioritized by user
+    const holdersCount = Number(metrics?.members || 0);
     const maxSupply = maxSupplyERC721 ? Number(maxSupplyERC721) : (project.artifacts?.[0]?.maxSupply ?? 0);
     const remaining = maxSupply > 0 ? maxSupply - holdersCount : null;
 
