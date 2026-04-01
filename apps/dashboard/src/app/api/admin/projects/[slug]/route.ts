@@ -10,6 +10,10 @@ import { db } from "~/db";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
+// 🔧 Allow large JSON bodies (rich text descriptions can exceed the default 1MB)
+export const maxDuration = 30;
+// Next.js App Router: increase body size limit for this route
+export const dynamic = 'force-dynamic';
 import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
@@ -248,13 +252,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (body.allowedDomains !== undefined) updates.allowedDomains = body.allowedDomains;
       if (body.discordWebhookUrl !== undefined) updates.discordWebhookUrl = body.discordWebhookUrl;
 
+      // Extended fields from new edit tabs
+      if (body.applicantName !== undefined) updates.applicantName = body.applicantName;
+      if (body.protoclMecanism !== undefined) updates.protoclMecanism = body.protoclMecanism;
+      if (body.artefactUtility !== undefined) updates.artefactUtility = body.artefactUtility;
+      if (body.worktoearnMecanism !== undefined) updates.worktoearnMecanism = body.worktoearnMecanism;
+      if (body.monetizationModel !== undefined) updates.monetizationModel = body.monetizationModel;
+      if (body.adquireStrategy !== undefined) updates.adquireStrategy = body.adquireStrategy;
+      if (body.legalStatus !== undefined) updates.legalStatus = body.legalStatus;
+
       // Optional: generate new slug if title changed
       if (body.title && body.title !== existingProject.title) {
         try {
           updates.slug = slugify(body.title, { lower: true, strict: true });
         } catch (slugErr) {
           console.error('❌ Slugify error:', slugErr);
-          // Fallback to a simple slug if complex characters fail
           updates.slug = body.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
         }
       }
@@ -269,7 +281,6 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         .where(eq(projectsSchema.id, projectId));
 
       // --- AUTOMATIC API KEY GENERATION ---
-      // If allowedDomains were updated (External Project integration start)
       if (body.allowedDomains && Array.isArray(body.allowedDomains) && body.allowedDomains.length > 0) {
         try {
           console.log(`🔑 Automatically ensuring API Key for project ${projectId} due to domain update...`);
@@ -279,7 +290,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         }
       }
 
-      return NextResponse.json({ message: "Propiedades básicas actualizadas" }, { status: 200 });
+      return NextResponse.json({ message: "Propiedades actualizadas" }, { status: 200 });
     }
 
     return NextResponse.json({ message: "Operación no reconocida" }, { status: 400 });
