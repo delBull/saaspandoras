@@ -126,19 +126,11 @@ export function TopNavbar({
 
   // Fetch admin status and user profile when account changes
   useEffect(() => {
-    if (isInitialLoad && !account?.address) {
-      setIsInitialLoad(false);
-      return;
-    }
-
-    if (account?.address === undefined && !isInitialLoad) {
-      return;
-    }
-
+    // When wallet disconnects, reset UI state so the connect button reappears
     if (!account?.address) {
-      if (!isAdminProp && !isSuperAdminProp) {
-        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
-      }
+      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+      setUserProfile(null);
+      setIsInitialLoad(false);
       return;
     }
 
