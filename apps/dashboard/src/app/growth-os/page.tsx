@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import useSWR from 'swr';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { 
@@ -27,6 +28,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import NextImage from "next/image";
 import { LeadCaptureModal } from "../../components/marketing/LeadCaptureModal";
+import { GrowthOSLeadModal } from "../../components/marketing/GrowthOSLeadModal";
 import { DocumentVisorModal } from "../../components/marketing/DocumentVisorModal";
 import { useAccessState } from "@/hooks/use-access-state";
 import { useRouter } from "next/navigation";
@@ -230,12 +232,21 @@ const APIPreview = () => (
 );
 
 export default function GrowthOSLanding() {
+  const [growthModal, setGrowthModal] = useState(false);
   const [leadModal, setLeadModal] = useState(false);
   const [docModal, setDocModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | undefined>(undefined);
   
   const router = useRouter();
   const { isGenesisQualified, ux, isLoading } = useAccessState();
+
+  // Dynamic Genesis slot counter (shared with GrowthOSLeadModal)
+  const { data: slotsData } = useSWR<{ remaining: number }>(
+    '/api/marketing/growth-os/slots',
+    (url: string) => fetch(url).then(r => r.json()),
+    { refreshInterval: 120000, fallbackData: { remaining: 44 } }
+  );
+  const slotsRemaining = slotsData?.remaining ?? 44;
 
   // Phase 86: Dogfooding (Growth OS as an External Project)
   React.useEffect(() => {
@@ -261,11 +272,12 @@ export default function GrowthOSLanding() {
 
   const openConversion = (tier?: string) => {
     if (isGenesisQualified) {
-        router.push("/admin");
+        // Already a Genesis member — go to home hub
+        router.push("/");
         return;
     }
     setSelectedTier(tier);
-    setLeadModal(true);
+    setGrowthModal(true);
   };
 
   return (
@@ -285,7 +297,7 @@ export default function GrowthOSLanding() {
           <span className="font-black text-2xl tracking-tighter uppercase italic">Pandora's <span className="text-zinc-500">Growth OS</span></span>
         </Link>
         <div className="flex items-center gap-8">
-          <Link href="/admin" className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] transition-colors">Admin Dashboard</Link>
+          <button onClick={() => setGrowthModal(true)} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] transition-colors">Acceso Anticipado</button>
           <div className="hidden sm:block h-4 w-px bg-zinc-800"></div>
           <Button 
             onClick={() => setDocModal(true)}
@@ -332,7 +344,7 @@ export default function GrowthOSLanding() {
                     </div>
                     <div className="h-4 w-px bg-red-500/30"></div>
                     <span className="text-white/80 font-black text-[11px] uppercase tracking-[0.2em]">
-                       {ux?.scarcityHint || "7 SLOTS REMAINING FOR FIXED YIELD"}
+                       {slotsRemaining} SLOTS GENESIS DISPONIBLES
                     </span>
                  </div>
               </motion.div>
@@ -536,9 +548,12 @@ export default function GrowthOSLanding() {
           <div className="mt-8 relative z-10">
             <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-4">O conecta tu identidad directamente</p>
             <div className="flex justify-center">
-               <Link href="/admin" className="px-6 py-3 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] transition-all text-zinc-400 hover:text-white">
+               <button
+                  onClick={() => setGrowthModal(true)}
+                  className="px-6 py-3 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] transition-all text-zinc-400 hover:text-white"
+               >
                   Conectar Wallet EOA
-               </Link>
+               </button>
             </div>
           </div>
           
@@ -549,6 +564,12 @@ export default function GrowthOSLanding() {
       </main>
 
       {/* Modals */}
+      <GrowthOSLeadModal
+        isOpen={growthModal}
+        onClose={() => setGrowthModal(false)}
+        tierName={selectedTier}
+      />
+
       <LeadCaptureModal 
         isOpen={leadModal} 
         onClose={() => setLeadModal(false)} 
