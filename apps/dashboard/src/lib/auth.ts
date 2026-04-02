@@ -87,8 +87,10 @@ export async function getAuth(headersData?: any, userAddress?: string) {
                      cookiesMap.get('auth_token') || 
                      cookiesMap.get('pbox_session_v3');
 
+    const decodeStartTime = Date.now();
     if (authToken) {
       const decoded = await verifyJWT(authToken);
+      console.log(`🕵️ [Auth] verifyJWT resolved in ${Date.now() - decodeStartTime}ms`);
       
       if (decoded) {
           // 🔥 INSTITUTIONAL FIX: Any valid JWT is a valid session.

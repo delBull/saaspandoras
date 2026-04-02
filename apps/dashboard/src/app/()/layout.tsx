@@ -18,8 +18,16 @@ export default async function DashboardLayout({
   const walletFromCookies = cookieStore.get('wallet-address')?.value ??
     cookieStore.get('thirdweb:wallet-address')?.value ?? null;
 
+  console.log('🏁 [Layout] Loading Dashboard for:', walletFromCookies || 'Guest');
+  
+  const startTime = Date.now();
   const { session } = await getAuth(undefined, walletFromCookies ?? undefined);
+  console.log(`🔑 [Layout] getAuth resolved in ${Date.now() - startTime}ms`);
+
+  const rbacStartTime = Date.now();
   const userIsAdmin = await isAdmin(session?.address);
+  console.log(`🛡️ [Layout] isAdmin resolved in ${Date.now() - rbacStartTime}ms`);
+
   const userIsSuperAdmin = session?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
   return (
