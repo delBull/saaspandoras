@@ -5,8 +5,8 @@ import { eq } from "drizzle-orm";
 import { PaymentCheckout } from "@/components/payments/PaymentCheckout";
 
 // Add metadata later
-export default async function PaymentPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export default async function PaymentPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug: id } = await params;
 
     // Fetch Link
     const link = await db.query.paymentLinks.findFirst({
