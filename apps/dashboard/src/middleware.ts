@@ -8,6 +8,7 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log(`🌐 [Middleware] INCOMING: ${request.method} ${pathname}`);
 
   // 0. Global OPTIONS Handling (CORS Preflight)
   if (request.method === "OPTIONS") {
