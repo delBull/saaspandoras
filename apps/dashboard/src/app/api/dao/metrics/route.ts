@@ -61,30 +61,13 @@ export async function GET(req: Request) {
         const top10Power = topWallets.reduce((acc, w) => acc + Number(w.votingPower || 0), 0);
         const pci = totalPowerNum > 0 ? top10Power / totalPowerNum : 0;
 
-        // c) Campaign Influence (CIS)
-        const attribution = await db.select({
-            campaignId: daoMembers.sourceCampaignId,
-            memberCount: count(),
-            totalVotingPower: sum(daoMembers.votingPower)
-        })
-        .from(daoMembers)
-        .where(eq(daoMembers.projectId, projectId))
-        .groupBy(daoMembers.sourceCampaignId)
-        .orderBy(sql`sum(voting_power) DESC`)
-        .limit(5);
-
         return NextResponse.json({
             members: Number(totalStats?.[0]?.totalMembers || 0),
             votingPower: totalPowerNum,
             artifacts: Number(totalStats?.[0]?.totalArtifacts || 0),
             treasury: treasuryUSD,
             pci,
-            attribution: attribution.map(a => ({
-                campaignId: a.campaignId,
-                members: Number(a.memberCount),
-                votingPower: Number(a.totalVotingPower),
-                share: totalPowerNum > 0 ? Number(a.totalVotingPower) / totalPowerNum : 0
-            }))
+            attribution: [] // Campaigns tracking currently disabled in schema
         });
 
     } catch (error) {

@@ -84,6 +84,7 @@ export async function GET(
     const projectId = Number(slug);
     const isId = !isNaN(projectId);
 
+    const dbStartTime = Date.now();
     try {
       if (isId) {
         projectResult = await db.query.projects.findFirst({
@@ -94,8 +95,9 @@ export async function GET(
           where: (projects, { eq, and }) => and(eq(projects.slug, slug), eq(projects.isDeleted, false))
         });
       }
+      console.log(`🗄️ [API] DB query resolved in ${Date.now() - dbStartTime}ms`);
     } catch (ormError) {
-      console.warn('⚠️ API: ORM Error (legacy data?), trying raw SQL:', ormError);
+      console.warn('⚠️ [API] ORM Error (legacy data?), trying raw SQL in ' + (Date.now() - dbStartTime) + 'ms', ormError);
       const { sql } = await import('drizzle-orm');
       if (isId) {
         const rawRes = await db.execute(sql`SELECT * FROM projects WHERE id = ${projectId} AND is_deleted = false LIMIT 1`);
