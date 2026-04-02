@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
-import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter, Phone, FileSignature, Calendar, XCircle, MoreVertical, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { Zap, Globe, ShieldCheck, Terminal, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter, Phone, FileSignature, Calendar, XCircle, MoreVertical, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { recordCallOutcome, getLeadInsights, toggleLeadNurture, archiveLead } from "@/actions/growth-os";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
@@ -2085,6 +2085,42 @@ export default function GrowthOSSubTab() {
               </div>
             </div>
 
+            {/* Checkout Links Generator */}
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8 mb-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                 <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 border border-emerald-500/20">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                      Payment Links Generados
+                      <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">Checkout Hub</Badge>
+                    </h4>
+                    <p className="text-sm text-zinc-500">Enlaces de pago de alto cierre para usar en páginas externas.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                 {['silver', 'gold', 'platinum'].map(tier => {
+                    const projectUrlSlug = selectedProjectId === 'all' ? 'global' : projects.find(p => String(p.id) === String(selectedProjectId))?.slug;
+                    const url = `${getDashboardDomain()}/pay/${projectUrlSlug}/${tier}`;
+                    return (
+                        <div key={tier} className="bg-zinc-950 border border-zinc-800 hover:border-emerald-500/30 transition-all rounded-2xl p-5 relative group">
+                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                              <UIButton size="sm" className="h-7 text-[8px] uppercase tracking-widest font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl" onClick={() => {
+                                navigator.clipboard.writeText(url);
+                                toast.success("Enlace de pago copiado");
+                              }}>Copia</UIButton>
+                            </div>
+                            <h5 className="font-bold text-white text-sm capitalize mb-1 flex items-center gap-2">{tier} Tier</h5>
+                            <p className="text-[10px] text-emerald-500 font-mono truncate">{url}</p>
+                        </div>
+                    );
+                 })}
+              </div>
+            </div>
+
             {/* Bottom Section: Injection Snippet */}
             <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
@@ -2107,7 +2143,7 @@ export default function GrowthOSSubTab() {
                   <UIButton className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6" onClick={() => {
                     const project = projects.find(p => String(p.id) === String(selectedProjectId));
                     const projectSlug = project?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId);
-                    const snippet = `<script \n  src="${window.location.origin}/api/widget/v1.js" \n  data-project-id="${projectSlug}" \n  data-api-key="${publicKey}" \n  data-theme="premium"\n></script>`;
+                    const snippet = `<!-- Pandoras Growth OS Widget -->\n<script \n  src="${getDashboardDomain()}/api/widget/v1.js" \n  data-project-id="${projectSlug}" \n  data-api-key="${publicKey}" \n  data-theme="premium"\n></script>`;
                     navigator.clipboard.writeText(snippet);
                     toast.success("Snippet copiado");
                   }}>COPY SNIPPET</UIButton>
@@ -2115,7 +2151,7 @@ export default function GrowthOSSubTab() {
                 <code>
                   <span className="text-zinc-600">{'<!-- Pandoras Growth OS Widget -->'}</span><br/>
                   <span className="text-indigo-400">{'<script'}</span><br/>
-                  {'  src="'}<span className="text-emerald-400">{window.location.origin}/api/widget/v1.js</span>{'"'}<br/>
+                  {'  src="'}<span className="text-emerald-400">{getDashboardDomain()}/api/widget/v1.js</span>{'"'}<br/>
                   {'  data-project-id="'}<span className="text-purple-400">{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId)}</span>{'"'}<br/>
                   {'  data-api-key="'}<span className="text-emerald-400">{publicKey}</span>{'"'}<br/>
                   {'  data-theme="'}<span className="text-purple-400">premium</span>{'"'}<br/>
@@ -2334,6 +2370,46 @@ export default function GrowthOSSubTab() {
             </div>
 
             <div className="p-8 space-y-12">
+              {/* Nueva sección: Guía de Conexión de Cables */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-indigo-500 text-black font-black text-[10px]">INFRAESTRUCTURA</Badge>
+                  <h3 className="text-lg font-black uppercase italic tracking-tight">Conexión de Cables (Full Stack)</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-5 bg-zinc-900/40 rounded-3xl border border-zinc-800/50 hover:border-indigo-500/30 transition-all group">
+                    <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center mb-4 border border-indigo-500/20 group-hover:bg-indigo-500/20">
+                      <Terminal className="w-5 h-5 text-indigo-400" />
+                    </div>
+                    <h4 className="text-sm font-bold text-zinc-100 mb-2">Cable 1: Identidad</h4>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed italic">
+                      El Widget identifica al usuario en tu sitio externo y prepara el <strong>Login Invisible</strong> en Pandora.
+                    </p>
+                  </div>
+                  
+                  <div className="p-5 bg-zinc-900/40 rounded-3xl border border-zinc-800/50 hover:border-emerald-500/30 transition-all group">
+                    <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-4 border border-emerald-500/20 group-hover:bg-emerald-500/20">
+                      <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <h4 className="text-sm font-bold text-zinc-100 mb-2">Cable 2: Handshake</h4>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed italic">
+                      Al llegar al pago, el sistema acuña automáticamente la <strong>Pandora Key</strong> y la <strong>Access Card</strong> del protocolo.
+                    </p>
+                  </div>
+                  
+                  <div className="p-5 bg-zinc-900/40 rounded-3xl border border-zinc-800/50 hover:border-purple-500/30 transition-all group">
+                    <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4 border border-purple-500/20 group-hover:bg-purple-500/20">
+                      <Zap className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <h4 className="text-sm font-bold text-zinc-100 mb-2">Cable 3: Sincronía</h4>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed italic">
+                      Tras la compra, Pandora envía un Webhook a tu servidor confirmando que el usuario ya es <strong>Holder Oficial</strong>.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
               {/* Step 1: Client-Side Installation */}
               <section className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -2345,13 +2421,16 @@ export default function GrowthOSSubTab() {
                   <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-xs border border-zinc-800 relative group">
                     <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <UIButton size="sm" variant="outline" className="h-7 text-[8px] uppercase tracking-widest font-black" onClick={() => {
-                        navigator.clipboard.writeText(`<script\n  src="${getDashboardDomain()}/api/widget/v1.js"\n  data-public-key="${publicKey}"\n  async\n></script>`);
+                        const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                        const projectSlug = project?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId);
+                        navigator.clipboard.writeText(`<script\n  src="${getDashboardDomain()}/api/widget/v1.js"\n  data-project-id="${projectSlug}"\n  data-public-key="${publicKey}"\n  async\n></script>`);
                         toast.success("Script copiado");
                       }}>Copiar</UIButton>
                     </div>
                     <pre className="text-zinc-300 leading-relaxed">
 {`<script
   src="${getDashboardDomain()}/api/widget/v1.js"
+  data-project-id="${projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId)}"
   data-public-key="${publicKey}"
   async
 ></script>`}
