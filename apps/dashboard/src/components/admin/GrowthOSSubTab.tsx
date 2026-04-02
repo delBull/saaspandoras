@@ -2416,27 +2416,30 @@ export default function GrowthOSSubTab() {
                     <Badge className="bg-indigo-500 text-black font-black text-[10px]">PASO 01</Badge>
                     <h3 className="text-lg font-black uppercase italic">Inyección del Widget</h3>
                   </div>
-                  <p className="text-zinc-400 text-sm font-medium">Agrega el siguiente script antes del cierre de la etiqueta <code className="text-indigo-400">&lt;/body&gt;</code> en tu aplicación web.</p>
+                  <p className="text-zinc-600 text-[10px] leading-relaxed mb-4">
+                    <AlertCircle className="w-3 h-3 inline mr-1 text-amber-500" />
+                    <strong>IMPORTANTE:</strong> Asegúrate de estar en el dominio correcto (<strong>{getDashboardDomain()}</strong>). Si ya tienes llaves generadas para este proyecto, úsalas directamente; no es necesario rotarlas a menos que haya una brecha de seguridad.
+                  </p>
                   
                   <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-xs border border-zinc-800 relative group">
                     <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <UIButton size="sm" variant="outline" className="h-7 text-[8px] uppercase tracking-widest font-black" onClick={() => {
                         const project = projects.find(p => String(p.id) === String(selectedProjectId));
                         const projectSlug = project?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId);
-                        navigator.clipboard.writeText(`<script\n  src="${getDashboardDomain()}/api/widget/v1.js"\n  data-project-id="${projectSlug}"\n  data-public-key="${publicKey}"\n  async\n></script>`);
+                        navigator.clipboard.writeText(`<script\n  src="https://${getDashboardDomain()}/api/widget/v1.js"\n  data-project-id="${projectSlug}"\n  data-public-key="${publicKey}"\n  async\n></script>`);
                         toast.success("Script copiado");
                       }}>Copiar</UIButton>
                     </div>
                     <pre className="text-zinc-300 leading-relaxed">
 {`<script
-  src="${getDashboardDomain()}/api/widget/v1.js"
+  src="https://${getDashboardDomain()}/api/widget/v1.js"
   data-project-id="${projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId)}"
   data-public-key="${publicKey}"
   async
 ></script>`}
                     </pre>
                   </div>
-                  <p className="text-[10px] text-zinc-600 italic">* Reemplaza data-public-key con tu llave pública actual si no estás en un proyecto específico.</p>
+                  <p className="text-[10px] text-zinc-600 italic">* Tip: El widget captura automáticamente el email de formularios existentes en tu sitio.</p>
               </section>
 
               {/* Step 2: Custom Attributes */}
