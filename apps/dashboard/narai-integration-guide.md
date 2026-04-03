@@ -37,33 +37,33 @@ window.PandorasGrowth.registerLead({
 ## 3. Botones de Pago (Popup Checkout)
 Para los 3 tiers de Narai, simplemente usa estos atributos en tus botones de compra actuales. El widget de Pandora detectará el clic automáticamente y abrirá la ventana emergente segura.
 
-### Tier Silver
+### Fase: Fundador
 ```html
 <button 
     data-pd-checkout-slug="narai" 
-    data-pd-checkout-tier="silver"
+    data-pd-checkout-tier="fundador"
 >
-    Comprar Silver
+    Comprar Fundador
 </button>
 ```
 
-### Tier Gold
+### Fase: Estratégico
 ```html
 <button 
     data-pd-checkout-slug="narai" 
-    data-pd-checkout-tier="gold"
+    data-pd-checkout-tier="estrategico"
 >
-    Comprar Gold
+    Comprar Estratégico
 </button>
 ```
 
-### Tier Platinum
+### Fase: Geeral
 ```html
 <button 
     data-pd-checkout-slug="narai" 
-    data-pd-checkout-tier="platinum"
+    data-pd-checkout-tier="geeral"
 >
-    Comprar Platinum
+    Comprar Geeral
 </button>
 ```
 

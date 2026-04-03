@@ -35,6 +35,7 @@ interface Project {
   status: string;
   allowedDomains: string[];
   discordWebhookUrl?: string | null;
+  w2eConfig?: any;
 }
 
 interface Lead {
@@ -2101,11 +2102,18 @@ export default function GrowthOSSubTab() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                 {['silver', 'gold', 'platinum'].map(tier => {
-                    const projectUrlSlug = selectedProjectId === 'all' ? 'global' : projects.find(p => String(p.id) === String(selectedProjectId))?.slug;
-                    const url = `${getDashboardDomain()}/pay/${projectUrlSlug}/${tier}`;
-                    return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {(function() {
+                    const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                    const phases = (project?.w2eConfig as any)?.phases || ['silver', 'gold', 'platinum'];
+                    const projectUrlSlug = selectedProjectId === 'all' ? 'global' : project?.slug;
+
+                    return phases.map((phase: any) => {
+                      const tier = typeof phase === 'string' ? phase : (phase.name || phase.id || phase.title);
+                      const displayTier = typeof phase === 'string' ? phase : (phase.title || phase.name || phase.id);
+                      const url = `${getDashboardDomain()}/pay/${projectUrlSlug}/${String(tier).toLowerCase()}`;
+                      
+                      return (
                         <div key={tier} className="bg-zinc-950 border border-zinc-800 hover:border-emerald-500/30 transition-all rounded-2xl p-5 relative group">
                             <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <UIButton size="sm" className="h-7 text-[8px] uppercase tracking-widest font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl" onClick={() => {
@@ -2113,12 +2121,13 @@ export default function GrowthOSSubTab() {
                                 toast.success("Enlace de pago copiado");
                               }}>Copia</UIButton>
                             </div>
-                            <h5 className="font-bold text-white text-sm capitalize mb-1 flex items-center gap-2">{tier} Tier</h5>
+                            <h5 className="font-bold text-white text-sm capitalize mb-1 flex items-center gap-2">{displayTier}</h5>
                             <p className="text-[10px] text-emerald-500 font-mono truncate">{url}</p>
                         </div>
-                    );
-                 })}
-              </div>
+                      );
+                    });
+                  })()}
+                </div>
             </div>
 
             {/* Bottom Section: Injection Snippet */}
@@ -2234,7 +2243,9 @@ export default function GrowthOSSubTab() {
                       <UIButton size="sm" variant="ghost" className="h-7 text-zinc-400 hover:text-white" onClick={() => {
                         const project = projects.find(p => String(p.id) === String(selectedProjectId));
                         const slug = project?.slug || 'project-slug';
-                        const snippet = `<button \n  data-pd-checkout-slug="${slug}" \n  data-pd-checkout-tier="silver"\n> Buy now </button>`;
+                        const firstPhase = (project?.w2eConfig as any)?.phases?.[0];
+                        const tier = firstPhase ? (firstPhase.name || firstPhase.id || firstPhase.title || 'silver') : 'silver';
+                        const snippet = `<button \n  data-pd-checkout-slug="${slug}" \n  data-pd-checkout-tier="${String(tier).toLowerCase()}"\n> Buy now </button>`;
                         navigator.clipboard.writeText(snippet);
                         toast.success("Snippet copiado");
                       }}><Copy className="w-3 h-3" /></UIButton>
@@ -2242,7 +2253,7 @@ export default function GrowthOSSubTab() {
                     <pre>
                       <span className="text-indigo-400">{'<button'}</span><br/>
                       {'  '}<span className="text-purple-400">{'data-pd-checkout-slug'}</span>{`="${projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'slug'}"`}<br/>
-                      {'  '}<span className="text-purple-400">{'data-pd-checkout-tier'}</span>{`="silver"`}<br/>
+                      {'  '}<span className="text-purple-400">{'data-pd-checkout-tier'}</span>{`="${String(((projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.name || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.id || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.title || 'silver')).toLowerCase()}"`}<br/>
                       <span className="text-indigo-400">{'>'}</span> Buy now <span className="text-indigo-400">{'</button>'}</span>
                     </pre>
                   </div>
@@ -2259,7 +2270,10 @@ export default function GrowthOSSubTab() {
                       <UIButton size="sm" variant="ghost" className="h-7 text-zinc-400 hover:text-white" onClick={() => {
                         const project = projects.find(p => String(p.id) === String(selectedProjectId));
                         const slug = project?.slug || 'project-slug';
-                        const snippet = `window.PandorasGrowth.openCheckout("${slug}", "gold");`;
+                        const phases = (project?.w2eConfig as any)?.phases || [];
+                        const secondPhase = phases.length > 1 ? phases[1] : phases[0];
+                        const tier = secondPhase ? (secondPhase.name || secondPhase.id || secondPhase.title || 'gold') : 'gold';
+                        const snippet = `window.PandorasGrowth.openCheckout("${slug}", "${String(tier).toLowerCase()}");`;
                         navigator.clipboard.writeText(snippet);
                         toast.success("JS copiado");
                       }}><Copy className="w-3 h-3" /></UIButton>
@@ -2268,7 +2282,7 @@ export default function GrowthOSSubTab() {
                       <span className="text-zinc-600">{'// Open on any custom event'}</span><br/>
                       <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<br/>
                       {'  '}<span className="text-emerald-400">"{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'slug'}"</span>, <br/>
-                      {'  '}<span className="text-emerald-400">"gold"</span><br/>
+                      {'  '}<span className="text-emerald-400">"{String(((projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.length > 1 ? (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases[1]?.name || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases[1]?.id || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases[1]?.title : (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.name || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.id || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.title || 'gold')).toLowerCase()}"</span><br/>
                       {');'}
                     </pre>
                   </div>

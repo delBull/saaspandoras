@@ -23,8 +23,13 @@ export default async function CheckoutHubPage({
     const w2eConfig = project.w2eConfig as any;
     const phases = w2eConfig?.phases || [];
     
-    // Find the requested phase by name (case-insensitive)
-    const activePhase = phases.find((p: any) => p.name.toLowerCase() === tier.toLowerCase());
+    // Find the requested phase by name, title or id (case-insensitive)
+    // This handles variations in how the phase was created in the dashboard
+    const activePhase = phases.find((p: any) => 
+        p.name?.toLowerCase() === tier.toLowerCase() || 
+        p.title?.toLowerCase() === tier.toLowerCase() ||
+        p.id?.toLowerCase() === tier.toLowerCase()
+    );
 
     // NOTE: If the specific phase requested doesn't exist, we STILL proceed to the client.
     // This allows the CheckoutClient to show a branded 'Fase No Disponible' screen
