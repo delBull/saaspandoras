@@ -58,7 +58,9 @@ export async function GET(req: Request) {
            });
         }
 
-        const totalPowerNum = Number(totalStats?.[0]?.totalPower || 0);
+        const totalPowerNum = totalStats?.[0]?.totalPower ? Number(totalStats[0].totalPower) : 0;
+        const totalMembersNum = totalStats?.[0]?.totalMembers ? Number(totalStats[0].totalMembers) : 0;
+        const totalArtifactsNum = totalStats?.[0]?.totalArtifacts ? Number(totalStats[0].totalArtifacts) : 0;
 
         // b) Power Concentration (Top 10)
         let topWallets: { votingPower: string | number }[] = [];
@@ -78,17 +80,27 @@ export async function GET(req: Request) {
         const top10Power = topWallets.reduce((acc, w) => acc + Number(w.votingPower || 0), 0);
         const pci = totalPowerNum > 0 ? top10Power / totalPowerNum : 0;
 
-        return NextResponse.json({
-            members: Number(totalStats?.[0]?.totalMembers || 0),
+        const response = {
+            members: totalMembersNum,
             votingPower: totalPowerNum,
-            artifacts: Number(totalStats?.[0]?.totalArtifacts || 0),
+            artifacts: totalArtifactsNum,
             treasury: treasuryUSD,
-            pci,
-            attribution: [] // Campaigns tracking currently disabled in schema
-        });
+            pci: isNaN(pci) ? 0 : pci,
+            attribution: [] 
+        };
 
-    } catch (error) {
-        console.error('Error fetching DAO metrics:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json(response);
+
+    } catch (error: any) {
+        console.error(`❌ [Metrics API] Error fetching DAO metrics for project ${projectId}:`, {
+            message: error.message,
+            stack: error.stack,
+            projectId
+        });
+        return NextResponse.json({ 
+            error: 'Internal Server Error', 
+            details: error.message,
+            projectId 
+        }, { status: 500 });
     }
 }

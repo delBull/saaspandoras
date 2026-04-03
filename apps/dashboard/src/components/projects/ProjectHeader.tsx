@@ -20,8 +20,14 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   
   const sanitizeUrl = (url: any) => {
     if (!url || typeof url !== 'string') return null;
-    if (url.startsWith('http') || url.startsWith('/') || url.startsWith('data:')) return url;
-    return `/${url}`; // Ensure relative paths are absolute from root
+    const cleanUrl = url.trim();
+    if (['image', 'logo', 'icon', 'undefined', 'null', 'cover'].includes(cleanUrl.toLowerCase())) return null;
+    if (cleanUrl.startsWith('http') || cleanUrl.startsWith('/') || cleanUrl.startsWith('data:')) return cleanUrl;
+    if (cleanUrl.startsWith('ipfs:')) {
+      const path = cleanUrl.replace(/^ipfs:(\/*)/, '');
+      return `https://ipfs.io/ipfs/${path}`;
+    }
+    return `/${cleanUrl}`;
   };
 
   const coverPhotoUrl = sanitizeUrl(projectObj.coverPhotoUrl || projectObj.cover_photo_url) || '/images/default-project.jpg';
