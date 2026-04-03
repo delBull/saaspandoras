@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Coins, CheckCircle, Loader2, HelpCircle, Copy, ExternalLink, AlertCircle, TrendingUp, ArrowRight, Gift, Sparkles, PlusCircle } from 'lucide-react';
+import { X, Coins, CheckCircle, Loader2, HelpCircle, Copy, ExternalLink, AlertCircle, TrendingUp, ArrowRight, Gift, Sparkles, PlusCircle, CreditCard } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useActiveAccount, TransactionButton, useWalletBalance } from "thirdweb/react";
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { resolveExecution } from "@/lib/protocol-engine/execute";
 import { resolveArtifactPrice } from "@/lib/protocol-engine/artifact/pricing";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
+import { CHAIN_TOKENS } from "@/lib/protocol-engine/artifact/payment";
 
 interface ArtifactPurchaseModalProps {
     isOpen: boolean;
@@ -145,8 +146,9 @@ export default function ArtifactPurchaseModal({
     }, [targetAddress, targetContract, phase?.tokenPrice]);
 
     // 3. Calculation & Config Generation (Safe Logic)
+    const tokenConfig = CHAIN_TOKENS[safeChainId] || CHAIN_TOKENS[11155111]!;
     const isBase = safeChainId === 8453 || safeChainId === 84532;
-    const decimals = BigInt(isBase ? 1e6 : 1e18);
+    const decimals = BigInt(10 ** tokenConfig.decimals);
     
     // Normalize user input to prevent NaN/Negative/Zero errors
     const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
@@ -571,8 +573,28 @@ export default function ArtifactPurchaseModal({
                                     )
                                 ) : (
                                     <button disabled className="w-full bg-zinc-700 text-gray-400 font-bold py-4 rounded-xl">
-                                        Conecta tu Wallet
+                                        Conecta tu Wallet para Comprar con Cripto
                                     </button>
+                                )}
+
+                                {/* Traditional Payment Bridge (Stripe / Wire Transfer) */}
+                                {['stripe', 'wire', 'card'].some(m => project.payment_methods?.includes(m)) && (
+                                    <div className="pt-4 border-t border-zinc-800/50 mt-4">
+                                        <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest text-center mb-4">O PAGA CON MEDIOS TRADICIONALES</p>
+                                        <button 
+                                            onClick={() => {
+                                                const tierSlug = String(phase?.name || phase?.id || 'silver').toLowerCase();
+                                                window.open(`/pay/${project.slug}/${tierSlug}`, '_blank');
+                                            }}
+                                            className="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold py-4 rounded-xl border border-zinc-800 flex items-center justify-center gap-2 group transition-all"
+                                        >
+                                            <CreditCard className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                            Pagar con Tarjeta o Transferencia
+                                        </button>
+                                        <p className="text-[10px] text-zinc-500 text-center mt-3 px-4 italic leading-tight">
+                                            Tu artefacto será registrado en tu perfil de {project.title} una vez confirmado el pago.
+                                        </p>
+                                    </div>
                                 )}
 
                                 {needsFaucet && account && isTestnet && (

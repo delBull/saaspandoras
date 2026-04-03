@@ -1,44 +1,62 @@
-# Guía de Integración para Narai V4 ⚡
+# Guía de Integración Narai V5 ⚡ (V5.1 - Session & Payments)
 
-Para activar el **Growth OS** y los **Pagos en Popup** en la landing de Narai, sigue estos pasos:
+Esta guía detalla cómo integrar el ecosistema de **Pandoras Growth OS** en la landing page de Narai, incluyendo la gestión de sesiones (Login/Logout) y las opciones de pago híbrido.
 
-## 1. Instalación del Script (SDK)
-Añade este script al final del `<body>` de tu sitio. Asegúrate de usar tu API Key real de Staging/Prod.
+---
+
+## 1. Instalación del SDK (Obligatorio)
+Añade el script base antes del cierre del `</body>`. Este script inyecta las funciones globales `window.PandorasGrowth`.
 
 ```html
 <script 
-    src="https://staging.dash.pandoras.finance/api/widget/v1.js" 
+    src="https://dash.pandoras.finance/api/widget/v1.js" 
     data-project-id="narai" 
-    data-api-key="pk_grow_live_..."
+    data-api-key="TU_API_KEY_AQUI" 
+    data-theme="dark"
     defer
 ></script>
 ```
 
 ---
 
-## 2. Captación de Leads (Waitlist VIP)
-Si quieres que un usuario sea marcado como de "Alta Intensidad" (ej. compró una unidad completa), usa este snippet en tu formulario de registro actual:
+## 2. Gestión de Sesión (Login / Logout)
+Para que los usuarios puedan conectar su identidad (Email, Google o Web3) directamente en la landing, tienes dos opciones:
+
+### Opción A: Botón de Login Pre-construido (Zonas de UI)
+Si quieres un botón que gestione todo el estado automáticamente, añade este contenedor donde quieras que aparezca el botón de conexión:
+
+```html
+<!-- El SDK inyectará el botón de Conectar/Perfil aquí automáticamente -->
+<div id="pd-connect-button"></div>
+```
+
+### Opción B: Control Programático (JS)
+Si usas tus propios botones de la interfaz, puedes disparar las funciones del SDK:
 
 ```javascript
-// Disparar cuando el usuario envíe su formulario en Narai
-window.PandorasGrowth.registerLead({
-    email: 'usuario@correo.com',
-    name: 'Nombre del Cliente',
-    phoneNumber: '+521234567890',
-    intent: 'whitelist',
-    metadata: {
-        tags: ['FULL_UNIT'] // <--- Esto activa el bypass VIP en Pandora
-    }
+// Disparar Login
+const login = () => window.PandorasGrowth.login();
+
+// Disparar Logout
+const logout = () => window.PandorasGrowth.logout();
+
+// Escuchar cambios de sesión (ej. para ocultar/mostrar elementos)
+window.addEventListener('pd-session-changed', (event) => {
+    const { isLoggedIn, userAddress } = event.detail;
+    console.log(`Usuario ${isLoggedIn ? 'Conectado: ' + userAddress : 'Desconectado'}`);
 });
 ```
 
 ---
 
-## 3. Botones de Pago (Popup Checkout)
-Para los 3 tiers de Narai, simplemente usa estos atributos en tus botones de compra actuales. El widget de Pandora detectará el clic automáticamente y abrirá la ventana emergente segura.
+## 3. Opciones de Compra y Métodos de Pago
+El sistema V5 de Narai es **Multi-Método**. El modal detectará automáticamente la mejor opción para el usuario.
 
-### Fase: Fundador
+### Atributos de Gatillo (Trigger)
+Usa estos atributos en cualquier botón para abrir el checkout de un tier específico:
+
 ```html
+<!-- Ejemplo para Tier Fundador -->
 <button 
     data-pd-checkout-slug="narai" 
     data-pd-checkout-tier="fundador"
@@ -47,32 +65,38 @@ Para los 3 tiers de Narai, simplemente usa estos atributos en tus botones de com
 </button>
 ```
 
-### Fase: Estratégico
-```html
-<button 
-    data-pd-checkout-slug="narai" 
-    data-pd-checkout-tier="estrategico"
->
-    Comprar Estratégico
-</button>
-```
+### Métodos de Pago Soportados (Automáticos en el Modal):
+1. **Cripto (Web3 Native):**
+   - **RED:** Base Mainnet (8453).
+   - **MONEDA:** USDC (Preferido) o ETH.
+   - *Nota: El modal gestiona el cambio de red y la aprobación de USDC automáticamente.*
 
-### Fase: Geeral
-```html
-<button 
-    data-pd-checkout-slug="narai" 
-    data-pd-checkout-tier="geeral"
->
-    Comprar Geeral
-</button>
+2. **Tradicional (Web2 Bridge):**
+   - **TARJETA:** Visa, Mastercard, AMEX (vía Stripe).
+   - **TRANSFERENCIA:** Wire Transfer / SPEI (vía Dashboard Finance).
+   - *Nota: El usuario verá un botón de "Pagar con Tarjeta" si no tiene fondos en su wallet.*
+
+---
+
+## 4. Captación de Leads (Eventos de Valor)
+Si el usuario se registra en tu formulario de Waitlist, notifícalo a Pandora para marcarlo como lead calificado:
+
+```javascript
+window.PandorasGrowth.registerLead({
+    email: 'cliente@ejemplo.com',
+    name: 'Juan Perez',
+    intent: 'whitelist',
+    metadata: {
+        source: 'landing_hero',
+        tags: ['EARLY_BIRD']
+    }
+});
 ```
 
 ---
 
-## 4. Verificación de Acceso (Handshake)
-Cuando el usuario regrese o abra la página de pago, Pandora ejecutará automáticamente un "Handshake" invisible que asocia su wallet con el acceso al protocolo de Narai. No necesitas código extra para esto en el frontend.
-
----
+> [!IMPORTANT]
+> **API KEY:** Sustituye `TU_API_KEY_AQUI` por la llave que encuentras en tu Developer Hub (Admin Dashboard).
 
 > [!TIP]
-> **Popups Bloqueados:** Si el navegador del usuario bloquea la ventana emergente, el script redirigirá automáticamente a la página de pago en la misma pestaña como respaldo (fallback) para asegurar la venta.
+> **Estilos Personalizados:** El widget hereda el `data-theme="dark"` o `"light"`. Si necesitas personalización profunda de colores, contacta al soporte técnico de Pandoras.

@@ -48,6 +48,7 @@ import { useReadContract, useWalletBalance } from "thirdweb/react";
 import { getTargetAmount } from "@/lib/project-utils";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
+import { calculatePhaseStatus } from "@/lib/phase-utils";
 // Format Helper
 const formatCurrency = (amount: number | string) => {
   const num = Number(amount);
@@ -234,62 +235,19 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   // let accumulatedUSD = 0; // Unused
   let accumulatedTokens = 0;
 
+  let tabsAccumulatedTokens = 0;
+
   const phasesWithStats = allPhases.map((phase: any) => {
-    const price = Number(phase.tokenPrice || 0);
-    const allocation = Number(phase.tokenAllocation || 0); // Tokens
-
-    const stats = {
-      cap: 0,
-      raised: 0,
-      percent: 0,
-      participants: 0,
-      metric: price > 0 ? 'USD' : 'Tokens',
-      isSoldOut: false, // Default to not sold out
-      hasStarted: false,
-    };
-
-    const now = new Date();
-    stats.hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
-
-    // Calculate Phase Cap in Tokens (Allocation is usually reliable)
-    // If allocation is 0/infinite, we can't easily calculate sold out unless we look at USD cap.
-
-    // Calculate Raised Tokens using Total Supply (On-chain Truth)
-    const phaseStartTokens = accumulatedTokens;
-    const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStartTokens));
-
-    // stats.participants = currentPhaseRaisedTokens; // Removed: inaccurate mapping of tokens to participants
-
-    if (price === 0) {
-      // Free Mint -> Track by Tokens
-      stats.cap = allocation;
-      stats.raised = currentPhaseRaisedTokens;
-      stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
-      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
-    } else {
-      // Paid Mint -> Display in USD, but Track Logic by Tokens (to match Sidebar)
-      let phaseCapUSD = 0;
-      if (phase.type === 'amount') {
-        phaseCapUSD = Number(phase.limit);
-      } else {
-        phaseCapUSD = allocation * price;
-      }
-      stats.cap = phaseCapUSD;
-
-      // Infer USD raised from tokens (Stable)
-      const inferredRaisedUSD = currentPhaseRaisedTokens * price;
-      stats.raised = inferredRaisedUSD;
-      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
-
-      // Sold Out Logic (Token based)
-      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
-    }
-
-    accumulatedTokens += allocation;
+    const statusData = calculatePhaseStatus(phase, totalSupply, tabsAccumulatedTokens);
+    tabsAccumulatedTokens += Number(phase.tokenAllocation || 0);
 
     return {
       ...phase,
-      stats
+      stats: {
+        ...statusData,
+        participants: 0, // Keep field for UI compatibility, though logic was removed previously
+      },
+      ...statusData // Flatten if needed
     };
   });
 
@@ -446,25 +404,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                       const hasEnded = phase.endDate && new Date(phase.endDate) < now;
                       const isNotPaused = phase.isActive !== false;
 
-                      let statusLabel = 'Monto';
-                      let statusBadgeColor = 'bg-zinc-700 text-gray-300';
-
-                      if (isSoldOut) {
-                        statusLabel = 'Agotado';
-                        statusBadgeColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
-                      } else if (!isNotPaused) {
-                        statusLabel = 'Pausado';
-                        statusBadgeColor = 'bg-yellow-500/20 text-yellow-400';
-                      } else if (hasEnded) {
-                        statusLabel = 'Finalizado';
-                        statusBadgeColor = 'bg-zinc-600 text-gray-400';
-                      } else if (!hasStarted) {
-                        statusLabel = 'Próximamente';
-                        statusBadgeColor = 'bg-blue-500/20 text-blue-400 border border-blue-500/50';
-                      } else {
-                        statusLabel = phase.type === 'time' ? 'Activo (Tiempo)' : 'Activo (Monto)';
-                        statusBadgeColor = 'bg-lime-500/10 text-lime-400 border border-lime-500/20';
-                      }
+                        const statusLabel = phase.statusLabel;
+                        const statusBadgeColor = phase.statusColor;
 
                       const isClickable = hasStarted && !isSoldOut && isNotPaused && !hasEnded;
 

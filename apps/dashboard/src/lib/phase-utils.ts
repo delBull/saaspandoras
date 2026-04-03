@@ -1,0 +1,119 @@
+/**
+ * Shared utility for calculating project phase status and metrics.
+ * Centralizing this ensures consistency between Admin (Growth Hub), 
+ * Public Sidebar, and Project Content Tabs.
+ */
+
+export interface Phase {
+  id?: string;
+  name: string;
+  type: 'amount' | 'time';
+  startDate?: string;
+  endDate?: string;
+  tokenPrice?: string | number;
+  tokenAllocation?: string | number;
+  limit?: string | number;
+  isActive?: boolean;
+  [key: string]: any;
+}
+
+export interface PhaseStatus {
+  status: 'active' | 'sold_out' | 'paused' | 'ended' | 'upcoming';
+  statusLabel: string;
+  statusColor: string;
+  percent: number;
+  raised: number;
+  cap: number;
+  metric: 'USD' | 'Tokens';
+  isSoldOut: boolean;
+  hasStarted: boolean;
+  hasEnded: boolean;
+  isClickable: boolean;
+}
+
+/**
+ * Calculates current status for a single phase.
+ * 
+ * @param phase The raw phase object
+ * @param totalSupply Current on-chain supply of the license contract
+ * @param accumulatedTokensBefore Total tokens in all phases PRIOR to this one
+ */
+export function calculatePhaseStatus(
+  phase: Phase, 
+  totalSupply: number, 
+  accumulatedTokensBefore: number,
+  now: Date = new Date()
+): PhaseStatus {
+  const price = Number(phase.tokenPrice || 0);
+  const allocation = Number(phase.tokenAllocation || 0);
+  const isTimeType = phase.type === 'time';
+  
+  const hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
+  const hasEnded = !!(phase.endDate && new Date(phase.endDate) < now);
+  const isNotPaused = phase.isActive !== false;
+
+  // Real-time calculation using Supply (Stable ground truth)
+  const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - accumulatedTokensBefore));
+  const isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
+
+  let metric: 'USD' | 'Tokens' = price > 0 ? 'USD' : 'Tokens';
+  let raised = 0;
+  let cap = 0;
+  let percent = 0;
+
+  if (price === 0) {
+    metric = 'Tokens';
+    cap = allocation;
+    raised = currentPhaseRaisedTokens;
+    percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
+  } else {
+    metric = 'USD';
+    let phaseCapUSD = phase.type === 'amount' && phase.limit ? Number(phase.limit) : allocation * price;
+    cap = phaseCapUSD;
+    raised = currentPhaseRaisedTokens * price;
+    percent = phaseCapUSD > 0 ? (raised / phaseCapUSD) * 100 : 0;
+  }
+
+  // Determine Status and Label
+  let status: PhaseStatus['status'] = 'active';
+  let statusLabel = 'Activo';
+  let statusColor = 'bg-lime-500/10 text-lime-400 border border-lime-500/20';
+
+  if (isSoldOut) {
+    status = 'sold_out';
+    statusLabel = 'Agotado';
+    statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
+  } else if (!isNotPaused) {
+    status = 'paused';
+    statusLabel = 'Pausado';
+    statusColor = 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20';
+  } else if (hasEnded) {
+    status = 'ended';
+    statusLabel = 'Finalizado';
+    statusColor = 'bg-zinc-600/20 text-zinc-400 border border-zinc-700/50';
+  } else if (!hasStarted) {
+    status = 'upcoming';
+    statusLabel = 'Próximamente';
+    statusColor = 'bg-blue-500/20 text-blue-400 border border-blue-500/50';
+  } else {
+    // Active - refine label based on type
+    status = 'active';
+    statusLabel = isTimeType ? 'Activo (Tiempo)' : 'Activo (Monto)';
+  }
+
+  const isClickable = hasStarted && !isSoldOut && isNotPaused && !hasEnded;
+
+  return {
+    status,
+    statusLabel,
+    statusColor,
+    percent: Math.min(100, Math.max(0, percent)),
+    raised,
+    cap,
+    metric,
+    isSoldOut,
+    hasStarted,
+    hasEnded,
+    isClickable
+  };
+}
