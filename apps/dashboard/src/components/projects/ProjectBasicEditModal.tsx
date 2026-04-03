@@ -95,15 +95,16 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                 title: project.title || '',
                 tagline: project.tagline || '',
                 description: project.description || '',
-                logoUrl: cleanUrl(project.logoUrl),
-                coverPhotoUrl: cleanUrl(project.coverPhotoUrl),
-                applicantName: project.applicantName || '',
-                protoclMecanism: project.protoclMecanism || '',
-                artefactUtility: project.artefactUtility || '',
-                worktoearnMecanism: project.worktoearnMecanism || '',
-                monetizationModel: project.monetizationModel || '',
-                adquireStrategy: project.adquireStrategy || '',
-                legalStatus: project.legalStatus || '',
+                // Fallback to legacy field names (snake_case from some API routes)
+                logoUrl: cleanUrl(project.logoUrl || project.logo_url || project.imageUrl || project.image_url),
+                coverPhotoUrl: cleanUrl(project.coverPhotoUrl || project.cover_photo_url),
+                applicantName: project.applicantName || project.applicant_name || '',
+                protoclMecanism: project.protoclMecanism || project.protocl_mecanism || '',
+                artefactUtility: project.artefactUtility || project.artefact_utility || '',
+                worktoearnMecanism: project.worktoearnMecanism || project.worktoearn_mecanism || '',
+                monetizationModel: project.monetizationModel || project.monetization_model || '',
+                adquireStrategy: project.adquireStrategy || project.adquire_strategy || '',
+                legalStatus: project.legalStatus || project.legal_status || '',
             });
             setActiveTab('basic');
         }

@@ -206,7 +206,7 @@ export default function ArtifactPurchaseModal({
                         price: phase?.tokenPrice || 0,
                         project: project.slug,
                         phase: phase.name,
-                        protocolId: project.id,
+                        projectId: project.id,
                         sessionId,
                         source: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_source') : null
                     }
