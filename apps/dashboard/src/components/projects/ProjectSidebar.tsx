@@ -147,7 +147,14 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const config = typeof project.w2eConfig === 'string'
     ? JSON.parse(project.w2eConfig)
     : (project.w2eConfig || {});
-  const accessCardImage = config.accessCardImage || project.image_url;
+  
+  const sanitizeUrl = (url: any) => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.startsWith('http') || url.startsWith('/') || url.startsWith('data:')) return url;
+    return `/${url}`;
+  };
+
+  const accessCardImage = sanitizeUrl(config.accessCardImage || project.image_url);
 
   // --- Smooth Scroll Logic ---
   const scrollToPhases = () => {
@@ -185,7 +192,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   return (
     <>
-      <div className="hidden lg:block absolute right-0 top-0 w-72 h-full z-20">
+      <div className="hidden lg:block sticky top-6 w-80 h-fit z-20 shrink-0 self-start">
         {/* Non-sticky section - Investment & Creator cards */}
         <div className="space-y-6 mb-6">
           {/* Access / Investment Card */}

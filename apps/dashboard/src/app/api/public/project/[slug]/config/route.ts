@@ -3,6 +3,11 @@ import { db } from "@/db";
 import { projects as projectsSchema } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
+import { getProjectPhasesWithStats } from "@/lib/phase-utils";
+import { getContract, defineChain, readContract } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
+import { totalSupply as erc721TotalSupply } from "thirdweb/extensions/erc721";
+import { totalSupply as erc1155TotalSupply } from "thirdweb/extensions/erc1155";
 
 export const runtime = "nodejs";
 
@@ -49,10 +54,35 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
     }
 
-    // 3. Normalize Config
     const w2e = typeof project.w2eConfig === 'string' 
       ? JSON.parse(project.w2eConfig) 
       : (project.w2eConfig || {});
+
+    // 3. (Optional) Fetch Current Supply if contract is present for real-time status
+    let currentSupply = 0;
+    if (project.contractAddress && project.chainId) {
+      try {
+        const contract = getContract({
+          client,
+          chain: defineChain(project.chainId),
+          address: project.contractAddress,
+        });
+
+        // Try ERC721 first, then fallback or check w2eConfig for type
+        try {
+          const supply = await erc721TotalSupply({ contract });
+          currentSupply = Number(supply);
+        } catch {
+          // If fail, might be 1155 or other? 
+          // Just keep 0 for now as fallback, calculatePhaseStatus is robust enough
+        }
+      } catch (e) {
+        console.warn("[PublicConfig] Supply fetch fail:", e);
+      }
+    }
+
+    // 4. Calculate Unified Phases with Stats
+    const phasesWithStats = getProjectPhasesWithStats(project, currentSupply);
 
     const response = {
       project: {
@@ -64,7 +94,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         chainId: project.chainId,
       },
       config: {
-        phases: w2e.phases || [],
+        phases: phasesWithStats.map((p: any) => ({
+          ...p,
+          // Explicitly expose cleaned status for SDK consumption
+          is_active: p.isActive,
+          status: p.status,
+          status_label: p.statusLabel,
+          is_clickable: p.isClickable
+        })),
         tiers: w2e.tiers || w2e.packages || [],
         tokenomics: {
           ticker: project.slug.toUpperCase() || 'TOKEN',

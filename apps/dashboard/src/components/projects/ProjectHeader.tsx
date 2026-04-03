@@ -17,8 +17,15 @@ interface ProjectHeaderProps {
 export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderProps) {
   // Acceso seguro a propiedades opcionales
   const projectObj = project as unknown as Record<string, unknown>;
-  const coverPhotoUrl = projectObj.coverPhotoUrl || projectObj.cover_photo_url || '/images/default-project.jpg';
-  const logoUrl = String(projectObj.logoUrl || projectObj.logo_url || '/images/default-logo.jpg');
+  
+  const sanitizeUrl = (url: any) => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.startsWith('http') || url.startsWith('/') || url.startsWith('data:')) return url;
+    return `/${url}`; // Ensure relative paths are absolute from root
+  };
+
+  const coverPhotoUrl = sanitizeUrl(projectObj.coverPhotoUrl || projectObj.cover_photo_url) || '/images/default-project.jpg';
+  const logoUrl = sanitizeUrl(projectObj.logoUrl || projectObj.logo_url) || '/images/default-logo.jpg';
   const tagline = String(projectObj.tagline || projectObj.description || 'Sin descripción');
   const businessCategory = projectObj.business_category;
 

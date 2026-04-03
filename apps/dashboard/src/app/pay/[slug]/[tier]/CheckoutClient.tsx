@@ -250,22 +250,28 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             {!isPhaseActive ? (
                                 /* Inactive Phase UI */
                                 <div className="space-y-6 mb-4 animate-in fade-in zoom-in-95 duration-500">
-                                    <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 text-center">
-                                        <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 border border-zinc-700">
-                                            <Lock className="w-8 h-8 text-zinc-500" />
+                                    {step === 'checkout' ? (
+                                        <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 text-center">
+                                            <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 border border-zinc-700">
+                                                <Lock className="w-8 h-8 text-zinc-500" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-white mb-2 font-mono uppercase tracking-tighter">Acceso Restringido</h3>
+                                            <p className="text-[11px] text-zinc-400 mb-6 font-medium leading-relaxed">
+                                                La fase <strong>{tierName.toUpperCase()}</strong> se encuentra cerrada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima ventana.
+                                            </p>
+                                            
+                                            <button 
+                                                onClick={() => setStep('fast_lane')}
+                                                className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-white/5 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                            >
+                                                Entrar por Fast Lane <Zap className="w-4 h-4 fill-black group-hover:scale-125 transition-transform" />
+                                            </button>
                                         </div>
-                                        <h3 className="text-lg font-bold text-white mb-2 font-mono uppercase tracking-tighter">Acceso Restringido</h3>
-                                        <p className="text-[11px] text-zinc-400 mb-6 font-medium leading-relaxed">
-                                            La fase <strong>{tierName.toUpperCase()}</strong> se encuentra cerrada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima ventana.
-                                        </p>
-                                        
-                                        <button 
-                                            onClick={() => setStep('fast_lane')}
-                                            className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-white/5 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
-                                        >
-                                            Entrar por Fast Lane <Zap className="w-4 h-4 fill-black group-hover:scale-125 transition-transform" />
-                                        </button>
-                                    </div>
+                                    ) : (
+                                        /* This is where Fast Lane Form will render via the shared block below, 
+                                           facilitated by step condition. */
+                                        null
+                                    )}
                                 </div>
                             ) : (
                                 /* Active Phase UI */
