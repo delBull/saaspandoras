@@ -48,7 +48,6 @@ import { useReadContract, useWalletBalance } from "thirdweb/react";
 import { getTargetAmount } from "@/lib/project-utils";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
-
 // Format Helper
 const formatCurrency = (amount: number | string) => {
   const num = Number(amount);
@@ -59,6 +58,28 @@ const formatCurrency = (amount: number | string) => {
     maximumFractionDigits: num < 1 ? 4 : 2,
   }).format(num);
 };
+
+// Human-readable legalStatus labels for consistent display
+const LEGAL_STATUS_LABELS: Record<string, string> = {
+  'sapi_mexico': 'S.A.P.I. de C.V. — Sociedad Anónima Promotora de Inversión (México)',
+  'sa_mexico': 'S.A. de C.V. — Sociedad Anónima de Capital Variable (México)',
+  'srl_mexico': 'S. de R.L. de C.V. — Sociedad de Responsabilidad Limitada (México)',
+  'llc_usa': 'LLC — Limited Liability Company (Estados Unidos)',
+  'corp_usa': 'Corp. — Corporation (Estados Unidos)',
+  'foundation': 'Fundación sin fines de lucro',
+  'dao': 'DAO — Organización Autónoma Descentralizada',
+  'bvi': 'BVI Ltd. — Compañía en Islas Vírgenes Británicas',
+  'cayman': 'Cayman Islands Foundation Company',
+  'panama': 'Sociedad Anónima (Panamá)',
+  'digital_asset': 'Activo Digital (sin entidad corporativa formal)',
+  'pending': 'Pendiente de constituir',
+  'other': 'Otro / En proceso de definición',
+};
+
+function getLegalLabel(value: string | null | undefined): string {
+  if (!value) return 'No especificado';
+  return LEGAL_STATUS_LABELS[value] ?? value;
+}
 import SectionCard from "./SectionCard";
 
 const TagIcon = ({ category }: { category: string }) => {
@@ -419,26 +440,33 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 <div className="space-y-4">
                   {activePhasesWithStats
                     .map((phase: any, index: number) => {
-                      // Status Logic
+                      const now = new Date();
                       const isSoldOut = phase.stats.isSoldOut;
                       const hasStarted = phase.stats.hasStarted;
+                      const hasEnded = phase.endDate && new Date(phase.endDate) < now;
                       const isNotPaused = phase.isActive !== false;
 
                       let statusLabel = 'Monto';
-                      if (isSoldOut) statusLabel = 'Agotado';
-                      else if (!hasStarted) statusLabel = 'Próximamente';
-                      else if (!isNotPaused) statusLabel = 'Pausado';
-                      else if (phase.type === 'time') statusLabel = 'Tiempo';
+                      let statusBadgeColor = 'bg-zinc-700 text-gray-300';
 
-                      const isClickable = hasStarted && !isSoldOut && isNotPaused;
+                      if (isSoldOut) {
+                        statusLabel = 'Agotado';
+                        statusBadgeColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
+                      } else if (!isNotPaused) {
+                        statusLabel = 'Pausado';
+                        statusBadgeColor = 'bg-yellow-500/20 text-yellow-400';
+                      } else if (hasEnded) {
+                        statusLabel = 'Finalizado';
+                        statusBadgeColor = 'bg-zinc-600 text-gray-400';
+                      } else if (!hasStarted) {
+                        statusLabel = 'Próximamente';
+                        statusBadgeColor = 'bg-blue-500/20 text-blue-400 border border-blue-500/50';
+                      } else {
+                        statusLabel = phase.type === 'time' ? 'Activo (Tiempo)' : 'Activo (Monto)';
+                        statusBadgeColor = 'bg-lime-500/10 text-lime-400 border border-lime-500/20';
+                      }
 
-                      const statusBadgeColor = isSoldOut
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/50'
-                        : !hasStarted
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                          : !isNotPaused
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-zinc-700 text-gray-300';
+                      const isClickable = hasStarted && !isSoldOut && isNotPaused && !hasEnded;
 
                       const cardBorderColor = isSoldOut
                         ? 'border-red-900/30'
@@ -496,7 +524,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                             </div>
                             <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
                               <div
-                                className={`${isSoldOut ? 'bg-red-500' : (!hasStarted ? 'bg-blue-500' : 'bg-lime-500')} h-full rounded-full transition-all duration-1000`}
+                                className={`${isSoldOut ? 'bg-red-500' : (hasEnded ? 'bg-zinc-600' : (!hasStarted ? 'bg-blue-500' : 'bg-lime-500'))} h-full rounded-full transition-all duration-1000`}
                                 style={{ width: `${phase.stats.percent}%` }}
                               />
                             </div>
@@ -536,8 +564,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                             {/* Status */}
                             <div>
                               <span className="text-zinc-500 block text-xs">Estado</span>
-                              <span className={`${isSoldOut ? 'text-red-400' : (!hasStarted ? 'text-blue-400' : 'text-lime-400')}`}>
-                                {isSoldOut ? 'Agotado' : (!hasStarted ? 'Próximamente' : 'Activo')}
+                              <span className={`${isSoldOut ? 'text-red-400' : (hasEnded ? 'text-zinc-500' : (!hasStarted ? 'text-blue-400' : 'text-lime-400'))}`}>
+                                {isSoldOut ? 'Agotado' : (hasEnded ? 'Finalizado' : (!hasStarted ? 'Próximamente' : 'Activo'))}
                               </span>
                             </div>
                           </div>
@@ -676,49 +704,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             )}
           </SectionCard>
 
-          {/* Estructura de Recompensa Recurrente */}
-          <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
-            {(() => {
-              // Intentar parsear como JSON primero (formato nuevo), luego como string simple
-              let rewardsData;
-              try {
-                rewardsData = project.recurring_rewards ? JSON.parse(project.recurring_rewards) : null;
-              } catch {
-                rewardsData = null;
-              }
-
-              if (rewardsData && typeof rewardsData === 'object') {
-                // Formato JSON: mostrar estructura detallada
-                return (
-                  <div className="space-y-3">
-                    {Object.entries(rewardsData).map(([key, value]) => {
-                      if (key.includes('Enabled') && value === true) {
-                        const detailKey = key.replace('Enabled', 'Details');
-                        const detailValue = (rewardsData as any)[detailKey];
-                        
-                        // Safety: ensure detailValue is a string or number before rendering
-                        if (typeof detailValue === 'object') return null;
-
-                        return (
-                          <div key={key} className="p-3 bg-zinc-700/50 rounded-lg">
-                            <p className="font-semibold text-white text-sm">{key.replace('Enabled', '')}</p>
-                            <p className="text-zinc-300 text-sm mt-1">{String(detailValue || '')}</p>
-                          </div>
-                        )
-                      }
-                      return null;
-                    })}
-                  </div>
-                );
-              } else if (project.recurring_rewards) {
-                // Formato string simple (legacy)
-                return <p className="text-zinc-300 whitespace-pre-line">{String(project.recurring_rewards)}</p>;
-              } else {
-                // No hay datos
-                return <p className="text-zinc-400">No hay recompensas recurrentes definidas en esta Creación.</p>;
-              }
-            })()}
-          </SectionCard>
         </div>
       ),
     },
@@ -770,14 +755,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           {/* Skipping full phase list here to avoid redundancy with Utility tab, or keeping concise */}
 
 
-          {/* Estructura de Recompensa Recurrente */}
-          <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
-            {project.recurring_rewards ? (
-              <p className="text-zinc-300 whitespace-pre-line">{project.recurring_rewards}</p>
-            ) : (
-              <p className="text-zinc-400">No especificada</p>
-            )}
-          </SectionCard>
 
           {/* Governance Tokenomics (Deployment Config) */}
           {project.w2eConfig?.tokenomics && (
@@ -853,13 +830,16 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
 
           {/* Estatus Legal - Nueva clave */}
           <SectionCard title="Estatus Legal y Jurisdicción" icon={Briefcase}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.legal_status ?? 'No especificado'}</p>
+            <p className="text-zinc-300 font-medium mb-2">{getLegalLabel(project.legalStatus)}</p>
+            {project.legalStatusDetails && (
+              <p className="text-zinc-400 text-sm whitespace-pre-line leading-relaxed border-t border-zinc-800/50 pt-2">{project.legalStatusDetails}</p>
+            )}
           </SectionCard>
 
           {/* Entidad Fiduciaria (desde ProjectDetails) */}
-          {project.fiduciary_entity && (
+          {project.fiduciaryEntity && (
             <SectionCard title="Entidad Fiduciaria" icon={Shield}>
-              <p className="text-zinc-300 whitespace-pre-line">{project.fiduciary_entity}</p>
+              <p className="text-zinc-300 whitespace-pre-line">{project.fiduciaryEntity}</p>
               <p className="mt-4 text-sm text-zinc-400">
                 *Custodia de activos del mundo real.
               </p>
@@ -867,9 +847,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           )}
 
           {/* Documento de Valuación (desde ProjectDetails) */}
-          {project.valuation_document_url && (
+          {project.valuationDocumentUrl && (
             <SectionCard title="Documento de Valuación" icon={Code}>
-              <a href={project.valuation_document_url} target="_blank" rel="noopener noreferrer"
+              <a href={project.valuationDocumentUrl} target="_blank" rel="noopener noreferrer"
                 className="text-lime-400 hover:text-lime-300 underline text-sm">
                 Ver documento →
               </a>
@@ -880,9 +860,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           )}
 
           {/* Reporte de Due Diligence (desde ProjectDetails) */}
-          {project.due_diligence_report_url && (
+          {project.dueDiligenceReportUrl && (
             <SectionCard title="Reporte de Due Diligence" icon={Shield}>
-              <a href={project.due_diligence_report_url} target="_blank" rel="noopener noreferrer"
+              <a href={project.dueDiligenceReportUrl} target="_blank" rel="noopener noreferrer"
                 className="text-lime-400 hover:text-lime-300 underline text-sm">
                 Ver reporte →
               </a>

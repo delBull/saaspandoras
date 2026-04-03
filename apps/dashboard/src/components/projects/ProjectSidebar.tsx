@@ -488,41 +488,41 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     const previousHasEnded = !!(previousPhase?.endDate && new Date(previousPhase.endDate) < now);
                     const previousIsComplete = previousIsSoldOut || previousHasEnded;
 
-                    let status = 'inactive';
-                    let statusPriority = 99; // Lower is better
-                    let statusLabel = 'No Disponible';
-                    let statusColor = 'bg-zinc-600 text-gray-300';
+                    let status: string = 'inactive';
+                    let statusPriority: number = 99; 
+                    let statusLabel: string = 'No Disponible';
+                    let statusColor: string = 'bg-zinc-600 text-gray-300';
 
                     if (isSoldOut) {
                       status = 'sold_out';
-                      statusPriority = 3;
+                      statusPriority = 4;
                       statusLabel = 'Agotado';
                       statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
                     } else if (!isNotPaused) {
                       status = 'paused';
-                      statusPriority = 4;
+                      statusPriority = 5;
                       statusLabel = 'Pausado';
                       statusColor = 'bg-yellow-500/20 text-yellow-400';
-                    } else if (!hasStarted) {
-                      status = 'coming_soon';
-                      statusPriority = 2; // Upcoming is second priority
-                      statusLabel = 'Próximamente';
-                      statusColor = 'bg-blue-500/20 text-blue-400';
                     } else if (hasEnded) {
                       status = 'ended';
-                      statusPriority = 5;
+                      statusPriority = 6;
                       statusLabel = 'Finalizado';
                       statusColor = 'bg-zinc-600 text-gray-400';
-                    } else if (!previousIsComplete) {
-                      status = 'waiting';
-                      statusPriority = 2; // Treat as upcoming/waiting
-                      statusLabel = 'Esperando';
-                      statusColor = 'bg-orange-500/20 text-orange-400';
-                    } else {
+                    } else if (hasStarted) {
                       status = 'active';
                       statusPriority = 1; // Highest priority
                       statusLabel = 'Activo';
                       statusColor = 'bg-lime-500 text-black';
+                    } else if (!previousIsComplete && phase.isActive !== true) {
+                      status = 'waiting';
+                      statusPriority = 3; // Treat as upcoming/waiting
+                      statusLabel = 'Esperando';
+                      statusColor = 'bg-orange-500/20 text-orange-400';
+                    } else {
+                      status = 'coming_soon';
+                      statusPriority = 2; // Upcoming is second priority
+                      statusLabel = 'Próximamente';
+                      statusColor = 'bg-blue-500/20 text-blue-400';
                     }
 
                     return { ...phase, status, statusPriority, statusLabel, statusColor };

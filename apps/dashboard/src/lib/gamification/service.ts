@@ -356,7 +356,7 @@ export class GamificationService {
         type: eventType.toLowerCase() as any,
         category: this.getEventCategory(eventType) as any,
         points: points,
-        projectId: metadata?.projectId ? Number(metadata.projectId) : null,
+        projectId: metadata?.projectId || metadata?.protocolId ? Number(metadata.projectId || metadata.protocolId) : null,
         metadata: metadata ? metadata : {},
         dedupId: dedupId || null, // Guard for future reconciliation
       }).returning();
@@ -822,7 +822,6 @@ export class GamificationService {
           wallet: walletLower,
           artifactsCount: incrementArtifacts,
           votingPower: incrementArtifacts.toString(), // Default 1:1 voting power
-          sourceCampaignId: campaignId || null,
           joinedAt: new Date(),
           lastActiveAt: new Date()
         })
@@ -830,8 +829,7 @@ export class GamificationService {
           target: [daoMembers.projectId, daoMembers.wallet],
           set: {
             artifactsCount: sql`${daoMembers.artifactsCount} + ${incrementArtifacts}`,
-            votingPower: sql`(${daoMembers.artifactsCount} + ${incrementArtifacts})::text`, // Cast to text for decimal field compatibility in set
-            sourceCampaignId: campaignId ? campaignId : undefined, // Update attribution if provided
+            votingPower: sql`(${daoMembers.artifactsCount} + ${incrementArtifacts})::text`,
             lastActiveAt: new Date()
           }
         });
