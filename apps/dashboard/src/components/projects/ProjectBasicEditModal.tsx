@@ -138,11 +138,16 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
         e.preventDefault();
         setIsSubmitting(true);
 
-        // formData.logoUrl/coverPhotoUrl are already clean (base64 stripped at load).
-        // If the file upload API returned a URL, it's already stored there.
-        // If somehow still a data URI, send null to avoid body-too-large errors.
-        const safeLogoUrl = formData.logoUrl?.startsWith('data:') ? null : (formData.logoUrl || null);
-        const safeCoverUrl = formData.coverPhotoUrl?.startsWith('data:') ? null : (formData.coverPhotoUrl || null);
+        // Improved sanity check to never send "null" or "undefined" as strings
+        const sanitizeUrl = (url: string | null | undefined) => {
+            if (!url || url === 'null' || url === 'undefined' || url.startsWith('data:')) return null;
+            return url;
+        };
+
+        const safeLogoUrl = sanitizeUrl(formData.logoUrl);
+        const safeCoverUrl = sanitizeUrl(formData.coverPhotoUrl);
+        
+        console.log('🖼️ Submitting project images:', { safeLogoUrl, safeCoverUrl });
 
         try {
             const response = await fetch(`/api/admin/projects/${project.id}`, {
@@ -297,7 +302,7 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                                         <Label>Imagen de Portada</Label>
                                         <div className="h-14 w-full rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden mb-1.5">
                                             {formData.coverPhotoUrl && !formData.coverPhotoUrl.startsWith('data:') ? (
-                                                <Image src={resolveIpfs(formData.coverPhotoUrl)} alt="Cover" width={600} height={56} className="w-full h-full object-cover" unoptimized />
+                                                <Image src={resolveIpfs(formData.coverPhotoUrl)} alt="Cover" width={600} height={56} className="w-full h-full object-cover" unoptimized={true} />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center"><PhotoIcon className="w-7 h-7 text-zinc-700" /></div>
                                             )}
