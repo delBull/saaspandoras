@@ -19,6 +19,7 @@
     const theme = script.getAttribute('data-theme') || 'light';
     const position = script.getAttribute('data-position') || 'right';
     const successUrl = script.getAttribute('data-success-url');
+    const hideButton = script.getAttribute('data-hide-button') === 'true';
     
     // Config
     // Use the script source itself to determine the base URL (Staging vs Prod)
@@ -302,16 +303,20 @@
     }
 
     function initTrigger() {
-        if (state.joined && !successUrl) return; // Keep showing if we want to test redirects or if already joined but no redirect
+        if (state.joined && !successUrl) return; 
         
-        const btn = document.createElement('button');
-        btn.id = 'pd-growth-trigger';
-        btn.className = 'pd-glow';
-        btn.innerText = customBtnText;
-        btn.onclick = openModal;
-        document.body.appendChild(btn);
-        
-        track('WIDGET_VIEW');
+        if (!hideButton) {
+            const btn = document.createElement('button');
+            btn.id = 'pd-growth-trigger';
+            btn.className = 'pd-glow';
+            btn.innerText = customBtnText;
+            btn.onclick = openModal;
+            document.body.appendChild(btn);
+            track('WIDGET_VIEW');
+        } else {
+            track('WIDGET_INIT_SILENT');
+        }
+
         setupAutoLinks();
     }
 
