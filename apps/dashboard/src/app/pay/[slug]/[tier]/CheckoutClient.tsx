@@ -345,7 +345,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                 toast.error(error.message.includes('insufficient') ? "Fondos insuficientes" : "Ocurrió un error en la blockchain.");
                                                             }}
                                                             disabled={!hasEnsuredAccess || isPriceLoading || !txConfig.address}
-                                                            className="!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px]"
+                                                            className="!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none"
                                                             style={{ backgroundColor: brandColor, color: '#000' }}
                                                         >
                                                             {hasEnsuredAccess ? "Asegurar Mi Posición Ahora" : "Preparando Acceso..."}
@@ -355,44 +355,30 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             ) : (
                                                 <div className="relative group">
                                                     <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                                                    <ConnectButton
-                                                        client={client}
-                                                        showAllWallets={false}
-                                                        theme="dark"
-                                                        locale="es_ES"
-                                                        chains={[chain]}
-                                                        wallets={[
-                                                            inAppWallet({
-                                                                auth: {
-                                                                    options: ["email", "google", "apple", "facebook", "passkey"],
-                                                                },
-                                                                executionMode: {
-                                                                    mode: "EIP7702",
-                                                                    sponsorGas: true,
-                                                                },
-                                                            }),
-                                                            createWallet("io.metamask"),
-                                                        ]}
-                                                        connectButton={{
-                                                            label: "Comenzar Registro Seguro",
-                                                            style: {
-                                                                width: '100%',
-                                                                height: '56px',
-                                                                borderRadius: '16px',
-                                                                textTransform: 'uppercase',
-                                                                letterSpacing: '0.1em',
-                                                                fontWeight: '900',
-                                                                fontSize: '11px',
-                                                                backgroundColor: '#fff',
-                                                                color: '#000'
-                                                            }
-                                                        }}
-                                                        connectModal={{
+                                                    <button 
+                                                        onClick={() => connect({
+                                                            client,
+                                                            chain,
+                                                            wallets: [
+                                                                inAppWallet({
+                                                                    auth: {
+                                                                        options: ["email", "google", "apple", "facebook", "passkey"],
+                                                                    },
+                                                                    executionMode: {
+                                                                        mode: "EIP7702",
+                                                                        sponsorGas: true,
+                                                                    },
+                                                                }),
+                                                                createWallet("io.metamask"),
+                                                            ],
                                                             showThirdwebBranding: false,
                                                             size: "compact",
                                                             title: "Identificación Segura"
-                                                        }}
-                                                    />
+                                                        })}
+                                                        className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all relative z-10"
+                                                    >
+                                                        Comenzar Registro Seguro
+                                                    </button>
                                                 </div>
                                             )}
 
@@ -492,6 +478,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
                                         >
                                             Ver mi participación <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                        <button
+                                            onClick={() => window.open(`${window.location.origin}/projects/${project.slug}/dao`, '_blank')}
+                                            className="w-full py-4 text-center text-[10px] uppercase font-black tracking-widest text-zinc-400 hover:text-white transition-colors block border border-zinc-800 rounded-2xl"
+                                        >
+                                            Abrir en nueva pestaña <ArrowRight className="w-3 h-3 inline ml-1 opacity-50" />
                                         </button>
                                     </div>
                                 </>
