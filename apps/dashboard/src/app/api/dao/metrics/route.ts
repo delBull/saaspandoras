@@ -40,15 +40,25 @@ export async function GET(req: Request) {
 
         // 2. Governance Intelligence (GGE Core)
         // a) Total Stats
-        const totalStats = await db.select({
-            totalPower: sum(daoMembers.votingPower),
-            totalMembers: count(daoMembers.wallet),
-            totalArtifacts: sum(daoMembers.artifactsCount)
-        })
-        .from(daoMembers)
-        .where(eq(daoMembers.projectId, projectId));
+        let totalStats;
+        try {
+            totalStats = await db.select({
+                totalPower: sum(daoMembers.votingPower),
+                totalMembers: count(daoMembers.wallet),
+                totalArtifacts: sum(daoMembers.artifactsCount)
+            })
+            .from(daoMembers)
+            .where(eq(daoMembers.projectId, projectId));
+        } catch (dbError: any) {
+            console.error(`❌ [Metrics API] DB select failed for project ${projectId}:`, dbError.message);
+            throw dbError; // re-throw to be caught by main catch
+        }
 
-        if (!totalStats || totalStats.length === 0) {
+        // If no members, or if Postgres returns a single row with all nulls (common for empty sum/count)
+        const firstStat = totalStats?.[0];
+        const hasNoMembers = !firstStat || (!firstStat.totalMembers && !firstStat.totalPower);
+
+        if (hasNoMembers) {
            console.log(`ℹ️ [Metrics API] No DAO members found for project ${projectId}`);
            return NextResponse.json({
                members: 0,
@@ -60,12 +70,12 @@ export async function GET(req: Request) {
            });
         }
 
-        const totalPowerNum = totalStats?.[0]?.totalPower ? Number(totalStats[0].totalPower) : 0;
-        const totalMembersNum = totalStats?.[0]?.totalMembers ? Number(totalStats[0].totalMembers) : 0;
-        const totalArtifactsNum = totalStats?.[0]?.totalArtifacts ? Number(totalStats[0].totalArtifacts) : 0;
+        const totalPowerNum = Number(firstStat.totalPower || 0);
+        const totalMembersNum = Number(firstStat.totalMembers || 0);
+        const totalArtifactsNum = Number(firstStat.totalArtifacts || 0);
 
         // b) Power Concentration (Top 10)
-        let topWallets: { votingPower: string | number }[] = [];
+        let topWallets: { votingPower: string | number | null }[] = [];
         try {
             topWallets = await db.select({
                 votingPower: daoMembers.votingPower
@@ -75,19 +85,23 @@ export async function GET(req: Request) {
             .orderBy(desc(daoMembers.votingPower))
             .limit(10);
         } catch (subError) {
-            console.error('❌ DAO Metrics: Error fetching top wallets:', subError);
-            // Non-critical fallback, keep going with empty list
+            console.warn('⚠️ [Metrics API] Error fetching top wallets:', subError);
         }
 
-        const top10Power = topWallets.reduce((acc, w) => acc + Number(w.votingPower || 0), 0);
-        const pci = totalPowerNum > 0 ? top10Power / totalPowerNum : 0;
+        const top10Power = topWallets.reduce((acc, w) => acc + Number(w?.votingPower || 0), 0);
+        
+        // PCI: Power Concentration Index (Gini-like for DAO)
+        let pci = 0;
+        if (totalPowerNum > 0) {
+            pci = top10Power / totalPowerNum;
+        }
 
         const response = {
             members: totalMembersNum,
             votingPower: totalPowerNum,
             artifacts: totalArtifactsNum,
             treasury: treasuryUSD,
-            pci: isNaN(pci) ? 0 : pci,
+            pci: (isNaN(pci) || !isFinite(pci)) ? 0 : pci,
             attribution: [] 
         };
 

@@ -3,6 +3,7 @@ import { db } from "~/db";
 import { sql, eq, and, inArray, desc } from "drizzle-orm";
 import { projects, users, gamificationEvents } from "~/db/schema";
 import type { DeploymentConfig } from "~/types/deployment";
+import { getProjectPhasesWithStats } from "@/lib/phase-utils";
 
 export const dynamic = 'force-dynamic';
 
@@ -110,23 +111,23 @@ export async function GET(request: Request) {
                 });
 
                 // --- Process Artifacts (Phases) ---
-                const config = project.w2eConfig as DeploymentConfig;
-                if (config?.phases) {
-                    for (const phase of config.phases) {
-                        if (phase.isActive) {
-                            artifacts.push({
-                                id: `artifact-${project.id}-${phase.id}`,
-                                projectId: project.id,
-                                title: phase.name,
-                                description: phase.description || `Participación en ${project.title}`,
-                                image: phase.image || project.logoUrl || "/images/default-project.jpg",
-                                slug: project.slug,
-                                type: "Artifact",
-                                price: phase.tokenPrice ? `$${phase.tokenPrice} USD` : "N/A",
-                                tokenAllocation: phase.tokenAllocation,
-                                phaseId: phase.id
-                            });
-                        }
+                const phasesWithStats = getProjectPhasesWithStats(project, 0); // Using 0 as fallback supply for global bootstrap
+                
+                for (const phase of phasesWithStats) {
+                    // Only show artifacts that are technically active or upcoming (not sold out or ended)
+                    if (phase.isActive || phase.status === 'active' || phase.status === 'upcoming') {
+                        artifacts.push({
+                            id: `artifact-${project.id}-${phase.id}`,
+                            projectId: project.id,
+                            title: phase.name,
+                            description: phase.description || `Participación en ${project.title}`,
+                            image: phase.image || project.logoUrl || "/images/default-project.jpg",
+                            slug: project.slug,
+                            type: "Artifact",
+                            price: phase.tokenPrice ? `$${phase.tokenPrice} USD` : "N/A",
+                            tokenAllocation: phase.tokenAllocation,
+                            phaseId: phase.id
+                        });
                     }
                 }
             }

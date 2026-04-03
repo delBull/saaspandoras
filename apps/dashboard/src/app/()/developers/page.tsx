@@ -110,13 +110,13 @@ export default function DevelopersPage() {
   data-theme="premium"
   defer
 ></script>`,
-    commerce: `// Option A: Data Attributes (Zero Code)
+    commerce: `// Option A: Data Attributes (Zero Code) - Now Case-Insensitive
 <button 
   data-pd-checkout-slug="${projectSlug}" 
   data-pd-checkout-tier="${firstTier}"
 > Buy Now </button>
 
-// Option B: Programmable Popup
+// Option B: Programmable Popup - Resilient Matching
 window.PandorasGrowth.openCheckout('${projectSlug}', '${secondTier}');`,
     api: `// Option A: SDK Implementation (Recommended)
 window.PandorasGrowth.registerLead({
@@ -388,7 +388,7 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                   ) : activeTab === 'commerce' ? (
                     <pre className="space-y-4">
                       <div>
-                        <div className="text-zinc-600 mb-2">// Option A: Data Attributes (Zero Code)</div>
+                        <div className="text-zinc-600 mb-2">// Option A: Data Attributes (Zero Code) - Now Case-Insensitive</div>
                         <span className="text-zinc-400">&lt;</span><span className="text-blue-400">button</span><br/>
                         <span className="pl-6 text-indigo-400">data-pd-checkout-slug</span>=<span className="text-emerald-300">"{projectSlug}"</span><br/>
                         <span className="pl-6 text-indigo-400">data-pd-checkout-tier</span>=<span className="text-emerald-300">"{firstTier}"</span><br/>
@@ -396,7 +396,7 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                       </div>
                       
                       <div>
-                        <div className="text-zinc-600 mb-2">// Option B: Programmable Popup</div>
+                        <div className="text-zinc-600 mb-2">// Option B: Programmable Popup - Resilient Matching</div>
                         <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<span className="text-emerald-300">'{projectSlug}'</span>, <span className="text-emerald-300">'{secondTier}'</span>);
                       </div>
                     </pre>

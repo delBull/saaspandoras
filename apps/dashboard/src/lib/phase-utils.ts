@@ -54,8 +54,8 @@ export function calculatePhaseStatus(
     return isNaN(d.getTime()) ? null : d;
   };
 
-  const startDate = parseSafeDate(phase.startDate);
-  const endDate = parseSafeDate(phase.endDate);
+  const startDate = parseSafeDate(phase.startDate || phase.startAt || phase.availableAt || phase.unlockAt);
+  const endDate = parseSafeDate(phase.endDate || phase.endAt || phase.expiresAt);
   
   const hasStarted = !startDate || startDate <= now;
   const hasEnded = !!(endDate && endDate < now);
@@ -180,5 +180,22 @@ export function getProjectPhasesWithStats(project: any, currentSupply: number) {
       },
       ...statusData
     };
+  });
+}
+
+/**
+ * Resiliently finds a phase within a project by name, slug or ID.
+ * Handles trims, case-insensitivity and multiple identifiers.
+ */
+export function matchPhase(phases: any[], identifier: string) {
+  if (!phases || !identifier) return null;
+  const cleanId = String(identifier).trim().toLowerCase();
+  
+  return phases.find(p => {
+    const rawName = String(p.name || p.title || "").trim().toLowerCase();
+    const rawId = String(p.id || "").trim().toLowerCase();
+    const rawSlug = String(p.slug || "").trim().toLowerCase();
+    
+    return rawName === cleanId || rawId === cleanId || rawSlug === cleanId;
   });
 }

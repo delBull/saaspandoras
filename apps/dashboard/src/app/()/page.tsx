@@ -8,8 +8,8 @@ import { getContract, prepareContractCall } from "thirdweb";
 import { governanceABI as PANDORAS_GOVERNANCE_ABI } from "@/lib/governance-abi";
 import { PANDORAS_POOL_ABI } from "@/lib/pandoras-pool-abi"; // Keeping for compatibility if needed
 import { UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon, Squares2X2Icon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon, CurrencyDollarIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
-import Image from "next/image";
 import { client } from "@/lib/thirdweb-client";
+import { sanitizeUrl } from "@/lib/project-utils";
 import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
@@ -93,12 +93,11 @@ function FeaturedCarousel({ projects }: { projects: any[] }) {
     <div className="relative w-full h-full">
       <div className="relative h-full w-full rounded-2xl overflow-hidden group cursor-pointer border border-white/10 shadow-2xl shadow-purple-900/20 aspect-[16/10] md:aspect-auto">
         {/* Background Image */}
-        <Image
-          src={currentProject.imageUrl || currentProject.coverPhotoUrl}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={sanitizeUrl(currentProject.imageUrl || currentProject.coverPhotoUrl) || "/images/dhub3.png"}
           alt={currentProject.title}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          priority
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
@@ -164,11 +163,11 @@ function ListItem({ item, isArtifact }: { item: any, isArtifact: boolean }) {
       <div className="bg-zinc-900/80 border border-zinc-800/50 rounded-xl p-3 flex gap-4 items-center hover:bg-zinc-800 transition-all duration-300 active:scale-[0.98]">
         {/* Image */}
         <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-black border border-zinc-800">
-          <Image
-            src={item.image}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={sanitizeUrl(item.image) || "/images/default-logo.jpg"}
             alt={item.title}
-            fill
-            className="object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
           />
           {isArtifact && (
             <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm px-2 py-1 text-center border-t border-white/10">

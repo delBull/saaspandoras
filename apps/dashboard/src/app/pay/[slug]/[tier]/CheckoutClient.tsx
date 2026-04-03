@@ -16,6 +16,7 @@ import useSWR from 'swr';
 // Protocol Engine Imports
 import { resolveExecution } from "@/lib/protocol-engine/execute";
 import { resolveArtifactPrice } from "@/lib/protocol-engine/artifact/pricing";
+import { calculatePhaseStatus } from "@/lib/phase-utils";
 
 // Generic fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -27,6 +28,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [amount, setAmount] = useState("1");
     const [contractPrice, setContractPrice] = useState<bigint | undefined>(undefined);
     const [isPriceLoading, setIsPriceLoading] = useState(true);
+    const [totalSupply, setTotalSupply] = useState<number>(0);
+    const [isStatusLoading, setIsStatusLoading] = useState(true);
 
     const [fastLaneEmail, setFastLaneEmail] = useState('');
     const [isSubmittingFastLane, setIsSubmittingFastLane] = useState(false);
@@ -97,11 +100,39 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [hasEnsuredAccess, setHasEnsuredAccess] = useState(false);
     const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
-    // 🧬 Real-time Phase Activation Engine
+    // 🧬 Real-time Phase Activation Engine (Unified)
     const isPhaseActive = useMemo(() => {
-        if (!rawPhase) return false;
-        return rawPhase.isActive !== false;
-    }, [rawPhase]);
+        if (!rawPhase || isStatusLoading) return false;
+        // Optimization: during global bootstrap we use 0, but here we use real-time supply
+        const statusData = calculatePhaseStatus(rawPhase, totalSupply, 0); // Simplified for single-tier checkout
+        return statusData.isClickable || statusData.status === 'active';
+    }, [rawPhase, totalSupply, isStatusLoading]);
+
+    // 🛡️ On-chain Status Synchronization
+    useEffect(() => {
+        if (!targetContract) return;
+
+        const { readContract } = require("thirdweb");
+        
+        async function syncStatus() {
+            try {
+                const supply = await readContract({
+                    contract: targetContract,
+                    method: "function totalSupply() view returns (uint256)",
+                    params: []
+                });
+                setTotalSupply(Number(supply));
+            } catch (e) {
+                console.warn("[CheckoutHub] TotalSupply sync failed:", e);
+                setTotalSupply(0);
+            } finally {
+                setIsStatusLoading(false);
+            }
+        }
+        syncStatus();
+        const interval = setInterval(syncStatus, 30000); // Polling every 30s
+        return () => clearInterval(interval);
+    }, [targetContract]);
 
     // 🧬 Real-time Scarcity Engine
     const { data: activityData } = useSWR(

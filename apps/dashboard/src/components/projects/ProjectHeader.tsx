@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
 import { useActiveAccount } from "thirdweb/react";
 import { useRouter } from "next/navigation";
 import type { ProjectData } from "@/app/()/projects/types";
 import { StatusTag } from "./ProjectStatusIndicators";
+import { sanitizeUrl } from "@/lib/project-utils";
 
 interface ProjectHeaderProps {
   project: ProjectData;
@@ -18,18 +18,6 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   // Acceso seguro a propiedades opcionales
   const projectObj = project as unknown as Record<string, unknown>;
   
-  const sanitizeUrl = (url: any) => {
-    if (!url || typeof url !== 'string') return null;
-    const cleanUrl = url.trim();
-    if (['image', 'logo', 'icon', 'undefined', 'null', 'cover'].includes(cleanUrl.toLowerCase())) return null;
-    if (cleanUrl.startsWith('http') || cleanUrl.startsWith('/') || cleanUrl.startsWith('data:')) return cleanUrl;
-    if (cleanUrl.startsWith('ipfs:')) {
-      const path = cleanUrl.replace(/^ipfs:(\/*)/, '');
-      return `https://ipfs.io/ipfs/${path}`;
-    }
-    return `/${cleanUrl}`;
-  };
-
   const coverPhotoUrl = sanitizeUrl(projectObj.coverPhotoUrl || projectObj.cover_photo_url) || '/images/default-project.jpg';
   const logoUrl = sanitizeUrl(projectObj.logoUrl || projectObj.logo_url) || '/images/default-logo.jpg';
   const tagline = String(projectObj.tagline || projectObj.description || 'Sin descripción');
