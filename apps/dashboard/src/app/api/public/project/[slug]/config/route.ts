@@ -68,16 +68,20 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           address: project.contractAddress,
         });
 
-        // Try ERC721 first, then fallback or check w2eConfig for type
+        // Try ERC721 first, then fallback to ERC1155 (Default ID 0)
         try {
           const supply = await erc721TotalSupply({ contract });
           currentSupply = Number(supply);
         } catch {
-          // If fail, might be 1155 or other? 
-          // Just keep 0 for now as fallback, calculatePhaseStatus is robust enough
+          try {
+            const supply = await erc1155TotalSupply({ contract, id: 0n });
+            currentSupply = Number(supply);
+          } catch (e1155) {
+            console.warn("[PublicConfig] Supply fetch fail (721 & 1155 id:0):", e1155);
+          }
         }
       } catch (e) {
-        console.warn("[PublicConfig] Supply fetch fail:", e);
+        console.warn("[PublicConfig] Contract setup fail:", e);
       }
     }
 

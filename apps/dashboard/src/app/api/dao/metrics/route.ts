@@ -24,16 +24,17 @@ export async function GET(req: Request) {
 
         let treasuryUSD = 0;
 
-        if (project?.treasuryAddress && project.chainId) {
+        if (project?.treasuryAddress?.startsWith('0x') && project.chainId) {
             try {
+                const chain = defineChain(Number(project.chainId));
                 const balance = await getWalletBalance({
                     client,
-                    chain: defineChain(project.chainId),
+                    chain,
                     address: project.treasuryAddress
                 });
                 treasuryUSD = Number(balance.displayValue);
-            } catch (balanceError) {
-                console.warn('⚠️ Failed to fetch on-chain treasury balance:', balanceError);
+            } catch (balanceError: any) {
+                console.warn(`⚠️ [Metrics API] Treasury balance fetch failed for project ${projectId}:`, balanceError.message);
             }
         }
 
@@ -48,6 +49,7 @@ export async function GET(req: Request) {
         .where(eq(daoMembers.projectId, projectId));
 
         if (!totalStats || totalStats.length === 0) {
+           console.log(`ℹ️ [Metrics API] No DAO members found for project ${projectId}`);
            return NextResponse.json({
                members: 0,
                votingPower: 0,

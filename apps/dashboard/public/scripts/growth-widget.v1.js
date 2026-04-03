@@ -172,7 +172,8 @@
         registerLead,
         open: openModal,
         openCheckout,
-        track
+        track,
+        login: openModal // Legacy compatibility for external projects
     };
 
     // --- UI ENGINE ---

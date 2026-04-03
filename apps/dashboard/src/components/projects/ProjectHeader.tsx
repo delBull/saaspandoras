@@ -64,12 +64,11 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   return (
     <div className="relative w-full h-96 overflow-hidden rounded-xl mb-8">
       {/* Imagen de Portada */}
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={coverPhotoUrl as string}
         alt={`Portada de ${project.title}`}
-        fill
-        className="object-cover"
-        priority
+        className="absolute inset-0 w-full h-full object-cover"
       />
 
 
@@ -80,11 +79,10 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
             {/* Logo */}
             <div className="hidden sm:block">
               <div className="rounded-xl border-2 md:border-4 border-zinc-900 bg-zinc-800 w-[80px] h-[80px] md:w-[100px] md:h-[100px] flex items-center justify-center p-3 overflow-hidden">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={(logoUrl as string) || '/images/default-logo.jpg'}
                   alt={`${project.title} logo`}
-                  width={100}
-                  height={100}
                   className="object-contain w-full h-full"
                 />
               </div>
