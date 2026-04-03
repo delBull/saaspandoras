@@ -26,6 +26,7 @@ interface Project {
   id: number;
   title: string;
   slug: string;
+  w2eConfig?: any;
 }
 
 export default function DevelopersPage() {
@@ -96,6 +97,9 @@ export default function DevelopersPage() {
   };
 
   const projectSlug = selectedProject?.slug || 'YOUR_PROJECT_SLUG';
+  const phases = (selectedProject?.w2eConfig as any)?.phases || [];
+  const firstTier = String(phases[0]?.name || phases[0]?.id || phases[0]?.title || 'platinum').toLowerCase();
+  const secondTier = String((phases[1] || phases[0])?.name || (phases[1] || phases[0])?.id || (phases[1] || phases[0])?.title || 'silver').toLowerCase();
 
   const snippets = {
     widget: `<!-- Pandoras Growth OS Widget -->
@@ -109,11 +113,11 @@ export default function DevelopersPage() {
     commerce: `// Option A: Data Attributes (Zero Code)
 <button 
   data-pd-checkout-slug="${projectSlug}" 
-  data-pd-checkout-tier="platinum"
+  data-pd-checkout-tier="${firstTier}"
 > Buy Now </button>
 
 // Option B: Programmable Popup
-window.PandorasGrowth.openCheckout('${projectSlug}', 'silver');`,
+window.PandorasGrowth.openCheckout('${projectSlug}', '${secondTier}');`,
     api: `// Option A: SDK Implementation (Recommended)
 window.PandorasGrowth.registerLead({
   email: "builder@example.com",
@@ -387,13 +391,13 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                         <div className="text-zinc-600 mb-2">// Option A: Data Attributes (Zero Code)</div>
                         <span className="text-zinc-400">&lt;</span><span className="text-blue-400">button</span><br/>
                         <span className="pl-6 text-indigo-400">data-pd-checkout-slug</span>=<span className="text-emerald-300">"{projectSlug}"</span><br/>
-                        <span className="pl-6 text-indigo-400">data-pd-checkout-tier</span>=<span className="text-emerald-300">"platinum"</span><br/>
+                        <span className="pl-6 text-indigo-400">data-pd-checkout-tier</span>=<span className="text-emerald-300">"{firstTier}"</span><br/>
                         <span className="text-zinc-400">&gt;</span> Buy Now <span className="text-zinc-400">&lt;/</span><span className="text-blue-400">button</span><span className="text-zinc-400">&gt;</span>
                       </div>
                       
                       <div>
                         <div className="text-zinc-600 mb-2">// Option B: Programmable Popup</div>
-                        <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<span className="text-emerald-300">'{projectSlug}'</span>, <span className="text-emerald-300">'silver'</span>);
+                        <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<span className="text-emerald-300">'{projectSlug}'</span>, <span className="text-emerald-300">'{secondTier}'</span>);
                       </div>
                     </pre>
                   ) : (
