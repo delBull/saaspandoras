@@ -32,7 +32,7 @@ import { useActiveAccount, useReadContract, TransactionButton, useWalletBalance 
 import { getContract, defineChain, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { balanceOf } from "thirdweb/extensions/erc721";
-import { calculatePhaseStatus } from "@/lib/phase-utils";
+import { calculatePhaseStatus, getProjectPhasesWithStats } from "@/lib/phase-utils";
 
 interface ProjectSidebarProps {
   project: ProjectData;
@@ -141,40 +141,9 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   const raisedPercentage = progressPercent;
 
-  // --- Phase Stats Calculation (Replicated from Tabs for Robustness) ---
-  const getPhases = () => {
-    try {
-      const config = typeof project.w2eConfig === 'string'
-        ? JSON.parse(project.w2eConfig)
-        : (project.w2eConfig || {});
+  const phasesWithStats = getProjectPhasesWithStats(project, currentSupply);
+  const allPhases = phasesWithStats;
 
-      // 1. Direct phases in config (V1 style)
-      let phases = config.phases || (project as any).phases || [];
-
-      // 2. If V2, check artifacts for phases
-      if (phases.length === 0 && project.artifacts?.length) {
-        // Collect phases from all artifacts (V2 modular approach)
-        // Ensure each phase knows which contract address it belongs to
-        const artifactPhases = project.artifacts
-          .flatMap((a: any) => (a.phases || []).map((p: any) => ({
-            ...p,
-            artifactAddress: a.address || a.contractAddress // Handle both possible field names
-          })))
-          .filter((p: any) => p?.name);
-
-        if (artifactPhases.length > 0) {
-          phases = artifactPhases;
-        }
-      }
-
-      return phases;
-    } catch (e) {
-      console.error("[Sidebar] Error parsing w2eConfig:", e);
-      return (project as any).phases || [];
-    }
-  };
-
-  const allPhases = getPhases();
   const config = typeof project.w2eConfig === 'string'
     ? JSON.parse(project.w2eConfig)
     : (project.w2eConfig || {});
@@ -193,24 +162,6 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       window.location.href = url.toString();
     }
   };
-  let sidebarAccumulatedTokens = 0;
-
-  const phasesWithStats = allPhases.map((phase: any) => {
-    const statusData = calculatePhaseStatus(phase, currentSupply, sidebarAccumulatedTokens);
-    sidebarAccumulatedTokens += Number(phase.tokenAllocation || 0);
-
-    return { 
-      ...phase, 
-      stats: {
-        ...statusData,
-        tokensAllocated: Number(phase.tokenAllocation || 0),
-        tokensSold: Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (sidebarAccumulatedTokens - Number(phase.tokenAllocation || 0)))),
-        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (sidebarAccumulatedTokens - Number(phase.tokenAllocation || 0))))),
-        velocity: `+${(phase.name?.length || 4) % 3 + 2}`
-      },
-      ...statusData // Flatten for easier access in Sidebar
-    };
-  });
 
   // Debug log (remove in prod)
   // console.log("Gating Check:", { user: account?.address, hasAccess, balance: licenseBalance?.toString() });
@@ -483,51 +434,33 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                             )}
                           </div>
 
-                          {/* Button Gated by Access */}
-                          {hasAccess ? (
-                            <button
-                              onClick={() => isActive && !phase.stats.isSoldOut && handlePhaseClick(phase)}
-                              className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive && !phase.stats.isSoldOut
-                                ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
-                                : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
-                                }`}
-                              disabled={!isActive || phase.stats.isSoldOut}
-                            >
-                              {phase.status === 'upcoming' || phase.status === 'paused' ? (
-                                <>
-                                  <Clock className="w-4 h-4" />
-                                  Próximamente
-                                </>
-                              ) : phase.status === 'sold_out' ? (
-                                <>
-                                  <Lock className="w-4 h-4" />
-                                  Agotado
-                                </>
-                              ) : isActive ? (
-                                <>
-                                  <Ticket className="w-4 h-4" />
-                                  Adquirir Artefactos
-                                </>
-                              ) : (
-                                'No Disponible'
-                              )}
-                            </button>
-                          ) : (
-                            <div className="relative group/lock w-full">
-                              <button
-                                className="w-full py-3 px-4 rounded-lg bg-zinc-800 text-gray-500 text-sm font-medium border border-zinc-700 border-dashed flex items-center justify-center gap-2 cursor-not-allowed hover:bg-zinc-750"
-                                disabled
-                              >
+                          <button
+                            onClick={() => isActive && !phase.stats.isSoldOut && handlePhaseClick(phase)}
+                            className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive && !phase.stats.isSoldOut
+                              ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
+                              : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
+                              }`}
+                            disabled={!isActive || phase.stats.isSoldOut}
+                          >
+                            {phase.status === 'upcoming' || phase.status === 'paused' ? (
+                              <>
+                                <Clock className="w-4 h-4" />
+                                Próximamente
+                              </>
+                            ) : phase.status === 'sold_out' ? (
+                              <>
                                 <Lock className="w-4 h-4" />
-                                Bloqueado
-                              </button>
-                              {/* Tooltip */}
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-black text-white text-xs p-3 rounded-lg hidden group-hover/lock:block text-center border border-zinc-700 shadow-xl z-50">
-                                <p className="font-bold text-lime-400 mb-1">Acceso Restringido</p>
-                                Adquiere el NFT de Acceso para participar en esta fase.
-                              </div>
-                            </div>
-                          )}
+                                Agotado
+                              </>
+                            ) : isActive ? (
+                              <>
+                                <Ticket className="w-4 h-4" />
+                                Adquirir Artefactos
+                              </>
+                            ) : (
+                              'No Disponible'
+                            )}
+                          </button>
                         </div>
                       </div>
                     );
