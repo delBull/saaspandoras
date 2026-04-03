@@ -2,7 +2,24 @@
 
 import Link from "next/link";
 import { useState } from 'react';
-import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare, ArrowDown, ArrowRight, Sparkles } from "lucide-react";
+import { 
+  Ticket, 
+  Lock, 
+  Unlock, 
+  Share2, 
+  Users, 
+  Heart, 
+  Check, 
+  Clock, 
+  Shield, 
+  Copy, 
+  MessageSquare, 
+  ArrowDown, 
+  ArrowRight, 
+  Sparkles,
+  Zap,
+  ExternalLink
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
@@ -15,6 +32,7 @@ import { useActiveAccount, useReadContract, TransactionButton, useWalletBalance 
 import { getContract, defineChain, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { balanceOf } from "thirdweb/extensions/erc721";
+import { calculatePhaseStatus } from "@/lib/phase-utils";
 
 interface ProjectSidebarProps {
   project: ProjectData;
@@ -175,73 +193,23 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       window.location.href = url.toString();
     }
   };
-  // let accumulatedUSD = 0; // Unused
-  let accumulatedTokens = 0;
+  let sidebarAccumulatedTokens = 0;
 
   const phasesWithStats = allPhases.map((phase: any) => {
-    const price = Number(phase.tokenPrice || 0);
-    const allocation = Number(phase.tokenAllocation || 0); // Tokens
+    const statusData = calculatePhaseStatus(phase, currentSupply, sidebarAccumulatedTokens);
+    sidebarAccumulatedTokens += Number(phase.tokenAllocation || 0);
 
-    const stats = {
-      cap: 0,
-      raised: 0,
-      percent: 0,
-      isSoldOut: false,
-      tokensAllocated: 0,
-      tokensSold: 0,
-      remainingTokens: 0,
-      velocity: ''
+    return { 
+      ...phase, 
+      stats: {
+        ...statusData,
+        tokensAllocated: Number(phase.tokenAllocation || 0),
+        tokensSold: Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (sidebarAccumulatedTokens - Number(phase.tokenAllocation || 0)))),
+        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (sidebarAccumulatedTokens - Number(phase.tokenAllocation || 0))))),
+        velocity: `+${(phase.name?.length || 4) % 3 + 2}`
+      },
+      ...statusData // Flatten for easier access in Sidebar
     };
-
-    // UNIFIED LOGIC: Always track by Tokens First (Source of Truth) to determine Sold Out
-    // If Price > 0, we can display USD, but the limit logic should respect the Token Allocation if present.
-    // NOTE: If phase.type === 'amount' (USD Limit), we track USD. If 'time', we track Tokens?
-    // Actually, usually allocations are in TOKENS.
-
-    // For this fix, we will prioritize Token Allocation check against Total Supply.
-
-    // Calculate Phase Cap in Tokens
-    const phaseCapTokens = allocation;
-
-    // Calculate Raised Tokens for this phase
-    const phaseStartTokens = accumulatedTokens;
-    const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, currentSupply - phaseStartTokens));
-
-    if (price === 0) {
-      // Free Mint
-      stats.cap = allocation;
-      stats.raised = currentPhaseRaisedTokens;
-      stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
-      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
-    } else {
-      // Paid Mint
-      // We still check Sold Out based on Token Allocation because checking USD wallet balance is flaky
-      const phaseCapUSD = phase.type === 'amount' ? Number(phase.limit) : (allocation * price);
-      stats.cap = phaseCapUSD;
-
-      // Infer Raised USD from Raised Tokens (more stable than wallet balance)
-      const inferredRaisedUSD = currentPhaseRaisedTokens * price;
-      stats.raised = inferredRaisedUSD;
-
-      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
-      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
-      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
-    }
-
-    // Add explicit token stats for Modal validation
-    stats.tokensAllocated = allocation;
-    stats.tokensSold = currentPhaseRaisedTokens;
-    stats.remainingTokens = Math.max(0, allocation - currentPhaseRaisedTokens);
-
-    // Provide a dynamic wear-down velocity for scarcity indicators
-    const uniquenessSeed = (phase.name?.length || 4) % 3 + 2; 
-    const activityFactor = currentPhaseRaisedTokens > 0 ? Math.max(1, Math.floor((currentPhaseRaisedTokens / Math.max(1, allocation)) * 10)) : 0;
-    stats.velocity = `+${uniquenessSeed + activityFactor}`;
-
-    accumulatedTokens += allocation;
-    // We don't really use accumulatedUSD for calculation anymore in this unified approach
-
-    return { ...phase, stats };
   });
 
   // Debug log (remove in prod)
@@ -473,65 +441,11 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               </h3>
               <div className="space-y-4">
                 {phasesWithStats
-                  .map((phase: any, index: number) => {
-                    // 1. Calculate Status for Sorting
-                    const now = new Date();
-                    const hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
-                    const hasEnded = phase.endDate && new Date(phase.endDate) < now;
-                    const isNotPaused = phase.isActive !== false;
-                    const isSoldOut = phase.stats?.isSoldOut || false;
-
-                    // Check previous phase for sequential logic
-                    // Note: We use original index from phasesWithStats to check previous
-                    const previousPhase = index > 0 ? phasesWithStats[index - 1] : null;
-                    const previousIsSoldOut = previousPhase?.stats?.isSoldOut ?? true;
-                    const previousHasEnded = !!(previousPhase?.endDate && new Date(previousPhase.endDate) < now);
-                    const previousIsComplete = previousIsSoldOut || previousHasEnded;
-
-                    let status: string = 'inactive';
-                    let statusPriority: number = 99; 
-                    let statusLabel: string = 'No Disponible';
-                    let statusColor: string = 'bg-zinc-600 text-gray-300';
-
-                    if (isSoldOut) {
-                      status = 'sold_out';
-                      statusPriority = 4;
-                      statusLabel = 'Agotado';
-                      statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
-                    } else if (!isNotPaused) {
-                      status = 'paused';
-                      statusPriority = 5;
-                      statusLabel = 'Pausado';
-                      statusColor = 'bg-yellow-500/20 text-yellow-400';
-                    } else if (hasEnded) {
-                      status = 'ended';
-                      statusPriority = 6;
-                      statusLabel = 'Finalizado';
-                      statusColor = 'bg-zinc-600 text-gray-400';
-                    } else if (hasStarted) {
-                      status = 'active';
-                      statusPriority = 1; // Highest priority
-                      statusLabel = 'Activo';
-                      statusColor = 'bg-lime-500 text-black';
-                    } else if (!previousIsComplete && phase.isActive !== true) {
-                      status = 'waiting';
-                      statusPriority = 3; // Treat as upcoming/waiting
-                      statusLabel = 'Esperando';
-                      statusColor = 'bg-orange-500/20 text-orange-400';
-                    } else {
-                      status = 'coming_soon';
-                      statusPriority = 2; // Upcoming is second priority
-                      statusLabel = 'Próximamente';
-                      statusColor = 'bg-blue-500/20 text-blue-400';
-                    }
-
-                    return { ...phase, status, statusPriority, statusLabel, statusColor };
-                  })
                   .sort((a: any, b: any) => {
-                    // Sort by Priority
-                    if (a.statusPriority !== b.statusPriority) return a.statusPriority - b.statusPriority;
-                    // Then by Original Order (implied by stability of sort or we can use ID/index if needed)
-                    return 0;
+                    const priorityArr = ['active', 'upcoming', 'paused', 'sold_out', 'ended'];
+                    const aPrio = priorityArr.indexOf(a.status);
+                    const bPrio = priorityArr.indexOf(b.status);
+                    return aPrio - bPrio;
                   })
                   .map((phase: any) => {
                     const isActive = phase.status === 'active';
@@ -579,7 +493,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                                 }`}
                               disabled={!isActive || phase.stats.isSoldOut}
                             >
-                              {phase.status === 'coming_soon' || phase.status === 'paused' || phase.status === 'waiting' ? (
+                              {phase.status === 'upcoming' || phase.status === 'paused' ? (
                                 <>
                                   <Clock className="w-4 h-4" />
                                   Próximamente
