@@ -48,7 +48,7 @@ import { useReadContract, useWalletBalance } from "thirdweb/react";
 import { getTargetAmount } from "@/lib/project-utils";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
-import { calculatePhaseStatus } from "@/lib/phase-utils";
+import { calculatePhaseStatus, getProjectPhasesWithStats } from "@/lib/phase-utils";
 // Format Helper
 const formatCurrency = (amount: number | string) => {
   const num = Number(amount);
@@ -193,63 +193,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   });
   const totalSupply = totalSupplyBN ? Number(totalSupplyBN) : 0;
 
-  // --- Calculate Phase Stats ---
-  const getPhases = () => {
-    try {
-      let config: Record<string, any> = {};
-      try {
-        config = typeof project.w2eConfig === 'string'
-          ? JSON.parse(project.w2eConfig)
-          : (project.w2eConfig || {});
-      } catch {
-        config = {};
-      }
-
-      // 1. Direct phases in config (V1 style)
-      let phases = config.phases || (project as any).phases || [];
-
-      // 2. If V2, check artifacts for phases
-      if (phases.length === 0 && project.artifacts?.length) {
-        const artifactPhases = project.artifacts
-          .flatMap((a: any) => a.phases || [])
-          .filter((p: any) => p?.name);
-
-        if (artifactPhases.length > 0) {
-          phases = artifactPhases;
-        }
-      }
-
-      return phases;
-    } catch (e) {
-      console.error("[Tabs] Error parsing w2eConfig:", e);
-      return (project as any).phases || [];
-    }
-  };
-  const allPhases = getPhases();
-
-  // We need to track BOTH USD accumulation and Token accumulation because phases might mix free/paid? 
-  // For simplicity, let's assume if price is 0, we track tokens. If price > 0, we track USD.
-  // Actually, simplest is to track "Sold Tokens" for everything?
-  // But legacy logic tracks USD.
-
-  // let accumulatedUSD = 0; // Unused
-  let accumulatedTokens = 0;
-
-  let tabsAccumulatedTokens = 0;
-
-  const phasesWithStats = allPhases.map((phase: any) => {
-    const statusData = calculatePhaseStatus(phase, totalSupply, tabsAccumulatedTokens);
-    tabsAccumulatedTokens += Number(phase.tokenAllocation || 0);
-
-    return {
-      ...phase,
-      stats: {
-        ...statusData,
-        participants: 0, // Keep field for UI compatibility, though logic was removed previously
-      },
-      ...statusData // Flatten if needed
-    };
-  });
+  const phasesWithStats = getProjectPhasesWithStats(project, totalSupply);
+  const allPhases = phasesWithStats;
 
   const activePhasesWithStats = phasesWithStats.filter((p: any) => p.isActive);
   const historicalPhasesWithStats = phasesWithStats.filter((p: any) => !p.isActive);

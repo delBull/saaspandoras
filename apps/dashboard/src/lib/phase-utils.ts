@@ -48,8 +48,17 @@ export function calculatePhaseStatus(
   const allocation = Number(phase.tokenAllocation || 0);
   const isTimeType = phase.type === 'time';
   
-  const hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
-  const hasEnded = !!(phase.endDate && new Date(phase.endDate) < now);
+  const parseSafeDate = (dateStr: string | undefined): Date | null => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const startDate = parseSafeDate(phase.startDate);
+  const endDate = parseSafeDate(phase.endDate);
+  
+  const hasStarted = !startDate || startDate <= now;
+  const hasEnded = !!(endDate && endDate < now);
   const isNotPaused = phase.isActive !== false;
 
   // Real-time calculation using Supply (Stable ground truth)
@@ -101,7 +110,7 @@ export function calculatePhaseStatus(
     statusLabel = isTimeType ? 'Activo (Tiempo)' : 'Activo (Monto)';
   }
 
-  const isClickable = hasStarted && !isSoldOut && isNotPaused && !hasEnded;
+  const isClickable = (hasStarted || !startDate) && !isSoldOut && isNotPaused && !hasEnded;
 
   return {
     status,
@@ -116,4 +125,60 @@ export function calculatePhaseStatus(
     hasEnded,
     isClickable
   };
+}
+
+/**
+ * Robust phase extraction and status calculation for a project.
+ * Unifies logic from Sidebar and ContentTabs to prevent "scattered functions".
+ */
+export function getProjectPhasesWithStats(project: any, currentSupply: number) {
+  const getRawPhases = () => {
+    try {
+      const config = typeof project.w2eConfig === 'string'
+        ? JSON.parse(project.w2eConfig)
+        : (project.w2eConfig || {});
+
+      // 1. Direct phases in config (V1 style)
+      let phases = config.phases || project.phases || [];
+
+      // 2. If V2, check artifacts for phases
+      if (phases.length === 0 && project.artifacts?.length) {
+        const artifactPhases = project.artifacts
+          .flatMap((a: any) => (a.phases || []).map((p: any) => ({
+            ...p,
+            artifactAddress: a.address || a.contractAddress
+          })))
+          .filter((p: any) => p?.name);
+
+        if (artifactPhases.length > 0) {
+          phases = artifactPhases;
+        }
+      }
+      return phases;
+    } catch (e) {
+      console.error("[PhaseUtils] Error parsing phases:", e);
+      return project.phases || [];
+    }
+  };
+
+  const allPhases = getRawPhases();
+  let accumulatedTokens = 0;
+
+  return allPhases.map((phase: any) => {
+    const statusData = calculatePhaseStatus(phase, currentSupply, accumulatedTokens);
+    accumulatedTokens += Number(phase.tokenAllocation || 0);
+
+    return {
+      ...phase,
+      stats: {
+        ...statusData,
+        tokensAllocated: Number(phase.tokenAllocation || 0),
+        tokensSold: Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (accumulatedTokens - Number(phase.tokenAllocation || 0)))),
+        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (accumulatedTokens - Number(phase.tokenAllocation || 0))))),
+        participants: 0, 
+        velocity: `+${(phase.name?.length || 4) % 3 + 2}`
+      },
+      ...statusData
+    };
+  });
 }

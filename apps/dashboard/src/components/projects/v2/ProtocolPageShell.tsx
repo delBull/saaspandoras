@@ -2,7 +2,6 @@
 
 import { Suspense } from 'react';
 import type { ProjectData } from '@/app/()/projects/types';
-import ProjectNavigationHeader from '../ProjectNavigationHeader';
 import ProjectSidebar from '../ProjectSidebar';
 import MobileInvestmentCard from '../MobileInvestmentCard';
 import RecommendedProjectsSection from '../RecommendedProjectsSection';
@@ -19,7 +18,6 @@ export default function ProtocolPageShell({ project, children, currentSlug }: Pr
     const targetAmount = getTargetAmount(project);
     return (
         <div className="min-h-screen pb-20 md:pb-6 bg-black">
-            <ProjectNavigationHeader />
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="relative">
                     <ProjectSidebar project={project} targetAmount={targetAmount} />
