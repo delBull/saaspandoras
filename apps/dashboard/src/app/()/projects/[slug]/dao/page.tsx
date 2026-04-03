@@ -136,14 +136,13 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
          It seems to be the top navbar. */ }
 
             <div className="flex flex-col lg:flex-row w-full">
-                {/* Main Content (Left/Center) */}
-                <div className="flex-1 order-2 lg:order-1 border-r border-zinc-800/50 min-h-[calc(100vh-80px)]">
+                {/* Main Content (Priority 1 on Mobile) */}
+                <div className="flex-1 order-1 lg:order-1 border-r border-zinc-800/50 min-h-[calc(100vh-80px)]">
                     <DAODashboard project={project} activeView={activeView} isOwner={isOwner} />
                 </div>
 
-                {/* Sidebar (Right Side - per User Request) */}
-                <div className="lg:w-80 order-1 lg:order-2">
-
+                {/* Sidebar (Priority 2 on Mobile) */}
+                <div className="lg:w-80 order-2 lg:order-2">
                     <DAOSidebar
                         project={project}
                         activeView={activeView}
