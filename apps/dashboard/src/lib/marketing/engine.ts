@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { marketingExecutions, marketingCampaigns, clients, users } from "@/db/schema";
+import { marketingExecutions, marketingCampaigns, clients, users, projects, marketingLeads } from "@/db/schema";
 import { eq, and, lte, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/utils/client";
@@ -28,7 +28,7 @@ export class MarketingEngine {
     // ... existing startCampaign and processDueExecutions ...
 
     static async startCampaign(campaignName: string, targetId: { userId?: string, leadId?: string }) {
-        console.log(`[MarketingEngine] Starting campaign '${campaignName}' for user ${JSON.stringify(targetId)}`);
+        console.log(`[MarketingEngine] Starting campaign '${campaignName}' for target ${JSON.stringify(targetId)}`);
 
         const [campaign] = await db
             .select()
@@ -39,6 +39,20 @@ export class MarketingEngine {
         if (!campaign?.isActive) {
             console.warn(`[MarketingEngine] Campaign '${campaignName}' not found or inactive`);
             return null;
+        }
+
+        // Idempotency check: Don't start if already active for this target
+        const existingExecution = await db.query.marketingExecutions.findFirst({
+            where: and(
+                eq(marketingExecutions.campaignId, campaign.id),
+                targetId.leadId ? eq(marketingExecutions.leadId, targetId.leadId.toString()) : eq(marketingExecutions.userId, targetId.userId as any),
+                eq(marketingExecutions.status, 'active')
+            )
+        });
+
+        if (existingExecution) {
+            console.log(`[MarketingEngine] Target already has an active execution for '${campaignName}'. Skipping.`);
+            return existingExecution;
         }
 
         const nextRunAt = new Date();
@@ -109,15 +123,51 @@ export class MarketingEngine {
         console.log(`[MarketingEngine] Executing Step ${currentStepIndex} (Day ${step.day}) Type: ${step.type}`);
 
         // GET TARGET DATA
-        const contact = { phone: '', email: '', name: 'Friend' };
+        const contact = { 
+            phone: '', 
+            email: '', 
+            name: 'Friend', 
+            projectName: '', 
+            payLink: '', 
+            price: '',
+            ownerContext: 'client'
+        };
 
         if (execution.leadId) {
-            const results = await db.select().from(clients).where(eq(clients.id, execution.leadId)).limit(1);
-            const lead = results[0];
-            if (lead) {
-                contact.phone = lead.whatsapp || lead.phone || '';
+            // Try marketing_leads first (new Growth OS)
+            const results = await db.select({
+                lead: marketingLeads,
+                project: projects
+            })
+            .from(marketingLeads)
+            .leftJoin(projects, eq(marketingLeads.projectId, projects.id))
+            .where(eq(marketingLeads.id, execution.leadId as any))
+            .limit(1);
+            
+            const row = results[0];
+            if (row) {
+                const { lead, project } = row;
+                contact.phone = lead.phoneNumber || '';
                 contact.email = lead.email || '';
                 contact.name = lead.name || 'Friend';
+                contact.ownerContext = lead.ownerContext || 'client';
+                
+                if (project) {
+                    contact.projectName = project.title;
+                    const domain = contact.ownerContext === 'protocol' ? 'dash.pandoras.finance' : 'staging.dash.pandoras.finance';
+                    contact.payLink = `https://${domain}/pay/${project.slug}/silver`;
+                    contact.price = project.tokenPriceUsd ? `$${project.tokenPriceUsd}` : '$50';
+                }
+            } else {
+                // Fallback to legacy clients table
+                const legacyResults = await db.select().from(clients).where(eq(clients.id, execution.leadId)).limit(1);
+                const lead = legacyResults[0];
+                if (lead) {
+                    contact.phone = lead.whatsapp || lead.phone || '';
+                    contact.email = lead.email || '';
+                    contact.name = lead.name || 'Friend';
+                    contact.ownerContext = lead.source === 'protocol' ? 'protocol' : 'client';
+                }
             }
         } else if (execution.userId) {
             const [user] = await db.select().from(users).where(eq(users.id, execution.userId)).limit(1);
@@ -134,10 +184,22 @@ export class MarketingEngine {
         }
 
         // --- REPLACE VARIABLES ---
-        const replaceVars = (text: string) => text
-            .replace(/{{name}}/g, contact.name)
-            .replace(/{{project}}/g, 'tu proyecto')
-            .replace(/{{agent_name}}/g, 'Equipo Pandora');
+        const replaceVars = (text: string) => {
+            let result = text
+                .replace(/{{name}}/g, contact.name)
+                .replace(/{{project}}/g, contact.projectName || 'tu proyecto')
+                .replace(/{{project_name}}/g, contact.projectName || 'tu proyecto')
+                .replace(/{{agent_name}}/g, 'Equipo Pandora');
+
+            if (contact.payLink) {
+                result = result.replace(/{{pay_link}}/g, contact.payLink);
+            }
+            if (contact.price) {
+                result = result.replace(/{{price}}/g, contact.price);
+            }
+            
+            return result;
+        };
 
         // --- EXECUTE ACTION ---
         let actionResult: any = {};

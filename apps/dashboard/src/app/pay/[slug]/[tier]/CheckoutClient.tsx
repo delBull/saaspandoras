@@ -52,7 +52,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         project.licenseContractAddress ||
         project.w2eConfig?.licenseToken?.address ||
         project.contractAddress ||
-        project.utilityContract?.address;
+        project.utilityContractAddress;
 
     const targetContract = useMemo(() => getContract({
         client,
@@ -122,7 +122,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 payload: {
                     project,
                     phase: rawPhase,
-                    utilityContract: project.utilityContract,
+                    utilityContract: { address: project.utilityContractAddress },
                     artifactType: 'Access',
                     quantity: BigInt(safeAmount),
                     account: account?.address || "",

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { cn, getDashboardDomain } from "@/lib/utils"
-import { Zap, Globe, ShieldCheck, Terminal, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter, Phone, FileSignature, Calendar, XCircle, MoreVertical, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { Zap, Globe, ShieldCheck, Terminal, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X, Monitor, ExternalLink, FileText, Loader2, LayoutDashboard, Coins, PenTool, Flame, BarChart3, Users, Fingerprint, Wallet, Mail, ListFilter, Phone, FileSignature, Calendar, XCircle, MoreVertical, CheckCircle2, AlertCircle, Clock, Copy } from "lucide-react";
 import { recordCallOutcome, getLeadInsights, toggleLeadNurture, archiveLead } from "@/actions/growth-os";
 import { MarketAttackEngine } from "./growth/MarketAttackEngine";
 import { CampaignPerformanceDashboard } from "./marketing/CampaignPerformanceDashboard";
@@ -2122,41 +2122,157 @@ export default function GrowthOSSubTab() {
             </div>
 
             {/* Bottom Section: Injection Snippet */}
-            <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+              {/* Widget Injection */}
+              <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 border border-indigo-500/20">
+                      <Monitor className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                        Quick Widget Injection
+                        <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-400">SDK v2.0</Badge>
+                      </h4>
+                      <p className="text-sm text-zinc-500">Copia este snippet en el {'<body>'} de la landing page.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950 rounded-3xl p-8 font-mono text-sm text-zinc-400 border border-zinc-800 relative group overflow-hidden">
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <UIButton className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6" onClick={() => {
+                      const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                      const projectSlug = project?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId);
+                      const snippet = `<!-- Pandoras Growth OS Widget -->\n<script \n  src="${getDashboardDomain()}/api/widget/v1.js" \n  data-project-id="${projectSlug}" \n  data-api-key="${publicKey}" \n  data-theme="premium"\n></script>`;
+                      navigator.clipboard.writeText(snippet);
+                      toast.success("Snippet copiado");
+                    }}>COPY</UIButton>
+                  </div>
+                  <code>
+                    <span className="text-zinc-600">{'<!-- Pandoras Growth OS Widget -->'}</span><br/>
+                    <span className="text-indigo-400">{'<script'}</span><br/>
+                    {'  src="'}<span className="text-emerald-400">{getDashboardDomain()}/api/widget/v1.js</span>{'"'}<br/>
+                    {'  data-project-id="'}<span className="text-purple-400">{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId)}</span>{'"'}<br/>
+                    {'  data-api-key="'}<span className="text-emerald-400">{publicKey}</span>{'"'}<br/>
+                    {'  data-theme="'}<span className="text-purple-400">premium</span>{'"'}<br/>
+                    <span className="text-indigo-400">{'>'}{'</script>'}</span>
+                  </code>
+                </div>
+              </div>
+
+              {/* Lead Registration API */}
+              <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-orange-500/10 rounded-2xl text-orange-400 border border-orange-500/20">
+                      <Terminal className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                        Advanced Lead API
+                        <Badge variant="outline" className="text-[10px] border-orange-500/30 text-orange-400">REST</Badge>
+                      </h4>
+                      <p className="text-sm text-zinc-500">Inyección directa de leads desde tu backend o formularios personalizados.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950 rounded-3xl p-8 font-mono text-[11px] text-zinc-400 border border-zinc-800 relative group overflow-hidden max-h-[250px] overflow-y-auto no-scrollbar">
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <UIButton className="bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl px-6" onClick={() => {
+                      const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                      const projectSlug = project?.slug || 'PROJECT_SLUG';
+                      const snippet = `fetch("${getDashboardDomain()}/api/v1/marketing/leads/register", {\n  method: "POST",\n  headers: { "Content-Type": "application/json", "x-api-key": "${publicKey}" },\n  body: JSON.stringify({\n    projectId: "${projectSlug}",\n    email: "builder@example.com",\n    metadata: { tags: ["FULL_UNIT"] }\n  })\n});`;
+                      navigator.clipboard.writeText(snippet);
+                      toast.success("Snippet copiado");
+                    }}>COPY</UIButton>
+                  </div>
+                  <pre>
+                    <span className="text-zinc-500">{'// Direct Lead Injection'}</span><br/>
+                    <span className="text-purple-400">await</span> <span className="text-blue-400">fetch</span>(<span className="text-emerald-400">"{getDashboardDomain()}/api/v1/leads/register"</span>, {'{'}<br/>
+                    {'  method: '}<span className="text-emerald-400">"POST"</span>,<br/>
+                    {'  headers: { '}<span className="text-emerald-400">"x-api-key"</span>{': '}<span className="text-emerald-400">"{publicKey}"</span>{' },'}<br/>
+                    {'  body: '}<span className="text-blue-400">JSON</span>.<span className="text-indigo-400">stringify</span>({'{'}<br/>
+                    {'    projectId: '}<span className="text-emerald-400">"{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId)}"</span>,<br/>
+                    {'    email: '}<span className="text-emerald-400">"user@example.com"</span>,<br/>
+                    {'    metadata: { tags: ['}<span className="text-emerald-400">"FULL_UNIT"</span>{'] } '}<span className="text-zinc-600">{'// Market Attack Trigger'}</span><br/>
+                    {'  })'}<br/>
+                    {'});'}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            {/* Popup Commerce Section */}
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8 mb-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 border border-indigo-500/20">
-                    <Monitor className="w-6 h-6" />
+                  <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-400 border border-purple-500/20">
+                    <Zap className="w-6 h-6" />
                   </div>
                   <div>
                     <h4 className="text-xl font-bold text-white flex items-center gap-2">
-                      Quick Widget Injection
-                      <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-400">SDK v2.0</Badge>
+                      Popup Commerce SDK
+                      <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">New</Badge>
                     </h4>
-                    <p className="text-sm text-zinc-500">Copia este snippet en el {'<body>'} de la landing page {selectedProjectId === 'all' ? 'externa' : 'de tu protocolo'}.</p>
+                    <p className="text-sm text-zinc-500">Lógica de pago embebida sin salir de tu sitio web.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-zinc-950 rounded-3xl p-8 font-mono text-sm text-zinc-400 border border-zinc-800 relative group overflow-hidden">
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <UIButton className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6" onClick={() => {
-                    const project = projects.find(p => String(p.id) === String(selectedProjectId));
-                    const projectSlug = project?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId);
-                    const snippet = `<!-- Pandoras Growth OS Widget -->\n<script \n  src="${getDashboardDomain()}/api/widget/v1.js" \n  data-project-id="${projectSlug}" \n  data-api-key="${publicKey}" \n  data-theme="premium"\n></script>`;
-                    navigator.clipboard.writeText(snippet);
-                    toast.success("Snippet copiado");
-                  }}>COPY SNIPPET</UIButton>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Option A: HTML Attributes */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                    Option A: Zero Code (Data Attributes)
+                  </div>
+                  <div className="bg-zinc-950 rounded-3xl p-6 font-mono text-xs text-zinc-400 border border-zinc-800 relative group overflow-hidden">
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <UIButton size="sm" variant="ghost" className="h-7 text-zinc-400 hover:text-white" onClick={() => {
+                        const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                        const slug = project?.slug || 'project-slug';
+                        const snippet = `<button \n  data-pd-checkout-slug="${slug}" \n  data-pd-checkout-tier="silver"\n> Buy now </button>`;
+                        navigator.clipboard.writeText(snippet);
+                        toast.success("Snippet copiado");
+                      }}><Copy className="w-3 h-3" /></UIButton>
+                    </div>
+                    <pre>
+                      <span className="text-indigo-400">{'<button'}</span><br/>
+                      {'  '}<span className="text-purple-400">{'data-pd-checkout-slug'}</span>{`="${projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'slug'}"`}<br/>
+                      {'  '}<span className="text-purple-400">{'data-pd-checkout-tier'}</span>{`="silver"`}<br/>
+                      <span className="text-indigo-400">{'>'}</span> Buy now <span className="text-indigo-400">{'</button>'}</span>
+                    </pre>
+                  </div>
                 </div>
-                <code>
-                  <span className="text-zinc-600">{'<!-- Pandoras Growth OS Widget -->'}</span><br/>
-                  <span className="text-indigo-400">{'<script'}</span><br/>
-                  {'  src="'}<span className="text-emerald-400">{getDashboardDomain()}/api/widget/v1.js</span>{'"'}<br/>
-                  {'  data-project-id="'}<span className="text-purple-400">{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'global' : selectedProjectId)}</span>{'"'}<br/>
-                  {'  data-api-key="'}<span className="text-emerald-400">{publicKey}</span>{'"'}<br/>
-                  {'  data-theme="'}<span className="text-purple-400">premium</span>{'"'}<br/>
-                  <span className="text-indigo-400">{'>'}{'</script>'}</span>
-                </code>
+
+                {/* Option B: Programmatic */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                    Option B: Programmable Popup
+                  </div>
+                  <div className="bg-zinc-950 rounded-3xl p-6 font-mono text-xs text-zinc-400 border border-zinc-800 relative group overflow-hidden">
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <UIButton size="sm" variant="ghost" className="h-7 text-zinc-400 hover:text-white" onClick={() => {
+                        const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                        const slug = project?.slug || 'project-slug';
+                        const snippet = `window.PandorasGrowth.openCheckout("${slug}", "gold");`;
+                        navigator.clipboard.writeText(snippet);
+                        toast.success("JS copiado");
+                      }}><Copy className="w-3 h-3" /></UIButton>
+                    </div>
+                    <pre>
+                      <span className="text-zinc-600">{'// Open on any custom event'}</span><br/>
+                      <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<br/>
+                      {'  '}<span className="text-emerald-400">"{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'slug'}"</span>, <br/>
+                      {'  '}<span className="text-emerald-400">"gold"</span><br/>
+                      {');'}
+                    </pre>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

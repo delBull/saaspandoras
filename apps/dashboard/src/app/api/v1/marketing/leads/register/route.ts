@@ -379,8 +379,14 @@ export async function POST(req: NextRequest) {
           bypassCooldown: forceBypass 
         });
       }
-    }
 
+      // --- MARKET ATTACK TRIGGER ---
+      if (isVipIntent) {
+        console.error(`[Growth OS] 🛡️ High-Intent VIP detected (${result.email}). Launching Market Attack sequence...`);
+        const { MarketingEngine } = await import('@/lib/marketing/engine');
+        await MarketingEngine.startCampaign("Market Attack", { leadId: result.id });
+      }
+    }
 
     if (!result) {
         return NextResponse.json({ error: 'Failed to process lead' }, { status: 500 });

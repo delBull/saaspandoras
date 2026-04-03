@@ -134,10 +134,43 @@
         }
     }
 
+    /**
+     * Public API - Commerce Popup
+     */
+    function openCheckout(slug, tier) {
+        if (!slug || !tier) {
+            console.error('[Pandoras] Missing slug or tier for checkout');
+            return;
+        }
+        
+        const url = `${BASE_URL}/pay/${slug}/${tier}`;
+        const width = 500;
+        const height = 750;
+        const left = (window.screen.width / 2) - (width / 2);
+        const top = (window.screen.height / 2) - (height / 2);
+        
+        track('COMMERCE_CHECKOUT_OPEN', { slug, tier });
+        
+        const popup = window.open(
+            url, 
+            `PandorasCheckout_${slug}_${tier}`, 
+            `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes,location=no,status=no`
+        );
+
+        if (window.focus && popup) {
+            popup.focus();
+        } else if (!popup) {
+            // Fallback for popup blockers
+            console.warn('[Pandoras] Popup blocked, redirecting instead');
+            window.location.href = url;
+        }
+    }
+
     // Expose Global API
     window.PandorasGrowth = {
         registerLead,
         open: openModal,
+        openCheckout,
         track
     };
 
@@ -253,6 +286,21 @@
         };
     }
 
+    /**
+     * Auto-setup for data-based links
+     */
+    function setupAutoLinks() {
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-pd-checkout-slug]');
+            if (target) {
+                e.preventDefault();
+                const slug = target.getAttribute('data-pd-checkout-slug');
+                const tier = target.getAttribute('data-pd-checkout-tier');
+                openCheckout(slug, tier);
+            }
+        });
+    }
+
     function initTrigger() {
         if (state.joined && !successUrl) return; // Keep showing if we want to test redirects or if already joined but no redirect
         
@@ -264,6 +312,7 @@
         document.body.appendChild(btn);
         
         track('WIDGET_VIEW');
+        setupAutoLinks();
     }
 
     // Start
