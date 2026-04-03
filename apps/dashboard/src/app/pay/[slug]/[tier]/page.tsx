@@ -18,25 +18,16 @@ export default async function CheckoutHubPage({
 
     if (!project) return notFound();
 
-    // Map tier name to a specific phase, or get the active phase
+    // 🧭 Strict Tier Resolution: Only honor the EXACT tier requested by the user
+    // This prevents falling back to random active phases when a specific tier is targeted.
     const w2eConfig = project.w2eConfig as any;
     const phases = w2eConfig?.phases || [];
-    let activePhase = phases.find((p: any) => p.name.toLowerCase() === tier.toLowerCase());
+    
+    // Find the requested phase by name (case-insensitive)
+    const activePhase = phases.find((p: any) => p.name.toLowerCase() === tier.toLowerCase());
 
-    if (!activePhase) {
-        activePhase = phases.find((p: any) => p.isActive);
-    }
-
-    if (!activePhase) {
-        // Fallback mock phase if none is found to allow compilation/development
-        activePhase = {
-            id: 'default',
-            name: tier,
-            isActive: true,
-            tokenPrice: 50,
-            stats: { remainingTokens: 1000, velocity: '+5' }
-        };
-    }
+    // If the specific phase requested doesn't exist, we don't fall back, we 404
+    if (!activePhase) return notFound();
 
     // Pass data to the deep-styled client component
     return (

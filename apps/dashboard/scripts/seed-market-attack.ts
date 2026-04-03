@@ -1,8 +1,14 @@
-import { db } from '../src/db';
-import { marketingCampaigns } from '../src/db/schema';
-import { eq } from 'drizzle-orm';
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.join(__dirname, '../.env.local') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 async function main() {
+    // Dynamic import to ensure dotenv.config() runs BEFORE the DB is initialized
+    const { db } = await import('../src/db');
+    const { marketingCampaigns } = await import('../src/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const campaignName = "Market Attack";
     console.log(`🌱 Seeding campaign: ${campaignName}...`);
 

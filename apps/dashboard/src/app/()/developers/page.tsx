@@ -114,13 +114,16 @@ export default function DevelopersPage() {
 
 // Option B: Programmable Popup
 window.PandorasGrowth.openCheckout('${projectSlug}', 'silver');`,
-    api: `// Direct Lead Injection (Market Attack Trigger)
+    api: `// Option A: SDK Implementation (Recommended)
+window.PandorasGrowth.registerLead({
+  email: "builder@example.com",
+  metadata: { tags: ["FULL_UNIT"] } // Global Market Attack Trigger
+});
+
+// Option B: Direct Lead API (Server-to-Server)
 await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
   method: "POST",
-  headers: { 
-    "Content-Type": "application/json", 
-    "x-api-key": "${publicKey}" 
-  },
+  headers: { "x-api-key": "${publicKey}" },
   body: JSON.stringify({
     projectId: "${projectSlug}",
     email: "builder@example.com",
