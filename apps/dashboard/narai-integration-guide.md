@@ -56,7 +56,7 @@ El sistema V5 de Narai es **Multi-Método**. El modal detectará automáticament
 Usa estos atributos en cualquier botón para abrir el checkout de un tier específico:
 
 ```html
-<!-- El 'tier' debe coincidir exactamente con el NOMBRE de la fase en el Dashboard (en minúsculas) -->
+<!-- El 'tier' es insensible a mayúsculas y espacios (ej. 'Fundador', 'fundador' o ' FUNDADOR ' funcionan) -->
 <button 
     data-pd-checkout-slug="narai" 
     data-pd-checkout-tier="fundador"

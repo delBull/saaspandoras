@@ -1,10 +1,9 @@
-import Image from "next/image";
+import { sanitizeUrl } from "@/lib/project-utils";
 import Link from "next/link";
 import { EyeIcon, ImageIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
 import { useWalletBalance, useReadContract } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { config } from "@/config";
 import { getContract } from "thirdweb";
 
 interface ProjectCardProps {
@@ -18,6 +17,8 @@ import { defineChain } from "thirdweb";
 // ...
 
 export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: ProjectCardProps) {
+  const sanitizedCoverUrl = sanitizeUrl(project.coverPhotoUrl);
+  
   // Robust Chain ID handling
   const rawChainId = Number((project as any).chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
@@ -115,7 +116,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
 
   const getImageAspectRatio = () => {
     // Mantener aspect ratio consistente para todas las tarjetas
-    return '56%'; // 16:9 aspect ratio para todas las tarjetas
+    return '56.25%'; // 16:9 aspect ratio para todas las tarjetas
   };
 
   const getPadding = () => {
@@ -152,12 +153,12 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
     <Link href={`/projects/${project.slug}`} className="block">
       <div className={getCardStyles()}>
         <div className="relative w-full bg-zinc-800/50" style={{ paddingBottom: getImageAspectRatio() }}>
-          {project.coverPhotoUrl ? (
-            <Image
-              src={project.coverPhotoUrl}
-              alt={`Cover photo for ${project.title}`}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+          {sanitizedCoverUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={sanitizedCoverUrl}
+              alt={project.title}
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

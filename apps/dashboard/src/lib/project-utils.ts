@@ -151,7 +151,31 @@ export function getTargetAmount(project: any): number {
   }
 }
 
-// ... existing code ...
-
-// End of shared utilities
+/**
+ * Sanitizes a URL for use in <img> tags.
+ * Handles IPFS, relative paths, and invalid placeholders.
+ */
+export function sanitizeUrl(url: any): string | null {
+  if (!url || typeof url !== 'string') return null;
+  
+  const cleanUrl = url.trim();
+  
+  // Ignore common placeholder strings or invalid values
+  const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder'];
+  if (placeholders.includes(cleanUrl.toLowerCase())) return null;
+  
+  // Return early if already a standard absolute/relative/data URL
+  if (cleanUrl.startsWith('http') || cleanUrl.startsWith('/') || cleanUrl.startsWith('data:')) {
+    return cleanUrl;
+  }
+  
+  // Handle IPFS: ipfs://CID or ipfs:CID
+  if (cleanUrl.startsWith('ipfs:')) {
+    const path = cleanUrl.replace(/^ipfs:(\/*)/, '');
+    return `https://ipfs.io/ipfs/${path}`;
+  }
+  
+  // Default fallback for simple strings that might be filenames
+  return `/${cleanUrl}`;
+}
 

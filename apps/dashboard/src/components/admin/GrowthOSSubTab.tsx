@@ -2251,6 +2251,7 @@ export default function GrowthOSSubTab() {
                       }}><Copy className="w-3 h-3" /></UIButton>
                     </div>
                     <pre>
+                      <span className="text-zinc-600">{'<!-- SDK v2.0: Tier names are now case-insensitive & resilient -->'}</span><br/>
                       <span className="text-indigo-400">{'<button'}</span><br/>
                       {'  '}<span className="text-purple-400">{'data-pd-checkout-slug'}</span>{`="${projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'slug'}"`}<br/>
                       {'  '}<span className="text-purple-400">{'data-pd-checkout-tier'}</span>{`="${String(((projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.name || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.id || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.title || 'silver')).toLowerCase()}"`}<br/>
@@ -2279,7 +2280,7 @@ export default function GrowthOSSubTab() {
                       }}><Copy className="w-3 h-3" /></UIButton>
                     </div>
                     <pre>
-                      <span className="text-zinc-600">{'// Open on any custom event'}</span><br/>
+                      <span className="text-zinc-600">{'// Case-insensitive & Resilient Tier Matching'}</span><br/>
                       <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<br/>
                       {'  '}<span className="text-emerald-400">"{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'slug'}"</span>, <br/>
                       {'  '}<span className="text-emerald-400">"{String(((projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.length > 1 ? (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases[1]?.name || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases[1]?.id || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases[1]?.title : (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.name || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.id || (projects.find(p => String(p.id) === String(selectedProjectId))?.w2eConfig as any)?.phases?.[0]?.title || 'gold')).toLowerCase()}"</span><br/>

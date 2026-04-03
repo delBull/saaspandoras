@@ -1,7 +1,7 @@
 "use client";
 
 import { Upload, Image as ImageIcon, Film, Tag } from "lucide-react";
-import Image from "next/image";
+import { sanitizeUrl } from "@/lib/project-utils";
 
 import { useFormContext } from "react-hook-form";
 import { useState } from "react";
@@ -94,22 +94,24 @@ const FileUpload = ({ id, accept = "image/*", className = "", ...props }: React.
   </div>
 );
 
-const ImagePreview = ({ src, alt, className = "" }: { src: string; alt: string; className?: string }) => (
-  src ? (
+const ImagePreview = ({ src, alt, className = "" }: { src: string; alt: string; className?: string }) => {
+  const sanitized = sanitizeUrl(src);
+  if (!sanitized) return null;
+
+  return (
     <div className={`relative rounded-lg overflow-hidden border border-zinc-700 ${className}`}>
-      <Image
-        src={src}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={sanitized}
         alt={alt}
-        width={768}
-        height={192}
         className="w-full h-48 object-cover"
       />
       <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
         Preview
       </div>
     </div>
-  ) : null
-);
+  );
+};
 
 export function ProjectSection1() {
   const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();

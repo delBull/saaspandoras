@@ -366,82 +366,87 @@ export async function PUT(request: Request, { params }: RouteParams) {
       }
     }
 
-    // Actualizar el proyecto en la base de datos
+    // Preparar el objeto de actualización basado únicamente en lo enviado en el body
+    // para evitar sobrescribir con null campos que no están en el formulario actual.
+    const rawBody = body as any;
+    const updateSet: any = {
+      updatedAt: new Date(),
+    };
+
+    // Mapeo selectivo: solo si la llave existe en el body original
+    // Sección 1
+    if ('title' in rawBody) {
+      updateSet.title = data.title;
+      updateSet.slug = slug;
+    }
+    if ('description' in rawBody) updateSet.description = data.description;
+    if ('tagline' in rawBody) updateSet.tagline = data.tagline ?? null;
+    if ('businessCategory' in rawBody) updateSet.businessCategory = data.businessCategory ?? 'other';
+    if ('logoUrl' in rawBody) updateSet.logoUrl = data.logoUrl ?? null;
+    if ('coverPhotoUrl' in rawBody) updateSet.coverPhotoUrl = data.coverPhotoUrl ?? null;
+    if ('videoPitch' in rawBody) updateSet.videoPitch = data.videoPitch ?? null;
+
+    // Sección 2
+    if ('website' in rawBody) updateSet.website = data.website ?? null;
+    if ('whitepaperUrl' in rawBody) updateSet.whitepaperUrl = data.whitepaperUrl ?? null;
+    if ('twitterUrl' in rawBody) updateSet.twitterUrl = data.twitterUrl ?? null;
+    if ('discordUrl' in rawBody) updateSet.discordUrl = data.discordUrl ?? null;
+    if ('telegramUrl' in rawBody) updateSet.telegramUrl = data.telegramUrl ?? null;
+    if ('linkedinUrl' in rawBody) updateSet.linkedinUrl = data.linkedinUrl ?? null;
+
+    // Sección 3: Tokenomics (Decimals as Strings)
+    if ('targetAmount' in rawBody) updateSet.targetAmount = data.targetAmount.toString();
+    if ('totalValuationUsd' in rawBody) updateSet.totalValuationUsd = data.totalValuationUsd?.toString() ?? null;
+    if ('tokenPriceUsd' in rawBody) updateSet.tokenPriceUsd = data.tokenPriceUsd?.toString() ?? null;
+
+    // Integers as Numbers
+    if ('totalTokens' in rawBody) updateSet.totalTokens = data.totalTokens ?? null;
+    if ('tokensOffered' in rawBody) updateSet.tokensOffered = data.tokensOffered ?? null;
+
+    // Standard Varchars
+    if ('tokenType' in rawBody) updateSet.tokenType = data.tokenType ?? 'erc20';
+    if ('estimatedApy' in rawBody) updateSet.estimatedApy = data.estimatedApy ?? null;
+    if ('yieldSource' in rawBody) updateSet.yieldSource = data.yieldSource ?? 'other';
+    if ('lockupPeriod' in rawBody) updateSet.lockupPeriod = data.lockupPeriod ?? null;
+    if ('fundUsage' in rawBody) updateSet.fundUsage = data.fundUsage ?? null;
+
+    // Sección 4: JSONB
+    if ('teamMembers' in rawBody) updateSet.teamMembers = data.teamMembers ?? [];
+    if ('advisors' in rawBody) updateSet.advisors = data.advisors ?? [];
+    if ('tokenDistribution' in rawBody) updateSet.tokenDistribution = data.tokenDistribution ?? {};
+    if ('contractAddress' in rawBody) updateSet.contractAddress = data.contractAddress ?? null;
+    if ('treasuryAddress' in rawBody) updateSet.treasuryAddress = data.treasuryAddress ?? null;
+
+    // Sección 5: Strings / Text
+    if ('legalStatus' in rawBody) updateSet.legalStatus = data.legalStatus ?? null;
+    if ('valuationDocumentUrl' in rawBody) updateSet.valuationDocumentUrl = data.valuationDocumentUrl ?? null;
+    if ('fiduciaryEntity' in rawBody) updateSet.fiduciaryEntity = data.fiduciaryEntity ?? null;
+    if ('dueDiligenceReportUrl' in rawBody) updateSet.dueDiligenceReportUrl = data.dueDiligenceReportUrl ?? null;
+
+    // Sección 6: Booleans
+    if ('isMintable' in rawBody) updateSet.isMintable = data.isMintable ?? false;
+    if ('isMutable' in rawBody) updateSet.isMutable = data.isMutable ?? false;
+    if ('updateAuthorityAddress' in rawBody) updateSet.updateAuthorityAddress = data.updateAuthorityAddress ?? null;
+
+    // Sección 7: Applicant info
+    if ('applicantName' in rawBody) updateSet.applicantName = data.applicantName ?? null;
+    if ('applicantPosition' in rawBody) updateSet.applicantPosition = data.applicantPosition ?? null;
+    if ('applicantEmail' in rawBody) updateSet.applicantEmail = data.applicantEmail ?? null;
+    if ('applicantPhone' in rawBody) updateSet.applicantPhone = data.applicantPhone ?? null;
+    if ('verificationAgreement' in rawBody) updateSet.verificationAgreement = data.verificationAgreement;
+
+    // Sección 8: Conversational fields
+    if ('protoclMecanism' in rawBody) updateSet.protoclMecanism = data.protoclMecanism ?? null;
+    if ('artefactUtility' in rawBody) updateSet.artefactUtility = data.artefactUtility ?? null;
+    if ('worktoearnMecanism' in rawBody) updateSet.worktoearnMecanism = data.worktoearnMecanism ?? null;
+    if ('monetizationModel' in rawBody) updateSet.monetizationModel = data.monetizationModel ?? null;
+    if ('adquireStrategy' in rawBody) updateSet.adquireStrategy = data.adquireStrategy ?? null;
+    if ('mitigationPlan' in rawBody) updateSet.mitigationPlan = data.mitigationPlan ?? null;
+
+    // Actualizar el proyecto en la base de datos (MERGE strategy)
     await db
       .update(projectsSchema)
-      .set({
-        // --- Sección 1: Strings / Enums ---
-        title: data.title,
-        description: data.description,
-        slug: slug,
-        tagline: data.tagline ?? null,
-        businessCategory: data.businessCategory ?? 'other',
-        logoUrl: data.logoUrl ?? null,
-        coverPhotoUrl: data.coverPhotoUrl ?? null,
-        videoPitch: data.videoPitch ?? null,
-
-        // --- Sección 2: Strings ---
-        website: data.website ?? null,
-        whitepaperUrl: data.whitepaperUrl ?? null,
-        twitterUrl: data.twitterUrl ?? null,
-        discordUrl: data.discordUrl ?? null,
-        telegramUrl: data.telegramUrl ?? null,
-        linkedinUrl: data.linkedinUrl ?? null,
-
-        // --- Sección 3: ¡LA CLAVE! Híbrido de Números y Strings ---
-
-        // Campos DECIMAL (decimal, numeric) -> van como STRING
-        targetAmount: data.targetAmount.toString(), // Convertir a string
-        totalValuationUsd: data.totalValuationUsd?.toString() ?? null, // Convertir a string
-        tokenPriceUsd: data.tokenPriceUsd?.toString() ?? null, // Convertir a string
-
-        // Campos INTEGER (integer) -> van como NUMBER
-        totalTokens: data.totalTokens ?? null, // Dejar como número
-        tokensOffered: data.tokensOffered ?? null, // Dejar como número
-
-        // Campos VARCHAR/TEXT -> van como STRING
-        tokenType: data.tokenType ?? 'erc20',
-        estimatedApy: data.estimatedApy ?? null,
-        yieldSource: data.yieldSource ?? 'other',
-        lockupPeriod: data.lockupPeriod ?? null,
-        fundUsage: data.fundUsage ?? null,
-
-        // --- Sección 4: JSONB (como Objetos/Arrays) y Strings ---
-        teamMembers: data.teamMembers ?? [], // Como Array
-        advisors: data.advisors ?? [], // Como Array
-        tokenDistribution: data.tokenDistribution ?? {}, // Como Objeto
-        contractAddress: data.contractAddress ?? null,
-        treasuryAddress: data.treasuryAddress ?? null,
-
-        // --- Sección 5: Strings / Text ---
-        legalStatus: data.legalStatus ?? null,
-        valuationDocumentUrl: data.valuationDocumentUrl ?? null,
-        fiduciaryEntity: data.fiduciaryEntity ?? null,
-        dueDiligenceReportUrl: data.dueDiligenceReportUrl ?? null,
-
-        // --- Sección 6: Booleans ---
-        isMintable: data.isMintable ?? false,
-        isMutable: data.isMutable ?? false,
-        updateAuthorityAddress: data.updateAuthorityAddress ?? null,
-
-        // --- Sección 7: Strings y Booleans ---
-        applicantName: data.applicantName ?? null,
-        applicantPosition: data.applicantPosition ?? null,
-        applicantEmail: data.applicantEmail ?? null,
-        applicantPhone: data.applicantPhone ?? null,
-        verificationAgreement: data.verificationAgreement,
-
-        // Mantener el status existente, a menos que se especifique cambiarlo
-        status: existingProject.status,
-
-        // --- Sección 8: Campos Conversational Form ---
-        protoclMecanism: data.protoclMecanism ?? null,
-        artefactUtility: data.artefactUtility ?? null,
-        worktoearnMecanism: data.worktoearnMecanism ?? null,
-        monetizationModel: data.monetizationModel ?? null,
-        adquireStrategy: data.adquireStrategy ?? null,
-        mitigationPlan: data.mitigationPlan ?? null,
-      })
+      .set(updateSet)
       .where(eq(projectsSchema.id, projectId));
 
     return NextResponse.json({ message: "Proyecto actualizado exitosamente" }, { status: 200 });
