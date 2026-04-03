@@ -19,15 +19,14 @@ export default function ProtocolPageShell({ project, children, currentSlug }: Pr
     return (
         <div className="min-h-screen pb-20 md:pb-6 bg-black">
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="relative">
+                <div className="flex flex-col lg:flex-row-reverse gap-8 xl:gap-12 items-start relative">
                     <ProjectSidebar project={project} targetAmount={targetAmount} />
-                    <div className="lg:mr-80 xl:mr-80 2xl:mr-80 p-6 lg:p-8 bg-zinc-950/50 rounded-3xl min-h-[80vh] border border-zinc-800/10">
+                    <div className="flex-1 min-w-0 p-6 lg:p-10 bg-zinc-950/50 rounded-3xl min-h-[80vh] border border-zinc-800/10 w-full">
                         <StatusAlert status={project.status} />
                         <Suspense fallback={<div className="h-96 animate-pulse bg-zinc-800/20 rounded-xl" />}>
                             {children}
                         </Suspense>
                     </div>
-                    <MobileInvestmentCard project={project} targetAmount={targetAmount} />
                 </div>
                 <div className="mt-8 px-4">
                     <RecommendedProjectsSection currentProjectSlug={currentSlug} />

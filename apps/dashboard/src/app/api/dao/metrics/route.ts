@@ -47,6 +47,17 @@ export async function GET(req: Request) {
         .from(daoMembers)
         .where(eq(daoMembers.projectId, projectId));
 
+        if (!totalStats || totalStats.length === 0) {
+           return NextResponse.json({
+               members: 0,
+               votingPower: 0,
+               artifacts: 0,
+               treasury: treasuryUSD,
+               pci: 0,
+               attribution: []
+           });
+        }
+
         const totalPowerNum = Number(totalStats?.[0]?.totalPower || 0);
 
         // b) Power Concentration (Top 10)
