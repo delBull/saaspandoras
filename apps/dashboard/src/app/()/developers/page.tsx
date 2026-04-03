@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Code2, 
   Terminal, 
   Copy, 
   Check, 
-  Cpu, 
   Globe, 
   Zap, 
   Lock, 
@@ -15,39 +13,121 @@ import {
   Layers, 
   MessageSquare, 
   Coins,
-  Puzzle
+  Puzzle,
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getDashboardDomain } from '@/lib/utils';
+import { toast } from 'sonner';
+
+interface Project {
+  id: number;
+  title: string;
+  slug: string;
+}
 
 export default function DevelopersPage() {
   const [copied, setCopied] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'widget' | 'commerce' | 'api'>('widget');
+  
+  // Dynamic State
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [publicKey, setPublicKey] = useState<string>('pk_grow_live_...');
+  const [loading, setLoading] = useState(true);
+  const [loadingKey, setLoadingKey] = useState(false);
+  const [showSelector, setShowSelector] = useState(false);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchApiKey(selectedProject.slug);
+    }
+  }, [selectedProject]);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/projects');
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setProjects(data);
+        if (data.length > 0) {
+          setSelectedProject(data[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchApiKey = async (slug: string) => {
+    setLoadingKey(true);
+    try {
+      const response = await fetch(`/api/admin/projects/${slug}/keys`);
+      const data = await response.json();
+      if (data.hasKeys) {
+        setPublicKey(data.publicKey || 'pk_grow_live_...');
+      } else {
+        // Fallback: check if we can generate
+        const genRes = await fetch(`/api/admin/projects/${slug}/keys`, { method: 'POST' });
+        const genData = await genRes.json();
+        setPublicKey(genData.publicKey || 'pk_grow_live_...');
+      }
+    } catch (error) {
+      console.error('Error fetching API key:', error);
+    } finally {
+      setLoadingKey(false);
+    }
+  };
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
+    toast.success('Snippet copiado');
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const widgetSnippet = `<script 
-  src="https://${getDashboardDomain()}/api/widget/v1.js" 
-  data-project-id="YOUR_PROJECT_SLUG" 
-  data-api-key="pk_grow_live_..."
-  defer
-></script>`;
+  const projectSlug = selectedProject?.slug || 'YOUR_PROJECT_SLUG';
 
-  const apiSnippet = `// Register a lead via JS API
-const res = await window.PandorasGrowth.registerLead({
-  email: 'user@example.com',
-  name: 'John Doe',
-  whatsapp: '+1234567890', // Automatically routes to CRM phone
-  intent: 'whitelist',
-  metadata: {
-    tags: ['FULL_UNIT'] // E.g. FULL_UNIT triggers bypass & VIP alert
-  }
-});`;
+  const snippets = {
+    widget: `<!-- Pandoras Growth OS Widget -->
+<script 
+  src="https://${getDashboardDomain()}/api/widget/v1.js" 
+  data-project-id="${projectSlug}" 
+  data-api-key="${publicKey}"
+  data-theme="premium"
+  defer
+></script>`,
+    commerce: `// Option A: Data Attributes (Zero Code)
+<button 
+  data-pd-checkout-slug="${projectSlug}" 
+  data-pd-checkout-tier="platinum"
+> Buy Now </button>
+
+// Option B: Programmable Popup
+window.PandorasGrowth.openCheckout('${projectSlug}', 'silver');`,
+    api: `// Direct Lead Injection (Market Attack Trigger)
+await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
+  method: "POST",
+  headers: { 
+    "Content-Type": "application/json", 
+    "x-api-key": "${publicKey}" 
+  },
+  body: JSON.stringify({
+    projectId: "${projectSlug}",
+    email: "builder@example.com",
+    metadata: { tags: ["FULL_UNIT"] } 
+  })
+});`
+  };
 
   const roadmapItems = [
     {
@@ -118,41 +198,84 @@ const res = await window.PandorasGrowth.registerLead({
 
       <div className="container relative max-w-6xl py-12 space-y-16">
         {/* Hero Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="space-y-6 text-center md:text-left"
-        >
-          <div className="inline-flex items-center px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest border rounded-full bg-zinc-900/80 border-white/10 text-indigo-400 backdrop-blur-md">
-            <Terminal className="w-3.5 h-3.5 mr-2" />
-            Developer ecosystem & Hub
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-white/5 pb-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6 text-center md:text-left flex-1"
+          >
+            <div className="inline-flex items-center px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest border rounded-full bg-zinc-900/80 border-white/10 text-indigo-400 backdrop-blur-md">
+              <Terminal className="w-3.5 h-3.5 mr-2" />
+              Developer ecosystem & Hub
+            </div>
+            <h1 className="text-5xl font-black tracking-tight md:text-6xl lg:text-7xl">
+              <span className="text-white">Build for</span> <br />
+              <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Hyper Growth.
+              </span>
+            </h1>
+            <p className="max-w-2xl text-xl text-zinc-400 font-light leading-relaxed">
+              Integra la infraestructura definitiva de Pandoras con fragmentos de código dinámicos.
+            </p>
+          </motion.div>
+
+          {/* Project Selector - Premium Style */}
+          <div className="relative w-full md:w-72 mt-8 md:mt-0">
+            <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest mb-3 ml-1">Configure your Workspace</p>
+            <button 
+              onClick={() => setShowSelector(!showSelector)}
+              className="w-full h-14 bg-zinc-900 border border-white/10 rounded-2xl px-6 flex items-center justify-between group hover:border-indigo-500/50 transition-all text-sm font-bold text-white shadow-xl"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                {loading ? 'Cargando proyectos...' : selectedProject?.title || 'Seleccionar Proyecto'}
+              </div>
+              <ChevronDown className={cn("w-4 h-4 text-zinc-500 transition-transform", showSelector && "rotate-180")} />
+            </button>
+
+            <AnimatePresence>
+              {showSelector && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full left-0 right-0 mt-2 p-2 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-xl overflow-hidden"
+                >
+                  <div className="max-h-60 overflow-y-auto no-scrollbar">
+                    {projects.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedProject(p);
+                          setShowSelector(false);
+                        }}
+                        className={cn(
+                          "w-full text-left p-3 rounded-xl text-xs font-bold transition-all mb-1",
+                          selectedProject?.id === p.id 
+                            ? "bg-indigo-500/10 text-indigo-400" 
+                            : "text-zinc-500 hover:bg-white/5 hover:text-white"
+                        )}
+                      >
+                        {p.title}
+                      </button>
+                    ))}
+                    {projects.length === 0 && !loading && (
+                      <div className="p-4 text-center text-zinc-600 text-xs italic">No hay proyectos activos</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <h1 className="text-5xl font-black tracking-tight md:text-6xl lg:text-7xl">
-            <span className="text-white">Build for</span> <br />
-            <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Hyper Growth.
-            </span>
-          </h1>
-          <p className="max-w-2xl text-xl text-zinc-400 font-light leading-relaxed">
-            Integra la infraestructura definitiva de Pandoras. Captación de leads, gamificación profunda y automatización Web3 en un solo hub centralizado.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4 md:justify-start pt-4">
-            <Button className="bg-white text-black hover:bg-zinc-200 h-12 px-8 rounded-xl font-bold transition-all hover:scale-105 active:scale-95">
-              Start Building
-            </Button>
-            <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 h-12 px-8 rounded-xl font-bold backdrop-blur-sm transition-all hover:border-zinc-500">
-              Technical Documentation
-            </Button>
-          </div>
-        </motion.div>
+        </div>
 
         {/* Dynamic Features Tabs */}
         <section className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <h2 className="text-3xl font-bold text-white">SDK & Integrations</h2>
-              <p className="text-zinc-500">Snippets de alta performance para tu stack técnico.</p>
+              <p className="text-zinc-500">Snippets de alta performance pre-configurados para <span className="text-white font-bold">{selectedProject?.title || 'tu protocolo'}</span>.</p>
             </div>
             <div className="hidden md:flex items-center space-x-2 text-xs font-mono text-zinc-600 bg-zinc-900/50 px-3 py-1 rounded-lg border border-zinc-800">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -165,81 +288,120 @@ const res = await window.PandorasGrowth.registerLead({
               {/* Sidebar Tabs for Codes */}
               <div className="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-white/5 p-4 bg-zinc-950/20">
                 <div className="space-y-2">
-                  <div className="text-[10px] uppercase font-bold text-zinc-600 mb-4 px-2">Growth OS v1.5</div>
+                  <div className="text-[10px] uppercase font-bold text-zinc-600 mb-4 px-2">Growth OS v2.0</div>
                   <button 
-                    onClick={() => setCopied('html-tab')}
-                    className={`w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all ${copied === 'html-tab' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+                    onClick={() => setActiveTab('widget')}
+                    className={cn(
+                      "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
+                      activeTab === 'widget' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                    )}
                   >
                     <Globe className="w-4 h-4" />
                     <span>Widget Script</span>
                   </button>
                   <button 
-                    onClick={() => setCopied('js-tab')}
-                    className={`w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all ${copied === 'js-tab' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+                    onClick={() => setActiveTab('commerce')}
+                    className={cn(
+                      "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
+                      activeTab === 'commerce' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                    )}
+                  >
+                    <Coins className="w-4 h-4" />
+                    <span>Commerce & Checkout</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('api')}
+                    className={cn(
+                      "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
+                      activeTab === 'api' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                    )}
                   >
                     <Puzzle className="w-4 h-4" />
-                    <span>Advanced API</span>
+                    <span>Advanced Lead API</span>
                   </button>
+                </div>
+
+                <div className="mt-10 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                   <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest mb-2">Workspace Info</p>
+                   <div className="space-y-2">
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-zinc-500">ID:</span>
+                        <span className="text-white font-mono">{selectedProject?.id || '—'}</span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-zinc-500">Slug:</span>
+                        <span className="text-white font-mono">{selectedProject?.slug || '—'}</span>
+                      </div>
+                   </div>
                 </div>
               </div>
 
               {/* Code Display Area */}
               <div className="lg:col-span-4 p-0 bg-zinc-950/40 relative group">
+                {loadingKey && (
+                   <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm z-20 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                   </div>
+                )}
+                
                 <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button 
                     size="sm" 
                     variant="secondary" 
-                    className="bg-zinc-800 hover:bg-zinc-700 text-xs rounded-lg h-8"
-                    onClick={() => handleCopy(copied === 'js-tab' ? apiSnippet : widgetSnippet, 'code')}
+                    className={cn(
+                      "bg-zinc-800 hover:bg-zinc-700 text-xs rounded-lg h-8 px-4 font-bold border border-white/5",
+                      copied === 'code' && "text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
+                    )}
+                    onClick={() => handleCopy(snippets[activeTab], 'code')}
                   >
                     {copied === 'code' ? (
-                      <><Check className="w-3 h-3 mr-2 text-emerald-400" /> Copied</>
+                      <><Check className="w-3 h-3 mr-2" /> Copied</>
                     ) : (
                       <><Copy className="w-3 h-3 mr-2" /> Copy Code</>
                     )}
                   </Button>
                 </div>
                 
-                <div className="p-8 font-mono text-sm overflow-auto max-h-[500px]">
-                  {copied === 'js-tab' ? (
+                <div className="p-8 font-mono text-sm overflow-auto max-h-[500px] leading-relaxed">
+                  {activeTab === 'api' ? (
                     <pre className="space-y-1">
-                      <div className="text-zinc-600">// Direct Lead Injection via window capability</div>
+                      <div className="text-zinc-600">// Direct Lead Injection via fetch</div>
                       <div>
-                        <span className="text-purple-400">const</span> <span className="text-blue-400">response</span> = <span className="text-purple-400">await</span> <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">registerLead</span>({'{'}
+                        <span className="text-purple-400">await</span> <span className="text-blue-400">fetch</span>(<span className="text-emerald-300">"https://${getDashboardDomain()}/api/v1/leads/register"</span>, {'{'}<br/>
+                        {'  method: '}<span className="text-emerald-300">"POST"</span>,<br/>
+                        {'  headers: { '}<span className="text-emerald-300">"x-api-key"</span>{': '}<span className="text-emerald-300">"{publicKey}"</span>{' },'}<br/>
+                        {'  body: '}<span className="text-blue-400">JSON</span>.<span className="text-indigo-400">stringify</span>({'{'}<br/>
+                        {'    projectId: '}<span className="text-emerald-300">"{projectSlug}"</span>,<br/>
+                        {'    email: '}<span className="text-emerald-300">"user@example.com"</span>,<br/>
+                        {'    metadata: { tags: ['}<span className="text-emerald-300">"FULL_UNIT"</span>{'] } '}<span className="text-zinc-600">// Triggers VIP Bypass</span><br/>
+                        {'  })'}<br/>
+                        {'});'}
                       </div>
-                      <div className="pl-6">
-                        <span className="text-zinc-400">email</span>: <span className="text-emerald-300">'builder@example.com'</span>,
+                    </pre>
+                  ) : activeTab === 'commerce' ? (
+                    <pre className="space-y-4">
+                      <div>
+                        <div className="text-zinc-600 mb-2">// Option A: Data Attributes (Zero Code)</div>
+                        <span className="text-zinc-400">&lt;</span><span className="text-blue-400">button</span><br/>
+                        <span className="pl-6 text-indigo-400">data-pd-checkout-slug</span>=<span className="text-emerald-300">"{projectSlug}"</span><br/>
+                        <span className="pl-6 text-indigo-400">data-pd-checkout-tier</span>=<span className="text-emerald-300">"platinum"</span><br/>
+                        <span className="text-zinc-400">&gt;</span> Buy Now <span className="text-zinc-400">&lt;/</span><span className="text-blue-400">button</span><span className="text-zinc-400">&gt;</span>
                       </div>
-                      <div className="pl-6">
-                        <span className="text-zinc-400">whatsapp</span>: <span className="text-emerald-300">'+1234567890'</span>, <span className="text-zinc-600">// Native routing</span>
+                      
+                      <div>
+                        <div className="text-zinc-600 mb-2">// Option B: Programmable Popup</div>
+                        <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<span className="text-emerald-300">'{projectSlug}'</span>, <span className="text-emerald-300">'silver'</span>);
                       </div>
-                      <div className="pl-6">
-                        <span className="text-zinc-400">intent</span>: <span className="text-emerald-300">'whitelisting'</span>,
-                      </div>
-                      <div className="pl-6">
-                        <span className="text-zinc-400">metadata</span>: {'{'} tags: [<span className="text-emerald-300">'FULL_UNIT'</span>] {'}'} <span className="text-zinc-600">// Triggers VIP Bypass</span>
-                      </div>
-                      <div>{'}'});</div>
                     </pre>
                   ) : (
                     <pre className="space-y-1">
                       <div className="text-zinc-600">&lt;!-- Drop this in your &lt;body&gt; --&gt;</div>
                       <div>
-                        <span className="text-zinc-400">&lt;</span><span className="text-blue-400">script</span>
-                      </div>
-                      <div className="pl-6">
-                        <span className="text-indigo-400">src</span>=<span className="text-emerald-300">"https://${getDashboardDomain()}/api/widget/v1.js"</span>
-                      </div>
-                      <div className="pl-6">
-                        <span className="text-indigo-400">data-project-id</span>=<span className="text-emerald-300">"narai"</span>
-                      </div>
-                      <div className="pl-6">
-                        <span className="text-indigo-400">data-api-key</span>=<span className="text-emerald-300">"pk_grow_live_..."</span>
-                      </div>
-                      <div className="pl-6">
-                        <span className="text-indigo-400">data-theme</span>=<span className="text-emerald-300">"dark"</span>
-                      </div>
-                      <div>
+                        <span className="text-zinc-400">&lt;</span><span className="text-blue-400">script</span><br/>
+                        <span className="pl-6 text-indigo-400">src</span>=<span className="text-emerald-300">"https://${getDashboardDomain()}/api/widget/v1.js"</span><br/>
+                        <span className="pl-6 text-indigo-400">data-project-id</span>=<span className="text-emerald-300">"{projectSlug}"</span><br/>
+                        <span className="pl-6 text-indigo-400">data-api-key</span>=<span className="text-emerald-300">"{publicKey}"</span><br/>
+                        <span className="pl-6 text-indigo-400">data-theme</span>=<span className="text-emerald-300">"premium"</span><br/>
                         <span className="text-zinc-400">&gt;&lt;/</span><span className="text-blue-400">script</span><span className="text-zinc-400">&gt;</span>
                       </div>
                     </pre>
@@ -328,4 +490,9 @@ const res = await window.PandorasGrowth.registerLead({
       </div>
     </div>
   );
+}
+
+// Helper for conditional classes
+function cn(...classes: (string | boolean | undefined | null)[]) {
+  return classes.filter(Boolean).join(' ');
 }
