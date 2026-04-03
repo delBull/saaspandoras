@@ -2,7 +2,6 @@
 
 import { useState, use, Suspense, useEffect } from "react";
 import { notFound } from "next/navigation";
-import ProjectNavigationHeader from "@/components/projects/ProjectNavigationHeader"; // Verify import path
 import { DAOSidebar } from "@/components/dao/DAOSidebar";
 import { DAODashboard } from "@/components/dao/DAODashboard";
 import { Loader2 } from "lucide-react";
@@ -130,11 +129,6 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
 
     return (
         <div className="min-h-screen bg-black text-white pb-20">
-            {/* Universal Nav */}
-            <ProjectNavigationHeader />
-            {/* Note: ProjectNavigationHeader usually needs to know it's in detailed view or just top nav? 
-         It seems to be the top navbar. */ }
-
             <div className="flex flex-col lg:flex-row w-full">
                 {/* Main Content (Priority 1 on Mobile) */}
                 <div className="flex-1 order-1 lg:order-1 border-r border-zinc-800/50 min-h-[calc(100vh-80px)]">

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import type { ProjectData } from "../types";
 import ProjectVideoSection, { type ProjectVideoSectionRef } from "../../../../components/projects/ProjectVideoSection";
-import ProjectNavigationHeader from "../../../../components/projects/ProjectNavigationHeader";
 import ProjectSidebar from "../../../../components/projects/ProjectSidebar";
 import ProjectHeader from "../../../../components/projects/ProjectHeader";
 import ProjectContentTabs from "../../../../components/projects/ProjectContentTabs";
@@ -208,7 +207,6 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
 
   return (
     <div className="min-h-screen pb-20 md:pb-6 bg-black">
-      <ProjectNavigationHeader />
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="relative">
           <ProjectSidebar project={normalizedProject!} targetAmount={targetAmount} />
