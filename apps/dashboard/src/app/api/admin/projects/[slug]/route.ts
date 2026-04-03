@@ -247,7 +247,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (body.title) updates.title = body.title;
       if (body.tagline !== undefined) updates.tagline = body.tagline;
       if (body.description) updates.description = body.description;
-      if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
+      if (body.logoUrl !== undefined) {
+        updates.logoUrl = body.logoUrl;
+        updates.imageUrl = body.logoUrl; // Sync legacy field
+      }
       if (body.coverPhotoUrl !== undefined) updates.coverPhotoUrl = body.coverPhotoUrl;
       if (body.allowedDomains !== undefined) updates.allowedDomains = body.allowedDomains;
       if (body.discordWebhookUrl !== undefined) updates.discordWebhookUrl = body.discordWebhookUrl;

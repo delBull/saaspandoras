@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoMembers, projects } from '@/db/schema';
-import { eq, sql, count, sum } from 'drizzle-orm';
+import { eq, sql, count, sum, desc } from 'drizzle-orm';
 import { defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { getWalletBalance } from "thirdweb/wallets";
@@ -50,13 +50,19 @@ export async function GET(req: Request) {
         const totalPowerNum = Number(totalStats?.[0]?.totalPower || 0);
 
         // b) Power Concentration (Top 10)
-        const topWallets = await db.select({
-            votingPower: daoMembers.votingPower
-        })
-        .from(daoMembers)
-        .where(eq(daoMembers.projectId, projectId))
-        .orderBy(sql`voting_power DESC`)
-        .limit(10);
+        let topWallets: { votingPower: string | number }[] = [];
+        try {
+            topWallets = await db.select({
+                votingPower: daoMembers.votingPower
+            })
+            .from(daoMembers)
+            .where(eq(daoMembers.projectId, projectId))
+            .orderBy(desc(daoMembers.votingPower))
+            .limit(10);
+        } catch (subError) {
+            console.error('❌ DAO Metrics: Error fetching top wallets:', subError);
+            // Non-critical fallback, keep going with empty list
+        }
 
         const top10Power = topWallets.reduce((acc, w) => acc + Number(w.votingPower || 0), 0);
         const pci = totalPowerNum > 0 ? top10Power / totalPowerNum : 0;
