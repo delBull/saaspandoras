@@ -97,6 +97,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [hasEnsuredAccess, setHasEnsuredAccess] = useState(false);
     const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
+    // 🧬 Real-time Phase Activation Engine
+    const isPhaseActive = useMemo(() => {
+        if (!rawPhase) return false;
+        return rawPhase.isActive !== false;
+    }, [rawPhase]);
+
     // 🧬 Real-time Scarcity Engine
     const { data: activityData } = useSWR(
         project?.id ? `/api/dao/recent-activity?projectId=${project.id}&minutes=15` : null,
@@ -159,7 +165,6 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         setStep('success');
         toast.success("¡Participación Confirmada!");
 
-        // Auto-Register user bypass
         try {
             fetch('/api/dao/register-holder', {
                 method: 'POST',
@@ -200,8 +205,6 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         }
     };
 
-    const isPhaseActive = rawPhase && rawPhase.isActive;
-
     return (
         <div className="flex flex-col min-h-screen bg-[#050505] relative overflow-hidden items-center justify-center p-4">
             {/* Deep Branding Background Effects */}
@@ -220,7 +223,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 >
                     {(step === 'checkout' || step === 'fast_lane') && (
                         <>
-                            {/* Header: Action First */}
+                            {/* Header Section */}
                             <div className="text-center mb-8">
                                 {project.logoUrl ? (
                                     <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-6 border border-zinc-800" style={{ boxShadow: `0 10px 40px -10px ${brandColor}40` }}>
@@ -233,165 +236,179 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                 )}
                                 
                                 <h1 className="text-2xl font-black tracking-tight text-white mb-2 leading-tight">
-                                    Acceso Prioritario: {project.title}
+                                    {isPhaseActive ? `Acceso Prioritario: ${project.title}` : `Tier ${tierName} No Disponible`}
                                 </h1>
                                 <p className="text-zinc-400 font-medium text-xs">
-                                    Asegura tu participación en una de las fases exclusivas del protocolo.
+                                    {isPhaseActive 
+                                        ? `Asegura tu participación en una de las fases exclusivas del protocolo.`
+                                        : `Esta fase del protocolo ya no se encuentra abierta para contribución directa.`
+                                    }
                                 </p>
                             </div>
 
-                            {/* Trust Layer (Simplified for Higher Conversion) */}
-                            <div className="bg-zinc-900/40 rounded-2xl p-5 mb-6 border border-zinc-800/50">
-                                <div className="space-y-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
-                                            <ShieldCheck className="w-4 h-4" />
+                            {/* Main View Logic */}
+                            {!isPhaseActive ? (
+                                /* Inactive Phase UI */
+                                <div className="space-y-6 mb-4 animate-in fade-in zoom-in-95 duration-500">
+                                    <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 text-center">
+                                        <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 border border-zinc-700">
+                                            <Lock className="w-8 h-8 text-zinc-500" />
                                         </div>
-                                        <div>
-                                            <h4 className="text-[11px] font-black uppercase text-zinc-300 tracking-widest mt-0.5">Participación Asegurada</h4>
-                                            <p className="text-[11px] text-zinc-500 leading-tight">Registro inmutable en la red {chain.name || 'Blockchain'}.</p>
-                                        </div>
-                                    </div>
-                                    <div className="p-3 bg-black/40 rounded-xl border border-zinc-900">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Activo Subyacente</span>
-                                            <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-md uppercase">{tierName}</span>
-                                        </div>
-                                        <p className="text-[11px] text-zinc-400 font-medium font-mono leading-relaxed truncate">
-                                            {targetAddress}
+                                        <h3 className="text-lg font-bold text-white mb-2 font-mono uppercase tracking-tighter">Acceso Restringido</h3>
+                                        <p className="text-[11px] text-zinc-400 mb-6 font-medium leading-relaxed">
+                                            La fase <strong>{tierName.toUpperCase()}</strong> se encuentra cerrada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima ventana.
                                         </p>
+                                        
+                                        <button 
+                                            onClick={() => setStep('fast_lane')}
+                                            className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-white/5 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                        >
+                                            Entrar por Fast Lane <Zap className="w-4 h-4 fill-black group-hover:scale-125 transition-transform" />
+                                        </button>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Phase Status Banner */}
-                            {!isPhaseActive && (
-                                <div className="bg-red-500/10 rounded-xl p-4 mb-4 border border-red-500/20 text-center">
-                                    <h4 className="text-[11px] font-black uppercase text-red-400 tracking-widest mb-1 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Fase No Disponible</h4>
-                                    <p className="text-[10px] text-red-400/80 font-medium">Esta etapa ha finalizado o aún no ha sido abierta al público.</p>
-                                </div>
-                            )}
-
-                            {isPhaseActive && (
-                                <div className="bg-emerald-500/10 rounded-xl p-4 mb-4 border border-emerald-500/20 text-center">
-                                    <h4 className="text-[11px] font-black uppercase text-emerald-400 tracking-widest mb-1 flex items-center justify-center gap-1.5"><Zap className="w-3 h-3" /> {activityData?.count > 0 ? `VENTA ACTIVA (+${activityData.count} usuarios)` : "VENTA ACTIVA — VERIFICADA"}</h4>
-                                    <p className="text-[10px] text-emerald-400/80 font-medium">Condiciones preferentes habilitadas para esta fase.</p>
-                                </div>
-                            )}
-
-                            {/* Investment Input Zone */}
-                            <div className="flex justify-between items-center bg-black/50 rounded-2xl p-4 mb-2 border border-zinc-800/80">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-1">Inversión Estimada</span>
-                                    <span className="text-2xl font-black text-white font-mono flex items-center gap-2">
-                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay.toLocaleString()} ${txConfig.token}`}
-                                    </span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 block mb-1">Unidades</span>
-                                    <input 
-                                        type="number" 
-                                        min="1"
-                                        disabled={!isPhaseActive}
-                                        value={amount}
-                                        onChange={(e) => setAmount(e.target.value)}
-                                        className="w-16 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-bold px-2 py-1 outline-none text-right focus:border-indigo-500 transition-colors disabled:opacity-50"
-                                    />
-                                </div>
-                            </div>
-                            <p className="text-center text-[10px] text-zinc-600 font-medium mb-6">Participas en activos productivos estructurados legalmente.</p>
-
-                            {/* Action Blocks */}
-                            {step === 'checkout' ? (
-                                <div className="space-y-4">
-                                    {account ? (
-                                        <>
-                                            {isCheckingAccess ? (
-                                                <button disabled className="w-full h-14 bg-zinc-900 text-zinc-500 font-black rounded-2xl uppercase tracking-widest text-[11px] border border-zinc-800 flex items-center justify-center gap-2">
-                                                    <Loader2 className="w-4 h-4 animate-spin" /> Verificando Credenciales...
-                                                </button>
-                                            ) : !isPhaseActive ? (
-                                                <button disabled className="w-full h-14 bg-zinc-900 text-zinc-500 font-black rounded-2xl uppercase tracking-widest text-[11px] border border-zinc-800">
-                                                    Acceso Restringido
-                                                </button>
-                                            ) : (
-                                                <TransactionButton
-                                                    transaction={() => {
-                                                        return prepareContractCall({
-                                                            contract: getContract({ client, chain, address: txConfig.address }),
-                                                            method: txConfig.method as any,
-                                                            params: txConfig.params as any,
-                                                            value: txConfig.value
-                                                        });
-                                                    }}
-                                                    onTransactionSent={() => setStep('processing')}
-                                                    onTransactionConfirmed={handleSuccess}
-                                                    onError={(error) => {
-                                                        console.error(error);
-                                                        toast.error(error.message.includes('insufficient') ? "Fondos insuficientes" : "Ocurrió un error en la blockchain.");
-                                                    }}
-                                                    disabled={!hasEnsuredAccess || isPriceLoading || !txConfig.address}
-                                                    className="!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px]"
-                                                    style={{ backgroundColor: brandColor, color: '#000' }}
-                                                >
-                                                    {hasEnsuredAccess ? "Asegurar Mi Posición Ahora" : "Preparando Acceso..."}
-                                                </TransactionButton>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <div className="relative group">
-                                            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                                            <ConnectButton
-                                                client={client}
-                                                showAllWallets={false}
-                                                theme="dark"
-                                                locale="es_ES"
-                                                chains={[chain]}
-                                                wallets={[
-                                                    inAppWallet({
-                                                        auth: {
-                                                            options: ["email", "google", "apple", "facebook", "passkey"],
-                                                        },
-                                                        executionMode: {
-                                                            mode: "EIP7702",
-                                                            sponsorGas: true,
-                                                        },
-                                                    }),
-                                                    createWallet("io.metamask"),
-                                                ]}
-                                                connectButton={{
-                                                    label: "Comenzar Registro Seguro",
-                                                    style: {
-                                                        width: '100%',
-                                                        height: '56px',
-                                                        borderRadius: '16px',
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.1em',
-                                                        fontWeight: '900',
-                                                        fontSize: '11px',
-                                                        backgroundColor: '#fff',
-                                                        color: '#000'
-                                                    }
-                                                }}
-                                                connectModal={{
-                                                    showThirdwebBranding: false,
-                                                    size: "compact",
-                                                    title: "Identificación Segura"
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Alternative Escape */}
-                                    <button 
-                                        onClick={() => setStep('fast_lane')}
-                                        className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
-                                    >
-                                        Reservar con medios tradicionales <ArrowRight className="w-3 h-3 inline ml-1" />
-                                    </button>
                                 </div>
                             ) : (
-                                /* Fast Lane Form */
+                                /* Active Phase UI */
+                                <>
+                                    {/* Trust Layer */}
+                                    <div className="bg-zinc-900/40 rounded-2xl p-5 mb-6 border border-zinc-800/50">
+                                        <div className="space-y-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
+                                                    <ShieldCheck className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-[11px] font-black uppercase text-zinc-300 tracking-widest mt-0.5">Participación Asegurada</h4>
+                                                    <p className="text-[11px] text-zinc-500 leading-tight">Registro inmutable en la red {chain.name || 'Blockchain'}.</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-3 bg-black/40 rounded-xl border border-zinc-900">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Activo Subyacente</span>
+                                                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-md uppercase">{tierName}</span>
+                                                </div>
+                                                <p className="text-[11px] text-zinc-400 font-medium font-mono leading-relaxed truncate">
+                                                    {targetAddress}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Status Indicator */}
+                                    <div className="bg-emerald-500/10 rounded-xl p-4 mb-4 border border-emerald-500/20 text-center">
+                                        <h4 className="text-[11px] font-black uppercase text-emerald-400 tracking-widest mb-1 flex items-center justify-center gap-1.5"><Zap className="w-3 h-3" /> {activityData?.count > 0 ? `VENTA ACTIVA (+${activityData.count} usuarios)` : "VENTA ACTIVA — VERIFICADA"}</h4>
+                                        <p className="text-[10px] text-emerald-400/80 font-medium">Condiciones preferentes habilitadas para esta fase.</p>
+                                    </div>
+
+                                    {/* Action Flow */}
+                                    {step === 'checkout' ? (
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center bg-black/50 rounded-2xl p-4 mb-2 border border-zinc-800/80">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-1">Inversión Estimada</span>
+                                                    <span className="text-2xl font-black text-white font-mono flex items-center gap-2">
+                                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay.toLocaleString()} ${txConfig.token}`}
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 block mb-1">Unidades</span>
+                                                    <input 
+                                                        type="number" 
+                                                        min="1"
+                                                        value={amount}
+                                                        onChange={(e) => setAmount(e.target.value)}
+                                                        className="w-16 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-bold px-2 py-1 outline-none text-right focus:border-indigo-500 transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {account ? (
+                                                <div className="space-y-4">
+                                                    {isCheckingAccess ? (
+                                                        <button disabled className="w-full h-14 bg-zinc-900 text-zinc-500 font-black rounded-2xl uppercase tracking-widest text-[11px] border border-zinc-800 flex items-center justify-center gap-2">
+                                                            <Loader2 className="w-4 h-4 animate-spin" /> Verificando Credenciales...
+                                                        </button>
+                                                    ) : (
+                                                        <TransactionButton
+                                                            transaction={() => {
+                                                                return prepareContractCall({
+                                                                    contract: getContract({ client, chain, address: txConfig.address }),
+                                                                    method: txConfig.method as any,
+                                                                    params: txConfig.params as any,
+                                                                    value: txConfig.value
+                                                                });
+                                                            }}
+                                                            onTransactionSent={() => setStep('processing')}
+                                                            onTransactionConfirmed={handleSuccess}
+                                                            onError={(error) => {
+                                                                console.error(error);
+                                                                toast.error(error.message.includes('insufficient') ? "Fondos insuficientes" : "Ocurrió un error en la blockchain.");
+                                                            }}
+                                                            disabled={!hasEnsuredAccess || isPriceLoading || !txConfig.address}
+                                                            className="!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px]"
+                                                            style={{ backgroundColor: brandColor, color: '#000' }}
+                                                        >
+                                                            {hasEnsuredAccess ? "Asegurar Mi Posición Ahora" : "Preparando Acceso..."}
+                                                        </TransactionButton>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="relative group">
+                                                    <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                                                    <ConnectButton
+                                                        client={client}
+                                                        showAllWallets={false}
+                                                        theme="dark"
+                                                        locale="es_ES"
+                                                        chains={[chain]}
+                                                        wallets={[
+                                                            inAppWallet({
+                                                                auth: {
+                                                                    options: ["email", "google", "apple", "facebook", "passkey"],
+                                                                },
+                                                                executionMode: {
+                                                                    mode: "EIP7702",
+                                                                    sponsorGas: true,
+                                                                },
+                                                            }),
+                                                            createWallet("io.metamask"),
+                                                        ]}
+                                                        connectButton={{
+                                                            label: "Comenzar Registro Seguro",
+                                                            style: {
+                                                                width: '100%',
+                                                                height: '56px',
+                                                                borderRadius: '16px',
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '0.1em',
+                                                                fontWeight: '900',
+                                                                fontSize: '11px',
+                                                                backgroundColor: '#fff',
+                                                                color: '#000'
+                                                            }
+                                                        }}
+                                                        connectModal={{
+                                                            showThirdwebBranding: false,
+                                                            size: "compact",
+                                                            title: "Identificación Segura"
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <button 
+                                                onClick={() => setStep('fast_lane')}
+                                                className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+                                            >
+                                                Reservar con medios tradicionales <ArrowRight className="w-3 h-3 inline ml-1" />
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                </>
+                            )}
+
+                            {/* Shared Fast Lane Form (Visible in both active/inactive states when step is fast_lane) */}
+                            {step === 'fast_lane' && (
                                 <div className="space-y-4 animate-in fade-in zoom-in-95">
                                     <input 
                                         type="email" 

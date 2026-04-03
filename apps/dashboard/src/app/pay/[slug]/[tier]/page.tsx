@@ -26,8 +26,9 @@ export default async function CheckoutHubPage({
     // Find the requested phase by name (case-insensitive)
     const activePhase = phases.find((p: any) => p.name.toLowerCase() === tier.toLowerCase());
 
-    // If the specific phase requested doesn't exist, we don't fall back, we 404
-    if (!activePhase) return notFound();
+    // NOTE: If the specific phase requested doesn't exist, we STILL proceed to the client.
+    // This allows the CheckoutClient to show a branded 'Fase No Disponible' screen
+    // rather than a generic 404, keeping the user in the funnel for the Fast Lane.
 
     // Pass data to the deep-styled client component
     return (
