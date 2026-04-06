@@ -1719,6 +1719,21 @@ export const deploymentJobs = pgTable("deployment_jobs", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
+// --- NEWSLETTER SUBSCRIPTIONS (Unified in Neon/Railway) ---
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  phone: varchar("phone", { length: 50 }),
+  source: varchar("source", { length: 100 }).default("unknown"),
+  tags: jsonb("tags").default([]).notNull(),
+  language: varchar("language", { length: 10 }).default("es"),
+  metadata: jsonb("metadata").default({}),
+  isConfirmed: boolean("is_confirmed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+
 // --- MARKETING / GROWTH OS TABLES ---
 
 export const marketingLeadStatusEnum = pgEnum("marketing_lead_status", [
@@ -1810,11 +1825,14 @@ export const marketingLeads = pgTable("marketing_leads", {
   
   lastAction: varchar("last_action", { length: 100 }), // Denormalized for performance
   
+  lastEngagementAt: timestamp("last_engaged_at", { withTimezone: true }),
+  isDeleted: boolean("is_deleted").default(false).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   // A lead is unique per Project + Identity (Email, Wallet or Fingerprint hash)
   projectIdentityIdx: uniqueIndex("marketing_leads_project_identity_idx").on(t.projectId, t.identityHash),
+  isDeletedIdx: index("marketing_leads_is_deleted_idx").on(t.isDeleted),
 }));
 
 /**

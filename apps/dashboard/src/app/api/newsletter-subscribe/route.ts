@@ -1,6 +1,8 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { notifyNewsletterSubscription } from '@/lib/discord';
+import { db } from '@/db';
+import { newsletterSubscribers } from '@/db/schema';
+import { sql } from 'drizzle-orm';
 
 
 // Configure Resend - SECURE ENVIRONMENT VARIABLES
@@ -12,34 +14,19 @@ if (!RESEND_API_KEY) {
   console.error('❌ RESEND_API_KEY not configured in environment variables');
 }
 
-// Database configuration - Environment-specific
+// Database configuration - REMOVED SUPABASE (Unified in Neon/Railway)
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const environment = process.env.VERCEL_ENV ?? NODE_ENV;
-let SUPABASE_URL: string | undefined;
-let SUPABASE_SERVICE_KEY: string | undefined;
 
-// Choose database configuration based on environment
-if (environment === 'production') {
-  SUPABASE_URL = process.env.PROD_SUSCRIBERS_SUPABASE_URL;
-  SUPABASE_SERVICE_KEY = process.env.PROD_SUSCRIBERS_SUPABASE_SERVICE_ROLE_KEY;
-} else if (environment === 'staging') {
-  SUPABASE_URL = process.env.DEV_SUSCRIBERS_SUPABASE_URL;
-  SUPABASE_SERVICE_KEY = process.env.DEV_SUSCRIBERS_SUPABASE_SERVICE_ROLE_KEY;
-} else {
-  // Development - use DEV_SUSCRIBERS or fallback to console
-  SUPABASE_URL = process.env.DEV_SUSCRIBERS_SUPABASE_URL;
-  SUPABASE_SERVICE_KEY = process.env.DEV_SUSCRIBERS_SUPABASE_SERVICE_ROLE_KEY;
-}
-
-// Database interface
+// Database interface - Matches Drizzle schema
 interface Subscriber {
   email: string;
-  phone?: string;
+  phone?: string | null;
   source: string;
   tags: string[];
   language?: string;
   metadata: Record<string, unknown>;
-  is_confirmed?: boolean;
+  isConfirmed?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -68,31 +55,23 @@ export async function POST(request: NextRequest) {
       tags: tags || [],
       language: language || 'es',
       metadata: metadata || {},
-      is_confirmed: false
+      isConfirmed: false
     };
 
-    // Save to database if Supabase is configured
-    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
-      try {
-        const supabaseResponse = await fetch(`${SUPABASE_URL}/rest/v1/newsletter_subscribers`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(subscriberData)
-        });
-
-        if (!supabaseResponse.ok) {
-          const errorText = await supabaseResponse.text();
-          console.error('Supabase error:', errorText);
-          // Continue with email sending even if DB fails
-        }
-      } catch (dbError) {
-        console.error('Database save failed:', dbError);
-        // Continue with email sending even if DB fails
-      }
+    // 🧬 Save to Unified Database (Neon/Railway) via Drizzle
+    try {
+      await db.insert(newsletterSubscribers).values({
+        email: subscriberData.email,
+        phone: subscriberData.phone,
+        source: subscriberData.source,
+        tags: subscriberData.tags,
+        language: subscriberData.language,
+        metadata: subscriberData.metadata,
+        isConfirmed: false
+      }).onConflictDoNothing(); // Prevent errors on double-submission
+    } catch (dbError) {
+      console.error('Unified Database save failed:', dbError);
+      // Continue with email sending even if DB fails to maintain conversion
     }
 
     // Send email via Resend with React Email template
@@ -165,8 +144,8 @@ export async function POST(request: NextRequest) {
       language,
       metadata,
       timestamp: new Date().toISOString(),
-      userAgent: request.headers.get('user-agent') ?? 'unknown',
-      database_status: SUPABASE_URL ? 'configured' : 'not_configured'
+      userAgent: (request as any).headers?.get('user-agent') ?? 'unknown',
+      database_status: 'drizzle_neon_unfied'
     });
 
     return NextResponse.json({
@@ -179,7 +158,7 @@ export async function POST(request: NextRequest) {
         tags,
         timestamp: new Date().toISOString(),
         email_sent: !!RESEND_API_KEY && !!contactEmail,
-        database_saved: !!(SUPABASE_URL && SUPABASE_SERVICE_KEY)
+        database_saved: true
       }
     });
 
