@@ -101,12 +101,34 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
     // 🧬 Real-time Phase Activation Engine (Unified)
+    const accumulatedTokensBefore = useMemo(() => {
+        if (!project || !rawPhase) return 0;
+        try {
+            const config = typeof project.w2eConfig === 'string' 
+                ? JSON.parse(project.w2eConfig) 
+                : (project.w2eConfig || {});
+            const phases = config.phases || project.phases || [];
+            let acc = 0;
+            for (const p of phases) {
+                // Match by ID or Name (resilient)
+                if (String(p.id || "") === String(rawPhase.id || "") || 
+                    String(p.name || "").toLowerCase().trim() === String(rawPhase.name || "").toLowerCase().trim()) {
+                    break;
+                }
+                acc += Number(p.tokenAllocation || 0);
+            }
+            return acc;
+        } catch (e) {
+            return 0;
+        }
+    }, [project, rawPhase]);
+
     const isPhaseActive = useMemo(() => {
         if (!rawPhase || isStatusLoading) return false;
-        // Optimization: during global bootstrap we use 0, but here we use real-time supply
-        const statusData = calculatePhaseStatus(rawPhase, totalSupply, 0); // Simplified for single-tier checkout
+        // Optimization: during global bootstrap we use 0, but here we use the precise offset
+        const statusData = calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore);
         return statusData.isClickable || statusData.status === 'active';
-    }, [rawPhase, totalSupply, isStatusLoading]);
+    }, [rawPhase, totalSupply, isStatusLoading, accumulatedTokensBefore]);
 
     // 🛡️ On-chain Status Synchronization
     useEffect(() => {
@@ -237,9 +259,9 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#050505] relative overflow-hidden items-center justify-center p-4">
+        <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative overflow-y-auto md:items-center md:justify-center p-4 py-12 md:py-8 lg:p-4">
             {/* Deep Branding Background Effects */}
-            <div className="absolute top-0 w-full h-[500px]" style={{
+            <div className="fixed inset-0 pointer-events-none z-0" style={{
                 background: `radial-gradient(ellipse at top, ${brandColor}20 0%, transparent 70%)`
             }}></div>
 
