@@ -194,10 +194,18 @@ export function getProjectPhasesWithStats(project: any, currentSupply: number) {
 
 /**
  * Resiliently finds a phase within a project by name, slug or ID.
- * Handles trims, case-insensitivity and multiple identifiers.
+ * Handles trims, case-insensitivity, URI decoding and multiple identifiers.
  */
 export function matchPhase(phases: any[], identifier: string) {
   if (!phases || !identifier) return null;
+  
+  let decodedId = identifier;
+  try {
+    decodedId = decodeURIComponent(identifier).trim().toLowerCase();
+  } catch (e) {
+    decodedId = identifier.trim().toLowerCase();
+  }
+  
   const cleanId = String(identifier).trim().toLowerCase();
   
   return phases.find(p => {
@@ -205,6 +213,8 @@ export function matchPhase(phases: any[], identifier: string) {
     const rawId = String(p.id || "").trim().toLowerCase();
     const rawSlug = String(p.slug || "").trim().toLowerCase();
     
-    return rawName === cleanId || rawId === cleanId || rawSlug === cleanId;
+    return rawName === decodedId || rawName === cleanId || 
+           rawId === decodedId || rawId === cleanId || 
+           rawSlug === decodedId || rawSlug === cleanId;
   });
 }
