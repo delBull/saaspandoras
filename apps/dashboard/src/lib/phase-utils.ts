@@ -128,40 +128,44 @@ export function calculatePhaseStatus(
 }
 
 /**
+ * Extracts raw phases from a project, handling both V1 (top-level config) 
+ * and V2 (artifact-based) projects.
+ */
+export function getRawPhases(project: any) {
+  try {
+    const config = typeof project.w2eConfig === 'string'
+      ? JSON.parse(project.w2eConfig || '{}')
+      : (project.w2eConfig || {});
+
+    // 1. Direct phases in config (V1 style)
+    let phases = config.phases || project.phases || [];
+
+    // 2. If V2, check artifacts for phases
+    if (phases.length === 0 && project.artifacts?.length) {
+      const artifactPhases = project.artifacts
+        .flatMap((a: any) => (a.phases || []).map((p: any) => ({
+          ...p,
+          artifactAddress: a.address || a.contractAddress
+        })))
+        .filter((p: any) => p?.name);
+
+      if (artifactPhases.length > 0) {
+        phases = artifactPhases;
+      }
+    }
+    return phases;
+  } catch (e) {
+    console.error("[PhaseUtils] Error parsing phases:", e);
+    return project.phases || [];
+  }
+}
+
+/**
  * Robust phase extraction and status calculation for a project.
  * Unifies logic from Sidebar and ContentTabs to prevent "scattered functions".
  */
 export function getProjectPhasesWithStats(project: any, currentSupply: number) {
-  const getRawPhases = () => {
-    try {
-      const config = typeof project.w2eConfig === 'string'
-        ? JSON.parse(project.w2eConfig)
-        : (project.w2eConfig || {});
-
-      // 1. Direct phases in config (V1 style)
-      let phases = config.phases || project.phases || [];
-
-      // 2. If V2, check artifacts for phases
-      if (phases.length === 0 && project.artifacts?.length) {
-        const artifactPhases = project.artifacts
-          .flatMap((a: any) => (a.phases || []).map((p: any) => ({
-            ...p,
-            artifactAddress: a.address || a.contractAddress
-          })))
-          .filter((p: any) => p?.name);
-
-        if (artifactPhases.length > 0) {
-          phases = artifactPhases;
-        }
-      }
-      return phases;
-    } catch (e) {
-      console.error("[PhaseUtils] Error parsing phases:", e);
-      return project.phases || [];
-    }
-  };
-
-  const allPhases = getRawPhases();
+  const allPhases = getRawPhases(project);
   let accumulatedTokens = 0;
 
   return allPhases.map((phase: any) => {
