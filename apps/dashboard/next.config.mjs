@@ -31,6 +31,7 @@ const nextConfig = {
   },
 
   images: {
+    minimumCacheTTL: 3600, // 🕒 1 Hour cache for optimized images (Saves CPU/Optimization Costs)
     remotePatterns: [
       { protocol: "https", hostname: "assets.coingecko.com" },
       { protocol: "https", hostname: "example.com" },

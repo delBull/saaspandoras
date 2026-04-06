@@ -184,16 +184,18 @@ export async function POST(req: NextRequest) {
             throw new Error("Failed to log marketing event");
         }
 
-        // 5. Growth Engine Connectivity (Non-Blocking)
+        // 5. Growth Engine Connectivity (Offloaded/Selective for Save CPU)
         const effectiveLeadEmail = lead?.email || leadEmail;
-        if (effectiveLeadEmail && lead && eventRecord) {
+        const HIGH_PRIORITY_EVENTS = ['IDENTIFY', 'FORM_SUBMIT', 'LEAD_SUBMIT', 'USER_IDENTIFIED', 'PURCHASE', 'CONVERSION'];
+        const isHighPriority = HIGH_PRIORITY_EVENTS.includes(eventType);
+
+        if (effectiveLeadEmail && lead && eventRecord && isHighPriority) {
             try {
-                console.error(`[Growth OS] 🔍 ENTERING Growth Engine for ${effectiveLeadEmail} (event: ${eventType}, leadId: ${lead.id})`);
+                console.log(`[Growth OS] 🧠 Triggering Engine for HIGH_PRIORITY event: ${eventType} (${effectiveLeadEmail})`);
                 
                 const { computeBehavioralMetrics, resolveGrowthAction } = await import("@/lib/marketing/growth-engine/engine");
                 const { executeGrowthActions } = await import("@/lib/marketing/growth-engine/actions");
 
-                // Use a simple direct query instead of relational query (avoids schema relation dependency)
                 const recentEvents = await db.select()
                     .from(marketingLeadEvents)
                     .where(eq(marketingLeadEvents.leadId, lead.id))
@@ -202,16 +204,8 @@ export async function POST(req: NextRequest) {
 
                 const { intentScore, priorityScore, engagementLevel, profile } = computeBehavioralMetrics(lead as any, recentEvents || []);
 
-                // IDENTIFY = widget user submitted their info → treat as LEAD_CAPTURED for engine
-                // This ensures welcome email + Discord webhook fire for external protocol widgets (Narai, etc.)
-                const IDENTITY_EVENTS = ['IDENTIFY', 'FORM_SUBMIT', 'LEAD_SUBMIT', 'USER_IDENTIFIED'];
-                const engineEventType = IDENTITY_EVENTS.includes(eventType) ? 'LEAD_CAPTURED' : eventType;
+                const engineEventType = eventType === 'IDENTIFY' ? 'LEAD_CAPTURED' : eventType;
                 
-                if (engineEventType !== eventType) {
-                    console.error(`[Growth OS] 🔀 Remapping event ${eventType} → LEAD_CAPTURED for Growth Engine trigger`);
-                }
-
-                // Detect if this lead is new (no prior growth executions) to bypass email cooldown
                 const existingGrowthMeta = (lead.metadata as any)?.growth;
                 const isNewLead = !existingGrowthMeta?.executedActions || 
                     Object.keys(existingGrowthMeta.executedActions).length === 0;
@@ -226,10 +220,7 @@ export async function POST(req: NextRequest) {
                     metadata: lead.metadata as any
                 }, project);
 
-                console.error(`[Growth OS] 🧠 Engine result: actions=${JSON.stringify(engineResult?.actions || [])} isNew=${isNewLead}`);
-
                 if (engineResult && engineResult.actions.length > 0) {
-                    console.error(`[Growth OS] 🚀 Event ${eventType} → Actions: ${JSON.stringify(engineResult.actions)} for ${effectiveLeadEmail}`);
                     await executeGrowthActions(
                         engineResult.actions, 
                         { 
@@ -247,14 +238,13 @@ export async function POST(req: NextRequest) {
                         engineResult.scoreChange,
                         engineResult
                     );
-                } else {
-                    console.log(`[Growth OS] ℹ️ No actions for event ${engineEventType} (original: ${eventType}) for ${effectiveLeadEmail}`);
                 }
             } catch (engineErr) {
                 console.error('❌ Growth Engine Execution Error:', engineErr);
             }
-        } else {
-            console.warn(`[Growth OS] ⚠️ Skipping Growth Engine: email=${effectiveLeadEmail}, lead=${!!lead}, event=${!!eventRecord}`);
+        } else if (!isHighPriority) {
+            // Low priority events don't trigger the engine, saving massive CPU
+            // console.log(`[Growth OS] ⚡ Skipping Engine for low-priority event: ${eventType}`);
         }
 
         console.log(`📊 [Growth OS] Event tracked: ${eventType} for Project ${parsedProjectId}`);
