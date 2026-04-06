@@ -16,7 +16,7 @@ import useSWR from 'swr';
 // Protocol Engine Imports
 import { resolveExecution } from "@/lib/protocol-engine/execute";
 import { resolveArtifactPrice } from "@/lib/protocol-engine/artifact/pricing";
-import { calculatePhaseStatus } from "@/lib/phase-utils";
+import { calculatePhaseStatus, getRawPhases } from "@/lib/phase-utils";
 
 // Generic fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -104,10 +104,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const accumulatedTokensBefore = useMemo(() => {
         if (!project || !rawPhase) return 0;
         try {
-            const config = typeof project.w2eConfig === 'string' 
-                ? JSON.parse(project.w2eConfig) 
-                : (project.w2eConfig || {});
-            const phases = config.phases || project.phases || [];
+            const phases = getRawPhases(project);
             let acc = 0;
             for (const p of phases) {
                 // Match by ID or Name (resilient)

@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import CheckoutClient from './CheckoutClient';
-import { matchPhase } from '@/lib/phase-utils';
+import { matchPhase, getRawPhases } from '@/lib/phase-utils';
 
 export default async function CheckoutHubPage({
     params
@@ -20,9 +20,8 @@ export default async function CheckoutHubPage({
     if (!project) return notFound();
 
     // 🧭 Strict Tier Resolution: Only honor the EXACT tier requested by the user
-    // This prevents falling back to random active phases when a specific tier is targeted.
-    const w2eConfig = project.w2eConfig as any;
-    const phases = w2eConfig?.phases || [];
+    // Using centralized getRawPhases to support both V1 and V2 (artifact-based) projects.
+    const phases = getRawPhases(project);
 
     // Find the requested phase using the resilient matchPhase helper
     const activePhase = matchPhase(phases, tier);
