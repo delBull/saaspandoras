@@ -39,6 +39,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     // Deep Styling Configuration
     const brandColor = project.themeColor || '#10b981'; // Emerald 500 default
     
+    // Resolve clean tier name for display (handles URI encoding like %C3%A9)
+    const displayTierName = useMemo(() => {
+        try {
+            return decodeURIComponent(tierName);
+        } catch (e) {
+            return tierName;
+        }
+    }, [tierName]);
+
     // Chain detection
     const rawChainId = Number(project.chainId);
     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
@@ -140,7 +149,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     method: "function totalSupply() view returns (uint256)",
                     params: []
                 });
-                setTotalSupply(Number(supply));
+                
+                // Normalization Engine: 
+                // If the supply is astronomical, it's likely an ERC-20 with 18 decimals.
+                // Otherwise, treat as an ERC-721/Artifact count.
+                const rawSupply = BigInt(supply);
+                const normalizedSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
+                
+                setTotalSupply(normalizedSupply);
             } catch (e) {
                 console.warn("[CheckoutHub] TotalSupply sync failed:", e);
                 setTotalSupply(0);
@@ -238,7 +254,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             const res = await fetch(`/api/v1/external-commerce/${project.id}/fast-lane`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: fastLaneEmail, tier: tierName, amount: safeAmount, source: 'checkout_hub', wallet_connected: !!account })
+                body: JSON.stringify({ email: fastLaneEmail, tier: displayTierName, amount: safeAmount, source: 'checkout_hub', wallet_connected: !!account })
             });
             const data = await res.json();
             if (res.ok) {
@@ -286,7 +302,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                 )}
                                 
                                 <h1 className="text-2xl font-black tracking-tight text-white mb-2 leading-tight">
-                                    {isPhaseActive ? `Acceso Prioritario: ${project.title}` : `Tier ${tierName} No Disponible`}
+                                    {isPhaseActive ? `Acceso Prioritario: ${project.title}` : `Tier ${displayTierName} No Disponible`}
                                 </h1>
                                 <p className="text-zinc-400 font-medium text-xs">
                                     {isPhaseActive 
@@ -307,7 +323,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             </div>
                                             <h3 className="text-lg font-bold text-white mb-2 font-mono uppercase tracking-tighter">Acceso Restringido</h3>
                                             <p className="text-[11px] text-zinc-400 mb-6 font-medium leading-relaxed">
-                                                La fase <strong>{tierName.toUpperCase()}</strong> se encuentra cerrada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima ventana.
+                                                La fase <strong>{displayTierName.toUpperCase()}</strong> se encuentra cerrada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima ventana.
                                             </p>
                                             
                                             <button 
@@ -341,7 +357,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             <div className="p-3 bg-black/40 rounded-xl border border-zinc-900">
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Activo Subyacente</span>
-                                                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-md uppercase">{tierName}</span>
+                                                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-md uppercase">{displayTierName}</span>
                                                 </div>
                                                 <p className="text-[11px] text-zinc-400 font-medium font-mono leading-relaxed truncate">
                                                     {targetAddress}
