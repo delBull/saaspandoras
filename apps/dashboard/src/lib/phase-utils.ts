@@ -14,6 +14,7 @@ export interface Phase {
   tokenAllocation?: string | number;
   limit?: string | number;
   isActive?: boolean;
+  artifactAddress?: string;
   [key: string]: any;
 }
 
@@ -62,7 +63,10 @@ export function calculatePhaseStatus(
   const isNotPaused = phase.isActive !== false;
 
   // Real-time calculation using Supply (Stable ground truth)
-  const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - accumulatedTokensBefore));
+  // V2 FIX: If phase has its own artifactAddress, do not subtract accumulatedTokensBefore
+  // as that contract's totalSupply is phase-specific.
+  const effectiveAccBefore = phase.artifactAddress ? 0 : accumulatedTokensBefore;
+  const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - effectiveAccBefore));
   const isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
 
   let metric: 'USD' | 'Tokens' = price > 0 ? 'USD' : 'Tokens';
@@ -83,7 +87,7 @@ export function calculatePhaseStatus(
     percent = phaseCapUSD > 0 ? (raised / phaseCapUSD) * 100 : 0;
   }
 
-  // Determine Status and Label
+  // Determine Status and Label (Dashboard Styling: Lime/Neon)
   let status: PhaseStatus['status'] = 'active';
   let statusLabel = 'Activo';
   let statusColor = 'bg-lime-500/10 text-lime-400 border border-lime-500/20';
@@ -177,12 +181,13 @@ export function getProjectPhasesWithStats(project: any, currentSupply: number) {
       stats: {
         ...statusData,
         tokensAllocated: Number(phase.tokenAllocation || 0),
-        tokensSold: Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (accumulatedTokens - Number(phase.tokenAllocation || 0)))),
-        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - (accumulatedTokens - Number(phase.tokenAllocation || 0))))),
+        tokensSold: Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - ((phase.artifactAddress ? 0 : accumulatedTokens) - (phase.artifactAddress ? 0 : Number(phase.tokenAllocation || 0))))),
+        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - ((phase.artifactAddress ? 0 : accumulatedTokens) - (phase.artifactAddress ? 0 : Number(phase.tokenAllocation || 0)))))),
         participants: 0, 
         velocity: `+${(phase.name?.length || 4) % 3 + 2}`
       },
-      ...statusData
+      ...statusData,
+      isGated: false // Bloqueo secuencial desactivado por defecto en Dashboard
     };
   });
 }
