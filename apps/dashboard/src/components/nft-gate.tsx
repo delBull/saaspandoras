@@ -57,9 +57,10 @@ function trackEvent(event: string, wallet?: string, data?: Record<string, unknow
 // ─── LeadCaptureGate ─────────────────────────────────────────────────────
 interface LeadCaptureGateProps {
   onLeadCaptured: () => void;
+  projectId?: string | null;
 }
 
-function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
+function LeadCaptureGate({ onLeadCaptured, projectId }: LeadCaptureGateProps) {
   const { connect } = useConnectModal();
   const account = useActiveAccount();
 
@@ -106,7 +107,7 @@ function LeadCaptureGate({ onLeadCaptured }: LeadCaptureGateProps) {
           email: formData.email,
           walletAddress: formData.walletAddress || account?.address || null,
           intent: formData.interest || "explore",
-          projectId: "pandoras_access",
+          projectId: projectId || "pandoras_access",
           metadata: { 
             capital: formData.capital,
             interest: formData.interest 
@@ -305,6 +306,8 @@ interface NFTGateProps {
   status?: AuthStatus; // Use strict type
   user?: User | null; // Use strict type
   initialState?: "HERO" | "FORM" | "RITUAL"; 
+  projectId?: string | null;
+  origin?: string | null;
   context?: {
     hasWallet: boolean;
     status: AuthStatus;
@@ -316,6 +319,8 @@ export function NFTGate({
   status: externalStatus, 
   user: externalUser,
   initialState,
+  projectId,
+  origin,
   context 
 }: NFTGateProps) {
   const [visualState, setVisualState] = useState<GateVisualState>("idle");
@@ -482,6 +487,24 @@ export function NFTGate({
         setVisualState("success");
         setShowSuccessAnimation(true);
         toast({ title: "Acceso Concedido", description: "Identidad Genesis sincronizada." });
+
+        // Phase: External Widget Communication & Registration
+        if (projectId && projectId !== 'pandoras' && projectId !== 'dashboard') {
+          try {
+            fetch("/api/v1/external-commerce/ensure-pandora-key", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ wallet: account.address, projectId })
+            }).catch(console.error);
+          } catch (e) {
+            console.error("Failed to ensure pandoras key", e);
+          }
+        }
+
+        // Send postMessage to opener to refresh the widget
+        if (typeof window !== 'undefined' && window.opener) {
+           window.opener.postMessage("growth_os:auth_success", origin || "*");
+        }
       } else {
         throw new Error("No se detectó el NFT en esta wallet. Si acabas de mintear, espera unos segundos y reintenta.");
       }
@@ -640,7 +663,7 @@ export function NFTGate({
 
   // 🎭 CASE 6: Lead not yet captured → show capture gate
   if (!leadCaptured) {
-    return <LeadCaptureGate onLeadCaptured={handleLeadCaptured} />;
+    return <LeadCaptureGate onLeadCaptured={handleLeadCaptured} projectId={projectId} />;
   }
 
   // 🎭 CASE 7: Lead captured → Ritual entry

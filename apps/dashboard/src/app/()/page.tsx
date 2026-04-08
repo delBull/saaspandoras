@@ -342,7 +342,9 @@ export default function DashboardPage() {
     
     if (UNAUTHORIZED_STATES.includes(accessState)) {
       console.log(`🛡️ [DashboardRoot] Unauthorized state (${accessState}), redirecting to /access...`);
-      router.push("/access");
+      // Preserve search parameters for external widgets passing ?project=...
+      const currentSearchParams = window.location.search;
+      router.push(`/access${currentSearchParams}`);
     }
   }, [accessState, router, isAutoConnecting, isManualConnecting]);
 

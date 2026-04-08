@@ -231,10 +231,43 @@
         document.head.appendChild(style);
     }
 
-    function openModal() {
+    /**
+     * Internal: Fetch UX state from the engine
+     */
+    async function getAccessState() {
+        try {
+            const response = await fetch(`${BASE_URL}/api/access-state?project=${projectId}`);
+            return await response.json();
+        } catch (e) {
+            console.warn('[Pandoras] Failed to resolve UX state', e);
+            return null;
+        }
+    }
+
+    async function openModal() {
         if (document.getElementById('pd-growth-modal')) return;
         
         track('WIDGET_CLICK');
+
+        // ✨ V5.1 Contextual Auth Bypass
+        // If this is an external project, check if we should skip the lead ritual 
+        const isInternal = projectId === 'pandoras' || projectId === 'dashboard';
+        if (!isInternal) {
+            const access = await getAccessState();
+            // If the server tells us to skip lead capture, we trigger the Auth Drawer instead
+            if (access?.ux?.flow && access.ux.flow !== 'lead_generation') {
+                const width = 480;
+                const height = 700;
+                const left = (window.screen.width / 2) - (width / 2);
+                const top = (window.screen.height / 2) - (height / 2);
+                
+                const authUrl = `${BASE_URL}/?project=${projectId}&bypass=ritual&origin=${encodeURIComponent(window.location.origin)}`;
+                
+                console.log('[Pandoras] Bypassing lead capture for external project:', projectId);
+                window.open(authUrl, 'PandorasAuth', `width=${width},height=${height},top=${top},left=${left},scrollbars=no,resizable=no`);
+                return;
+            }
+        }
         
         const modal = document.createElement('div');
         modal.id = 'pd-growth-modal';
@@ -320,6 +353,24 @@
 
         setupAutoLinks();
     }
+
+    // --- External Login Bridge ---
+    window.addEventListener('message', (event) => {
+        if (event.data === 'growth_os:auth_success') {
+            console.log('[Pandoras] External Auth Success detected via bridge.');
+            
+            state.joined = true;
+            localStorage.setItem(`pd_joined_${projectId}`, 'true');
+            
+            // Dispatch event for parent applications (like React) to react to
+            window.dispatchEvent(new CustomEvent('pd-session-changed', { detail: { authenticated: true } }));
+            
+            // For external projects that use standard widget setup
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+    });
 
     // Start
     if (projectId && apiKey) {
