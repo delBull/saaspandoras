@@ -81,6 +81,11 @@ export default function AccessPage() {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [iniciacionPhase, setIniciacionPhase] = useState(1);
 
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const project = searchParams?.get('project');
+  const bypass = searchParams?.get('bypass');
+  const origin = searchParams?.get('origin');
+
   useEffect(() => { 
     setMounted(true); 
     // 🧠 Phase 87: Deterministic Lead Tracking (Dogfooding)
@@ -180,7 +185,7 @@ export default function AccessPage() {
         <span className="text-[7px] font-mono text-zinc-700">v2.0 // RESTRICTED</span>
       </div>
 
-      <NFTGate>
+      <NFTGate projectId={project} origin={origin} initialState={bypass === "ritual" ? "RITUAL" : undefined}>
         {showPortal ? (
           <PortalActivated 
             tier={user?.tier} 

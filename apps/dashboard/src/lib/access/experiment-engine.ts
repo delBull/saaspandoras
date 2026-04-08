@@ -46,7 +46,7 @@ async function getRemoteConfig(): Promise<Record<string, ExperimentConfig>> {
 /**
  * Config-Driven Resolver: Maps user context to a specific UX experiment.
  */
-export async function resolveUXConfig(address: string | undefined, state: AccessState, isAdmin: boolean): Promise<UXData> {
+export async function resolveUXConfig(address: string | undefined, state: AccessState, isAdmin: boolean, projectSlug: string = "pandoras"): Promise<UXData> {
   // 1. FETCH CONFIG (Remote + Distributed Cache)
   const configs = await getRemoteConfig();
 
@@ -56,6 +56,14 @@ export async function resolveUXConfig(address: string | undefined, state: Access
   else if (state === AccessState.HAS_ACCESS) segment = "holder";
   else if (state === AccessState.WALLET_NO_ACCESS) segment = "ritual";
 
+  // 🛡️ EXTERNAL PROJECT BYPASS
+  // For external projects (like Narai), if the user is in lead segment (no wallet), 
+  // we force them into 'ritual' flow to show the Connect Wallet/Login UI instead of Lead capture.
+  const isInternal = projectSlug === "pandoras" || projectSlug === "dashboard";
+  if (!isInternal && segment === "lead") {
+    segment = "ritual"; 
+  }
+
   const base = (configs[segment as keyof typeof configs] || configs.lead) as ExperimentConfig;
 
   // 3. A/B TESTING (Deterministic based on address)
@@ -63,7 +71,7 @@ export async function resolveUXConfig(address: string | undefined, state: Access
 
   return {
     segment,
-    cta: base.cta,
+    cta: projectSlug !== "pandoras" && segment === "ritual" ? "Connect Wallet" : base.cta,
     flow: base.flow,
     delay: isVariantB ? base.delay * 1.5 : base.delay, 
     copyVariant: isVariantB ? "B_REINFORCED" : base.copyVariant,

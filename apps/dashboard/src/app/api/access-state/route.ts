@@ -36,6 +36,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     try {
         const { searchParams } = new URL(req.url);
         const walletParam = searchParams.get("wallet")?.toLowerCase();
+        const projectSlug = searchParams.get("project")?.toLowerCase() || "pandoras";
         
         const headerList = await headers();
         const ip = headerList.get("x-forwarded-for") || "unknown";
@@ -52,7 +53,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
         // 🛡️ 2. NO TOKEN
         if (!token) {
-            const ux = await resolveUXConfig(walletParam || undefined, AccessState.NO_WALLET, false);
+            const ux = await resolveUXConfig(walletParam || undefined, AccessState.NO_WALLET, false, projectSlug);
             return NextResponse.json({ 
                 state: walletParam ? AccessState.NO_SESSION : AccessState.NO_WALLET,
                 authenticated: false,
@@ -75,7 +76,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         const cacheKey = `access:${address}`;
         const cached = await accessCache.get<any>(cacheKey);
         if (cached) {
-            const ux = await resolveUXConfig(address, cached.state, cached.isAdmin);
+            const ux = await resolveUXConfig(address, cached.state, cached.isAdmin, projectSlug);
             return NextResponse.json({ ...cached, ux });
         }
 
@@ -112,7 +113,7 @@ export async function GET(req: Request): Promise<NextResponse> {
                 resolvedState = AccessState.HAS_ACCESS;
             }
 
-            const ux = await resolveUXConfig(address, resolvedState, !!userIsAdmin);
+            const ux = await resolveUXConfig(address, resolvedState, !!userIsAdmin, projectSlug);
             
             if (resolvedState === AccessState.WALLET_NO_ACCESS) {
                 const pressureLevel = 0.65 + (Math.random() * 0.2); 
