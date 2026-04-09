@@ -12,6 +12,16 @@ import { unstable_cache } from "next/cache";
 
 export const runtime = "nodejs";
 
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key",
+};
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
+
 // ✅ CACHED GLOBAL CONFIG (Project #15)
 // This stores the ritual status and beta flags in Vercel memory for 5 mins.
 const getCachedGlobalConfig = unstable_cache(
@@ -43,7 +53,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         
         // 🛑 1. RATE LIMITING
         if (await isRateLimited(ip, 30, 60000)) { 
-            return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+            return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429, headers: corsHeaders });
         }
 
         const cookieStore = await cookies();
@@ -58,7 +68,7 @@ export async function GET(req: Request): Promise<NextResponse> {
                 state: walletParam ? AccessState.NO_SESSION : AccessState.NO_WALLET,
                 authenticated: false,
                 ux
-            });
+            }, { headers: corsHeaders });
         }
 
         // 🔐 3. VERIFICATION
@@ -66,18 +76,18 @@ export async function GET(req: Request): Promise<NextResponse> {
         const payload = await verifyJWT(token);
 
         if (!payload) {
-            return NextResponse.json({ state: AccessState.NO_SESSION, authenticated: false }, { status: 401 });
+            return NextResponse.json({ state: AccessState.NO_SESSION, authenticated: false }, { status: 401, headers: corsHeaders });
         }
 
         const address = payload.address?.toLowerCase();
-        if (!address) return NextResponse.json({ state: AccessState.NO_SESSION }, { status: 401 });
+        if (!address) return NextResponse.json({ state: AccessState.NO_SESSION }, { status: 401, headers: corsHeaders });
 
         // 🧊 4. CACHE LAYER (60s Lifetime for individual state)
         const cacheKey = `access:${address}`;
         const cached = await accessCache.get<any>(cacheKey);
         if (cached) {
             const ux = await resolveUXConfig(address, cached.state, cached.isAdmin, projectSlug);
-            return NextResponse.json({ ...cached, ux });
+            return NextResponse.json({ ...cached, ux }, { headers: corsHeaders });
         }
 
         if (dbBreaker.isOpen()) throw new Error("Service Temporarily Degraded");
@@ -149,7 +159,7 @@ export async function GET(req: Request): Promise<NextResponse> {
                 metadata: { address, state: resolvedState, latency: Date.now() - start }
             }).catch(() => {});
 
-            return NextResponse.json(responseData);
+            return NextResponse.json(responseData, { headers: corsHeaders });
 
         } catch (e) {
             dbBreaker.recordFailure();
@@ -163,6 +173,6 @@ export async function GET(req: Request): Promise<NextResponse> {
             authenticated: false,
             error: error.message,
             infrastructure: true
-        }, { status: 200 });
+        }, { status: 200, headers: corsHeaders });
     }
 }
