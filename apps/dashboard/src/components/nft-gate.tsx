@@ -533,7 +533,7 @@ export function NFTGate({
     
     if (isWidgetBypass) {
       // Auto-complete external widget cross-authentication
-      if (typeof window !== 'undefined' && window.opener) {
+      if (typeof window !== 'undefined') {
         if (projectId && projectId !== 'pandoras' && projectId !== 'dashboard' && account?.address) {
           fetch("/api/v1/external-commerce/ensure-pandora-key", {
             method: "POST",
@@ -541,8 +541,13 @@ export function NFTGate({
             body: JSON.stringify({ wallet: account.address, projectId })
           }).catch(console.error);
         }
-        window.opener.postMessage("growth_os:auth_success", origin || "*");
-        setTimeout(() => window.close(), 800);
+        
+        if (window.opener) {
+            window.opener.postMessage("growth_os:auth_success", origin || "*");
+        }
+        
+        // Ensure browser fallback gracefully closes the popup so users aren't stuck globally
+        setTimeout(() => window.close(), 1000);
       }
       
       return (
