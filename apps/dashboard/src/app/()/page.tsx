@@ -340,8 +340,10 @@ export default function DashboardPage() {
       AccessState.WALLET_NO_ACCESS
     ];
     
-    if (UNAUTHORIZED_STATES.includes(accessState)) {
-      console.log(`🛡️ [DashboardRoot] Unauthorized state (${accessState}), redirecting to /access...`);
+    const isWidgetBypass = window.location.search.includes('bypass=ritual');
+    
+    if (UNAUTHORIZED_STATES.includes(accessState) || isWidgetBypass) {
+      console.log(`🛡️ [DashboardRoot] Redirecting to /access (State: ${accessState}, Bypass: ${isWidgetBypass})...`);
       // Preserve search parameters for external widgets passing ?project=...
       const currentSearchParams = window.location.search;
       router.push(`/access${currentSearchParams}`);

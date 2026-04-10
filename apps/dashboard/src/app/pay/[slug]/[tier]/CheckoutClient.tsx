@@ -290,7 +290,20 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     {(step === 'checkout' || step === 'fast_lane') && (
                         <>
                             {/* Header Section */}
-                            <div className="text-center mb-8">
+                            <div className="text-center mb-8 relative">
+                                <div className="absolute -top-4 -right-4 scale-75 origin-top-right">
+                                    <ConnectButton
+                                        client={client}
+                                        chain={chain}
+                                        wallets={[
+                                            inAppWallet({
+                                                auth: { options: ["email", "google", "apple", "facebook", "passkey"] },
+                                                executionMode: { mode: "EIP7702", sponsorGas: true },
+                                            }),
+                                            createWallet("io.metamask"),
+                                        ]}
+                                    />
+                                </div>
                                 {project.logoUrl ? (
                                     <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-6 border border-zinc-800" style={{ boxShadow: `0 10px 40px -10px ${brandColor}40` }}>
                                         <Image src={project.logoUrl} alt={project.title} width={64} height={64} className="object-cover" />

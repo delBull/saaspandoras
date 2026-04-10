@@ -504,6 +504,7 @@ export function NFTGate({
         // Send postMessage to opener to refresh the widget
         if (typeof window !== 'undefined' && window.opener) {
            window.opener.postMessage("growth_os:auth_success", origin || "*");
+           window.close();
         }
       } else {
         throw new Error("No se detectó el NFT en esta wallet. Si acabas de mintear, espera unos segundos y reintenta.");
@@ -528,6 +529,35 @@ export function NFTGate({
 
   // 🟢 CASE 1: Full Access (Bypass everything except wallet requirement)
   if (shouldBypass) {
+    const isWidgetBypass = typeof window !== 'undefined' && window.location.search.includes('bypass=ritual');
+    
+    if (isWidgetBypass) {
+      // Auto-complete external widget cross-authentication
+      if (typeof window !== 'undefined' && window.opener) {
+        if (projectId && projectId !== 'pandoras' && projectId !== 'dashboard' && account?.address) {
+          fetch("/api/v1/external-commerce/ensure-pandora-key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet: account.address, projectId })
+          }).catch(console.error);
+        }
+        window.opener.postMessage("growth_os:auth_success", origin || "*");
+        setTimeout(() => window.close(), 800);
+      }
+      
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-6">
+          <div className="relative">
+             <div className="absolute inset-0 bg-lime-500/10 blur-xl rounded-full animate-pulse" />
+             <Loader2 className="w-10 h-10 animate-spin text-lime-500 relative z-10" />
+          </div>
+          <p className="text-lime-400 font-mono text-[10px] tracking-widest uppercase animate-pulse">
+             Sincronizando Estado...
+          </p>
+        </div>
+      );
+    }
+
     const hasSeenSuccess = typeof window !== 'undefined' ? sessionStorage.getItem("pandora_access_reward_seen") : "true";
     if (!hasSeenSuccess && hasAccess) {
       sessionStorage.setItem("pandora_access_reward_seen", "true");
