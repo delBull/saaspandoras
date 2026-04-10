@@ -350,11 +350,18 @@ export default function DashboardPage() {
     }
   }, [accessState, router, isAutoConnecting, isManualConnecting]);
 
-  // 🟢 CASE 1: LOADING STATE
-  if (accessState === AccessState.LOADING) {
+  // 🟢 CASE 1: LOADING STATE OR WIDGET INTERCEPT
+  const isWidgetBypass = typeof window !== 'undefined' && window.location.search.includes('bypass=ritual');
+  
+  if (accessState === AccessState.LOADING || isWidgetBypass) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center space-y-4">
+        {isWidgetBypass && (
+          <>
+            <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500">Iniciando Enlace Criptográfico...</p>
+          </>
+        )}
       </div>
     );
   }
