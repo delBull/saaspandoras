@@ -106,7 +106,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups", // 🔧 Fixed: Allows social login popups
+            value: "unsafe-none", // 🔧 Fixed: Allows external widgets to retain window.opener
           },
           {
             key: "Cross-Origin-Embedder-Policy",
