@@ -430,8 +430,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                 toast.error(error.message.includes('insufficient') ? "Fondos insuficientes" : "Ocurrió un error en la blockchain.");
                                                             }}
                                                             disabled={!hasEnsuredAccess || isPriceLoading || !txConfig.address}
-                                                            className="!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none"
-                                                            style={{ backgroundColor: brandColor, color: '#000' }}
+                                                            className={`!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none ${(!hasEnsuredAccess || isPriceLoading || !txConfig.address) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
+                                                            style={{ backgroundColor: brandColor, color: '#000', transition: 'all 0.2s' }}
                                                         >
                                                             {hasEnsuredAccess ? "Asegurar Mi Posición Ahora" : "Preparando Acceso..."}
                                                         </TransactionButton>
