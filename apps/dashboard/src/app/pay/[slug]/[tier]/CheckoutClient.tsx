@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton } from "thirdweb/react";
+import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, darkTheme } from "thirdweb/react";
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import useSWR from 'swr';
 import { resolveExecution } from "@/lib/protocol-engine/execute";
 import { resolveArtifactPrice } from "@/lib/protocol-engine/artifact/pricing";
 import { calculatePhaseStatus, getRawPhases } from "@/lib/phase-utils";
+import { sanitizeUrl } from "@/lib/project-utils";
 
 // Generic fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -270,6 +271,57 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             setIsSubmittingFastLane(false);
         }
     };
+
+    const wallets = useMemo(() => [
+        inAppWallet({ auth: { options: ["email", "google", "apple", "facebook"] } }),
+        createWallet("io.metamask")
+    ], []);
+
+    if (!account) {
+        return (
+            <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative items-center justify-center p-6">
+                {/* Deep Branding Background Effects */}
+                <div className="fixed inset-0 pointer-events-none z-0" style={{
+                    background: `radial-gradient(ellipse at top, ${brandColor}20 0%, transparent 70%)`
+                }}></div>
+                
+                <div className="z-10 w-full max-w-sm flex flex-col items-center justify-center space-y-8 animate-in fade-in zoom-in duration-500">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center backdrop-blur-xl bg-white/5">
+                        <img 
+                            src={sanitizeUrl(project.imageUrl || project.coverPhotoUrl) || "/favicon.ico"} 
+                            alt={project.title} 
+                            className="w-16 h-16 object-cover rounded-xl"
+                        />
+                    </div>
+                    
+                    <div className="text-center space-y-2">
+                        <h2 className="text-2xl font-bold text-white tracking-widest">{project.title}</h2>
+                        <p className="text-sm text-zinc-400">Verifica tu identidad para continuar.</p>
+                    </div>
+
+                    <div className="w-full relative scale-[1.02] origin-center mt-8 mb-4">
+                        <ConnectButton
+                            client={client}
+                            chain={chain}
+                            wallets={wallets}
+                            connectModal={{
+                                size: "compact",
+                                title: `Acceder a ${project.title}`,
+                                titleIcon: sanitizeUrl(project.imageUrl || project.coverPhotoUrl) || "",
+                                showThirdwebBranding: false,
+                            }}
+                            theme={darkTheme({
+                                colors: {
+                                    primaryButtonBg: brandColor,
+                                    primaryButtonText: "#000",
+                                }
+                            })}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative overflow-y-auto md:items-center md:justify-center p-4 py-12 md:py-8 lg:p-4">
