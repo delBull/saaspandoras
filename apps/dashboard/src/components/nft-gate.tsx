@@ -501,10 +501,12 @@ export function NFTGate({
           }
         }
 
-        // Send postMessage to opener to refresh the widget
-        if (typeof window !== 'undefined' && window.opener) {
-           window.opener.postMessage("growth_os:auth_success", origin || "*");
-           window.close();
+        // Send postMessage to opener to refresh the widget (Guarded strictly for external widgets)
+        if (typeof window !== 'undefined' && window.location.search.includes('bypass=ritual')) {
+           if (window.opener) {
+               window.opener.postMessage("growth_os:auth_success", origin || "*");
+           }
+           setTimeout(() => window.close(), 1000);
         }
       } else {
         throw new Error("No se detectó el NFT en esta wallet. Si acabas de mintear, espera unos segundos y reintenta.");
