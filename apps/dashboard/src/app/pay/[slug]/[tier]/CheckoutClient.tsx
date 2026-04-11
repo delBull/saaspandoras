@@ -181,6 +181,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     useEffect(() => {
         let isMounted = true;
         if (account?.address) {
+            console.log("🛡️ [CheckoutHub] Starting Handshake for:", account.address);
             setIsCheckingAccess(true);
             fetch('/api/v1/external-commerce/ensure-pandora-key', {
                 method: 'POST',
@@ -193,6 +194,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             .then(res => res.json())
             .then(data => {
                 if (isMounted) {
+                  console.log("🛡️ [CheckoutHub] Handshake Result:", data);
                   setHasEnsuredAccess(data.hasProtocolAccess || data.hasPandorasKey);
                   setIsCheckingAccess(false);
                 }
@@ -210,7 +212,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
     const txConfig = useMemo(() => {
         try {
-            return resolveExecution({
+            const config = resolveExecution({
                 type: 'BUY_ARTIFACT',
                 payload: {
                     project,
@@ -223,7 +225,10 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     priceInWei: effectivePriceInWei
                 }
             });
+            console.log("🛠️ [CheckoutHub] Tx Resolved:", config);
+            return config;
         } catch (e) {
+            console.error("🛠️ [CheckoutHub] Execution Error:", e);
             return { address: "", method: "", params: [], value: 0n, token: "ETH" };
         }
     }, [project, rawPhase, safeAmount, account, safeChainId, effectivePriceInWei]);
@@ -273,33 +278,38 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     };
 
     const wallets = useMemo(() => [
-        inAppWallet({ auth: { options: ["email", "google", "apple", "facebook"] } }),
+        inAppWallet({ auth: { options: ["email", "google", "apple", "facebook", "passkey"] } }),
         createWallet("io.metamask")
     ], []);
 
-    if (!account) {
+    // 🛡️ AUTH GATE: Force centered login if no wallet is connected
+    if (!account?.address) {
         return (
-            <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative items-center justify-center p-6">
+            <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative items-center justify-center p-6 overflow-hidden">
                 {/* Deep Branding Background Effects */}
                 <div className="fixed inset-0 pointer-events-none z-0" style={{
-                    background: `radial-gradient(ellipse at top, ${brandColor}20 0%, transparent 70%)`
+                    background: `radial-gradient(ellipse at top, ${brandColor}30 0%, transparent 70%)`
                 }}></div>
                 
-                <div className="z-10 w-full max-w-sm flex flex-col items-center justify-center space-y-8 animate-in fade-in zoom-in duration-500">
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center backdrop-blur-xl bg-white/5">
-                        <img 
-                            src={sanitizeUrl(project.imageUrl || project.coverPhotoUrl) || "/favicon.ico"} 
-                            alt={project.title} 
-                            className="w-16 h-16 object-cover rounded-xl"
-                        />
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="z-10 w-full max-w-[380px] flex flex-col items-center space-y-8 p-10 bg-zinc-950/50 backdrop-blur-3xl border border-zinc-800/50 rounded-[2.5rem] shadow-2xl"
+                >
+                    <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center bg-zinc-900">
+                        {project.logoUrl ? (
+                            <Image src={project.logoUrl} alt={project.title} width={80} height={80} className="object-cover" />
+                        ) : (
+                            <span className="text-2xl font-black text-white">{project.title.substring(0, 2).toUpperCase()}</span>
+                        )}
                     </div>
                     
-                    <div className="text-center space-y-2">
-                        <h2 className="text-2xl font-bold text-white tracking-widest">{project.title}</h2>
-                        <p className="text-sm text-zinc-400">Verifica tu identidad para continuar.</p>
+                    <div className="text-center space-y-3">
+                        <h2 className="text-2xl font-black text-white tracking-tight leading-tight">{project.title}</h2>
+                        <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.2em]">Identificación Requerida</p>
                     </div>
 
-                    <div className="w-full relative scale-[1.02] origin-center mt-8 mb-4">
+                    <div className="w-full relative scale-[1.05]">
                         <ConnectButton
                             client={client}
                             chain={chain}
@@ -307,7 +317,6 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             connectModal={{
                                 size: "compact",
                                 title: `Acceder a ${project.title}`,
-                                titleIcon: sanitizeUrl(project.imageUrl || project.coverPhotoUrl) || "",
                                 showThirdwebBranding: false,
                             }}
                             theme={darkTheme({
@@ -318,6 +327,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             })}
                         />
                     </div>
+                    
+                    <p className="text-[10px] text-zinc-600 font-medium text-center leading-relaxed">
+                        Conecta tu billetera o usa tu correo para validar tu acceso al protocolo de forma segura.
+                    </p>
+                </motion.div>
+
+                <div className="fixed bottom-8 text-center opacity-30">
+                     <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Pandoras Security Layer</p>
                 </div>
             </div>
         );
@@ -459,15 +476,16 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                 </div>
                                             </div>
 
-                                            {account ? (
-                                                <div className="space-y-4">
-                                                    {isCheckingAccess ? (
-                                                        <button disabled className="w-full h-14 bg-zinc-900 text-zinc-500 font-black rounded-2xl uppercase tracking-widest text-[11px] border border-zinc-800 flex items-center justify-center gap-2">
-                                                            <Loader2 className="w-4 h-4 animate-spin" /> Verificando Credenciales...
-                                                        </button>
-                                                    ) : (
+                                            <div className="space-y-4">
+                                                {isCheckingAccess ? (
+                                                    <button disabled className="w-full h-14 bg-zinc-900 text-zinc-500 font-black rounded-2xl uppercase tracking-widest text-[11px] border border-zinc-800 flex items-center justify-center gap-2">
+                                                        <Loader2 className="w-4 h-4 animate-spin" /> Verificando Credenciales...
+                                                    </button>
+                                                ) : (
+                                                    <div className="space-y-4">
                                                         <TransactionButton
                                                             transaction={() => {
+                                                                if (!txConfig.address) throw new Error("Configuración de contrato no válida.");
                                                                 return prepareContractCall({
                                                                     contract: getContract({ client, chain, address: txConfig.address }),
                                                                     method: txConfig.method as any,
@@ -478,53 +496,35 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                             onTransactionSent={() => setStep('processing')}
                                                             onTransactionConfirmed={handleSuccess}
                                                             onError={(error) => {
-                                                                console.error(error);
-                                                                toast.error(error.message.includes('insufficient') ? "Fondos insuficientes" : "Ocurrió un error en la blockchain.");
+                                                                console.error("Transacción Fallida:", error);
+                                                                toast.error(error.message.includes('insufficient') ? "Fondos insuficientes" : "Error en el protocolo.");
                                                             }}
-                                                            disabled={!hasEnsuredAccess || isPriceLoading || !txConfig.address}
-                                                            className={`!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none ${(!hasEnsuredAccess || isPriceLoading || !txConfig.address) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
-                                                            style={{ backgroundColor: brandColor, color: '#000', transition: 'all 0.2s' }}
+                                                            disabled={isPriceLoading || !txConfig.address}
+                                                            className={`!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none ${(isPriceLoading || !txConfig.address) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
+                                                            style={{ 
+                                                                backgroundColor: !hasEnsuredAccess ? '#3f3f46' : brandColor, 
+                                                                color: !hasEnsuredAccess ? '#a1a1aa' : '#000', 
+                                                                transition: 'all 0.2s' 
+                                                            }}
                                                         >
-                                                            {hasEnsuredAccess ? "Asegurar Mi Posición Ahora" : "Preparando Acceso..."}
+                                                            {isPriceLoading ? "Calculando..." : (hasEnsuredAccess ? "Confirmar Participación" : "Preparando Acceso...")}
                                                         </TransactionButton>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className="relative group">
-                                                    <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                                                    <button 
-                                                        onClick={() => connect({
-                                                            client,
-                                                            chain,
-                                                            wallets: [
-                                                                inAppWallet({
-                                                                    auth: {
-                                                                        options: ["email", "google", "apple", "facebook", "passkey"],
-                                                                    },
-                                                                    executionMode: {
-                                                                        mode: "EIP7702",
-                                                                        sponsorGas: true,
-                                                                    },
-                                                                }),
-                                                                createWallet("io.metamask"),
-                                                            ],
-                                                            showThirdwebBranding: false,
-                                                            size: "compact",
-                                                            title: "Identificación Segura"
-                                                        })}
-                                                        className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all relative z-10"
-                                                    >
-                                                        Comenzar Registro Seguro
-                                                    </button>
-                                                </div>
-                                            )}
+                                                        
+                                                        {!hasEnsuredAccess && !isCheckingAccess && (
+                                                            <p className="text-[10px] text-zinc-500 text-center font-bold px-4">
+                                                                Estamos sincronizando tu llave de acceso para esta red. Espera un momento.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
 
-                                            <button 
-                                                onClick={() => setStep('fast_lane')}
-                                                className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
-                                            >
-                                                Reservar con medios tradicionales <ArrowRight className="w-3 h-3 inline ml-1" />
-                                            </button>
+                                                <button 
+                                                    onClick={() => setStep('fast_lane')}
+                                                    className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+                                                >
+                                                    Reservar con medios tradicionales <ArrowRight className="w-3 h-3 inline ml-1" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : null}
                                 </>
