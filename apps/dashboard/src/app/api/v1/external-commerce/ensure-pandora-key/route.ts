@@ -196,6 +196,25 @@ export async function POST(req: Request) {
             }
         }
 
+        // 🔔 Notify Bull's Lab when a user earns protocol access (lead.converted)
+        if (hasProtocolAccess && project) {
+            try {
+                const { WebhookService } = await import('@/lib/integrations/webhook-service');
+                await WebhookService.queueEvent('system', 'lead.converted', {
+                    event: 'lead.converted',
+                    timestamp: new Date().toISOString(),
+                    data: {
+                        wallet: walletLower,
+                        project_id: project.id,
+                        project_slug: project.slug,
+                        has_pandoras_key: hasPandorasKey,
+                        has_protocol_access: hasProtocolAccess,
+                        source: 'external_handshake',
+                    }
+                });
+            } catch (_) { /* Non-critical */ }
+        }
+
         return NextResponse.json({ 
             success: true, 
             hasPandorasKey, 

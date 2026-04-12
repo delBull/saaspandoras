@@ -392,6 +392,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to process lead' }, { status: 500 });
     }
 
+    // 🔔 Bull's Lab Webhook Emission (fire-and-forget, never blocks main flow)
+    try {
+      const { WebhookService } = await import('@/lib/integrations/webhook-service');
+      await WebhookService.queueEvent('system', alreadyRegistered ? 'lead.returning' : 'lead.new', {
+        event: alreadyRegistered ? 'lead.returning' : 'lead.new',
+        timestamp: new Date().toISOString(),
+        data: {
+          lead_id: result.id,
+          email: result.email,
+          name: result.name,
+          wallet_address: result.walletAddress,
+          phone_number: result.phoneNumber,
+          project_id: result.projectId,
+          project_slug: projectContext?.slug,
+          status: result.status,
+          quality: result.quality,
+          intent: result.intent,
+          score: result.score,
+          source: result.origin,
+          already_registered: alreadyRegistered,
+        }
+      });
+    } catch (_) { /* Non-critical — never block lead registration */ }
+
     return NextResponse.json({ 
       success: true, 
       id: result.id, 

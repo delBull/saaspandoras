@@ -33,7 +33,7 @@ async function isAdminAuthorized(req: NextRequest): Promise<boolean> {
     if (xAdminSecret === secret || authHeader === `Bearer ${secret}`) return true;
   }
 
-  // Method 2: Same-origin admin dashboard (wallet address verified against admin list)
+  // Method 2: Same-origin admin dashboard — wallet verified against administrators table
   const walletAddress =
     req.headers.get("x-thirdweb-address") ||
     req.headers.get("x-wallet-address") ||
@@ -41,31 +41,23 @@ async function isAdminAuthorized(req: NextRequest): Promise<boolean> {
 
   if (walletAddress) {
     try {
-      const { db } = await import("@/db");
-      const { admins } = await import("@/db/schema");
-      const { eq, or } = await import("drizzle-orm");
-
-      // Import admins table only if it exists
-      let isAdminUser = false;
-      try {
-        const adminRow = await db.query.admins.findFirst({
-          where: eq(admins.walletAddress, walletAddress.toLowerCase()),
-        });
-        isAdminUser = !!adminRow;
-      } catch {
-        // Fallback to env-based check
-        const adminWallets = (process.env.ADMIN_WALLETS || "").toLowerCase().split(",");
-        isAdminUser = adminWallets.includes(walletAddress.toLowerCase());
-      }
-
-      return isAdminUser;
+      const { administrators } = await import("@/db/schema");
+      const adminRow = await db.query.administrators.findFirst({
+        where: eq(administrators.walletAddress, walletAddress.toLowerCase()),
+      });
+      if (adminRow) return true;
     } catch {
-      return false;
+      // Fallback: env-based allowlist
     }
+
+    // Env-based fallback (comma-separated list of admin wallets)
+    const adminWallets = (process.env.ADMIN_WALLETS || "").toLowerCase().split(",").filter(Boolean);
+    if (adminWallets.includes(walletAddress.toLowerCase())) return true;
   }
 
   return false;
 }
+
 
 // ── POST /api/v1/internal/api-keys  →  Create a new integration client ────────
 

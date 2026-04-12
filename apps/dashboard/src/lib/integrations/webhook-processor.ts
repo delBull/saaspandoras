@@ -31,9 +31,6 @@ export class WebhookProcessor {
             ),
             limit: batchSize,
             orderBy: [asc(webhookEvents.createdAt)],
-            with: {
-                client: true
-            }
         });
 
         if (pendingEvents.length === 0) {
@@ -50,13 +47,10 @@ export class WebhookProcessor {
     }
 
     private static async processEvent(event: any) {
-        // Fetch client if not eager loaded
-        let client = event.client;
-        if (!client) {
-            client = await db.query.integrationClients.findFirst({
-                where: eq(integrationClients.id, event.clientId)
-            });
-        }
+        // Fetch the integration client for this event
+        const client = await db.query.integrationClients.findFirst({
+            where: eq(integrationClients.id, event.clientId)
+        });
 
         if (!client?.callbackUrl) {
             console.error(`❌ Client not found or no callback URL for event ${event.id}`);
