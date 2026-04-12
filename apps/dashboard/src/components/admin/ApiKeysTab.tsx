@@ -41,6 +41,11 @@ const AVAILABLE_PERMISSIONS = [
   { id: 'read:operations',  label: 'Operations',   desc: 'Health check del sistema (solo Bull’s Lab)', icon: '💻', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
 ];
 
+interface GlobalConfig {
+  apiBaseUrlProduction: string;
+  apiBaseUrlStaging: string;
+}
+
 export function ApiKeysTab() {
   const { user } = useAuth();
   const walletAddress = user?.address ?? '';
@@ -56,6 +61,27 @@ export function ApiKeysTab() {
   const [formEnvironment, setFormEnvironment] = useState<'staging' | 'production'>('production');
   const [formPermissions, setFormPermissions] = useState<string[]>(['read:growth_os']);
   const [formCallbackUrl, setFormCallbackUrl] = useState('');
+
+  // Global Config state (Base URLs)
+  const [globalConfig, setGlobalConfig] = useState<GlobalConfig>({
+    apiBaseUrlProduction: 'https://saaspandoras-production.up.railway.app:8080',
+    apiBaseUrlStaging: 'https://staging.pandoras.io'
+  });
+
+  const fetchGlobalConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/global-config');
+      if (res.ok) {
+        const data = await res.json();
+        setGlobalConfig({
+          apiBaseUrlProduction: data.apiBaseUrlProduction || 'https://saaspandoras-production.up.railway.app:8080',
+          apiBaseUrlStaging: data.apiBaseUrlStaging || 'https://staging.pandoras.io'
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching global config:', e);
+    }
+  }, []);
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -77,7 +103,10 @@ export function ApiKeysTab() {
     }
   }, [walletAddress]);
 
-  useEffect(() => { fetchClients(); }, [fetchClients]);
+  useEffect(() => { 
+    fetchClients(); 
+    fetchGlobalConfig();
+  }, [fetchClients, fetchGlobalConfig]);
 
   const handleCreate = async () => {
     if (!formName.trim()) { toast.error('El nombre es requerido'); return; }
@@ -445,7 +474,11 @@ export function ApiKeysTab() {
       </div>
 
       {/* Developer Guide */}
-      <DevGuide copyToClipboard={copyToClipboard} />
+      <DevGuide 
+        copyToClipboard={copyToClipboard} 
+        apiBaseUrlProduction={globalConfig.apiBaseUrlProduction}
+        apiBaseUrlStaging={globalConfig.apiBaseUrlStaging}
+      />
     </div>
   );
 }
@@ -510,15 +543,7 @@ const ERRORS = [
   { code: '500', label: 'Server Error', desc: 'Error interno — reportar a Pandoras' },
 ];
 
-const QUICK_START_CURL = `# Reemplaza TU_API_KEY con tu pk_live_... o pk_test_...
-curl https://dashboard.pandoras.io/api/v1/external/growth-os/metrics \\
-  -H "x-api-key: TU_API_KEY"`;
-
-const QUICK_START_JS = `const res = await fetch(
-  'https://dashboard.pandoras.io/api/v1/external/growth-os/leads?page=1&limit=20',
-  { headers: { 'x-api-key': process.env.PANDORAS_API_KEY } }
-);
-const { leads, pagination } = await res.json();`;
+// Eliminados constantes estáticas de QUICK_START para usar las dinámicas dentro de DevGuide
 
 const WEBHOOK_VERIFY = `import crypto from 'crypto';
 
@@ -532,14 +557,32 @@ function verifySignature(payload: string, signature: string, secret: string) {
   );
 }
 
-// En tu endpoint POST /webhooks/pandoras:
-const rawBody  = await req.text();
-const sig      = req.headers.get('x-pandoras-signature') ?? '';
-const isValid  = verifySignature(rawBody, sig, process.env.PANDORAS_WEBHOOK_SECRET!);
-if (!isValid) return new Response('Unauthorized', { status: 401 });`;
+  // En tu endpoint POST /webhooks/pandoras:
+  const rawBody  = await req.text();
+  const sig      = req.headers.get('x-pandoras-signature') ?? '';
+  const isValid  = verifySignature(rawBody, sig, process.env.PANDORAS_WEBHOOK_SECRET!);
+  if (!isValid) return new Response('Unauthorized', { status: 401 });\`;
 
-function DevGuide({ copyToClipboard }: { copyToClipboard: (text: string, label?: string) => void }) {
+function DevGuide({ 
+  copyToClipboard,
+  apiBaseUrlProduction,
+  apiBaseUrlStaging
+}: { 
+  copyToClipboard: (text: string, label?: string) => void;
+  apiBaseUrlProduction: string;
+  apiBaseUrlStaging: string;
+}) {
   const [activeSection, setActiveSection] = useState<'quickstart' | 'endpoints' | 'webhooks' | 'errors'>('quickstart');
+
+  const QUICK_START_CURL = \`# Reemplaza TU_API_KEY con tu pk_live_... o pk_test_...
+curl \${apiBaseUrlProduction}/api/v1/external/growth-os/metrics \\\\
+  -H "x-api-key: TU_API_KEY"\`;
+
+  const QUICK_START_JS = \`const res = await fetch(
+  '\${apiBaseUrlProduction}/api/v1/external/growth-os/leads?page=1&limit=20',
+  { headers: { 'x-api-key': process.env.PANDORAS_API_KEY } }
+);
+const { leads, pagination } = await res.json();\`;
 
   const sections = [
     { id: 'quickstart' as const, label: '🚀 Quick Start' },
@@ -592,8 +635,8 @@ function DevGuide({ copyToClipboard }: { copyToClipboard: (text: string, label?:
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
               <p className="text-blue-300 text-xs font-semibold mb-2">Base URL por entorno</p>
               <div className="space-y-1 text-xs font-mono">
-                <div><span className="text-green-400">Production:</span> <span className="text-zinc-300">https://dashboard.pandoras.io</span></div>
-                <div><span className="text-yellow-400">Staging:</span>    <span className="text-zinc-300">https://staging.pandoras.io</span></div>
+                <div><span className="text-green-400">Production:</span> <span className="text-zinc-300">{apiBaseUrlProduction}</span></div>
+                <div><span className="text-yellow-400">Staging:</span>    <span className="text-zinc-300">{apiBaseUrlStaging}</span></div>
               </div>
             </div>
           </div>

@@ -96,9 +96,16 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   const [isGamificationLoading, setIsGamificationLoading] = useState(false);
 
   // --- GLOBAL CONFIG STATE (Phase 89) ---
-  const [globalConfig, setGlobalConfig] = useState<{ betaOpen: boolean; ritualEnabled: boolean }>({
+  const [globalConfig, setGlobalConfig] = useState<{ 
+    betaOpen: boolean; 
+    ritualEnabled: boolean;
+    apiBaseUrlProduction: string;
+    apiBaseUrlStaging: string;
+  }>({
     betaOpen: false,
     ritualEnabled: true,
+    apiBaseUrlProduction: "https://saaspandoras-production.up.railway.app:8080",
+    apiBaseUrlStaging: "https://staging.pandoras.io",
   });
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
@@ -114,7 +121,12 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
     }
   }, []);
 
-  const handleUpdateGlobalConfig = async (updates: Partial<{ betaOpen: boolean; ritualEnabled: boolean }>) => {
+  const handleUpdateGlobalConfig = async (updates: Partial<{ 
+    betaOpen: boolean; 
+    ritualEnabled: boolean;
+    apiBaseUrlProduction: string;
+    apiBaseUrlStaging: string;
+  }>) => {
     if (!effectiveIsSuperAdmin) {
       toast.error("Solo el Super Admin puede cambiar la configuración global.");
       return;
@@ -378,6 +390,48 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
               >
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${globalConfig.ritualEnabled ? 'left-7' : 'left-1'}`} />
               </button>
+            </div>
+
+            {/* API Base URLs */}
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 flex flex-col gap-3 min-w-[280px]">
+              <div>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">API Base URL (Production)</p>
+                <div className="flex gap-2">
+                  <Input 
+                    value={globalConfig.apiBaseUrlProduction}
+                    onChange={(e) => setGlobalConfig(prev => ({ ...prev, apiBaseUrlProduction: e.target.value }))}
+                    placeholder="https://saaspandoras-production.up.railway.app:8080"
+                    className="bg-zinc-900 border-zinc-700 h-8 text-[11px]"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-8 text-[11px] bg-zinc-800 hover:bg-zinc-700"
+                    onClick={() => handleUpdateGlobalConfig({ apiBaseUrlProduction: globalConfig.apiBaseUrlProduction })}
+                    disabled={isGlobalLoading || !effectiveIsSuperAdmin}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-zinc-800/50">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">API Base URL (Staging)</p>
+                <div className="flex gap-2">
+                  <Input 
+                    value={globalConfig.apiBaseUrlStaging}
+                    onChange={(e) => setGlobalConfig(prev => ({ ...prev, apiBaseUrlStaging: e.target.value }))}
+                    placeholder="https://staging.pandoras.io"
+                    className="bg-zinc-900 border-zinc-700 h-8 text-[11px]"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-8 text-[11px] bg-zinc-800 hover:bg-zinc-700"
+                    onClick={() => handleUpdateGlobalConfig({ apiBaseUrlStaging: globalConfig.apiBaseUrlStaging })}
+                    disabled={isGlobalLoading || !effectiveIsSuperAdmin}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -28,7 +28,9 @@ export async function GET() {
 
         return NextResponse.json({
             betaOpen: w2eConfig.betaOpen ?? false,
-            ritualEnabled: w2eConfig.ritualEnabled ?? true
+            ritualEnabled: w2eConfig.ritualEnabled ?? true,
+            apiBaseUrlProduction: w2eConfig.apiBaseUrlProduction ?? 'https://saaspandoras-production.up.railway.app:8080',
+            apiBaseUrlStaging: w2eConfig.apiBaseUrlStaging ?? 'https://staging.pandoras.io'
         });
     } catch (error: any) {
         console.error('[GLOBAL_CONFIG_GET] Error:', error.message);
@@ -43,7 +45,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { betaOpen, ritualEnabled } = body;
+        const { betaOpen, ritualEnabled, apiBaseUrlProduction, apiBaseUrlStaging } = body;
 
         // Fetch current w2eConfig to merge
         const current = await db.select({
@@ -59,6 +61,8 @@ export async function POST(request: Request) {
             ...currentW2eConfig,
             betaOpen: betaOpen ?? currentW2eConfig.betaOpen,
             ritualEnabled: ritualEnabled ?? currentW2eConfig.ritualEnabled,
+            apiBaseUrlProduction: apiBaseUrlProduction ?? currentW2eConfig.apiBaseUrlProduction,
+            apiBaseUrlStaging: apiBaseUrlStaging ?? currentW2eConfig.apiBaseUrlStaging,
             updatedAt: new Date().toISOString()
         };
 
@@ -73,7 +77,9 @@ export async function POST(request: Request) {
             success: true,
             config: {
                 betaOpen: newW2eConfig.betaOpen,
-                ritualEnabled: newW2eConfig.ritualEnabled
+                ritualEnabled: newW2eConfig.ritualEnabled,
+                apiBaseUrlProduction: newW2eConfig.apiBaseUrlProduction,
+                apiBaseUrlStaging: newW2eConfig.apiBaseUrlStaging
             }
         });
     } catch (error: any) {
