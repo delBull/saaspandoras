@@ -557,11 +557,11 @@ function verifySignature(payload: string, signature: string, secret: string) {
   );
 }
 
-  // En tu endpoint POST /webhooks/pandoras:
-  const rawBody  = await req.text();
-  const sig      = req.headers.get('x-pandoras-signature') ?? '';
-  const isValid  = verifySignature(rawBody, sig, process.env.PANDORAS_WEBHOOK_SECRET!);
-  if (!isValid) return new Response('Unauthorized', { status: 401 });\`;
+// En tu endpoint POST /webhooks/pandoras:
+const rawBody  = await req.text();
+const sig      = req.headers.get('x-pandoras-signature') ?? '';
+const isValid  = verifySignature(rawBody, sig, process.env.PANDORAS_WEBHOOK_SECRET!);
+if (!isValid) return new Response('Unauthorized', { status: 401 });`;
 
 function DevGuide({ 
   copyToClipboard,
@@ -574,15 +574,15 @@ function DevGuide({
 }) {
   const [activeSection, setActiveSection] = useState<'quickstart' | 'endpoints' | 'webhooks' | 'errors'>('quickstart');
 
-  const QUICK_START_CURL = \`# Reemplaza TU_API_KEY con tu pk_live_... o pk_test_...
-curl \${apiBaseUrlProduction}/api/v1/external/growth-os/metrics \\\\
-  -H "x-api-key: TU_API_KEY"\`;
+  const QUICK_START_CURL = `# Reemplaza TU_API_KEY con tu pk_live_... o pk_test_...
+curl ${apiBaseUrlProduction}/api/v1/external/growth-os/metrics \\
+  -H "x-api-key: TU_API_KEY"`;
 
-  const QUICK_START_JS = \`const res = await fetch(
-  '\${apiBaseUrlProduction}/api/v1/external/growth-os/leads?page=1&limit=20',
+  const QUICK_START_JS = `const res = await fetch(
+  '${apiBaseUrlProduction}/api/v1/external/growth-os/leads?page=1&limit=20',
   { headers: { 'x-api-key': process.env.PANDORAS_API_KEY } }
 );
-const { leads, pagination } = await res.json();\`;
+const { leads, pagination } = await res.json();`;
 
   const sections = [
     { id: 'quickstart' as const, label: '🚀 Quick Start' },
