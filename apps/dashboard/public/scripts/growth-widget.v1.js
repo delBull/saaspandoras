@@ -136,7 +136,7 @@
     }
 
     /**
-     * Public API - Commerce Popup
+     * Public API - Commerce Modal (Iframe based)
      */
     function openCheckout(slug, tier) {
         if (!slug || !tier) {
@@ -144,26 +144,52 @@
             return;
         }
         
-        const url = `${BASE_URL}/pay/${slug}/${tier}`;
-        const width = 500;
-        const height = 750;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
-        
-        track('COMMERCE_CHECKOUT_OPEN', { slug, tier });
-        
-        const popup = window.open(
-            url, 
-            `PandorasCheckout_${slug}_${tier}`, 
-            `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes,location=no,status=no`
-        );
+        const url = `${BASE_URL}/pay/${slug}/${tier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        track('COMMERCE_MODAL_OPEN', { slug, tier });
 
-        if (window.focus && popup) {
-            popup.focus();
-        } else if (!popup) {
-            // Fallback for popup blockers
-            console.warn('[Pandoras] Popup blocked, redirecting instead');
-            window.location.href = url;
+        let container = document.getElementById('pd-checkout-modal');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'pd-checkout-modal';
+            Object.assign(container.style, {
+                position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: '2147483647', transition: 'all 0.3s ease'
+            });
+
+            const content = document.createElement('div');
+            Object.assign(content.style, {
+                width: '100%', maxWidth: '480px', height: '90%', maxHeight: '720px',
+                position: 'relative', borderRadius: '24px', overflow: 'hidden',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,1)', backgroundColor: '#000'
+            });
+
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '&times;';
+            Object.assign(closeBtn.style, {
+                position: 'absolute', top: '15px', right: '15px', width: '32px', height: '32px',
+                borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none',
+                cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: '2147483648'
+            });
+            closeBtn.onclick = () => container.remove();
+
+            const iframe = document.createElement('iframe');
+            iframe.id = 'pd-checkout-iframe';
+            iframe.src = url;
+            Object.assign(iframe.style, {
+                width: '100%', height: '100%', border: 'none', background: 'transparent'
+            });
+
+            content.appendChild(closeBtn);
+            content.appendChild(iframe);
+            container.appendChild(content);
+            document.body.appendChild(container);
+        } else {
+            // Update existing iframe if it exists
+            const iframe = document.getElementById('pd-checkout-iframe');
+            if (iframe) iframe.src = url;
         }
     }
 

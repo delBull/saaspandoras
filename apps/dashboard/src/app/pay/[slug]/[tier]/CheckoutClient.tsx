@@ -296,9 +296,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     animate={{ opacity: 1, y: 0 }}
                     className="z-10 w-full max-w-[380px] flex flex-col items-center space-y-8 p-10 bg-zinc-950/50 backdrop-blur-3xl border border-zinc-800/50 rounded-[2.5rem] shadow-2xl"
                 >
-                    <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center bg-zinc-900">
-                        {project.logoUrl ? (
-                            <Image src={project.logoUrl} alt={project.title} width={80} height={80} className="object-cover" />
+                    <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center bg-zinc-900 group">
+                        {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
+                            <Image 
+                                src={sanitizeUrl(project.logoUrl || project.imageUrl)!} 
+                                alt={project.title} 
+                                width={80} 
+                                height={80} 
+                                className="object-cover transition-transform group-hover:scale-110" 
+                            />
                         ) : (
                             <span className="text-2xl font-black text-white">{project.title.substring(0, 2).toUpperCase()}</span>
                         )}
@@ -309,11 +315,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                         <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.2em]">Identificación Requerida</p>
                     </div>
 
-                    <div className="w-full relative scale-[1.05]">
+                    <div className="w-full relative scale-[1.05] flex justify-center">
                         <ConnectButton
                             client={client}
                             chain={chain}
                             wallets={wallets}
+                            connectButton={{
+                                label: "Activa tu acceso",
+                            }}
                             connectModal={{
                                 size: "compact",
                                 title: `Acceder a ${project.title}`,
@@ -373,9 +382,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                         ]}
                                     />
                                 </div>
-                                {project.logoUrl ? (
-                                    <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-6 border border-zinc-800" style={{ boxShadow: `0 10px 40px -10px ${brandColor}40` }}>
-                                        <Image src={project.logoUrl} alt={project.title} width={64} height={64} className="object-cover" />
+                                {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
+                                    <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-6 border border-zinc-800 group" style={{ boxShadow: `0 10px 40px -10px ${brandColor}40` }}>
+                                        <Image 
+                                            src={sanitizeUrl(project.logoUrl || project.imageUrl)!} 
+                                            alt={project.title} 
+                                            width={64} 
+                                            height={64} 
+                                            className="object-cover transition-transform group-hover:scale-110" 
+                                        />
                                     </div>
                                 ) : (
                                     <div className="w-16 h-16 mx-auto rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
