@@ -51,8 +51,22 @@ router.all(EXTERNAL_PATHS, async (req: Request, res: Response) => {
     // Normalize the path: Ensure it always uses the /api/v1/external prefix for the dashboard
     let targetPath = req.originalUrl;
     
-    // Add prefix if missing
-    if (!targetPath.startsWith("/api/v1/external")) {
+    // 🔀 ALIASING LOGIC: Support shorter paths requested by Bull's Lab
+    const ALIASES: Record<string, string> = {
+        "/external/users": "/api/v1/external/users/stats",
+        "/users":          "/api/v1/external/users/stats",
+        "/external/leads": "/api/v1/external/growth-os/leads",
+        "/leads":          "/api/v1/external/growth-os/leads",
+    };
+
+    // Strip query string for matching
+    const purePath = targetPath.split('?')[0];
+    if (ALIASES[purePath]) {
+        const queryString = targetPath.includes('?') ? targetPath.slice(targetPath.indexOf('?')) : '';
+        targetPath = ALIASES[purePath] + queryString;
+        console.log(`🔀 [PROXY] Alias matched: ${purePath} -> ${ALIASES[purePath]}`);
+    } else if (!targetPath.startsWith("/api/v1/external")) {
+        // Add prefix if missing for other paths (growth-os, protocols, etc.)
         if (targetPath.startsWith("/external")) {
             targetPath = `/api/v1${targetPath}`;
         } else {

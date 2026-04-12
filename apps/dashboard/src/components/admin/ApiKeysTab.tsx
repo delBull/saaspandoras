@@ -487,6 +487,9 @@ export function ApiKeysTab() {
 // ─── Developer Guide Component ────────────────────────────────────────────────
 
 const ALL_ENDPOINTS = [
+  // ── Aliases Bull's Lab (Shortcuts) ─────────────────────────────────────────
+  { method: 'GET', path: '/external/users',            perm: 'read:users',        live: true,  desc: 'Snapshot rápido: total usuarios, activos, KYC y racha' },
+  { method: 'GET', path: '/external/leads',            perm: 'read:leads',        live: true,  desc: 'Métricas y listado de leads de Growth OS' },
   // ── Growth OS (LIVE) ──────────────────────────────────────────────────────
   { method: 'GET', path: '/external/growth-os/metrics',        perm: 'read:growth_os',    live: true,  desc: 'Dashboard ejecutivo: leads, conversión, newsletter' },
   { method: 'GET', path: '/external/growth-os/leads',          perm: 'read:growth_os',    live: true,  desc: 'Lista paginada de leads con filtros' },
