@@ -2,16 +2,32 @@ import { Router, type Request, type Response } from "express";
 
 const router = Router();
 
-// 💡 INTERNAL RAILWAY URL: For service-to-service communication
-// Use HTTP to avoid SSL overhead within the internal network
-const DASHBOARD_URL = process.env.DASHBOARD_INTERNAL_URL || "http://saaspandoras.railway.internal";
+// 🧠 DYNAMIC ENVIRONMENT DETECTION
+// 1. Check if an explicit URL is provided in env vars
+// 2. Fallback to staging/main based on NODE_ENV or RAILWAY_ENVIRONMENT_NAME
+const PROD_URL = "https://dash.pandoras.finance";
+const STAGING_URL = "https://staging.dash.pandoras.finance";
+
+const getTargetBaseUrl = () => {
+    // If user provided an override, use it
+    if (process.env.DASHBOARD_INTERNAL_URL) {
+        let url = process.env.DASHBOARD_INTERNAL_URL;
+        // Ensure protocol exists
+        if (!url.startsWith("http")) {
+            url = `https://${url}`;
+        }
+        return url;
+    }
+
+    // Default detection logic
+    const isProduction = process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT_NAME === "production";
+    return isProduction ? PROD_URL : STAGING_URL;
+};
+
+const DASHBOARD_URL = getTargetBaseUrl();
 
 /**
  * PROXY ROUTER: Captures external API requests and forwards them to the Dashboard Next.js app.
- * Supports: 
- *  - /api/v1/external/* (Standard format)
- *  - /external/* (Shortcut format)
- *  - /growth-os/*, /protocols/*, /users/*, /payments/* (Direct format — requested by Bull's Lab)
  */
 const EXTERNAL_PATHS = [
     "/api/v1/external/*",
@@ -27,9 +43,8 @@ const EXTERNAL_PATHS = [
 
 router.all(EXTERNAL_PATHS, async (req: Request, res: Response) => {
     // 🛡️ INFINITE LOOP GUARD
-    // Prevent api-core from proxying to itself if DASHBOARD_URL is accidentally set to its own public domain
-    if (DASHBOARD_URL.includes(req.get("host") || "")) {
-        console.error("🚨 [PROXY] Infinite loop detected! DASHBOARD_INTERNAL_URL matches current host.");
+    if (DASHBOARD_URL.includes(req.get("host") || "none_host")) {
+        console.error("🚨 [PROXY] Infinite loop detected!");
         return res.status(500).json({ error: "Configuration Error: Infinite Loop detected in proxy." });
     }
 

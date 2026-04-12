@@ -64,7 +64,7 @@ export function ApiKeysTab() {
 
   // Global Config state (Base URLs)
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig>({
-    apiBaseUrlProduction: 'https://saaspandoras-production.up.railway.app:8080',
+    apiBaseUrlProduction: 'https://saaspandoras-production.up.railway.app',
     apiBaseUrlStaging: 'https://staging.pandoras.io'
   });
 
@@ -74,7 +74,7 @@ export function ApiKeysTab() {
       if (res.ok) {
         const data = await res.json();
         setGlobalConfig({
-          apiBaseUrlProduction: data.apiBaseUrlProduction || 'https://saaspandoras-production.up.railway.app:8080',
+          apiBaseUrlProduction: data.apiBaseUrlProduction || 'https://saaspandoras-production.up.railway.app',
           apiBaseUrlStaging: data.apiBaseUrlStaging || 'https://staging.pandoras.io'
         });
       }
@@ -487,28 +487,28 @@ export function ApiKeysTab() {
 // ─── Developer Guide Component ────────────────────────────────────────────────
 
 const ALL_ENDPOINTS = [
-  // ── Growth OS (Fase 1 — LIVE) ──────────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/growth-os/metrics',        perm: 'read:growth_os',    live: true,  desc: 'Dashboard ejecutivo: leads, conversión, newsletter' },
-  { method: 'GET', path: '/api/v1/external/growth-os/leads',          perm: 'read:growth_os',    live: true,  desc: 'Lista paginada de leads con filtros' },
-  { method: 'GET', path: '/api/v1/external/growth-os/leads/[id]',     perm: 'read:growth_os',    live: true,  desc: 'Detalle de lead + historial de eventos' },
-  { method: 'GET', path: '/api/v1/external/growth-os/campaigns',      perm: 'read:growth_os',    live: true,  desc: 'Campañas con CTR y lead-rate calculados' },
-  { method: 'GET', path: '/api/v1/external/growth-os/newsletter',     perm: 'read:growth_os',    live: true,  desc: 'Métricas de suscriptores por fuente/idioma' },
-  // ── Protocols (Fase 2 — LIVE) ─────────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/protocols',                perm: 'read:protocols',    live: true,  desc: 'Lista de protocolos activos con tokenomics' },
-  { method: 'GET', path: '/api/v1/external/protocols/[slug]',         perm: 'read:protocols',    live: true,  desc: 'Detalle completo: fases, tokenomics, contratos' },
-  // ── Payments (Fase 2 — LIVE) ──────────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/payments/summary',         perm: 'read:payments',     live: true,  desc: 'Revenue total + conversiones por protocolo' },
-  // ── Users (Fase 3 — LIVE) ─────────────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/users/stats',              perm: 'read:users',        live: true,  desc: 'Estadísticas globales: total, activos, ritual, KYC' },
-  // ── Gamification (Fase 3 — LIVE) ──────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/gamification/leaderboard', perm: 'read:gamification', live: true,  desc: 'Top usuarios por XP, racha, PBOX reclamado' },
-  // ── Agora Market (Fase 3 — LIVE) ──────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/agora/listings',           perm: 'read:agora',        live: true,  desc: 'Listings del mercado secundario + volumen' },
-  { method: 'GET', path: '/api/v1/external/agora/nav/[protocolId]',   perm: 'read:agora',        live: true,  desc: 'NAV histórico + buyback pool de un protocolo' },
-  // ── Governance (Fase 4 — LIVE) ────────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/governance/proposals',     perm: 'read:governance',   live: true,  desc: 'Propuestas on-chain: votos, quorum, estado' },
-  // ── Operations (Fase 4 — LIVE) ────────────────────────────────────────────
-  { method: 'GET', path: '/api/v1/external/operations/health',        perm: 'read:operations',   live: true,  desc: 'Health check: DB latencia, sanity counts' },
+  // ── Growth OS (LIVE) ──────────────────────────────────────────────────────
+  { method: 'GET', path: '/external/growth-os/metrics',        perm: 'read:growth_os',    live: true,  desc: 'Dashboard ejecutivo: leads, conversión, newsletter' },
+  { method: 'GET', path: '/external/growth-os/leads',          perm: 'read:growth_os',    live: true,  desc: 'Lista paginada de leads con filtros' },
+  { method: 'GET', path: '/external/growth-os/leads/[id]',     perm: 'read:growth_os',    live: true,  desc: 'Detalle de lead + historial de eventos' },
+  { method: 'GET', path: '/external/growth-os/campaigns',      perm: 'read:growth_os',    live: true,  desc: 'Campañas con CTR y lead-rate calculados' },
+  { method: 'GET', path: '/external/growth-os/newsletter',     perm: 'read:growth_os',    live: true,  desc: 'Métricas de suscriptores por fuente/idioma' },
+  // ── Protocols (LIVE) ─────────────────────────────────────────────────────
+  { method: 'GET', path: '/external/protocols',                perm: 'read:protocols',    live: true,  desc: 'Lista de protocolos activos con tokenomics' },
+  { method: 'GET', path: '/external/protocols/[slug]',         perm: 'read:protocols',    live: true,  desc: 'Detalle completo: fases, tokenomics, contratos' },
+  // ── Payments (LIVE) ──────────────────────────────────────────────────────
+  { method: 'GET', path: '/external/payments/summary',         perm: 'read:payments',     live: true,  desc: 'Revenue total + conversiones por protocolo' },
+  // ── Users (LIVE) ─────────────────────────────────────────────────────────
+  { method: 'GET', path: '/external/users/stats',              perm: 'read:users',        live: true,  desc: 'Estadísticas globales: total, activos, ritual, KYC' },
+  // ── Gamification (LIVE) ──────────────────────────────────────────────────
+  { method: 'GET', path: '/external/gamification/leaderboard', perm: 'read:gamification', live: true,  desc: 'Top usuarios por XP, racha, PBOX reclamado' },
+  // ── Agora Market (LIVE) ──────────────────────────────────────────────────
+  { method: 'GET', path: '/external/agora/listings',           perm: 'read:agora',        live: true,  desc: 'Listings del mercado secundario + volumen' },
+  { method: 'GET', path: '/external/agora/nav/[protocolId]',   perm: 'read:agora',        live: true,  desc: 'NAV histórico + buyback pool de un protocolo' },
+  // ── Governance (LIVE) ────────────────────────────────────────────────────
+  { method: 'GET', path: '/external/governance/proposals',     perm: 'read:governance',   live: true,  desc: 'Propuestas on-chain: votos, quorum, estado' },
+  // ── Operations (LIVE) ────────────────────────────────────────────────────
+  { method: 'GET', path: '/external/operations/health',        perm: 'read:operations',   live: true,  desc: 'Health check: DB latencia, sanity counts' },
 ];
 
 const PERM_COLORS: Record<string, string> = {
@@ -575,12 +575,12 @@ function DevGuide({
   const [activeSection, setActiveSection] = useState<'quickstart' | 'endpoints' | 'webhooks' | 'errors'>('quickstart');
 
   const QUICK_START_CURL = `# Reemplaza TU_API_KEY con tu pk_live_... o pk_test_...
-curl ${apiBaseUrlProduction}/api/v1/external/growth-os/metrics \\
-  -H "x-api-key: TU_API_KEY"`;
+curl ${apiBaseUrlProduction}/external/growth-os/metrics \\
+  -H "Authorization: Bearer TU_API_KEY"`;
 
   const QUICK_START_JS = `const res = await fetch(
-  '${apiBaseUrlProduction}/api/v1/external/growth-os/leads?page=1&limit=20',
-  { headers: { 'x-api-key': process.env.PANDORAS_API_KEY } }
+  '${apiBaseUrlProduction}/external/growth-os/leads?page=1&limit=20',
+  { headers: { 'Authorization': 'Bearer ' + process.env.PANDORAS_API_KEY } }
 );
 const { leads, pagination } = await res.json();`;
 
