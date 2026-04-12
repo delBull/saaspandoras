@@ -87,6 +87,7 @@ import authRoutes from "./routes/auth.js";
 import webhookRoutes from "./routes/webhooks.js";
 import debugRoutes from "./routes/debug.js";
 import tenantRoutes from "./routes/tenants.js";
+import externalProxy from "./routes/external-proxy.js";
 
 //...
 
@@ -95,6 +96,9 @@ app.use("/auth", authRoutes);
 app.use("/webhooks", webhookRoutes);
 app.use("/debug", debugRoutes); // DEBUG ONLY - Remove in production
 app.use("/tenants", tenantRoutes);
+
+// 📡 External API Proxy (MUST cover /api/v1/external and /external)
+app.use("/", externalProxy);
 
 app.get("/", (req: Request, res: Response) => {
     res.json({
