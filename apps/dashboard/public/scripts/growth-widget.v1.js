@@ -138,14 +138,17 @@
     /**
      * Public API - Commerce Modal (Iframe based)
      */
-    function openCheckout(slug, tier) {
-        if (!slug || !tier) {
-            console.error('[Pandoras] Missing slug or tier for checkout');
+    function openCheckout(slug, tier = 'standard') {
+        const finalSlug = slug || projectId;
+        const finalTier = tier || 'standard';
+
+        if (!finalSlug) {
+            console.error('[Pandoras] Missing slug for checkout. Ensure data-pd-checkout-slug is set.');
             return;
         }
         
-        const url = `${BASE_URL}/pay/${slug}/${tier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
-        track('COMMERCE_MODAL_OPEN', { slug, tier });
+        const url = `${BASE_URL}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        track('COMMERCE_MODAL_OPEN', { slug: finalSlug, tier: finalTier });
 
         let container = document.getElementById('pd-checkout-modal');
         if (!container) {
@@ -322,7 +325,7 @@
                             <div style="width:75%; height:100%; background:${accentColor}; border-radius:3px;"></div>
                         </div>
                     </div>
-
+ 
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         <input id="pd-email" type="email" placeholder="Your best email" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
                         <input id="pd-wallet" type="text" placeholder="Wallet address (optional)" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
@@ -336,7 +339,7 @@
                 </div>
             </div>
         `;
-
+ 
         document.body.appendChild(modal);
         
         document.getElementById('pd-submit-action').onclick = () => {
@@ -346,18 +349,34 @@
             registerLead({ email, walletAddress });
         };
     }
-
+ 
     /**
      * Auto-setup for data-based links
      */
     function setupAutoLinks() {
         document.addEventListener('click', (e) => {
-            const target = e.target.closest('[data-pd-checkout-slug]');
-            if (target) {
+            const target = e.target.closest('a, button, [data-pd-checkout-slug], [data-slug]');
+            if (!target) return;
+
+            let slug = target.getAttribute('data-pd-checkout-slug') || target.getAttribute('data-slug') || target.getAttribute('data-pd-slug');
+            let tier = target.getAttribute('data-pd-checkout-tier') || target.getAttribute('data-tier') || target.getAttribute('data-pd-tier');
+
+            // Extraction Intelligence: Auto-detect from HREF if it's a Pandoras payment link
+            if (!slug && target.tagName === 'A' && target.href && target.href.includes('/pay/')) {
+                try {
+                    const url = new URL(target.href);
+                    const parts = url.pathname.split('/').filter(p => p);
+                    // Expected: /pay/{slug}/{tier}
+                    if (parts[0] === 'pay' && parts[1]) {
+                        slug = parts[1];
+                        tier = parts[2];
+                    }
+                } catch (e) {}
+            }
+
+            if (slug) {
                 e.preventDefault();
-                const slug = target.getAttribute('data-pd-checkout-slug');
-                const tier = target.getAttribute('data-pd-checkout-tier');
-                openCheckout(slug, tier);
+                openCheckout(slug, tier || 'standard');
             }
         });
     }
