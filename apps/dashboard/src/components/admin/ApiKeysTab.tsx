@@ -31,9 +31,11 @@ interface NewKeyResult {
 }
 
 const AVAILABLE_PERMISSIONS = [
-  { id: 'read:growth_os', label: 'Growth OS', desc: 'Leads, métricas, campañas, newsletter', icon: '📊', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
-  { id: 'read:projects', label: 'Proyectos', desc: 'Proyectos públicos y fases', icon: '🏗️', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-  { id: 'read:users', label: 'Usuarios', desc: 'Datos no sensibles de usuarios', icon: '👥', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
+  { id: 'read:growth_os',    label: 'Growth OS',    desc: 'Leads, métricas, campañas, newsletter', icon: '📊', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+  { id: 'read:protocols',   label: 'Protocolos',   desc: 'Proyectos, fases, montos, progreso',    icon: '🏗️', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  { id: 'read:payments',    label: 'Pagos',        desc: 'Revenue, conversiones, por protocolo',  icon: '💰', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+  { id: 'read:users',       label: 'Usuarios',     desc: 'Datos no sensibles de usuarios',        icon: '👥', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
+  { id: 'read:gamification',label: 'Gamification', desc: 'Leaderboard, XP, PBOX balances',        icon: '🏆', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
 ];
 
 export function ApiKeysTab() {
@@ -439,27 +441,254 @@ export function ApiKeysTab() {
         )}
       </div>
 
-      {/* Quick Reference */}
-      <div className="bg-zinc-900/30 border border-zinc-800 rounded-2xl p-5 space-y-3">
-        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Referencia rápida de endpoints</h4>
-        <div className="space-y-2">
-          {[
-            { method: 'GET', path: '/api/v1/external/growth-os/metrics', perm: 'read:growth_os', desc: 'Dashboard ejecutivo' },
-            { method: 'GET', path: '/api/v1/external/growth-os/leads', perm: 'read:growth_os', desc: 'Lista de leads (filtrable)' },
-            { method: 'GET', path: '/api/v1/external/growth-os/campaigns', perm: 'read:growth_os', desc: 'Campañas + estadísticas' },
-            { method: 'GET', path: '/api/v1/external/growth-os/newsletter', perm: 'read:growth_os', desc: 'Métricas de suscriptores' },
-          ].map(ep => (
-            <div key={ep.path} className="flex items-center gap-3 text-xs">
-              <span className="text-green-400 font-mono font-bold w-8 shrink-0">{ep.method}</span>
-              <code className="text-zinc-300 font-mono flex-1 truncate">{ep.path}</code>
-              <span className="text-zinc-600 hidden sm:block">{ep.desc}</span>
-            </div>
-          ))}
-        </div>
-        <p className="text-[11px] text-zinc-600 mt-2">
-          Header: <code className="text-zinc-400 font-mono bg-zinc-800 px-1.5 py-0.5 rounded">x-api-key: pk_live_...</code>
-        </p>
+      {/* Developer Guide */}
+      <DevGuide copyToClipboard={copyToClipboard} />
+    </div>
+  );
+}
+
+
+// ─── Developer Guide Component ────────────────────────────────────────────────
+
+const ALL_ENDPOINTS = [
+  // Growth OS
+  { method: 'GET', path: '/api/v1/external/growth-os/metrics',     perm: 'read:growth_os', desc: 'Dashboard ejecutivo: leads, conversión, newsletter' },
+  { method: 'GET', path: '/api/v1/external/growth-os/leads',       perm: 'read:growth_os', desc: 'Lista paginada de leads con filtros' },
+  { method: 'GET', path: '/api/v1/external/growth-os/leads/[id]',  perm: 'read:growth_os', desc: 'Detalle de lead + historial de eventos' },
+  { method: 'GET', path: '/api/v1/external/growth-os/campaigns',   perm: 'read:growth_os', desc: 'Campañas con CTR y lead-rate calculados' },
+  { method: 'GET', path: '/api/v1/external/growth-os/newsletter',  perm: 'read:growth_os', desc: 'Métricas de suscriptores por fuente/idioma' },
+  // Protocols (Fase 2)
+  { method: 'GET', path: '/api/v1/external/protocols',             perm: 'read:protocols', desc: 'Lista de protocolos activos' },
+  { method: 'GET', path: '/api/v1/external/protocols/[slug]',      perm: 'read:protocols', desc: 'Detalle de protocolo + fases' },
+  // Payments (Fase 2)
+  { method: 'GET', path: '/api/v1/external/payments/summary',      perm: 'read:payments',  desc: 'Revenue total por periodo' },
+  // Users (Fase 3)
+  { method: 'GET', path: '/api/v1/external/users/stats',           perm: 'read:users',     desc: 'Estadísticas globales de usuarios' },
+  // Gamification (Fase 3)
+  { method: 'GET', path: '/api/v1/external/gamification/leaderboard', perm: 'read:gamification', desc: 'Top usuarios por XP/PBOX' },
+];
+
+const PERM_COLORS: Record<string, string> = {
+  'read:growth_os':    'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+  'read:protocols':    'text-blue-400   bg-blue-500/10   border-blue-500/30',
+  'read:payments':     'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+  'read:users':        'text-cyan-400   bg-cyan-500/10   border-cyan-500/30',
+  'read:gamification': 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+};
+
+const WEBHOOK_EVENTS = [
+  { event: 'lead.new',              perm: 'read:growth_os',  status: '✅ Live',  desc: 'Nuevo lead registrado' },
+  { event: 'lead.returning',         perm: 'read:growth_os',  status: '✅ Live',  desc: 'Lead repetido' },
+  { event: 'lead.converted',         perm: 'read:growth_os',  status: '✅ Live',  desc: 'Lead compró protocol access' },
+  { event: 'payment.completed',       perm: 'read:payments',   status: '⏳ Fase 2', desc: 'Pago completado' },
+  { event: 'protocol.phase_activated',perm: 'read:protocols',  status: '⏳ Fase 2', desc: 'Nueva fase de protocolo activa' },
+  { event: 'user.initiated',          perm: 'read:users',      status: '⏳ Fase 3', desc: 'Usuario completó ritual' },
+  { event: 'agora.listing_sold',      perm: 'read:agora',      status: '⏳ Fase 3', desc: 'Venta en Agora Market' },
+];
+
+const ERRORS = [
+  { code: '200', label: 'OK', desc: 'Request exitoso' },
+  { code: '401', label: 'Unauthorized', desc: 'API key inválida, expirada o faltante' },
+  { code: '403', label: 'Forbidden', desc: 'Key activa pero sin el permiso requerido' },
+  { code: '404', label: 'Not Found', desc: 'Recurso no existe' },
+  { code: '429', label: 'Rate Limited', desc: 'Más de 100 requests/min por key' },
+  { code: '500', label: 'Server Error', desc: 'Error interno — reportar a Pandoras' },
+];
+
+const QUICK_START_CURL = `# Reemplaza TU_API_KEY con tu pk_live_... o pk_test_...
+curl https://dashboard.pandoras.io/api/v1/external/growth-os/metrics \\
+  -H "x-api-key: TU_API_KEY"`;
+
+const QUICK_START_JS = `const res = await fetch(
+  'https://dashboard.pandoras.io/api/v1/external/growth-os/leads?page=1&limit=20',
+  { headers: { 'x-api-key': process.env.PANDORAS_API_KEY } }
+);
+const { leads, pagination } = await res.json();`;
+
+const WEBHOOK_VERIFY = `import crypto from 'crypto';
+
+function verifySignature(payload: string, signature: string, secret: string) {
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature), Buffer.from(expected)
+  );
+}
+
+// En tu endpoint POST /webhooks/pandoras:
+const rawBody  = await req.text();
+const sig      = req.headers.get('x-pandoras-signature') ?? '';
+const isValid  = verifySignature(rawBody, sig, process.env.PANDORAS_WEBHOOK_SECRET!);
+if (!isValid) return new Response('Unauthorized', { status: 401 });`;
+
+function DevGuide({ copyToClipboard }: { copyToClipboard: (text: string, label?: string) => void }) {
+  const [activeSection, setActiveSection] = useState<'quickstart' | 'endpoints' | 'webhooks' | 'errors'>('quickstart');
+
+  const sections = [
+    { id: 'quickstart' as const, label: '🚀 Quick Start' },
+    { id: 'endpoints'  as const, label: '📡 Endpoints'   },
+    { id: 'webhooks'   as const, label: '🔔 Webhooks'    },
+    { id: 'errors'     as const, label: '🔴 Errores'     },
+  ];
+
+  return (
+    <div className="bg-zinc-900/30 border border-zinc-800 rounded-2xl overflow-hidden">
+      {/* Guide Header */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+          📖 <span>Developer Guide</span>
+        </h4>
+        <span className="text-[10px] text-zinc-600 font-mono">API v1</span>
       </div>
+
+      {/* Section Nav */}
+      <div className="flex gap-1 px-5 pb-4 border-b border-zinc-800">
+        {sections.map(s => (
+          <button
+            key={s.id}
+            onClick={() => setActiveSection(s.id)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+              activeSection === s.id
+                ? 'bg-zinc-700 text-white'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* ── Quick Start ── */}
+        {activeSection === 'quickstart' && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-zinc-400 text-xs mb-3">
+                Autenticación via header <code className="font-mono bg-zinc-800 px-1.5 py-0.5 rounded text-yellow-300">x-api-key</code> o{' '}
+                <code className="font-mono bg-zinc-800 px-1.5 py-0.5 rounded text-yellow-300">Authorization: Bearer pk_live_...</code>
+              </p>
+            </div>
+
+            <CodeBlock label="cURL" code={QUICK_START_CURL} onCopy={() => copyToClipboard(QUICK_START_CURL, 'cURL copiado')} />
+            <CodeBlock label="JavaScript / TypeScript" code={QUICK_START_JS} onCopy={() => copyToClipboard(QUICK_START_JS, 'JS snippet copiado')} />
+
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+              <p className="text-blue-300 text-xs font-semibold mb-2">Base URL por entorno</p>
+              <div className="space-y-1 text-xs font-mono">
+                <div><span className="text-green-400">Production:</span> <span className="text-zinc-300">https://dashboard.pandoras.io</span></div>
+                <div><span className="text-yellow-400">Staging:</span>    <span className="text-zinc-300">https://staging.pandoras.io</span></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Endpoints ── */}
+        {activeSection === 'endpoints' && (
+          <div className="space-y-1">
+            {ALL_ENDPOINTS.map(ep => (
+              <div key={ep.path} className="flex items-start gap-3 py-2 border-b border-zinc-800/50 last:border-0">
+                <span className="text-green-400 font-mono font-bold text-[11px] w-8 shrink-0 mt-0.5">{ep.method}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code
+                      className="text-zinc-200 font-mono text-xs cursor-pointer hover:text-yellow-300 transition-colors"
+                      onClick={() => copyToClipboard(ep.path, 'Path copiado')}
+                      title="Click para copiar"
+                    >
+                      {ep.path}
+                    </code>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${PERM_COLORS[ep.perm] ?? 'text-zinc-400 bg-zinc-800 border-zinc-700'}`}>
+                      {ep.perm}
+                    </span>
+                    {ep.perm !== 'read:growth_os' && (
+                      <span className="text-[10px] text-zinc-600 italic">próx.</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">{ep.desc}</p>
+                </div>
+              </div>
+            ))}
+            <p className="text-[10px] text-zinc-600 pt-2">Click en el path para copiarlo al portapapeles.</p>
+          </div>
+        )}
+
+        {/* ── Webhooks ── */}
+        {activeSection === 'webhooks' && (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              {WEBHOOK_EVENTS.map(ev => (
+                <div key={ev.event} className="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-0 text-xs">
+                  <code
+                    className="text-zinc-300 font-mono flex-1 cursor-pointer hover:text-yellow-300 transition-colors"
+                    onClick={() => copyToClipboard(ev.event, 'Evento copiado')}
+                  >
+                    {ev.event}
+                  </code>
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${PERM_COLORS[ev.perm] ?? 'text-zinc-400 bg-zinc-800 border-zinc-700'}`}>
+                    {ev.perm}
+                  </span>
+                  <span className="text-[10px] text-zinc-600 hidden sm:block shrink-0 w-20 text-right">{ev.status}</span>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <p className="text-zinc-400 text-xs mb-2 font-semibold">Verificar firma HMAC-SHA256</p>
+              <CodeBlock label="Node.js / Edge Runtime" code={WEBHOOK_VERIFY} onCopy={() => copyToClipboard(WEBHOOK_VERIFY, 'Snippet de verificación copiado')} />
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-xl p-4 text-xs space-y-1">
+              <p className="text-zinc-400 font-semibold">Payload de ejemplo — <code className="font-mono text-indigo-300">lead.new</code></p>
+              <pre className="text-zinc-400 font-mono text-[11px] leading-relaxed overflow-x-auto">{JSON.stringify({
+                event: 'lead.new',
+                timestamp: new Date().toISOString(),
+                data: {
+                  lead_id: 'clx1abc...', email: 'user@example.com',
+                  name: 'Marco', project_slug: 'narai',
+                  intent: 'invest', quality: 'high', score: 87,
+                }
+              }, null, 2)}</pre>
+            </div>
+          </div>
+        )}
+
+        {/* ── Errors ── */}
+        {activeSection === 'errors' && (
+          <div className="space-y-1">
+            {ERRORS.map(err => (
+              <div key={err.code} className="flex items-center gap-4 py-2 border-b border-zinc-800/50 last:border-0 text-xs">
+                <span className={`font-mono font-bold w-8 shrink-0 ${
+                  err.code.startsWith('2') ? 'text-green-400' :
+                  err.code.startsWith('4') ? 'text-yellow-400' : 'text-red-400'
+                }`}>{err.code}</span>
+                <span className="font-mono text-zinc-300 w-24 shrink-0">{err.label}</span>
+                <span className="text-zinc-500">{err.desc}</span>
+              </div>
+            ))}
+            <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 mt-3">
+              <p className="text-yellow-400 text-xs font-semibold mb-1">Formato de error</p>
+              <code className="text-zinc-400 font-mono text-[11px]">{'{ "error": "Mensaje descriptivo", "detail": "..." }'}</code>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Code block with copy button
+function CodeBlock({ label, code, onCopy }: { label: string; code: string; onCopy: () => void }) {
+  return (
+    <div className="bg-black/40 rounded-xl border border-zinc-800 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
+        <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">{label}</span>
+        <button onClick={onCopy} className="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-yellow-400 transition-colors">
+          <Copy className="w-3 h-3" /> copiar
+        </button>
+      </div>
+      <pre className="p-4 text-[11px] font-mono text-zinc-300 leading-relaxed overflow-x-auto whitespace-pre">{code}</pre>
     </div>
   );
 }
