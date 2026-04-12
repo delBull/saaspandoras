@@ -36,6 +36,9 @@ const AVAILABLE_PERMISSIONS = [
   { id: 'read:payments',    label: 'Pagos',        desc: 'Revenue, conversiones, por protocolo',  icon: '💰', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
   { id: 'read:users',       label: 'Usuarios',     desc: 'Datos no sensibles de usuarios',        icon: '👥', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
   { id: 'read:gamification',label: 'Gamification', desc: 'Leaderboard, XP, PBOX balances',        icon: '🏆', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+  { id: 'read:agora',       label: 'Agora',        desc: 'Listings, NAV, buyback pool',           icon: '🏛️', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+  { id: 'read:governance',  label: 'Governance',   desc: 'Propuestas on-chain, votos, quorum',    icon: '⚖️', color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+  { id: 'read:operations',  label: 'Operations',   desc: 'Health check del sistema (solo Bull’s Lab)', icon: '💻', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
 ];
 
 export function ApiKeysTab() {
@@ -451,21 +454,28 @@ export function ApiKeysTab() {
 // ─── Developer Guide Component ────────────────────────────────────────────────
 
 const ALL_ENDPOINTS = [
-  // Growth OS
-  { method: 'GET', path: '/api/v1/external/growth-os/metrics',     perm: 'read:growth_os', desc: 'Dashboard ejecutivo: leads, conversión, newsletter' },
-  { method: 'GET', path: '/api/v1/external/growth-os/leads',       perm: 'read:growth_os', desc: 'Lista paginada de leads con filtros' },
-  { method: 'GET', path: '/api/v1/external/growth-os/leads/[id]',  perm: 'read:growth_os', desc: 'Detalle de lead + historial de eventos' },
-  { method: 'GET', path: '/api/v1/external/growth-os/campaigns',   perm: 'read:growth_os', desc: 'Campañas con CTR y lead-rate calculados' },
-  { method: 'GET', path: '/api/v1/external/growth-os/newsletter',  perm: 'read:growth_os', desc: 'Métricas de suscriptores por fuente/idioma' },
-  // Protocols (Fase 2)
-  { method: 'GET', path: '/api/v1/external/protocols',             perm: 'read:protocols', desc: 'Lista de protocolos activos' },
-  { method: 'GET', path: '/api/v1/external/protocols/[slug]',      perm: 'read:protocols', desc: 'Detalle de protocolo + fases' },
-  // Payments (Fase 2)
-  { method: 'GET', path: '/api/v1/external/payments/summary',      perm: 'read:payments',  desc: 'Revenue total por periodo' },
-  // Users (Fase 3)
-  { method: 'GET', path: '/api/v1/external/users/stats',           perm: 'read:users',     desc: 'Estadísticas globales de usuarios' },
-  // Gamification (Fase 3)
-  { method: 'GET', path: '/api/v1/external/gamification/leaderboard', perm: 'read:gamification', desc: 'Top usuarios por XP/PBOX' },
+  // ── Growth OS (Fase 1 — LIVE) ──────────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/growth-os/metrics',        perm: 'read:growth_os',    live: true,  desc: 'Dashboard ejecutivo: leads, conversión, newsletter' },
+  { method: 'GET', path: '/api/v1/external/growth-os/leads',          perm: 'read:growth_os',    live: true,  desc: 'Lista paginada de leads con filtros' },
+  { method: 'GET', path: '/api/v1/external/growth-os/leads/[id]',     perm: 'read:growth_os',    live: true,  desc: 'Detalle de lead + historial de eventos' },
+  { method: 'GET', path: '/api/v1/external/growth-os/campaigns',      perm: 'read:growth_os',    live: true,  desc: 'Campañas con CTR y lead-rate calculados' },
+  { method: 'GET', path: '/api/v1/external/growth-os/newsletter',     perm: 'read:growth_os',    live: true,  desc: 'Métricas de suscriptores por fuente/idioma' },
+  // ── Protocols (Fase 2 — LIVE) ─────────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/protocols',                perm: 'read:protocols',    live: true,  desc: 'Lista de protocolos activos con tokenomics' },
+  { method: 'GET', path: '/api/v1/external/protocols/[slug]',         perm: 'read:protocols',    live: true,  desc: 'Detalle completo: fases, tokenomics, contratos' },
+  // ── Payments (Fase 2 — LIVE) ──────────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/payments/summary',         perm: 'read:payments',     live: true,  desc: 'Revenue total + conversiones por protocolo' },
+  // ── Users (Fase 3 — LIVE) ─────────────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/users/stats',              perm: 'read:users',        live: true,  desc: 'Estadísticas globales: total, activos, ritual, KYC' },
+  // ── Gamification (Fase 3 — LIVE) ──────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/gamification/leaderboard', perm: 'read:gamification', live: true,  desc: 'Top usuarios por XP, racha, PBOX reclamado' },
+  // ── Agora Market (Fase 3 — LIVE) ──────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/agora/listings',           perm: 'read:agora',        live: true,  desc: 'Listings del mercado secundario + volumen' },
+  { method: 'GET', path: '/api/v1/external/agora/nav/[protocolId]',   perm: 'read:agora',        live: true,  desc: 'NAV histórico + buyback pool de un protocolo' },
+  // ── Governance (Fase 4 — LIVE) ────────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/governance/proposals',     perm: 'read:governance',   live: true,  desc: 'Propuestas on-chain: votos, quorum, estado' },
+  // ── Operations (Fase 4 — LIVE) ────────────────────────────────────────────
+  { method: 'GET', path: '/api/v1/external/operations/health',        perm: 'read:operations',   live: true,  desc: 'Health check: DB latencia, sanity counts' },
 ];
 
 const PERM_COLORS: Record<string, string> = {
@@ -474,17 +484,22 @@ const PERM_COLORS: Record<string, string> = {
   'read:payments':     'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
   'read:users':        'text-cyan-400   bg-cyan-500/10   border-cyan-500/30',
   'read:gamification': 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+  'read:agora':        'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+  'read:governance':   'text-violet-400 bg-violet-500/10 border-violet-500/30',
+  'read:operations':   'text-rose-400   bg-rose-500/10   border-rose-500/30',
 };
 
 const WEBHOOK_EVENTS = [
-  { event: 'lead.new',              perm: 'read:growth_os',  status: '✅ Live',  desc: 'Nuevo lead registrado' },
-  { event: 'lead.returning',         perm: 'read:growth_os',  status: '✅ Live',  desc: 'Lead repetido' },
-  { event: 'lead.converted',         perm: 'read:growth_os',  status: '✅ Live',  desc: 'Lead compró protocol access' },
-  { event: 'payment.completed',       perm: 'read:payments',   status: '⏳ Fase 2', desc: 'Pago completado' },
-  { event: 'protocol.phase_activated',perm: 'read:protocols',  status: '⏳ Fase 2', desc: 'Nueva fase de protocolo activa' },
-  { event: 'user.initiated',          perm: 'read:users',      status: '⏳ Fase 3', desc: 'Usuario completó ritual' },
-  { event: 'agora.listing_sold',      perm: 'read:agora',      status: '⏳ Fase 3', desc: 'Venta en Agora Market' },
+  { event: 'lead.new',                   perm: 'read:growth_os',  status: 'Live',    desc: 'Nuevo lead registrado' },
+  { event: 'lead.returning',             perm: 'read:growth_os',  status: 'Live',    desc: 'Lead repetido identificado' },
+  { event: 'lead.converted',             perm: 'read:growth_os',  status: 'Live',    desc: 'Lead compro protocol access' },
+  { event: 'payment.completed',          perm: 'read:payments',   status: 'Proximo', desc: 'Pago procesado completamente' },
+  { event: 'protocol.phase_activated',   perm: 'read:protocols',  status: 'Proximo', desc: 'Nueva fase de protocolo activa' },
+  { event: 'user.initiated',             perm: 'read:users',      status: 'Proximo', desc: 'Usuario completo ritual' },
+  { event: 'agora.listing_sold',         perm: 'read:agora',      status: 'Proximo', desc: 'Venta en Agora Market' },
+  { event: 'governance.proposal_closed', perm: 'read:governance', status: 'Proximo', desc: 'Propuesta de governance cerrada' },
 ];
+
 
 const ERRORS = [
   { code: '200', label: 'OK', desc: 'Request exitoso' },
