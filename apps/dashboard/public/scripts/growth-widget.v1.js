@@ -9,7 +9,13 @@
  */
 (function() {
     const script = document.currentScript;
-    const projectId = script.getAttribute('data-project-id');
+    // Intelligent Project ID detection (handles async/module loaders)
+    const getProjectId = () => {
+        if (script && script.getAttribute('data-project-id')) return script.getAttribute('data-project-id');
+        const scriptTag = document.querySelector('script[data-project-id]') || document.querySelector('script[src*="growth-widget"]');
+        return scriptTag ? scriptTag.getAttribute('data-project-id') : null;
+    };
+    const projectId = getProjectId();
     const apiKey = script.getAttribute('data-api-key');
     const accentColor = script.getAttribute('data-color') || '#7c3aed';
     const customTitle = script.getAttribute('data-title') || 'Early Access';
@@ -138,16 +144,30 @@
     /**
      * Public API - Commerce Modal (Iframe based)
      */
-    /**
-     * Public API - Commerce Modal (Iframe based)
-     */
     function openCheckout(slug, tier = 'standard') {
-        const finalSlug = slug || projectId;
-        const finalTier = tier || 'standard';
+        let finalSlug = slug;
+        let finalTier = tier;
+
+        // 🛡️ Robustness: Handle being called as an event listener (onclick="PandorasGrowth.openCheckout")
+        if (slug && typeof slug === 'object' && (slug.preventDefault || slug.target)) {
+            const event = slug;
+            const target = event.currentTarget || event.target;
+            finalSlug = target.getAttribute('data-pd-checkout-slug') || target.getAttribute('data-slug') || target.getAttribute('data-pd-slug');
+            finalTier = target.getAttribute('data-pd-checkout-tier') || target.getAttribute('data-tier') || target.getAttribute('data-pd-tier');
+        }
+
+        // 🛡️ Robustness: Fallback to global projectId if slug is missing or an object string
+        if (!finalSlug || typeof finalSlug !== 'string' || finalSlug === '[object Object]') {
+            finalSlug = projectId;
+        }
+        
+        if (!finalTier || typeof finalTier !== 'string') {
+            finalTier = 'standard';
+        }
 
         console.log('[Pandoras] Opening Checkout:', { slug, tier, finalSlug, finalTier, projectId });
 
-        if (!finalSlug) {
+        if (!finalSlug || finalSlug === 'null') {
             console.error('[Pandoras] Critical: Missing slug for checkout. Ensure data-project-id is set in the script tag or data-slug is on the button.');
             return;
         }
