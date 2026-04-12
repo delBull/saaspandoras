@@ -23,6 +23,7 @@ import { CreatePaymentLinkModal } from "./payments/CreatePaymentLinkModal";
 import { toast } from "sonner";
 import { PaymentsDashboard } from "./payments/PaymentsDashboard";
 import { CoursesAdminPanel } from "./CoursesAdminPanel";
+import { ApiKeysTab } from "./ApiKeysTab";
 
 interface Swap {
   txHash: string;
@@ -41,10 +42,11 @@ interface AdminTabsProps {
   showUsers?: boolean;
   showShortlinks?: boolean;
   showMarketing?: boolean;
+  showApiKeys?: boolean;
   currentUserId?: string; // ID of the logged-in admin
 }
 
-export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false, showMarketing = false, currentUserId }: AdminTabsProps) {
+export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false, showMarketing = false, showApiKeys = false, currentUserId }: AdminTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') ?? 'projects';
@@ -88,6 +90,11 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           {showSettings && (
             <button onClick={() => setTab('settings')} className={`pb-2 font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
               Config
+            </button>
+          )}
+          {showApiKeys && (
+            <button onClick={() => setTab('api-keys')} className={`pb-2 font-semibold ${activeTab === 'api-keys' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-1.5`}>
+              🔑 API Keys
             </button>
           )}
         </nav>
@@ -227,6 +234,10 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
       {activeTab === 'shortlinks' && showShortlinks && children[2]}
 
       {activeTab === 'settings' && showSettings && children[1]}
+
+      {activeTab === 'api-keys' && showApiKeys && (
+        <ApiKeysTab />
+      )}
     </>
   );
 }
