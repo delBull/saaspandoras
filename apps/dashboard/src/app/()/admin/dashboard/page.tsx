@@ -480,7 +480,7 @@ export default function AdminDashboardPage() {
         ) : (!isAdmin && isAdmin !== null) ? (
           <UnauthorizedAccess authError={authError} />
         ) : (
-          <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} currentUserId={currentUserId}>
+          <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} showApiKeys={true} currentUserId={currentUserId}>
             {/* Tab de proyectos */}
             <div key="projects-tab" className="space-y-6">
               {loading ? (
