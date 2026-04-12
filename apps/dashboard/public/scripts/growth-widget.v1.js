@@ -138,16 +138,25 @@
     /**
      * Public API - Commerce Modal (Iframe based)
      */
+    /**
+     * Public API - Commerce Modal (Iframe based)
+     */
     function openCheckout(slug, tier = 'standard') {
         const finalSlug = slug || projectId;
         const finalTier = tier || 'standard';
 
+        console.log('[Pandoras] Opening Checkout:', { slug, tier, finalSlug, finalTier, projectId });
+
         if (!finalSlug) {
-            console.error('[Pandoras] Missing slug for checkout. Ensure data-pd-checkout-slug is set.');
+            console.error('[Pandoras] Critical: Missing slug for checkout. Ensure data-project-id is set in the script tag or data-slug is on the button.');
             return;
         }
         
-        const url = `${BASE_URL}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        // Ensure we use an absolute URL to avoid hitting the external project's own 404
+        const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
+        const url = `${absoluteBase}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        
+        console.log('[Pandoras] Final Checkout URL:', url);
         track('COMMERCE_MODAL_OPEN', { slug: finalSlug, tier: finalTier });
 
         let container = document.getElementById('pd-checkout-modal');
