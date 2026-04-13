@@ -15,6 +15,7 @@ import useSWR from 'swr';
 // Protocol Engine Imports
 import { resolveExecution } from "@/lib/protocol-engine/execute";
 import { resolveArtifactPrice } from "@/lib/protocol-engine/artifact/pricing";
+import { CHAIN_TOKENS } from "@/lib/protocol-engine/artifact/payment";
 import { calculatePhaseStatus, getRawPhases } from "@/lib/phase-utils";
 import { sanitizeUrl } from "@/lib/project-utils";
 
@@ -101,12 +102,18 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         return () => { isMounted = false; };
     }, [targetAddress, targetContract, rawPhase?.tokenPrice, safeChainId]);
 
-    const isBase = safeChainId === 8453 || safeChainId === 84532;
-    const decimals = BigInt(isBase ? 1e6 : 1e18);
+    const tokenConfig = CHAIN_TOKENS[safeChainId] || CHAIN_TOKENS[11155111]!;
+    const decimals = BigInt(Math.pow(10, tokenConfig.decimals));
     const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
-    const effectivePriceInWei = contractPrice ?? BigInt(Math.round((rawPhase?.tokenPrice || 0) * Number(decimals)));
+    
+    // Safety Fallback: Use rawPhase price if contract returns 0 or is null
+    const effectivePriceInWei = (contractPrice && contractPrice > 0n) 
+        ? contractPrice 
+        : BigInt(Math.round((rawPhase?.tokenPrice || 0) * Number(decimals)));
+
     const totalCostWei = BigInt(safeAmount) * effectivePriceInWei;
     const totalCostDisplay = Number(totalCostWei) / Number(decimals);
+    const currencySymbol = tokenConfig.symbol;
 
     const [hasEnsuredAccess, setHasEnsuredAccess] = useState(false);
     const [isCheckingAccess, setIsCheckingAccess] = useState(false);
@@ -230,7 +237,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             return config;
         } catch (e) {
             console.error("🛠️ [CheckoutHub] Execution Error:", e);
-            return { address: "", method: "", params: [], value: 0n, token: "ETH" };
+            return { address: "", method: "", params: [], value: 0n, token: currencySymbol };
         }
     }, [project, rawPhase, safeAmount, account, safeChainId, effectivePriceInWei]);
 
@@ -493,7 +500,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-1">Inversión Estimada</span>
                                                     <span className="text-2xl font-black text-white font-mono flex items-center gap-2">
-                                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay.toLocaleString()} ${txConfig.token}`}
+                                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay.toLocaleString()} ${currencySymbol}`}
                                                     </span>
                                                 </div>
                                                 <div className="text-right">

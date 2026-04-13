@@ -55,12 +55,22 @@ export function computeBehavioralMetrics(
   // 2.5. Auto-detect FULL_UNIT purchase intent from metadata keywords
   const intentKeywords = [
     lead.metadata?.interest, lead.metadata?.product, lead.metadata?.type,
-    lead.metadata?.purchaseType, lead.metadata?.notes
+    lead.metadata?.purchaseType, lead.metadata?.notes, lead.metadata?.formResponse,
+    lead.metadata?.message, lead.metadata?.comment
   ].join(' ').toLowerCase();
-  const isFullUnitIntent = intentKeywords.includes('full_unit') || 
+  
+  const isFullUnitIntent = 
+    intentKeywords.includes('full_unit') || 
+    intentKeywords.includes('full unit') ||
     intentKeywords.includes('departamento completo') ||
     intentKeywords.includes('adquirir departamento') ||
-    intentKeywords.includes('unidad completa');
+    intentKeywords.includes('unidad completa') ||
+    intentKeywords.includes('departamento') ||
+    intentKeywords.includes('unidad') ||
+    intentKeywords.includes('inversionista') ||
+    intentKeywords.includes('investor') ||
+    intentKeywords.includes('narai gold') ||
+    intentKeywords.includes('full units');
   if (isFullUnitIntent && !lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
     if (!lead.metadata) lead.metadata = {};
     if (!lead.metadata.tags) lead.metadata.tags = [];

@@ -104,13 +104,23 @@ export async function POST(req: NextRequest) {
     
     // Support both flat (Narai) and structured (Pandoras) formats
     let email = body.email || body.userEmail;
-    let name = body.name || body.userName || body.metadata?.name;
-    let phoneNumber = body.phoneNumber || body.phone || body.whatsapp || body.metadata?.whatsapp || body.metadata?.phone || body.metadata?.phoneNumber;
+    let name = body.name || body.userName || body.Nombre || body.nombre || body.metadata?.name || body.metadata?.Nombre;
+    let phoneNumber = body.phoneNumber || body.phone || body.whatsapp || body.WhatsApp || body.telefono || body.Telefono || body.metadata?.whatsapp || body.metadata?.phone || body.metadata?.phoneNumber;
     let walletAddress = body.walletAddress || body.wallet || body.metadata?.wallet;
     let fingerprint = body.fingerprint || body.fp;
     let origin = body.origin || requestOrigin;
     let intent = (body.intent || body.metadata?.intent || 'explore').toLowerCase();
-    let consent = body.consent ?? true; // Default to true if not provided but request reaches here
+    
+    // High-Intent Detection (Narai specific keywords)
+    const highIntentKeywords = ['full_unit', 'full unit', 'departamento', 'unidad', 'inversionista', 'investor', 'full unit narai'];
+    const bodyString = JSON.stringify(body).toLowerCase();
+    const isHighIntent = highIntentKeywords.some(k => bodyString.includes(k));
+    
+    if (isHighIntent) {
+      intent = 'invest';
+    }
+
+    let consent = body.consent ?? true; 
     let bodyScope = body.scope;
     let projectId = body.projectId;
 
@@ -262,18 +272,18 @@ export async function POST(req: NextRequest) {
       scope: scope as any,
       identityId: identityId,
       leadType,
-      email: email?.toLowerCase() || null,
-      name: name || null,
-      phoneNumber: phoneNumber || null,
-      walletAddress: walletAddress || existingUser?.walletAddress || null,
-      fingerprint: fingerprint || null,
+      email: email?.toLowerCase() || (existingLead as any)?.email || null,
+      name: name || (existingLead as any)?.name || null,
+      phoneNumber: phoneNumber || (existingLead as any)?.phoneNumber || null,
+      walletAddress: walletAddress || existingUser?.walletAddress || (existingLead as any)?.walletAddress || null,
+      fingerprint: fingerprint || (existingLead as any)?.fingerprint || null,
       identityHash: identityHash,
-      origin: origin || null,
+      origin: origin || (existingLead as any)?.origin || null,
       intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
       consent: true,
       metadata: finalMetadata,
-      status: 'active' as any,
-      score: existingLead ? undefined : 50, // Don't reset score on re-reg
+      status: (isHighIntent ? 'hot' : (existingLead ? (existingLead as any).status : 'active')) as any,
+      score: isHighIntent ? 100 : (existingLead ? undefined : 50), // Set high score for VIPs
       updatedAt: new Date(),
     };
 
