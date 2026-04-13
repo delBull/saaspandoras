@@ -90,9 +90,9 @@ export default function ArtifactPurchaseModal({
         }
     }, [isOpen, initialAmount, initialDelta]);
 
-    // Chain detection
+    const IS_PROD = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
     const rawChainId = Number((project as any).chainId);
-    const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+    const safeChainId = IS_PROD ? (rawChainId || 8453) : 11155111;
     const chain = useMemo(() => defineChain(safeChainId), [safeChainId]);
     const isTestnet = safeChainId === 11155111 || safeChainId === 84532;
 
@@ -146,17 +146,20 @@ export default function ArtifactPurchaseModal({
     }, [targetAddress, targetContract, phase?.tokenPrice]);
 
     // 3. Calculation & Config Generation (Safe Logic)
-    const tokenConfig = CHAIN_TOKENS[safeChainId] || CHAIN_TOKENS[11155111]!;
+    const tokenConfig = useMemo(() => CHAIN_TOKENS[safeChainId] || CHAIN_TOKENS[11155111]!, [safeChainId]);
     const isBase = safeChainId === 8453 || safeChainId === 84532;
-    const decimals = BigInt(10 ** tokenConfig.decimals);
+    const decimals = useMemo(() => BigInt(10 ** tokenConfig.decimals), [tokenConfig.decimals]);
     
     // Normalize user input to prevent NaN/Negative/Zero errors
-    const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
-    const effectivePriceInWei = contractPrice ?? BigInt(Math.round((phase?.tokenPrice || 0) * Number(decimals)));
+    const safeAmount = useMemo(() => Math.max(1, Math.floor(Number(amount) || 1)), [amount]);
+    
+    const effectivePriceInWei = useMemo(() => {
+        return contractPrice ?? BigInt(Math.round((phase?.tokenPrice || 0) * Number(decimals)));
+    }, [contractPrice, phase?.tokenPrice, decimals]);
     
     // Use BigInt for all core calculations to prevent precision/overflow issues
-    const totalCostWei = BigInt(safeAmount) * effectivePriceInWei;
-    const totalCostDisplay = Number(totalCostWei) / Number(decimals);
+    const totalCostWei = useMemo(() => BigInt(safeAmount) * effectivePriceInWei, [safeAmount, effectivePriceInWei]);
+    const totalCostDisplay = useMemo(() => Number(totalCostWei) / Number(decimals), [totalCostWei, decimals]);
 
     // Unified Transaction Configuration (Safe wrapping to prevent render crashes on misconfigured projects)
     const txConfig = useMemo(() => {

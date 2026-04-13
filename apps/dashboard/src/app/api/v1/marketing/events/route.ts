@@ -45,7 +45,29 @@ export async function POST(req: NextRequest) {
         let project: any = null;
         let resolutionMethod = 'unknown';
 
-        if (isNaN(Number(requestedProjectIdentifier))) {
+        // EXPLICIT ROUTING: Generic Origin Resolution
+        let autoDiscoveredProjectId: number | null = null;
+        if (origin) {
+          try {
+            const url = new URL(origin);
+            const host = url.hostname.replace('www.', '');
+            const projectMatch = await db.query.projects.findFirst({
+              where: (projects, { sql }) => sql`${projects.allowedDomains}::jsonb ?? ${host}`,
+              columns: { id: true }
+            });
+            if (projectMatch) {
+              autoDiscoveredProjectId = projectMatch.id;
+              console.info(`[Growth Engine] 🎯 Project Auto-Discovered: ID=${autoDiscoveredProjectId}, Host=${host}`);
+            }
+          } catch (e) { /* Ignore parse errors */ }
+        }
+
+        if (autoDiscoveredProjectId) {
+            project = await db.query.projects.findFirst({
+                where: (projects, { eq }) => eq(projects.id, autoDiscoveredProjectId as number)
+            });
+            resolutionMethod = 'origin_autodiscovery';
+        } else if (isNaN(Number(requestedProjectIdentifier))) {
             project = await db.query.projects.findFirst({
                 where: (projects, { ilike }) => ilike(projects.slug, requestedProjectIdentifier)
             });

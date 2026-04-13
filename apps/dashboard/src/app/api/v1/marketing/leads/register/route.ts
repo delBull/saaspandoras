@@ -52,23 +52,48 @@ export async function POST(req: NextRequest) {
       requestOrigin?.includes('pandoras.finance') || 
       requestOrigin?.includes('localhost') ||
       requestOrigin?.includes('saaspandoras') ||
+      requestOrigin?.includes('railway.app') || // Include Vercel/Railway previews
       xInternalService === 'pandoras-v2';
     
+    // EXPLICIT ROUTING: Generic Origin Resolution
+    // Instead of hardcoding projects, we look up if the origin hostname is registered
+    let autoDiscoveredProjectId: number | null = null;
+    let resolutionMethod = 'unknown';
+
+    if (requestOrigin) {
+      try {
+        const url = new URL(requestOrigin);
+        const host = url.hostname.replace('www.', '');
+        
+        const projectMatch = await db.query.projects.findFirst({
+          where: (projects, { sql }) => sql`${projects.allowedDomains}::jsonb ?? ${host}`,
+          columns: { id: true }
+        });
+
+        if (projectMatch) {
+          autoDiscoveredProjectId = projectMatch.id;
+          resolutionMethod = 'origin_autodiscovery';
+          console.info(`[Growth OS] 🎯 Project Auto-Discovered via Origin: ID=${autoDiscoveredProjectId}, Host=${host}`);
+        }
+      } catch (e) {
+        console.warn(`[Growth OS] Failed to parse request origin for autodiscovery: ${requestOrigin}`);
+      }
+    }
+
     let client;
     if (!apiKey && isInternalDashboard) {
       console.error(`[Growth OS] Internal Service Bypass Detected. Origin: ${requestOrigin}, Service: ${xInternalService}`);
       // Use the core Pandora project for internal dashboard leads
-      // Try by ID 1 first (Staging/Legacy) then by slug (Production-safe)
+      // Try by ID 3 first (Pandoras Access) then fallback to slug
       client = await db.query.integrationClients.findFirst({
         where: or(
-          eq(integrationClients.projectId, 1),
-          eq(integrationClients.name, 'Pandoras Protocol')
+          eq(integrationClients.projectId, autoDiscoveredProjectId || 3),
+          eq(integrationClients.name, autoDiscoveredProjectId === 2 ? 'Narai Real Estate' : 'Pandoras Protocol')
         )
       });
       
       console.info(`[Growth OS] Internal Dashboard Lead bypass for Origin: ${requestOrigin}. Client found: ${!!client}`);
-    }
- else if (apiKey) {
+    } else if (apiKey) {
       client = await IntegrationKeyService.validateKey(apiKey);
     }
 
@@ -140,10 +165,16 @@ export async function POST(req: NextRequest) {
 
     // Resolve Project Context - Support both ID (numeric) and Slug (string)
     let targetProjectId: number;
-    let resolutionMethod = 'unknown';
+    resolutionMethod = 'unknown';
 
-    if (projectId === 'external' || !projectId) {
-      targetProjectId = Number(clientProjectId || 1);
+    // Priority 1: Generic Autodiscovery via Origin/Allowed-Domains
+    if (autoDiscoveredProjectId) {
+      targetProjectId = autoDiscoveredProjectId;
+      resolutionMethod = 'origin_autodiscovery_final';
+    } 
+    // Priority 2: Standard resolution
+    else if (projectId === 'external' || !projectId) {
+      targetProjectId = Number(clientProjectId || 3); // Fallback to Project 3 (Pandoras Access)
       resolutionMethod = projectId === 'external' ? 'explicit_external' : 'client_default';
     } else if (isNaN(Number(projectId))) {
       const projectBySlug = await db.query.projects.findFirst({
@@ -155,7 +186,7 @@ export async function POST(req: NextRequest) {
         targetProjectId = projectBySlug.id;
         resolutionMethod = 'slug_match';
       } else {
-        targetProjectId = Number(clientProjectId || 1);
+        targetProjectId = Number(clientProjectId || 3);
         resolutionMethod = 'slug_mismatch_fallback';
       }
     } else {
