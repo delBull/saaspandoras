@@ -145,11 +145,13 @@
      * Public API - Commerce Modal (Iframe based)
      */
     function openCheckout(slug, tier = 'standard') {
+        const modalId = 'pd-checkout-modal';
+        if (document.getElementById(modalId)) return; // Prevent double opening
+
         // ✨ CLEANUP: Ensure no other Pandoras modals are clogging the screen (Fix for Screenshot 1)
-        // Move to the VERY TOP to prevent flicker
         const oldModal = document.getElementById('pd-growth-modal');
         if (oldModal) {
-            oldModal.style.transition = 'none';
+            oldModal.style.display = 'none'; // Instant hide
             oldModal.remove();
         }
 
@@ -159,20 +161,30 @@
         const findAttr = (el, attrs) => {
             let curr = el;
             while (curr && curr !== document.body) {
-                for (const attr of attrs) {
-                    const val = curr.getAttribute(attr);
-                    if (val) return val;
+                if (curr.nodeType === 1) { // Element node
+                    for (const attr of attrs) {
+                        const val = curr.getAttribute(attr);
+                        if (val) return val;
+                    }
                 }
                 curr = curr.parentElement;
             }
             return null;
         };
 
-        // 🛡️ Robustness: Handle being called as an event listener (onclick="PandorasGrowth.openCheckout")
+        // 🛡️ DEDUPLICATION GUARD: Handle being called as an event listener (onclick="PandorasGrowth.openCheckout(event)")
         if (slug && typeof slug === 'object' && (slug.preventDefault || slug.target)) {
             const event = slug;
             const target = event.currentTarget || event.target;
-            finalSlug = findAttr(target, ['data-pd-checkout-slug', 'data-slug', 'data-pd-slug']);
+            
+            // If the element doesn't have slug data, it might be a generic click.
+            // We bail here to let the global setupAutoLinks handle it more accurately.
+            const extractedSlug = findAttr(target, ['data-pd-checkout-slug', 'data-slug', 'data-pd-slug']);
+            if (!extractedSlug) {
+                console.log('[Pandoras] Checkout called without data, deferring to global listener...');
+                return;
+            }
+            finalSlug = extractedSlug;
             finalTier = findAttr(target, ['data-pd-checkout-tier', 'data-tier', 'data-pd-tier', 'data-phase']);
         }
 
