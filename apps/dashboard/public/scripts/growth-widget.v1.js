@@ -161,7 +161,7 @@
         const findAttr = (el, attrs) => {
             let curr = el;
             while (curr && curr !== document.body) {
-                if (curr.nodeType === 1) { // Element node
+                if (curr && curr.nodeType === 1) { // Element node
                     for (const attr of attrs) {
                         const val = curr.getAttribute(attr);
                         if (val) return val;
@@ -172,8 +172,14 @@
             return null;
         };
 
+        // 🛡️ DATA OBJECT SUPPORT: Handle manual calls with objects (e.g. Narai: {slug, tier})
+        if (slug && typeof slug === 'object' && !slug.preventDefault && !slug.target) {
+            finalSlug = slug.slug || slug.projectId || slug.id;
+            finalTier = slug.tier || slug.tierName || slug.phase;
+            console.log('[Pandoras] Data Object extracted:', { finalSlug, finalTier });
+        }
         // 🛡️ DEDUPLICATION GUARD: Handle being called as an event listener (onclick="PandorasGrowth.openCheckout(event)")
-        if (slug && typeof slug === 'object' && (slug.preventDefault || slug.target)) {
+        else if (slug && typeof slug === 'object' && (slug.preventDefault || slug.target)) {
             const event = slug;
             const target = event.currentTarget || event.target;
             
@@ -188,7 +194,7 @@
             finalTier = findAttr(target, ['data-pd-checkout-tier', 'data-tier', 'data-pd-tier', 'data-phase']);
         }
 
-        // 🛡️ Robustness: Fallback to global projectId if slug is missing or an object string
+        // 🛡️ Robustness: Fallback to global projectId if slug is missing or invalid
         if (!finalSlug || typeof finalSlug !== 'string' || finalSlug === '[object Object]') {
             finalSlug = projectId;
         }
@@ -197,10 +203,10 @@
             finalTier = 'standard';
         }
 
-        console.log('[Pandoras] Opening Checkout:', { slug, tier, finalSlug, finalTier, projectId });
+        console.log('[Pandoras] Final Parameters Ready:', { finalSlug, finalTier });
 
         if (!finalSlug || finalSlug === 'null') {
-            console.error('[Pandoras] Critical: Missing slug for checkout. Ensure data-project-id is set in the script tag or data-slug is on the button.');
+            console.error('[Pandoras] Critical: Missing slug for checkout.');
             return;
         }
         
@@ -223,16 +229,21 @@
                 position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
                 backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: '2147483647', transition: 'all 0.3s ease'
+                zIndex: '2147483647', transition: 'all 0.2s ease', opacity: '0'
             });
+            
+            // Transition in
+            setTimeout(() => container.style.opacity = '1', 10);
 
             const content = document.createElement('div');
             Object.assign(content.style, {
                 width: '100%', maxWidth: '480px', height: '90%', maxHeight: '780px',
                 position: 'relative', borderRadius: '32px', overflow: 'hidden',
                 boxShadow: '0 25px 100px -12px rgba(0,0,0,1)', backgroundColor: '#000',
-                border: '1px solid rgba(255,255,255,0.05)'
+                border: '1px solid rgba(255,255,255,0.05)', transform: 'translateY(10px)', transition: 'all 0.3s ease'
             });
+            
+            setTimeout(() => content.style.transform = 'translateY(0)', 10);
 
             const closeBtn = document.createElement('button');
             closeBtn.innerHTML = '&times;';
