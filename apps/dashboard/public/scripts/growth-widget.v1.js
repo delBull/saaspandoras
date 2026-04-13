@@ -144,6 +144,9 @@
     /**
      * Public API - Commerce Modal (Iframe based)
      */
+    /**
+     * Public API - Commerce Modal (Iframe based)
+     */
     function openCheckout(slug, tier = 'standard') {
         let finalSlug = slug;
         let finalTier = tier;
@@ -176,6 +179,10 @@
         const oldModal = document.getElementById('pd-growth-modal');
         if (oldModal) oldModal.remove();
 
+        // 🕵️ UI Polish: Hide the floating trigger button while checkout is open
+        const triggerBtn = document.getElementById('pd-growth-trigger');
+        if (triggerBtn) triggerBtn.style.display = 'none';
+
         // Ensure we use an absolute URL to avoid hitting the external project's own 404
         const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
         const url = `${absoluteBase}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
@@ -189,33 +196,39 @@
             container.id = 'pd-checkout-modal';
             Object.assign(container.style, {
                 position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 zIndex: '2147483647', transition: 'all 0.3s ease'
             });
 
             const content = document.createElement('div');
             Object.assign(content.style, {
-                width: '100%', maxWidth: '480px', height: '90%', maxHeight: '720px',
-                position: 'relative', borderRadius: '24px', overflow: 'hidden',
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,1)', backgroundColor: '#000'
+                width: '100%', maxWidth: '480px', height: '90%', maxHeight: '780px',
+                position: 'relative', borderRadius: '32px', overflow: 'hidden',
+                boxShadow: '0 25px 100px -12px rgba(0,0,0,1)', backgroundColor: '#000',
+                border: '1px solid rgba(255,255,255,0.05)'
             });
 
             const closeBtn = document.createElement('button');
             closeBtn.innerHTML = '&times;';
             Object.assign(closeBtn.style, {
-                position: 'absolute', top: '15px', right: '15px', width: '32px', height: '32px',
-                borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none',
-                cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: '2147483648'
+                position: 'absolute', top: '20px', right: '20px', width: '36px', height: '36px',
+                borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none',
+                cursor: 'pointer', fontSize: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: '2147483648', transition: 'all 0.2s'
             });
-            closeBtn.onclick = () => container.remove();
+            closeBtn.onmouseenter = () => closeBtn.style.background = 'rgba(255,255,255,0.1)';
+            closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(255,255,255,0.05)';
+            closeBtn.onclick = () => {
+                container.remove();
+                if (triggerBtn) triggerBtn.style.display = 'flex';
+            };
 
             const iframe = document.createElement('iframe');
             iframe.id = 'pd-checkout-iframe';
             iframe.src = url;
             Object.assign(iframe.style, {
-                width: '100%', height: '100%', border: 'none', background: 'transparent'
+                width: '100%', height: '100%', border: 'none', background: '#000'
             });
 
             content.appendChild(closeBtn);
