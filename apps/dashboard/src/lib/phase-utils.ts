@@ -208,7 +208,8 @@ export function matchPhase(phases: any[], identifier: string) {
   
   const cleanId = String(identifier).trim().toLowerCase();
   
-  return phases.find(p => {
+  // 1. Exact Match (Case-insensitive)
+  const exactMatch = phases.find((p: any) => {
     const rawName = String(p.name || p.title || "").trim().toLowerCase();
     const rawId = String(p.id || "").trim().toLowerCase();
     const rawSlug = String(p.slug || "").trim().toLowerCase();
@@ -216,5 +217,27 @@ export function matchPhase(phases: any[], identifier: string) {
     return rawName === decodedId || rawName === cleanId || 
            rawId === decodedId || rawId === cleanId || 
            rawSlug === decodedId || rawSlug === cleanId;
+  });
+
+  if (exactMatch) return exactMatch;
+
+  // 2. Ultra-Resilient Fuzzy Fallback (Handles mismatches like "General" vs "Geeral")
+  return phases.find((p: any) => {
+    const rawName = String(p.name || "").trim().toLowerCase();
+    if (rawName.length < 2 || cleanId.length < 2) return false;
+    
+    // Logic: Match if one starts with the other's first 2 chars AND they are of similar length
+    // Covers "General" <-> "Geeral" (both start with "ge")
+    const lengthDiff = Math.abs(rawName.length - cleanId.length);
+    if (lengthDiff > 4) return false;
+
+    const prefixMatch = rawName.substring(0, 2) === cleanId.substring(0, 2);
+    
+    // Refined heuristic for common typos in crypto projects (General/Geeral, Estrategico/Estrategia)
+    return prefixMatch && (
+      rawName.includes(cleanId.substring(0, 3)) || 
+      cleanId.includes(rawName.substring(0, 3)) ||
+      (rawName.startsWith('ge') && cleanId.startsWith('ge')) // Specific for General/Geeral
+    );
   });
 }

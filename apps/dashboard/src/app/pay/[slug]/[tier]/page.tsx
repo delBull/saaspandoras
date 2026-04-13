@@ -27,7 +27,9 @@ export default async function CheckoutHubPage({
     let activePhase = matchPhase(phases, tier);
     
     if (!activePhase) {
-        console.log(`[CheckoutHub] No exact match for tier: "${tier}" in project: ${slug}. Available phases: ${phases.map((p: any) => p.name).join(', ')}`);
+        console.log(`[CheckoutHub] No match for tier: "${tier}" in project: ${slug}. Available: ${phases.map((p: any) => p.name).join(', ')}`);
+    } else {
+        console.log(`[CheckoutHub] Resolved phase: "${activePhase.name}" (requested: "${tier}"). Active: ${activePhase.isActive !== false}`);
     }
 
     // 🛡️ Resilient Fallback: If 'standard' or 'default' requested but not found, 

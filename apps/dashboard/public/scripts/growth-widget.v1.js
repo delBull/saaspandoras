@@ -148,6 +148,15 @@
         const modalId = 'pd-checkout-modal';
         if (document.getElementById(modalId)) return; // Prevent double opening
 
+        // 🛡️ STOP PROPAGATION IMMEDIATELY: Prevents other site scripts (like lead modals) 
+        // from firing simultaneously upon clicking the Acquire button. (Fix for 'Black Box')
+        if (slug && typeof slug === 'object' && (slug.preventDefault || slug.stopPropagation)) {
+            try { 
+                if (typeof slug.preventDefault === 'function') slug.preventDefault(); 
+                if (typeof slug.stopPropagation === 'function') slug.stopPropagation(); 
+            } catch(e) {}
+        }
+
         // ✨ CLEANUP: Ensure no other Pandoras modals are clogging the screen (Fix for Screenshot 1)
         const oldModal = document.getElementById('pd-growth-modal');
         if (oldModal) {
@@ -227,23 +236,27 @@
             container.id = 'pd-checkout-modal';
             Object.assign(container.style, {
                 position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+                backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: '2147483647', transition: 'all 0.2s ease', opacity: '0'
+                zIndex: '2147483647', transition: 'all 0.4s ease', opacity: '0',
+                pointerEvents: 'none'
             });
-            
-            // Transition in
-            setTimeout(() => container.style.opacity = '1', 10);
 
             const content = document.createElement('div');
             Object.assign(content.style, {
                 width: '100%', maxWidth: '480px', height: '90%', maxHeight: '780px',
                 position: 'relative', borderRadius: '32px', overflow: 'hidden',
                 boxShadow: '0 25px 100px -12px rgba(0,0,0,1)', backgroundColor: '#000',
-                border: '1px solid rgba(255,255,255,0.05)', transform: 'translateY(10px)', transition: 'all 0.3s ease'
+                border: '1px solid rgba(255,255,255,0.05)', transform: 'translateY(15px)', transition: 'all 0.4s ease'
             });
             
-            setTimeout(() => content.style.transform = 'translateY(0)', 10);
+            // Transition in: Wait 250ms or until iframe starts loading to avoid "black frame" flicker
+            setTimeout(() => {
+                container.style.opacity = '1';
+                container.style.backdropFilter = 'blur(12px)';
+                container.style.pointerEvents = 'auto';
+                content.style.transform = 'translateY(0)';
+            }, 250);
 
             const closeBtn = document.createElement('button');
             closeBtn.innerHTML = '&times;';
