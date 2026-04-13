@@ -37,6 +37,152 @@ async function trackEmailMetadata(payload: {
   }
 }
 
+const NICHE_COPIES: Record<string, Record<string, Record<number | string, { subject: string, body: string, ctaText?: string }>>> = {
+  'real_estate': {
+    'high': {
+      1: { 
+        subject: "oportunidad ya está activa", 
+        body: "la oportunidad ya está en operación.\n\nEs un sistema que te permite participar en proyectos inmobiliarios sin tener que adquirir una propiedad completa.\n\nDesde aquí puedes acceder a oportunidades estructuradas y comenzar a posicionarte dentro del ecosistema.", 
+        ctaText: "Explorar oportunidades" 
+      },
+      2: { 
+        subject: `Cómo funciona el acceso`, 
+        body: "Dentro del sistema, el acceso no es igual para todos.\n\nExisten diferentes niveles que determinan:\n• qué proyectos puedes ver\n• en cuáles puedes participar\n• bajo qué condiciones entras\n\nEstos niveles se activan a través de artefactos.", 
+        ctaText: "Ver cómo funciona" 
+      },
+      3: { 
+        subject: "Tu posición dentro del sistema", 
+        body: "Tu participación define tu acceso.\n\nLos artefactos te permiten:\n• entrar antes que otros\n• mejorar tus condiciones\n• acceder a oportunidades más sólidas\n\nEntre antes entres, mejor posición puedes tomar.\n\nNota: Algunos accesos tienen disponibilidad limitada.", 
+        ctaText: "Ver beneficios" 
+      },
+      4: { 
+        subject: "Acceso disponible ahora", 
+        body: "El sistema está disponible.\n\nPuedes ingresar, activar tu acceso y comenzar a participar en los proyectos activos.", 
+        ctaText: "Entrar ahora" 
+      },
+      'GENESIS': {
+        subject: "Estás dentro de la ventana de oportunidad.",
+        body: "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
+      }
+    },
+    'mid': {
+      1: { 
+        subject: "Una nueva forma de participar en bienes raíces", 
+        body: "El ecosistema ya está disponible.\n\nEs una forma más flexible de acceder a proyectos inmobiliarios sin los requisitos tradicionales.\n\nPuedes entrar y conocer cómo funciona desde dentro.", 
+        ctaText: "Explorar" 
+      },
+      2: { 
+        subject: "No todos ven lo mismo", 
+        body: "El acceso depende de tu nivel dentro del sistema.\n\nEsto define:\n• qué oportunidades ves\n• cuándo puedes entrar\n• qué beneficios obtienes", 
+        ctaText: "Ver sistema" 
+      },
+      3: { 
+        subject: "Por qué entrar ahora", 
+        body: "Los primeros en participar suelen tener mejores condiciones y acceso a las mejores oportunidades.\n\nEntrar antes te da ventaja.", 
+        ctaText: "Ver oportunidades" 
+      },
+      4: { 
+        subject: "Acceso disponible", 
+        body: "El sistema ya está abierto.\n\nPuedes entrar y comenzar a explorar las oportunidades disponibles.", 
+        ctaText: "Entrar" 
+      }
+    }
+  },
+  'tech_startup': {
+    'high': {
+      1: { 
+        subject: "La infraestructura ya está activa", 
+        body: "La infraestructura ya está en marcha.\n\nEs un sistema donde puedes interactuar, construir y acceder a componentes que no están disponibles públicamente.\n\nYa puedes comenzar a explorar.", 
+        ctaText: "Entrar al sistema" 
+      },
+      2: { 
+        subject: "Cómo funciona realmente el acceso", 
+        body: "Dentro del sistema existen artefactos.\n\nCada uno te da acceso a capacidades específicas:\n• interacción con el protocolo\n• acceso a herramientas\n• posiciones dentro del sistema\n\nNo todos los artefactos son iguales.", 
+        ctaText: "Ver artefactos" 
+      },
+      3: { 
+        subject: "Lo que puedes desbloquear", 
+        body: "Tu participación define lo que puedes hacer dentro del sistema.\n\nLos artefactos habilitan:\n• más control\n• más acceso\n• más capacidad de construcción\n\nEntre antes participes, mejor posicionamiento obtienes.", 
+        ctaText: "Explorar beneficios" 
+      },
+      4: { 
+        subject: "Puedes activar tu acceso ahora", 
+        body: "El sistema ya está disponible.\n\nPuedes entrar, adquirir artefactos y comenzar a interactuar.", 
+        ctaText: "Activar acceso" 
+      },
+      'GENESIS': {
+        subject: "Estás dentro antes que el resto.",
+        body: "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
+      }
+    },
+    'mid': {
+      1: { 
+        subject: "Bienvenido al ecosistema", 
+        body: "Ya puedes entrar.\n\nEs un sistema diseñado para operar sobre activos digitales y nuevas formas de infraestructura.", 
+        ctaText: "Conocer más" 
+      },
+      2: { 
+        subject: "Qué hay dentro", 
+        body: "Dentro del sistema existen accesos estructurados a través de artefactos.\n\nEstos determinan cómo interactúas con el protocolo.", 
+        ctaText: "Ver cómo funciona" 
+      },
+      3: { 
+        subject: "Por qué participar ahora", 
+        body: "Los primeros participantes suelen tener mejores condiciones, más acceso y mayor control.", 
+        ctaText: "Ver beneficios" 
+      },
+      4: { 
+        subject: "Acceso disponible", 
+        body: "Puedes entrar cuando quieras y comenzar a participar.", 
+        ctaText: "Entrar" 
+      }
+    }
+  },
+  'growth_os': {
+    'high': {
+      1: { subject: "Tu infraestructura está activa", body: "El Sistema Operativo de Adquisición ya está en operación.\n\nPuedes acceder ahora para integrar el motor de cierre automático a tu flujo de negocio." },
+      2: { subject: "IA y Cierre Automático", body: "El motor de Growth OS no solo captura, sino que cierra.\n\nDentro existen niveles de automatización definidos por tus artefactos de certificación." },
+      3: { subject: "Escala con Precisión", body: "Tu participación activa desbloquea capas de inteligencia avanzada para tu ecosistema." },
+      4: { subject: "Enciende tu Motor", body: "Ya puedes entrar, firmar tu acceso y activar la infraestructura de crecimiento.", ctaText: "ACTIVAR SISTEMA" }
+    },
+    'mid': {
+      1: { subject: "Bienvenido al motor de adquisición", body: "El futuro de la adquisición autónoma ya está aquí.\n\nYa puedes entrar y conocer las reglas del motor de conversión." },
+      2: { subject: "Capa de Inteligencia", body: "Descubre cómo el sistema procesa cada lead de forma determinística." },
+      3: { subject: "Ventajas de Escala", body: "Como parte del ecosistema, accedes a herramientas de cierre que otros no conocen." },
+      4: { subject: "Dashboard Abierto", body: "Puedes empezar a configurar tu nodo ahora.", ctaText: "ENCENDER" }
+    }
+  }
+};
+
+/**
+ * Resolves the niche and intent context for a project to provide consistent storytelling.
+ */
+function resolveNicheContext(context: { 
+  projectName?: string; 
+  businessCategory?: string; 
+  brandHeader?: string;
+  engagementLevel?: EngagementLevel;
+}) {
+  const projectName = context.projectName || "Pandora";
+  const category = context.businessCategory?.toLowerCase() || '';
+  
+  // Niche mapping logic (Scalable)
+  let niche = 'tech_startup';
+  if (category.includes('real_estate') || category.includes('inmobiliario') || context.brandHeader?.toLowerCase().includes('narai')) {
+    niche = 'real_estate';
+  } else if (category.includes('growth_os') || category.includes('marketing') || projectName.toLowerCase().includes('growth os')) {
+    niche = 'growth_os';
+  } else if (projectName.toLowerCase().includes('pandora')) {
+    niche = 'tech_startup';
+  }
+
+  const intent: EngagementLevel = context.engagementLevel || 'mid';
+  const nicheMap = NICHE_COPIES[niche] || NICHE_COPIES['tech_startup'];
+  const intentMap = nicheMap?.[intent === 'critical' ? 'high' : (intent === 'low' ? 'mid' : intent)] || nicheMap?.['mid'];
+
+  return { niche, intent, intentMap, projectName };
+}
+
 export async function sendWaitlistSequenceEmail(context: {
   to: string;
   step: 1 | 2 | 3 | 4;
@@ -44,9 +190,10 @@ export async function sendWaitlistSequenceEmail(context: {
   projectSlug?: string;
   brandHeader?: string;
   engagementLevel?: EngagementLevel;
+  businessCategory?: string;
 }) {
-  const projectName = context.projectName || "Pandora";
-  console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) for ${projectName} to ${context.to}`);
+  const { projectName, niche, intentMap } = resolveNicheContext(context);
+  console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) for ${projectName} (Niche: ${niche}) to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
   const apiKey = process.env.RESEND_API_KEY;
@@ -58,195 +205,6 @@ export async function sendWaitlistSequenceEmail(context: {
       return { success: true, mocked: true };
   }
 
-  // Determine the Copy based on the project context
-  const isNarai = context.brandHeader?.toLowerCase().includes('narai');
-  const isPandora = context.projectName?.toLowerCase().includes('pandora');
-  const isGrowthOs = context.projectName?.toLowerCase().includes('growth os');
-  const niche = isNarai ? 'real_estate' : (isGrowthOs ? 'growth_os' : (isPandora ? 'tech_startup' : 'other'));
-  const intent = context.engagementLevel || 'mid';
-  
-  const NICHE_COPIES: Record<string, Record<string, Record<number, { subject: string, body: string, ctaText?: string }>>> = {
-    'real_estate': {
-      'high': {
-        1: { 
-          subject: `${projectName} ya está activo`, 
-          body: `${projectName} ya está en operación.\n\nEs un sistema que te permite participar en proyectos inmobiliarios sin tener que adquirir una propiedad completa.\n\nDesde aquí puedes acceder a oportunidades estructuradas y comenzar a posicionarte dentro del ecosistema.`, 
-          ctaText: `Explorar ${projectName}` 
-        },
-        2: { 
-          subject: `Cómo funciona ${projectName}`, 
-          body: `Dentro de ${projectName}, el acceso no es igual para todos.\n\nExisten diferentes niveles que determinan:\n• qué proyectos puedes ver\n• en cuáles puedes participar\n• bajo qué condiciones entras\n\nEstos niveles se activan a través de artefactos.`, 
-          ctaText: "Ver cómo funciona" 
-        },
-        3: { 
-          subject: "Tu posición dentro del sistema", 
-          body: `Tu participación define tu acceso.\n\nLos artefactos te permiten:\n• entrar antes que otros\n• mejorar tus condiciones\n• acceder a oportunidades más sólidas\n\nEntre antes entres, mejor posición puedes tomar.\n\nNota: Algunos accesos tienen disponibilidad limitada.`, 
-          ctaText: "Ver beneficios" 
-        },
-        4: { 
-          subject: `Puedes entrar a ${projectName} ahora`, 
-          body: `El sistema está disponible.\n\nPuedes ingresar, activar tu acceso y comenzar a participar en los proyectos activos.`, 
-          ctaText: "Entrar ahora" 
-        }
-      },
-      'mid': {
-        1: { 
-          subject: `Una nueva forma de participar en bienes raíces`, 
-          body: `${projectName} ya está disponible.\n\nEs una forma más flexible de acceder a proyectos inmobiliarios sin los requisitos tradicionales.\n\nPuedes entrar y conocer cómo funciona desde dentro.`, 
-          ctaText: "Explorar" 
-        },
-        2: { 
-          subject: "No todos ven lo mismo", 
-          body: `Dentro de ${projectName}, el acceso depende de tu nivel dentro del sistema.\n\nEsto define:\n• qué oportunidades ves\n• cuándo puedes entrar\n• qué beneficios obtienes`, 
-          ctaText: "Ver sistema" 
-        },
-        3: { 
-          subject: "Por qué entrar ahora", 
-          body: "Los primeros en participar suelen tener mejores condiciones y acceso a las mejores oportunidades.\n\nEntrar antes te da ventaja.", 
-          ctaText: "Ver oportunidades" 
-        },
-        4: { 
-          subject: "Acceso disponible", 
-          body: `${projectName} ya está abierto.\n\nPuedes entrar y comenzar a explorar las oportunidades disponibles.`, 
-          ctaText: "Entrar" 
-        }
-      }
-    },
-    'tech_startup': {
-      'high': {
-        1: { 
-          subject: `${projectName} ya está activo`, 
-          body: `La infraestructura ya está en marcha.\n\n${projectName} es un sistema donde puedes interactuar, construir y acceder a componentes que no están disponibles públicamente.\n\nYa puedes comenzar a explorar.`, 
-          ctaText: "Entrar al sistema" 
-        },
-        2: { 
-          subject: `Cómo funciona realmente ${projectName}`, 
-          body: `Dentro del sistema existen artefactos.\n\nCada uno te da acceso a capacidades específicas:\n• interacción con el protocolo\n• acceso a herramientas\n• posiciones dentro del sistema\n\nNo todos los artefactos son iguales.`, 
-          ctaText: "Ver artefactos" 
-        },
-        3: { 
-          subject: "Lo que puedes desbloquear", 
-          body: `Tu participación define lo que puedes hacer dentro del sistema.\n\nLos artefactos habilitan:\n• más control\n• más acceso\n• más capacidad de construcción\n\nEntre antes participes, mejor posicionamiento obtienes.`, 
-          ctaText: "Explorar beneficios" 
-        },
-        4: { 
-          subject: "Puedes activar tu acceso ahora", 
-          body: `El sistema ya está disponible.\n\nPuedes entrar, adquirir artefactos y comenzar a interactuar con ${projectName}.`, 
-          ctaText: "Activar acceso" 
-        }
-      },
-      'mid': {
-        1: { 
-          subject: `Bienvenido a ${projectName}`, 
-          body: `Ya puedes entrar a ${projectName}.\n\nEs un sistema diseñado para operar sobre activos digitales y nuevas formas de infraestructura.`, 
-          ctaText: "Conocer más" 
-        },
-        2: { 
-          subject: "Qué hay dentro", 
-          body: `Dentro del sistema existen accesos estructurados a través de artefactos.\n\nEstos determinan cómo interactúas con el protocolo.`, 
-          ctaText: "Ver cómo funciona" 
-        },
-        3: { 
-          subject: "Por qué participar ahora", 
-          body: "Los primeros participantes suelen tener mejores condiciones, más acceso y mayor control.", 
-          ctaText: "Ver beneficios" 
-        },
-        4: { 
-          subject: "Acceso disponible", 
-          body: "Puedes entrar cuando quieras y comenzar a participar.", 
-          ctaText: "Entrar" 
-        }
-      }
-    },
-    'ecommerce': {
-      'high': {
-        1: { subject: "Acceso a inventario ya disponible", body: `El sistema ya está activo.\n\nPuedes acceder a productos con beneficios que no están disponibles de forma abierta con ${projectName}.`, ctaText: "Ver inventario" },
-        2: { subject: "Cómo funciona el acceso", body: "El acceso a productos no es igual para todos.\n\nLos artefactos determinan:\n• prioridad\n• beneficios\n• condiciones especiales", ctaText: "Ver accesos" },
-        3: { subject: "Lo que obtienes al participar", body: "Participar te permite:\n• acceder antes que otros\n• obtener mejores condiciones\n• desbloquear beneficios adicionales", ctaText: "Ver beneficios" },
-        4: { subject: "Ya puedes entrar", body: "El acceso está abierto.\n\nPuedes comenzar a aprovecharlo ahora.", ctaText: "Entrar" }
-      },
-      'mid': {
-        1: { subject: "Descubre el Protocolo de Stock", body: `Una nueva forma de acceder a inventario exclusivo con ${projectName}.\n\nEntra ahora y descubre cómo funciona el sistema de prioridad.`, ctaText: "Explorar" },
-        2: { subject: "Beneficios de Miembro", body: "Participar en el sistema te otorga beneficios directos sobre el stock disponible.", ctaText: "Ver más" },
-        3: { subject: "Tu posición importa", body: "Entrar temprano te asegura una mejor posición en la cola de acceso.", ctaText: "Ver ventajas" },
-        4: { subject: "Sistema Abierto", body: "Ya puedes ingresar y activar tu perfil de cliente.", ctaText: "Ingresar" }
-      }
-    },
-    'edtech': {
-      'high': {
-        1: { subject: "El sistema de aprendizaje está activo", body: `Ya puedes entrar a ${projectName}.\n\nNo es contenido tradicional. Es un sistema donde avanzas según lo que haces.`, ctaText: "Ver programa" },
-        2: { subject: "Cómo funciona el sistema", body: "Tu progreso no es lineal.\n\nLos artefactos desbloquean:\n• niveles\n• mentoría\n• acceso a contenido avanzado", ctaText: "Ver estructura" },
-        3: { subject: "Tu avance define tu acceso", body: "Mientras más participas:\n• más acceso obtienes\n• más oportunidades se abren", ctaText: "Ver beneficios" },
-        4: { subject: "Puedes comenzar ahora", body: "El sistema ya está disponible.\n\nPuedes entrar y avanzar a tu ritmo.", ctaText: "Entrar" }
-      },
-      'mid': {
-        1: { subject: "Aprende de forma diferente", body: `Explora el nuevo protocolo de aprendizaje de ${projectName}.\n\nUn sistema que evoluciona contigo.`, ctaText: "Conocer más" },
-        2: { subject: "Metodología No Lineal", body: "Descubre cómo desbloquear nuevos módulos a través de la participación activa.", ctaText: "Ver método" },
-        3: { subject: "Ventajas de este sistema", body: "Tú controlas tu ritmo y tu nivel de acceso al conocimiento experto.", ctaText: "Ver beneficios" },
-        4: { subject: "Plataforma Activa", body: "Ya puedes iniciar tu recorrido.", ctaText: "Comenzar" }
-      }
-    },
-    'wellness': {
-      'high': {
-        1: { subject: "El protocolo ya está activo", body: `Ya puedes comenzar con ${projectName}.\n\nEste sistema está diseñado para mejorar tu bienestar de forma estructurada.`, ctaText: "Ver protocolo" },
-        2: { subject: "Cómo funciona", body: "El sistema se basa en acciones y consistencia.\n\nLos artefactos desbloquean:\n• rutinas\n• niveles\n• beneficios adicionales", ctaText: "Ver estructura" },
-        3: { subject: "Resultados reales", body: "Tu progreso dentro del sistema define los resultados que obtienes.", ctaText: "Ver beneficios" },
-        4: { subject: "Puedes iniciar", body: "Todo está listo.\n\nPuedes comenzar hoy.", ctaText: "Iniciar" }
-      },
-      'mid': {
-        1: { subject: "Bienestar Sistémico", body: `Conoce el nuevo enfoque de ${projectName} para una vida equilibrada.`, ctaText: "Explorar" },
-        2: { subject: "Consistencia Premiada", body: "Un sistema que recompensa tu avance diario con accesos exclusivos.", ctaText: "Ver más" },
-        3: { subject: "Tu evolución importa", body: "Avanza niveles y desbloquea beneficios de salud optimizados.", ctaText: "Ver beneficios" },
-        4: { subject: "Acceso Habilitado", body: "Puedes comenzar tu transformación cuando estés listo.", ctaText: "Entrar" }
-      }
-    },
-    'gaming': {
-      'high': {
-        1: { subject: "El sistema ya está en vivo", body: `Puedes entrar ahora a ${projectName}.\n\nEl acceso te permite comenzar a desbloquear artefactos y progresar dentro del ecosistema.`, ctaText: "Entrar" },
-        2: { subject: "Cómo funciona el desbloqueo", body: "Los artefactos determinan:\n• habilidades\n• acceso\n• progreso", ctaText: "Ver sistema" },
-        3: { subject: "Tu progreso importa", body: "Mientras más participas, más puedes desbloquear.", ctaText: "Ver recompensas" },
-        4: { subject: "Todo listo para jugar", body: "Puedes entrar y comenzar ahora.", ctaText: "Jugar" }
-      },
-      'mid': {
-        1: { subject: "Nuevo Ecosistema de Juego", body: `Explora las reglas de este nuevo sistema con ${projectName}.`, ctaText: "Ver más" },
-        2: { subject: "Artefactos y Habilidades", body: "Aprende cómo tu actividad se transforma en recompensas reales dentro del juego.", ctaText: "Conocer" },
-        3: { subject: "Ventajas Tempranas", body: "Los primeros en participar aseguran los mejores ítems de acceso.", ctaText: "Ver catálogo" },
-        4: { subject: "Servidores Activos", body: "Ya puedes iniciar tu sesión.", ctaText: "Ingresar" }
-      }
-    },
-    'fintech': {
-      'high': {
-        1: { subject: "Acceso a estructura financiera activo", body: `El sistema ya está disponible con ${projectName}.\n\nPuedes participar y acceder a mejores condiciones de capital.`, ctaText: "Ver acceso" },
-        2: { subject: "Cómo funciona", body: "Los artefactos determinan:\n• condiciones\n• oportunidades\n• acceso a capital", ctaText: "Ver estructura" },
-        3: { subject: "Ventajas de participar", body: "Participar te permite optimizar cómo operas tu capital.", ctaText: "Ver beneficios" },
-        4: { subject: "Puedes entrar ahora", body: "El sistema está abierto.", ctaText: "Entrar" }
-      },
-      'mid': {
-        1: { subject: "Eficiencia de Capital", body: `Una nueva forma de gestionar activos y acceso a liquidez con ${projectName}.`, ctaText: "Explorar" },
-        2: { subject: "Reglas de Operación", body: "Entiende cómo tu posición en el sistema mejora tus tasas y condiciones.", ctaText: "Ver más" },
-        3: { subject: "Tu crecimiento importa", body: "A medida que participas, tus límites y capacidades aumentan.", ctaText: "Ver beneficios" },
-        4: { subject: "Portal Activo", body: "Accede ahora a tu panel financiero.", ctaText: "Ingresar" }
-      }
-    },
-    'growth_os': {
-      'high': {
-        1: { subject: `${projectName}: Tu infraestructura está activa`, body: "El Sistema Operativo de Adquisición ya está en operación.\n\nPuedes acceder ahora para integrar el motor de cierre automático a tu flujo de negocio." },
-        2: { subject: "IA y Cierre Automático", body: "El motor de Growth OS no solo captura, sino que cierra.\n\nDentro existen niveles de automatización definidos por tus artefactos de certificación." },
-        3: { subject: "Escala con Precisión", body: "Tu participación activa desbloquea capas de inteligencia avanzada para tu ecosistema." },
-        4: { subject: "Enciende tu Motor", body: "Ya puedes entrar, firmar tu acceso y activar la infraestructura de crecimiento.", ctaText: "ACTIVAR SISTEMA" }
-      },
-      'mid': {
-        1: { subject: `Bienvenido al ${projectName}`, body: "El futuro de la adquisición autónoma ya está aquí.\n\nYa puedes entrar y conocer las reglas del motor de conversión." },
-        2: { subject: "Capa de Inteligencia", body: "Descubre cómo el sistema procesa cada lead de forma determinística." },
-        3: { subject: "Ventajas de Escala", body: "Como parte del ecosistema, accedes a herramientas de cierre que otros no conocen." },
-        4: { subject: "Dashboard Abierto", body: "Puedes empezar a configurar tu nodo ahora.", ctaText: "ENCENDER" }
-      }
-    }
-  };
-
-  // Fallback Logic
-  const nicheMap = NICHE_COPIES[niche] || NICHE_COPIES['tech_startup'];
-  const intentMap = nicheMap?.[intent === 'critical' ? 'high' : (intent === 'low' ? 'mid' : intent)] || nicheMap?.['mid'];
   const emailData = intentMap?.[context.step] || {
     subject: `Actualización de Acceso: Paso ${context.step}`,
     body: "Seguimos procesando tu solicitud de acceso al ecosistema.\n\nRecibirás una confirmación en las próximas horas."
@@ -277,7 +235,7 @@ export async function sendWaitlistSequenceEmail(context: {
         brandHeader: context.brandHeader || `${projectName.toUpperCase()} // PROTOCOLO DE ESPERA`,
         ctaText: ('ctaText' in emailData) ? emailData.ctaText as string | undefined : undefined,
         ctaUrl: resolvedCtaUrl,
-        showPathway: context.step === 4 || (context.step === 1 && !isPandora) 
+        showPathway: context.step === 4 || (context.step === 1 && niche !== 'tech_startup') 
       }) as React.ReactElement,
     });
 
@@ -304,8 +262,9 @@ export async function sendGenesisWelcomeEmail(context: {
   to: string;
   projectName?: string;
   brandHeader?: string;
+  businessCategory?: string;
 }) {
-  const projectName = context.projectName || "Pandora";
+  const { projectName, intentMap } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Genesis Welcome Email for ${projectName} to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
@@ -318,11 +277,13 @@ export async function sendGenesisWelcomeEmail(context: {
       return { success: true, mocked: true };
   }
 
-  const isNarai = projectName.toLowerCase().includes('narai');
-  const subject = isNarai ? "Estás dentro de Narai." : "Estás dentro antes que el resto.";
-  const body = isNarai
-    ? "Entraste en la primera ventana de Narai.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Narai"
-    : "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Pandora";
+  const emailData = intentMap?.['GENESIS'] || {
+    subject: "Estás dentro antes que el resto.",
+    body: "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
+  };
+
+  const subject = emailData.subject;
+  const body = emailData.body;
 
   try {
     const data = await resend.emails.send({
@@ -778,8 +739,8 @@ export async function sendVIPConciergeEmail(context: {
   projectName?: string;
   brandHeader?: string;
 }) {
-  const projectName = context.projectName || "Pandora";
-  console.log(`[Growth Engine] Sending VIP Concierge Email for ${projectName} to ${context.to}`);
+  const { projectName, niche } = resolveNicheContext(context);
+  console.log(`[Growth Engine] Sending VIP Concierge Email for ${projectName} (Niche: ${niche}) to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
   const apiKey = process.env.RESEND_API_KEY;
@@ -792,7 +753,9 @@ export async function sendVIPConciergeEmail(context: {
   }
 
   const subject = "Atención Prioritaria - Tu solicitud fue recibida";
-  const body = `Hemos recibido tu solicitud de acceso VIP para ${projectName}.\n\nTu perfil ha sido catalogado como de alta prioridad y ha sido asignado directamente a uno de nuestros directores.\n\nEn breve te contactaremos personalmente por WhatsApp o llamada para darte seguimiento uno a uno.\n\nNo requieres hacer nada más por el momento.\n\n— Equipo ${projectName}`;
+  const body = niche === 'real_estate' 
+    ? `Hemos recibido tu solicitud de acceso VIP para ${projectName}.\n\nTu perfil ha sido catalogado como de alta prioridad y ha sido asignado directamente a uno de nuestros directores inmobiliarios.\n\nEn breve te contactaremos personalmente por WhatsApp o llamada para darte seguimiento uno a uno y presentarte las oportunidades exclusivas.\n\nNo requieres hacer nada más por el momento.\n\n— Equipo ${projectName}`
+    : `Hemos recibido tu solicitud de acceso VIP para ${projectName}.\n\nTu perfil ha sido catalogado como de alta prioridad y ha sido asignado directamente a uno de nuestros directores.\n\nEn breve te contactaremos personalmente por WhatsApp o llamada para darte seguimiento uno a uno.\n\nNo requieres hacer nada más por el momento.\n\n— Equipo ${projectName}`;
 
   try {
     const data = await resend.emails.send({
