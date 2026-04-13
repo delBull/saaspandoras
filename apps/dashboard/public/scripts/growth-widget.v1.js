@@ -141,9 +141,6 @@
         }
     }
 
-    /**
-     * Public API - Commerce Modal (Iframe based)
-     */
     function openCheckout(slug, tier = 'standard') {
         const modalId = 'pd-checkout-modal';
         if (document.getElementById(modalId)) return; // Prevent double opening
@@ -157,12 +154,18 @@
             } catch(e) {}
         }
 
-        // ✨ CLEANUP: Ensure no other Pandoras modals are clogging the screen (Fix for Screenshot 1)
-        const oldModal = document.getElementById('pd-growth-modal');
-        if (oldModal) {
-            oldModal.style.display = 'none'; // Instant hide
-            oldModal.remove();
-        }
+        // ✨ CLEANUP: Ensure no other Pandoras modals are clogging the screen
+        const removeGhostModals = () => {
+            const oldModal = document.getElementById('pd-growth-modal');
+            if (oldModal) {
+                oldModal.style.display = 'none';
+                oldModal.remove();
+            }
+        };
+        removeGhostModals();
+        // Aggressive loop cleanup for 500ms to catch racers
+        const ghostCleaner = setInterval(removeGhostModals, 100);
+        setTimeout(() => clearInterval(ghostCleaner), 600);
 
         let finalSlug = slug;
         let finalTier = tier;
@@ -187,47 +190,28 @@
             finalTier = slug.tier || slug.tierName || slug.phase;
             console.log('[Pandoras] Data Object extracted:', { finalSlug, finalTier });
         }
-        // 🛡️ DEDUPLICATION GUARD: Handle being called as an event listener (onclick="PandorasGrowth.openCheckout(event)")
         else if (slug && typeof slug === 'object' && (slug.preventDefault || slug.target)) {
             const event = slug;
             const target = event.currentTarget || event.target;
-            
-            // If the element doesn't have slug data, it might be a generic click.
-            // We bail here to let the global setupAutoLinks handle it more accurately.
             const extractedSlug = findAttr(target, ['data-pd-checkout-slug', 'data-slug', 'data-pd-slug']);
-            if (!extractedSlug) {
-                console.log('[Pandoras] Checkout called without data, deferring to global listener...');
-                return;
-            }
+            if (!extractedSlug) return;
             finalSlug = extractedSlug;
             finalTier = findAttr(target, ['data-pd-checkout-tier', 'data-tier', 'data-pd-tier', 'data-phase']);
         }
 
-        // 🛡️ Robustness: Fallback to global projectId if slug is missing or invalid
         if (!finalSlug || typeof finalSlug !== 'string' || finalSlug === '[object Object]') {
             finalSlug = projectId;
         }
-        
-        if (!finalTier || typeof finalTier !== 'string') {
-            finalTier = 'standard';
-        }
+        if (!finalTier || typeof finalTier !== 'string') finalTier = 'standard';
 
         console.log('[Pandoras] Final Parameters Ready:', { finalSlug, finalTier });
-
-        if (!finalSlug || finalSlug === 'null') {
-            console.error('[Pandoras] Critical: Missing slug for checkout.');
-            return;
-        }
         
-        // 🕵️ UI Polish: Hide the floating trigger button while checkout is open
         const triggerBtn = document.getElementById('pd-growth-trigger');
         if (triggerBtn) triggerBtn.style.display = 'none';
 
-        // Ensure we use an absolute URL to avoid hitting the external project's own 404
         const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
         const url = `${absoluteBase}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
         
-        console.log('[Pandoras] Final Checkout URL:', url);
         track('COMMERCE_MODAL_OPEN', { slug: finalSlug, tier: finalTier });
 
         let container = document.getElementById('pd-checkout-modal');
@@ -236,7 +220,7 @@
             container.id = 'pd-checkout-modal';
             Object.assign(container.style, {
                 position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'none',
+                backgroundColor: 'rgba(0,0,0,0.92)', backdropFilter: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 zIndex: '2147483647', transition: 'all 0.4s ease', opacity: '0',
                 pointerEvents: 'none'
@@ -250,7 +234,6 @@
                 border: '1px solid rgba(255,255,255,0.05)', transform: 'translateY(15px)', transition: 'all 0.4s ease'
             });
             
-            // Transition in: Wait 250ms or until iframe starts loading to avoid "black frame" flicker
             setTimeout(() => {
                 container.style.opacity = '1';
                 container.style.backdropFilter = 'blur(12px)';
@@ -264,10 +247,8 @@
                 position: 'absolute', top: '20px', right: '20px', width: '36px', height: '36px',
                 borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none',
                 cursor: 'pointer', fontSize: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: '2147483648', transition: 'all 0.2s'
+                zIndex: '2147483648'
             });
-            closeBtn.onmouseenter = () => closeBtn.style.background = 'rgba(255,255,255,0.1)';
-            closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(255,255,255,0.05)';
             closeBtn.onclick = () => {
                 container.remove();
                 if (triggerBtn) triggerBtn.style.display = 'flex';
@@ -276,20 +257,24 @@
             const iframe = document.createElement('iframe');
             iframe.id = 'pd-checkout-iframe';
             iframe.src = url;
-            Object.assign(iframe.style, {
-                width: '100%', height: '100%', border: 'none', background: '#000'
-            });
+            Object.assign(iframe.style, { width: '100%', height: '100%', border: 'none', background: '#000' });
 
             content.appendChild(closeBtn);
             content.appendChild(iframe);
             container.appendChild(content);
             document.body.appendChild(container);
         } else {
-            // Update existing iframe if it exists
             const iframe = document.getElementById('pd-checkout-iframe');
             if (iframe) iframe.src = url;
         }
     }
+
+    /**
+     * Public API - Lead Modal (ritual)
+     */
+    async function openModal() {
+        if (document.getElementById('pd-growth-modal') || document.getElementById('pd-checkout-modal')) return;
+        track('WIDGET_CLICK');
 
     // Expose Global API
     window.PandorasGrowth = {

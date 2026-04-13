@@ -52,10 +52,22 @@ export class WebhookProcessor {
             where: eq(integrationClients.id, event.clientId)
         });
 
-        if (!client?.callbackUrl) {
-            console.error(`❌ Client not found or no callback URL for event ${event.id}`);
+        if (!client) {
+            console.error(`❌ Webhook Error: Client ID ${event.clientId} not found in database for event ${event.id}`);
+            await this.markAsFailed(event.id, "Client not found", 999);
+            return;
+        }
+
+        if (!client.isActive) {
+            console.warn(`⚠️ Webhook Skipped: Client ${client.name} (${client.id}) is marked as INACTIVE.`);
+            await this.markAsFailed(event.id, "Client is inactive", 999);
+            return;
+        }
+
+        if (!client.callbackUrl) {
+            console.error(`❌ Webhook Error: Client ${client.name} has NO callback URL configured.`);
             // Force DLQ state immediately if configuration is broken
-            await this.markAsFailed(event.id, "Client missing or no callback URL", 999);
+            await this.markAsFailed(event.id, "Missing callback URL", 999);
             return;
         }
 
@@ -80,6 +92,7 @@ export class WebhookProcessor {
             const result = await sendWebhook(client.callbackUrl, secretToUse, webhookEvent);
 
             if (!result.success) {
+                console.error(`🛑 Webhook Dispatch Failed for ${client.name}: ${result.error} (Status: ${result.statusCode})`);
                 throw new Error(result.error || `HTTP ${result.statusCode}`);
             }
 
