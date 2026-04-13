@@ -30,7 +30,16 @@ export async function POST(req: Request) {
                 sql`type IN ('access_card_acquired', 'artifact_acquired', 'artifact_purchased')`
             ));
 
-        console.log(`🧹 Reconciling DAO for Project ${projectId}. Found ${events.length} events.`);
+        // 2. Fetch successful purchases for this project (V2 backup truth)
+        const { purchases } = await import('@/db/schema');
+        const confirmedPurchases = await db.select()
+            .from(purchases)
+            .where(and(
+                eq(purchases.projectId, projectId),
+                eq(purchases.status, 'completed')
+            ));
+
+        console.log(`🧹 Reconciling DAO for Project ${projectId}. Found ${events.length} events and ${confirmedPurchases.length} confirmed purchases.`);
 
         // 2. Aggregate by wallet (Self-Healing from Events)
         const memberStats = events.reduce((acc, event) => {
@@ -50,6 +59,22 @@ export async function POST(req: Request) {
             return acc;
         }, {} as Record<string, any>);
 
+        // Add stats from confirmed purchases
+        confirmedPurchases.forEach(p => {
+            const wallet = p.userId.toLowerCase();
+            if (!memberStats[wallet]) {
+                memberStats[wallet] = {
+                    artifactsCount: 0,
+                    joinedAt: p.createdAt,
+                    lastActiveAt: p.createdAt,
+                    campaignId: (p.metadata as any)?.paymentConfig?.payOptions?.metadata?.campaignId || null
+                };
+            }
+            memberStats[wallet].artifactsCount += 1;
+            if (p.createdAt < memberStats[wallet].joinedAt) memberStats[wallet].joinedAt = p.createdAt;
+            if (p.createdAt > memberStats[wallet].lastActiveAt) memberStats[wallet].lastActiveAt = p.createdAt;
+        });
+
         // 3. Update dao_members
         let updatedCount = 0;
         for (const wallet in memberStats) {
@@ -67,7 +92,6 @@ export async function POST(req: Request) {
                     wallet,
                     artifactsCount: stats.artifactsCount,
                     votingPower: finalVotingPower,
-                    sourceCampaignId: stats.campaignId ? Number(stats.campaignId) : null,
                     joinedAt: stats.joinedAt,
                     lastActiveAt: stats.lastActiveAt
                 })
@@ -76,7 +100,6 @@ export async function POST(req: Request) {
                     set: {
                         artifactsCount: stats.artifactsCount,
                         votingPower: finalVotingPower,
-                        // Don't overwrite campaignId if it already exists from a previous attribution
                         lastActiveAt: stats.lastActiveAt
                     }
                 });

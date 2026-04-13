@@ -48,6 +48,13 @@ export async function GET() {
             )
             .orderBy(desc(projects.updatedAt));
 
+        const resolveIpfs = (url: any) => {
+            if (typeof url === 'string' && url.startsWith('ipfs://')) {
+                return url.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+            }
+            return url;
+        };
+
         const formattedProtocols = projectsData.map(p => {
             // Fallback for artifacts from w2eConfig if the main column is empty
             let rawArtifacts = p.artifacts;
@@ -66,8 +73,8 @@ export async function GET() {
                 version: p.protocolVersion || 1,
                 pageLayoutType: (p.pageLayoutType || 'Access').toUpperCase(),
                 visuals: {
-                    logo_url: p.logoUrl, // Snake_case for Telegram
-                    cover_photo_url: p.coverPhotoUrl,
+                    logo_url: resolveIpfs(p.logoUrl), // Snake_case for Telegram
+                    cover_photo_url: resolveIpfs(p.coverPhotoUrl),
                 },
                 metrics: {
                     apr: p.estimatedApy || "0%",

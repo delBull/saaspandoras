@@ -155,6 +155,37 @@ export async function POST(req: Request) {
                         });
                         console.log(`📡 [Webhook] Notified Edge API of completed purchase: ${purchaseId}`);
                     }
+
+                    // 🏛️ DAO Membership Sync: Register or update the holder in dao_members
+                    try {
+                        const { daoMembers } = await import("@/db/schema");
+                        const wallet = purchase.userId.toLowerCase();
+                        const projectId = purchase.projectId;
+                        
+                        // Default to 1 artifact if not specified
+                        const count = 1;
+
+                        await db.insert(daoMembers)
+                            .values({
+                                projectId,
+                                wallet,
+                                artifactsCount: count,
+                                votingPower: count.toString(),
+                                joinedAt: new Date(),
+                                lastActiveAt: new Date(),
+                            })
+                            .onConflictDoUpdate({
+                                target: [daoMembers.projectId, daoMembers.wallet],
+                                set: {
+                                    artifactsCount: sql`${daoMembers.artifactsCount} + ${count}`,
+                                    votingPower: sql`(${daoMembers.votingPower}::integer + ${count})::text`,
+                                    lastActiveAt: new Date(),
+                                }
+                            });
+                        console.log(`🏛️ [Webhook] DAO member synchronized for wallet ${wallet} in project ${projectId}`);
+                    } catch (daoError: any) {
+                        console.error("❌ [Webhook] Failed to sync DAO member:", daoError.message);
+                    }
                 }
             } catch (err) {
                 console.error(`⚠️ Error resolving purchase ${purchaseId}:`, err);
