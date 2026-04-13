@@ -392,11 +392,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to process lead' }, { status: 500 });
     }
 
-    // 🔔 Bull's Lab Webhook Emission (fire-and-forget, never blocks main flow)
+    // 🔔 Bull's Lab Webhook Emission (Fast Path Optimization)
     try {
       const { WebhookService } = await import('@/lib/integrations/webhook-service');
-      await WebhookService.queueEvent('system', alreadyRegistered ? 'lead.returning' : 'lead.new', {
-        event: alreadyRegistered ? 'lead.returning' : 'lead.new',
+      const eventName = alreadyRegistered ? 'lead.returning' : 'lead.new';
+      
+      console.log(`[Webhook] Queuing ${eventName} for ${result.email}...`);
+      
+      await WebhookService.queueEvent('system', eventName, {
+        event: eventName,
         timestamp: new Date().toISOString(),
         data: {
           lead_id: result.id,
@@ -414,7 +418,17 @@ export async function POST(req: NextRequest) {
           already_registered: alreadyRegistered,
         }
       });
-    } catch (_) { /* Non-critical — never block lead registration */ }
+
+      // 🚀 FAST PATH: Trigger immediate background dispatch instead of waiting for Cron
+      const { WebhookProcessor } = await import('@/lib/integrations/webhook-processor');
+      WebhookProcessor.processPendingEvents(5).catch(e => {
+        console.error("[Webhook] Background FastPath failed (non-critical):", e.message);
+      });
+
+    } catch (whError: any) { 
+      console.error("[Webhook] Critical queueing error:", whError.message);
+      /* Non-critical — never block lead registration */ 
+    }
 
     return NextResponse.json({ 
       success: true, 
