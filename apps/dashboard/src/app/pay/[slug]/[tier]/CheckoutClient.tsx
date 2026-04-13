@@ -41,13 +41,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const brandColor = project.themeColor || '#10b981'; // Emerald 500 default
     
     // Resolve clean tier name for display (handles URI encoding like %C3%A9)
+    // ✨ FIX: Prioritize the actual phase name from the DB over the URL parameter
     const displayTierName = useMemo(() => {
+        if (rawPhase && rawPhase.name) return rawPhase.name;
         try {
             return decodeURIComponent(tierName);
         } catch (e) {
             return tierName;
         }
-    }, [tierName]);
+    }, [tierName, rawPhase]);
 
     // Chain detection
     const rawChainId = Number(project.chainId);
