@@ -351,11 +351,27 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     }
 
     return (
-        <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative overflow-y-auto md:items-center md:justify-center p-4 py-12 md:py-8 lg:p-4">
+        <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative overflow-x-hidden md:items-center md:justify-center p-4 py-12 md:py-8 lg:p-4">
             {/* Deep Branding Background Effects */}
-            <div className="fixed inset-0 pointer-events-none z-0" style={{
-                background: `radial-gradient(ellipse at top, ${brandColor}20 0%, transparent 70%)`
-            }}></div>
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+                {/* Project Cover Photo as Background */}
+                {sanitizeUrl(project.coverPhotoUrl) && (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 1.1 }}
+                        animate={{ opacity: 0.3, scale: 1 }}
+                        transition={{ duration: 1.5 }}
+                        className="absolute inset-0 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${sanitizeUrl(project.coverPhotoUrl)})` }}
+                    />
+                )}
+                
+                {/* Deep Overlay Gradients */}
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+                <div className="absolute inset-0" style={{
+                    background: `radial-gradient(ellipse at center, ${brandColor}15 0%, #050505 100%)`
+                }}></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40"></div>
+            </div>
 
             <AnimatePresence mode="wait">
                 <motion.div 

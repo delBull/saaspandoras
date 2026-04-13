@@ -194,6 +194,10 @@ export async function GET(
           created_at: projectResult.createdAt || (projectResult as any).created_at || null,
           w2eConfig: parsedW2eConfig,
 
+          // --- Aliases for Telegram App Compatibility (camelCase) ---
+          logoUrl: resolveIpfs(projectResult.logoUrl || (projectResult as any).logo_url) || null,
+          coverPhotoUrl: resolveIpfs(projectResult.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
+
           // Technical / Governance Addresses (with snake_case fallbacks)
           registryContractAddress: projectResult.registryContractAddress || (projectResult as any).registry_contract_address || null,
           governorContractAddress: projectResult.governorContractAddress || (projectResult as any).votingContractAddress ||
