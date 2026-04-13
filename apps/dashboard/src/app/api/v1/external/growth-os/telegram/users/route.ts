@@ -25,6 +25,14 @@ export async function GET(req: NextRequest) {
         const query = searchParams.get('q');
         const telegramId = searchParams.get('telegramId');
 
+        // 🛡️ Validation: Ensure we have something to search for
+        if (!query && !telegramId) {
+            return NextResponse.json({ 
+                error: "Missing parameters", 
+                detail: "You must provide either 'q' (search term) or 'telegramId' (specific ID)." 
+            }, { status: 400 });
+        }
+
         let url = `${EDGE_URL}/admin/telegram-users`;
         if (telegramId) {
             url += `/${telegramId}`;
@@ -55,7 +63,11 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (e: any) {
-        console.error("[external:telegram:users] Proxy Error:", e);
-        return NextResponse.json({ error: "Internal Server Error", detail: e.message }, { status: 500 });
+        console.error("[external:telegram:users] Proxy Fatal Error:", e);
+        return NextResponse.json({ 
+            error: "Internal Server Error", 
+            detail: e.message || "Failed to communicate with identity service",
+            type: e.name
+        }, { status: 500 });
     }
 }
