@@ -8,7 +8,6 @@ import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { useConnectModal } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import useSWR from 'swr';
@@ -300,12 +299,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 >
                     <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center bg-zinc-900 group">
                         {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
-                            <Image 
+                            <img 
                                 src={sanitizeUrl(project.logoUrl || project.imageUrl)!} 
                                 alt={project.title} 
                                 width={80} 
                                 height={80} 
-                                className="object-cover transition-transform group-hover:scale-110" 
+                                className="w-full h-full object-cover transition-transform group-hover:scale-110" 
                             />
                         ) : (
                             <span className="text-2xl font-black text-white">{project.title.substring(0, 2).toUpperCase()}</span>
@@ -386,12 +385,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                 </div>
                                 {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
                                     <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-6 border border-zinc-800 group" style={{ boxShadow: `0 10px 40px -10px ${brandColor}40` }}>
-                                        <Image 
+                                        <img 
                                             src={sanitizeUrl(project.logoUrl || project.imageUrl)!} 
                                             alt={project.title} 
                                             width={64} 
                                             height={64} 
-                                            className="object-cover transition-transform group-hover:scale-110" 
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-110" 
                                         />
                                     </div>
                                 ) : (
