@@ -1747,6 +1747,9 @@ export const marketingLeadStatusEnum = pgEnum("marketing_lead_status", [
   "scheduled",
   "no_show",
   "cancelled",
+  "hot",
+  "cold",
+  "frio",
   "archived",
   "nurturing"
 ]);
