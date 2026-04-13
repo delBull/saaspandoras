@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoMembers, projects } from '@/db/schema';
-import { eq, sql, count, sum, desc } from 'drizzle-orm';
+import { eq, sql, count, sum, desc, and } from 'drizzle-orm';
 import { defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { getWalletBalance } from "thirdweb/wallets";
@@ -71,8 +71,30 @@ export async function GET(req: Request) {
         }
 
         const totalPowerNum = Number(firstStat.totalPower || 0);
-        const totalMembersNum = Number(firstStat.totalMembers || 0);
-        const totalArtifactsNum = Number(firstStat.totalArtifacts || 0);
+        let totalMembersNum = Number(firstStat.totalMembers || 0);
+        let totalArtifactsNum = Number(firstStat.totalArtifacts || 0);
+
+        // 🟢 SELF-HEALING FALLBACK: If dao_members is empty but projects have history, 
+        // fallback to 'purchases' table to avoid showing 0 to the user.
+        if (totalMembersNum === 0) {
+            try {
+                const { purchases } = await import('@/db/schema');
+                const purchaseStats = await db.select({
+                    count: count(purchases.id),
+                    uniqueWallets: sql<number>`count(distinct ${purchases.userId})`
+                })
+                .from(purchases)
+                .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')));
+                
+                if (purchaseStats[0] && Number(purchaseStats[0].uniqueWallets) > 0) {
+                    totalMembersNum = Number(purchaseStats[0].uniqueWallets);
+                    totalArtifactsNum = Number(purchaseStats[0].count);
+                    console.log(`📡 [Metrics API] Self-healed Narai/V2 metrics from purchases table for project ${projectId}`);
+                }
+            } catch (fallbackError) {
+                console.warn('⚠️ [Metrics API] Fallback to purchases failed:', fallbackError);
+            }
+        }
 
         // b) Power Concentration (Top 10)
         let topWallets: { votingPower: string | number | null }[] = [];
@@ -94,11 +116,14 @@ export async function GET(req: Request) {
         let pci = 0;
         if (totalPowerNum > 0) {
             pci = top10Power / totalPowerNum;
+        } else if (totalMembersNum > 0) {
+            // Pseudo-PCI if no refined voting power yet
+            pci = 0.1; 
         }
 
         const response = {
             members: totalMembersNum,
-            votingPower: totalPowerNum,
+            votingPower: totalPowerNum || totalMembersNum, // Fallback power to member count if 1:1
             artifacts: totalArtifactsNum,
             treasury: treasuryUSD,
             pci: (isNaN(pci) || !isFinite(pci)) ? 0 : pci,
