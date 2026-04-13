@@ -172,6 +172,10 @@
             return;
         }
         
+        // ✨ CLEANUP: Ensure no other Pandoras modals are clogging the screen (Fix for Screenshot 1)
+        const oldModal = document.getElementById('pd-growth-modal');
+        if (oldModal) oldModal.remove();
+
         // Ensure we use an absolute URL to avoid hitting the external project's own 404
         const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
         const url = `${absoluteBase}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
@@ -405,6 +409,7 @@
 
             if (slug) {
                 e.preventDefault();
+                e.stopPropagation(); // Avoid triggering other listeners (Fix for Screenshot 1)
                 openCheckout(slug, tier || 'standard');
             }
         });
