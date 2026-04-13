@@ -154,6 +154,7 @@ export function getTargetAmount(project: any): number {
 /**
  * Sanitizes a URL for use in <img> tags.
  * Handles IPFS, relative paths, and invalid placeholders.
+ * V3 FIX: Forces absolute URLs for commerce widgets to load correctly on external domains.
  */
 export function sanitizeUrl(url: any): string | null {
   if (!url || typeof url !== 'string') return null;
@@ -161,21 +162,36 @@ export function sanitizeUrl(url: any): string | null {
   const cleanUrl = url.trim();
   
   // Ignore common placeholder strings or invalid values
-  const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder'];
+  const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder', 'narai'];
   if (placeholders.includes(cleanUrl.toLowerCase())) return null;
   
-  // Return early if already a standard absolute/relative/data URL
-  if (cleanUrl.startsWith('http') || cleanUrl.startsWith('/') || cleanUrl.startsWith('data:')) {
-    return cleanUrl;
-  }
-  
-  // Handle IPFS: ipfs://CID or ipfs:CID
-  if (cleanUrl.startsWith('ipfs:')) {
+  // Handle IPFS: ipfs://CID or ipfs:CID or just a raw CID (starting with Qm or ba)
+  if (cleanUrl.startsWith('ipfs:') || cleanUrl.startsWith('ipfs://')) {
     const path = cleanUrl.replace(/^ipfs:(\/*)/, '');
     return `https://ipfs.io/ipfs/${path}`;
   }
   
-  // Default fallback for simple strings that might be filenames
-  return `/${cleanUrl}`;
+  // Detect raw CID (Common in Web3/Thirdweb)
+  if (cleanUrl.startsWith('Qm') && cleanUrl.length >= 46) {
+    return `https://ipfs.io/ipfs/${cleanUrl}`;
+  }
+
+  // Handle standard absolute URLs
+  if (cleanUrl.startsWith('http')) {
+    return cleanUrl;
+  }
+  
+  // Handle relative paths - Force pointing back to the Dashboard to ensure assets load correctly on Narai/External
+  if (cleanUrl.startsWith('/')) {
+    return `https://dash.pandoras.finance${cleanUrl}`;
+  }
+
+  // Handle data URLs
+  if (cleanUrl.startsWith('data:')) {
+    return cleanUrl;
+  }
+  
+  // Default fallback: Assume it might be a relative asset on the dashboard
+  return `https://dash.pandoras.finance/${cleanUrl}`;
 }
 

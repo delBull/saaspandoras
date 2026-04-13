@@ -144,19 +144,36 @@
     /**
      * Public API - Commerce Modal (Iframe based)
      */
-    /**
-     * Public API - Commerce Modal (Iframe based)
-     */
     function openCheckout(slug, tier = 'standard') {
+        // ✨ CLEANUP: Ensure no other Pandoras modals are clogging the screen (Fix for Screenshot 1)
+        // Move to the VERY TOP to prevent flicker
+        const oldModal = document.getElementById('pd-growth-modal');
+        if (oldModal) {
+            oldModal.style.transition = 'none';
+            oldModal.remove();
+        }
+
         let finalSlug = slug;
         let finalTier = tier;
+
+        const findAttr = (el, attrs) => {
+            let curr = el;
+            while (curr && curr !== document.body) {
+                for (const attr of attrs) {
+                    const val = curr.getAttribute(attr);
+                    if (val) return val;
+                }
+                curr = curr.parentElement;
+            }
+            return null;
+        };
 
         // 🛡️ Robustness: Handle being called as an event listener (onclick="PandorasGrowth.openCheckout")
         if (slug && typeof slug === 'object' && (slug.preventDefault || slug.target)) {
             const event = slug;
             const target = event.currentTarget || event.target;
-            finalSlug = target.getAttribute('data-pd-checkout-slug') || target.getAttribute('data-slug') || target.getAttribute('data-pd-slug');
-            finalTier = target.getAttribute('data-pd-checkout-tier') || target.getAttribute('data-tier') || target.getAttribute('data-pd-tier');
+            finalSlug = findAttr(target, ['data-pd-checkout-slug', 'data-slug', 'data-pd-slug']);
+            finalTier = findAttr(target, ['data-pd-checkout-tier', 'data-tier', 'data-pd-tier', 'data-phase']);
         }
 
         // 🛡️ Robustness: Fallback to global projectId if slug is missing or an object string
@@ -175,10 +192,6 @@
             return;
         }
         
-        // ✨ CLEANUP: Ensure no other Pandoras modals are clogging the screen (Fix for Screenshot 1)
-        const oldModal = document.getElementById('pd-growth-modal');
-        if (oldModal) oldModal.remove();
-
         // 🕵️ UI Polish: Hide the floating trigger button while checkout is open
         const triggerBtn = document.getElementById('pd-growth-trigger');
         if (triggerBtn) triggerBtn.style.display = 'none';
@@ -255,7 +268,7 @@
 
     function updateUI() {
         const btn = document.getElementById('pd-growth-trigger');
-        if (btn) btn.innerText = state.isSubmitting ? 'Syncing...' : customBtnText;
+        if (btn) btn.innerText = customBtnText;
     }
 
     function showSuccess() {
@@ -400,12 +413,24 @@
      * Auto-setup for data-based links
      */
     function setupAutoLinks() {
+        const findAttr = (el, attrs) => {
+            let curr = el;
+            while (curr && curr !== document.body) {
+                for (const attr of attrs) {
+                    const val = curr.getAttribute(attr);
+                    if (val) return val;
+                }
+                curr = curr.parentElement;
+            }
+            return null;
+        };
+
         document.addEventListener('click', (e) => {
             const target = e.target.closest('a, button, [data-pd-checkout-slug], [data-slug]');
             if (!target) return;
 
-            let slug = target.getAttribute('data-pd-checkout-slug') || target.getAttribute('data-slug') || target.getAttribute('data-pd-slug');
-            let tier = target.getAttribute('data-pd-checkout-tier') || target.getAttribute('data-tier') || target.getAttribute('data-pd-tier');
+            let slug = findAttr(target, ['data-pd-checkout-slug', 'data-slug', 'data-pd-slug']);
+            let tier = findAttr(target, ['data-pd-checkout-tier', 'data-tier', 'data-pd-tier', 'data-phase']);
 
             // Extraction Intelligence: Auto-detect from HREF if it's a Pandoras payment link
             if (!slug && target.tagName === 'A' && target.href && target.href.includes('/pay/')) {
