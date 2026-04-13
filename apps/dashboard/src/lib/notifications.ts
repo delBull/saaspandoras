@@ -69,8 +69,13 @@ class NotificationService {
    * Send notification for a high-intent Growth Lead (Phase 1.5)
    */
   async notifyGrowthLead(lead: any, project: any, isClosingStrike = false): Promise<boolean> {
-    const title = isClosingStrike ? "🚨 **PH85: STRIKE DE CIERRE DETECTADO**" : "💎 **NUEVO LEAD DE ALTA INTENCIÓN**";
-    const color = isClosingStrike ? 16711680 : 3447003; // Red for strike, Blue for high intent
+    const isHot = (lead as any).status === 'hot' || (lead as any).state === 'HOT';
+    const title = isClosingStrike ? "🚨 **PH85: STRIKE DE CIERRE DETECTADO**" : 
+                  (isHot ? "🔥 **LEAD CALIENTE (HOT) DETECTADO**" : "💎 **NUEVO LEAD DE ALTA INTENCIÓN**");
+    const color = isClosingStrike ? 16711680 : (isHot ? 16744192 : 3447003); // Red / Orange / Blue
+
+    const tags = (lead.metadata as any)?.tags || [];
+    const tagsText = tags.length > 0 ? `\n🏷️ **Etiquetas**: ${tags.join(', ')}` : '';
 
     const notificationText = `
 ${title}
@@ -81,7 +86,7 @@ ${title}
 💳 **Wallet**: ${lead.walletAddress ? `\`${lead.walletAddress}\`` : 'No provista'}
 🎯 **Intención**: ${lead.intent?.toUpperCase()}
 📊 **Score**: ${lead.score || 0}/100
-⚖️ **Prioridad**: ${lead.priorityScore || 0}
+⚖️ **Prioridad**: ${lead.priorityScore || 0}${tagsText}
 🚀 **Proyecto**: ${project.name}
 
 ${isClosingStrike ? "⚠️ **ACCION REQUERIDA**: Intervención de ventas inmediata sugerida." : ""}
