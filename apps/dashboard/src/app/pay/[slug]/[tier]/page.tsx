@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import CheckoutClient from './CheckoutClient';
-import { matchPhase, getRawPhases } from '@/lib/phase-utils';
+import { matchPhase, getRawPhases, type Phase } from '@/lib/phase-utils';
 
 export default async function CheckoutHubPage({
     params
@@ -24,7 +24,15 @@ export default async function CheckoutHubPage({
     const phases = getRawPhases(project);
 
     // Find the requested phase using the resilient matchPhase helper
-    const activePhase = matchPhase(phases, tier);
+    let activePhase = matchPhase(phases, tier);
+
+    // 🛡️ Resilient Fallback: If 'standard' or 'default' requested but not found, 
+    // we try to resolve to the FIRST active phase available in the project.
+    // This handles cases where external projects haven't renamed their buttons.
+    if (!activePhase && (tier === 'standard' || tier === 'default')) {
+        console.log(`🧭 [CheckoutHub] Resilient fallback for "${tier}". Finding first active phase...`);
+        activePhase = phases.find((p: Phase) => p.isActive !== false);
+    }
 
     // NOTE: If the specific phase requested doesn't exist, we STILL proceed to the client.
     // This allows the CheckoutClient to show a branded 'Fase No Disponible' screen
