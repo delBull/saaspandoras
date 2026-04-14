@@ -24,6 +24,7 @@ interface ArtifactPurchaseModalProps {
     phase: any;
     userArtifactCount: number;
     initialAmount?: string;
+    tokenType?: 'erc20' | 'erc721' | 'erc1155' | 'unknown';
 }
 
 export default function ArtifactPurchaseModal({ 
@@ -56,6 +57,7 @@ export default function ArtifactPurchaseModal({
     const recentPurchaseCount = activityData?.count ?? null;
 
     // 0. Progression Engine Data
+    const tokenType = (project as any).tokenType || 'erc20';
     const tiers: Tier[] = useMemo(() => {
         const rawTiers = (project?.w2eConfig?.tiers || project?.w2eConfig?.packages || []) as any[];
         return rawTiers.map(t => ({
@@ -67,13 +69,13 @@ export default function ArtifactPurchaseModal({
     }, [project]);
 
     const progression = useMemo(() => 
-        ProgressionEngine.calculate(Number(userArtifactCount || 0), tiers, Number(amount || 0)),
-    [userArtifactCount, tiers, amount]);
+        ProgressionEngine.calculate(Number(userArtifactCount || 0), tiers, Number(amount || 0), tokenType),
+    [userArtifactCount, tiers, amount, tokenType]);
 
     const initialDelta = useMemo(() => {
-        const state = ProgressionEngine.calculate(Number(userArtifactCount || 0), tiers);
+        const state = ProgressionEngine.calculate(Number(userArtifactCount || 0), tiers, 0, tokenType);
         return state.unlockDelta;
-    }, [userArtifactCount, tiers]);
+    }, [userArtifactCount, tiers, tokenType]);
 
     // Handle initial amount from props or suggested delta
     useEffect(() => {

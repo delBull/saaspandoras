@@ -11,11 +11,13 @@ interface PerksModalProps {
     project: any;
     userArtifactCount: number;
     onBuyMore?: (amount: number) => void;
+    tokenType?: 'erc20' | 'erc721' | 'erc1155' | 'unknown';
 }
 
-export default function PerksModal({ isOpen, onClose, project, userArtifactCount, onBuyMore }: PerksModalProps) {
+export default function PerksModal({ isOpen, onClose, project, userArtifactCount, onBuyMore, tokenType: propTokenType }: PerksModalProps) {
     const w2e = project?.w2eConfig || {};
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
+    const tokenType = propTokenType || (project as any).tokenType || 'erc20';
     
     // Normalize and Calculate via Engine
     const tiers: Tier[] = rawTiers.map(t => ({
@@ -26,7 +28,7 @@ export default function PerksModal({ isOpen, onClose, project, userArtifactCount
       description: t.description
     }));
 
-    const progression = ProgressionEngine.calculate(userArtifactCount, tiers);
+    const progression = ProgressionEngine.calculate(userArtifactCount, tiers, 0, tokenType);
     const { currentTier, nextTier, progressPercentage, urgencyLevel, unlockDelta } = progression;
 
     const sortedTiers = [...tiers].sort((a, b) => a.artifactCountThreshold - b.artifactCountThreshold);
