@@ -25,7 +25,7 @@ const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 const IS_PROD = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
 const ACTIVE_CHAIN = IS_PROD ? base : sepolia;
 const ACTIVE_TOKEN = IS_PROD ? USDC_BASE : USDC_SEPOLIA;
-const MERCHANT_WALLET = "0xDEEb671dEda720a75B07E9874e4371c194e38919";
+const MERCHANT_WALLET = "0xc52BB6f53C91ff7134e7508B102E5A22BA415954";
 
 export function PaymentCheckout({ link, client: clientData }: { link: any, client: any }) {
     // Default to 'stripe' if available, then 'crypto'

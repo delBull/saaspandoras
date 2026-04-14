@@ -29,17 +29,29 @@ export class ProgressionEngine {
     static calculate(
         currentCount: number, 
         tiers: Tier[], 
-        additionalPurchase: number = 0
+        additionalPurchase: number = 0,
+        tokenType: 'erc20' | 'erc721' | 'erc1155' | 'unknown' = 'erc20'
     ): ProgressionState {
         const sortedTiers = [...tiers].sort((a, b) => a.artifactCountThreshold - b.artifactCountThreshold);
         const newCount = currentCount + additionalPurchase;
+
+        // For ERC-721 (NFTs): thresholds are virtual - having ANY NFT qualifies for Tier 1
+        // Cannot buy more NFTs to unlock higher tiers - progression is based on tenure/referrals/activity
+        // We normalize threshold to 1 for Tier 1 determination
+        const effectiveTiers = tokenType === 'erc721' 
+            ? sortedTiers.map((t, idx) => ({
+                ...t,
+                // First tier: threshold 1 (has NFT), subsequent tiers: progressively harder
+                artifactCountThreshold: idx === 0 ? 1 : (idx === 1 ? 2 : t.artifactCountThreshold)
+              }))
+            : sortedTiers;
         
         let currentTier: Tier | null = null;
         let nextTier: Tier | null = null;
         let tierAfterPurchase: Tier | null = null;
 
-        // Find current tier
-        for (const tier of sortedTiers) {
+        // Find current tier using effective tiers (adapted for token type)
+        for (const tier of effectiveTiers) {
             if (currentCount >= tier.artifactCountThreshold) {
                 currentTier = tier;
             }

@@ -105,8 +105,25 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
     params: [account?.address || "0x0000000000000000000000000000000000000000"]
   });
 
-  const hasAccess = licenseBalance ? Number(licenseBalance) > 0 : false;
-  // For verification: If we are the creator, maybe bypass? No, stricter is better.
+  // 2.1 Token Type Detection & Artifact Count Normalization
+  const tokenType = (project as any).tokenType || 'erc20';
+  const rawArtifactCount = licenseBalance ? Number(licenseBalance) : 0;
+  
+  // Normalize artifact count based on token type for progression calculations
+  // ERC-721 (NFT): If user has ANY NFT, they qualify - map 0/1 to tier progression
+  // ERC-20: Use actual balance (fungible tokens)
+  // ERC-1155: Use balance as-is
+  const normalizedArtifactCount = (() => {
+    if (tokenType === 'erc721') {
+      // For NFTs: treat holding as progressive - each tier unlocks based on Having NFT access
+      // Map: 0 = 0, 1+ = 1 (min-based progression)
+      return rawArtifactCount > 0 ? 1 : 0;
+    }
+    // ERC-20 or ERC-1155: use actual balance
+    return rawArtifactCount;
+  })();
+
+  const hasAccess = rawArtifactCount > 0;
 
   // --- Real Data Hooks (Moved Down) ---
   const { data: treasuryBalance } = useWalletBalance({
@@ -560,15 +577,17 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
         project={project}
         utilityContract={{ address: project.utilityContractAddress }}
         phase={selectedPhase}
-        userArtifactCount={licenseBalance ? Number(licenseBalance) : 0}
+        userArtifactCount={normalizedArtifactCount}
         initialAmount={initialPurchaseAmount}
+        tokenType={tokenType as any}
       />
 
       <PerksModal 
         isOpen={isPerksModalOpen}
         onClose={() => setIsPerksModalOpen(false)}
         project={project}
-        userArtifactCount={licenseBalance ? Number(licenseBalance) : 0}
+        userArtifactCount={normalizedArtifactCount}
+        tokenType={tokenType as any}
         onBuyMore={(amount) => {
             setIsPerksModalOpen(false);
             setInitialPurchaseAmount(String(amount));

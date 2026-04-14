@@ -53,9 +53,11 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
     const { data: metrics } = useSWR(project.id ? `/api/dao/metrics?projectId=${project.id}` : null, fetcher);
 
     // Holders count is unique wallets via DAO tracking as prioritized by user
-    const holdersCount = Number(metrics?.members || 0);
+    const memberWallets = Number(metrics?.memberWallets || metrics?.members || 0);
+    const holdersCount = memberWallets;
+    const artifactHolders = Number(metrics?.uniqueArtifactHolders || metrics?.artifactHolders || 0);
     const maxSupply = maxSupplyERC721 ? Number(maxSupplyERC721) : (project.artifacts?.[0]?.maxSupply ?? 0);
-    const remaining = maxSupply > 0 ? maxSupply - holdersCount : null;
+    const remaining = maxSupply > 0 ? maxSupply - memberWallets : null;
 
     const primaryArtifact = project.artifacts?.find(a => a.isPrimary) ?? project.artifacts?.[0];
     const registryAddress = project.registryContractAddress;
@@ -110,7 +112,11 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
                 {/* Live Stats */}
                 <div className="hidden sm:flex items-center gap-4 text-center shrink-0">
                     <div>
-                        <p className="text-lg font-bold text-lime-400">{holdersCount.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-lime-400">{memberWallets.toLocaleString()}</p>
+                        <p className="text-[10px] text-gray-500">Miembros</p>
+                    </div>
+                    <div>
+                        <p className="text-lg font-bold text-emerald-400">{artifactHolders.toLocaleString()}</p>
                         <p className="text-[10px] text-gray-500">Holders</p>
                     </div>
                     {remaining !== null && (
@@ -125,7 +131,8 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
             {/* Protocol Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 {[
-                    { icon: Users, label: 'Holders', value: holdersCount.toLocaleString(), color: 'text-lime-400' },
+                    { icon: Users, label: 'Miembros', value: memberWallets.toLocaleString(), color: 'text-lime-400' },
+                    { icon: Users, label: 'Holders', value: artifactHolders.toLocaleString(), color: 'text-emerald-400' },
                     { icon: Shield, label: 'Tipo', value: 'Access Pass', color: 'text-emerald-400' },
                     { icon: Zap, label: 'Precio de Acceso', value: 'GRATIS', color: 'text-white' },
                     { icon: Lock, label: 'Supply Máx', value: maxSupply > 0 ? maxSupply.toLocaleString() : '∞', color: 'text-gray-300' },
@@ -137,9 +144,8 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
                         </div>
                         <p className={`text-base font-bold ${stat.color}`}>{stat.value}</p>
                     </div>
-                ))}
+))}
             </div>
-
 
             {/* Additional Artifacts in ecosystem */}
             {project.artifacts && project.artifacts.length > 1 && (

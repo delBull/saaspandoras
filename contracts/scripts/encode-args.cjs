@@ -1,7 +1,7 @@
 const { AbiCoder } = require("ethers");
 
 async function main() {
-  const initialAdmins = ["0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9", "0xDEEb671dEda720a75B07E9874e4371c194e38919"];
+  const initialAdmins = ["0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9", "0xc52BB6f53C91ff7134e7508B102E5A22BA415954"];
   const utilityAddress = "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9";
 
   const abiCoder = new AbiCoder();

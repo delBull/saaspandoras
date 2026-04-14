@@ -96,6 +96,37 @@ export async function GET(req: Request) {
             }
         }
 
+        // Get unique wallets that have purchased artifacts (excluding free access)
+        let uniqueArtifactHolders = 0;
+        let uniqueMemberWallets = 0;
+        try {
+            const { purchases } = await import('@/db/schema');
+            
+            // Get unique member wallets (those with Access Pass from dao_members or purchases)
+            const memberStats = await db.select({
+                uniqueWallets: sql<number>`count(distinct ${daoMembers.wallet})`
+            })
+            .from(daoMembers)
+            .where(eq(daoMembers.projectId, projectId));
+            uniqueMemberWallets = memberStats[0]?.uniqueWallets ? Number(memberStats[0].uniqueWallets) : totalMembersNum;
+            
+            // Get unique wallets that have purchased artefacts (status completed, amount > 0)
+            const artifactPurchases = await db.select({
+                uniqueWallets: sql<number>`count(distinct ${purchases.userId})`,
+                totalArtifacts: sum(purchases.amount)
+            })
+            .from(purchases)
+            .where(and(
+                eq(purchases.projectId, projectId),
+                eq(purchases.status, 'completed')
+            ));
+            
+            uniqueArtifactHolders = artifactPurchases[0]?.uniqueWallets ? Number(artifactPurchases[0].uniqueWallets) : 0;
+            console.log(`📊 [Metrics API] Artifact holders: ${uniqueArtifactHolders}, Member wallets: ${uniqueMemberWallets} for project ${projectId}`);
+        } catch (artifactError) {
+            console.warn('⚠️ [Metrics API] Error fetching artifact holders:', artifactError);
+        }
+
         // b) Power Concentration (Top 10)
         let topWallets: { votingPower: string | number | null }[] = [];
         try {
@@ -123,8 +154,11 @@ export async function GET(req: Request) {
 
         const response = {
             members: totalMembersNum,
-            votingPower: totalPowerNum || totalMembersNum, // Fallback power to member count if 1:1
+            memberWallets: uniqueMemberWallets,
+            votingPower: totalPowerNum || totalMembersNum,
             artifacts: totalArtifactsNum,
+            artifactHolders: uniqueArtifactHolders,
+            uniqueArtifactHolders: uniqueArtifactHolders,
             treasury: treasuryUSD,
             pci: (isNaN(pci) || !isFinite(pci)) ? 0 : pci,
             attribution: [] 
