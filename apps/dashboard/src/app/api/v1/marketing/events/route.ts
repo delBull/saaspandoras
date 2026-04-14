@@ -94,14 +94,18 @@ export async function POST(req: NextRequest) {
         const walletAddress = body.walletAddress || metadata?.walletAddress || metadata?.wallet || body.wallet;
         const leadEmail = (body.email || metadata?.email || body.userEmail)?.toLowerCase?.() || null;
         const effectiveFingerprint = fingerprint || `anon_${createHash('md5').update(req.headers.get('user-agent') || 'unknown').digest('hex')}`;
+        const identityHash = IdentityService.getIdentityHash(leadEmail, walletAddress, effectiveFingerprint);
+
+        if (!identityHash) {
+          throw new Error("Failed to generate identity hash");
+        }
 
         // 2.1 Resolve existing Lead record (Avoiding duplication)
         const orConditions = [];
         if (leadEmail) orConditions.push(eq(marketingLeads.email, leadEmail));
         if (walletAddress) orConditions.push(eq(marketingLeads.walletAddress, walletAddress));
         if (fingerprint) orConditions.push(eq(marketingLeads.fingerprint, fingerprint));
-        
-        if (orConditions.length === 0) orConditions.push(eq(marketingLeads.fingerprint, effectiveFingerprint));
+        orConditions.push(eq(marketingLeads.identityHash, identityHash));
 
         const leadRecordArray = await db.select().from(marketingLeads).where(
             and(
@@ -117,6 +121,8 @@ export async function POST(req: NextRequest) {
             const updates: any = {};
             if (!leadRecord.email && leadEmail) updates.email = leadEmail;
             if (!leadRecord.walletAddress && walletAddress) updates.walletAddress = walletAddress;
+            // Always update identityHash to the current standard if it differs
+            if (leadRecord.identityHash !== identityHash) updates.identityHash = identityHash;
             
             if (Object.keys(updates).length > 0) {
                 await db.update(marketingLeads).set({ ...updates, updatedAt: new Date() }).where(eq(marketingLeads.id, leadRecord.id));
@@ -154,7 +160,7 @@ export async function POST(req: NextRequest) {
                 email: leadEmail,
                 walletAddress: walletAddress,
                 fingerprint: effectiveFingerprint,
-                identityHash: leadEmail || walletAddress || effectiveFingerprint,
+                identityHash: identityHash,
                 origin: origin || req.headers.get("referer"),
                 scope: "b2c",
                 intent: "explore",
