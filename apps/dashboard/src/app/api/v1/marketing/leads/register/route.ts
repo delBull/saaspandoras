@@ -275,12 +275,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Ingest Lead (Smart Upsert with Metadata Merge)
+    const orConditions = [];
+    if (email) orConditions.push(eq(marketingLeads.email, email.toLowerCase()));
+    if (walletAddress) orConditions.push(eq(marketingLeads.walletAddress, walletAddress));
+    if (fingerprint) orConditions.push(eq(marketingLeads.fingerprint, fingerprint));
+    orConditions.push(eq(marketingLeads.identityHash, identityHash));
+
     const existingLead = await db.query.marketingLeads.findFirst({
       where: and(
         eq(marketingLeads.projectId, targetProjectId),
-        eq(marketingLeads.identityHash, (identityHash as string))
+        or(...orConditions)
       ),
-      columns: { id: true, metadata: true }
+      columns: { id: true, metadata: true, email: true, walletAddress: true, name: true, phoneNumber: true, origin: true, fingerprint: true, status: true }
     });
 
     const alreadyRegistered = !!existingLead;

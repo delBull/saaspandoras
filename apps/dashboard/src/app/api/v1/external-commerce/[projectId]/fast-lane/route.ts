@@ -29,13 +29,14 @@ export async function POST(
     const isWhale = safeAmount >= 5;
     
     // Create the lead using db.insert
-    const identityHash = crypto.createHash('sha256').update(email.toLowerCase()).digest('hex');
+    const { IdentityService } = await import("@/lib/marketing/identity-service");
+    const identityHash = IdentityService.getIdentityHash(email.toLowerCase(), null, null);
     
     await db.insert(marketingLeads).values({
         projectId: projectIdNum,
         email: email.toLowerCase(),
         walletAddress: null,
-        identityHash: identityHash,
+        identityHash: identityHash as string,
         status: 'active',
         intent: 'invest',
         score: isWhale ? 98 : 75,

@@ -125,6 +125,9 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
           // 3. PIPELINE SYNC (Idempotent & Normalized)
           try {
             // A. Update Marketing Lead with Idempotent Scoring
+            const { IdentityService } = await import("@/lib/marketing/identity-service");
+            const identityHash = IdentityService.getIdentityHash(normalizedEmail, null, leadData.fingerprint);
+            
             await tx.insert(marketingLeads).values({
               projectId: projectId,
               email: normalizedEmail,
@@ -136,7 +139,7 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
               score: 50,
               scope: 'b2b',
               fingerprint: leadData.fingerprint || null,
-              identityHash: normalizedEmail
+              identityHash: identityHash as string
             }).onConflictDoUpdate({
               target: [marketingLeads.projectId, marketingLeads.identityHash],
               set: {
