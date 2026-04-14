@@ -60,8 +60,9 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
 
     // -- Voting Power Fetching (Artifacts / Licenses) --
     // We use the License Contract for voting power, not the Utility Token.
+    // Properties are now standardized by the harmonizer API
     const licenseAddress = project?.licenseContractAddress;
-    const chainId = project?.chain_id ? Number(project.chain_id) : 11155111;
+    const chainId = project?.chainId || 11155111;
 
     console.log("DEBUG: DAO Page Setup", {
         licenseAddress,

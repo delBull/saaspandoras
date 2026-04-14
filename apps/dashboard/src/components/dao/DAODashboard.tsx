@@ -32,9 +32,8 @@ interface DAODashboardProps {
 }
 
 export function DAODashboard({ project, activeView, isOwner = false }: DAODashboardProps) {
-    // Robust Chain ID handling
-    const rawChainId = Number((project as any).chainId);
-    const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+    // Standardized Chain ID from Harmonizer
+    const safeChainId = project?.chainId || 11155111;
 
     // --- Hooks for Real Data ---
     // --- Hooks for Real Data ---
@@ -47,7 +46,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const { data: nativeBalance } = useWalletBalance({
         client,
         chain: defineChain(safeChainId),
-        address: !isBaseMainnet ? (project.treasuryAddress || project.treasuryContractAddress || "") : "",
+        address: !isBaseMainnet ? (project.treasuryAddress || "") : "",
     });
 
     // Hook for USDC Balance (Base)
@@ -66,7 +65,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const { data: usdcBalance } = useReadContract({
         contract: usdcContract || dummyContract,
         method: "function balanceOf(address) view returns (uint256)",
-        params: [project.treasuryAddress || project.treasuryContractAddress || "0x0000000000000000000000000000000000000000"],
+        params: [project.treasuryAddress || "0x0000000000000000000000000000000000000000"],
         queryOptions: { enabled: isBaseMainnet }
     });
 
@@ -84,7 +83,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         formattedBalance = `${balanceVal.toFixed(4)} ${safeChainId === 11155111 ? 'SepoliaETH' : 'ETH'}`;
     }
 
-    const treasuryAddress = project?.treasuryAddress || project?.treasuryContractAddress;
+    const treasuryAddress = project?.treasuryAddress;
 
     // 2. Real Data Hooks
     const licenseContract = project.licenseContractAddress ? getContract({
@@ -95,10 +94,10 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
     const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
-    const loomContract = project.loom_contract_address ? getContract({
+    const loomContract = project.loomContractAddress ? getContract({
         client,
         chain: defineChain(safeChainId),
-        address: project.loom_contract_address
+        address: project.loomContractAddress
     }) : undefined;
 
     // -- Sub-Views --
@@ -229,22 +228,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     );
 
     const ProposalsView = () => {
-        // Robust detection of governance contract
-        const artifacts = project?.artifacts || (project?.w2eConfig as any)?.artifacts || [];
-        const govArtifact = Array.isArray(artifacts) ? artifacts.find((a: any) =>
-            a?.type === 'governor' ||
-            a?.type === 'registry' ||
-            a?.type === 'voting' ||
-            a?.name?.toLowerCase().includes('governor')
-        ) : null;
-
-        const govAddress = project?.governorContractAddress ||
-            project?.votingContractAddress ||
-            govArtifact?.address ||
-            (project as any)?.governor_contract_address ||
-            (project as any)?.voting_contract_address ||
-            (project as any)?.registry_contract_address ||
-            project?.registryContractAddress;
+        const govAddress = project?.governorContractAddress;
 
         return (
             <div className="space-y-6">
