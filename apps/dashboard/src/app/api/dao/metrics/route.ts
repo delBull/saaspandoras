@@ -56,28 +56,16 @@ export async function GET(req: Request) {
 
         // If no members, or if Postgres returns a single row with all nulls (common for empty sum/count)
         const firstStat = totalStats?.[0];
-        const hasNoMembers = !firstStat || (!firstStat.totalMembers && !firstStat.totalPower);
-
-        if (hasNoMembers) {
-           console.log(`ℹ️ [Metrics API] No DAO members found for project ${projectId}`);
-           return NextResponse.json({
-               members: 0,
-               votingPower: 0,
-               artifacts: 0,
-               treasury: treasuryUSD,
-               pci: 0,
-               attribution: []
-           });
-        }
-
-        const totalPowerNum = Number(firstStat.totalPower || 0);
-        let totalMembersNum = Number(firstStat.totalMembers || 0);
-        let totalArtifactsNum = Number(firstStat.totalArtifacts || 0);
+        
+        const totalPowerNum = Number(firstStat?.totalPower || 0);
+        let totalMembersNum = Number(firstStat?.totalMembers || 0);
+        let totalArtifactsNum = Number(firstStat?.totalArtifacts || 0);
 
         // 🟢 SELF-HEALING FALLBACK: If dao_members is empty but projects have history, 
         // fallback to 'purchases' table to avoid showing 0 to the user.
         if (totalMembersNum === 0) {
             try {
+                console.log(`ℹ️ [Metrics API] dao_members empty for project ${projectId}. Attempting self-healing via purchases...`);
                 const { purchases } = await import('@/db/schema');
                 const purchaseStats = await db.select({
                     count: count(purchases.id),
@@ -89,11 +77,26 @@ export async function GET(req: Request) {
                 if (purchaseStats[0] && Number(purchaseStats[0].uniqueWallets) > 0) {
                     totalMembersNum = Number(purchaseStats[0].uniqueWallets);
                     totalArtifactsNum = Number(purchaseStats[0].count);
-                    console.log(`📡 [Metrics API] Self-healed Narai/V2 metrics from purchases table for project ${projectId}`);
+                    console.log(`📡 [Metrics API] Self-healed metrics from purchases table for project ${projectId}: ${totalMembersNum} members`);
                 }
             } catch (fallbackError) {
                 console.warn('⚠️ [Metrics API] Fallback to purchases failed:', fallbackError);
             }
+        }
+
+        if (totalMembersNum === 0 && totalPowerNum === 0) {
+           console.log(`ℹ️ [Metrics API] No DAO members or purchases found for project ${projectId}`);
+           return NextResponse.json({
+               members: 0,
+               memberWallets: 0,
+               votingPower: 0,
+               artifacts: 0,
+               artifactHolders: 0,
+               uniqueArtifactHolders: 0,
+               treasury: treasuryUSD,
+               pci: 0,
+               attribution: []
+           });
         }
 
         // Get unique wallets that have purchased artifacts (excluding free access)

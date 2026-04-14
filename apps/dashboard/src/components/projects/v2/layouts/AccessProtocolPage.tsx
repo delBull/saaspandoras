@@ -115,23 +115,12 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
                         <p className="text-lg font-bold text-lime-400">{memberWallets.toLocaleString()}</p>
                         <p className="text-[10px] text-gray-500">Miembros</p>
                     </div>
-                    <div>
-                        <p className="text-lg font-bold text-emerald-400">{artifactHolders.toLocaleString()}</p>
-                        <p className="text-[10px] text-gray-500">Holders</p>
-                    </div>
-                    {remaining !== null && (
-                        <div>
-                            <p className="text-lg font-bold text-white">{remaining.toLocaleString()}</p>
-                            <p className="text-[10px] text-gray-500">Restantes</p>
-                        </div>
-                    )}
                 </div>
             </div>
 
             {/* Protocol Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 {[
-                    { icon: Users, label: 'Miembros', value: memberWallets.toLocaleString(), color: 'text-lime-400' },
                     { icon: Users, label: 'Holders', value: artifactHolders.toLocaleString(), color: 'text-emerald-400' },
                     { icon: Shield, label: 'Tipo', value: 'Access Pass', color: 'text-emerald-400' },
                     { icon: Zap, label: 'Precio de Acceso', value: 'GRATIS', color: 'text-white' },
