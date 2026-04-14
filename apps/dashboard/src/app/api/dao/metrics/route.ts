@@ -5,6 +5,7 @@ import { eq, sql, count, sum, desc, and } from 'drizzle-orm';
 import { defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { getWalletBalance } from "thirdweb/wallets";
+import { harmonizeProject } from "@/lib/projects/harmonizer";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -18,10 +19,15 @@ export async function GET(req: Request) {
 
     try {
         // 1. Get Treasury Data (On-chain fallback)
-        const project = await db.query.projects.findFirst({
+        const rawProject = await db.query.projects.findFirst({
             where: eq(projects.id, projectId)
         });
 
+        if (!rawProject) {
+            return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+        }
+
+        const project = harmonizeProject(rawProject);
         let treasuryUSD = 0;
 
         if (project?.treasuryAddress?.startsWith('0x') && project.chainId) {

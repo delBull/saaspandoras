@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
+import { harmonizeProject } from "@/lib/projects/harmonizer";
 
 export const dynamic = 'force-dynamic';
 
@@ -130,102 +131,79 @@ export async function GET(
           }
         }
 
+        // Use the Centralized Harmonizer for all technical fields
+        const harmonizedProject = harmonizeProject(projectResult);
+
         // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
+        // but now enriched by the harmonizer's logic (chain_id, treasury_address, etc.)
         const mappedProject = {
-          ...projectResult,
-          id: projectResult.id ? Number(projectResult.id) : (projectResult as any).id,
-          logo_url: resolveIpfs(projectResult.logoUrl || (projectResult as any).logo_url) || null,
-          cover_photo_url: resolveIpfs(projectResult.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
-          tagline: projectResult.tagline || (projectResult as any).tagline || null,
-          description: projectResult.description || (projectResult as any).description || '',
-          business_category: projectResult.businessCategory || (projectResult as any).business_category || null,
-          video_pitch: projectResult.videoPitch || (projectResult as any).video_pitch || (projectResult as any).video_url || null,
-          website: projectResult.website || (projectResult as any).website || null,
-          whitepaper_url: projectResult.whitepaperUrl || (projectResult as any).whitepaper_url || null,
-          twitter_url: projectResult.twitterUrl || (projectResult as any).twitter_url || null,
-          discord_url: projectResult.discordUrl || (projectResult as any).discord_url || null,
-          telegram_url: projectResult.telegramUrl || (projectResult as any).telegram_url || null,
-          linkedin_url: projectResult.linkedinUrl || (projectResult as any).linkedin_url || null,
-          target_amount: projectResult.targetAmount || (projectResult as any).target_amount || "0.00",
-          total_valuation_usd: projectResult.totalValuationUsd || (projectResult as any).total_valuation_usd || null,
-          token_type: projectResult.tokenType || (projectResult as any).token_type || 'erc20',
-          total_tokens: projectResult.totalTokens || (projectResult as any).total_tokens || null,
-          tokens_offered: projectResult.tokensOffered || (projectResult as any).tokens_offered || null,
-          token_price_usd: projectResult.tokenPriceUsd || (projectResult as any).token_price_usd || null,
-          estimated_apy: projectResult.estimatedApy || (projectResult as any).estimated_apy || null,
-          yield_source: projectResult.yieldSource || (projectResult as any).yield_source || null,
-          lockup_period: projectResult.lockupPeriod || (projectResult as any).lockup_period || null,
-          fund_usage: projectResult.fundUsage || (projectResult as any).fund_usage || null,
+          ...harmonizedProject,
+          logo_url: resolveIpfs(harmonizedProject.logoUrl || (projectResult as any).logo_url) || null,
+          cover_photo_url: resolveIpfs(harmonizedProject.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
+          tagline: harmonizedProject.tagline || null,
+          description: harmonizedProject.description || '',
+          business_category: harmonizedProject.businessCategory || null,
+          video_pitch: harmonizedProject.videoPitch || (projectResult as any).video_url || null,
+          website: harmonizedProject.website || null,
+          whitepaper_url: harmonizedProject.whitepaperUrl || null,
+          twitter_url: harmonizedProject.twitterUrl || null,
+          discord_url: harmonizedProject.discordUrl || null,
+          telegram_url: harmonizedProject.telegramUrl || null,
+          linkedin_url: harmonizedProject.linkedinUrl || null,
+          target_amount: harmonizedProject.targetAmount || "0.00",
+          total_valuation_usd: harmonizedProject.totalValuationUsd || null,
+          token_type: harmonizedProject.tokenType || 'erc20',
+          total_tokens: harmonizedProject.totalTokens || null,
+          tokens_offered: harmonizedProject.tokensOffered || null,
+          token_price_usd: harmonizedProject.tokenPriceUsd || null,
+          estimated_apy: harmonizedProject.estimatedApy || null,
+          yield_source: harmonizedProject.yieldSource || null,
+          lockup_period: harmonizedProject.lockupPeriod || null,
+          fund_usage: harmonizedProject.fundUsage || null,
           team_members: projectResult.teamMembers ? (typeof projectResult.teamMembers === 'string' ? projectResult.teamMembers : JSON.stringify(projectResult.teamMembers)) : null,
           advisors: projectResult.advisors ? (typeof projectResult.advisors === 'string' ? projectResult.advisors : JSON.stringify(projectResult.advisors)) : null,
           token_distribution: projectResult.tokenDistribution || null,
-          contract_address: projectResult.contractAddress || (projectResult as any).contract_address || null,
-          licenseContractAddress: projectResult.licenseContractAddress || (projectResult as any).license_contract_address || null,
-          treasury_address: projectResult.treasuryAddress || (projectResult as any).treasury_address || null,
-          legal_status: projectResult.legalStatus || (projectResult as any).legal_status || null,
-          valuation_document_url: projectResult.valuationDocumentUrl || (projectResult as any).valuation_document_url || null,
-          fiduciary_entity: projectResult.fiduciaryEntity || (projectResult as any).fiduciary_entity || null,
-          due_diligence_report_url: projectResult.dueDiligenceReportUrl || (projectResult as any).due_diligence_report_url || null,
-          is_mintable: projectResult.isMintable ?? (projectResult as any).is_mintable ?? false,
-          is_mutable: projectResult.isMutable ?? (projectResult as any).is_mutable ?? false,
-          update_authority_address: projectResult.updateAuthorityAddress || (projectResult as any).update_authority_address || null,
-          applicant_name: projectResult.applicantName || (projectResult as any).applicant_name || null,
-          applicant_position: projectResult.applicantPosition || (projectResult as any).applicant_position || null,
-          applicant_email: projectResult.applicantEmail || (projectResult as any).applicant_email || null,
-          applicant_phone: projectResult.applicantPhone || (projectResult as any).applicant_phone || null,
-          applicant_wallet_address: projectResult.applicantWalletAddress || (projectResult as any).applicant_wallet_address || null,
-          verification_agreement: projectResult.verificationAgreement ?? (projectResult as any).verification_agreement ?? false,
-          integration_details: projectResult.integrationDetails || (projectResult as any).integration_details || null,
-          legal_entity_help: projectResult.legalEntityHelp ?? (projectResult as any).legal_entity_help ?? false,
-          image_url: projectResult.imageUrl || (projectResult as any).image_url || null,
-          raised_amount: projectResult.raisedAmount || (projectResult as any).raised_amount || "0.00",
-          returns_paid: projectResult.returnsPaid || (projectResult as any).returns_paid || "0.00",
-          featured_button_text: projectResult.featuredButtonText || (projectResult as any).featured_button_text || null,
           
-          // --- Mapeo de nuevos campos ---
-          protoclMecanism: projectResult.protoclMecanism || (projectResult as any).protocl_mecanism || null,
-          artefactUtility: projectResult.artefactUtility || (projectResult as any).artefact_utility || null,
-          worktoearnMecanism: projectResult.worktoearnMecanism || (projectResult as any).worktoearn_mecanism || null,
-          monetizationModel: projectResult.monetizationModel || (projectResult as any).monetization_model || null,
-          adquireStrategy: projectResult.adquireStrategy || (projectResult as any).adquire_strategy || null,
-          mitigationPlan: projectResult.mitigationPlan || (projectResult as any).mitigation_plan || null,
-          recurring_rewards: projectResult.recurringRewards || (projectResult as any).recurring_rewards || null,
+          // Technical Addresses (Now from Harmonizer)
+          contract_address: harmonizedProject.contractAddress,
+          licenseContractAddress: harmonizedProject.licenseContractAddress,
+          treasury_address: harmonizedProject.treasuryAddress,
           
-          created_at: projectResult.createdAt || (projectResult as any).created_at || null,
-          w2eConfig: parsedW2eConfig,
-
-          // --- Aliases for Telegram App Compatibility (camelCase) ---
-          logoUrl: resolveIpfs(projectResult.logoUrl || (projectResult as any).logo_url) || null,
-          coverPhotoUrl: resolveIpfs(projectResult.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
-
-          // Technical / Governance Addresses (with snake_case fallbacks)
-          registryContractAddress: projectResult.registryContractAddress || (projectResult as any).registry_contract_address || null,
-          governorContractAddress: projectResult.governorContractAddress || (projectResult as any).votingContractAddress ||
-            (projectResult as any).governor_contract_address || (projectResult as any).voting_contract_address || null,
-          tokenContractAddress: projectResult.contractAddress || (projectResult as any).contract_address || null,
-          timelockContractAddress: projectResult.loomContractAddress || (projectResult as any).loom_contract_address || null,
-          utilityContractAddress: projectResult.utilityContractAddress || (projectResult as any).utility_contract_address || null,
-
-          // V2 Protocol Fields with extreme safety
-          protocol_version: (() => {
-            if (projectResult.protocolVersion) return Number(projectResult.protocolVersion);
-            if ((projectResult as any).protocol_version) return Number((projectResult as any).protocol_version);
-            const artifacts = projectResult.artifacts || (projectResult as any).artifacts || parsedW2eConfig?.artifacts;
-            return (Array.isArray(artifacts) && artifacts.length > 0) ? 2 : 1;
-          })(),
-          artifacts: Array.isArray(projectResult.artifacts)
-            ? projectResult.artifacts
-            : Array.isArray((projectResult as any).artifacts)
-              ? (projectResult as any).artifacts
-              : Array.isArray(parsedW2eConfig?.artifacts)
-                ? parsedW2eConfig.artifacts
-                : [],
-          pageLayoutType: (() => {
-            const raw = projectResult.pageLayoutType || (projectResult as any).page_layout_type || parsedW2eConfig?.pageLayoutType || 'Access';
-            if (typeof raw !== 'string') return 'Access';
-            // Capitalize first letter to match ProtocolLayoutType
-            return (raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()) as any;
-          })(),
+          legal_status: harmonizedProject.legalStatus || null,
+          valuation_document_url: harmonizedProject.valuationDocumentUrl || null,
+          fiduciary_entity: harmonizedProject.fiduciaryEntity || null,
+          due_diligence_report_url: harmonizedProject.dueDiligenceReportUrl || null,
+          is_mintable: harmonizedProject.isMintable ?? false,
+          is_mutable: harmonizedProject.isMutable ?? false,
+          update_authority_address: harmonizedProject.updateAuthorityAddress || null,
+          applicant_name: harmonizedProject.applicantName || null,
+          applicant_position: harmonizedProject.applicantPosition || null,
+          applicant_email: harmonizedProject.applicantEmail || null,
+          applicant_phone: harmonizedProject.applicantPhone || null,
+          applicant_wallet_address: harmonizedProject.applicantWalletAddress || null,
+          verification_agreement: harmonizedProject.verificationAgreement ?? false,
+          integration_details: harmonizedProject.integrationDetails || null,
+          legal_entity_help: harmonizedProject.legalEntityHelp ?? false,
+          image_url: harmonizedProject.imageUrl || null,
+          raised_amount: harmonizedProject.raisedAmount || "0.00",
+          returns_paid: harmonizedProject.returnsPaid || "0.00",
+          featured_button_text: harmonizedProject.featuredButtonText || null,
+          
+          protoclMecanism: harmonizedProject.protoclMecanism || null,
+          artefactUtility: harmonizedProject.artefactUtility || null,
+          worktoearnMecanism: harmonizedProject.worktoearnMecanism || null,
+          monetizationModel: harmonizedProject.monetizationModel || null,
+          adquireStrategy: harmonizedProject.adquireStrategy || null,
+          mitigationPlan: harmonizedProject.mitigationPlan || null,
+          recurring_rewards: harmonizedProject.recurringRewards || null,
+          
+          created_at: harmonizedProject.createdAt || null,
+          
+          // Network & Version (Already harmonized)
+          protocol_version: harmonizedProject.protocolVersion,
+          chainId: harmonizedProject.chainId,
+          chain_id: harmonizedProject.chain_id,
+          pageLayoutType: harmonizedProject.pageLayoutType
         };
 
         // Serialize manually to handle potential BigInts from database numeric fields
