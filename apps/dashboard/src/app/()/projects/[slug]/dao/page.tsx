@@ -123,32 +123,42 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
     if (error || !project) {
         return (
             <div className="min-h-screen flex items-center justify-center text-white">
-                Error al cargar el proyecto o no encontrado.
+                <div className="text-center">
+                    <p className="mb-4 text-zinc-500">Error al cargar el proyecto o no encontrado.</p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors border border-zinc-700"
+                    >
+                        Reintentar
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black text-white pb-20">
-            <div className="flex flex-col lg:flex-row w-full">
-                {/* Main Content (Priority 1 on Mobile) */}
-                <div className="flex-1 order-1 lg:order-1 border-r border-zinc-800/50 min-h-[calc(100vh-80px)]">
-                    <DAODashboard project={project} activeView={activeView} isOwner={isOwner} />
-                </div>
+        <Suspense fallback={<div className="min-h-screen bg-black" />}>
+            <div key={slug} className="min-h-screen bg-black text-white pb-20">
+                <div className="flex flex-col lg:flex-row w-full">
+                    {/* Main Content (Priority 1 on Mobile) */}
+                    <div className="flex-1 order-1 lg:order-1 border-r border-zinc-800/50 min-h-[calc(100vh-80px)]">
+                        <DAODashboard project={project} activeView={activeView} isOwner={isOwner} />
+                    </div>
 
-                {/* Sidebar (Priority 2 on Mobile) */}
-                <div className="lg:w-80 order-2 lg:order-2">
-                    <DAOSidebar
-                        project={project}
-                        activeView={activeView}
-                        onViewChange={setActiveView}
-                        isOwner={isOwner}
-                        votingPower={votingPower}
-                        tokenBalance={tokenBalance}
-                        className="lg:h-[calc(100vh-80px)]"
-                    />
+                    {/* Sidebar (Priority 2 on Mobile) */}
+                    <div className="lg:w-80 order-2 lg:order-2">
+                        <DAOSidebar
+                            project={project}
+                            activeView={activeView}
+                            onViewChange={setActiveView}
+                            isOwner={isOwner}
+                            votingPower={votingPower}
+                            tokenBalance={tokenBalance}
+                            className="lg:h-[calc(100vh-80px)]"
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
+        </Suspense>
     );
 }

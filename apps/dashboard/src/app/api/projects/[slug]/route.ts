@@ -110,6 +110,38 @@ export async function GET(
     }
 
     if (projectResult) {
+      // SELF-HEALING: If artifacts are missing but project is marked as deployed/live,
+      // try to recover artifacts from the latest successful deployment job.
+      const hasArtifacts = Array.isArray(projectResult.artifacts) && projectResult.artifacts.length > 0;
+      const isDeployed = projectResult.status === 'live' || projectResult.deploymentStatus === 'deployed';
+
+      if (!hasArtifacts && isDeployed) {
+        console.log(`🩹 API: Self-healing artifacts for ${slug}...`);
+        try {
+          const { deploymentJobs } = await import('~/db/schema');
+          const { desc, eq, and } = await import('drizzle-orm');
+          const lastJob = await db.query.deploymentJobs.findFirst({
+            where: and(
+              eq(deploymentJobs.projectSlug, projectResult.slug),
+              eq(deploymentJobs.status, 'completed')
+            ),
+            orderBy: [desc(deploymentJobs.createdAt)]
+          });
+
+          if (lastJob?.result && (lastJob.result as any).artifacts) {
+            console.log(`✅ API: Recovered artifacts from job ${lastJob.id}`);
+            const result = lastJob.result as any;
+            projectResult.artifacts = result.artifacts;
+            
+            // Also update main contract addresses if missing
+            if (!projectResult.licenseContractAddress) projectResult.licenseContractAddress = result.licenseContractAddress;
+            if (!projectResult.governorContractAddress) projectResult.governorContractAddress = result.governorContractAddress;
+            if (!projectResult.treasuryAddress) projectResult.treasuryAddress = result.treasuryAddress;
+          }
+        } catch (healError) {
+          console.error('⚠️ API: Self-healing failed:', healError);
+        }
+      }
       console.log('✅ API: Project found:', (projectResult as any).title);
       console.log('📊 API: Project keys:', Object.keys(projectResult));
 

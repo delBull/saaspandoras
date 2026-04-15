@@ -60,7 +60,14 @@ export function DAOSidebar({
             {/* Header - Fixed at top */}
             <div className="p-6 pb-4 shrink-0">
                 <h3 className="text-lime-400 font-bold uppercase tracking-wider text-xs mb-2">Protocolo DAO</h3>
-                <h2 className="text-xl font-bold text-white leading-tight">{project.title}</h2>
+                <Link 
+                    href={`/projects/${project.slug}`}
+                    className="group flex items-center gap-2"
+                >
+                    <h2 className="text-xl font-bold text-white leading-tight group-hover:text-lime-400 transition-colors">
+                        {project.title}
+                    </h2>
+                </Link>
                 <div className="mt-2 flex items-center gap-2">
                     <span className="px-2 py-0.5 bg-green-900/30 border border-green-500/30 text-green-400 text-xs rounded-full flex items-center gap-1">
                         <ShieldCheckIcon className="w-3 h-3" /> Verificado
