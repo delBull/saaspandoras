@@ -86,10 +86,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
             setIsPriceLoading(true);
             try {
+                // Determine Phase Index for on-chain lookup
+                const phaseIndex = rawPhase?.phaseIndex !== undefined ? rawPhase.phaseIndex : undefined;
+
                 const { price } = await resolveArtifactPrice({
                     contract: targetContract,
                     fallbackPrice: rawPhase?.tokenPrice || 0,
-                    chainId: safeChainId
+                    chainId: safeChainId,
+                    phaseIndex: phaseIndex
                 });
                 if (isMounted) setContractPrice(price);
             } catch (error) {
