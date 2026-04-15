@@ -61,10 +61,15 @@ export async function resolveArtifactPrice({
   }
 
   // 4. Static Fallback from Phase/Project data
-  // Base Mainnet (8453) and Base Sepolia (84532) often use USDC (6 decimals)
-  // Sepolia (11155111) and others typically use Native (18 decimals)
-  const isUSDCBased = chainId === 8453 || chainId === 84532;
-  const decimals = isUSDCBased ? 1e6 : 1e18;
+  // Logic: 
+  // - Chain 1 (Mainnet) or 8453 (Base): Use 6 decimals if likely USDC/Stable
+  // - Others (Sepolia, etc.): Use 18 decimals
+  
+  // Detection for USDC Mainnet specifically
+  const isMainnetUSDC = chainId === 1 && contract?.address?.toLowerCase() === '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+  const isBaseStable = chainId === 8453 || chainId === 84532;
+  
+  const decimals = (isMainnetUSDC || isBaseStable) ? 1e6 : 1e18;
 
   return {
     price: BigInt(Math.round((fallbackPrice || 0) * decimals)),
