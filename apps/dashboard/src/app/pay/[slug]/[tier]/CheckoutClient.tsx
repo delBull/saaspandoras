@@ -504,18 +504,32 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-1">Inversión Estimada</span>
                                                     <span className="text-2xl font-black text-white font-mono flex items-center gap-2">
-                                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay.toLocaleString()} ${currencySymbol}`}
+                                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay < 1 ? totalCostDisplay.toFixed(4) : totalCostDisplay.toLocaleString()} ${currencySymbol}`}
                                                     </span>
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="text-right flex flex-col items-end">
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 block mb-1">Unidades</span>
-                                                    <input 
-                                                        type="number" 
-                                                        min="1"
-                                                        value={amount}
-                                                        onChange={(e) => setAmount(e.target.value)}
-                                                        className="w-16 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-bold px-2 py-1 outline-none text-right focus:border-indigo-500 transition-colors"
-                                                    />
+                                                    <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg p-1">
+                                                        <button 
+                                                            onClick={() => setAmount(prev => String(Math.max(1, Number(prev) - 1)))}
+                                                            className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                                                        >
+                                                            -
+                                                        </button>
+                                                        <input 
+                                                            type="number" 
+                                                            min="1"
+                                                            value={amount}
+                                                            onChange={(e) => setAmount(e.target.value)}
+                                                            className="w-10 bg-transparent text-white font-bold text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        />
+                                                        <button 
+                                                            onClick={() => setAmount(prev => String(Number(prev) + 1))}
+                                                            className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
 

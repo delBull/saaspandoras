@@ -147,8 +147,9 @@ export function getRawPhases(project: any) {
     // 2. If V2, check artifacts for phases
     if (phases.length === 0 && project.artifacts?.length) {
       const artifactPhases = project.artifacts
-        .flatMap((a: any) => (a.phases || []).map((p: any) => ({
+        .flatMap((a: any) => (a.phases || []).map((p: any, idx: number) => ({
           ...p,
+          phaseIndex: idx, // Critical for on-chain lookup
           artifactAddress: a.address || a.contractAddress
         })))
         .filter((p: any) => p?.name);
