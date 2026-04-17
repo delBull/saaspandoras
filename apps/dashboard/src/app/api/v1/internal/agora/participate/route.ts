@@ -62,8 +62,11 @@ export async function POST(req: Request) {
         let updatedArtifacts = currentArtifacts || [];
         if (artifactName && Array.isArray(updatedArtifacts)) {
             updatedArtifacts = updatedArtifacts.map((a: any) => {
-                if (a.name === artifactName || a.id === artifactName) {
-                    return { ...a, consumptionsUsed: (a.consumptionsUsed || 0) + numericAmount };
+                const sanitize = (str: string) => (str || '').toString().trim().toLowerCase();
+                const targetName = sanitize(artifactName);
+
+                if (sanitize(a.name) === targetName || sanitize(a.id) === targetName) {
+                    return { ...a, consumptionsUsed: Number(a.consumptionsUsed || 0) + Number(numericAmount) };
                 }
                 return a;
             });
