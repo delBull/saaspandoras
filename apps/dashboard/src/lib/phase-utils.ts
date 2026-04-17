@@ -66,7 +66,12 @@ export function calculatePhaseStatus(
   // V2 FIX: If phase has its own artifactAddress, do not subtract accumulatedTokensBefore
   // as that contract's totalSupply is phase-specific.
   const effectiveAccBefore = phase.artifactAddress ? 0 : accumulatedTokensBefore;
-  const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - effectiveAccBefore));
+  
+  // V2 HYBRID ABSOLUTE AUTHORITY: If JSON provides exact consumptionsUsed, it bypasses the sequential fallback entirely.
+  const hasInjectedConsumptions = phase.consumptionsUsed !== undefined && phase.consumptionsUsed !== null;
+  const sequentialStock = Math.max(0, Math.min(allocation, totalSupply - effectiveAccBefore));
+  const currentPhaseRaisedTokens = hasInjectedConsumptions ? Number(phase.consumptionsUsed) : sequentialStock;
+  
   const isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
 
   let metric: 'USD' | 'Tokens' = price > 0 ? 'USD' : 'Tokens';
@@ -182,8 +187,8 @@ export function getProjectPhasesWithStats(project: any, currentSupply: number) {
       stats: {
         ...statusData,
         tokensAllocated: Number(phase.tokenAllocation || 0),
-        tokensSold: Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - ((phase.artifactAddress ? 0 : accumulatedTokens) - (phase.artifactAddress ? 0 : Number(phase.tokenAllocation || 0))))),
-        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - Math.max(0, Math.min(Number(phase.tokenAllocation || 0), currentSupply - ((phase.artifactAddress ? 0 : accumulatedTokens) - (phase.artifactAddress ? 0 : Number(phase.tokenAllocation || 0)))))),
+        tokensSold: statusData.raised,
+        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - (statusData.metric === 'Tokens' ? statusData.raised : statusData.raised / Number(phase.tokenPrice || 1))),
         participants: 0, 
         velocity: `+${(phase.name?.length || 4) % 3 + 2}`
       },
