@@ -82,7 +82,7 @@ ${title}
 
 👤 **Nombre**: ${lead.name || lead.email?.split('@')[0] || 'Anónimo'}
 📧 **Email**: ${lead.email || 'N/A'}
-📱 **WhatsApp**: ${lead.phoneNumber || 'No provisto'}
+📱 **WhatsApp**: ${lead.phoneNumber || lead.metadata?.whatsapp || lead.metadata?.WhatsApp || lead.metadata?.phone || lead.metadata?.phoneNumber || 'No provisto'}
 💳 **Wallet**: ${lead.walletAddress ? `\`${lead.walletAddress}\`` : 'No provista'}
 🎯 **Intención**: ${lead.intent?.toUpperCase()}
 📊 **Score**: ${lead.score || 0}/100
