@@ -27,6 +27,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function GET(req: NextRequest) {
+    return POST(req);
+}
+
+
 export async function OPTIONS(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';
   return new NextResponse(null, {
