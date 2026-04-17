@@ -1,4 +1,4 @@
-const TEST_WALLET = "0xdeeb671deda720a75b07e9874e4371c194e38919";
+const TEST_WALLET = "0xc52BB6f53C91ff7134e7508B102E5A22BA415954";
 const BASE_URL = "http://127.0.0.1:3000/api/gamification";
 
 async function fetchAPI(endpoint: string, method = 'GET', body?: any) {

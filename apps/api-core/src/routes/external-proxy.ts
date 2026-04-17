@@ -35,6 +35,9 @@ const EXTERNAL_PATHS = [
     "/growth-os/*",
     "/protocols/*",
     "/users/*",
+    "/users",
+    "/leads/*",
+    "/leads",
     "/payments/*",
     "/agora/*",
     "/governance/*",
@@ -51,17 +54,27 @@ router.all(EXTERNAL_PATHS, async (req: Request, res: Response) => {
     // Normalize the path: Ensure it always uses the /api/v1/external prefix for the dashboard
     let targetPath = req.originalUrl;
     
+    // Strip query string for matching
+    const purePath = targetPath.split('?')[0];
+
     // 🔀 ALIASING LOGIC: Support shorter paths requested by Bull's Lab
     const ALIASES: Record<string, string> = {
         "/external/users": "/api/v1/external/users/stats",
         "/users":          "/api/v1/external/users/stats",
         "/external/leads": "/api/v1/external/growth-os/leads",
         "/leads":          "/api/v1/external/growth-os/leads",
+        "/external/leads/register": "/api/v1/marketing/leads/register",
+        "/leads/register":          "/api/v1/marketing/leads/register",
+        "/growth-os/leads/register": "/api/v1/marketing/leads/register",
     };
 
-    // Strip query string for matching
-    const purePath = targetPath.split('?')[0];
-    if (ALIASES[purePath]) {
+    // Smart Method-Aware Routing for Lead Ingestion
+    // If an external service tries to POST to the generic leads endpoint, automatically route to the Marketing Ingestion Engine.
+    if (req.method === 'POST' && (purePath === '/leads' || purePath === '/external/leads' || purePath === '/growth-os/leads')) {
+        const queryString = targetPath.includes('?') ? targetPath.slice(targetPath.indexOf('?')) : '';
+        targetPath = '/api/v1/marketing/leads/register' + queryString;
+        console.log(`🔀 [PROXY] Lead Ingestion Alias matched: POST ${purePath} -> ${targetPath}`);
+    } else if (ALIASES[purePath]) {
         const queryString = targetPath.includes('?') ? targetPath.slice(targetPath.indexOf('?')) : '';
         targetPath = ALIASES[purePath] + queryString;
         console.log(`🔀 [PROXY] Alias matched: ${purePath} -> ${ALIASES[purePath]}`);
