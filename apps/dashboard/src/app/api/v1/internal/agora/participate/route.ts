@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { protocolId, telegramId, amount, customPriceUsd } = body;
+        const { protocolId, telegramId, amount, customPriceUsd, artifactName } = body;
 
         let errorMessages = [];
         if (!protocolId) errorMessages.push("protocolId is required");
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         const multiplier = customPriceUsd ? Number(customPriceUsd) : 1;
         const totalAddedValue = numericAmount * multiplier;
 
-        console.log(`[S2S Agora Sync] Processing acquisition from TG User ${telegramId} on Protocol ${protocolId} - Amount: ${numericAmount} (Value: $${totalAddedValue})`);
+        console.log(`[S2S Agora Sync] Processing acquisition from TG User ${telegramId} on Protocol ${protocolId} - Artifact: ${artifactName || 'N/A'} - Amount: ${numericAmount} (Value: $${totalAddedValue})`);
 
         // Check if project exists by PK ID
         const targetId = Number(protocolId);
@@ -55,11 +55,26 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Protocol not found" }, { status: 404 });
         }
 
+        // Isolate Virtual Array Stock Increment
+        let currentArtifacts = existingProject.artifacts;
+        if (typeof currentArtifacts === 'string') currentArtifacts = JSON.parse(currentArtifacts);
+        
+        let updatedArtifacts = currentArtifacts || [];
+        if (artifactName && Array.isArray(updatedArtifacts)) {
+            updatedArtifacts = updatedArtifacts.map((a: any) => {
+                if (a.name === artifactName || a.id === artifactName) {
+                    return { ...a, consumptionsUsed: (a.consumptionsUsed || 0) + numericAmount };
+                }
+                return a;
+            });
+        }
+
         // Execute atomic incrementation over the raised_amount to reflect
         // the stock consumption symmetrically across Telegram UI & Dashboard.
         await db.update(projects)
             .set({ 
                 raisedAmount: sql`${projects.raisedAmount} + ${totalAddedValue}`,
+                artifacts: updatedArtifacts,
                 updatedAt: new Date()
             })
             .where(eq(projects.id, targetId));
