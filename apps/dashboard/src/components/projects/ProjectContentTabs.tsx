@@ -437,10 +437,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                                 {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
                               </span>
                             </div>
-                            {/* Limit (Context sensitive) */}
                             <div>
                               <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
-                              <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
+                              <span className="text-white font-mono">{Number(phase.type === 'time' ? phase.limit : phase.stats.cap).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
                             </div>
                             {/* Allocation (Property: tokenAllocation) */}
                             <div>
@@ -500,10 +499,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                               <span className="text-zinc-600 block text-xs">Precio Token</span>
                               <span className="text-zinc-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
                             </div>
-                            {/* Limit (Context sensitive) */}
                             <div>
                               <span className="text-zinc-600 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
-                              <span className="text-zinc-400 font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
+                              <span className="text-zinc-400 font-mono">{Number(phase.type === 'time' ? phase.limit : phase.stats.cap).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
                             </div>
                             {/* Allocation (Property: tokenAllocation) */}
                             <div>

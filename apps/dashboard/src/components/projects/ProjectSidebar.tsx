@@ -454,7 +454,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                             <div className="flex-1">
                               <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
                               <p className="text-gray-400 text-xs uppercase tracking-wide">
-                                {phase.type === 'amount' ? `Meta: $${Number(phase.limit).toLocaleString()}` : `Duración: ${phase.limit} días`}
+                                {phase.type === 'amount' ? `Meta: ${phase.metric === 'USD' ? '$' : ''}${Number(phase.cap || 0).toLocaleString()} ${phase.metric === 'Tokens' ? 'NFTs' : ''}` : `Duración: ${phase.limit} días`}
                               </p>
                             </div>
                             {!phase.image && (
