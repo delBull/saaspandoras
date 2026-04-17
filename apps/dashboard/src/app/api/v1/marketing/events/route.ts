@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { marketingLeadEvents, marketingLeads, marketingIdentities, projects } from '@/db/schema';
 import { eq, and, gt, sql, or, ilike } from 'drizzle-orm';
 import { createHash } from 'crypto';
+import { IdentityService } from '@/lib/marketing/identity-service';
 
 export const dynamic = 'force-dynamic';
 
