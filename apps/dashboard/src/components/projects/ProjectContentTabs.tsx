@@ -439,7 +439,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                             </div>
                             <div>
                               <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
-                              <span className="text-white font-mono">{Number(phase.type === 'time' ? phase.limit : phase.stats.cap).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
+                              <span className="text-white font-mono">{Number(phase.type === 'time' ? phase.limit : phase.stats.cap).toLocaleString(undefined, { minimumFractionDigits: Number(phase.type === 'time' ? 0 : phase.stats.cap) < 1 ? 3 : 2, maximumFractionDigits: 4 })} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
                             </div>
                             {/* Allocation (Property: tokenAllocation) */}
                             <div>

@@ -181,9 +181,9 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   // --- Smooth Scroll Logic ---
   const scrollToPhases = () => {
-    const element = document.getElementById('tab-phases');
+    const element = document.getElementById('sidebar-phases');
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       // Fallback: switch tab via URL if not in DOM, but try to stay on page if possible
       const url = new URL(window.location.href);
@@ -412,7 +412,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
         </div>
 
         {/* Sticky section - Tokenomics & Offers (from here down) */}
-        <div id="sidebar-phases" className="sticky top-6 space-y-6">
+        <div id="sidebar-phases" className="sticky top-6 space-y-6" style={{ scrollMarginTop: '100px' }}>
 
           {/* Utility Offers Panel (Dynamic Phases) */}
           {(allPhases && allPhases.length > 0) ? (
@@ -454,7 +454,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                             <div className="flex-1">
                               <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
                               <p className="text-gray-400 text-xs uppercase tracking-wide">
-                                {phase.type === 'amount' ? `Meta: ${phase.metric === 'USD' ? '$' : ''}${Number(phase.cap || 0).toLocaleString()} ${phase.metric === 'Tokens' ? 'NFTs' : ''}` : `Duración: ${phase.limit} días`}
+                                {phase.type === 'amount' ? `Meta: ${phase.metric === 'USD' ? '$' : ''}${Number(phase.cap || 0).toLocaleString(undefined, { minimumFractionDigits: Number(phase.cap) < 1 ? 3 : 2, maximumFractionDigits: Number(phase.cap) < 1 ? 4 : 2 })} ${phase.metric === 'Tokens' ? 'NFTs' : ''}` : `Duración: ${phase.limit} días`}
                               </p>
                             </div>
                             {!phase.image && (
