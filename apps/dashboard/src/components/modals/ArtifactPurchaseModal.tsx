@@ -60,12 +60,21 @@ export default function ArtifactPurchaseModal({
     const tokenType = (project as any).tokenType || 'erc20';
     const tiers: Tier[] = useMemo(() => {
         const rawTiers = (project?.w2eConfig?.tiers || project?.w2eConfig?.packages || []) as any[];
-        return rawTiers.map(t => ({
-            id: t.id,
-            name: t.name,
-            artifactCountThreshold: t.artifactCountThreshold ?? t.minArtifacts ?? 0,
-            perks: t.perks || [],
-        }));
+        return rawTiers.map(t => {
+            // Extract threshold from range (e.g. "101 - 500" -> 101) or other fallback props
+            let threshold = t.artifactCountThreshold ?? t.minArtifacts ?? 0;
+            if (t.range && typeof t.range === 'string') {
+                const parsed = parseInt(t.range.split('-')[0].replace(/,/g, '').trim());
+                if (!isNaN(parsed)) threshold = parsed;
+            }
+            
+            return {
+                id: (t.id || t.name || '').toLowerCase(),
+                name: t.name || 'Protocol Member',
+                artifactCountThreshold: threshold,
+                perks: t.perks || [],
+            };
+        });
     }, [project]);
 
     const progression = useMemo(() => 
@@ -375,9 +384,11 @@ export default function ArtifactPurchaseModal({
                                     {/* Dynamic Urgency / Scarcity UI */}
                                     <div className="flex items-center justify-between gap-2 px-1 py-1">
                                         <div className="flex items-center gap-1.5">
-                                           <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                                           <span className="text-[10px] font-bold text-orange-400 uppercase tracking-tight">
-                                              {recentPurchaseCount !== null ? `+${recentPurchaseCount}` : (phase?.stats?.velocity || "+0")} adquiridos últ. 10 min
+                                           <div className={`w-1.5 h-1.5 rounded-full ${recentPurchaseCount !== null && recentPurchaseCount > 0 ? 'bg-orange-500 animate-pulse' : 'bg-zinc-500'}`} />
+                                           <span className={`text-[10px] font-bold uppercase tracking-tight ${recentPurchaseCount !== null && recentPurchaseCount > 0 ? 'text-orange-400' : 'text-zinc-500'}`}>
+                                              {recentPurchaseCount !== null && recentPurchaseCount > 0 
+                                                ? `+${recentPurchaseCount} adquiridos últ. 10 min` 
+                                                : `Expectativa: ${phase?.stats?.velocity || 'ALTA'}`}
                                            </span>
                                         </div>
                                         {phase?.stats?.timeRemaining && (
@@ -389,6 +400,7 @@ export default function ArtifactPurchaseModal({
                                 </div>
 
                                 {/* Progression Impact Block (v2.0 Optimized) */}
+                                {tiers && tiers.length > 0 && (
                                 <div className={`border rounded-[2rem] p-6 space-y-4 transition-all duration-500 ${
                                     progression.isUnlockMoment 
                                         ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.1)]' 
@@ -478,6 +490,7 @@ export default function ArtifactPurchaseModal({
                                         </div>
                                     ) : null}
                                 </div>
+                                )}
 
                                 {/* Summary */}
                                 <div className="bg-zinc-800/50 rounded-xl p-4 space-y-3">

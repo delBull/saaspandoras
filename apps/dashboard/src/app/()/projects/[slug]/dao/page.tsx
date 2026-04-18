@@ -76,15 +76,6 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
         address: licenseAddress
     }) : undefined;
 
-    // Licenses are NFTs (usually 0 decimals, but treated as 1 unit = 1 vote)
-    // We don't need decimals for ERC721 usually, but let's assume 18 if strictly needed or 0.
-    // Actually, getVotes usually returns WEI format if ERC20Votes, but for simple NFT 1=1. 
-    // However, W2ELoom might use standard checkpoints.
-    // Let's assume 0 decimals for display of "Count" but check raw value.
-    const decimals = 0;
-
-
-
     const { data: votingPowerBigInt } = useReadContract({
         contract: licenseContract || dummyContract,
         method: "function getVotes(address) view returns (uint256)",
@@ -99,6 +90,19 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
         queryOptions: { enabled: !!licenseContract && !!account }
     });
 
+    const { data: decimalsBigInt } = useReadContract({
+        contract: licenseContract || dummyContract,
+        method: "function decimals() view returns (uint8)",
+        params: [],
+        queryOptions: { enabled: !!licenseContract && project?.token_type === 'erc20' }
+    });
+
+    const decimals = decimalsBigInt !== undefined ? Number(decimalsBigInt) : (project?.token_type === 'erc20' ? 18 : 0);
+    const divisor = Math.pow(10, decimals);
+
+    const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / divisor : 0;
+    const tokenBalance = tokenBalanceBigInt ? Number(tokenBalanceBigInt) / divisor : 0;
+
     console.log("DEBUG: DAO Page Stats", {
         licenseAddress,
         account: account?.address,
@@ -106,10 +110,6 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
         tokenBalanceRaw: tokenBalanceBigInt?.toString(),
         decimals
     });
-
-    const divisor = 1; // NFTs are whole units usually
-    const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / divisor : 0;
-    const tokenBalance = tokenBalanceBigInt ? Number(tokenBalanceBigInt) / divisor : 0;
 
     if (isLoading) {
         return (
