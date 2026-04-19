@@ -57,13 +57,24 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
         params: []
     });
 
+    const { data: decimalsBN } = useReadContract({
+        contract: licenseContract || dummyContract,
+        queryOptions: { enabled: !!licenseContract && project?.token_type === 'erc20', retry: 0 },
+        method: 'function decimals() view returns (uint8)',
+        params: []
+    });
+
     const { data: metrics } = useSWR(project.id ? `/api/dao/metrics?projectId=${project.id}` : null, fetcher);
 
     // Holders count is unique wallets via DAO tracking as prioritized by user
     const memberWallets = Number(metrics?.memberWallets || metrics?.members || 0);
-    const currentSupply = currentSupplyBN !== undefined ? Number(currentSupplyBN) : memberWallets;
+    const decimals = decimalsBN !== undefined ? Number(decimalsBN) : (project?.token_type === 'erc20' ? 18 : 0);
+    const divisor = Math.pow(10, decimals);
+
+    const currentSupply = currentSupplyBN !== undefined ? Number(currentSupplyBN) / divisor : memberWallets;
     const artifactHolders = Number(metrics?.uniqueArtifactHolders || metrics?.artifactHolders || 0);
-    const maxSupply = maxSupplyERC721 ? Number(maxSupplyERC721) : (project.artifacts?.[0]?.maxSupply ?? 0);
+    const maxSupplyRaw = maxSupplyERC721 ? Number(maxSupplyERC721) : (project.artifacts?.[0]?.maxSupply ?? 0);
+    const maxSupply = maxSupplyRaw / divisor;
     const remaining = maxSupply > 0 ? maxSupply - currentSupply : null;
 
     const primaryArtifact = project.artifacts?.find(a => a.isPrimary) ?? project.artifacts?.[0];
