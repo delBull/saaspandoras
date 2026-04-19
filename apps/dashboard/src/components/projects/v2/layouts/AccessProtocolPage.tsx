@@ -50,14 +50,21 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
         params: []
     });
 
+    const { data: currentSupplyBN } = useReadContract({
+        contract: licenseContract || dummyContract,
+        queryOptions: { enabled: !!licenseContract, retry: 0 },
+        method: 'function totalSupply() view returns (uint256)',
+        params: []
+    });
+
     const { data: metrics } = useSWR(project.id ? `/api/dao/metrics?projectId=${project.id}` : null, fetcher);
 
     // Holders count is unique wallets via DAO tracking as prioritized by user
     const memberWallets = Number(metrics?.memberWallets || metrics?.members || 0);
-    const holdersCount = memberWallets;
+    const currentSupply = currentSupplyBN !== undefined ? Number(currentSupplyBN) : memberWallets;
     const artifactHolders = Number(metrics?.uniqueArtifactHolders || metrics?.artifactHolders || 0);
     const maxSupply = maxSupplyERC721 ? Number(maxSupplyERC721) : (project.artifacts?.[0]?.maxSupply ?? 0);
-    const remaining = maxSupply > 0 ? maxSupply - memberWallets : null;
+    const remaining = maxSupply > 0 ? maxSupply - currentSupply : null;
 
     const primaryArtifact = project.artifacts?.find(a => a.isPrimary) ?? project.artifacts?.[0];
     const registryAddress = project.registryContractAddress;
@@ -112,16 +119,15 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
                 {/* Live Stats */}
                 <div className="hidden sm:flex items-center gap-4 text-center shrink-0">
                     <div>
-                        <p className="text-lg font-bold text-lime-400">{memberWallets.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-lime-400">{currentSupply.toLocaleString()}</p>
                         <p className="text-[10px] text-gray-500">Miembros</p>
                     </div>
                 </div>
             </div>
 
             {/* Protocol Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                 {[
-                    { icon: Users, label: 'Holders', value: artifactHolders.toLocaleString(), color: 'text-emerald-400' },
                     { icon: Shield, label: 'Tipo', value: 'Access Pass', color: 'text-emerald-400' },
                     { icon: Zap, label: 'Precio de Acceso', value: 'GRATIS', color: 'text-white' },
                     { icon: Lock, label: 'Supply Máx', value: maxSupply > 0 ? maxSupply.toLocaleString() : '∞', color: 'text-gray-300' },
@@ -133,7 +139,7 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
                         </div>
                         <p className={`text-base font-bold ${stat.color}`}>{stat.value}</p>
                     </div>
-))}
+                ))}
             </div>
 
             {/* Additional Artifacts in ecosystem */}
