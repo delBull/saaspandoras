@@ -116,6 +116,14 @@ export default function ArtifactPurchaseModal({
 
     // 1. Resolve Target Contract
     // Priority handled by the Engine Resolver
+    console.log('[ArtifactPurchaseModal] Target resolution:', {
+        phase_artifactAddress: phase?.artifactAddress,
+        phase_name: phase?.name,
+        phase_phaseIndex: phase?.phaseIndex,
+        project_licenseContractAddress: project?.licenseContractAddress,
+        project_artifacts: project?.artifacts?.slice?.(0, 2)
+    });
+    
     const targetAddress = phase?.artifactAddress ||
         project.licenseContractAddress ||
         project.w2eConfig?.licenseToken?.address ||
