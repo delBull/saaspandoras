@@ -5,12 +5,13 @@ import useSWR from "swr";
 
 interface DAOMetricsProps {
     projectId: number;
+    project?: any;
     licenseContract?: any; // Keep for backward compat if needed, but we use API
 }
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-export function DAOMetrics({ projectId }: DAOMetricsProps) {
+export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
     const { data, error, isLoading } = useSWR(
         projectId ? `/api/dao/metrics?projectId=${projectId}` : null,
         fetcher,
@@ -27,6 +28,8 @@ export function DAOMetrics({ projectId }: DAOMetricsProps) {
         );
     }
 
+    const isToken = project?.token_type === 'erc20' || project?.tokenType === 'erc20' || project?.licenseToken?.type === 'erc20';
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* MEMBERS */}
@@ -36,9 +39,11 @@ export function DAOMetrics({ projectId }: DAOMetricsProps) {
                 </div>
                 <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">Miembros Únicos</p>
                 <h3 className="text-3xl font-black text-white font-mono">
-                    {data?.members ?? 0}
+                    {data?.members?.toLocaleString() ?? 0}
                 </h3>
-                <div className="mt-2 text-[10px] text-zinc-500">Wallets verificadas en el DAO</div>
+                <div className="mt-2 text-[10px] text-zinc-500">
+                    {isToken ? 'Wallets verificadas en el DAO' : 'Poseedores únicos de artefactos'}
+                </div>
             </div>
 
             {/* VOTING POWER */}
@@ -48,21 +53,25 @@ export function DAOMetrics({ projectId }: DAOMetricsProps) {
                 </div>
                 <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">Poder de Voto Total</p>
                 <h3 className="text-3xl font-black text-purple-400 font-mono">
-                    {data?.votingPower ?? 0}
+                    {data?.votingPower?.toLocaleString() ?? 0}
                 </h3>
                 <div className="mt-2 text-[10px] text-zinc-500">Suma total de derecho al voto</div>
             </div>
 
-            {/* ARTIFACTS */}
+            {/* ARTIFACTS / SUPPLY */}
             <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Zap className="w-12 h-12 text-lime-500" />
                 </div>
-                <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Artefactos</p>
+                <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+                    {isToken ? 'Suministro Total' : 'Total Artefactos'}
+                </p>
                 <h3 className="text-3xl font-black text-white font-mono">
-                    {data?.artifacts ?? 0}
+                    {data?.artifacts?.toLocaleString() ?? 0}
                 </h3>
-                <div className="mt-2 text-[10px] text-zinc-500">NFTs de acceso emitidos</div>
+                <div className="mt-2 text-[10px] text-zinc-500">
+                    {isToken ? 'Tokens de gobernanza emitidos' : 'NFTs de acceso emitidos'}
+                </div>
             </div>
 
             {/* TREASURY */}

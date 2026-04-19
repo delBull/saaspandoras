@@ -65,12 +65,31 @@ export async function GET(req: Request) {
         if (project?.treasuryAddress?.startsWith('0x') && project.chainId) {
             try {
                 const chain = defineChain(Number(project.chainId));
-                const balance = await getWalletBalance({
-                    client,
-                    chain,
-                    address: project.treasuryAddress
-                });
-                treasuryUSD = Number(balance.displayValue);
+                
+                // If on Base Mainnet, check USDC balance primarily
+                if (Number(project.chainId) === 8453) {
+                    const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+                    const usdcContract = getContract({
+                        client,
+                        chain,
+                        address: USDC_BASE_ADDRESS
+                    });
+                    const usdcBalance = await readContract({
+                        contract: usdcContract,
+                        method: "function balanceOf(address) view returns (uint256)",
+                        params: [project.treasuryAddress]
+                    }).catch(() => 0n);
+                    
+                    treasuryUSD = Number(usdcBalance) / 1e6;
+                } else {
+                    // Native balance fallback for other chains (Sepolia, etc)
+                    const balance = await getWalletBalance({
+                        client,
+                        chain,
+                        address: project.treasuryAddress
+                    });
+                    treasuryUSD = Number(balance.displayValue);
+                }
             } catch (balanceError: any) {
                 console.warn(`⚠️ [Metrics API] Treasury balance fetch failed for project ${projectId}:`, balanceError.message);
             }
@@ -95,7 +114,7 @@ export async function GET(req: Request) {
         // If no members, or if Postgres returns a single row with all nulls (common for empty sum/count)
         const firstStat = totalStats?.[0];
         
-        const totalPowerNum = Number(firstStat?.totalPower || 0);
+        let totalPowerNum = Number(firstStat?.totalPower || 0);
         let totalMembersNum = Number(firstStat?.totalMembers || 0);
         let totalArtifactsNum = Number(firstStat?.totalArtifacts || 0);
 
@@ -109,8 +128,8 @@ export async function GET(req: Request) {
                     client, chain, address: project.licenseContractAddress
                 });
 
-                // Fetch total supply (Holders/Artifacts)
-                const [onChainSupply, onChainParticipants] = await Promise.all([
+                // Fetch total supply, participants and decimals
+                const [onChainSupply, onChainParticipants, onChainDecimals] = await Promise.all([
                     readContract({
                         contract,
                         method: "function totalSupply() view returns (uint256)",
@@ -120,13 +139,29 @@ export async function GET(req: Request) {
                         contract,
                         method: "function totalParticipants() view returns (uint256)",
                         params: []
-                    }).catch(() => 0n)
+                    }).catch(() => 0n),
+                    readContract({
+                        contract,
+                        method: "function decimals() view returns (uint8)",
+                        params: []
+                    }).catch(() => (project?.tokenType === 'erc20' ? 18n : 0n))
                 ]);
 
+                const decimals = Number(onChainDecimals);
+                const divisor = Math.pow(10, decimals);
+
                 if (onChainSupply > 0n) {
-                    totalArtifactsNum = Number(onChainSupply);
+                    // For ERC20, artifacts count is often equivalent to whole units
+                    totalArtifactsNum = Number(onChainSupply) / divisor;
                     totalMembersNum = onChainParticipants > 0n ? Number(onChainParticipants) : totalArtifactsNum;
-                    console.log(`✅ [Metrics API] On-chain recovery successful: ${totalMembersNum} members`);
+                    
+                    // If no power from DB, the total possible power is the current supply
+                    // (This assumes 1 token = 1 vote unit at the base level)
+                    if (totalPowerNum === 0) {
+                        totalPowerNum = totalArtifactsNum;
+                    }
+                    
+                    console.log(`✅ [Metrics API] On-chain recovery successful: ${totalMembersNum} members, ${totalPowerNum} power`);
                 }
             } catch (onChainError) {
                 console.warn('⚠️ [Metrics API] On-chain recovery failed:', onChainError);
@@ -171,11 +206,14 @@ export async function GET(req: Request) {
         
         // PCI: Power Concentration Index (Gini-like for DAO)
         let pci = 0;
-        if (totalPowerNum > 0) {
+        if (totalPowerNum > 0 && totalMembersNum > 1) {
             pci = top10Power / totalPowerNum;
-        } else if (totalMembersNum > 0) {
-            // Pseudo-PCI if no refined voting power yet
-            pci = 0.1; 
+        } else if (totalPowerNum > 0 && totalMembersNum === 1) {
+            // If only 1 member has all tokens, PCI is 1 (Max concentration)
+            pci = 1;
+        } else {
+            // Default to 0 (Perfect distribution or no data)
+            pci = 0; 
         }
 
         // unique Member Wallets and Artifact Holders

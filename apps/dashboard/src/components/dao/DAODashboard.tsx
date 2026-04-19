@@ -185,7 +185,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             )}
 
             {/* Key Metrics Dashboard (Unified) */}
-            <DAOMetrics projectId={Number(project.id)} />
+            <DAOMetrics projectId={Number(project.id)} project={project} />
 
             {/* Admin Payouts Section (Owner Only, outside metric cards to keep them compact) */}
             {isOwner && !licenseContract && (
