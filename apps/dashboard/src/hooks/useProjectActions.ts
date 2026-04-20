@@ -408,6 +408,44 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     }
   };
 
+  // Function to update arbitrary project properties
+  const updateProject = async (projectId: string, updates: any) => {
+    if (!walletAddress) {
+      toast.error('Error: Wallet no conectada');
+      return;
+    }
+
+    const actionKey = `update-${projectId}`;
+    setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
+
+    try {
+      const response = await fetch(`/api/admin/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (response.ok) {
+        if (refreshCallback) {
+          await refreshCallback();
+        }
+      } else {
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        throw new Error(errorText || 'Error al actualizar proyecto');
+      }
+    } catch (error: any) {
+      console.error('Error updating project:', error);
+      throw error;
+    } finally {
+      setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
   return {
     deleteProject,
     approveProject,
@@ -417,5 +455,6 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     deployProtocol,
     certifySale,
     cloneProject,
+    updateProject,
   };
 }

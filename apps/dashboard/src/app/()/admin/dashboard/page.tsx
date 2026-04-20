@@ -19,6 +19,7 @@ import { ProjectCardsView } from "@/components/ProjectCardsView";
 import { ShortlinksAnalyticsTab } from "@/components/admin/ShortlinksAnalyticsTab";
 import { DeploymentConfigModal } from "@/components/admin/DeploymentConfigModal";
 import DeploymentProgressModal from "@/components/admin/DeploymentProgressModal";
+import { ProjectDetailModal } from "@/components/admin/ProjectDetailModal";
 import type { DeploymentConfig } from "@/types/deployment";
 import { waitForSession } from "@/lib/session";
 
@@ -58,6 +59,10 @@ export default function AdminDashboardPage() {
   const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+
+  // Project Detail Modal State
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [projectForDetail, setProjectForDetail] = useState<Project | null>(null);
 
   // Deployment Config Modal State
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -114,7 +119,7 @@ export default function AdminDashboardPage() {
   };
 
   // Use project actions hook with refresh callback
-  const { deleteProject, approveProject, rejectProject, changeProjectStatus, transferProject, deployProtocol, certifySale, cloneProject } = useProjectActions({
+  const { deleteProject, approveProject, rejectProject, changeProjectStatus, transferProject, deployProtocol, certifySale, cloneProject, updateProject } = useProjectActions({
     setActionsLoading,
     walletAddress: walletAddress ?? undefined,
     refreshCallback: refreshData,
@@ -178,6 +183,11 @@ export default function AdminDashboardPage() {
   const handleOpenDeployConfig = async (id: string, title: string, slug?: string, config?: DeploymentConfig) => {
     setSelectedProjectForDeployment({ id, title, slug: slug || '', forceRedeploy: config?.forceRedeploy });
     setIsConfigModalOpen(true);
+  };
+
+  const handleOpenDetail = (project: Project) => {
+    setProjectForDetail(project);
+    setIsDetailModalOpen(true);
   };
 
   // Use global featured projects hook
@@ -672,8 +682,7 @@ export default function AdminDashboardPage() {
                   ) : (
                     <ProjectTableView
                       projects={filteredProjects}
-                      expandedProject={expandedProject}
-                      setExpandedProject={setExpandedProject}
+                      onOpenDetail={handleOpenDetail}
                       actionsDropdown={actionsDropdown}
                       setActionsDropdown={setActionsDropdown}
                       setActionsDropdownPosition={setActionsDropdownPosition}
@@ -1006,6 +1015,13 @@ export default function AdminDashboardPage() {
         status={deploymentStatus}
         error={deploymentError}
         projectTitle={selectedProjectForDeployment?.title || ''}
+      />
+      <ProjectDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        project={projectForDetail}
+        onUpdate={updateProject}
+        actionsLoading={actionsLoading[`update-${projectForDetail?.id}`]}
       />
     </div>
   );

@@ -34,7 +34,8 @@ const FALLBACK_PROJECTS = [
     subtitle: "La infraestructura descentralizada para el acceso digital soberano.",
     actionText: "Explorar",
     imageUrl: "/images/dhub3.png",
-    projectSlug: "pandoras-protocol"
+    projectSlug: "pandoras-protocol",
+    isFallback: true
   }
 ];
 
@@ -111,7 +112,7 @@ function FeaturedCarousel({ projects }: { projects: any[] }) {
             <p className="text-sm md:text-base text-gray-200 line-clamp-2 max-w-[90%] opacity-90 drop-shadow-md mb-4">{currentProject.subtitle || currentProject.description}</p>
 
             <Link
-              href={`/projects/${currentProject.projectSlug || currentProject.slug}`}
+              href={currentProject.isFallback ? "/applicants" : `/projects/${currentProject.projectSlug || currentProject.slug}`}
               className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-black bg-white px-5 py-2.5 rounded-full hover:bg-gray-200 transition-colors shadow-lg"
             >
               {currentProject.actionText || "Ver Proyecto"} <ChevronRightIcon className="w-4 h-4" />

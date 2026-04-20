@@ -59,6 +59,8 @@ export async function GET(
         yieldSource: true,
         stakingRewardsEnabled: true,
         revenueSharingEnabled: true,
+        w2eConfig: true,
+        artifacts: true,
         createdAt: true,
         updatedAt: true,
         // Always exclude PII and internal fields
@@ -90,6 +92,17 @@ export async function GET(
         fundingProgress: project.targetAmount && project.raisedAmount
           ? Math.round((Number(project.raisedAmount) / Number(project.targetAmount)) * 100)
           : 0,
+        // 🧬 Filter out inactive phases from w2eConfig to hide them in external widgets
+        w2eConfig: project.w2eConfig ? (function() {
+          const config = typeof project.w2eConfig === 'string' 
+            ? JSON.parse(project.w2eConfig) 
+            : (project.w2eConfig as any);
+          
+          if (config.phases && Array.isArray(config.phases)) {
+            config.phases = config.phases.filter((p: any) => p.isActive !== false);
+          }
+          return config;
+        })() : null
       },
       generated_at: new Date().toISOString(),
     });

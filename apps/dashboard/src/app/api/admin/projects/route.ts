@@ -130,6 +130,7 @@ export async function GET(request: Request) {
           w2eConfig: true,
           allowedDomains: true,
           discordWebhookUrl: true,
+          protocolVersion: true,
         }
       });
       console.log(`📊 Admin API: Found ${projectsData.length} projects (excluding infrastructure)`);
