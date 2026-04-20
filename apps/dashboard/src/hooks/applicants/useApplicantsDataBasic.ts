@@ -57,8 +57,16 @@ export function useApplicantsDataBasic(): ApplicantsData {
         throw new Error('Failed to fetch projects');
       }
       const data = await response.json() as Project[];
-      console.log('✅ Basic Hook: Projects loaded:', data.length);
-      setProjects(data);
+      
+      // 🛡️ FILTER: Exclude internal 'Pandoras Access' from the applicants view
+      const filteredData = data.filter(p => {
+        const isAccessSlug = p.slug === 'pandoras-access' || p.slug === 'pandora-access' || p.slug === 'pandoras-protocol';
+        const isAccessTitle = p.title?.toLowerCase().includes("pandora's access") || p.title?.toLowerCase() === "pandora's access";
+        return !isAccessSlug && !isAccessTitle;
+      });
+
+      console.log('✅ Basic Hook: Projects loaded and filtered:', filteredData.length);
+      setProjects(filteredData);
     } catch (error) {
       console.error("❌ Basic Hook: Error fetching projects:", error);
       toast.error("No se pudieron cargar los proyectos.");
