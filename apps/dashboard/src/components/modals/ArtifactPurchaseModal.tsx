@@ -114,15 +114,15 @@ export default function ArtifactPurchaseModal({
         address: account?.address,
     });
 
-    // 1. Resolve Target Contract
-    // Priority handled by the Engine Resolver
-    console.log('[ArtifactPurchaseModal] Target resolution:', {
-        phase_artifactAddress: phase?.artifactAddress,
-        phase_name: phase?.name,
-        phase_phaseIndex: phase?.phaseIndex,
-        project_licenseContractAddress: project?.licenseContractAddress,
-        project_artifacts: project?.artifacts?.slice?.(0, 2)
-    });
+    // [DEV NOTE] Target resolution logged in dev only
+    if (process.env.NODE_ENV === 'development') {
+        console.debug('[ArtifactPurchaseModal] Target resolution:', {
+            phase_artifactAddress: phase?.artifactAddress,
+            phase_name: phase?.name,
+            phase_phaseIndex: phase?.phaseIndex,
+            project_licenseContractAddress: project?.licenseContractAddress,
+        });
+    }
     
     const targetAddress = phase?.artifactAddress ||
         project.licenseContractAddress ||
@@ -241,6 +241,7 @@ export default function ArtifactPurchaseModal({
         }
 
         // Register buyer as unique holder immediately — updates Holders count in real-time
+        // Also records phase metadata to track which phase was acquired (V1 model)
         try {
             fetch('/api/dao/register-holder', {
                 method: 'POST',
@@ -249,6 +250,9 @@ export default function ArtifactPurchaseModal({
                     wallet: account?.address,
                     projectId: project.id,
                     artifactsAcquired: safeAmount,
+                    phaseName: phase?.name,
+                    phaseIndex: phase?.phaseIndex,
+                    contractAddress: targetAddress,
                 })
             }).catch(() => {});
         } catch (e) {
