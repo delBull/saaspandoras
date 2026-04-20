@@ -60,8 +60,12 @@ export function useApplicantsDataBasic(): ApplicantsData {
       
       // 🛡️ FILTER: Exclude internal 'Pandoras Access' from the applicants view
       const filteredData = data.filter(p => {
-        const isAccessSlug = p.slug === 'pandoras-access' || p.slug === 'pandora-access' || p.slug === 'pandoras-protocol';
-        const isAccessTitle = p.title?.toLowerCase().includes("pandora's access") || p.title?.toLowerCase() === "pandora's access";
+        const pSlug = (p.slug || '').toLowerCase();
+        const pTitle = (p.title || '').toLowerCase();
+        
+        const isAccessSlug = pSlug === 'pandoras-access' || pSlug === 'pandora-access' || pSlug === 'pandoras-protocol';
+        const isAccessTitle = pTitle.includes("pandora's access") || pTitle === "pandora's access";
+        
         return !isAccessSlug && !isAccessTitle;
       });
 
