@@ -181,15 +181,20 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   // --- Smooth Scroll Logic ---
   const scrollToPhases = () => {
-    const element = document.getElementById('sidebar-phases');
+    const element = document.getElementById('phases-section-anchor');
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const headerOffset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     } else {
-      // Fallback: switch tab via URL if not in DOM, but try to stay on page if possible
       const url = new URL(window.location.href);
       url.searchParams.set('tab', 'utility');
-      url.hash = 'tab-phases';
-      window.location.href = url.toString();
+      window.history.pushState({}, '', url.toString());
     }
   };
 
@@ -417,7 +422,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
           {/* Utility Offers Panel (Dynamic Phases) */}
           {(allPhases && allPhases.length > 0) ? (
             <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <h3 id="phases-section-anchor" className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-lime-400" /> Fases de Venta
               </h3>
               <div className="space-y-4">

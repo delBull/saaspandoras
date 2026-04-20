@@ -20,7 +20,7 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[1, 2, 3, 4].map(i => (
                     <div key={i} className="h-24 bg-zinc-900 animate-pulse rounded-2xl border border-zinc-800" />
                 ))}
@@ -31,7 +31,7 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
     const isToken = project?.token_type === 'erc20' || project?.tokenType === 'erc20' || project?.licenseToken?.type === 'erc20';
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* MEMBERS */}
             <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -42,7 +42,7 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
                     {data?.members?.toLocaleString() ?? 0}
                 </h3>
                 <div className="mt-2 text-[10px] text-zinc-500">
-                    {isToken ? 'Wallets verificadas en el DAO' : 'Poseedores únicos de artefactos'}
+                    {isToken ? 'Wallets verificadas en el DAO' : 'Poseedores de Access Card'}
                 </div>
             </div>
 
@@ -56,22 +56,6 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
                     {data?.votingPower?.toLocaleString() ?? 0}
                 </h3>
                 <div className="mt-2 text-[10px] text-zinc-500">Suma total de derecho al voto</div>
-            </div>
-
-            {/* ARTIFACTS / SUPPLY */}
-            <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Zap className="w-12 h-12 text-lime-500" />
-                </div>
-                <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">
-                    {isToken ? 'Suministro Total' : 'Total Artefactos'}
-                </p>
-                <h3 className="text-3xl font-black text-white font-mono">
-                    {data?.artifacts?.toLocaleString() ?? 0}
-                </h3>
-                <div className="mt-2 text-[10px] text-zinc-500">
-                    {isToken ? 'Tokens de gobernanza emitidos' : 'NFTs de acceso emitidos'}
-                </div>
             </div>
 
             {/* TREASURY */}
