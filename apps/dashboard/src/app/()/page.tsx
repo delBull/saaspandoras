@@ -344,17 +344,25 @@ export default function DashboardPage() {
     const isWidgetBypass = window.location.search.includes('bypass=ritual');
     
     if (UNAUTHORIZED_STATES.includes(accessState) || isWidgetBypass) {
+      // 🛡️ SECURITY: Do not redirect if we are still "booting" or "checking"
+      // to avoid kicking users out while their session is being verified.
+      const IS_TRANSITIONAL = status === "booting" || status === "checking_session" || status === "checking_access";
+      
+      if (isAutoConnecting || isManualConnecting || IS_TRANSITIONAL) {
+        return;
+      }
+
       // 🛡️ SECURITY: Only redirect if NOT already on an access path to avoid loops
       if (typeof window !== 'undefined' && (window.location.pathname.includes('/access') || window.location.pathname.includes('/accessv2'))) {
         return;
       }
       
-      console.log(`🛡️ [DashboardRoot] Redirecting to /accessv2 (State: ${accessState}, Bypass: ${isWidgetBypass})...`);
+      console.log(`🛡️ [DashboardRoot] Redirecting to /accessv2 (Status: ${status}, State: ${accessState})...`);
       // Preserve search parameters for external widgets passing ?project=...
       const currentSearchParams = window.location.search;
       router.push(`/accessv2${currentSearchParams}`);
     }
-  }, [accessState, router, isAutoConnecting, isManualConnecting]);
+  }, [accessState, router, isAutoConnecting, isManualConnecting, status]);
 
   // 🟢 CASE 1: LOADING STATE OR WIDGET INTERCEPT
   const isWidgetBypass = typeof window !== 'undefined' && window.location.search.includes('bypass=ritual');

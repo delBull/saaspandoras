@@ -127,11 +127,13 @@ export function getTargetAmount(project: any): number {
 
     // V2 / Phase-based Structure (Highest Priority)
     // If there are phases, the total target is the sum of all phase caps
-    const phases = config.phases || (project as any).phases || [];
+    // Check both standard phase array locations
+    const phases = config.phases || (project as any).phases || config.tokenomics?.phases || [];
     if (Array.isArray(phases) && phases.length > 0) {
       const totalFromPhases = phases.reduce((sum: number, phase: any) => {
-        // Only sum phases that have a numeric cap
-        const cap = Number(phase.cap || 0);
+        // Handle both 'cap' and 'target' field names for robustness
+        const capValue = phase.cap ?? phase.target ?? phase.amount ?? 0;
+        const cap = Number(capValue);
         return sum + (isNaN(cap) ? 0 : cap);
       }, 0);
       if (totalFromPhases > 0) return totalFromPhases;

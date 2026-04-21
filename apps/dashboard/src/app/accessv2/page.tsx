@@ -195,11 +195,14 @@ function AccessV2Inner() {
       );
       if (bypassRitual) {
         // If came from a specific project, go there directly
-        if (projectSlug) {
-          router.push(`/protocol/${projectSlug}`);
-        } else {
-          router.push('/');
-        }
+        // DELAYED REDIRECT: Wait a small beat to ensure session is stable
+        setTimeout(() => {
+          if (projectSlug) {
+            router.push(`/protocol/${projectSlug}`);
+          } else {
+            router.push('/');
+          }
+        }, 500);
       } else {
         setShowPortal(true);
       }
