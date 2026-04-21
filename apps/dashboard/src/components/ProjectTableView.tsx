@@ -91,6 +91,30 @@ export function ProjectTableView({
                           🔮 Full Protocol
                         </span>
                       )}
+                      {/* Badge for Provisional Treasury (Custody Mode) */}
+                      {p.w2eConfig?.isProvisionalTreasury && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/20 text-amber-500 border border-amber-500/30 whitespace-nowrap cursor-help animate-pulse-subtle">
+                              🛡️ Tesorería en Custodia
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-zinc-900 border-amber-500/30 text-zinc-200 w-64">
+                            <p className="font-bold flex items-center gap-1 text-amber-500 mb-1">
+                              🛡️ Modo Provisional Activo
+                            </p>
+                            <p className="text-[11px] leading-relaxed">
+                              Este proyecto fue desplegado sin una wallet de fundador configurada. Los fondos están resguardados en la <b>Super Admin Wallet</b>.
+                            </p>
+                            {p.w2eConfig?.claimableByEmail && (
+                              <div className="mt-2 p-1.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px]">
+                                <span className="opacity-70 text-gray-400">Reclamable por administrador de:</span><br/>
+                                <span className="font-mono text-amber-400">{p.w2eConfig.claimableByEmail}</span>
+                              </div>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                       {/* Growth OS Visual Identifier (Zap) with Tooltip */}
                       {p.deploymentStatus === 'deployed' && (
                         <Tooltip>

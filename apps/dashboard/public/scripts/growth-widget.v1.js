@@ -269,19 +269,13 @@
         }
     }
 
-    /**
-     * Public API - Lead Modal (ritual)
-     */
-    async function openModal() {
-        if (document.getElementById('pd-growth-modal') || document.getElementById('pd-checkout-modal')) return;
-        track('WIDGET_CLICK');
-
-    // Expose Global API
+    // --- Public API ---
     window.PandorasGrowth = {
         registerLead,
         open: openModal,
         openCheckout,
         track,
+        emit: track, // Alias for protocol standardization
         login: openModal // Legacy compatibility for external projects
     };
 
