@@ -183,18 +183,17 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const scrollToPhases = () => {
     const element = document.getElementById('phases-section-anchor');
     if (element) {
-      const headerOffset = 100;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', 'utility');
-      window.history.pushState({}, '', url.toString());
+      // Fallback: try to find the utility tab or scroll to bottom of sidebar
+      const sidebarPhases = document.getElementById('sidebar-phases');
+      if (sidebarPhases) {
+        sidebarPhases.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', 'utility');
+        window.history.pushState({}, '', url.toString());
+      }
     }
   };
 

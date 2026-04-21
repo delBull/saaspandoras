@@ -198,34 +198,32 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
             {project.description}
           </p>
 
-          {!isPending && project.status !== 'pending' && (
-            <div className="mb-4">
-              {/* Dynamic Phase Info */}
-              {activePhase ? (
-                <div className="flex justify-between items-center text-xs mb-2 bg-black/40 p-2 rounded-lg border border-white/5">
-                  <span className="text-zinc-400">{activePhase.name ?? "Venta de Utilidad"}</span>
-                  <span className="font-mono font-bold text-lime-400">
-                    {activePhase.tokenPrice ? `$${activePhase.tokenPrice}` : 'Gratis'}
-                  </span>
-                </div>
-              ) : null}
+          <div className="mb-4">
+            {/* Dynamic Phase Info */}
+            {activePhase ? (
+              <div className="flex justify-between items-center text-xs mb-2 bg-black/40 p-2 rounded-lg border border-white/5">
+                <span className="text-zinc-400">{activePhase.name ?? "Venta de Utilidad"}</span>
+                <span className="font-mono font-bold text-lime-400">
+                  {activePhase.tokenPrice ? `$${activePhase.tokenPrice}` : 'Gratis'}
+                </span>
+              </div>
+            ) : null}
 
-              <div className="flex justify-between items-center text-xs text-zinc-400 mb-2">
-                <span>Progreso del Protocolo</span>
-                <span className="font-semibold text-white">{progress.toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-zinc-800 rounded-full h-2 mb-2 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-lime-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-xs text-zinc-500">
-                <span>${raisedAmount.toLocaleString()} recaudados</span>
-                <span>de ${targetAmount.toLocaleString()}</span>
-              </div>
+            <div className="flex justify-between items-center text-xs text-zinc-400 mb-2">
+              <span>Progreso del Protocolo</span>
+              <span className="font-semibold text-white">{progress.toFixed(1)}%</span>
             </div>
-          )}
+            <div className="w-full bg-zinc-800 rounded-full h-2 mb-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-lime-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-xs text-zinc-500">
+              <span>${raisedAmount.toLocaleString()} recaudados</span>
+              <span>de ${targetAmount.toLocaleString()}</span>
+            </div>
+          </div>
 
           <div className={`flex justify-between items-center ${isPending ? 'pt-2' : 'pt-3'} border-t border-white/10 mt-auto`}>
             {variant === 'pending' ? (
