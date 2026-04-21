@@ -21,8 +21,11 @@ import {
   gamificationEvents,
   actionLogs,
   daoMembers,
+  marketingLeads,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
+import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
+import { executeGrowthActions } from '@/lib/marketing/growth-engine/actions';
 import { eq, sql, desc, or, and } from 'drizzle-orm';
 import { WebhookService } from '@/lib/integrations/webhook-service';
 import { integrationClients as integrationClientsSchema } from '@/db/schema';
@@ -384,18 +387,64 @@ export class GamificationService {
         console.warn('⚠️ Failed to queue gamification webhook:', webhookError);
       }
 
-      // 🎯 DAO SYNC: If this is a membership event, sync to dao_members table
-      const daoTriggerEvents = ['artifact_acquired', 'access_card_acquired', 'artifact_purchased'];
-      if (daoTriggerEvents.includes(eventType.toLowerCase()) && metadata?.projectId) {
+
+      // 🚀 GROWTH OS TRIGGER: If artifact purchased, trigger post-purchase sequence
+      if (eventType.toLowerCase() === 'artifact_purchased' && metadata?.projectId) {
         try {
-          await this.upsertDaoMember(
-            Number(metadata.projectId),
-            walletAddressLower,
-            1, // Default increment
-            metadata?.campaignId ? Number(metadata.campaignId) : undefined
-          );
-        } catch (daoError) {
-          console.warn('⚠️ Failed to sync DAO member:', daoError);
+          // 1. Get Project Context
+          const projectRecord = await db.query.projects.findFirst({
+            where: eq(projects.id, Number(metadata.projectId))
+          });
+
+          // 2. Resolve Lead Context (B2C)
+          // Find if there's an existing marketing lead for this user's email
+          const userWithEmail = await db.query.users.findFirst({
+            where: eq(users.walletAddress, walletAddressLower),
+            columns: { email: true }
+          });
+
+          if (userWithEmail?.email && projectRecord) {
+            const leadRecord = await db.query.marketingLeads.findFirst({
+              where: eq(marketingLeads.email, userWithEmail.email)
+            });
+
+            if (leadRecord) {
+              console.log(`🚀 [Growth OS] Triggering Post-Purchase for ${userWithEmail.email}`);
+              
+              // Map to engine payloads
+              const leadPayload = {
+                id: leadRecord.id,
+                email: leadRecord.email,
+                name: leadRecord.name,
+                intent: leadRecord.intent,
+                projectId: projectRecord.id,
+                metadata: leadRecord.metadata,
+                scope: (leadRecord.scope as any) || 'b2c'
+              };
+
+              const projectPayload = {
+                id: projectRecord.id,
+                slug: projectRecord.slug,
+                name: projectRecord.title,
+                businessCategory: projectRecord.businessCategory || 'real_estate'
+              };
+
+              // Resolve & Execute
+              const engineResult = resolveGrowthAction('PURCHASED', leadPayload as any, projectPayload as any);
+              
+              if (engineResult && engineResult.actions.length > 0) {
+                await executeGrowthActions(
+                  engineResult.actions,
+                  { lead: leadPayload as any, project: projectPayload as any },
+                  { ruleId: 'GAMIFICATION_PURCHASE_HOOK', ruleCondition: 'Post-Purchase Success Sequence' },
+                  engineResult.scoreChange,
+                  engineResult
+                );
+              }
+            }
+          }
+        } catch (growthError) {
+          console.warn('⚠️ [Growth OS] Failed to trigger post-purchase growth action:', growthError);
         }
       }
 

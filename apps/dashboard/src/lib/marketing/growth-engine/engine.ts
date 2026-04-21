@@ -273,7 +273,7 @@ export function resolveGrowthAction(
 
     case 'PURCHASED':
       nextState = 'INVESTOR';
-      actions = ['NOTIFY_TEAM'];
+      actions = ['SEND_POST_PURCHASE_SUCCESS', 'NOTIFY_TEAM'];
       break;
 
     case 'BOOKING_CREATED':

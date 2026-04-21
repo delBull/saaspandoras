@@ -1,6 +1,6 @@
 import { eq, and, gt } from 'drizzle-orm';
 import { db } from '@/db';
-import { marketingLeads, courses, growthActionsLog } from '@/db/schema';
+import { marketingLeads, courses, growthActionsLog, projects } from '@/db/schema';
 import { GrowthActionType, LeadContextPayload, ProjectContextPayload, GrowthMetadata, LeadState } from './types';
 import { notificationService, ensureNotificationServiceConfigured } from '@/lib/notifications';
 
@@ -16,7 +16,8 @@ import {
   sendWaitlistSequenceEmail,
   sendGenesisWelcomeEmail,
   sendEducationalNurtureEmail,
-  sendVIPConciergeEmail
+  sendVIPConciergeEmail,
+  sendPostPurchaseSuccessEmail
 } from '@/lib/marketing/growth-engine/email-senders';
 
 export async function executeGrowthActions(
@@ -383,6 +384,33 @@ export async function executeGrowthActions(
                             name: lead.name || 'Futuro Colaborador',
                             projectName: project.name,
                             courseUrl
+                        });
+                        success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
+
+                case 'SEND_POST_PURCHASE_SUCCESS': {
+                    if (lead.email) {
+                        // Fetch fresh project stats for accuracy (Funding %, Phase)
+                        const [freshProject] = await tx.select()
+                            .from(projects)
+                            .where(eq(projects.id, project.id))
+                            .limit(1);
+
+                        const raised = Number(freshProject?.raisedAmount || 0);
+                        const target = Number(freshProject?.targetAmount || 1);
+                        const fundingPercentage = Math.min(100, Math.round((raised / target) * 100));
+                        
+                        const res = await sendPostPurchaseSuccessEmail({
+                            to: lead.email as string,
+                            projectName: project.name,
+                            projectSlug: project.slug,
+                            businessCategory: project.businessCategory || 'other',
+                            fundingPercentage,
+                            currentPhase: freshProject?.status === 'live' ? 'Participación Abierta' : 'Fase Privada'
                         });
                         success = res.success;
                     } else {

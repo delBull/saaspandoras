@@ -65,6 +65,7 @@ export type GrowthActionType =
   | 'SEND_DYNAMIC_OFFER'    // Phase 85: Risk-Adjusted Yield
   | 'GENERATE_LEAD_BRIEF'
   | 'SEND_EDUCATIONAL_NURTURE'
+  | 'SEND_POST_PURCHASE_SUCCESS'
   | 'SEND_SOW';
 
 export interface GrowthEngineResult {
