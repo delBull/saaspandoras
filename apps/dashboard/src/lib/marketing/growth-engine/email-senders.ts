@@ -8,6 +8,7 @@ import B2BBookingConfirmedEmail from '@/emails/b2b-booking-confirmed';
 import B2BNoShowRecoveryEmail from '@/emails/b2b-no-show-recovery';
 import WaitlistEmail from '@/emails/WaitlistEmail';
 import ProjectEducationalEmail from '@/emails/educational-nurture';
+import PostPurchaseSuccessEmail from '@/emails/PostPurchaseSuccessEmail';
 
 import { EngagementLevel } from './types';
 import { db } from '@/db';
@@ -63,6 +64,11 @@ const NICHE_COPIES: Record<string, Record<string, Record<number | string, { subj
       'GENESIS': {
         subject: "Estás dentro de la ventana de oportunidad.",
         body: "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
+      },
+      'POST_PURCHASE': {
+        subject: "Tu participación en {projectName} está activa",
+        body: "Has dado el paso más importante.\n\nAl participar en {projectName}, no solo estás adquiriendo un activo, estás activando una pieza clave de infraestructura inmobiliaria que garantiza transparencia y trazabilidad sobre cada metro cuadrado.\n\nTu posición ya está registrada en el protocolo.",
+        ctaText: "ACCEDER A MI PANEL"
       }
     },
     'mid': {
@@ -113,6 +119,11 @@ const NICHE_COPIES: Record<string, Record<string, Record<number | string, { subj
       'GENESIS': {
         subject: "Estás dentro antes que el resto.",
         body: "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
+      },
+      'POST_PURCHASE': {
+        subject: "Posición activada: {projectName}",
+        body: "Bienvenido a la infraestructura.\n\nHas asegurado tu lugar en el despliegue de {projectName}. Esta acción te otorga acceso directo a los componentes modulares y la gobernanza del protocolo.\n\nEs hora de empezar a construir.",
+        ctaText: "VER PANEL DE CONTROL"
       }
     },
     'mid': {
@@ -143,13 +154,58 @@ const NICHE_COPIES: Record<string, Record<string, Record<number | string, { subj
       1: { subject: "Tu infraestructura está activa", body: "El Sistema Operativo de Adquisición ya está en operación.\n\nPuedes acceder ahora para integrar el motor de cierre automático a tu flujo de negocio." },
       2: { subject: "IA y Cierre Automático", body: "El motor de Growth OS no solo captura, sino que cierra.\n\nDentro existen niveles de automatización definidos por tus artefactos de certificación." },
       3: { subject: "Escala con Precisión", body: "Tu participación activa desbloquea capas de inteligencia avanzada para tu ecosistema." },
-      4: { subject: "Enciende tu Motor", body: "Ya puedes entrar, firmar tu acceso y activar la infraestructura de crecimiento.", ctaText: "ACTIVAR SISTEMA" }
+      4: { subject: "Enciende tu Motor", body: "Ya puedes entrar, firmar tu acceso y activar la infraestructura de crecimiento.", ctaText: "ACTIVAR SISTEMA" },
+      'POST_PURCHASE': {
+        subject: "Motor encendido: {projectName}",
+        body: "La integración ha comenzado.\n\nYa eres parte de la red de {projectName}. El Sistema Operativo de Adquisición está listo para ser escalado bajo tu control.\n\nAccede a tu nodo ahora.",
+        ctaText: "GESTIONAR NODO"
+      }
     },
     'mid': {
       1: { subject: "Bienvenido al motor de adquisición", body: "El futuro de la adquisición autónoma ya está aquí.\n\nYa puedes entrar y conocer las reglas del motor de conversión." },
       2: { subject: "Capa de Inteligencia", body: "Descubre cómo el sistema procesa cada lead de forma determinística." },
       3: { subject: "Ventajas de Escala", body: "Como parte del ecosistema, accedes a herramientas de cierre que otros no conocen." },
       4: { subject: "Dashboard Abierto", body: "Puedes empezar a configurar tu nodo ahora.", ctaText: "ENCENDER" }
+    }
+  },
+  'finance': {
+    'high': {
+      1: { subject: "Protocolo de liquidez activo", body: "Ya puedes interactuar con los pools y capas de rendimiento." },
+      'POST_PURCHASE': {
+        subject: "Posición financiera activa: {projectName}",
+        body: "Tu capital ya está operando bajo las reglas del protocolo {projectName}. Has asegurado un nodo de liquidez que te otorga derechos sobre el flujo generado por el sistema.\n\nEl panel de control financiero ya está desbloqueado.",
+        ctaText: "GESTIONAR LIQUIDEZ"
+      }
+    }
+  },
+  'creative': {
+    'high': {
+      1: { subject: "Registro de propiedad activo", body: "Tus derechos y participaciones ya están registrados en el protocolo." },
+      'POST_PURCHASE': {
+        subject: "Propiedad intelectual asegurada: {projectName}",
+        body: "Bienvenido a la nueva era de la propiedad digital. Al participar en {projectName}, has registrado tu posición sobre activos de propiedad intelectual únicos.\n\nTu certificado de participación ya es visible en el ledger.",
+        ctaText: "VER MI COLECCIÓN"
+      }
+    }
+  },
+  'impact': {
+    'high': {
+      1: { subject: "Infraestructura de impacto lista", body: "Estamos construyendo el futuro de {projectName} sobre bases sólidas." },
+      'POST_PURCHASE': {
+        subject: "Impacto activado: {projectName}",
+        body: "Gracias por ser parte del cambio. Tu participación en {projectName} habilita el despliegue de infraestructura crítica para un futuro más sostenible y eficiente.\n\nSigue el progreso de la implementación desde tu panel.",
+        ctaText: "VER IMPACTO"
+      }
+    }
+  },
+  'other': {
+    'high': {
+      1: { subject: "Acceso total desbloqueado", body: "Ya puedes empezar a participar en el ecosistema." },
+      'POST_PURCHASE': {
+        subject: "Bienvenido a {projectName}",
+        body: "Tu participación ha sido confirmada exitosamente. Ya tienes acceso a todas las herramientas y beneficios exclusivos dentro del protocolo {projectName}.\n\nEs el momento de empezar a explorar.",
+        ctaText: "ENTRAR AL PANEL"
+      }
     }
   }
 };
@@ -168,10 +224,19 @@ function resolveNicheContext(context: {
   
   // Niche mapping logic (Scalable)
   let niche = 'tech_startup';
+  
   if (category.includes('real_estate') || category.includes('inmobiliario') || context.brandHeader?.toLowerCase().includes('narai')) {
     niche = 'real_estate';
   } else if (category.includes('growth_os') || category.includes('marketing') || projectName.toLowerCase().includes('growth os')) {
     niche = 'growth_os';
+  } else if (['defi', 'finance', 'sports_fan_tokens'].includes(category)) {
+    niche = 'finance';
+  } else if (['art_collectibles', 'music_audio', 'intellectual_property', 'metaverse', 'gaming', 'social_networks'].includes(category)) {
+    niche = 'creative';
+  } else if (['renewable_energy', 'healthcare', 'education', 'supply_chain', 'infrastructure'].includes(category)) {
+    niche = 'impact';
+  } else if (category === 'other') {
+    niche = 'other';
   } else if (projectName.toLowerCase().includes('pandora')) {
     niche = 'tech_startup';
   }
@@ -786,6 +851,78 @@ export async function sendVIPConciergeEmail(context: {
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (VIP Concierge):`, error);
+    throw error;
+  }
+}
+
+export async function sendPostPurchaseSuccessEmail(context: {
+  to: string;
+  projectName?: string;
+  projectSlug?: string;
+  businessCategory?: string;
+  fundingPercentage?: number;
+  currentPhase?: string;
+  brandHeader?: string;
+}) {
+  const { projectName, intentMap } = resolveNicheContext(context);
+  console.log(`[Growth Engine] Sending Post-Purchase Success Email for ${projectName} to ${context.to}`);
+  
+  const isProd = process.env.NODE_ENV === 'production';
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+      if (isProd) {
+          throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
+      }
+      return { success: true, mocked: true };
+  }
+
+  const emailData = intentMap?.['POST_PURCHASE'] || {
+    subject: `Tu participación en ${projectName} está activa`,
+    body: `Has dado el paso más importante. Ahora eres parte de la infraestructura que está redefiniendo el sector de ${context.businessCategory || 'Tecnología'}.\n\nTu posición ya está registrada.`
+  };
+
+  // Dynamic template replacements
+  const subject = emailData.subject.replace('{projectName}', projectName);
+  const body = emailData.body.replace('{projectName}', projectName);
+  const ctaText = emailData.ctaText || "ACCEDER A MI PANEL";
+  const ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance'}/projects/${context.projectSlug || 'default'}/dao`;
+
+  try {
+    const data = await resend.emails.send({
+      from: `${projectName} <${FROM_EMAIL}>`,
+      to: [context.to],
+      subject,
+      tags: [
+        { name: 'audience', value: 'post_purchase_success' },
+        { name: 'project', value: context.projectSlug || 'unknown' }
+      ],
+      react: PostPurchaseSuccessEmail({ 
+        projectName,
+        projectSlug: context.projectSlug,
+        subject,
+        body,
+        fundingPercentage: context.fundingPercentage || 0,
+        currentPhase: context.currentPhase || 'Public Sale',
+        ctaText,
+        ctaUrl
+      }) as React.ReactElement,
+    });
+
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
+      await trackEmailMetadata({
+        emailId: String(resendId),
+        recipient: context.to,
+        subject,
+        type: 'post_purchase_success'
+      });
+    }
+
+    console.log(`[Growth Engine] Resend Success (Post-Purchase):`, data);
+    return { success: true, data };
+  } catch (error) {
+    console.error(`[Growth Engine] Resend Error (Post-Purchase):`, error);
     throw error;
   }
 }
