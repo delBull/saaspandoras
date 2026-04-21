@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Lock, ChevronDown, CheckCircle } from 'lucide-react';
 
@@ -118,35 +118,76 @@ function GridBackground() {
 }
 
 function LiveActivity() {
-  const [items] = useState([
-    { id: 1, user: '0x4f...a2', action: 'solicitó acceso', time: 'hace 2m' },
-    { id: 2, user: '0x1c...e9', action: 'entró en S\'Narai', time: 'hace 15m' },
-    { id: 3, user: '0x9a...f4', action: 'solicitó acceso', time: 'hace 24m' },
-  ]);
+  const [items, setItems] = useState<any[]>([]);
+  const [visible, setVisible] = useState(true);
+
+  const walletPool = [
+    '0x4f...a2', '0x1c...e9', '0x9a...f4', '0x3d...b1', '0x7e...c5',
+    '0x2b...d8', '0x8f...e3', '0x5a...f7', '0x6c...a9', '0x11...b2',
+    '0xaa...11', '0xbb...22', '0xcc...33', '0xdd...44', '0xee...55',
+    '0xff...66', '0x12...34', '0x56...78', '0x90...ab', '0xcd...ef'
+  ];
+
+  const actions = ['solicitó acceso', 'entró en S\'Narai', 'verificó identidad', 'minteó acceso'];
+
+  useEffect(() => {
+    const generateItems = () => {
+      const shuffled = [...walletPool].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 3).map((wallet, i) => ({
+        id: Math.random(),
+        user: wallet,
+        action: actions[Math.floor(Math.random() * actions.length)],
+        time: `hace ${Math.floor(Math.random() * 30) + 1}m`
+      }));
+      setItems(selected);
+    };
+
+    generateItems();
+    
+    // Hide after 15 seconds to clear the landing
+    const hideTimer = setTimeout(() => setVisible(false), 15000);
+    
+    // Rotate every 30 seconds (show again briefly)
+    const rotateInterval = setInterval(() => {
+      setVisible(true);
+      generateItems();
+      setTimeout(() => setVisible(false), 8000);
+    }, 30000);
+
+    return () => {
+      clearTimeout(hideTimer);
+      clearInterval(rotateInterval);
+    };
+  }, []);
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 hidden sm:block">
-      <div className="flex flex-col gap-2">
-        {items.map((item, i) => (
-          <motion.div
-            key={item.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.4 + 1.5, duration: 0.8 }}
-            className="flex items-center gap-3 px-4 py-2 border border-white/[0.05] bg-[#080808]/80 backdrop-blur-md rounded-full"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest leading-none">
-              {item.user}
-            </span>
-            <span className="text-[9px] text-zinc-500 uppercase tracking-widest leading-none">
-              {item.action}
-            </span>
-            <span className="text-[8px] text-zinc-700 leading-none">{item.time}</span>
-          </motion.div>
-        ))}
-      </div>
-    </div>
+    <AnimatePresence>
+      {visible && (
+        <div className="fixed bottom-6 left-6 z-50 hidden sm:block">
+          <div className="flex flex-col gap-2">
+            {items.map((item, i) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ delay: i * 0.4, duration: 0.8 }}
+                className="flex items-center gap-3 px-4 py-2 border border-white/[0.05] bg-[#080808]/80 backdrop-blur-md rounded-full"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[10px] font-bold text-white uppercase tracking-widest leading-none">
+                  {item.user}
+                </span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest leading-none">
+                  {item.action}
+                </span>
+                <span className="text-[8px] text-zinc-700 leading-none">{item.time}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 
