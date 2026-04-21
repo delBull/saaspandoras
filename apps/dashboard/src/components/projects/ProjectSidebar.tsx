@@ -224,7 +224,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   return (
     <>
-      <div className="hidden lg:block sticky top-6 w-80 h-fit z-20 shrink-0 self-start">
+      <div className="hidden lg:block sticky top-28 w-80 h-fit z-20 shrink-0 self-start">
         {/* Non-sticky section - Investment & Creator cards */}
         <div className="space-y-6 mb-6">
           {/* Access / Investment Card */}
