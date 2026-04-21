@@ -166,6 +166,7 @@ function AccessV2Inner() {
 
   // 🧠 Phase 89: Deterministic Tracking
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== 'undefined') {
       fetch('/api/v1/marketing/events', {
         method: 'POST',
