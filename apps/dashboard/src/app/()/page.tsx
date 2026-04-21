@@ -344,10 +344,15 @@ export default function DashboardPage() {
     const isWidgetBypass = window.location.search.includes('bypass=ritual');
     
     if (UNAUTHORIZED_STATES.includes(accessState) || isWidgetBypass) {
-      console.log(`🛡️ [DashboardRoot] Redirecting to /access (State: ${accessState}, Bypass: ${isWidgetBypass})...`);
+      // 🛡️ SECURITY: Only redirect if NOT already on an access path to avoid loops
+      if (typeof window !== 'undefined' && (window.location.pathname.includes('/access') || window.location.pathname.includes('/accessv2'))) {
+        return;
+      }
+      
+      console.log(`🛡️ [DashboardRoot] Redirecting to /accessv2 (State: ${accessState}, Bypass: ${isWidgetBypass})...`);
       // Preserve search parameters for external widgets passing ?project=...
       const currentSearchParams = window.location.search;
-      router.push(`/access${currentSearchParams}`);
+      router.push(`/accessv2${currentSearchParams}`);
     }
   }, [accessState, router, isAutoConnecting, isManualConnecting]);
 

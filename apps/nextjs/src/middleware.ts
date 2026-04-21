@@ -86,7 +86,7 @@ export default async function middleware(
   // ── /v2 is the new root ──────────────────────────────────────────────────
   const pathname = req.nextUrl.pathname;
   if (pathname === "/") {
-    return NextResponse.redirect(new URL("/v2", req.url));
+    return NextResponse.redirect(new URL("/v3", req.url));
   }
   // All /v2 and /v3 routes are fully public — no auth, no locale injection
   if (pathname.startsWith("/v2") || pathname.startsWith("/v3")) {
