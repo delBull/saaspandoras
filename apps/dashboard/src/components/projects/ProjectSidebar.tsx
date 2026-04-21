@@ -207,13 +207,8 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const handlePhaseClick = (phase: any) => {
-    // SECURITY/UX: Instead of internal modal, redirect to dedicated checkout page
-    // This resolves authentication issues and provides a cleaner payment flow
-    const checkoutUrl = `/pay/${project.slug}/${phase.id}`;
-    window.open(checkoutUrl, '_blank');
-    
-    // Fallback: update state in case they stay on page
     setSelectedPhase(phase);
+    setIsArtifactModalOpen(true);
   };
 
   const isDeployed = ['approved', 'live', 'deployed', 'active'].includes(project.status?.toLowerCase() || '') || project.deploymentStatus === 'deployed';
