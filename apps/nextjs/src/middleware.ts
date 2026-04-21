@@ -21,7 +21,7 @@ const noNeedProcessRoute = [
   "/en/__next_devtools__/client(.*)",
 ];
 
-const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card", "/v2(.*)"];
+const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card", "/v2(.*)", "/v3(.*)"];
 
 const publicRoute = [
   "/(\\w{2}/)?signin(.*)",
@@ -88,8 +88,8 @@ export default async function middleware(
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/v2", req.url));
   }
-  // All /v2 routes are fully public — no auth, no locale injection
-  if (pathname.startsWith("/v2")) {
+  // All /v2 and /v3 routes are fully public — no auth, no locale injection
+  if (pathname.startsWith("/v2") || pathname.startsWith("/v3")) {
     return NextResponse.next();
   }
 
