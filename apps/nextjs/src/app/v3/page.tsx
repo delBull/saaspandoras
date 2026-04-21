@@ -16,29 +16,30 @@ const ACCESS_URL = `${DASHBOARD_URL}/accessv2`;
 const PIONEER_PROJECT = {
   slug: 'snarai',
   name: "S'Narai",
-  category: 'Inversión Inmobiliaria',
-  location: 'Huatulco, México',
-  minInvestment: '$500 USD',
+  category: 'Residential Real Estate',
+  location: 'Bucerías, Bahía de Banderas',
+  minInvestment: '$50 USD',
   status: 'active' as const,
   phase: 'Fase 1',
   badge: 'PIONEER',
   href: `${DASHBOARD_URL}/accessv2?project=snarai`,
+  website: 'https://snarai.aztecaz.xyz'
 };
 
 const LOCKED_PROJECTS = [
   {
     id: 'protocol-02',
-    label: 'PROTOCOLO 02',
-    category: 'Rendimientos en Activos Reales',
+    label: 'Vista Horizonte',
+    category: 'Residential Real Estate · Nayarit',
     timeline: 'Q3 2025',
-    hint: 'Solo para miembros activos de la plataforma',
+    hint: 'Exclusiva torre de departamentos con vista al océano.',
   },
   {
     id: 'protocol-03',
-    label: 'PROTOCOLO 03',
-    category: 'Fondo de Acceso Temprano',
+    label: 'BlockBuny Casino',
+    category: 'Web3 Entertainment Protocol',
     timeline: 'Q4 2025',
-    hint: 'Acceso por historial acumulado',
+    hint: 'El primer ecosistema de entretenimiento on-chain en Pandoras.',
   },
 ];
 
@@ -262,11 +263,22 @@ function PioneerCard() {
               {PIONEER_PROJECT.name}
             </h3>
             <p className="text-zinc-400 text-sm font-medium">
-              Activos Reales · Huatulco
+              {PIONEER_PROJECT.category} · {PIONEER_PROJECT.location}
             </p>
             <p className="text-zinc-500 text-xs mt-2 leading-relaxed">
               Posición pionera en el primer protocolo inmobiliario tokenizado de la red.
             </p>
+            {PIONEER_PROJECT.website && (
+              <a 
+                href={PIONEER_PROJECT.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 mt-4 text-[10px] text-zinc-600 hover:text-emerald-400 transition-colors uppercase font-bold tracking-widest"
+              >
+                Sitio Oficial <ArrowRight className="w-2.5 h-2.5 -rotate-45" />
+              </a>
+            )}
           </div>
 
           {/* Meta */}
