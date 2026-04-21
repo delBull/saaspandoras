@@ -125,6 +125,18 @@ export function getTargetAmount(project: any): number {
       ? (JSON.parse(project.w2eConfig || '{}'))
       : (project.w2eConfig || {});
 
+    // V2 / Phase-based Structure (Highest Priority)
+    // If there are phases, the total target is the sum of all phase caps
+    const phases = config.phases || (project as any).phases || [];
+    if (Array.isArray(phases) && phases.length > 0) {
+      const totalFromPhases = phases.reduce((sum: number, phase: any) => {
+        // Only sum phases that have a numeric cap
+        const cap = Number(phase.cap || 0);
+        return sum + (isNaN(cap) ? 0 : cap);
+      }, 0);
+      if (totalFromPhases > 0) return totalFromPhases;
+    }
+
     // V2 Structure (Optimized)
     const tokenomics = config.tokenomics || {};
     if (tokenomics.initialSupply && tokenomics.price) {
