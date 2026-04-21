@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { getContract, defineChain, sendTransaction, prepareTransaction, prepareContractCall, readContract } from "thirdweb";
+import { getContract, defineChain, sendTransaction, prepareTransaction, prepareContractCall, readContract, toWei } from "thirdweb";
 import { AdminPayouts } from "./AdminPayouts";
 import { mintWithSignature } from "thirdweb/extensions/erc20";
 import { usePBOXBalance } from "@/hooks/usePBOXBalance";
@@ -139,7 +139,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
                                         return prepareTransaction({
                                             to: project?.treasuryAddress || project?.treasuryContractAddress,
-                                            value: BigInt(Math.floor(Number(amount) * 1e18)),
+                                            value: toWei(amount),
                                             chain: defineChain(safeChainId),
                                             client: client
                                         });

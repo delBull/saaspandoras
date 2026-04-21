@@ -260,11 +260,62 @@ export function ProjectDetailModal({
                 </div>
                 <div className="space-y-1">
                   <span className="text-zinc-500 block">Treasury (Multi-Sig):</span>
-                  <div className="flex items-center justify-between bg-zinc-950 p-2 rounded border border-zinc-800 group">
-                    <span className="text-white truncate">{project.treasuryAddress || 'N/A'}</span>
+                  <div className={`flex items-center justify-between p-2 rounded border border-zinc-800 group ${project.w2eConfig?.isProvisionalTreasury ? 'bg-amber-500/10 border-amber-500/30' : 'bg-zinc-950'}`}>
+                    <span className={`truncate ${project.w2eConfig?.isProvisionalTreasury ? 'text-amber-400 font-medium' : 'text-white'}`}>
+                      {project.treasuryAddress || 'N/A'}
+                    </span>
+                    {project.w2eConfig?.isProvisionalTreasury && (
+                      <Shield className="w-3 h-3 text-amber-500" />
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Custody Reconciliation Block */}
+              {project.w2eConfig?.isProvisionalTreasury && (
+                <div className="mt-4 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 p-1 rounded-full bg-amber-500/20 text-amber-500">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-amber-500">Reconciliación de Propiedad Necesaria</h5>
+                      <p className="text-xs text-zinc-400 leading-relaxed mt-1">
+                        Este protocolo está actualmente bajo custodia de la <b>Super Admin Wallet</b>. 
+                        Para completar la descentralización, el propietario autorizado debe reclamar estos contratos.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div className="bg-zinc-950/50 p-2 rounded border border-zinc-800">
+                      <span className="text-[10px] text-zinc-500 uppercase block">Propietario Autorizado</span>
+                      <span className="text-xs text-amber-400 font-mono">{project.w2eConfig.claimableByEmail || "Desconocido"}</span>
+                    </div>
+                    <div className="bg-zinc-950/50 p-2 rounded border border-zinc-800">
+                      <span className="text-[10px] text-zinc-500 uppercase block">Wallet de Destino (Applicant)</span>
+                      <span className="text-xs text-zinc-300 font-mono text-balance break-all">
+                        {project.applicantWalletAddress && project.applicantWalletAddress !== project.treasuryAddress 
+                          ? project.applicantWalletAddress 
+                          : "Pendiente de configurar"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {project.applicantWalletAddress && project.applicantWalletAddress !== project.treasuryAddress && (
+                    <div className="pt-2">
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         className="w-full border-amber-500/50 text-amber-500 hover:bg-amber-500/10 gap-2 h-8 text-[11px]"
+                         onClick={() => toast.info("Funcionalidad de transferencia segura en preparación. Por ahora, contacta al administrador técnico.")}
+                       >
+                         <Zap className="w-3 h-3" /> Preparar Transferencia de Dominio
+                       </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Artifacts Summary */}
               {isV2 && (project as any).artifacts && (

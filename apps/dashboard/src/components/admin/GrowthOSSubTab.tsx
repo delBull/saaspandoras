@@ -2573,58 +2573,99 @@ export default function GrowthOSSubTab() {
                   <p className="text-[10px] text-zinc-600 italic">* Tip: El widget captura automáticamente el email de formularios existentes en tu sitio.</p>
               </section>
 
-              {/* Step 2: Custom Attributes */}
+              {/* Step 2: Next.js / React Integration */}
               <section className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-emerald-500 text-black font-black text-[10px]">PASO 02</Badge>
-                  <h3 className="text-lg font-black uppercase italic">Manejo de Atributos (Data-Layer)</h3>
+                  <Badge className="bg-cyan-500 text-black font-black text-[10px]">PASO 02</Badge>
+                  <h3 className="text-lg font-black uppercase italic">Next.js / React Integration</h3>
                 </div>
-                <p className="text-zinc-400 text-sm font-medium">El widget captura automáticamente el email, pero puedes enriquecer el lead enviando metadatos adicionales desde tu aplicación.</p>
+                <p className="text-zinc-400 text-sm font-medium">Recomendamos encapsular el SDK en un proveedor para manejar el ciclo de vida del App Router de forma segura.</p>
                 
-                <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-xs border border-zinc-800">
+                <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-[10px] border border-zinc-800 relative group">
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <UIButton size="sm" variant="outline" className="h-7 text-[8px] uppercase tracking-widest font-black" onClick={() => {
+                        const code = `// components/providers/PandoraProvider.tsx\n'use client';\nimport Script from 'next/script';\n\nexport default function PandoraProvider({ children }) {\n  return (\n    <>\n      <Script\n        id="pandoras-sdk"\n        src="https://${getDashboardDomain()}/api/widget/v1.js"\n        data-project-id="${projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'PROJECT_SLUG'}"\n        data-api-key="${publicKey}"\n        data-hide-button="true"\n        strategy="afterInteractive"\n      />\n      {children}\n    </>\n  );\n}`;
+                        navigator.clipboard.writeText(code);
+                        toast.success("Boilerplate copiado");
+                    }}>Copiar</UIButton>
+                  </div>
+                  <pre className="text-zinc-300 leading-relaxed overflow-x-auto">
+{`// components/providers/PandoraProvider.tsx
+'use client';
+import Script from 'next/script';
+
+export default function PandoraProvider({ children }) {
+  return (
+    <>
+      <Script
+        id="pandoras-sdk"
+        src="https://${getDashboardDomain()}/api/widget/v1.js"
+        data-project-id="${projects.find(p => String(p.id) === String(selectedProjectId))?.slug || 'narai'}"
+        data-api-key="${publicKey}"
+        data-hide-button="true"
+        strategy="afterInteractive"
+      />
+      {children}
+    </>
+  );
+}`}
+                  </pre>
+                </div>
+              </section>
+
+              {/* Step 3: Advanced Event Tracking */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-emerald-500 text-black font-black text-[10px]">PASO 03</Badge>
+                  <h3 className="text-lg font-black uppercase italic">Eventos & Gamificación</h3>
+                </div>
+                <p className="text-zinc-400 text-sm font-medium">Dispara eventos para calificar el interés (Intent Scoring) y otorgar puntos de experiencia (XP) automáticos.</p>
+                
+                <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-[11px] border border-zinc-800">
                   <pre className="text-zinc-300 leading-relaxed">
-{`window.PandoraWidget.identify({
+{`// Disparar evento de interés
+window.PandorasGrowth.emit('tier_viewed', {
+  tier: "residente",
+  price: 2500
+});
+
+// Identificar usuario con perfil
+window.PandorasGrowth.identify({
   email: "user@example.com",
-  metadata: {
-    capital: "100k+",      // Signal para Scoring
-    intent: "invest",      // 'whitelist', 'invest', 'earn'
-    source: "landing_v2"   // Origen de captura
-  }
+  metadata: { intent: "invest" }
 });`}
                   </pre>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-900/50">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Atributo: intent</span>
-                    <p className="text-xs text-zinc-400 leading-relaxed">
-                      Determina la automatización que se dispara (D1, D2, D3). Valores sugeridos: <code className="text-emerald-400">whitelist</code>, <code className="text-emerald-400">invest</code>, <code className="text-emerald-400">earn</code>.
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-900/50">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Atributo: capital</span>
-                    <p className="text-xs text-zinc-400 leading-relaxed">
-                      Ajusta el multiplicador de score. Formatos aceptados: <code className="text-emerald-400">5k-25k</code>, <code className="text-emerald-400">25k-100k</code>, <code className="text-emerald-400">100k+</code>.
-                    </p>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                  {[
+                    { e: 'tier_viewed', d: 'Interacción con packs.' },
+                    { e: 'calculator_used', d: 'Uso de simuladores.' },
+                    { e: 'waitlist_intent', d: 'Click en Early Access.' }
+                  ].map((item) => (
+                    <div key={item.e} className="p-3 rounded-xl border border-zinc-800 bg-zinc-950/50">
+                      <code className="text-[10px] text-emerald-400 font-bold block">{item.e}</code>
+                      <p className="text-[9px] text-zinc-500 italic">{item.d}</p>
+                    </div>
+                  ))}
                 </div>
               </section>
 
-              {/* Step 3: Server-Side Webhooks */}
+              {/* Step 4: Webhooks & Notifications */}
               <section className="space-y-4 pb-8">
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-purple-500 text-black font-black text-[10px]">PASO 03</Badge>
-                  <h3 className="text-lg font-black uppercase italic">Webhooks & Eventos</h3>
+                  <Badge className="bg-purple-500 text-black font-black text-[10px]">PASO 04</Badge>
+                  <h3 className="text-lg font-black uppercase italic">Webhooks & Discord</h3>
                 </div>
-                <p className="text-zinc-400 text-sm font-medium">Configura el webhook de Discord en el panel anterior para recibir alertas en tiempo real de cada conversión.</p>
+                <p className="text-zinc-400 text-sm font-medium">Recibe alertas en tiempo real en tus canales de Discord configurando el webhook en el panel anterior.</p>
                 
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                    <RefreshCw className="w-5 h-5 text-blue-400" />
+                <div className="flex items-center gap-4 p-5 rounded-2xl bg-zinc-900 border border-zinc-800 group hover:border-blue-500/30 transition-all">
+                  <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20">
+                    <RefreshCw className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white">Event: WAITLIST_JOIN</h4>
-                    <p className="text-[9px] text-zinc-500">Se dispara inmediatamente al capturar un lead.</p>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-white">Event: WAITLIST_JOIN</h4>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed mt-1">Se dispara inmediatamente al capturar un lead o evento de interés en tu sitio externo independiente.</p>
                   </div>
                 </div>
               </section>

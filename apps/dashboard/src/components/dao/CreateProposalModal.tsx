@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { XIcon, BanknoteIcon, FileTextIcon } from "lucide-react";
-import { TransactionButton } from "thirdweb/react";
+import { XIcon, BanknoteIcon, FileTextIcon, InfoIcon, Loader2 } from "lucide-react";
+import { TransactionButton, useReadContract } from "thirdweb/react";
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { encodeFunctionData, parseUnits } from "viem";
@@ -36,6 +36,25 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
 
     const isOffChain = submissionMode === 'offchain';
     const [isLoading, setIsLoading] = useState(false);
+
+    // Auto-fetch decimals if tokenAddress is provided
+    const { data: fetchedDecimals, isLoading: isFetchingDecimals } = useReadContract({
+        contract: getContract({
+            client,
+            chain: defineChain(chainId || 8453),
+            address: tokenAddress || ""
+        }),
+        method: "function decimals() view returns (uint8)",
+        params: [],
+    });
+
+    useEffect(() => {
+        if (fetchedDecimals !== undefined) {
+            setDecimals(Number(fetchedDecimals));
+        } else if (!tokenAddress) {
+            setDecimals(18); // Reset to 18 for native
+        }
+    }, [fetchedDecimals, tokenAddress]);
 
     // On-Chain State
     const contract = votingContractAddress && chainId ? getContract({
@@ -228,7 +247,7 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                                         placeholder="0.0"
                                     />
                                 </div>
-                                <div className="w-1/3">
+                                <div className="w-1/3 relative">
                                     <label htmlFor="transfer-decimals" className="block text-xs text-zinc-400 mb-1">Decimals</label>
                                     <input
                                         id="transfer-decimals"
@@ -237,6 +256,11 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                                         value={decimals}
                                         onChange={e => setDecimals(Number(e.target.value))}
                                     />
+                                    {isFetchingDecimals && (
+                                        <div className="absolute bottom-2.5 right-2">
+                                            <Loader2 className="w-3 h-3 text-lime-500 animate-spin" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

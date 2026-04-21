@@ -64,6 +64,16 @@ export function AdminPayouts({ projectId, project, safeChainId }: AdminPayoutsPr
         }
     };
 
+    // Calculate Totals for Selected
+    const totals = selectedIds.reduce((acc: Record<string, number>, id) => {
+        const sub = submissions.find(s => s.id === id);
+        if (sub && sub.rewardAmount) {
+            const symbol = sub.rewardTokenSymbol || 'PBOX';
+            acc[symbol] = (acc[symbol] || 0) + Number(sub.rewardAmount);
+        }
+        return acc;
+    }, {});
+
     const handleMarkPaid = async () => {
         if (selectedIds.length === 0) return;
         setIsProcessing(true);
@@ -125,7 +135,9 @@ export function AdminPayouts({ projectId, project, safeChainId }: AdminPayoutsPr
                                         />
                                     </th>
                                     <th className="p-3">Usuario (Wallet)</th>
-                                    <th className="p-3">Actividad ID</th>
+                                    <th className="p-3">Actividad</th>
+                                    <th className="p-3 text-right">Monto</th>
+                                    <th className="p-3">Token</th>
                                     <th className="p-3">Fecha Aprobación</th>
                                 </tr>
                             </thead>
@@ -141,7 +153,13 @@ export function AdminPayouts({ projectId, project, safeChainId }: AdminPayoutsPr
                                             />
                                         </td>
                                         <td className="p-3 font-mono text-xs text-white">{sub.userWallet}</td>
-                                        <td className="p-3 text-xs">#{sub.activityId}</td>
+                                        <td className="p-3 text-xs max-w-[200px] truncate">{sub.activityTitle || `ID: ${sub.activityId}`}</td>
+                                        <td className="p-3 text-right font-bold text-white text-sm">{Number(sub.rewardAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</td>
+                                        <td className="p-3">
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                                {sub.rewardTokenSymbol || 'PBOX'}
+                                            </span>
+                                        </td>
                                         <td className="p-3 text-xs">{new Date(sub.statusUpdatedAt).toLocaleDateString()}</td>
                                     </tr>
                                 ))}
@@ -157,9 +175,21 @@ export function AdminPayouts({ projectId, project, safeChainId }: AdminPayoutsPr
                                 <p>2. <span className="text-white">Envía los fondos</span> a las wallets listadas usando tu billetera.</p>
                                 <p>3. <span className="text-white">Confirma abajo</span> para cerrar los tickets.</p>
                             </div>
-                            <p className="text-yellow-500/80 mt-2 flex items-center gap-1">
-                                <ArrowRightIcon className="w-3 h-3" />
-                                Usuarios Seleccionados: <span className="font-bold text-white">{selectedIds.length}</span>
+                             <p className="text-yellow-500/80 mt-2 flex flex-col gap-1">
+                                <span className="flex items-center gap-1">
+                                    <ArrowRightIcon className="w-3 h-3" />
+                                    Usuarios Seleccionados: <span className="font-bold text-white">{selectedIds.length}</span>
+                                </span>
+                                {Object.keys(totals).length > 0 && (
+                                    <span className="bg-yellow-500/10 border border-yellow-500/20 p-2 rounded mt-1 block">
+                                        <span className="text-[10px] uppercase font-black block mb-1">Total a Enviar:</span>
+                                        {Object.entries(totals).map(([symbol, amount]) => (
+                                            <span key={symbol} className="text-lg font-black text-white block">
+                                                {amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {symbol}
+                                            </span>
+                                        ))}
+                                    </span>
+                                )}
                             </p>
                         </div>
 

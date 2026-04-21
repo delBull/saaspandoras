@@ -59,19 +59,33 @@ export function OnChainProposalsList({ votingContractAddress, chainId, governanc
                     contract={contract}
                     account={account}
                     chainId={chainId}
+                    governanceTokenAddress={governanceTokenAddress}
                 />
             ))}
         </div>
     );
 }
 
-function ProposalCard({ proposal, contract, account, chainId }: any) {
+function ProposalCard({ proposal, contract, account, chainId, governanceTokenAddress }: any) {
     // Fetch State
     const { data: stateData } = useReadContract({
         contract,
         method: "function state(uint256) view returns (uint8)",
         params: [proposal.proposalId],
     });
+
+    // Fetch Token Decimals
+    const { data: decimalsData } = useReadContract({
+        contract: getContract({
+            client,
+            chain: defineChain(chainId),
+            address: proposal.contract?.address || governanceTokenAddress || "",
+        }),
+        method: "function decimals() view returns (uint8)",
+        params: [],
+    });
+
+    const decimals = decimalsData !== undefined ? Number(decimalsData) : 18;
 
     // Fetch Votes (For, Against, Abstain)
     const { data: votesData } = useReadContract({
@@ -81,8 +95,8 @@ function ProposalCard({ proposal, contract, account, chainId }: any) {
     });
 
     // Parse Votes
-    const forVotes = votesData ? Number(ethers.utils.formatEther(votesData[1])) : 0;
-    const againstVotes = votesData ? Number(ethers.utils.formatEther(votesData[0])) : 0;
+    const forVotes = votesData ? Number(ethers.utils.formatUnits(votesData[1], decimals)) : 0;
+    const againstVotes = votesData ? Number(ethers.utils.formatUnits(votesData[0], decimals)) : 0;
     const totalVotes = forVotes + againstVotes;
     const forPercentage = totalVotes > 0 ? (forVotes / totalVotes) * 100 : 0;
 

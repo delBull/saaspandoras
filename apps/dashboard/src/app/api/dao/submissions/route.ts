@@ -11,19 +11,28 @@ export async function GET(req: Request) {
     const userAddress = searchParams.get('userAddress');
 
     try {
-        let query = db.select().from(daoActivitySubmissions);
-
         const conditions = [];
         if (activityId) conditions.push(eq(daoActivitySubmissions.activityId, Number(activityId)));
         if (projectId) conditions.push(eq(daoActivitySubmissions.projectId, Number(projectId)));
         if (userAddress) conditions.push(eq(daoActivitySubmissions.userWallet, userAddress));
 
-        if (conditions.length > 0) {
-            // @ts-expect-error: Drizzle query construction complexity
-            query = query.where(and(...conditions));
-        }
+        const submissions = await db.select({
+            id: daoActivitySubmissions.id,
+            projectId: daoActivitySubmissions.projectId,
+            activityId: daoActivitySubmissions.activityId,
+            userWallet: daoActivitySubmissions.userWallet,
+            status: daoActivitySubmissions.status,
+            proofData: daoActivitySubmissions.proofData,
+            statusUpdatedAt: daoActivitySubmissions.statusUpdatedAt,
+            createdAt: daoActivitySubmissions.createdAt,
+            rewardAmount: daoActivities.rewardAmount,
+            rewardTokenSymbol: daoActivities.rewardTokenSymbol,
+            activityTitle: daoActivities.title
+        })
+        .from(daoActivitySubmissions)
+        .leftJoin(daoActivities, eq(daoActivitySubmissions.activityId, daoActivities.id))
+        .where(and(...conditions));
 
-        const submissions = await query;
         return NextResponse.json(submissions);
     } catch (error) {
         console.error('Error fetching submissions:', error);

@@ -84,10 +84,24 @@ export async function POST(
         const teamBps = tokenomics?.teamAllocationBps || 0;
         const pandorasBps = tokenomics?.pandorasAllocationBps || 0;
         // Use Treasury Address or fallback to Applicant Wallet (Founder)
-        const treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
+        let treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
+        let isProvisionalTreasury = false;
+        const fallbackEmail = project.applicantEmail || project.creatorEmail || "support@pandoras.com";
 
-        if (!treasuryAddress) {
-            return NextResponse.json({ error: "Project Treasury Address is missing (Advisor/Founder Wallet required)" }, { status: 400 });
+        if (!treasuryAddress || treasuryAddress === "0x0000000000000000000000000000000000000000") {
+            console.warn(`🛡️ API: Project ${slug} missing treasury. Falling back to SUPER_ADMIN_WALLET (Provisional Mode).`);
+            
+            // Check if SUPER_ADMIN_WALLET is defined properly
+            if (!SUPER_ADMIN_WALLET || SUPER_ADMIN_WALLET.includes("undefined")) {
+                return NextResponse.json({ 
+                    error: "Project Treasury Address is missing and SUPER_ADMIN_WALLET not configured in environment.",
+                    slug 
+                }, { status: 400 });
+            }
+            
+            treasuryAddress = SUPER_ADMIN_WALLET;
+            isProvisionalTreasury = true;
+            console.log(`🛡️ API: PROVISIONAL MODE ENABLED for ${slug}. Custodian: ${treasuryAddress}. Claimant: ${fallbackEmail}`);
         }
 
         const teamWallet = tokenomics?.teamWallet || treasuryAddress;
@@ -213,11 +227,33 @@ export async function POST(
 
         console.log(`🚀 API: Proceeding with config (Asynchronous Job):`, config);
 
-        // 4. Create Deployment Job
+        // 4. Create Deployment Job and Mark Project as Provisional if needed
+        if (isProvisionalTreasury) {
+             console.log(`📝 API: Marking project ${slug} as provisional in database. Claimable by: ${fallbackEmail}`);
+             await db.update(projects)
+                .set({ 
+                    // We store it in a way that indicates it's provisional but still has a valid wallet for the SC
+                    applicantWalletAddress: treasuryAddress,
+                    w2eConfig: { 
+                        ...(project.w2eConfig as any || {}), 
+                        isProvisionalTreasury: true,
+                        provisionalReason: "Missing founder wallet during admin deployment",
+                        claimableByEmail: fallbackEmail
+                    }
+                })
+                .where(eq(projects.slug, slug));
+        }
+
         const [job] = await db.insert(deploymentJobs).values({
             projectSlug: slug,
             network: network,
-            config: config as any,
+            config: {
+                ...config,
+                metadata: {
+                    isProvisionalTreasury,
+                    claimableByEmail: fallbackEmail
+                }
+            } as any,
             status: "pending",
             step: "queued"
         }).returning();
@@ -231,13 +267,16 @@ export async function POST(
         const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 
         if (!DEPLOY_SECRET) {
+            console.error("❌ API: Missing DEPLOY_SECRET. Deployment job created but not signaled.");
             throw new Error("Missing DEPLOY_SECRET in environment variables");
         }
 
-        console.log(`📡 Notifying deployment service for job: ${job.id}`);
+        console.log(`📡 API: Notifying deployment service for job: ${job.id} (Slug: ${slug})`);
+        if (isProvisionalTreasury) {
+            console.log(`🛡️ API: PROVISIONAL MODE ENABLED for job ${job.id}. Custodian: ${treasuryAddress}`);
+        }
 
         // We use a non-blocking fetch (or just let the worker pick it up if it's polling)
-        // For now, we'll hit the process endpoint but not wait for it.
         fetch(`${DEPLOY_SERVICE_URL}/deploy/process-job`, {
             method: "POST",
             headers: {

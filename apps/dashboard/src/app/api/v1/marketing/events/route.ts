@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
 
         // 5. Growth Engine Connectivity (Offloaded/Selective for Save CPU)
         const effectiveLeadEmail = lead?.email || leadEmail;
-        const HIGH_PRIORITY_EVENTS = ['IDENTIFY', 'FORM_SUBMIT', 'LEAD_SUBMIT', 'USER_IDENTIFIED', 'PURCHASE', 'CONVERSION'];
+        const HIGH_PRIORITY_EVENTS = ['IDENTIFY', 'FORM_SUBMIT', 'LEAD_SUBMIT', 'USER_IDENTIFIED', 'PURCHASE', 'CONVERSION', 'TIER_VIEWED'];
         const isHighPriority = HIGH_PRIORITY_EVENTS.includes(eventType);
 
         if (effectiveLeadEmail && lead && eventRecord && isHighPriority) {
