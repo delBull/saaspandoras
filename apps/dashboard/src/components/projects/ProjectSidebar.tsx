@@ -510,7 +510,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                               <div className="flex items-center justify-between">
                                   <div className="px-2 py-1 bg-zinc-900 rounded-lg border border-white/5">
                                       <span className="text-[10px] font-black text-lime-400 font-mono">
-                                          {Number(phase.price || phase.tokenPrice) === 0 ? 'GRATIS' : `${Number(phase.price || phase.tokenPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (isEth || (Number(phase.price || phase.tokenPrice) < 1)) ? 6 : 2 })} ${currencySymbol}`}
+                                          {Number(phase.tokenPrice || phase.price) === 0 ? 'GRATIS' : `${Number(phase.tokenPrice || phase.price).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (isEth || (Number(phase.tokenPrice || phase.price) < 1)) ? 6 : 2 })} ${currencySymbol}`}
                                       </span>
                                   </div>
                                   <span className="text-[9px] text-zinc-600 font-medium italic">

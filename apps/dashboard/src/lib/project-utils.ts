@@ -1,3 +1,5 @@
+import { getRawPhases } from "./phase-utils";
+
 /**
  * Calculates the percentage of completion of a project
  * Based on required vs optional fields completed
@@ -120,27 +122,22 @@ export function getTargetAmount(project: any): number {
   if (!project) return 0;
   
   try {
-    // 1. Resolve phases from all possible locations (V1 config, V2 artifacts, etc)
-    const config = typeof project.w2eConfig === 'string'
-      ? (JSON.parse(project.w2eConfig || '{}'))
-      : (project.w2eConfig || {});
-
-    // Try canonical locations first (w2eConfig or project top-level)
-    let phases = config.phases || (project as any).phases || config.tokenomics?.phases || [];
-    
-    // ✅ V2 ENHANCEMENT: If no top-level phases, check artifact-based phases
-    if ((!phases || phases.length === 0) && Array.isArray(project.artifacts)) {
-      phases = project.artifacts.flatMap((a: any) => a.phases || []);
-    }
+    // Use the unified phase extractor
+    const phases = getRawPhases(project);
 
     if (Array.isArray(phases) && phases.length > 0) {
       const totalPhasesAmount = phases.reduce((acc: number, phase: any) => {
-        const price = Number(phase.price || phase.tokenPrice || 0);
-        const allocation = Number(phase.tokenAllocation || phase.allocation || phase.maxSupply || phase.supply || 0);
+        const price = Number(phase.tokenPrice || phase.price || 0);
+        const allocation = Number(phase.tokenAllocation || phase.allocation || phase.limit || phase.amount || phase.maxSupply || 0);
         const cap = Number(phase.cap || phase.target || 0);
         
-        // Use cap if available, otherwise calculate from price * allocation
-        const phaseValue = cap > 0 ? cap : (price * allocation);
+        // V2 PRIORITY: If we have price and allocation, use their product.
+        // This prevents cases where "limit" might be incorrectly set to the unit price.
+        const calculatedValue = (price > 0 && allocation > 0) ? (price * allocation) : 0;
+        
+        // Use the higher value between calculated and explicit cap (if any)
+        const phaseValue = Math.max(calculatedValue, cap);
+        
         return acc + (isNaN(phaseValue) ? 0 : phaseValue);
       }, 0);
       

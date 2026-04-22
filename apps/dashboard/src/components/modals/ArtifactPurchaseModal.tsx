@@ -149,7 +149,7 @@ export default function ArtifactPurchaseModal({
             try {
                 const { price } = await resolveArtifactPrice({
                     contract: targetContract,
-                    fallbackPrice: phase?.tokenPrice || 0,
+                    fallbackPrice: phase?.tokenPrice || phase?.price || 0,
                     chainId: safeChainId,
                     phaseIndex: phase?.phaseIndex
                 });

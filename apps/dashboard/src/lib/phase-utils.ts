@@ -45,8 +45,8 @@ export function calculatePhaseStatus(
   accumulatedTokensBefore: number,
   now: Date = new Date()
 ): PhaseStatus {
-  const price = Number(phase.price || phase.tokenPrice || 0);
-  const allocation = Number(phase.tokenAllocation || phase.allocation || 0);
+  const price = Number(phase.tokenPrice || phase.price || 0);
+  const allocation = Number(phase.tokenAllocation || phase.allocation || phase.limit || phase.amount || phase.maxSupply || 0);
   const isTimeType = phase.type === 'time';
   
   const parseSafeDate = (dateStr: string | undefined): Date | null => {
@@ -152,11 +152,16 @@ export function getRawPhases(project: any) {
     // 2. If V2, check artifacts for phases
     if (phases.length === 0 && project.artifacts?.length) {
       const artifactPhases = project.artifacts
-        .flatMap((a: any) => (a.phases || []).map((p: any, idx: number) => ({
-          ...p,
-          phaseIndex: idx, // Critical for on-chain lookup
-          artifactAddress: a.address || a.contractAddress
-        })))
+        .flatMap((a: any) => {
+          const artifactSupply = Number(a.maxSupply || a.supply || 0);
+          return (a.phases || []).map((p: any, idx: number) => ({
+            ...p,
+            phaseIndex: idx, // Critical for on-chain lookup
+            artifactAddress: a.address || a.contractAddress,
+            // Inherit artifact supply if phase has no explicit allocation
+            tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || (a.phases.length === 1 ? artifactSupply : 0)
+          }));
+        })
         .filter((p: any) => p?.name);
 
       if (artifactPhases.length > 0) {
