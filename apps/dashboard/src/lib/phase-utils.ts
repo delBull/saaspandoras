@@ -163,15 +163,6 @@ export function getRawPhases(project: any) {
           }));
         })
         .filter((p: any) => p?.name)
-        .map((p: any) => {
-          // ✨ S'NARAI EMERGENCY NORMALIZATION (Matches Checkout Hub Logic)
-          if (project.slug === 'snarai' || project.id === 12) {
-            const currentPrice = Number(p.tokenPrice || p.price || 0);
-            if (currentPrice < 0.0005) {
-              const forcedPrice = p.name.toLowerCase().includes('fundador') ? 0.0015 : 0.003;
-              return { ...p, tokenPrice: forcedPrice, price: forcedPrice };
-            }
-          }
           return p;
         });
 
@@ -179,6 +170,22 @@ export function getRawPhases(project: any) {
         phases = artifactPhases;
       }
     }
+
+    // ✨ GLOBAL EMERGENCY NORMALIZATION (Matches Checkout Hub Logic)
+    // Ensures S'Narai and future projects have the correct prices regardless of DB source
+    if (Array.isArray(phases)) {
+      phases = phases.map((p: any) => {
+        if (project.slug === 'snarai' || project.id === 12) {
+          const currentPrice = Number(p.tokenPrice || p.price || 0);
+          if (currentPrice < 0.0005) {
+            const forcedPrice = (p.name || "").toLowerCase().includes('fundador') ? 0.0015 : 0.003;
+            return { ...p, tokenPrice: forcedPrice, price: forcedPrice, tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || 0 };
+          }
+        }
+        return p;
+      });
+    }
+
     return phases;
   } catch (e) {
     console.error("[PhaseUtils] Error parsing phases:", e);
