@@ -189,20 +189,14 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const scrollToPhases = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    const element = document.getElementById('sidebar-phases');
-    if (element) {
-        const headerOffset = 110;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-        return;
+      const scrollToPhases = () => {
+        const element = document.getElementById('sidebar-phases');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+      scrollToPhases();
+      return;
     }
 
     // Fallback or Mobile: Switch to Utility tab where phases are rendered in main content
@@ -277,9 +271,9 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Objetivo</span>
                     <span className="text-sm font-bold text-white tracking-tight">
                       {isEth ? '' : (isBase ? '' : '$')}
-                      {targetAmount.toLocaleString(undefined, { 
+                      {Number(targetAmount || 0).toLocaleString(undefined, { 
                         minimumFractionDigits: 0, 
-                        maximumFractionDigits: (isEth ? 6 : 2) 
+                        maximumFractionDigits: (isEth || targetAmount < 1) ? 6 : 2 
                       })}
                       {isEth ? ' ETH' : (isBase ? ' USDC' : ' USD')}
                     </span>
@@ -497,6 +491,14 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                             <p className="text-[10px] text-zinc-400 font-medium leading-tight">
                                 {phase.description || 'Fase de adquisición oficial del protocolo.'}
                             </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-[9px] px-1.5 py-0.5 bg-lime-500/10 text-lime-400 rounded border border-lime-500/20 font-bold uppercase tracking-tighter">
+                                    Fundador Activo
+                                </span>
+                                <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded border border-purple-500/20 font-bold uppercase tracking-tighter">
+                                    {isActive ? 'Monto' : 'Bloqueado'}
+                                </span>
+                            </div>
                             {phase.minPurchase && (
                               <p className="text-[9px] text-zinc-600 flex items-center gap-1">
                                 <Zap className="w-2.5 h-2.5 text-yellow-500/50" />
@@ -508,7 +510,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                               <div className="flex items-center justify-between">
                                   <div className="px-2 py-1 bg-zinc-900 rounded-lg border border-white/5">
                                       <span className="text-[10px] font-black text-lime-400 font-mono">
-                                          {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `${Number(phase.tokenPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: isEth ? 6 : 2 })} ${currencySymbol}`}
+                                          {Number(phase.price || phase.tokenPrice) === 0 ? 'GRATIS' : `${Number(phase.price || phase.tokenPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (isEth || (Number(phase.price || phase.tokenPrice) < 1)) ? 6 : 2 })} ${currencySymbol}`}
                                       </span>
                                   </div>
                                   <span className="text-[9px] text-zinc-600 font-medium italic">

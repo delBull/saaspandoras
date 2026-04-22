@@ -189,9 +189,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
     project.protocol_version === 2
     || safeConfig?.version === '2'
     || safeConfig?.schema === 'v2'
-    || (!!project.w2eConfig && Object.keys(safeConfig).length > 0)
-    || project.status === 'pending'
-    || project.status === 'approved';
+    || (!!project.w2eConfig && Object.keys(safeConfig).length > 0);
 
   // ── V2 Route ──────────────────────────────────────────────────────────────
   if (isV2) {

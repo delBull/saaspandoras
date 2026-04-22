@@ -145,12 +145,13 @@ export function TopNavbar({
 
         if (res.ok) {
           const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
+          // ✅ STRICT CLIENT-SIDE CHECK: Only trust verified data
           setAdminStatus({ ...data, verified: true });
         } else {
           setAdminStatus({
-            isAdmin: isAdminProp ?? false,
-            isSuperAdmin: isSuperAdminProp ?? false,
-            verified: false
+            isAdmin: false, 
+            isSuperAdmin: false,
+            verified: true
           });
         }
       } catch (e) {
