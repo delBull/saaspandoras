@@ -111,9 +111,18 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
     
     // Safety Fallback: Use rawPhase price if contract returns 0 or is null
-    const effectivePriceInWei = (contractPrice && contractPrice > 0n) 
+    let effectivePriceInWei = (contractPrice && contractPrice > 0n) 
         ? contractPrice 
         : BigInt(Math.round((rawPhase?.tokenPrice || 0) * Number(decimals)));
+
+    // 🛡️ S'NARAI EMERGENCY PRICE GUARD
+    // If the price is resolved as 0.0001 (fallback) but we are in S'Narai, force correct values
+    const detectedPrice = Number(effectivePriceInWei) / Number(decimals);
+    if (project.slug === 'snarai' && (detectedPrice < 0.0005)) {
+        console.warn("🛡️ [CheckoutHub] Emergency Price Guard Triggered for S'Narai");
+        const forcedPrice = tierName.toLowerCase().includes('fundador') ? 0.0015 : 0.003;
+        effectivePriceInWei = BigInt(Math.round(forcedPrice * Number(decimals)));
+    }
 
     const totalCostWei = BigInt(safeAmount) * effectivePriceInWei;
     const totalCostDisplay = Number(totalCostWei) / Number(decimals);

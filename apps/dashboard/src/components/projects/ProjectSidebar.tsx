@@ -190,6 +190,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
       window.scrollTo({
         top: offsetPosition,
+        left: 0,
         behavior: 'smooth'
       });
     } else {
@@ -460,9 +461,14 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
                               <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
-                              <p className="text-gray-400 text-xs uppercase tracking-wide">
-                                {phase.type === 'amount' ? `Meta: ${phase.metric === 'USD' ? '$' : ''}${Number(phase.cap || 0).toLocaleString(undefined, { minimumFractionDigits: Number(phase.cap) < 1 ? 3 : 2, maximumFractionDigits: Number(phase.cap) < 1 ? 4 : 2 })} ${phase.metric === 'Tokens' ? 'NFTs' : ''}` : `Duración: ${phase.limit} días`}
-                              </p>
+                              <div className="space-y-1">
+                                <p className="text-gray-400 text-[10px] uppercase tracking-wider font-bold">
+                                  {phase.type === 'amount' ? `Meta: ${project.slug === 'snarai' ? (phase.name.toLowerCase().includes('fundador') ? '$10,500 USD' : '$21,000 USD') : `${phase.metric === 'USD' ? '$' : ''}${Number(phase.cap || 0).toLocaleString(undefined, { minimumFractionDigits: Number(phase.cap) < 1 ? 3 : 2, maximumFractionDigits: Number(phase.cap) < 1 ? 4 : 2 })} ${phase.metric === 'Tokens' ? 'NFTs' : ''}`}` : `Duración: ${phase.limit} días`}
+                                </p>
+                                <p className="text-lime-400 text-[10px] uppercase tracking-widest font-black">
+                                  Costo: {project.slug === 'snarai' ? (phase.name.toLowerCase().includes('fundador') ? '0.0015 ETH' : '0.003 ETH') : `${phase.tokenPrice || '0.00'} ETH`}
+                                </p>
+                              </div>
                             </div>
                             {!phase.image && (
                               <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${phase.statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>

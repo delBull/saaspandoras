@@ -137,7 +137,7 @@ export function getTargetAmount(project: any): number {
         return sum + (isNaN(cap) ? 0 : cap);
       }, 0);
       
-      // ELITE FIX: If we have phases, they ALWAYS define the real goal.
+      // ✨ ELITE FIX: Always prioritize phase sum if > 0
       if (totalFromPhases > 0) return totalFromPhases;
     }
 
