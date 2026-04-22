@@ -192,22 +192,17 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       e.stopPropagation();
     }
     
-    // Check if we are on desktop
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    const element = document.getElementById('sidebar-phases');
+    if (element) {
+        const headerOffset = 110;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
-    if (isDesktop) {
-        const element = document.getElementById('sidebar-phases');
-        if (element) {
-            const topOffset = 100;
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - topOffset;
-
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            });
-            return;
-        }
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+        return;
     }
 
     // Fallback or Mobile: Switch to Utility tab where phases are rendered in main content

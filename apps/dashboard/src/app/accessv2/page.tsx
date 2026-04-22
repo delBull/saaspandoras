@@ -140,6 +140,7 @@ function AccessV2Inner() {
   const {
     state,
     hasAccess,
+    isAdmin,
     betaOpen,
     ritualEnabled,
     user,
@@ -215,22 +216,77 @@ function AccessV2Inner() {
   }, [state, mounted, user?.address, router, projectSlug]);
 
   const handleEnterSystem = () => {
-    if (hasAccess) {
+    if (hasAccess || isAdmin) {
       if (typeof window !== 'undefined' && user?.address) {
         localStorage.setItem(`pbox_ritual_seen_${user.address}`, 'true');
         fetch('/api/v1/user/initiate', { method: 'POST' }).catch(console.error);
       }
+      
+      // TRIGGER HANDSHAKE: Ensure background minting for both keys
+      if (account?.address) {
+        fetch("/api/v1/external-commerce/ensure-pandora-key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                wallet: account.address, 
+                projectId: projectSlug || "pandoras" 
+            })
+        }).catch(console.error);
+      }
+
       // Route to project or home
       if (projectSlug) {
-        // V2 Correct Path: /projects/
         router.push(`/projects/${projectSlug}`);
       } else {
         router.push('/');
       }
     } else {
-      setShowPortal(false);
+      window.location.reload();
     }
   };
+
+  // Logic for the primary button in the "Not Authenticated" view
+  const getPrimaryButtonLabel = () => {
+    if (isLoading) return 'VERIFICANDO...';
+    if (account && authStatus === 'unauthenticated') return 'ACEPTAR Y CONTINUAR';
+    if (account) return 'SOLICITUD EN PROCESO';
+    return 'SOLICITAR ACCESO';
+  };
+
+  const handlePrimaryAction = async () => {
+    if (account && authStatus === 'unauthenticated') {
+      try {
+        await runAuthFlow();
+        // The useEffect will catch the status change and call handleEnterSystem()
+      } catch (e) {
+        console.error("Auth flow failed", e);
+      }
+      return;
+    }
+    
+    if (!account) {
+        localStorage.removeItem('wallet-logged-out');
+        connect({
+          client,
+          chain: config.chain,
+          showThirdwebBranding: false,
+          showAllWallets: false,
+          size: 'compact',
+          wallets,
+        });
+    }
+  };
+
+  // AUTO-REDIRECT: If authenticated and has access, just go.
+  useEffect(() => {
+    if (authUser?.id && (hasAccess || isAdmin) && mounted) {
+        // If they are returning or already seen it, don't show the ritual again
+        const hasSeenPortal = localStorage.getItem(`pbox_ritual_seen_${authUser.address}`);
+        if (hasSeenPortal || isReturning) {
+            handleEnterSystem();
+        }
+    }
+  }, [authUser?.id, hasAccess, isAdmin, mounted]);
 
   const isApprovedFromEmail =
     typeof window !== 'undefined' &&
@@ -367,39 +423,31 @@ function AccessV2Inner() {
 
                   {/* Connect primary */}
                   <button
-                    onClick={() => {
-                      localStorage.removeItem('wallet-logged-out');
-                      connect({
-                        client,
-                        chain: config.chain,
-                        showThirdwebBranding: false,
-                        showAllWallets: false,
-                        size: 'compact',
-                        wallets,
-                      });
-                    }}
+                    onClick={handlePrimaryAction}
                     className="w-full bg-white text-black py-5 text-[10px] tracking-[0.4em] font-black hover:bg-zinc-100 transition-colors uppercase flex items-center justify-center gap-3 group"
                   >
-                    SOLICITAR ACCESO
+                    {getPrimaryButtonLabel()}
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </button>
 
-                  {/* Secondary/Returning */}
-                  <button
-                    onClick={() =>
-                      connect({
-                        client,
-                        chain: config.chain,
-                        showThirdwebBranding: false,
-                        showAllWallets: false,
-                        size: 'compact',
-                        wallets,
-                      })
-                    }
-                    className="w-full bg-transparent border border-zinc-800 text-zinc-500 py-4 text-[9px] tracking-[0.3em] font-bold hover:border-zinc-600 hover:text-white transition-all uppercase"
-                  >
-                    CONECTAR WALLET (YA TENGO ACCESO)
-                  </button>
+                  {/* Secondary/Returning - Only show if NO wallet is connected */}
+                  {!account && (
+                    <button
+                        onClick={() =>
+                        connect({
+                            client,
+                            chain: config.chain,
+                            showThirdwebBranding: false,
+                            showAllWallets: false,
+                            size: 'compact',
+                            wallets,
+                        })
+                        }
+                        className="w-full bg-transparent border border-zinc-800 text-zinc-500 py-4 text-[9px] tracking-[0.3em] font-bold hover:border-zinc-600 hover:text-white transition-all uppercase"
+                    >
+                        CONECTAR WALLET (YA TENGO ACCESO)
+                    </button>
+                  )}
 
                   {/* SIWE sign prompt (wallet connected, not authenticated) */}
                   <AnimatePresence>
@@ -440,7 +488,7 @@ function AccessV2Inner() {
             )}
 
             {/* ── CONNECTED — HAS ACCESS ────────────────────────────────────── */}
-            {authUser?.id && user?.hasAccess && !showPortal && (
+            {authUser?.id && !showPortal && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
