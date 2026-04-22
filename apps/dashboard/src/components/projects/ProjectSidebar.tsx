@@ -192,14 +192,20 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       e.stopPropagation();
     }
     
-    // Check if we are on desktop (lg:block is used for sidebar container)
+    // Check if we are on desktop
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
     if (isDesktop) {
         const element = document.getElementById('sidebar-phases');
         if (element) {
-            // If on desktop, scroll the window to the sidebar phases
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const topOffset = 100;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
             return;
         }
     }
@@ -245,7 +251,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   return (
     <>
-      <div id="sidebar-scroll-container" className="hidden lg:block sticky top-24 w-80 z-20 shrink-0 self-start pr-2 max-h-[calc(100vh-120px)] overflow-y-auto no-scrollbar">
+      <div id="sidebar-scroll-container" className="hidden lg:block sticky top-24 w-80 z-20 shrink-0 self-start pr-2">
         {/* Non-sticky section - Investment & Creator cards */}
         <div className="space-y-6 mb-6">
           {/* Access / Investment Card */}
@@ -492,9 +498,17 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                               </span>
                             )}
                           </div>
-                          <p className="text-[10px] text-zinc-500 line-clamp-1 mb-3">
-                              {phase.description || 'Fase de adquisición oficial del protocolo.'}
-                          </p>
+                          <div className="space-y-1 mb-3">
+                            <p className="text-[10px] text-zinc-400 font-medium leading-tight">
+                                {phase.description || 'Fase de adquisición oficial del protocolo.'}
+                            </p>
+                            {phase.minPurchase && (
+                              <p className="text-[9px] text-zinc-600 flex items-center gap-1">
+                                <Zap className="w-2.5 h-2.5 text-yellow-500/50" />
+                                Mínimo: {Number(phase.minPurchase).toLocaleString()} tokens
+                              </p>
+                            )}
+                          </div>
                           <div className="flex flex-col gap-2 mb-4">
                               <div className="flex items-center justify-between">
                                   <div className="px-2 py-1 bg-zinc-900 rounded-lg border border-white/5">

@@ -19,11 +19,11 @@ interface JWTPayload {
 }
 
 export async function isAdmin(address?: string | null): Promise<boolean> {
-  if (!address) return false;
+  if (!address || address === "0x_undefined_admin") return false;
   const lower = address.toLowerCase();
   
-  // 🛡️ SECURITY GUARD: Strictly enforce Ethereum Address format (no UUIDs allowed)
-  if (!lower.startsWith("0x") || lower.length !== 42) {
+  // 🛡️ SECURITY GUARD: Strictly enforce Ethereum Address format
+  if (!/^0x[a-fA-F0-9]{40}$/.test(lower)) {
     console.error("🚨 [Auth] RBAC REJECTION: isAdmin requires a valid 0x wallet address. Received:", lower);
     return false; 
   }
@@ -33,7 +33,8 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
   if (lower === MARCO_ADMIN) return true;
 
   // ⚡ Optimistic check for Super Admin (No DB call)
-  if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
+  const superAdmin = (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || "0x_undefined_admin").toLowerCase();
+  if (lower === superAdmin && superAdmin !== "0x_undefined_admin") return true;
 
   try {
     const result = await db

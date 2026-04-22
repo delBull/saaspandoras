@@ -116,6 +116,12 @@ export function harmonizeProject(project: any): HarmonizedProject {
         // Data Structure Harmony
         artifacts,
         w2eConfig,
+        
+        // Financial Harmony (Standardize naming for API)
+        targetAmount: project.target_amount || project.targetAmount || project.goal || "0.00",
+        raisedAmount: project.raised_amount || project.raisedAmount || "0.00",
+        returnsPaid: project.returns_paid || project.returnsPaid || "0.00",
+
         protocolVersion: project.protocolVersion ? Number(project.protocolVersion) : (artifacts.length > 0 ? 2 : 1)
     };
 }

@@ -289,7 +289,7 @@ export function Sidebar({
 
   // The final isAdmin status - STRICT: Only trust verified API status or hardcoded super admin wallet
   // We no longer fallback to unverified props to prevent spoofing in Staging
-  const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+  const isSuperAdminWallet = !!account?.address && !!SUPER_ADMIN_WALLET && SUPER_ADMIN_WALLET !== "0x_undefined_admin" && account.address.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
   const isAdmin = (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin)) || isSuperAdminWallet;
 
   // Use centralized network configuration
