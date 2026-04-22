@@ -128,29 +128,23 @@ export function getTargetAmount(project: any): number {
     // Try canonical locations first (w2eConfig or project top-level)
     let phases = config.phases || (project as any).phases || config.tokenomics?.phases || [];
     
-    // V2 FALLBACK: If no phases in config, check if they are nested inside artifacts (Standard in V2)
+    // ✅ V2 ENHANCEMENT: If no top-level phases, check artifact-based phases
     if ((!phases || phases.length === 0) && Array.isArray(project.artifacts)) {
       phases = project.artifacts.flatMap((a: any) => a.phases || []);
     }
 
     if (Array.isArray(phases) && phases.length > 0) {
-      const totalFromPhases = phases.reduce((sum: number, phase: any) => {
-        // Calculate phase cap: prioritize explicit 'cap', otherwise multiply price * supply
+      const totalPhasesAmount = phases.reduce((acc: number, phase: any) => {
         const price = Number(phase.price || phase.tokenPrice || 0);
-        const supply = Number(phase.maxSupply || phase.supply || phase.amount || 0);
+        const allocation = Number(phase.tokenAllocation || phase.allocation || phase.maxSupply || phase.supply || 0);
+        const cap = Number(phase.cap || phase.target || 0);
         
-        // Use phase.cap or phase.target. If not present, price * supply.
-        // Also handle cases where cap might be 0 but price and supply are valid.
-        const rawCap = phase.cap ?? phase.target;
-        const val = (rawCap !== undefined && rawCap !== null) ? Number(rawCap) : (price * supply);
-        
-        // If val is 0 but price and supply are positive, use the product
-        const finalVal = (val === 0 && price > 0 && supply > 0) ? (price * supply) : val;
-        
-        return sum + (isNaN(finalVal) ? 0 : finalVal);
+        // Use cap if available, otherwise calculate from price * allocation
+        const phaseValue = cap > 0 ? cap : (price * allocation);
+        return acc + (isNaN(phaseValue) ? 0 : phaseValue);
       }, 0);
       
-      if (totalFromPhases > 0) return totalFromPhases;
+      if (totalPhasesAmount > 0) return totalPhasesAmount;
     }
 
     // Fallback to DB fields if no phases found

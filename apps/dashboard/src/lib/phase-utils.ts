@@ -45,8 +45,8 @@ export function calculatePhaseStatus(
   accumulatedTokensBefore: number,
   now: Date = new Date()
 ): PhaseStatus {
-  const price = Number(phase.tokenPrice || 0);
-  const allocation = Number(phase.tokenAllocation || 0);
+  const price = Number(phase.price || phase.tokenPrice || 0);
+  const allocation = Number(phase.tokenAllocation || phase.allocation || 0);
   const isTimeType = phase.type === 'time';
   
   const parseSafeDate = (dateStr: string | undefined): Date | null => {
