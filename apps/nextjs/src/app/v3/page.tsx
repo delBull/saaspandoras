@@ -22,7 +22,7 @@ const PIONEER_PROJECT = {
   status: 'active' as const,
   phase: 'Fase 1',
   badge: 'PIONEER',
-  href: `${DASHBOARD_URL}/accessv2?project=snarai`,
+  href: `${DASHBOARD_URL}/projects/snarai`,
   website: 'https://snarai.aztecaz.xyz'
 };
 

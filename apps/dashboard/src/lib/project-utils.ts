@@ -132,10 +132,11 @@ export function getTargetAmount(project: any): number {
     if (Array.isArray(phases) && phases.length > 0) {
       const totalFromPhases = phases.reduce((sum: number, phase: any) => {
         // Handle both 'cap' and 'target' field names for robustness
-        const capValue = phase.cap ?? phase.target ?? phase.amount ?? 0;
+        const capValue = phase.cap ?? phase.target ?? phase.amount ?? phase.metadata?.cap ?? 0;
         const cap = Number(capValue);
         return sum + (isNaN(cap) ? 0 : cap);
       }, 0);
+      // Even if it's a very small number (like 0.0015), we should use it if it's > 0
       if (totalFromPhases > 0) return totalFromPhases;
     }
 

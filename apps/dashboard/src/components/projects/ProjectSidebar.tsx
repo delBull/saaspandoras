@@ -181,19 +181,22 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   // --- Smooth Scroll Logic ---
   const scrollToPhases = () => {
-    const element = document.getElementById('phases-section-anchor');
+    const element = document.getElementById('phases-section-anchor') || document.getElementById('sidebar-phases');
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Use offset-based scroll to be more precise and avoid window jumps
+      const topOffset = 140; // Accounts for sticky headers and profile button
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     } else {
-      // Fallback: try to find the utility tab or scroll to bottom of sidebar
-      const sidebarPhases = document.getElementById('sidebar-phases');
-      if (sidebarPhases) {
-        sidebarPhases.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        const url = new URL(window.location.href);
-        url.searchParams.set('tab', 'utility');
-        window.history.pushState({}, '', url.toString());
-      }
+      // Fallback: search for utility tab
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'utility');
+      window.history.pushState({}, '', url.toString());
     }
   };
 

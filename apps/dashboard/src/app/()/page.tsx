@@ -344,21 +344,18 @@ export default function DashboardPage() {
     const isWidgetBypass = window.location.search.includes('bypass=ritual');
     
     if (UNAUTHORIZED_STATES.includes(accessState) || isWidgetBypass) {
-      // 🛡️ SECURITY: Do not redirect if we are still "booting" or "checking"
-      // to avoid kicking users out while their session is being verified.
-      const IS_TRANSITIONAL = status === "booting" || status === "checking_session" || status === "checking_access";
-      
-      if (isAutoConnecting || isManualConnecting || IS_TRANSITIONAL) {
-        return;
-      }
+      // 🛡️ SECURITY: Extreme guard against loops
+      // If we are already on an access page, NEVER redirect.
+      const isAccessPage = typeof window !== 'undefined' && (window.location.pathname.includes('/access') || window.location.pathname.includes('/accessv2'));
+      if (isAccessPage) return;
 
-      // 🛡️ SECURITY: Only redirect if NOT already on an access path to avoid loops
-      if (typeof window !== 'undefined' && (window.location.pathname.includes('/access') || window.location.pathname.includes('/accessv2'))) {
+      // 🛡️ SECURITY: Do not redirect if we are still "booting" or "checking"
+      const IS_TRANSITIONAL = status === "booting" || status === "checking_session" || status === "checking_access";
+      if (isAutoConnecting || isManualConnecting || IS_TRANSITIONAL || status === "idle") {
         return;
       }
       
       console.log(`🛡️ [DashboardRoot] Redirecting to /accessv2 (Status: ${status}, State: ${accessState})...`);
-      // Preserve search parameters for external widgets passing ?project=...
       const currentSearchParams = window.location.search;
       router.push(`/accessv2${currentSearchParams}`);
     }
