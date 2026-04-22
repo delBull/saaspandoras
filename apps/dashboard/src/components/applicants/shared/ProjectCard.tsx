@@ -19,6 +19,8 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
   const rawChainId = Number((project as any).chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
   const isEth = safeChainId === 11155111 || safeChainId === 1;
+  const isBase = safeChainId === 8453 || safeChainId === 84532;
+  const currencySymbol = isEth ? 'ETH' : (isBase ? 'USDC' : 'USD');
 
   // License Contract Setup
   const isValidAddress = (addr: string | null | undefined): boolean =>
@@ -200,7 +202,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
               <div className="flex justify-between items-center text-xs mb-2 bg-black/40 p-2 rounded-lg border border-white/5">
                 <span className="text-zinc-400">{activePhase.name ?? "Venta de Utilidad"}</span>
                 <span className="font-mono font-bold text-lime-400">
-                  {activePhase.tokenPrice ? (isEth ? `${activePhase.tokenPrice} ETH` : `$${activePhase.tokenPrice}`) : 'Gratis'}
+                  {activePhase.tokenPrice ? `${Number(activePhase.tokenPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: isEth ? 6 : 2 })} ${currencySymbol}` : 'Gratis'}
                 </span>
               </div>
             ) : null}
@@ -217,14 +219,14 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
             </div>
             <div className="flex justify-between items-center text-xs text-zinc-500">
               <span>
-                {isEth ? '' : '$'}
-                {raisedAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
-                {isEth ? ' ETH' : ' recaudados'}
+                {isEth ? '' : (isBase ? '' : '$')}
+                {raisedAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: isEth ? 6 : 2 })}
+                {isEth ? ' ETH' : (isBase ? ' USDC' : ' USD')} recaudados
               </span>
               <span>
-                de {isEth ? '' : '$'}
-                {targetAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
-                {isEth ? ' ETH' : ''}
+                de {isEth ? '' : (isBase ? '' : '$')}
+                {targetAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: isEth ? 6 : 2 })}
+                {isEth ? ' ETH' : (isBase ? ' USDC' : ' USD')}
               </span>
             </div>
           </div>

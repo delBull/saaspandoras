@@ -16,6 +16,8 @@ export default function MobileInvestmentCard({ project, targetAmount: targetAmou
   const rawChainId = Number(project.chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
   const isEth = safeChainId === 11155111 || safeChainId === 1;
+  const isBase = safeChainId === 8453 || safeChainId === 84532;
+  const currencySymbol = isEth ? 'ETH' : (isBase ? 'USDC' : 'USD');
 
   return (
     <div className="lg:hidden mb-8">
@@ -34,12 +36,12 @@ export default function MobileInvestmentCard({ project, targetAmount: targetAmou
 
         <div className="text-center mb-6">
           <div className="text-3xl font-bold text-white mb-2">
-            {isEth ? '' : '$'}
-            {raisedAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 2 })}
-            {isEth ? ' ETH' : ''}
+            {isEth ? '' : (isBase ? '' : '$')}
+            {raisedAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 6 : 2 })}
+            {isEth ? ' ETH' : (isBase ? ' USDC' : ' USD')}
           </div>
           <div className="text-sm text-gray-400 mb-4">
-            recaudados de {isEth ? '' : '$'}{targetAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 2 })}{isEth ? ' ETH' : ' meta USD'}
+            recaudados de {isEth ? '' : (isBase ? '' : '$')}{targetAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: isEth ? 6 : 2 })}{isEth ? ' ETH' : ` ${currencySymbol}`}
           </div>
 
           <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">

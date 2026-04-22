@@ -71,8 +71,8 @@ function ProjectContextBadge({
 }: {
   projectSlug: string | null;
 }) {
-  if (!projectSlug || !PROJECT_META[projectSlug]) return null;
-  const meta = PROJECT_META[projectSlug];
+  const meta = projectSlug ? PROJECT_META[projectSlug] : null;
+  if (!meta) return null;
 
   return (
     <motion.div
@@ -194,11 +194,12 @@ function AccessV2Inner() {
         `pbox_ritual_seen_${user.address}`
       );
       if (bypassRitual) {
-        // If came from a specific project, go there directly
-        // DELAYED REDIRECT: Wait a small beat to ensure session is stable
+        // AUTO-REDIRECT DISABLED: User wants to see options (solicitar acceso / ya tengo cuenta)
+        // We now wait for them to click the action button
+        /*
         setTimeout(() => {
           if (projectSlug) {
-            router.push(`/protocol/${projectSlug}`);
+            router.push(`/projects/${projectSlug}`);
           } else {
             if (typeof sessionStorage !== 'undefined') {
               sessionStorage.setItem('pd_last_access_redirect', Date.now().toString());
@@ -206,6 +207,7 @@ function AccessV2Inner() {
             router.push('/');
           }
         }, 500);
+        */
       } else {
         setShowPortal(true);
       }
@@ -220,7 +222,8 @@ function AccessV2Inner() {
       }
       // Route to project or home
       if (projectSlug) {
-        router.push(`/protocol/${projectSlug}`);
+        // V2 Correct Path: /projects/
+        router.push(`/projects/${projectSlug}`);
       } else {
         router.push('/');
       }
@@ -340,12 +343,12 @@ function AccessV2Inner() {
 
                   <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
                     {projectSlug && PROJECT_META[projectSlug]
-                      ? `Estás a un paso de ${PROJECT_META[projectSlug].name}.`
+                      ? `Estás a un paso de ${PROJECT_META[projectSlug]!.name}.`
                       : 'Estás a un paso de entrar.'}
                   </h1>
                   <p className="text-zinc-500 leading-relaxed font-light">
                     {projectSlug && PROJECT_META[projectSlug]
-                      ? `Pandoras verifica tu identidad para asignarte tu posición en ${PROJECT_META[projectSlug].name} — ${PROJECT_META[projectSlug].minInvestment}.`
+                      ? `Pandoras verifica tu identidad para asignarte tu posición en ${PROJECT_META[projectSlug]!.name} — ${PROJECT_META[projectSlug]!.minInvestment}.`
                       : 'Pandoras utiliza tu identidad para determinar qué proyectos y condiciones corresponden a tu perfil.'}
                   </p>
                 </div>
@@ -453,7 +456,7 @@ function AccessV2Inner() {
 
                 <h2 className="text-3xl font-bold text-white tracking-tight">
                   {projectSlug && PROJECT_META[projectSlug]
-                    ? `Tu lugar en ${PROJECT_META[projectSlug].name} está listo.`
+                    ? `Tu lugar en ${PROJECT_META[projectSlug]!.name} está listo.`
                     : 'Acceso confirmado.'}
                 </h2>
 
@@ -493,7 +496,7 @@ function AccessV2Inner() {
                   {hasAccess ? (
                     <>
                       {projectSlug && PROJECT_META[projectSlug]
-                        ? `Ir a ${PROJECT_META[projectSlug].name}`
+                        ? `Ir a ${PROJECT_META[projectSlug]!.name}`
                         : 'Ver oportunidades disponibles'}
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </>
