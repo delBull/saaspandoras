@@ -120,22 +120,29 @@ export function getTargetAmount(project: any): number {
   if (!project) return 0;
   
   try {
-    // Definitive parsing of w2eConfig (Source of truth from Deployer)
+    // 1. Resolve phases from all possible locations (V1 config, V2 artifacts, etc)
     const config = typeof project.w2eConfig === 'string'
       ? (JSON.parse(project.w2eConfig || '{}'))
       : (project.w2eConfig || {});
 
-    // Sum all phases dynamically
-    const phases = config.phases || (project as any).phases || config.tokenomics?.phases || [];
+    // Try canonical locations first (w2eConfig or project top-level)
+    let phases = config.phases || (project as any).phases || config.tokenomics?.phases || [];
     
+    // V2 FALLBACK: If no phases in config, check if they are nested inside artifacts (Standard in V2)
+    if ((!phases || phases.length === 0) && Array.isArray(project.artifacts)) {
+      phases = project.artifacts.flatMap((a: any) => a.phases || []);
+    }
+
     if (Array.isArray(phases) && phases.length > 0) {
       const totalFromPhases = phases.reduce((sum: number, phase: any) => {
         // Calculate phase cap: prioritize explicit 'cap', otherwise multiply price * supply
         const price = Number(phase.price || phase.tokenPrice || 0);
         const supply = Number(phase.maxSupply || phase.supply || phase.amount || 0);
         
-        const phaseCap = phase.cap ?? phase.target ?? (price * supply);
-        const val = Number(phaseCap);
+        // Use phase.cap or phase.target. If not present, price * supply.
+        // Also handle cases where cap might be 0 but price and supply are valid.
+        const rawCap = phase.cap ?? phase.target;
+        const val = (rawCap !== undefined && rawCap !== null) ? Number(rawCap) : (price * supply);
         
         // If val is 0 but price and supply are positive, use the product
         const finalVal = (val === 0 && price > 0 && supply > 0) ? (price * supply) : val;
@@ -147,8 +154,12 @@ export function getTargetAmount(project: any): number {
     }
 
     // Fallback to DB fields if no phases found
-    const dbAmount = Number(project.target_amount || project.targetAmount || project.goal);
-    if (!isNaN(dbAmount) && dbAmount > 0 && dbAmount !== 100000 && dbAmount !== 10000) {
+    // 🛡️ RECOVERY: Some projects use project.goal or project.targetAmount (camelCase)
+    const dbAmount = Number(project.target_amount || project.targetAmount || project.goal || project.target_amount_usd);
+    
+    // Valid DB amounts (not dummy placeholders like 100000 or 10000 unless they are the real target)
+    if (!isNaN(dbAmount) && dbAmount > 0) {
+        // If it looks like a dummy placeholder but we have no other data, use it as last resort
         return dbAmount;
     }
 
