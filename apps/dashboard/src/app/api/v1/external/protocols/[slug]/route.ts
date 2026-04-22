@@ -3,6 +3,7 @@ import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { harmonizeProject } from "@/lib/projects/harmonizer";
 
 export const dynamic = "force-dynamic";
 
@@ -79,30 +80,16 @@ export async function GET(
       return NextResponse.json({ error: "Protocol not found" }, { status: 404 });
     }
 
+    // 🧬 Harmonize project data (Calculates targetAmount and Normalizes Prices)
+    const harmonized = harmonizeProject(project);
+
     return NextResponse.json({
       success: true,
       protocol: {
-        ...project,
-        targetAmount: project.targetAmount ? Number(project.targetAmount) : null,
-        raisedAmount: project.raisedAmount ? Number(project.raisedAmount) : null,
-        returnsPaid: project.returnsPaid ? Number(project.returnsPaid) : null,
-        totalValuationUsd: project.totalValuationUsd ? Number(project.totalValuationUsd) : null,
-        tokenPriceUsd: project.tokenPriceUsd ? Number(project.tokenPriceUsd) : null,
-        price: project.price ? Number(project.price) : null,
-        fundingProgress: project.targetAmount && project.raisedAmount
-          ? Math.round((Number(project.raisedAmount) / Number(project.targetAmount)) * 100)
+        ...harmonized,
+        fundingProgress: harmonized.targetAmount && harmonized.raisedAmount
+          ? Math.round((Number(harmonized.raisedAmount) / Number(harmonized.targetAmount)) * 100)
           : 0,
-        // 🧬 Filter out inactive phases from w2eConfig to hide them in external widgets
-        w2eConfig: project.w2eConfig ? (function() {
-          const config = typeof project.w2eConfig === 'string' 
-            ? JSON.parse(project.w2eConfig) 
-            : (project.w2eConfig as any);
-          
-          if (config.phases && Array.isArray(config.phases)) {
-            config.phases = config.phases.filter((p: any) => p.isActive !== false);
-          }
-          return config;
-        })() : null
       },
       generated_at: new Date().toISOString(),
     });

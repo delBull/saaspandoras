@@ -3,6 +3,7 @@ import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { inArray, sql, desc } from "drizzle-orm";
+import { harmonizeProject } from "@/lib/projects/harmonizer";
 
 export const dynamic = "force-dynamic";
 
@@ -79,16 +80,15 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      protocols: list.map(p => ({
-        ...p,
-        targetAmount: p.targetAmount ? Number(p.targetAmount) : null,
-        raisedAmount: p.raisedAmount ? Number(p.raisedAmount) : null,
-        totalValuationUsd: p.totalValuationUsd ? Number(p.totalValuationUsd) : null,
-        price: p.price ? Number(p.price) : null,
-        fundingProgress: p.targetAmount && p.raisedAmount
-          ? Math.round((Number(p.raisedAmount) / Number(p.targetAmount)) * 100)
-          : 0,
-      })),
+      protocols: list.map(p => {
+        const harmonized = harmonizeProject(p);
+        return {
+          ...harmonized,
+          fundingProgress: harmonized.targetAmount && harmonized.raisedAmount
+            ? Math.round((Number(harmonized.raisedAmount) / Number(harmonized.targetAmount)) * 100)
+            : 0,
+        };
+      }),
       pagination: {
         total,
         limit,

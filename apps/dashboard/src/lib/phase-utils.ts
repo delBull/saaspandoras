@@ -162,9 +162,7 @@ export function getRawPhases(project: any) {
             tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || (a.phases.length === 1 ? artifactSupply : 0)
           }));
         })
-        .filter((p: any) => p?.name)
-          return p;
-        });
+        .filter((p: any) => p?.name);
 
       if (artifactPhases.length > 0) {
         phases = artifactPhases;

@@ -1,4 +1,6 @@
 
+import { getTargetAmount } from "../project-utils";
+
 /**
  * Project Data Harmonizer
  * Centralizes the logic to resolve technical blockchain data (contracts, chainIds)
@@ -54,9 +56,38 @@ export function harmonizeProject(project: any): HarmonizedProject {
         ? project.artifacts 
         : (typeof project.artifacts === 'string' ? JSON.parse(project.artifacts || '[]') : []);
     
-    const w2eConfig = typeof project.w2eConfig === 'string' 
+    let w2eConfig = typeof project.w2eConfig === 'string' 
         ? JSON.parse(project.w2eConfig || '{}') 
         : (project.w2eConfig || {});
+
+    // ✨ EMERGENCY NORMALIZATION: Ensure S'Narai prices are correct at the source
+    // This fixes the API response for all consumers (Dashboard, Telegram, etc.)
+    if (project.slug === 'snarai' || project.id === 12) {
+        const normalize = (p: any) => {
+            const currentPrice = Number(p.tokenPrice || p.price || 0);
+            if (currentPrice < 0.0005) {
+                const forcedPrice = (p.name || "").toLowerCase().includes('fundador') ? 0.0015 : 0.003;
+                return { 
+                    ...p, 
+                    tokenPrice: forcedPrice, 
+                    price: forcedPrice,
+                    tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || 0
+                };
+            }
+            return p;
+        };
+
+        if (Array.isArray(artifacts)) {
+            artifacts.forEach((a: any) => {
+                if (Array.isArray(a.phases)) {
+                    a.phases = a.phases.map(normalize);
+                }
+            });
+        }
+        if (Array.isArray(w2eConfig.phases)) {
+            w2eConfig.phases = w2eConfig.phases.map(normalize);
+        }
+    }
 
     // 1. Resolve Chain ID
     // Priority: chainId field > chain_id field > network name string > environment default
@@ -118,7 +149,13 @@ export function harmonizeProject(project: any): HarmonizedProject {
         w2eConfig,
         
         // Financial Harmony (Standardize naming for API)
-        targetAmount: project.target_amount || project.targetAmount || project.goal || "0.00",
+        // If DB target is 0 or missing, use calculated amount from phases
+        targetAmount: (Number(project.target_amount || project.targetAmount || project.goal) > 0)
+            ? (project.target_amount || project.targetAmount || project.goal)
+            : getTargetAmount({ ...project, artifacts, w2eConfig }),
+        target_amount: (Number(project.target_amount || project.targetAmount || project.goal) > 0)
+            ? (project.target_amount || project.targetAmount || project.goal)
+            : getTargetAmount({ ...project, artifacts, w2eConfig }),
         raisedAmount: project.raised_amount || project.raisedAmount || "0.00",
         returnsPaid: project.returns_paid || project.returnsPaid || "0.00",
 
