@@ -35,7 +35,7 @@ export default async function AdminDashboardLayout({
     const isStaging = host.includes('staging.dash.pandoras.finance');
     const envLabel = isStaging ? 'staging' : (process.env.NODE_ENV || 'development');
 
-    const { session } = await getAuth(undefined, walletFromCookies ?? undefined);
+    const { session } = await getAuth(hdrs);
     const userAddress = session?.address?.toLowerCase();
     
     // 🔥 FIX: Explicit support for Marco's Admin Wallet on Staging

@@ -102,7 +102,10 @@ export async function POST(req: NextRequest) {
       // check if the main project exists at least.
       if (isInternalDashboard) {
         const mainProject = await db.query.projects.findFirst({
-          where: (projects, { ilike }) => ilike(projects.slug, 'pandoras-protocol')
+          where: (projects, { or, ilike }) => or(
+            ilike(projects.slug, 'pandoras-protocol'),
+            ilike(projects.slug, 'pandoras_access')
+          )
         });
         
         if (mainProject) {

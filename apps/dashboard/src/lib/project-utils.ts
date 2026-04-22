@@ -137,7 +137,10 @@ export function getTargetAmount(project: any): number {
         const phaseCap = phase.cap ?? phase.target ?? (price * supply);
         const val = Number(phaseCap);
         
-        return sum + (isNaN(val) ? 0 : val);
+        // If val is 0 but price and supply are positive, use the product
+        const finalVal = (val === 0 && price > 0 && supply > 0) ? (price * supply) : val;
+        
+        return sum + (isNaN(finalVal) ? 0 : finalVal);
       }, 0);
       
       if (totalFromPhases > 0) return totalFromPhases;
