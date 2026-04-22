@@ -105,9 +105,9 @@ export async function GET(req: Request): Promise<NextResponse> {
 
             let hasNFTPermission = dbUser?.hasPandorasKey || false;
             
-            // Dynamic flags from Cached Global Metadata
-            const isBetaOpen = globalMetadata.betaOpen ?? config.betaOpen;
-            const isRitualEnabled = globalMetadata.ritualEnabled ?? true;
+            // 🔓 ELITE ACCESS: Beta and Ritual are now bypassed as requested
+            const isBetaOpen = true; 
+            const isRitualEnabled = false;
 
             // 🧠 6. RESOLVE STATE
             let resolvedState = AccessState.WALLET_NO_ACCESS;
