@@ -117,47 +117,44 @@ export function calculateProjectCompletion(project: Record<string, unknown>): {
  * Prioritizes the deployed configuration (w2eConfig) over the initial application form.
  */
 export function getTargetAmount(project: any): number {
-  if (!project) return 10000;
+  if (!project) return 0;
   
   try {
-    // Definitive parsing of w2eConfig
+    // Definitive parsing of w2eConfig (Source of truth from Deployer)
     const config = typeof project.w2eConfig === 'string'
       ? (JSON.parse(project.w2eConfig || '{}'))
       : (project.w2eConfig || {});
 
-    // V2 / Phase-based Structure (Highest Priority)
-    // If there are phases, the total target is the sum of all phase caps
-    // Check both standard phase array locations
+    // Sum all phases dynamically
     const phases = config.phases || (project as any).phases || config.tokenomics?.phases || [];
+    
     if (Array.isArray(phases) && phases.length > 0) {
       const totalFromPhases = phases.reduce((sum: number, phase: any) => {
-        // Handle both 'cap' and 'target' field names for robustness
-        const capValue = phase.cap ?? phase.target ?? phase.amount ?? phase.metadata?.cap ?? 0;
-        const cap = Number(capValue);
-        return sum + (isNaN(cap) ? 0 : cap);
+        // Calculate phase cap: prioritize explicit 'cap', otherwise multiply price * supply
+        const price = Number(phase.price || phase.tokenPrice || 0);
+        const supply = Number(phase.maxSupply || phase.supply || phase.amount || 0);
+        
+        const phaseCap = phase.cap ?? phase.target ?? (price * supply);
+        const val = Number(phaseCap);
+        
+        return sum + (isNaN(val) ? 0 : val);
       }, 0);
       
-      // ✨ ELITE FIX: Always prioritize phase sum if > 0
       if (totalFromPhases > 0) return totalFromPhases;
     }
 
-    // Fallback logic only if no phases found
-    const tokenomics = config.tokenomics || {};
-    if (tokenomics.initialSupply && tokenomics.price) {
-      const amount = Number(tokenomics.initialSupply) * Number(tokenomics.price);
-      if (!isNaN(amount) && amount > 0) return amount;
-    }
-
+    // Fallback to DB fields if no phases found
     const dbAmount = Number(project.target_amount || project.targetAmount || project.goal);
     if (!isNaN(dbAmount) && dbAmount > 0 && dbAmount !== 100000 && dbAmount !== 10000) {
         return dbAmount;
     }
 
-    return 10000; // Final default
+    // Absolute fallback
+    return 0;
   } catch (e) {
     console.warn("[getTargetAmount] Parsing failed, using fallback:", e);
-    const fallbackAmount = Number(project?.target_amount || project?.targetAmount || 10000);
-    return (!isNaN(fallbackAmount) && fallbackAmount > 0) ? fallbackAmount : 10000;
+    const fallbackAmount = Number(project?.target_amount || project?.targetAmount || 0);
+    return (!isNaN(fallbackAmount) && fallbackAmount > 0) ? fallbackAmount : 0;
   }
 }
 

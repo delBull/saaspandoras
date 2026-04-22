@@ -50,7 +50,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   }, [account?.address, ownerWallet, isOwner]);
 
   return (
-    <div className="relative w-full h-96 overflow-hidden rounded-xl mb-8">
+    <div className="relative w-full h-64 md:h-96 overflow-hidden rounded-xl mb-8">
       {/* Imagen de Portada */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -61,7 +61,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
 
 
       {/* Superposición Oscura y Contenido */}
-      <div className="absolute inset-0 bg-black/60 flex items-end p-4 md:p-12">
+      <div className="absolute inset-0 bg-black/60 flex items-end p-6 md:p-12">
         <div className="flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 w-full justify-between">
           <div className="flex items-center md:items-end gap-4 md:gap-6">
             {/* Logo */}

@@ -193,6 +193,34 @@ export async function POST(request: Request) {
 
         console.log(`✅ [LOGIN] Session ${sid} created for user ${userId}`);
 
+        // 🧠 Ritual v2: Auto-Ritual Logic (Optimistic Entrance)
+        // If the user hasn't completed the ritual, check if they are a Narai lead
+        if (!userRecord?.ritualCompletedAt) {
+            try {
+                const leadMatch = await db.query.marketingLeads.findFirst({
+                    where: (leads, { eq, and, or }) => and(
+                        eq(leads.walletAddress, walletAddress),
+                        or(
+                            eq(leads.intent, 'invest'),
+                            eq(leads.intent, 'whitelist')
+                        )
+                    )
+                });
+
+                if (leadMatch) {
+                    console.log(`✨ [Ritual v2] Auto-activating access for Narai Lead: ${walletAddress}`);
+                    await db.update(users)
+                        .set({ ritualCompletedAt: now, hasPandorasKey: true })
+                        .where(eq(users.id, userId));
+                    
+                    // Force access flag for the JWT token
+                    hasAccess = true; 
+                }
+            } catch (err) {
+                console.warn("⚠️ [Ritual v2] Auto-activation failed:", err);
+            }
+        }
+
         // 🧬 Phase 89: Growth Engine - High Intent Capture
         // Trigger a WALLET_CONNECTED event for the Growth OS immediately upon successful Ritual entrance.
         try {
