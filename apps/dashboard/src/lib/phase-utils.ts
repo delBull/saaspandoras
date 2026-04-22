@@ -162,7 +162,18 @@ export function getRawPhases(project: any) {
             tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || (a.phases.length === 1 ? artifactSupply : 0)
           }));
         })
-        .filter((p: any) => p?.name);
+        .filter((p: any) => p?.name)
+        .map((p: any) => {
+          // ✨ S'NARAI EMERGENCY NORMALIZATION (Matches Checkout Hub Logic)
+          if (project.slug === 'snarai' || project.id === 12) {
+            const currentPrice = Number(p.tokenPrice || p.price || 0);
+            if (currentPrice < 0.0005) {
+              const forcedPrice = p.name.toLowerCase().includes('fundador') ? 0.0015 : 0.003;
+              return { ...p, tokenPrice: forcedPrice, price: forcedPrice };
+            }
+          }
+          return p;
+        });
 
       if (artifactPhases.length > 0) {
         phases = artifactPhases;
