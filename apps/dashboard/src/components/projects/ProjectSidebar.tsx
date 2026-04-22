@@ -23,6 +23,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
+import { usePathname, useRouter } from 'next/navigation';
 import type { ProjectData } from "@/app/()/projects/types";
 import AccessCardPurchaseModal from "../modals/AccessCardPurchaseModal";
 import ArtifactPurchaseModal from "../modals/ArtifactPurchaseModal"; // Unified Modal
@@ -40,6 +41,8 @@ interface ProjectSidebarProps {
 }
 
 export default function ProjectSidebar({ project, targetAmount }: ProjectSidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [isPerksModalOpen, setIsPerksModalOpen] = useState(false);
   const [initialPurchaseAmount, setInitialPurchaseAmount] = useState<string | undefined>(undefined);
   // Debug: Check status
@@ -47,6 +50,9 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   // Robust Chain ID handling: Handle potential undefined/null/NaN/0 values from DB
   const rawChainId = Number(project.chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111; // Default Sepolia
+  const isEth = safeChainId === 1 || safeChainId === 11155111;
+  const isBase = safeChainId === 8453 || safeChainId === 84532;
+  const currencySymbol = isEth ? 'ETH' : (isBase ? 'USDC' : 'USD');
 
 
   // --- Access Gating Logic ---
@@ -185,17 +191,36 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       e.preventDefault();
       e.stopPropagation();
     }
-    const element = document.getElementById('phases-section-anchor') || document.getElementById('sidebar-phases');
-    if (element) {
-      const topOffset = 100;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+    
+    // Check if we are on desktop (lg:block is used for sidebar container)
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+    if (isDesktop) {
+        const element = document.getElementById('sidebar-phases');
+        if (element) {
+            // If on desktop, scroll the window to the sidebar phases
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
     }
+
+    // Fallback or Mobile: Switch to Utility tab where phases are rendered in main content
+    router.push(`${pathname}?tab=utility#tab-phases`);
+    
+    // Slight delay to allow tab content to mount if switching
+    setTimeout(() => {
+        const element = document.getElementById('tab-phases') || document.getElementById('phases-section-anchor');
+        if (element) {
+          const topOffset = 100;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+    }, 150);
   };
 
   // Debug log (remove in prod)
@@ -220,7 +245,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   return (
     <>
-      <div id="sidebar-scroll-container" className="hidden lg:block sticky top-28 w-80 z-20 shrink-0 self-start pr-2">
+      <div id="sidebar-scroll-container" className="hidden lg:block sticky top-24 w-80 z-20 shrink-0 self-start pr-2 max-h-[calc(100vh-120px)] overflow-y-auto no-scrollbar">
         {/* Non-sticky section - Investment & Creator cards */}
         <div className="space-y-6 mb-6">
           {/* Access / Investment Card */}
@@ -250,12 +275,12 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   <div className="flex flex-col items-start gap-0.5">
                     <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Objetivo</span>
                     <span className="text-sm font-bold text-white tracking-tight">
-                      {safeChainId === 11155111 || safeChainId === 1 ? '' : '$'}
+                      {isEth ? '' : (isBase ? '' : '$')}
                       {targetAmount.toLocaleString(undefined, { 
                         minimumFractionDigits: 0, 
-                        maximumFractionDigits: (targetAmount < 1 ? 4 : 2) 
+                        maximumFractionDigits: (isEth ? 6 : 2) 
                       })}
-                      {safeChainId === 11155111 || safeChainId === 1 ? ' ETH' : ' USD'}
+                      {isEth ? ' ETH' : (isBase ? ' USDC' : ' USD')}
                     </span>
                   </div>
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
@@ -419,7 +444,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
         </div>
 
         {/* Sticky section - Tokenomics & Offers (from here down) */}
-        <div id="sidebar-phases" className="sticky top-6 space-y-6" style={{ scrollMarginTop: '100px' }}>
+        <div id="sidebar-phases" className="space-y-6" style={{ scrollMarginTop: '100px' }}>
 
           {/* Utility Offers Panel (Dynamic Phases) */}
           {(allPhases && allPhases.length > 0) ? (
@@ -457,15 +482,37 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                         )}
 
                         <div className="p-4">
-                          <div className="flex justify-between items-start mb-2">
+                          <div className="flex justify-between items-start mb-1">
                             <div className="flex-1">
-                              <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
+                              <h4 className="text-white font-bold text-lg mb-0.5">{phase.name}</h4>
                             </div>
                             {!phase.image && (
-                              <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${phase.statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>
+                              <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border border-white/10 ${phase.statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>
                                 {phase.statusLabel}
                               </span>
                             )}
+                          </div>
+                          <p className="text-[10px] text-zinc-500 line-clamp-1 mb-3">
+                              {phase.description || 'Fase de adquisición oficial del protocolo.'}
+                          </p>
+                          <div className="flex flex-col gap-2 mb-4">
+                              <div className="flex items-center justify-between">
+                                  <div className="px-2 py-1 bg-zinc-900 rounded-lg border border-white/5">
+                                      <span className="text-[10px] font-black text-lime-400 font-mono">
+                                          {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `${Number(phase.tokenPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: isEth ? 6 : 2 })} ${currencySymbol}`}
+                                      </span>
+                                  </div>
+                                  <span className="text-[9px] text-zinc-600 font-medium italic">
+                                      {phase.stats.remainingTokens.toLocaleString()} / {Number(phase.tokenAllocation || 0).toLocaleString()} DISP.
+                                  </span>
+                              </div>
+                              {/* Small progress bar for phase */}
+                              <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
+                                  <div 
+                                      className="h-full bg-lime-500/50 transition-all duration-500" 
+                                      style={{ width: `${Math.min(100, (1 - (phase.stats.remainingTokens / (Number(phase.tokenAllocation) || 1))) * 100)}%` }}
+                                  />
+                              </div>
                           </div>
 
                           <button

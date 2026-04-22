@@ -149,6 +149,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   const rawChainId = Number((project as any).chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
   const isEth = safeChainId === 1 || safeChainId === 11155111;
+  const isBase = safeChainId === 8453 || safeChainId === 84532;
+  const currencySymbol = isEth ? 'ETH' : (isBase ? 'USDC' : 'USD');
 
   console.log("DEBUG: ProjectContentTabs", {
     title: project.title,
@@ -403,7 +405,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                             <div>
                               <span className="text-zinc-500 block text-xs">Precio Token</span>
                               <span className={`${isSoldOut ? 'text-zinc-400' : 'text-lime-400'} font-mono`}>
-                                {Number(phase.tokenPrice) === 0 ? 'GRATIS' : (safeChainId === 1 || safeChainId === 11155111 ? `${phase.tokenPrice} ETH` : `$${phase.tokenPrice}`)}
+                                {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `${Number(phase.tokenPrice).toLocaleString(undefined, { maximumFractionDigits: isEth ? 6 : 2 })} ${currencySymbol}`}
                               </span>
                             </div>
                             <div>
@@ -537,17 +539,17 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                   <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Treasury Actual</p>
                     <p className="text-xl font-mono text-white">
-                      {isEth ? '' : '$'}
-                      {fundsRaised.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
-                      {isEth ? ' ETH' : ''}
+                      {isEth ? '' : (isBase ? '' : '$')}
+                      {fundsRaised.toLocaleString(undefined, { maximumFractionDigits: isEth ? 6 : 2 })}
+                      {isEth ? ' ETH' : ` ${currencySymbol}`}
                     </p>
                   </div>
                   <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Meta Activación</p>
                     <p className="text-xl font-mono text-lime-400">
-                      {isEth ? '' : '$'}
-                      {targetAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
-                      {isEth ? ' ETH' : ''}
+                      {isEth ? '' : (isBase ? '' : '$')}
+                      {targetAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 6 : 2 })}
+                      {isEth ? ' ETH' : ` ${currencySymbol}`}
                     </p>
                   </div>
                 </div>
@@ -589,11 +591,11 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               <SectionCard title="Meta de Adopción" icon={Globe}>
                 <p className="text-zinc-300">
                   <span className="font-semibold text-lime-400 text-lg">
-                    {isEth ? '' : '$'}
-                    {target.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 2 })}
-                    {isEth ? ' ETH' : ''}
+                    {isEth ? '' : (isBase ? '' : '$')}
+                    {target.toLocaleString(undefined, { maximumFractionDigits: isEth ? 6 : 2 })}
+                    {isEth ? ' ETH' : ` ${currencySymbol}`}
                   </span>
-                  <span className="text-zinc-400 ml-2">{isEth ? 'objetivo de recaudación' : 'USD objetivo'}</span>
+                  <span className="text-zinc-400 ml-2">{isEth ? 'objetivo de recaudación' : `${currencySymbol} objetivo`}</span>
                 </p>
               </SectionCard>
             );

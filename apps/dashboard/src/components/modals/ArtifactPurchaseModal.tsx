@@ -150,7 +150,8 @@ export default function ArtifactPurchaseModal({
                 const { price } = await resolveArtifactPrice({
                     contract: targetContract,
                     fallbackPrice: phase?.tokenPrice || 0,
-                    chainId: safeChainId
+                    chainId: safeChainId,
+                    phaseIndex: phase?.phaseIndex
                 });
                 if (isMounted) setContractPrice(price);
             } catch (error) {
@@ -596,7 +597,7 @@ export default function ArtifactPurchaseModal({
                                                  {isPriceLoading ? (
                                                     <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                                                 ) : (
-                                                    <>Adquirir Ahora ({totalCostDisplay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {txConfig.token})</>
+                                                    <>Adquirir Ahora ({totalCostDisplay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: (txConfig.token === 'ETH' ? 6 : 2) })} {txConfig.token})</>
                                                 )}
                                             </TransactionButton>
                                         )
