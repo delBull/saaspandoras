@@ -345,19 +345,30 @@ export default function DashboardPage() {
     
     if (UNAUTHORIZED_STATES.includes(accessState) || isWidgetBypass) {
       // 🛡️ SECURITY: Extreme guard against loops
-      // If we are already on an access page, NEVER redirect.
       const isAccessPage = typeof window !== 'undefined' && (window.location.pathname.includes('/access') || window.location.pathname.includes('/accessv2'));
       if (isAccessPage) return;
 
-      // 🛡️ SECURITY: Do not redirect if we are still "booting" or "checking"
-      const IS_TRANSITIONAL = status === "booting" || status === "checking_session" || status === "checking_access";
-      if (isAutoConnecting || isManualConnecting || IS_TRANSITIONAL || status === "idle") {
+      // 🛡️ SECURITY: Stability Guard - If we just came from access, wait for Thirdweb to settle
+      const lastAccessRedirect = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pd_last_access_redirect') : null;
+      if (lastAccessRedirect && (Date.now() - Number(lastAccessRedirect) < 5000)) {
+        console.log("🛡️ [DashboardRoot] Stability guard active, skipping redirect...");
+        return;
+      }
+
+      // 🛡️ SECURITY: High-tolerance transitional check
+      const IS_TRANSITIONAL = status === "booting" || status === "checking_session" || status === "checking_access" || status === "idle";
+      
+      if (isAutoConnecting || isManualConnecting || IS_TRANSITIONAL) {
         return;
       }
       
-      console.log(`🛡️ [DashboardRoot] Redirecting to /accessv2 (Status: ${status}, State: ${accessState})...`);
-      const currentSearchParams = window.location.search;
-      router.push(`/accessv2${currentSearchParams}`);
+      const timer = setTimeout(() => {
+        console.log(`🛡️ [DashboardRoot] Redirecting to /accessv2 (Status: ${status}, State: ${accessState})...`);
+        const currentSearchParams = window.location.search;
+        router.push(`/accessv2${currentSearchParams}`);
+      }, 1500); // Increased grace period
+
+      return () => clearTimeout(timer);
     }
   }, [accessState, router, isAutoConnecting, isManualConnecting, status]);
 
