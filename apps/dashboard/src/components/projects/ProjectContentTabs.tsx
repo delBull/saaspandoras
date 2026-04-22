@@ -148,6 +148,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   // Robust Chain ID handling
   const rawChainId = Number((project as any).chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+  const isEth = safeChainId === 1 || safeChainId === 11155111;
 
   console.log("DEBUG: ProjectContentTabs", {
     title: project.title,
@@ -397,53 +398,26 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                             <span className={`text-xs px-2 py-0.5 rounded uppercase ${statusBadgeColor}`}>{statusLabel}</span>
                           </h4>
 
-                          {/* --- REAL DATA PROGRESS BAR (PHASE SPECIFIC) --- */}
-                          <div className="mb-4 bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
-                            <div className="flex justify-between items-end mb-1">
-                              <span className="text-xs text-zinc-400">Progreso Fase</span>
-                              <span className={`${isSoldOut ? 'text-red-400' : 'text-lime-400'} font-mono text-sm font-bold`}>
-                                {phase.stats.metric === 'Tokens' ?
-                                  `${phase.stats.raised.toLocaleString()} / ${phase.stats.cap.toLocaleString()} Tokens` :
-                                  `${formatCurrency(phase.stats.raised)} / ${formatCurrency(phase.stats.cap)}`
-                                }
-                              </span>
-                            </div>
-                            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
-                              <div
-                                className={`${isSoldOut ? 'bg-red-500' : (hasEnded ? 'bg-zinc-600' : (!hasStarted ? 'bg-blue-500' : 'bg-lime-500'))} h-full rounded-full transition-all duration-1000`}
-                                style={{ width: `${phase.stats.percent}%` }}
-                              />
-                            </div>
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="text-zinc-500">
-                                Faltan: <span className="text-zinc-300">
-                                  {phase.stats.metric === 'Tokens' ?
-                                    `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} Tokens` :
-                                    formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))
-                                  }
-                                </span>
-                              </span>
-                              <span className="px-2 py-0.5 bg-lime-900/30 text-lime-400 rounded-full border border-lime-500/20">
-                                {phase.stats.participants.toLocaleString()} Partic.
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4">
                             {/* Token Price (Property: tokenPrice) */}
                             <div>
                               <span className="text-zinc-500 block text-xs">Precio Token</span>
                               <span className={`${isSoldOut ? 'text-zinc-400' : 'text-lime-400'} font-mono`}>
-                                {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
+                                {Number(phase.tokenPrice) === 0 ? 'GRATIS' : (safeChainId === 1 || safeChainId === 11155111 ? `${phase.tokenPrice} ETH` : `$${phase.tokenPrice}`)}
                               </span>
                             </div>
                             <div>
-                              <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
-                              <span className="text-white font-mono">{Number(phase.type === 'time' ? phase.limit : phase.stats.cap).toLocaleString(undefined, { minimumFractionDigits: Number(phase.type === 'time' ? 0 : phase.stats.cap) < 1 ? 3 : 2, maximumFractionDigits: 4 })} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
+                              <span className="text-zinc-500 block text-xs">Disponibilidad</span>
+                              <span className="text-white font-mono">
+                                {phase.stats.metric === 'Tokens' 
+                                  ? `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} T`
+                                  : phase.type === 'time' ? `${phase.limit} d` : 'Disponible'
+                                }
+                              </span>
                             </div>
                             {/* Allocation (Property: tokenAllocation) */}
                             <div>
-                              <span className="text-zinc-500 block text-xs">Asignación</span>
+                              <span className="text-zinc-500 block text-xs">Asignación Total</span>
                               <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
                             </div>
                             {/* Status */}
@@ -562,11 +536,19 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Treasury Actual</p>
-                    <p className="text-xl font-mono text-white">{formatCurrency(fundsRaised)}</p>
+                    <p className="text-xl font-mono text-white">
+                      {isEth ? '' : '$'}
+                      {fundsRaised.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
+                      {isEth ? ' ETH' : ''}
+                    </p>
                   </div>
                   <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
                     <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Meta Activación</p>
-                    <p className="text-xl font-mono text-lime-400">{formatCurrency(targetAmount)}</p>
+                    <p className="text-xl font-mono text-lime-400">
+                      {isEth ? '' : '$'}
+                      {targetAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
+                      {isEth ? ' ETH' : ''}
+                    </p>
                   </div>
                 </div>
 
@@ -600,16 +582,18 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
         <div className="space-y-8 mb-8">
           {/* Meta de Adopción - Dynamic from Config or Target */}
           {(() => {
-            const tokenomics = project.w2eConfig?.tokenomics;
-            const target = tokenomics?.initialSupply ?
-              (Number(tokenomics.initialSupply) * Number(tokenomics.price || 0)) :
-              Number(project.target_amount || 0);
+            const target = getTargetAmount(project);
+            const isEth = safeChainId === 1 || safeChainId === 11155111;
 
             return target > 0 && (
               <SectionCard title="Meta de Adopción" icon={Globe}>
                 <p className="text-zinc-300">
-                  <span className="font-semibold text-lime-400 text-lg">${target.toLocaleString()}</span>
-                  <span className="text-zinc-400 ml-2">USD objetivo</span>
+                  <span className="font-semibold text-lime-400 text-lg">
+                    {isEth ? '' : '$'}
+                    {target.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 2 })}
+                    {isEth ? ' ETH' : ''}
+                  </span>
+                  <span className="text-zinc-400 ml-2">{isEth ? 'objetivo de recaudación' : 'USD objetivo'}</span>
                 </p>
               </SectionCard>
             );

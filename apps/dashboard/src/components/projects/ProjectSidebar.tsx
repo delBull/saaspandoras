@@ -180,24 +180,21 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const accessCardImage = sanitizeUrl(config.accessCardImage || project.image_url);
 
   // --- Smooth Scroll Logic ---
-  const scrollToPhases = () => {
+  const scrollToPhases = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const element = document.getElementById('phases-section-anchor') || document.getElementById('sidebar-phases');
     if (element) {
-      // Use offset-based scroll to be more precise and avoid window jumps
-      const topOffset = 140; // Accounts for sticky headers and profile button
+      const topOffset = 100;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - topOffset;
 
       window.scrollTo({
         top: offsetPosition,
-        left: 0,
         behavior: 'smooth'
       });
-    } else {
-      // Fallback: search for utility tab
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', 'utility');
-      window.history.pushState({}, '', url.toString());
     }
   };
 
@@ -223,7 +220,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   return (
     <>
-      <div className="hidden lg:block sticky top-28 w-80 h-fit z-20 shrink-0 self-start">
+      <div id="sidebar-scroll-container" className="hidden lg:block sticky top-28 w-80 z-20 shrink-0 self-start pr-2">
         {/* Non-sticky section - Investment & Creator cards */}
         <div className="space-y-6 mb-6">
           {/* Access / Investment Card */}
@@ -253,10 +250,12 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   <div className="flex flex-col items-start gap-0.5">
                     <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Objetivo</span>
                     <span className="text-sm font-bold text-white tracking-tight">
-                      ${targetAmount.toLocaleString(undefined, { 
+                      {safeChainId === 11155111 || safeChainId === 1 ? '' : '$'}
+                      {targetAmount.toLocaleString(undefined, { 
                         minimumFractionDigits: 0, 
-                        maximumFractionDigits: (targetAmount < 1 ? 4 : 0) 
-                      })} USD
+                        maximumFractionDigits: (targetAmount < 1 ? 4 : 2) 
+                      })}
+                      {safeChainId === 11155111 || safeChainId === 1 ? ' ETH' : ' USD'}
                     </span>
                   </div>
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
@@ -295,7 +294,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     Acceso Verificado
                   </div>
                   <button
-                    onClick={scrollToPhases}
+                    onClick={(e) => scrollToPhases(e)}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-lime-400 hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
@@ -332,7 +331,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <span>Ver Beneficios</span>
                   </button>
                   <button
-                    onClick={scrollToPhases}
+                    onClick={(e) => scrollToPhases(e)}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-white hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
@@ -461,14 +460,6 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
                               <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
-                              <div className="space-y-1">
-                                <p className="text-gray-400 text-[10px] uppercase tracking-wider font-bold">
-                                  {phase.type === 'amount' ? `Meta: ${project.slug === 'snarai' ? (phase.name.toLowerCase().includes('fundador') ? '$10,500 USD' : '$21,000 USD') : `${phase.metric === 'USD' ? '$' : ''}${Number(phase.cap || 0).toLocaleString(undefined, { minimumFractionDigits: Number(phase.cap) < 1 ? 3 : 2, maximumFractionDigits: Number(phase.cap) < 1 ? 4 : 2 })} ${phase.metric === 'Tokens' ? 'NFTs' : ''}`}` : `Duración: ${phase.limit} días`}
-                                </p>
-                                <p className="text-lime-400 text-[10px] uppercase tracking-widest font-black">
-                                  Costo: {project.slug === 'snarai' ? (phase.name.toLowerCase().includes('fundador') ? '0.0015 ETH' : '0.003 ETH') : `${phase.tokenPrice || '0.00'} ETH`}
-                                </p>
-                              </div>
                             </div>
                             {!phase.image && (
                               <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${phase.statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>

@@ -1,10 +1,10 @@
-import { sanitizeUrl } from "@/lib/project-utils";
+import { sanitizeUrl, getTargetAmount } from "@/lib/project-utils";
 import Link from "next/link";
 import { EyeIcon, ImageIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
 import { useWalletBalance, useReadContract } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { getContract } from "thirdweb";
+import { getContract, defineChain } from "thirdweb";
 
 interface ProjectCardProps {
   project: Project;
@@ -12,16 +12,13 @@ interface ProjectCardProps {
   gridColumns?: 3 | 4 | 6;
 }
 
-import { defineChain } from "thirdweb";
-
-// ...
-
 export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: ProjectCardProps) {
   const sanitizedCoverUrl = sanitizeUrl(project.coverPhotoUrl);
   
   // Robust Chain ID handling
   const rawChainId = Number((project as any).chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+  const isEth = safeChainId === 11155111 || safeChainId === 1;
 
   // License Contract Setup
   const isValidAddress = (addr: string | null | undefined): boolean =>
@@ -57,7 +54,9 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
   const config = (project as any).w2eConfig;
   const price = Number(config?.licenseToken?.price ?? 0);
   const maxSupply = Number(config?.licenseToken?.maxSupply ?? 0);
-  const targetAmount = Number(project.targetAmount ?? 0);
+  
+  // 🎯 DYNAMIC TARGET CALCULATION
+  const targetAmount = getTargetAmount(project);
 
   const dbRaised = Number((project as any).raised_amount ?? 0);
   const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
@@ -120,32 +119,29 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
   };
 
   const getPadding = () => {
-    if (variant === 'pending') return 'p-3';
     switch (gridColumns) {
-      case 6: return 'p-3'; // Menos padding para tarjetas pequeñas
-      case 4: return 'p-4'; // Padding medio
+      case 6: return 'p-3'; 
+      case 4: return 'p-4'; 
       case 3:
-      default: return 'p-5'; // Más padding para tarjetas grandes
+      default: return 'p-5'; 
     }
   };
 
   const getTitleSize = () => {
-    if (isPending) return 'text-base';
     switch (gridColumns) {
-      case 6: return 'text-lg'; // Título más pequeño
-      case 4: return 'text-lg'; // Título medio
+      case 6: return 'text-lg'; 
+      case 4: return 'text-lg'; 
       case 3:
-      default: return 'text-xl'; // Título más grande
+      default: return 'text-xl'; 
     }
   };
 
   const getDescriptionHeight = () => {
-    if (isPending) return 'h-8 line-clamp-1 group-hover:line-clamp-none group-hover:h-auto';
     switch (gridColumns) {
-      case 6: return 'h-8 line-clamp-1 group-hover:line-clamp-none group-hover:h-auto'; // Menos espacio
-      case 4: return 'h-10 line-clamp-2 group-hover:line-clamp-none group-hover:h-auto'; // Espacio medio
+      case 6: return 'h-8 line-clamp-1 group-hover:line-clamp-none group-hover:h-auto'; 
+      case 4: return 'h-10 line-clamp-2 group-hover:line-clamp-none group-hover:h-auto'; 
       case 3:
-      default: return 'h-12 line-clamp-2 group-hover:line-clamp-none group-hover:h-auto'; // Más espacio
+      default: return 'h-12 line-clamp-2 group-hover:line-clamp-none group-hover:h-auto'; 
     }
   };
 
@@ -204,7 +200,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
               <div className="flex justify-between items-center text-xs mb-2 bg-black/40 p-2 rounded-lg border border-white/5">
                 <span className="text-zinc-400">{activePhase.name ?? "Venta de Utilidad"}</span>
                 <span className="font-mono font-bold text-lime-400">
-                  {activePhase.tokenPrice ? `$${activePhase.tokenPrice}` : 'Gratis'}
+                  {activePhase.tokenPrice ? (isEth ? `${activePhase.tokenPrice} ETH` : `$${activePhase.tokenPrice}`) : 'Gratis'}
                 </span>
               </div>
             ) : null}
@@ -220,25 +216,36 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
               />
             </div>
             <div className="flex justify-between items-center text-xs text-zinc-500">
-              <span>${raisedAmount.toLocaleString()} recaudados</span>
-              <span>de ${targetAmount.toLocaleString()}</span>
+              <span>
+                {isEth ? '' : '$'}
+                {raisedAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
+                {isEth ? ' ETH' : ' recaudados'}
+              </span>
+              <span>
+                de {isEth ? '' : '$'}
+                {targetAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 0 })}
+                {isEth ? ' ETH' : ''}
+              </span>
             </div>
           </div>
 
-          <div className={`flex justify-between items-center ${isPending ? 'pt-2' : 'pt-3'} border-t border-white/10 mt-auto`}>
+          <div className="flex justify-between items-center pt-3 border-t border-white/10 mt-auto">
             {variant === 'pending' ? (
-              <span className={`px-2 py-1 text-xs font-medium bg-yellow-500/10 text-yellow-300 rounded-full border border-yellow-500/20 ${gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
-                }`}>
+              <span className={`px-2 py-1 text-xs font-medium bg-yellow-500/10 text-yellow-300 rounded-full border border-yellow-500/20 ${
+                gridColumns === 6 ? 'px-1.5 py-0.5' : 'px-2 py-1'
+              }`}>
                 En Revisión
               </span>
             ) : (
-              <span className={`px-2 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-300 rounded-full border border-emerald-500/20 ${gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
-                }`}>
+              <span className={`px-2 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-300 rounded-full border border-emerald-500/20 ${
+                gridColumns === 6 ? 'px-1.5 py-0.5' : 'px-2 py-1'
+              }`}>
                 Aprobado
               </span>
             )}
-            <div className={`flex items-center gap-1 overflow-hidden ${isPending ? 'text-xs' : gridColumns === 6 ? 'text-xs' : 'text-sm'
-              } ${variant === 'pending' ? 'text-lime-400' : 'text-emerald-400'}`}>
+            <div className={`flex items-center gap-1 overflow-hidden ${
+              gridColumns === 6 ? 'text-xs' : 'text-sm'
+            } text-lime-400`}>
               <EyeIcon className={`${gridColumns === 6 ? 'w-3 h-3' : 'w-4 h-4'} flex-shrink-0`} />
               <span className={`truncate ${gridColumns === 6 ? 'hidden' : gridColumns === 4 ? 'hidden sm:inline' : 'inline'}`}>
                 {gridColumns === 6 || gridColumns === 4 ? 'Ver' : 'Ver Proyecto'}

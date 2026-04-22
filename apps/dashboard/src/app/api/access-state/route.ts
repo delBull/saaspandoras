@@ -112,14 +112,19 @@ export async function GET(req: Request): Promise<NextResponse> {
             // 🧠 6. RESOLVE STATE
             let resolvedState = AccessState.WALLET_NO_ACCESS;
             
+            // ELITE ACCESS LOGIC: NFT OR Ritual Completion (Optimistic) OR Admin
+            const hasRitualAccess = !!dbUser?.ritualCompletedAt;
+            const canEnter = hasNFTPermission || hasRitualAccess || userIsAdmin;
+
             if (userIsAdmin) {
                 resolvedState = AccessState.ADMIN;
                 hasNFTPermission = true;
-            } else if (hasNFTPermission) {
+            } else if (canEnter) {
                 resolvedState = isBetaOpen ? AccessState.HAS_ACCESS : AccessState.WALLET_NO_ACCESS;
             }
 
-            if (!isRitualEnabled && hasNFTPermission && !userIsAdmin) {
+            // Fallback for bypass
+            if (!isRitualEnabled && canEnter && !userIsAdmin) {
                 resolvedState = AccessState.HAS_ACCESS;
             }
 

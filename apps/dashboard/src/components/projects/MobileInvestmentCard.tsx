@@ -1,15 +1,21 @@
 'use client';
 
 import type { ProjectData } from "@/app/()/projects/types";
+import { getTargetAmount } from "@/lib/project-utils";
 
 interface MobileInvestmentCardProps {
   project: ProjectData;
-  targetAmount: number;
+  targetAmount: number; // Keep for backward compatibility but recalculate if needed
 }
 
-export default function MobileInvestmentCard({ project, targetAmount }: MobileInvestmentCardProps) {
+export default function MobileInvestmentCard({ project, targetAmount: targetAmountProp }: MobileInvestmentCardProps) {
+  const targetAmount = getTargetAmount(project);
   const raisedAmount = Number(project.raised_amount ?? 0);
-  const raisedPercentage = (raisedAmount / targetAmount) * 100;
+  const raisedPercentage = targetAmount > 0 ? (raisedAmount / targetAmount) * 100 : 0;
+  
+  const rawChainId = Number(project.chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+  const isEth = safeChainId === 11155111 || safeChainId === 1;
 
   return (
     <div className="lg:hidden mb-8">
@@ -28,10 +34,12 @@ export default function MobileInvestmentCard({ project, targetAmount }: MobileIn
 
         <div className="text-center mb-6">
           <div className="text-3xl font-bold text-white mb-2">
-            ${raisedAmount.toLocaleString()}
+            {isEth ? '' : '$'}
+            {raisedAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 2 })}
+            {isEth ? ' ETH' : ''}
           </div>
           <div className="text-sm text-gray-400 mb-4">
-            recaudados de {targetAmount.toLocaleString()} meta USD
+            recaudados de {isEth ? '' : '$'}{targetAmount.toLocaleString(undefined, { maximumFractionDigits: isEth ? 4 : 2 })}{isEth ? ' ETH' : ' meta USD'}
           </div>
 
           <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">
