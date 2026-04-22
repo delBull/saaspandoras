@@ -136,27 +136,22 @@ export function getTargetAmount(project: any): number {
         const cap = Number(capValue);
         return sum + (isNaN(cap) ? 0 : cap);
       }, 0);
-      // Even if it's a very small number (like 0.0015), we should use it if it's > 0
+      
+      // ELITE FIX: If we have phases, they ALWAYS define the real goal.
       if (totalFromPhases > 0) return totalFromPhases;
     }
 
-    // V2 Structure (Optimized)
+    // Fallback logic only if no phases found
     const tokenomics = config.tokenomics || {};
     if (tokenomics.initialSupply && tokenomics.price) {
       const amount = Number(tokenomics.initialSupply) * Number(tokenomics.price);
       if (!isNaN(amount) && amount > 0) return amount;
     }
 
-    // V1 Structure (Legacy Fallback)
-    const tokenDetails = config.tokenDetails || {};
-    if (tokenDetails.initialSupply && tokenDetails.price) {
-      const amount = Number(tokenDetails.initialSupply) * Number(tokenDetails.price);
-      if (!isNaN(amount) && amount > 0) return amount;
+    const dbAmount = Number(project.target_amount || project.targetAmount || project.goal);
+    if (!isNaN(dbAmount) && dbAmount > 0 && dbAmount !== 100000 && dbAmount !== 10000) {
+        return dbAmount;
     }
-
-    // Database Fallback (Direct columns)
-    const dbAmount = Number(project.target_amount || project.targetAmount);
-    if (!isNaN(dbAmount) && dbAmount > 0) return dbAmount;
 
     return 10000; // Final default
   } catch (e) {

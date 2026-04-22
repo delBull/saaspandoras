@@ -200,6 +200,9 @@ function AccessV2Inner() {
           if (projectSlug) {
             router.push(`/protocol/${projectSlug}`);
           } else {
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('pd_last_access_redirect', Date.now().toString());
+            }
             router.push('/');
           }
         }, 500);
