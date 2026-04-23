@@ -69,7 +69,11 @@ export function computeBehavioralMetrics(
     intentKeywords.includes('unidad') ||
     intentKeywords.includes('inversionista') ||
     intentKeywords.includes('investor') ||
-    intentKeywords.includes('narai gold') ||
+    intentKeywords.includes('snarai gold') || 
+    intentKeywords.includes('s\'narai gold') || 
+    intentKeywords.includes('snarai') || 
+    intentKeywords.includes('s\'narai') || 
+    intentKeywords.includes('narai gold') || 
     intentKeywords.includes('full units');
   if (isFullUnitIntent && !lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
     if (!lead.metadata) lead.metadata = {};
