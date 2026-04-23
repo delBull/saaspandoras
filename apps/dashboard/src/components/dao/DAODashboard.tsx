@@ -46,7 +46,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const { data: nativeBalance } = useWalletBalance({
         client,
         chain: defineChain(safeChainId),
-        address: !isBaseMainnet ? (project.treasuryAddress || "") : "",
+        address: (!isBaseMainnet && project.treasuryAddress) ? project.treasuryAddress : undefined,
     });
 
     // Hook for USDC Balance (Base)

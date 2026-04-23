@@ -41,13 +41,19 @@ export async function POST(req: Request) {
             return acc;
         }, {} as Record<string, any>);
 
+        // 3. Sync to DB and track active wallets for cleanup
         let syncedCount = 0;
+        const activeWallets: string[] = [];
+        const projectIdsToClean = new Set<number>();
 
         for (const key in walletGroups) {
             const data = walletGroups[key];
             
             // Only sync to dao_members if they have an actual Access Card
             if (!data.hasAccessCard) continue;
+
+            activeWallets.push(data.wallet);
+            projectIdsToClean.add(data.projectId);
 
             const totalVotes = data.artifactsCount.toString(); // 1 vote per artifact as requested
 
@@ -72,9 +78,27 @@ export async function POST(req: Request) {
             syncedCount++;
         }
 
+        // 4. Cleanup: Remove members that no longer have an Access Card
+        // We only do this for projects we processed in this run to avoid accidental wipes
+        for (const pId of projectIdsToClean) {
+             const walletsForThisProject = Object.values(walletGroups)
+                .filter(w => w.projectId === pId && w.hasAccessCard)
+                .map(w => w.wallet);
+
+             if (walletsForThisProject.length > 0) {
+                 await db.delete(daoMembers)
+                    .where(
+                        sql`${daoMembers.projectId} = ${pId} AND ${daoMembers.wallet} NOT IN (${sql.join(walletsForThisProject.map(w => sql`${w}`), sql`, `)})`
+                    );
+             } else {
+                 // If no members left for this project, wipe it
+                 await db.delete(daoMembers).where(sql`${daoMembers.projectId} = ${pId}`);
+             }
+        }
+
         return NextResponse.json({ 
             success: true, 
-            message: `Successfully synced ${syncedCount} unique member records from ${events.length} total events.` 
+            message: `Successfully reconciled ${syncedCount} unique member records. Invalid records removed.` 
         });
 
     } catch (error) {
