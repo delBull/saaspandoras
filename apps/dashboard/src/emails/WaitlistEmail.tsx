@@ -30,7 +30,7 @@ export default function WaitlistEmail({
   subject,
   body,
   step,
-  projectName = "Narai",
+  projectName = "S'Narai",
   brandHeader = "PANDORA'S FINANCE // ACCESO EXCLUSIVO",
   ctaText,
   ctaUrl,

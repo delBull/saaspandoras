@@ -212,6 +212,8 @@ export function resolveGrowthAction(
         actions.push('SEND_WAITLIST_ACTIVATION_D3');
       } else if (config && hoursSinceJoin > (config.d2 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_STATUS_D2']) {
         actions.push('SEND_WAITLIST_STATUS_D2');
+      } else if (config && hoursSinceJoin > (config.d1 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_NARRATIVE_D1']) {
+        actions.push('SEND_WAITLIST_NARRATIVE_D1');
       } else if (canNurture && config && hoursSinceJoin > (0.5 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_EDUCATIONAL_NURTURE']) {
         // PHASE 80: Education Nurturing (12h - 24h delay window)
         if (engagement !== 'low') {
