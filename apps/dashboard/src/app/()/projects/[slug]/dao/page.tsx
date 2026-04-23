@@ -23,16 +23,15 @@ import { client } from "@/lib/thirdweb-client"; // Verify client import path
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-// Dummy contract for typing fallback
-const dummyContract = getContract({
-    client,
-    chain: defineChain(11155111),
-    address: "0x0000000000000000000000000000000000000000"
-});
-
 export default function DAOPage({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = use(params); // React 19 `use` for params
     const { slug } = resolvedParams;
+
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(11155111),
+        address: "0x0000000000000000000000000000000000000000"
+    });
 
     const { data: project, error, isLoading } = useSWR(`/api/projects/${slug}`, fetcher);
     const [activeView, setActiveView] = useState('overview');
@@ -62,31 +61,31 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
     // We use the License Contract for voting power, not the Utility Token.
     // Properties are now standardized by the harmonizer API
     const licenseAddress = project?.licenseContractAddress;
-    const chainId = project?.chainId || 11155111;
+    const safeChainId = project?.chainId || 11155111;
 
     console.log("DEBUG: DAO Page Setup", {
         licenseAddress,
         project_id: project?.id,
-        chainId
+        safeChainId
     });
 
-    const licenseContract = licenseAddress ? getContract({
+    const licenseContract = (project?.licenseContractAddress && project.licenseContractAddress.startsWith('0x')) ? getContract({
         client,
-        chain: defineChain(chainId),
-        address: licenseAddress
+        chain: defineChain(safeChainId),
+        address: project.licenseContractAddress,
     }) : undefined;
 
     const { data: votingPowerBigInt } = useReadContract({
         contract: licenseContract || dummyContract,
         method: "function getVotes(address) view returns (uint256)",
-        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        params: [(account?.address && account.address.startsWith('0x')) ? account.address : "0x0000000000000000000000000000000000000000"],
         queryOptions: { enabled: !!licenseContract && !!account }
     });
 
     const { data: tokenBalanceBigInt } = useReadContract({
         contract: licenseContract || dummyContract,
         method: "function balanceOf(address) view returns (uint256)",
-        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        params: [(account?.address && account.address.startsWith('0x')) ? account.address : "0x0000000000000000000000000000000000000000"],
         queryOptions: { enabled: !!licenseContract && !!account }
     });
 

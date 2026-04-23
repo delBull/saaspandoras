@@ -46,7 +46,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const { data: nativeBalance } = useWalletBalance({
         client,
         chain: defineChain(safeChainId),
-        address: (!isBaseMainnet && project.treasuryAddress) ? project.treasuryAddress : undefined,
+        address: (!isBaseMainnet && project?.treasuryAddress && project.treasuryAddress.startsWith('0x')) ? project.treasuryAddress : "0x0000000000000000000000000000000000000000",
     });
 
     // Hook for USDC Balance (Base)
@@ -86,7 +86,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const treasuryAddress = project?.treasuryAddress;
 
     // 2. Real Data Hooks
-    const licenseContract = project.licenseContractAddress ? getContract({
+    const licenseContract = (project?.licenseContractAddress && project.licenseContractAddress.startsWith('0x')) ? getContract({
         client,
         chain: defineChain(safeChainId),
         address: project.licenseContractAddress,
@@ -94,7 +94,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
     const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
-    const loomContract = project.loomContractAddress ? getContract({
+    const loomContract = (project?.loomContractAddress && project.loomContractAddress.startsWith('0x')) ? getContract({
         client,
         chain: defineChain(safeChainId),
         address: project.loomContractAddress
