@@ -46,7 +46,7 @@ export type FlowType = 'utility' | 'high_ticket' | 'eight_q' | 'support' | 'huma
 
 // Utility Protocol Flow (Landing: utility-protocol) - NOW WITH PROGRESSION
 // Utility Protocol Flow (Landing: utility-protocol - OPTIMIZED TECHNICAL FILTER 2.5)
-async function handleUtilityFlow(message: string, step = 0, phone?: string): Promise<FlowResult> {
+async function handleUtilityFlow(message: string, step = 0, phone?: string, projectId?: number | null): Promise<FlowResult> {
   const text = message.toLowerCase().trim();
 
   // Step 0: Entry Authority (No Servilismo)
@@ -109,6 +109,7 @@ async function handleUtilityFlow(message: string, step = 0, phone?: string): Pro
         const syncRes = await syncLeadAsClient({
           whatsapp: phone,
           source: 'utility_filter',
+          projectId: projectId || undefined,
           notes: 'Completed Utility Protocol Filter Q1-Q3',
           metadata: { flow: 'utility' }
         });
@@ -138,7 +139,7 @@ async function handleUtilityFlow(message: string, step = 0, phone?: string): Pro
 
 // High Ticket Founders Flow (Landing: founders)
 // High Ticket Founders Flow (Landing: founders - OPTIMIZED HIGH STATUS)
-async function handleHighTicketFlow(message: string, step = 0, phone?: string): Promise<FlowResult> {
+async function handleHighTicketFlow(message: string, step = 0, phone?: string, projectId?: number | null): Promise<FlowResult> {
   const text = message.toLowerCase().trim();
 
   if (text.includes('cancelar') || text.includes('stop')) {
@@ -224,6 +225,7 @@ async function handleHighTicketFlow(message: string, step = 0, phone?: string): 
         const syncRes = await syncLeadAsClient({
           whatsapp: phone,
           source: 'founders_wa',
+          projectId: projectId || undefined,
           package: 'founders_program',
           notes: 'Qualified High Ticket Founder via WA',
         });
@@ -404,7 +406,7 @@ async function handleHumanFlow(phone: string, message = '', step = 0): Promise<F
 }
 
 // Protocol Application Flow (Automated Follow-up - OPTIMIZED CLOSING)
-async function handleProtocolApplicationFlow(message: string, step = 0, phone?: string): Promise<FlowResult> {
+async function handleProtocolApplicationFlow(message: string, step = 0, phone?: string, projectId?: number | null): Promise<FlowResult> {
   const text = message.toLowerCase().trim();
 
   // Step 0: Welcome & Permission (Triggered manually or via initial hook)
@@ -472,6 +474,7 @@ async function handleProtocolApplicationFlow(message: string, step = 0, phone?: 
         const syncRes = await syncLeadAsClient({
           whatsapp: phone,
           source: 'protocol_app_wa',
+          projectId: projectId || undefined,
           notes: `Protocol Application - Budget: ${budgetLevel}`,
           metadata: { budgetLevel }
         });
@@ -543,7 +546,7 @@ async function getExistingFlow(phone: string): Promise<FlowType | null> {
 }
 
 // Asignar flujo por primera vez
-async function assignFlow(phone: string, flowType: FlowType, name?: string): Promise<void> {
+async function assignFlow(phone: string, flowType: FlowType, name?: string, projectId?: number | null): Promise<void> {
   // Crear usuario
   await sql`
     INSERT INTO whatsapp_users (phone, name, priority_level)
@@ -561,7 +564,7 @@ async function assignFlow(phone: string, flowType: FlowType, name?: string): Pro
     // Crear sesión activa para este flujo
     await sql`
       INSERT INTO whatsapp_sessions (user_id, flow_type, state, current_step, is_active)
-      VALUES (${user.id}, ${flowType}, '{}'::jsonb, 0, true)
+      VALUES (${user.id}, ${flowType}, ${JSON.stringify({ projectId: projectId || null })}::jsonb, 0, true)
       ON CONFLICT (user_id, flow_type)
       DO UPDATE SET is_active = true, updated_at = now()
     `;
@@ -569,9 +572,9 @@ async function assignFlow(phone: string, flowType: FlowType, name?: string): Pro
 }
 
 // Obtener estado actual del flujo
-async function getCurrentFlowState(phone: string): Promise<{ flowType: FlowType; step: number } | null> {
+async function getCurrentFlowState(phone: string): Promise<{ flowType: FlowType; step: number; state: any } | null> {
   const [row] = await sql`
-    SELECT s.flow_type, s.current_step
+    SELECT s.flow_type, s.current_step, s.state
     FROM whatsapp_sessions s
     JOIN whatsapp_users u ON s.user_id = u.id
     WHERE u.phone = ${phone} 
@@ -579,7 +582,11 @@ async function getCurrentFlowState(phone: string): Promise<{ flowType: FlowType;
     LIMIT 1
   ` as any[];
 
-  return row ? { flowType: row.flow_type as FlowType, step: row.current_step || 0 } : null;
+  return row ? { 
+    flowType: row.flow_type as FlowType, 
+    step: row.current_step || 0,
+    state: row.state || {}
+  } : null;
 }
 
 // Actualizar paso del flujo
@@ -636,6 +643,34 @@ function detectFlowFromLanding(payload: any, messageText?: string): FlowType {
 }
 
 /**
+ * DETECCIÓN DE PROYECTO BASADA EN KEYWORDS
+ */
+async function detectProject(messageText?: string): Promise<number | null> {
+  const text = (messageText || '').toLowerCase();
+  
+  // 1. Hardcoded high-priority matches
+  if (text.includes('snarai') || text.includes('narai')) return 2; // Narai / S'Narai
+  if (text.includes('pandora')) return 3; // Pandora's Access
+  
+  // 2. Dynamic lookup by slug or title
+  try {
+    const { db } = await import("~/db");
+    const allProjects = await db.query.projects.findMany({
+      columns: { id: true, slug: true, title: true }
+    });
+
+    for (const p of allProjects) {
+      if (text.includes(p.slug.toLowerCase())) return p.id;
+      if (p.title && text.includes(p.title.toLowerCase())) return p.id;
+    }
+  } catch (e) {
+    console.error("[detectProject] Error matching project:", e);
+  }
+
+  return null;
+}
+
+/**
  * FUNCIÓN PRINCIPAL DE ROUTING SIMPLIFICADO
  */
 export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
@@ -683,7 +718,9 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         };
       }
 
-      console.log(`📊 [FLOW-STATE] Usuario ${phone}: flow=${existingFlow}, currentStep=${currentState.step}`);
+      console.log(`📊 [FLOW-STATE] Usuario ${phone}: flow=${existingFlow}, currentStep=${currentState.step}, projectId=${currentState.state?.projectId || 'Global'}`);
+
+      const sessionProjectId = currentState.state?.projectId || null;
 
       // Procesar respuesta en el flujo existente
       let result: FlowResult;
@@ -782,7 +819,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             break;
 
           case 'protocol_application':
-            result = await handleProtocolApplicationFlow(messageText, currentState.step, phone);
+            result = await handleProtocolApplicationFlow(messageText, currentState.step, phone, sessionProjectId);
             if (result.action === 'next_question') {
               await updateFlowStep(phone, 2);
             } else if (result.action === 'flow_completed') {
@@ -798,7 +835,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         // PROCESS EXISTING FLOW NORMALLY
         switch (existingFlow) {
           case 'utility':
-            result = await handleUtilityFlow(messageText, currentState.step, phone);
+            result = await handleUtilityFlow(messageText, currentState.step, phone, sessionProjectId);
             if (result.action === 'next_question') {
               const next = currentState.step + 1;
               await updateFlowStep(phone, next);
@@ -807,7 +844,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             }
             break;
           case 'high_ticket':
-            result = await handleHighTicketFlow(messageText, currentState.step, phone);
+            result = await handleHighTicketFlow(messageText, currentState.step, phone, sessionProjectId);
 
             // Only advance if input was valid (next_question)
             if (result.action === 'next_question' && currentState.step < 3) {
@@ -874,10 +911,12 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
 
     // 3. NUEVO USUARIO: Asignar flujo basado en landing
     const detectedFlow = detectFlowFromLanding(payload, messageText);
-    console.log(`🆕 [SIMPLE-ROUTER] Nuevo usuario ${phone} → Asignando flujo: "${detectedFlow}" (Basado en keywords/landing)`);
+    const detectedProjectId = await detectProject(messageText);
+    
+    console.log(`🆕 [SIMPLE-ROUTER] Nuevo usuario ${phone} → Asignando flujo: "${detectedFlow}", Proyecto: ${detectedProjectId || 'Global'}`);
 
-    // Asignar flujo
-    await assignFlow(phone, detectedFlow, payload.contactName || null);
+    // Asignar flujo con contexto de proyecto
+    await assignFlow(phone, detectedFlow, payload.contactName || null, detectedProjectId);
 
     // Sync WhatsApp lead to clients table for admin visibility
     try {
@@ -885,6 +924,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         whatsapp: phone,
         name: payload.contactName || undefined,
         source: `wa_${detectedFlow}`,
+        projectId: detectedProjectId || undefined,
         metadata: { flowType: detectedFlow, firstMessage: messageText.substring(0, 200) }
       });
     } catch (syncErr) {

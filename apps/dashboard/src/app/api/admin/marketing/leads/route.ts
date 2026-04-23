@@ -16,16 +16,34 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get('projectId');
+    const requestedProjectIdentifier = searchParams.get('projectId');
     const scope = searchParams.get('scope');
     const ownerContext = searchParams.get('ownerContext');
     const limit = Math.min(Number(searchParams.get('limit') || 50), 100);
     const offset = Number(searchParams.get('offset') || 0);
 
     const conditions: any[] = [];
-    if (projectId && projectId !== 'all') {
-      conditions.push(eq(marketingLeads.projectId, Number(projectId)));
-      // If a specific project is chosen, we show its leads regardless of ownerContext
+    
+    // DYNAMIC RESOLUTION: Handle ID or Slug
+    let resolvedProjectId: number | null = null;
+    if (requestedProjectIdentifier && requestedProjectIdentifier !== 'all') {
+      if (!isNaN(Number(requestedProjectIdentifier))) {
+        resolvedProjectId = Number(requestedProjectIdentifier);
+      } else {
+        // Find by slug
+        const project = await db.query.projects.findFirst({
+          where: (projects, { eq, ilike, or }) => or(
+            eq(projects.slug, requestedProjectIdentifier),
+            ilike(projects.title, `%${requestedProjectIdentifier}%`)
+          ),
+          columns: { id: true }
+        });
+        if (project) resolvedProjectId = project.id;
+      }
+    }
+
+    if (resolvedProjectId) {
+      conditions.push(eq(marketingLeads.projectId, resolvedProjectId));
     } else if (ownerContext === 'pandora') {
       // THE ECOSYSTEM FILTER: Only Core Pandora projects
       const { inArray } = require('drizzle-orm');
