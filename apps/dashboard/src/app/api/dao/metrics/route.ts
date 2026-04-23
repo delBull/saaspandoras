@@ -61,6 +61,8 @@ export async function GET(req: Request) {
 
         const project = harmonizeProject(rawProject);
         let treasuryUSD = 0;
+        let treasuryDisplay = "0.00";
+        let treasurySymbol = "USD";
 
         if (project?.treasuryAddress?.startsWith('0x') && project.chainId) {
             try {
@@ -81,6 +83,8 @@ export async function GET(req: Request) {
                     }).catch(() => 0n);
                     
                     treasuryUSD = Number(usdcBalance) / 1e6;
+                    treasuryDisplay = treasuryUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                    treasurySymbol = "USDC";
                 } else {
                     // Native balance fallback for other chains (Sepolia, etc)
                     const balance = await getWalletBalance({
@@ -89,9 +93,14 @@ export async function GET(req: Request) {
                         address: project.treasuryAddress
                     });
                     treasuryUSD = Number(balance.displayValue);
+                    const isSepolia = Number(project.chainId) === 11155111;
+                    treasurySymbol = isSepolia ? "SepoliaETH" : (balance.symbol || "ETH");
+                    // For ETH/Native, show more decimals (6) to avoid "$0" when balance is small
+                    treasuryDisplay = `${treasuryUSD.toFixed(6)} ${treasurySymbol}`;
                 }
             } catch (balanceError: any) {
                 console.warn(`⚠️ [Metrics API] Treasury balance fetch failed for project ${projectId}:`, balanceError.message);
+                treasuryDisplay = "Error";
             }
         }
 
@@ -109,6 +118,14 @@ export async function GET(req: Request) {
         } catch (dbError: any) {
             console.error(`❌ [Metrics API] DB select failed for project ${projectId}:`, dbError.message);
             throw dbError; // re-throw to be caught by main catch
+        }
+
+        // Calculate Max Possible Capacity from Artifacts Metadata
+        let maxPossiblePower = 0;
+        if (Array.isArray(rawProject.artifacts)) {
+            maxPossiblePower = rawProject.artifacts.reduce((acc: number, art: any) => {
+                return acc + (Number(art.supply) || 0);
+            }, 0);
         }
 
         // If no members, or if Postgres returns a single row with all nulls (common for empty sum/count)
@@ -226,9 +243,12 @@ export async function GET(req: Request) {
             memberWallets: uniqueMemberWallets,
             votingPower: totalPowerNum || totalMembersNum,
             artifacts: totalArtifactsNum,
+            maxPower: maxPossiblePower,
             artifactHolders: uniqueArtifactHolders,
             uniqueArtifactHolders: uniqueArtifactHolders,
             treasury: treasuryUSD,
+            treasuryDisplay,
+            treasurySymbol,
             pci: (isNaN(pci) || !isFinite(pci)) ? 0 : pci,
             attribution: [] 
         };

@@ -52,10 +52,19 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
                     <VoteIcon className="w-12 h-12 text-purple-500" />
                 </div>
                 <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">Poder de Voto Total</p>
-                <h3 className="text-3xl font-black text-purple-400 font-mono">
-                    {data?.votingPower?.toLocaleString() ?? 0}
-                </h3>
-                <div className="mt-2 text-[10px] text-zinc-500">Suma total de derecho al voto</div>
+                <div className="flex items-baseline gap-2">
+                    <h3 className="text-3xl font-black text-purple-400 font-mono">
+                        {data?.votingPower?.toLocaleString() ?? 0}
+                    </h3>
+                    {data?.maxPower > 0 && (
+                        <span className="text-zinc-600 text-xs font-bold">
+                            / {data.maxPower.toLocaleString()}
+                        </span>
+                    )}
+                </div>
+                <div className="mt-2 text-[10px] text-zinc-500">
+                    Suma total de votos en circulación
+                </div>
             </div>
 
             {/* TREASURY */}
@@ -64,10 +73,12 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
                     <Wallet className="w-12 h-12 text-emerald-500" />
                 </div>
                 <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-1">Tesorería (Est.)</p>
-                <h3 className="text-3xl font-black text-emerald-400 font-mono">
-                    ${data?.treasury?.toLocaleString() ?? "0"}
+                <h3 className="text-xl font-black text-emerald-400 font-mono truncate">
+                    {data?.treasuryDisplay ?? `$${data?.treasury?.toLocaleString() ?? "0"}`}
                 </h3>
-                <div className="mt-2 text-[10px] text-zinc-500">Balance nativo del protocolo</div>
+                <div className="mt-2 text-[10px] text-zinc-500">
+                    Balance nativo {data?.treasurySymbol ? `(${data.treasurySymbol})` : ''}
+                </div>
             </div>
 
             {/* GGE: GOVERNANCE INTELLIGENCE PANEL (High Level) */}
