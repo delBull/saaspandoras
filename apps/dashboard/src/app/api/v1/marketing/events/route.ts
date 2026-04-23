@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
         // Handle metadata structure flexibly (Support Narai's flatter structure)
         const walletAddress = body.walletAddress || metadata?.walletAddress || metadata?.wallet || body.wallet;
         const leadEmail = (body.email || metadata?.email || body.userEmail)?.toLowerCase?.() || null;
+        const phoneNumber = body.phoneNumber || body.phone || body.whatsapp || metadata?.phoneNumber || metadata?.phone || metadata?.whatsapp || null;
         const effectiveFingerprint = fingerprint || `anon_${createHash('md5').update(req.headers.get('user-agent') || 'unknown').digest('hex')}`;
         const identityHash = IdentityService.getIdentityHash(leadEmail, walletAddress, effectiveFingerprint);
 
@@ -122,6 +123,7 @@ export async function POST(req: NextRequest) {
             const updates: any = {};
             if (!leadRecord.email && leadEmail) updates.email = leadEmail;
             if (!leadRecord.walletAddress && walletAddress) updates.walletAddress = walletAddress;
+            if (!leadRecord.phoneNumber && phoneNumber) updates.phoneNumber = phoneNumber;
             // Always update identityHash to the current standard if it differs
             if (leadRecord.identityHash !== identityHash) updates.identityHash = identityHash;
             
@@ -159,6 +161,7 @@ export async function POST(req: NextRequest) {
                 projectId: parsedProjectId,
                 identityId: resolvedIdentityId,
                 email: leadEmail,
+                phoneNumber: phoneNumber,
                 walletAddress: walletAddress,
                 fingerprint: effectiveFingerprint,
                 identityHash: identityHash,
