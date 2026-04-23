@@ -493,7 +493,14 @@ export async function GET(request: Request) {
       })
       .from(courses)
       .leftJoin(courseEnrollments, eq(courses.id, courseEnrollments.courseId))
-      .groupBy(courses.id, courses.title, courses.description, courses.category, courses.difficulty, courses.duration, courses.xpReward, courses.creditsReward, courses.instructor, courses.orderIndex, courses.isActive, courses.imageUrl, courses.modules, courses.createdAt, courses.updatedAt)
+      .groupBy(
+        courses.id, courses.title, courses.description, courses.category, 
+        courses.difficulty, courses.duration, courses.xpReward, courses.creditsReward, 
+        courses.instructor, courses.orderIndex, courses.isActive, courses.imageUrl, 
+        courses.modules, courses.prerequisites, courses.skillsCovered,
+        courses.enrolledCount, courses.completionRate,
+        courses.createdAt, courses.updatedAt
+      )
       .orderBy(courses.orderIndex);
 
     logger.info({
@@ -544,35 +551,47 @@ export async function POST(request: Request) {
     if (body.action === 'seed') {
       const results = [];
       for (const course of SEED_COURSES) {
-        // Check if exists to report correctly to frontend
-        const [existing] = await db.select({ id: courses.id }).from(courses).where(eq(courses.id, course.id));
-        const action = existing ? 'skipped' : 'created';
+        try {
+          // Check if exists
+          const [existing] = await db.select({ id: courses.id }).from(courses).where(eq(courses.id, course.id));
+          const action = existing ? 'updated' : 'created';
 
-        // Upsert logic: insert or update if exists based on id
-        const [upserted] = await db.insert(courses)
-          .values(course)
-          .onConflictDoUpdate({
-            target: courses.id,
-            set: {
-              title: course.title,
-              description: course.description,
-              category: course.category,
-              difficulty: course.difficulty,
-              duration: course.duration,
-              xpReward: course.xpReward,
-              creditsReward: course.creditsReward,
-              instructor: course.instructor,
-              prerequisites: course.prerequisites,
-              skillsCovered: course.skillsCovered,
-              orderIndex: course.orderIndex,
-              isActive: course.isActive,
-              modules: course.modules,
-              updatedAt: new Date()
-            }
-          })
-          .returning();
-        
-        results.push({ id: course.id, action, data: upserted });
+          // Upsert logic
+          const [upserted] = await db.insert(courses)
+            .values(course)
+            .onConflictDoUpdate({
+              target: courses.id,
+              set: {
+                title: course.title,
+                description: course.description,
+                category: course.category,
+                difficulty: course.difficulty,
+                duration: course.duration,
+                xpReward: course.xpReward,
+                creditsReward: course.creditsReward,
+                instructor: course.instructor,
+                prerequisites: course.prerequisites,
+                skillsCovered: course.skillsCovered,
+                orderIndex: course.orderIndex,
+                isActive: course.isActive,
+                modules: course.modules,
+                enrolledCount: course.enrolledCount,
+                completionRate: course.completionRate,
+                updatedAt: new Date()
+              }
+            })
+            .returning();
+          
+          results.push({ id: course.id, action, success: true });
+        } catch (itemError: any) {
+          logger.error({
+            requestId,
+            userId,
+            event: "SEED_ITEM_FAILED",
+            metadata: { courseId: course.id, error: itemError.message }
+          });
+          results.push({ id: course.id, action: 'failed', error: itemError.message, success: false });
+        }
       }
       return NextResponse.json({ success: true, results });
     }
@@ -603,11 +622,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, course: created }, { status: 201 });
 
   } catch (error: any) {
+    logger.error({
+      requestId,
+      userId,
+      event: "POST_COURSES_ERROR",
+      error: error instanceof Error ? error.message : String(error),
+      metadata: { 
+        code: error?.code,
+        detail: error?.detail,
+        stack: error?.stack
+      }
+    });
+    
     if (error?.code === '23505') {
-      return NextResponse.json({ error: 'Duplicate course ID' }, { status: 409 });
+      return NextResponse.json({ error: 'Duplicate course ID', requestId }, { status: 409 });
     }
-    console.error('[Admin Courses POST]', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('[Admin Courses POST] Critical Error:', error);
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      message: error instanceof Error ? error.message : "Unknown error",
+      requestId 
+    }, { status: 500 });
   }
 }
 
