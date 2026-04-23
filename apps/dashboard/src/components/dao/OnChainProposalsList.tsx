@@ -24,11 +24,15 @@ export function OnChainProposalsList({ votingContractAddress, chainId, governanc
         address: votingContractAddress,
     }) : undefined;
 
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(chainId),
+        address: "0x0000000000000000000000000000000000000000"
+    });
+
     // Fetch Proposals
-    // Assuming standard Governor or Vote contract. usually `getAllProposals` or loop.
-    // For Thirdweb Vote contract: `getAll()`
     const { data: proposals, isLoading, refetch } = useReadContract({
-        contract: contract as any,
+        contract: contract || dummyContract,
         method: "function getAll() view returns ((uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)[])",
         params: [],
         queryOptions: { enabled: !!contract }
@@ -68,9 +72,15 @@ export function OnChainProposalsList({ votingContractAddress, chainId, governanc
 }
 
 function ProposalCard({ proposal, contract, account, chainId, governanceTokenAddress }: any) {
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(chainId),
+        address: "0x0000000000000000000000000000000000000000"
+    });
+
     // Fetch State
     const { data: stateData } = useReadContract({
-        contract,
+        contract: contract || dummyContract,
         method: "function state(uint256) view returns (uint8)",
         params: [proposal.proposalId],
         queryOptions: { enabled: !!contract }
@@ -81,7 +91,7 @@ function ProposalCard({ proposal, contract, account, chainId, governanceTokenAdd
             client,
             chain: defineChain(chainId),
             address: proposal.contract?.address || governanceTokenAddress || "",
-        }) : undefined as any,
+        }) : dummyContract as any,
         method: "function decimals() view returns (uint8)",
         params: [],
         queryOptions: { enabled: !!(proposal.contract?.address || governanceTokenAddress) }
@@ -91,7 +101,7 @@ function ProposalCard({ proposal, contract, account, chainId, governanceTokenAdd
 
     // Fetch Votes (For, Against, Abstain)
     const { data: votesData } = useReadContract({
-        contract,
+        contract: contract || dummyContract,
         method: "function proposalVotes(uint256) view returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)",
         params: [proposal.proposalId],
         queryOptions: { enabled: !!contract }

@@ -39,13 +39,14 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
 
     // Auto-fetch decimals if tokenAddress is provided
     const { data: fetchedDecimals, isLoading: isFetchingDecimals } = useReadContract({
-        contract: getContract({
+        contract: tokenAddress ? getContract({
             client,
             chain: defineChain(chainId || 8453),
-            address: tokenAddress || ""
-        }),
+            address: tokenAddress
+        }) : undefined as any,
         method: "function decimals() view returns (uint8)",
         params: [],
+        queryOptions: { enabled: !!tokenAddress }
     });
 
     useEffect(() => {
