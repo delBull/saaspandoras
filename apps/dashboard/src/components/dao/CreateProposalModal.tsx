@@ -36,6 +36,12 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
 
     const isOffChain = submissionMode === 'offchain';
     const [isLoading, setIsLoading] = useState(false);
+ 
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(chainId || 8453),
+        address: "0x0000000000000000000000000000000000000000"
+    });
 
     // Auto-fetch decimals if tokenAddress is provided
     const { data: fetchedDecimals, isLoading: isFetchingDecimals } = useReadContract({
@@ -43,10 +49,10 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
             client,
             chain: defineChain(chainId || 8453),
             address: tokenAddress
-        }) : undefined as any,
+        }) : dummyContract,
         method: "function decimals() view returns (uint8)",
         params: [],
-        queryOptions: { enabled: !!tokenAddress }
+        queryOptions: { enabled: !!tokenAddress && tokenAddress.startsWith('0x') }
     });
 
     useEffect(() => {
@@ -292,7 +298,7 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                             transaction={() => {
                                 const params = getProposalParams();
                                 return prepareContractCall({
-                                    contract: contract!,
+                                    contract: contract || dummyContract,
                                     method: "function propose(address[] targets, uint256[] values, bytes[] calldatas, string description) returns (uint256)",
                                     params: [
                                         params.targets as `0x${string}`[],
