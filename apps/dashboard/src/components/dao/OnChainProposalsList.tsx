@@ -18,19 +18,20 @@ interface OnChainProposalsListProps {
 
 export function OnChainProposalsList({ votingContractAddress, chainId, governanceTokenAddress }: OnChainProposalsListProps) {
     const account = useActiveAccount();
-    const contract = getContract({
+    const contract = votingContractAddress ? getContract({
         client,
         chain: defineChain(chainId),
         address: votingContractAddress,
-    });
+    }) : undefined;
 
     // Fetch Proposals
     // Assuming standard Governor or Vote contract. usually `getAllProposals` or loop.
     // For Thirdweb Vote contract: `getAll()`
     const { data: proposals, isLoading, refetch } = useReadContract({
-        contract,
+        contract: contract as any,
         method: "function getAll() view returns ((uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)[])",
         params: [],
+        queryOptions: { enabled: !!contract }
     });
 
     // Helper to get state
@@ -72,17 +73,18 @@ function ProposalCard({ proposal, contract, account, chainId, governanceTokenAdd
         contract,
         method: "function state(uint256) view returns (uint8)",
         params: [proposal.proposalId],
+        queryOptions: { enabled: !!contract }
     });
 
-    // Fetch Token Decimals
     const { data: decimalsData } = useReadContract({
-        contract: getContract({
+        contract: (proposal.contract?.address || governanceTokenAddress) ? getContract({
             client,
             chain: defineChain(chainId),
             address: proposal.contract?.address || governanceTokenAddress || "",
-        }),
+        }) : undefined as any,
         method: "function decimals() view returns (uint8)",
         params: [],
+        queryOptions: { enabled: !!(proposal.contract?.address || governanceTokenAddress) }
     });
 
     const decimals = decimalsData !== undefined ? Number(decimalsData) : 18;
@@ -92,6 +94,7 @@ function ProposalCard({ proposal, contract, account, chainId, governanceTokenAdd
         contract,
         method: "function proposalVotes(uint256) view returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)",
         params: [proposal.proposalId],
+        queryOptions: { enabled: !!contract }
     });
 
     // Parse Votes
