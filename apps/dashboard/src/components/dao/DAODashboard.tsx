@@ -256,6 +256,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         <OnChainProposalsList
                             votingContractAddress={govAddress}
                             chainId={safeChainId}
+                            governanceTokenAddress={project.licenseContractAddress}
                         />
                     </div>
                 ) : (
