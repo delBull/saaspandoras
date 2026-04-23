@@ -71,7 +71,8 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
     const decimals = decimalsBN !== undefined ? Number(decimalsBN) : (project?.token_type === 'erc20' ? 18 : 0);
     const divisor = Math.pow(10, decimals);
 
-    const currentSupply = currentSupplyBN !== undefined ? Number(currentSupplyBN) / divisor : memberWallets;
+    // Prioritize API member count over contract totalSupply to ensure unique wallet counting
+    const currentSupply = memberWallets;
     const artifactHolders = Number(metrics?.uniqueArtifactHolders || metrics?.artifactHolders || 0);
     const maxSupplyRaw = maxSupplyERC721 ? Number(maxSupplyERC721) : (project.artifacts?.[0]?.maxSupply ?? 0);
     const maxSupply = maxSupplyRaw / divisor;
