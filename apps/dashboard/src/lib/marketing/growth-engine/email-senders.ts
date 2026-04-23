@@ -278,9 +278,7 @@ export async function sendWaitlistSequenceEmail(context: {
   // Determine dynamic CTA URL based on project/niche
   const isCoreRitual = niche === 'tech_startup' || niche === 'growth_os';
   const queryParam = context.step === 4 ? "?approved=true" : "";
-  const resolvedCtaUrl = isCoreRitual 
-    ? `https://dash.pandoras.finance/access${queryParam}` 
-    : `https://dash.pandoras.finance/projects/${context.projectSlug || 'default'}${queryParam}`;
+  const resolvedCtaUrl = `https://dash.pandoras.finance/accessv2?project=${context.projectSlug || 'pandoras'}${queryParam}`;
 
   try {
     const data = await resend.emails.send({
@@ -326,6 +324,7 @@ export async function sendWaitlistSequenceEmail(context: {
 export async function sendGenesisWelcomeEmail(context: {
   to: string;
   projectName?: string;
+  projectSlug?: string;
   brandHeader?: string;
   businessCategory?: string;
 }) {
@@ -361,7 +360,9 @@ export async function sendGenesisWelcomeEmail(context: {
         body,
         step: "GENESIS",
         projectName: projectName,
-        brandHeader: context.brandHeader
+        brandHeader: context.brandHeader,
+        ctaText: "ENTRAR AL SISTEMA",
+        ctaUrl: `https://dash.pandoras.finance/accessv2?project=${context.projectSlug || 'pandoras'}&returning=true`
       }) as React.ReactElement,
     });
 

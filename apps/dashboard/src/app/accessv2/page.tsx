@@ -191,34 +191,22 @@ function AccessV2Inner() {
       mounted &&
       user?.address
     ) {
-      const bypassRitual = localStorage.getItem(
-        `pbox_ritual_seen_${user.address}`
-      );
-      if (bypassRitual) {
-        // AUTO-REDIRECT DISABLED: User wants to see options (solicitar acceso / ya tengo cuenta)
-        // We now wait for them to click the action button
-        /*
-        setTimeout(() => {
-          if (projectSlug) {
-            router.push(`/projects/${projectSlug}`);
-          } else {
-            if (typeof sessionStorage !== 'undefined') {
-              sessionStorage.setItem('pd_last_access_redirect', Date.now().toString());
-            }
-            router.push('/');
-          }
-        }, 500);
-        */
+      const addressKey = user.address.toLowerCase();
+      const bypassRitual = localStorage.getItem(`pbox_ritual_seen_${addressKey}`);
+      
+      if (bypassRitual || isReturning) {
+        handleEnterSystem();
       } else {
         setShowPortal(true);
       }
     }
-  }, [state, mounted, user?.address, router, projectSlug]);
+  }, [state, mounted, user?.address, isReturning]);
 
   const handleEnterSystem = () => {
     if (hasAccess || isAdmin) {
       if (typeof window !== 'undefined' && user?.address) {
-        localStorage.setItem(`pbox_ritual_seen_${user.address}`, 'true');
+        const addressKey = user.address.toLowerCase();
+        localStorage.setItem(`pbox_ritual_seen_${addressKey}`, 'true');
         fetch('/api/v1/user/initiate', { method: 'POST' }).catch(console.error);
       }
       
@@ -249,7 +237,8 @@ function AccessV2Inner() {
   const getPrimaryButtonLabel = () => {
     if (isLoading) return 'VERIFICANDO...';
     if (account && authStatus === 'unauthenticated') return 'ACEPTAR Y CONTINUAR';
-    if (account) return 'SOLICITUD EN PROCESO';
+    if (account && authStatus === 'authenticated') return 'ENTRAR AL SISTEMA';
+    if (account) return 'PROCESANDO...';
     return 'SOLICITAR ACCESO';
   };
 
@@ -257,11 +246,15 @@ function AccessV2Inner() {
     if (account && authStatus === 'unauthenticated') {
       try {
         await runAuthFlow();
-        // The useEffect will catch the status change and call handleEnterSystem()
       } catch (e) {
         console.error("Auth flow failed", e);
       }
       return;
+    }
+
+    if (account && authStatus === 'authenticated') {
+        handleEnterSystem();
+        return;
     }
     
     if (!account) {
@@ -277,16 +270,15 @@ function AccessV2Inner() {
     }
   };
 
-  // AUTO-REDIRECT: If authenticated and has access, just go.
   useEffect(() => {
-    if (authUser?.id && (hasAccess || isAdmin) && mounted) {
-        // If they are returning or already seen it, don't show the ritual again
-        const hasSeenPortal = localStorage.getItem(`pbox_ritual_seen_${authUser.address}`);
+    if (authUser?.id && (hasAccess || isAdmin) && mounted && authUser?.address) {
+        const addressKey = authUser.address.toLowerCase();
+        const hasSeenPortal = localStorage.getItem(`pbox_ritual_seen_${addressKey}`);
         if (hasSeenPortal || isReturning) {
             handleEnterSystem();
         }
     }
-  }, [authUser?.id, hasAccess, isAdmin, mounted]);
+  }, [authUser?.id, authUser?.address, hasAccess, isAdmin, mounted, isReturning]);
 
   const isApprovedFromEmail =
     typeof window !== 'undefined' &&
@@ -330,7 +322,7 @@ function AccessV2Inner() {
           </div>
         </div>
         <a
-          href="/v3"
+          href="https://pandoras.finance"
           className="text-[9px] text-zinc-600 hover:text-zinc-400 uppercase tracking-widest transition-colors"
         >
           ← Volver
@@ -480,7 +472,7 @@ function AccessV2Inner() {
 
                 {/* Footer link */}
                 <p className="text-[9px] text-zinc-700">
-                  <a href="/v3" className="hover:text-zinc-500 transition-colors">
+                  <a href="https://pandoras.finance" className="hover:text-zinc-500 transition-colors">
                     ← Regresar a Pandoras Finance
                   </a>
                 </p>
