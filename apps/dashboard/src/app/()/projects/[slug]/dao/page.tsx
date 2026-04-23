@@ -78,15 +78,19 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
     const { data: votingPowerBigInt } = useReadContract({
         contract: licenseContract || dummyContract,
         method: "function getVotes(address) view returns (uint256)",
-        params: [(account?.address && account.address.startsWith('0x')) ? account.address : "0x0000000000000000000000000000000000000000"],
-        queryOptions: { enabled: !!licenseContract && !!account }
+        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { 
+            enabled: !!licenseContract && !!account?.address && account.address.startsWith('0x') 
+        }
     });
 
     const { data: tokenBalanceBigInt } = useReadContract({
         contract: licenseContract || dummyContract,
         method: "function balanceOf(address) view returns (uint256)",
-        params: [(account?.address && account.address.startsWith('0x')) ? account.address : "0x0000000000000000000000000000000000000000"],
-        queryOptions: { enabled: !!licenseContract && !!account }
+        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { 
+            enabled: !!licenseContract && !!account?.address && account.address.startsWith('0x') 
+        }
     });
 
     const { data: decimalsBigInt } = useReadContract({
@@ -102,13 +106,20 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
     const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / divisor : 0;
     const tokenBalance = tokenBalanceBigInt ? Number(tokenBalanceBigInt) / divisor : 0;
 
-    console.log("DEBUG: DAO Page Stats", {
-        licenseAddress,
-        account: account?.address,
-        votingPowerRaw: votingPowerBigInt?.toString(),
-        tokenBalanceRaw: tokenBalanceBigInt?.toString(),
-        decimals
+    console.log("🔍 [DAO Debug] Stats Check:", {
+        contractToQuery: licenseContract?.address,
+        yourWallet: account?.address,
+        rawVotingPower: votingPowerBigInt?.toString(),
+        rawTokenBalance: tokenBalanceBigInt?.toString(),
+        detectedDecimals: decimals,
+        isERC20: project?.token_type === 'erc20',
+        finalVP: votingPower,
+        finalBalance: tokenBalance
     });
+
+    if (tokenBalance > 0) {
+        console.warn("🎯 [DAO Debug] Balance detected! If you think this is 0, please check your wallet for this contract on the explorer.");
+    }
 
     if (isLoading) {
         return (
