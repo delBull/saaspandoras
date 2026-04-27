@@ -173,10 +173,21 @@ export function getRawPhases(project: any) {
     // Ensures S'Narai and future projects have the correct prices regardless of DB source
     if (Array.isArray(phases)) {
       phases = phases.map((p: any) => {
-        if (project.slug === 'snarai' || project.id === 12) {
+        if (project.slug === 'snarai' || project.id === 12 || project.id === 1) {
           const currentPrice = Number(p.tokenPrice || p.price || 0);
+          const isFundador = (p.name || "").toLowerCase().includes('fundador');
+          
+          // 🛡️ S'Narai Aliases for Landing Page Tiers
+          if (isFundador) {
+            p.slug = 'explorer'; // Map Explorer -> Fundador
+          } else if ((p.name || "").toLowerCase().includes('estrat')) {
+            // Strategic phase covers all higher tiers
+            p.slug = 'residente'; 
+            p.aliases = ['embajador', 'riviera']; 
+          }
+
           if (currentPrice < 0.0005) {
-            const forcedPrice = (p.name || "").toLowerCase().includes('fundador') ? 0.0015 : 0.003;
+            const forcedPrice = isFundador ? 0.0015 : 0.003;
             return { ...p, tokenPrice: forcedPrice, price: forcedPrice, tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || 0 };
           }
         }
@@ -240,10 +251,12 @@ export function matchPhase(phases: any[], identifier: string) {
     const rawName = String(p.name || p.title || "").trim().toLowerCase();
     const rawId = String(p.id || "").trim().toLowerCase();
     const rawSlug = String(p.slug || "").trim().toLowerCase();
+    const aliases = Array.isArray(p.aliases) ? p.aliases.map((a: any) => String(a).trim().toLowerCase()) : [];
     
     return rawName === decodedId || rawName === cleanId || 
            rawId === decodedId || rawId === cleanId || 
-           rawSlug === decodedId || rawSlug === cleanId;
+           rawSlug === decodedId || rawSlug === cleanId ||
+           aliases.includes(decodedId) || aliases.includes(cleanId);
   });
 
   if (exactMatch) return exactMatch;

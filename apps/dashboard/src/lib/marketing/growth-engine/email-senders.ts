@@ -42,28 +42,28 @@ const NICHE_COPIES: Record<string, Record<string, Record<number | string, { subj
   'real_estate': {
     'high': {
       1: { 
-        subject: "oportunidad ya está activa", 
-        body: "la oportunidad ya está en operación.\n\nEs un sistema que te permite participar en proyectos inmobiliarios sin tener que adquirir una propiedad completa.\n\nDesde aquí puedes acceder a oportunidades estructuradas y comenzar a posicionarte dentro del ecosistema.", 
-        ctaText: "Explorar oportunidades" 
+        subject: "Tu participación en {projectName} está lista", 
+        body: "La oportunidad ya está en operación.\n\nEs un sistema que te permite participar en proyectos inmobiliarios sin tener que adquirir una propiedad completa.\n\nDesde aquí puedes asegurar tu lugar y continuar con el proceso de adquisición.", 
+        ctaText: "Adquirir Participación" 
       },
       2: { 
-        subject: `Cómo funciona el acceso`, 
-        body: "Dentro del sistema, el acceso no es igual para todos.\n\nExisten diferentes niveles que determinan:\n• qué proyectos puedes ver\n• en cuáles puedes participar\n• bajo qué condiciones entras\n\nEstos niveles se activan a través de artefactos.", 
-        ctaText: "Ver cómo funciona" 
+        subject: `Cómo asegurar tu acceso`, 
+        body: "Dentro del sistema, el acceso es por niveles.\n\nTu perfil califica para los niveles más exclusivos de {projectName}.\n\nAsegura tu posición ahora para garantizar las condiciones preferenciales.", 
+        ctaText: "Continuar Adquisición" 
       },
       3: { 
-        subject: "Tu posición dentro del sistema", 
-        body: "Tu participación define tu acceso.\n\nLos artefactos te permiten:\n• entrar antes que otros\n• mejorar tus condiciones\n• acceder a oportunidades más sólidas\n\nEntre antes entres, mejor posición puedes tomar.\n\nNota: Algunos accesos tienen disponibilidad limitada.", 
-        ctaText: "Ver beneficios" 
+        subject: "Tu posición estratégica en {projectName}", 
+        body: "Tu participación define tu acceso.\n\nEntre antes asegures tu lugar, mejor posición puedes tomar en el ecosistema de {projectName}.\n\nNota: La disponibilidad es limitada por fase.", 
+        ctaText: "Asegurar Mi Lugar" 
       },
       4: { 
-        subject: "Acceso disponible ahora", 
-        body: "El sistema está disponible.\n\nPuedes ingresar, activar tu acceso y comenzar a participar en los proyectos activos.", 
-        ctaText: "Entrar ahora" 
+        subject: "Adquisición disponible ahora", 
+        body: "El sistema de {projectName} está abierto para tu perfil.\n\nPuedes ingresar ahora para finalizar tu adquisición y activar tu participación.", 
+        ctaText: "Finalizar Adquisición" 
       },
       'GENESIS': {
         subject: "Estás dentro de la ventana de oportunidad.",
-        body: "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
+        body: "Entraste en la primera ventana de {projectName}.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
       },
       'POST_PURCHASE': {
         subject: "Tu participación en {projectName} está activa",
@@ -73,24 +73,24 @@ const NICHE_COPIES: Record<string, Record<string, Record<number | string, { subj
     },
     'mid': {
       1: { 
-        subject: "Una nueva forma de participar en bienes raíces", 
-        body: "El ecosistema ya está disponible.\n\nEs una forma más flexible de acceder a proyectos inmobiliarios sin los requisitos tradicionales.\n\nPuedes entrar y conocer cómo funciona desde dentro.", 
-        ctaText: "Explorar" 
+        subject: "Una nueva forma de adquirir bienes raíces", 
+        body: "El ecosistema de {projectName} ya está disponible.\n\nEs una forma más flexible de participar en proyectos inmobiliarios con respaldo real.\n\nPuedes entrar y asegurar tu posición desde ahora.", 
+        ctaText: "Ver Oportunidad" 
       },
       2: { 
-        subject: "No todos ven lo mismo", 
-        body: "El acceso depende de tu nivel dentro del sistema.\n\nEsto define:\n• qué oportunidades ves\n• cuándo puedes entrar\n• qué beneficios obtienes", 
-        ctaText: "Ver sistema" 
+        subject: "Asegura tu lugar en {projectName}", 
+        body: "El acceso depende de tu nivel dentro del sistema.\n\nEsto define tus beneficios y el tiempo de entrada.\n\nAsegura tu nivel ahora.", 
+        ctaText: "Continuar" 
       },
       3: { 
-        subject: "Por qué entrar ahora", 
-        body: "Los primeros en participar suelen tener mejores condiciones y acceso a las mejores oportunidades.\n\nEntrar antes te da ventaja.", 
-        ctaText: "Ver oportunidades" 
+        subject: "Por qué participar ahora", 
+        body: "Los primeros en participar en {projectName} suelen tener mejores condiciones y acceso a las mejores unidades.\n\nEntrar antes te da ventaja.", 
+        ctaText: "Ver Beneficios" 
       },
       4: { 
-        subject: "Acceso disponible", 
-        body: "El sistema ya está abierto.\n\nPuedes entrar y comenzar a explorar las oportunidades disponibles.", 
-        ctaText: "Entrar" 
+        subject: "Participación disponible", 
+        body: "El sistema de {projectName} ya está abierto.\n\nPuedes entrar y comenzar tu proceso de adquisición ahora mismo.", 
+        ctaText: "Adquirir Ahora" 
       }
     }
   },
@@ -215,17 +215,26 @@ const NICHE_COPIES: Record<string, Record<string, Record<number | string, { subj
  */
 function resolveNicheContext(context: { 
   projectName?: string; 
+  projectSlug?: string;
   businessCategory?: string; 
   brandHeader?: string;
   engagementLevel?: EngagementLevel;
 }) {
-  const projectName = context.projectName || "Pandora";
+  let projectName = context.projectName || "Pandora";
+  let projectSlug = context.projectSlug || "pandoras";
+
+  // 🛡️ [Rebranding Guard] Force Narai -> S'Narai
+  if (projectName.toLowerCase().includes('narai') || projectSlug.toLowerCase() === 'narai') {
+    projectName = "S'Narai";
+    projectSlug = "snarai";
+  }
+
   const category = context.businessCategory?.toLowerCase() || '';
   
   // Niche mapping logic (Scalable)
   let niche = 'tech_startup';
   
-  if (category.includes('real_estate') || category.includes('inmobiliario') || context.brandHeader?.toLowerCase().includes('narai')) {
+  if (category.includes('real_estate') || category.includes('inmobiliario') || projectName.toLowerCase().includes('snarai')) {
     niche = 'real_estate';
   } else if (category.includes('growth_os') || category.includes('marketing') || projectName.toLowerCase().includes('growth os')) {
     niche = 'growth_os';
@@ -245,7 +254,7 @@ function resolveNicheContext(context: {
   const nicheMap = NICHE_COPIES[niche] || NICHE_COPIES['tech_startup'];
   const intentMap = nicheMap?.[intent === 'critical' ? 'high' : (intent === 'low' ? 'mid' : intent)] || nicheMap?.['mid'];
 
-  return { niche, intent, intentMap, projectName };
+  return { niche, intent, intentMap, projectName, projectSlug };
 }
 
 export async function sendWaitlistSequenceEmail(context: {
@@ -257,7 +266,7 @@ export async function sendWaitlistSequenceEmail(context: {
   engagementLevel?: EngagementLevel;
   businessCategory?: string;
 }) {
-  const { projectName, niche, intentMap } = resolveNicheContext(context);
+  const { projectName, projectSlug, niche, intentMap } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) for ${projectName} (Niche: ${niche}) to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
@@ -276,9 +285,11 @@ export async function sendWaitlistSequenceEmail(context: {
   };
 
   // Determine dynamic CTA URL based on project/niche
-  const isCoreRitual = niche === 'tech_startup' || niche === 'growth_os';
+  const isExternalProject = projectSlug !== 'pandoras';
   const queryParam = context.step === 4 ? "?approved=true" : "";
-  const resolvedCtaUrl = `https://dash.pandoras.finance/accessv2?project=${context.projectSlug || 'pandoras'}${queryParam}`;
+  const resolvedCtaUrl = isExternalProject 
+    ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
+    : `https://dash.pandoras.finance/accessv2?project=pandoras${queryParam}`;
 
   try {
     const data = await resend.emails.send({
@@ -288,7 +299,7 @@ export async function sendWaitlistSequenceEmail(context: {
       tags: [
         { name: 'audience', value: 'waitlist_sequence' },
         { name: 'step', value: String(context.step) },
-        { name: 'project', value: context.projectSlug || 'pandora' }
+        { name: 'project', value: projectSlug || 'pandora' }
       ],
       react: WaitlistEmail({ 
         subject: emailData.subject,
@@ -328,7 +339,7 @@ export async function sendGenesisWelcomeEmail(context: {
   brandHeader?: string;
   businessCategory?: string;
 }) {
-  const { projectName, intentMap } = resolveNicheContext(context);
+  const { projectName, projectSlug, intentMap } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Genesis Welcome Email for ${projectName} to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
@@ -361,8 +372,10 @@ export async function sendGenesisWelcomeEmail(context: {
         step: "GENESIS",
         projectName: projectName,
         brandHeader: context.brandHeader,
-        ctaText: "ENTRAR AL SISTEMA",
-        ctaUrl: `https://dash.pandoras.finance/accessv2?project=${context.projectSlug || 'pandoras'}&returning=true`
+        ctaText: "ASEGURAR MI LUGAR",
+        ctaUrl: projectSlug !== 'pandoras'
+          ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
+          : `https://dash.pandoras.finance/accessv2?project=pandoras&returning=true`
       }) as React.ReactElement,
     });
 
@@ -501,6 +514,7 @@ export async function sendExploreWelcomeEmail(context: {
   projectSlug?: string;
   baseUrl?: string;
 }) {
+  const { projectName, projectSlug } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Explore Step 1 Email to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
@@ -516,18 +530,21 @@ export async function sendExploreWelcomeEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: `${context.projectName} <${FROM_EMAIL}>`,
+      from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
-      subject: `Acceso rápido: Entendiendo ${context.projectName}`,
+      subject: `Acceso rápido: Entendiendo ${projectName}`,
       tags: [
         { name: 'audience', value: 'explore_welcome' },
-        { name: 'project', value: context.projectSlug || 'unknown' }
+        { name: 'project', value: projectSlug || 'unknown' }
       ],
       react: ExploreStep1Email({ 
-        projectName: context.projectName,
+        projectName: projectName,
         differentiator: context.differentiator,
-        projectSlug: context.projectSlug,
-        baseUrl: context.baseUrl
+        projectSlug: projectSlug,
+        baseUrl: context.baseUrl,
+        ctaUrl: projectSlug !== 'pandoras' 
+          ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
+          : undefined
       }) as React.ReactElement,
     });
 
@@ -537,7 +554,7 @@ export async function sendExploreWelcomeEmail(context: {
       await trackEmailMetadata({
         emailId: String(resendId),
         recipient: context.to,
-        subject: `Acceso rápido: Entendiendo ${context.projectName}`,
+        subject: `Acceso rápido: Entendiendo ${projectName}`,
         type: 'explore_welcome'
       });
     }
@@ -555,8 +572,9 @@ export async function sendInvestWelcomeEmail(context: {
   projectSlug?: string;
   baseUrl?: string;
 }) {
+  const { projectName, projectSlug } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Invest Step 1 Email to ${context.to}`);
-  
+
   const isProd = process.env.NODE_ENV === 'production';
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -570,17 +588,20 @@ export async function sendInvestWelcomeEmail(context: {
 
   try {
     const data = await resend.emails.send({
-      from: `${context.projectName} <${FROM_EMAIL}>`,
+      from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
-      subject: `Tu interés en ${context.projectName} - Siguientes Pasos`,
+      subject: `Tu interés en ${projectName} - Siguientes Pasos`,
       tags: [
         { name: 'audience', value: 'invest_welcome' },
-        { name: 'project', value: context.projectSlug || 'unknown' }
+        { name: 'project', value: projectSlug || 'unknown' }
       ],
       react: InvestStep1Email({ 
-        projectName: context.projectName,
-        projectSlug: context.projectSlug,
-        baseUrl: context.baseUrl
+        projectName: projectName,
+        projectSlug: projectSlug,
+        baseUrl: context.baseUrl,
+        ctaUrl: projectSlug !== 'pandoras'
+          ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
+          : undefined
       }) as React.ReactElement,
     });
 
@@ -590,7 +611,7 @@ export async function sendInvestWelcomeEmail(context: {
       await trackEmailMetadata({
         emailId: String(resendId),
         recipient: context.to,
-        subject: `Tu interés en ${context.projectName} - Siguientes Pasos`,
+        subject: `Tu interés en ${projectName} - Siguientes Pasos`,
         type: 'invest_welcome'
       });
     }
@@ -805,7 +826,7 @@ export async function sendVIPConciergeEmail(context: {
   projectName?: string;
   brandHeader?: string;
 }) {
-  const { projectName, niche } = resolveNicheContext(context);
+  const { projectName, projectSlug, niche } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending VIP Concierge Email for ${projectName} (Niche: ${niche}) to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
@@ -865,7 +886,7 @@ export async function sendPostPurchaseSuccessEmail(context: {
   currentPhase?: string;
   brandHeader?: string;
 }) {
-  const { projectName, intentMap } = resolveNicheContext(context);
+  const { projectName, projectSlug, intentMap } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Post-Purchase Success Email for ${projectName} to ${context.to}`);
   
   const isProd = process.env.NODE_ENV === 'production';
@@ -887,7 +908,7 @@ export async function sendPostPurchaseSuccessEmail(context: {
   const subject = emailData.subject.replace('{projectName}', projectName);
   const body = emailData.body.replace('{projectName}', projectName);
   const ctaText = emailData.ctaText || "ACCEDER A MI PANEL";
-  const ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance'}/projects/${context.projectSlug || 'default'}/dao`;
+  const ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance'}/projects/${projectSlug || 'default'}/dao`;
 
   try {
     const data = await resend.emails.send({
@@ -896,11 +917,11 @@ export async function sendPostPurchaseSuccessEmail(context: {
       subject,
       tags: [
         { name: 'audience', value: 'post_purchase_success' },
-        { name: 'project', value: context.projectSlug || 'unknown' }
+        { name: 'project', value: projectSlug || 'unknown' }
       ],
       react: PostPurchaseSuccessEmail({ 
         projectName,
-        projectSlug: context.projectSlug,
+        projectSlug,
         subject,
         body,
         fundingPercentage: context.fundingPercentage || 0,
