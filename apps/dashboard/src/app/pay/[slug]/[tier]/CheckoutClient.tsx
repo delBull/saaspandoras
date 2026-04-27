@@ -33,6 +33,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [isStatusLoading, setIsStatusLoading] = useState(true);
 
     const [fastLaneEmail, setFastLaneEmail] = useState('');
+    const [fastLaneName, setFastLaneName] = useState('');
+    const [fastLanePhone, setFastLanePhone] = useState('');
     const [isSubmittingFastLane, setIsSubmittingFastLane] = useState(false);
     const [cameFromFastLane, setCameFromFastLane] = useState(false);
     const { connect } = useConnectModal();
@@ -285,7 +287,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             const res = await fetch(`/api/v1/external-commerce/${project.id}/fast-lane`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: fastLaneEmail, tier: displayTierName, amount: safeAmount, source: 'checkout_hub', wallet_connected: !!account })
+                body: JSON.stringify({ 
+                    email: fastLaneEmail, 
+                    name: fastLaneName,
+                    phone: fastLanePhone,
+                    tier: displayTierName, 
+                    amount: safeAmount, 
+                    source: 'checkout_hub', 
+                    wallet_connected: !!account 
+                })
             });
             const data = await res.json();
             if (res.ok) {
@@ -600,7 +610,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                     onClick={() => setStep('fast_lane')}
                                                     className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
                                                 >
-                                                    Reservar con medios tradicionales <ArrowRight className="w-3 h-3 inline ml-1" />
+                                                    Reservar con moneda nacional <ArrowRight className="w-3 h-3 inline ml-1" />
                                                 </button>
                                             </div>
                                         </div>
@@ -611,13 +621,29 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             {/* Shared Fast Lane Form (Visible in both active/inactive states when step is fast_lane) */}
                             {step === 'fast_lane' && (
                                 <div className="space-y-4 animate-in fade-in zoom-in-95">
-                                    <input 
-                                        type="email" 
-                                        placeholder="Tu correo electrónico empresarial/personal"
-                                        value={fastLaneEmail}
-                                        onChange={(e) => setFastLaneEmail(e.target.value)}
-                                        className="w-full h-14 bg-zinc-900 border border-zinc-700 rounded-2xl px-5 text-sm text-white focus:outline-none focus:border-white transition-colors"
-                                    />
+                                    <div className="space-y-3">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Nombre Completo"
+                                            value={fastLaneName}
+                                            onChange={(e) => setFastLaneName(e.target.value)}
+                                            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
+                                        />
+                                        <input 
+                                            type="email" 
+                                            placeholder="Correo electrónico"
+                                            value={fastLaneEmail}
+                                            onChange={(e) => setFastLaneEmail(e.target.value)}
+                                            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
+                                        />
+                                        <input 
+                                            type="tel" 
+                                            placeholder="WhatsApp (Opcional)"
+                                            value={fastLanePhone}
+                                            onChange={(e) => setFastLanePhone(e.target.value)}
+                                            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
+                                        />
+                                    </div>
                                     <button 
                                         disabled={isSubmittingFastLane}
                                         onClick={submitFastLane}
@@ -661,11 +687,16 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                     <p className="text-zinc-300 font-bold text-sm mb-6">¿Qué prefieres hacer ahora?</p>
                                     
                                     <div className="space-y-3">
-                                        <a href="mailto:soporte@pandoras.finance" className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group">
-                                            Agendar asesoría privada
+                                        <a 
+                                            href={`https://wa.me/${project.whatsappPhone || '523222741987'}?text=${encodeURIComponent(`Hola, acabo de reservar mi lugar en ${project.title} (${displayTierName}) y quiero coordinar el pago.`)}`}
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="w-full h-14 bg-[#25D366] text-white font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                        >
+                                            <Zap className="w-4 h-4 fill-current" /> Hablar por WhatsApp
                                         </a>
-                                        <a href="https://t.me/PandorasOfficial" target="_blank" rel="noopener noreferrer" className="w-full py-4 text-center text-[10px] uppercase font-black tracking-widest text-zinc-400 hover:text-white transition-colors block border border-zinc-800 rounded-2xl">
-                                            Continuar por Telegram
+                                        <a href="mailto:soporte@pandoras.finance" className="w-full py-4 text-center text-[10px] uppercase font-black tracking-widest text-zinc-400 hover:text-white transition-colors block border border-zinc-800 rounded-2xl">
+                                            Agendar asesoría privada
                                         </a>
                                     </div>
                                 </>

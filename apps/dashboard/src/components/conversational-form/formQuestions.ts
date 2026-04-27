@@ -116,6 +116,13 @@ export const formQuestions: FormQuestion[] = [
     info: 'Grupo o canal de Telegram para anuncios importantes y comunicación directa.',
   },
   {
+    id: 'whatsappPhone',
+    label: '¿Tienes un número de WhatsApp para soporte y atención al cliente de este proyecto?',
+    placeholder: 'Ej: 521234567890',
+    component: 'text-input',
+    info: 'Este número se usará para que los leads puedan contactarte directamente vía WhatsApp desde los correos de seguimiento y el widget.',
+  },
+  {
     id: 'linkedinUrl',
     label: '¿Cuál es tu perfil de LinkedIn (para mostrar credenciales del equipo)?',
     placeholder: 'https://linkedin.com/in/...',

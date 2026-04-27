@@ -209,6 +209,7 @@ export const projects = pgTable("projects", {
   discordUrl: varchar("discord_url", { length: 512 }),
   discordWebhookUrl: text("discord_webhook_url"), // Webhook para alertas de Growth OS (Phase 1.5)
   telegramUrl: varchar("telegram_url", { length: 512 }),
+  whatsappPhone: varchar("whatsapp_phone", { length: 50 }),
   linkedinUrl: varchar("linkedin_url", { length: 512 }),
 
   // Sección 3: Detalles de la Oferta (Tokenomics)

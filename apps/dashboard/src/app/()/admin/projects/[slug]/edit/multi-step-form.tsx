@@ -36,6 +36,7 @@ interface Project {
   discordUrl?: string | null;
   telegramUrl?: string | null;
   linkedinUrl?: string | null;
+  whatsappPhone?: string | null;
   targetAmount?: string | number | null;
   totalValuationUsd?: string | number | null;
   tokenType?: string | null;
@@ -201,6 +202,7 @@ const fullProjectSchema = z.object({
   applicantPosition: z.string().optional(),
   applicantEmail: z.string().email("Email inválido").optional(),
   applicantPhone: z.string().optional(),
+  whatsappPhone: z.string().optional(),
   applicantWalletAddress: z.string().optional(),
   verificationAgreement: z.boolean(),
 });
@@ -379,6 +381,7 @@ export function MultiStepForm({
       applicantPosition: project?.applicantPosition ?? undefined,
       applicantEmail: project?.applicantEmail ?? undefined,
       applicantPhone: project?.applicantPhone ?? undefined,
+      whatsappPhone: project?.whatsappPhone ?? undefined,
       applicantWalletAddress: project?.applicantWalletAddress ?? undefined,
       verificationAgreement: Boolean(project?.verificationAgreement ?? false),
     },

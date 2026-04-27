@@ -155,4 +155,5 @@ export interface ProjectContextPayload {
   differentiator?: string;
   businessCategory?: string;
   discordWebhookUrl?: string | null;
+  whatsappPhone?: string | null;
 }

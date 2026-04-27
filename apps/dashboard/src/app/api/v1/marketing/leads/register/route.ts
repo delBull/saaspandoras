@@ -218,7 +218,8 @@ export async function POST(req: NextRequest) {
         businessCategory: true,
         discordWebhookUrl: true,
         description: true,
-        tagline: true
+        tagline: true,
+        whatsappPhone: true
       }
     });
 
@@ -422,7 +423,8 @@ export async function POST(req: NextRequest) {
             name: projectContext?.title || 'Protocolo Ecosystem',
             businessCategory: projectContext?.businessCategory || 'other',
             differentiator: projectContext?.tagline || projectContext?.description || null,
-            discordWebhookUrl: projectContext?.discordWebhookUrl || null
+            discordWebhookUrl: projectContext?.discordWebhookUrl || null,
+            whatsappPhone: projectContext?.whatsappPhone || null
           } as any
         }, { 
           ruleId: engineResult.ruleId || 'LEAD_CAPTURED',

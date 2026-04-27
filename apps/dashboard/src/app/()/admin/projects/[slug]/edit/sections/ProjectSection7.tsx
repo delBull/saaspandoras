@@ -189,9 +189,9 @@ export function ProjectSection7() {
             </p>
           </div>
 
-          {/* Teléfono */}
+          {/* Teléfono Solicitante */}
           <div>
-            <Label htmlFor="applicantPhone" required>Número de Teléfono</Label>
+            <Label htmlFor="applicantPhone" required>Número de Teléfono (Privado)</Label>
             <Input
               id="applicantPhone"
               type="tel"
@@ -206,6 +206,20 @@ export function ProjectSection7() {
             )}
             <p className="text-xs text-gray-500 mt-1">
               Número directo del representante. Incluye código de país (ej: +52 para México).
+            </p>
+          </div>
+
+          {/* WhatsApp Soporte Público */}
+          <div>
+            <Label htmlFor="whatsappPhone">WhatsApp de Soporte (Público)</Label>
+            <Input
+              id="whatsappPhone"
+              type="text"
+              placeholder="Ej: 5213222741987"
+              {...register("whatsappPhone", { required: false })}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Este número se usará en los correos y widget para que los leads te contacten.
             </p>
           </div>
         </div>
