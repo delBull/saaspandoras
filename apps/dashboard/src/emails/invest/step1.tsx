@@ -18,13 +18,15 @@ interface InvestStep1EmailProps {
   projectSlug?: string;
   baseUrl?: string;
   ctaUrl?: string;
+  whatsappPhone?: string;
 }
 
 export const InvestStep1Email = ({
   projectName = 'nuestro proyecto',
   projectSlug = '',
   baseUrl = 'https://dash.pandoras.finance',
-  ctaUrl
+  ctaUrl,
+  whatsappPhone
 }: InvestStep1EmailProps) => {
   const previewText = `Tu interés en ${projectName} - Siguientes Pasos`;
 
@@ -66,6 +68,17 @@ export const InvestStep1Email = ({
               >
                 {isAcquisition ? 'Adquirir ahora' : 'Acceso directo a detalles'}
               </Button>
+
+              {whatsappPhone && (
+                <div style={{ marginTop: '16px' }}>
+                  <Link
+                    href={`https://wa.me/${whatsappPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, tengo interés en invertir en ${projectName} y me gustaría hablar con un asesor.`)}`}
+                    className="text-[#25D366] text-[12px] font-bold no-underline text-center block"
+                  >
+                    O hablar con un asesor por WhatsApp →
+                  </Link>
+                </div>
+              )}
             </Section>
 
             <Text className="text-black text-[14px] leading-[24px]">

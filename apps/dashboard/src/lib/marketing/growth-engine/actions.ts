@@ -105,7 +105,8 @@ export async function executeGrowthActions(
                             projectName: project.name,
                             differentiator: project.differentiator || 'Innovando en la Web3',
                             projectSlug: project.slug,
-                            baseUrl: (project as any).baseUrl
+                            baseUrl: (project as any).baseUrl,
+                            whatsappPhone: project.whatsappPhone || undefined
                         });
                         success = res.success;
                     } else {
@@ -120,7 +121,8 @@ export async function executeGrowthActions(
                             to: lead.email as string,
                             projectName: project.name,
                             projectSlug: project.slug,
-                            baseUrl: (project as any).baseUrl
+                            baseUrl: (project as any).baseUrl,
+                            whatsappPhone: project.whatsappPhone || undefined
                         });
                         success = res.success;
                     } else {
@@ -229,7 +231,8 @@ export async function executeGrowthActions(
                       projectName: project.name,
                       projectSlug: project.slug,
                       brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-                      engagementLevel: lead.engagementLevel
+                      engagementLevel: lead.engagementLevel,
+                      whatsappPhone: project.whatsappPhone || undefined
                     });
                     success = res.success;
                   } else {
@@ -252,7 +255,8 @@ export async function executeGrowthActions(
                       projectName: project.name,
                       projectSlug: project.slug,
                       brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-                      engagementLevel: lead.engagementLevel
+                      engagementLevel: lead.engagementLevel,
+                      whatsappPhone: project.whatsappPhone || undefined
                     });
                     success = res.success;
                   } else {
@@ -275,7 +279,8 @@ export async function executeGrowthActions(
                       projectName: project.name,
                       projectSlug: project.slug,
                       brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-                      engagementLevel: lead.engagementLevel
+                      engagementLevel: lead.engagementLevel,
+                      whatsappPhone: project.whatsappPhone || undefined
                     });
                     success = res.success;
                   } else {
@@ -298,7 +303,8 @@ export async function executeGrowthActions(
                       projectName: project.name,
                       projectSlug: project.slug,
                       brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
-                      engagementLevel: lead.engagementLevel
+                      engagementLevel: lead.engagementLevel,
+                      whatsappPhone: project.whatsappPhone || undefined
                     });
                     success = res.success;
                   } else {
@@ -312,7 +318,8 @@ export async function executeGrowthActions(
                     const res = await sendGenesisWelcomeEmail({
                       to: lead.email as string,
                       projectName: project.name,
-                      brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO"
+                      brandHeader: project.name?.toUpperCase() + " // ACCESO EXCLUSIVO",
+                      whatsappPhone: project.whatsappPhone || undefined
                     });
                     success = res.success;
                   } else {
@@ -332,7 +339,8 @@ export async function executeGrowthActions(
                     const res = await sendVIPConciergeEmail({
                       to: lead.email as string,
                       projectName: project.name,
-                      brandHeader: project.name?.toUpperCase() + " // ESTADO VIP"
+                      brandHeader: project.name?.toUpperCase() + " // ESTADO VIP",
+                      whatsappPhone: project.whatsappPhone || undefined
                     });
                     success = res.success;
                   } else {

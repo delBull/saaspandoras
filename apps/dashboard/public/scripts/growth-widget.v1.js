@@ -401,10 +401,12 @@
                     </div>
  
                     <div style="display:flex; flex-direction:column; gap:12px;">
-                        <input id="pd-email" type="email" placeholder="Your best email" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
-                        <input id="pd-wallet" type="text" placeholder="Wallet address (optional)" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
+                        <input id="pd-name" type="text" placeholder="Tu nombre" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
+                        <input id="pd-email" type="email" placeholder="Tu mejor correo" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
+                        <input id="pd-phone" type="tel" placeholder="WhatsApp (opcional)" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
+                        <input id="pd-wallet" type="text" placeholder="Wallet address (opcional)" style="padding:14px; border:1px solid var(--pd-border); border-radius:12px; width:100%; outline:none; background:transparent; color:var(--pd-text); font-size:14px;" />
                         <button id="pd-submit-action" style="background:${accentColor}; color:white; border:none; padding:16px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:8px; transition: opacity 0.2s; font-size:15px;">${customActionText}</button>
-                        <p style="font-size:10px; color:var(--pd-subtext); text-align:center; line-height:1.4;">By joining, you agree to our <br/> Terms and Growth Privacy Policy.</p>
+                        <p style="font-size:10px; color:var(--pd-subtext); text-align:center; line-height:1.4;">Al unirte, aceptas nuestra <br/> Política de Privacidad de Crecimiento.</p>
                     </div>
                 </div>
                 <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--pd-border); display:flex; flex-direction:column; align-items:center; gap:4px;">
@@ -417,10 +419,12 @@
         document.body.appendChild(modal);
         
         document.getElementById('pd-submit-action').onclick = () => {
+            const name = document.getElementById('pd-name').value;
             const email = document.getElementById('pd-email').value;
+            const phoneNumber = document.getElementById('pd-phone').value;
             const walletAddress = document.getElementById('pd-wallet').value;
-            if (!email || !email.includes('@')) return alert('Please enter a valid email');
-            registerLead({ email, walletAddress });
+            if (!email || !email.includes('@')) return alert('Por favor ingresa un correo válido');
+            registerLead({ name, email, phoneNumber, walletAddress });
         };
     }
  

@@ -24,6 +24,7 @@ interface WaitlistEmailProps {
   ctaText?: string;
   ctaUrl?: string;
   showPathway?: boolean;
+  whatsappPhone?: string;
 }
 
 export default function WaitlistEmail({
@@ -35,6 +36,7 @@ export default function WaitlistEmail({
   ctaText,
   ctaUrl,
   showPathway = false,
+  whatsappPhone,
 }: WaitlistEmailProps) {
   const pathwaySteps = [
     { id: 1, label: "CONECTAR", desc: "Login en Pandoras Hub" },
@@ -106,6 +108,16 @@ export default function WaitlistEmail({
                   >
                     {ctaText}
                   </Button>
+                  {whatsappPhone && (
+                    <Section className="mt-4">
+                      <Link 
+                        href={`https://wa.me/${whatsappPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, tengo dudas sobre ${projectName} y me gustaría hablar con un asesor.`)}`}
+                        className="text-[#25D366] text-[11px] font-black uppercase tracking-[0.2em] no-underline mx-auto block"
+                      >
+                        Hablar con un asesor por WhatsApp →
+                      </Link>
+                    </Section>
+                  )}
                   <Text className="text-[9px] text-zinc-400 mt-6 uppercase tracking-widest font-bold">
                     Enlace de un solo uso. No compartir.
                   </Text>

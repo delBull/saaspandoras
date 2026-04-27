@@ -42,6 +42,7 @@ export const projectSchema = z.object({
   discordUrl: z.string().url("URL inválida").max(512).optional().or(z.literal("")),
   telegramUrl: z.string().url("URL inválida").max(512).optional().or(z.literal("")),
   linkedinUrl: z.string().url("URL inválida").max(512).optional().or(z.literal("")),
+  whatsappPhone: z.string().max(20, "El número es demasiado largo").optional().or(z.literal("")),
 
   // Utilidad y Economía de la Creación - NUEVAS CLAVES
   protoclMecanism: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),

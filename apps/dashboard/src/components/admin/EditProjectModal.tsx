@@ -55,6 +55,7 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
       discordUrl: project?.discordUrl || '',
       telegramUrl: project?.telegramUrl || '',
       linkedinUrl: project?.linkedinUrl || '',
+      whatsappPhone: project?.whatsappPhone || '',
       protoclMecanism: project?.protoclMecanism || '',
       artefactUtility: project?.artefactUtility || '',
       worktoearnMecanism: project?.worktoearnMecanism || '',
@@ -91,6 +92,7 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
         discordUrl: project.discordUrl || '',
         telegramUrl: project.telegramUrl || '',
         linkedinUrl: project.linkedinUrl || '',
+        whatsappPhone: project.whatsappPhone || '',
         protoclMecanism: project.protoclMecanism || '',
         artefactUtility: project.artefactUtility || '',
         worktoearnMecanism: project.worktoearnMecanism || '',
@@ -235,6 +237,24 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
                     className="bg-zinc-900 border-zinc-800 focus:ring-lime-500"
                     placeholder="Ej: Suscripciones, Fees por transacción..."
                   />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-zinc-800">
+                <h4 className="text-sm font-bold text-lime-400 mb-4 flex items-center gap-2">
+                  <Send className="w-4 h-4" /> Información de Contacto
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">WhatsApp de Soporte (Público)</Label>
+                    <Input {...register('whatsappPhone')} className="bg-zinc-900 border-zinc-800 border-lime-500/30" placeholder="Ej: 521234567890" />
+                    <p className="text-[10px] text-zinc-500 italic">Número que aparecerá en los correos y el widget.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">Teléfono del Solicitante (Privado)</Label>
+                    <Input {...register('applicantPhone')} className="bg-zinc-900 border-zinc-800" placeholder="+52..." />
+                    <p className="text-[10px] text-zinc-500 italic">Número de contacto directo con el representante.</p>
+                  </div>
                 </div>
               </div>
             </TabsContent>

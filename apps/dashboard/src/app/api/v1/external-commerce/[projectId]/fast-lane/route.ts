@@ -6,12 +6,13 @@ import crypto from 'crypto';
 
 export async function POST(
   req: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    const { projectId } = await params;
     const body = await req.json();
-    const { email, amount, tier, source, wallet_connected } = body;
-    const projectIdNum = parseInt(params.projectId, 10);
+    const { email, name, phone, amount, tier, source, wallet_connected } = body;
+    const projectIdNum = parseInt(projectId, 10);
 
     if (!email || isNaN(projectIdNum)) {
       return NextResponse.json({ error: 'Email y proyecto son requeridos' }, { status: 400 });
@@ -32,9 +33,11 @@ export async function POST(
     const { IdentityService } = await import("@/lib/marketing/identity-service");
     const identityHash = IdentityService.getIdentityHash(email.toLowerCase(), null, null);
     
-    await db.insert(marketingLeads).values({
+    const [newLead] = await db.insert(marketingLeads).values({
         projectId: projectIdNum,
         email: email.toLowerCase(),
+        name: name || null,
+        phoneNumber: phone || null,
         walletAddress: null,
         identityHash: identityHash as string,
         status: 'active',
@@ -51,7 +54,23 @@ export async function POST(
            intentTimestamp: new Date().toISOString()
         },
         consent: true
-    });
+    }).returning({ id: marketingLeads.id });
+
+    // Trigger Growth OS (Institutional Engine)
+    if (newLead) {
+        const { processGrowthEvent } = await import("@/lib/marketing/growth-engine/engine-service");
+        await processGrowthEvent('LEAD_CAPTURED', {
+            id: newLead.id,
+            email: email.toLowerCase(),
+            projectId: projectIdNum,
+            intent: 'invest',
+            metadata: { 
+                tier, 
+                amount: safeAmount,
+                fast_lane: true
+            }
+        });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -12,6 +12,7 @@ export interface Project {
   discordUrl?: string;
   telegramUrl?: string;
   linkedinUrl?: string;
+  whatsappPhone?: string;
   logoUrl?: string;
   videoPitch?: string;
   businessCategory?: string;

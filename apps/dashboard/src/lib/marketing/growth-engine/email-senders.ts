@@ -265,6 +265,7 @@ export async function sendWaitlistSequenceEmail(context: {
   brandHeader?: string;
   engagementLevel?: EngagementLevel;
   businessCategory?: string;
+  whatsappPhone?: string;
 }) {
   const { projectName, projectSlug, niche, intentMap } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Waitlist Email (Step ${context.step}) for ${projectName} (Niche: ${niche}) to ${context.to}`);
@@ -284,6 +285,11 @@ export async function sendWaitlistSequenceEmail(context: {
     body: "Seguimos procesando tu solicitud de acceso al ecosistema.\n\nRecibirás una confirmación en las próximas horas."
   };
 
+  // Dynamic template replacements
+  const subject = emailData.subject.replace(/{projectName}/g, projectName);
+  const body = emailData.body.replace(/{projectName}/g, projectName);
+  const ctaText = emailData.ctaText?.replace(/{projectName}/g, projectName);
+
   // Determine dynamic CTA URL based on project/niche
   const isExternalProject = projectSlug !== 'pandoras';
   const queryParam = context.step === 4 ? "?approved=true" : "";
@@ -302,14 +308,15 @@ export async function sendWaitlistSequenceEmail(context: {
         { name: 'project', value: projectSlug || 'pandora' }
       ],
       react: WaitlistEmail({ 
-        subject: emailData.subject,
-        body: emailData.body,
+        subject,
+        body,
         step: context.step,
         projectName: projectName,
         brandHeader: context.brandHeader || `${projectName.toUpperCase()} // PROTOCOLO DE ESPERA`,
         ctaText: ('ctaText' in emailData) ? emailData.ctaText as string | undefined : undefined,
         ctaUrl: resolvedCtaUrl,
-        showPathway: context.step === 4 || (context.step === 1 && niche !== 'tech_startup') 
+        showPathway: context.step === 4 || (context.step === 1 && niche !== 'tech_startup'),
+        whatsappPhone: context.whatsappPhone
       }) as React.ReactElement,
     });
 
@@ -338,6 +345,7 @@ export async function sendGenesisWelcomeEmail(context: {
   projectSlug?: string;
   brandHeader?: string;
   businessCategory?: string;
+  whatsappPhone?: string;
 }) {
   const { projectName, projectSlug, intentMap } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Genesis Welcome Email for ${projectName} to ${context.to}`);
@@ -357,8 +365,8 @@ export async function sendGenesisWelcomeEmail(context: {
     body: "Entraste en la primera ventana.\n\nNo es casualidad.\n\nLos primeros no solo entran antes,\nentran en mejores condiciones.\n\nTu acceso ya está activo.\n\nLo que hagas con esto… importa.\n\n— Equipo"
   };
 
-  const subject = emailData.subject;
-  const body = emailData.body;
+  const subject = emailData.subject.replace(/{projectName}/g, projectName);
+  const body = emailData.body.replace(/{projectName}/g, projectName);
 
   try {
     const data = await resend.emails.send({
@@ -375,7 +383,8 @@ export async function sendGenesisWelcomeEmail(context: {
         ctaText: "ASEGURAR MI LUGAR",
         ctaUrl: projectSlug !== 'pandoras'
           ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
-          : `https://dash.pandoras.finance/accessv2?project=pandoras&returning=true`
+          : `https://dash.pandoras.finance/accessv2?project=pandoras&returning=true`,
+        whatsappPhone: context.whatsappPhone
       }) as React.ReactElement,
     });
 
@@ -513,6 +522,7 @@ export async function sendExploreWelcomeEmail(context: {
   differentiator: string;
   projectSlug?: string;
   baseUrl?: string;
+  whatsappPhone?: string;
 }) {
   const { projectName, projectSlug } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Explore Step 1 Email to ${context.to}`);
@@ -544,7 +554,8 @@ export async function sendExploreWelcomeEmail(context: {
         baseUrl: context.baseUrl,
         ctaUrl: projectSlug !== 'pandoras' 
           ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
-          : undefined
+          : undefined,
+        whatsappPhone: context.whatsappPhone
       }) as React.ReactElement,
     });
 
@@ -571,6 +582,7 @@ export async function sendInvestWelcomeEmail(context: {
   projectName: string;
   projectSlug?: string;
   baseUrl?: string;
+  whatsappPhone?: string;
 }) {
   const { projectName, projectSlug } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Invest Step 1 Email to ${context.to}`);
@@ -601,7 +613,8 @@ export async function sendInvestWelcomeEmail(context: {
         baseUrl: context.baseUrl,
         ctaUrl: projectSlug !== 'pandoras'
           ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
-          : undefined
+          : undefined,
+        whatsappPhone: context.whatsappPhone
       }) as React.ReactElement,
     });
 
@@ -825,6 +838,7 @@ export async function sendVIPConciergeEmail(context: {
   to: string;
   projectName?: string;
   brandHeader?: string;
+  whatsappPhone?: string;
 }) {
   const { projectName, projectSlug, niche } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending VIP Concierge Email for ${projectName} (Niche: ${niche}) to ${context.to}`);
@@ -855,7 +869,8 @@ export async function sendVIPConciergeEmail(context: {
         body,
         step: "VIP",
         projectName: projectName,
-        brandHeader: context.brandHeader || `${projectName.toUpperCase()} // CONJUNTO VIP`
+        brandHeader: context.brandHeader || `${projectName.toUpperCase()} // CONJUNTO VIP`,
+        whatsappPhone: context.whatsappPhone
       }) as React.ReactElement,
     });
 
