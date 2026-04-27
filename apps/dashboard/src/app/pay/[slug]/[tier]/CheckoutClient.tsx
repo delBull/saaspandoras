@@ -221,7 +221,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 }
             })
             .catch(err => {
-              console.warn("🛡️ [CheckoutHub] Handshake Error:", err);
+              console.warn("🛡️ [CheckoutHub] Handshake Error (API Path: /api/v1/external-commerce/ensure-pandora-key):", err);
               if (isMounted) {
                 // Fail-safe: allow proceeding to let the wallet/contract handle the error
                 setHasEnsuredAccess(true);
@@ -567,7 +567,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                             onTransactionConfirmed={handleSuccess}
                                                             onError={(error) => {
                                                                 console.error("Transacción Fallida:", error);
-                                                                toast.error(error.message.includes('insufficient') ? "Fondos insuficientes" : "Error en el protocolo.");
+                                                                let errorMsg = "Error en el protocolo.";
+                                                                const msg = error.message?.toLowerCase() || "";
+                                                                
+                                                                if (msg.includes('insufficient')) errorMsg = "Fondos insuficientes.";
+                                                                else if (msg.includes('user rejected')) errorMsg = "Transacción cancelada.";
+                                                                else if (msg.includes('already owned') || msg.includes('already minted')) errorMsg = "Ya posees esta participación.";
+                                                                else if (msg.includes('invalid key') || msg.includes('clientid')) errorMsg = "Error de configuración del protocolo.";
+                                                                
+                                                                toast.error(errorMsg);
                                                             }}
                                                             disabled={isPriceLoading || !txConfig.address}
                                                             className={`!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none ${(isPriceLoading || !txConfig.address) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'}`}

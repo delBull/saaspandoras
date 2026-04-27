@@ -18,18 +18,21 @@ interface ExploreStep1EmailProps {
   differentiator?: string;
   projectSlug?: string;
   baseUrl?: string;
+  ctaUrl?: string;
 }
 
 export const ExploreStep1Email = ({
   projectName = 'nuestro proyecto',
   differentiator = 'una tecnología diferencial',
   projectSlug = '',
-  baseUrl = 'https://dash.pandoras.finance'
+  baseUrl = 'https://dash.pandoras.finance',
+  ctaUrl
 }: ExploreStep1EmailProps) => {
   const previewText = `Viste algo en ${projectName} que te llamó la atención...`;
   
   // Dynamic link to the project or educational draft
-  const exploreUrl = `${baseUrl}/education/courses/draft-${projectSlug}`;
+  const finalCtaUrl = ctaUrl || `${baseUrl}/education/courses/draft-${projectSlug}`;
+  const isAcquisition = !!ctaUrl;
 
   return (
     <Html>
@@ -69,9 +72,9 @@ export const ExploreStep1Email = ({
             <Section className="text-center mt-[32px] mb-[32px]">
               <Button
                 className="bg-[#000000] rounded-lg text-white text-[14px] font-bold no-underline text-center px-10 py-4 inline-block"
-                href={exploreUrl}
+                href={finalCtaUrl}
               >
-                Explorar ahora
+                {isAcquisition ? 'Adquirir ahora' : 'Explorar ahora'}
               </Button>
             </Section>
 

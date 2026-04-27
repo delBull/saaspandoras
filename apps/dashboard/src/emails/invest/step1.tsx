@@ -17,17 +17,20 @@ interface InvestStep1EmailProps {
   projectName: string;
   projectSlug?: string;
   baseUrl?: string;
+  ctaUrl?: string;
 }
 
 export const InvestStep1Email = ({
   projectName = 'nuestro proyecto',
   projectSlug = '',
-  baseUrl = 'https://dash.pandoras.finance'
+  baseUrl = 'https://dash.pandoras.finance',
+  ctaUrl
 }: InvestStep1EmailProps) => {
   const previewText = `Tu interés en ${projectName} - Siguientes Pasos`;
 
   // Dynamic link to the project or educational draft
-  const investUrl = `${baseUrl}/education/courses/draft-${projectSlug}`;
+  const finalCtaUrl = ctaUrl || `${baseUrl}/education/courses/draft-${projectSlug}`;
+  const isAcquisition = !!ctaUrl;
 
   return (
     <Html>
@@ -59,9 +62,9 @@ export const InvestStep1Email = ({
             <Section className="text-center mt-[32px] mb-[32px]">
               <Button
                 className="bg-[#000000] rounded-lg text-white text-[14px] font-bold no-underline text-center px-10 py-4 inline-block"
-                href={investUrl}
+                href={finalCtaUrl}
               >
-                Acceso directo a detalles
+                {isAcquisition ? 'Adquirir ahora' : 'Acceso directo a detalles'}
               </Button>
             </Section>
 
