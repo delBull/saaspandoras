@@ -146,7 +146,14 @@ export default function AdminDashboardPage() {
 
         if (jobId) {
           // Start Polling
+          let attempts = 0;
           const pollStatus = async () => {
+            attempts++;
+            if (attempts > 60) { // 3 minutes timeout
+               setDeploymentStatus('error');
+               setDeploymentError('Timeout esperando confirmación del despliegue. Revisa los logs de Railway.');
+               return;
+            }
             try {
               const pollRes = await fetch(`/api/admin/deployment-job/${jobId}`);
               if (!pollRes.ok) throw new Error("Failed to poll status");

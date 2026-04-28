@@ -305,6 +305,7 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
         if (refreshCallback) {
           await refreshCallback();
         }
+        return await response.json();
       } else {
         const errorText = await response.text().catch(() => 'Error desconocido');
         console.error('Error response:', response.status, errorText);
