@@ -610,7 +610,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                     onClick={() => setStep('fast_lane')}
                                                     className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
                                                 >
-                                                    Reservar con moneda nacional <ArrowRight className="w-3 h-3 inline ml-1" />
+                                                    Reserva con Métodos Tradicionales <ArrowRight className="w-3 h-3 inline ml-1" />
                                                 </button>
                                             </div>
                                         </div>

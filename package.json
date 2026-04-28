@@ -44,7 +44,6 @@
     "packages/*",
     "tooling/*"
   ],
-  "packageManager": "bun@1.1.10",
   "dependencies": {
     "@radix-ui/react-tooltip": "^1.2.7",
     "@vercel/analytics": "^1.5.0",
