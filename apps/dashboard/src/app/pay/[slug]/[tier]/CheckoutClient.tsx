@@ -114,10 +114,10 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     
     // Normalize Phase using unified engine (S'Narai & V2 handling)
     const normalizedPhases = getRawPhases(project);
-    const matchedPhase = normalizedPhases.find((p: any) => 
-        String(p.id || "") === String(rawPhase.id || "") || 
-        String(p.name || "").toLowerCase().trim() === String(rawPhase.name || "").toLowerCase().trim()
-    );
+    const matchedPhase = rawPhase ? normalizedPhases.find((p: any) => 
+        String(p.id || "") === String(rawPhase?.id || "") || 
+        String(p.name || "").toLowerCase().trim() === String(rawPhase?.name || "").toLowerCase().trim()
+    ) : undefined;
 
     let effectivePriceInWei = (contractPrice && contractPrice > 0n) 
         ? contractPrice 
