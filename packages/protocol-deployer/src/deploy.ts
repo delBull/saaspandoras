@@ -242,9 +242,9 @@ export async function deployW2EProtocol(
     try {
         console.log(`🪙 Starting Post-Deploy Allocation for ${finalUtility}...`);
         
-        // 1. Enter Initializing Mode
-        const initTx = await utilityContract.setInitializing(true);
-        await initTx.wait();
+        // 1. Enter Initializing Mode (Skipped for V2)
+        // const initTx = await utilityContract.setInitializing(true);
+        // await initTx.wait();
 
         const totalCap = eth.BigNumber.from(config.utilityToken.initialSupply || "1000000");
 
@@ -255,7 +255,7 @@ export async function deployW2EProtocol(
             
             const currentBalance = await utilityContract.balanceOf(config.utilityToken.teamWallet);
             if (currentBalance.lt(teamAmount)) {
-                const mintTx = await utilityContract.mint(config.utilityToken.teamWallet, teamAmount.sub(currentBalance));
+                const mintTx = await utilityContract.mint(config.utilityToken.teamWallet, teamAmount.sub(currentBalance), { gasLimit: 200000 });
                 await mintTx.wait();
             }
         }
@@ -267,14 +267,14 @@ export async function deployW2EProtocol(
             
             const currentBalance = await utilityContract.balanceOf(config.utilityToken.pandorasWallet);
             if (currentBalance.lt(pandorasAmount)) {
-                const mintTx = await utilityContract.mint(config.utilityToken.pandorasWallet, pandorasAmount.sub(currentBalance));
+                const mintTx = await utilityContract.mint(config.utilityToken.pandorasWallet, pandorasAmount.sub(currentBalance), { gasLimit: 200000 });
                 await mintTx.wait();
             }
         }
 
-        // 4. Exit Initializing Mode
-        const endInitTx = await utilityContract.setInitializing(false);
-        await endInitTx.wait();
+        // 4. Exit Initializing Mode (Skipped for V2)
+        // const endInitTx = await utilityContract.setInitializing(false);
+        // await endInitTx.wait();
         
     } catch (mintError) {
         console.error("⚠️ Post-Deploy Minting encountered an error:", mintError);
@@ -282,7 +282,7 @@ export async function deployW2EProtocol(
         // 5. Mandatory Ownership Transfer to Governor
         console.log(`🔐 Transferring Utility Ownership to Governor: ${finalGovernor}`);
         try {
-            const transferTx = await utilityContract.transferOwnership(finalGovernor);
+            const transferTx = await utilityContract.transferOwnership(finalGovernor, { gasLimit: 150000 });
             await transferTx.wait();
         } catch (transferError) {
              console.error("❌ CRITICAL: Failed to transfer ownership to Governor!", transferError);
@@ -291,7 +291,7 @@ export async function deployW2EProtocol(
         // 6. Mandatory Ownership Transfer for License to Governor
         try {
             const licenseContract = new eth.Contract(finalLicense, W2ELicenseArtifact.abi, wallet);
-            const lTransferTx = await licenseContract.transferOwnership(finalGovernor);
+            const lTransferTx = await licenseContract.transferOwnership(finalGovernor, { gasLimit: 150000 });
             await lTransferTx.wait();
         } catch (lTransferError) {
             console.error("❌ CRITICAL: Failed to transfer License ownership to Governor!", lTransferError);
