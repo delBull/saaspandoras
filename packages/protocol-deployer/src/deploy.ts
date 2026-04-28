@@ -133,7 +133,9 @@ export async function deployW2EProtocol(
   const primaryArtifact = artifactsToDeploy[0];
   if (!primaryArtifact) throw new Error("No artifacts found to deploy. Ensure artifacts list is not empty.");
 
-  const salt = eth.utils.id(projectSlug || `w2e-project-${Date.now()}`);
+  // Append a timestamp to the slug to ensure a unique salt for every deployment attempt, avoiding CREATE2 collisions.
+  const uniqueId = projectSlug ? `${projectSlug}-${Date.now()}` : `w2e-project-${Date.now()}`;
+  const salt = eth.utils.id(uniqueId);
 
   const configStruct = {
     pandoraRootTreasury: rootTreasury,
