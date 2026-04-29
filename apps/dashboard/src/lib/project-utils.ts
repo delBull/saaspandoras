@@ -1,6 +1,24 @@
 import { getRawPhases } from "./phase-utils";
 
 /**
+ * Resolves a project slug to its canonical version.
+ * Handles legacy aliases (e.g., narai -> snarai) to ensure backwards compatibility.
+ * This is the central source of truth for project renaming transitions.
+ */
+export function resolveProjectSlug(slug: string): string {
+  if (!slug) return slug;
+  const s = slug.toLowerCase();
+  
+  // Legacy Aliases Mapping (Scalable)
+  const ALIASES: Record<string, string> = {
+    'narai': 'snarai',
+  };
+  
+  return ALIASES[s] || slug;
+}
+
+
+/**
  * Calculates the percentage of completion of a project
  * Based on required vs optional fields completed
  */
@@ -174,7 +192,7 @@ export function sanitizeUrl(url: any): string | null {
   const cleanUrl = url.trim();
   
   // Ignore common placeholder strings or invalid values
-  const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder', 'narai'];
+  const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder'];
   if (placeholders.includes(cleanUrl.toLowerCase())) return null;
   
   // Handle IPFS: ipfs://CID or ipfs:CID or just a raw CID (starting with Qm or ba)

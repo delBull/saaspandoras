@@ -16,6 +16,7 @@ import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
 import { executeGrowthActions, computeNextGrowthMetadata } from '@/lib/marketing/growth-engine/actions';
 import { IdentityResolver } from '@/lib/marketing/identity-resolver';
 import { AttributionManager } from '@/lib/marketing/scoring-engine';
+import { resolveProjectSlug } from '@/lib/project-utils';
 
 
 export const dynamic = 'force-dynamic';
@@ -180,8 +181,9 @@ export async function POST(req: NextRequest) {
       targetProjectId = Number(clientProjectId || 3); // Fallback to Project 3 (Pandoras Access)
       resolutionMethod = projectId === 'external' ? 'explicit_external' : 'client_default';
     } else if (isNaN(Number(projectId))) {
+      const canonicalSlug = resolveProjectSlug(projectId);
       const projectBySlug = await db.query.projects.findFirst({
-        where: (projects, { ilike }) => ilike(projects.slug, projectId),
+        where: (projects, { ilike }) => ilike(projects.slug, canonicalSlug),
         columns: { id: true }
       });
       
