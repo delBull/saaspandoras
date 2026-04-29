@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { projects as projectsSchema, daoMembers as daoMembersSchema } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         id: true, slug: true, status: true, chainId: true, 
         licenseContractAddress: true, contractAddress: true, w2eConfig: true,
         title: true, tagline: true, targetAmount: true, tokenPriceUsd: true,
-        estimatedApy: true, treasuryAddress: true,
+        estimatedApy: true, treasuryAddress: true, applicantWalletAddress: true
       }
     });
 
@@ -151,6 +151,23 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         console.warn(`[API] Error fetching metrics for ${slug}:`, metricError);
     }
 
+    // 4.5 Fetch User DB State (Leads, Whitelist, etc.)
+    let isWhitelisted = false;
+    let dbUserStatus = "visitor";
+    if (wallet && wallet.startsWith("0x")) {
+        const { marketingLeads: leadsSchema } = await import("@/db/schema");
+        const lead = await db.query.marketingLeads.findFirst({
+            where: and(
+                eq(leadsSchema.projectId, project.id),
+                eq(leadsSchema.walletAddress, wallet)
+            )
+        });
+        if (lead) {
+            isWhitelisted = lead.status === "whitelisted" || lead.status === "active";
+            dbUserStatus = lead.status || "active";
+        }
+    }
+
     // 5. Calculate Progression via Engine
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
     const normalizedTiers: Tier[] = rawTiers.map(t => ({
@@ -175,10 +192,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       holdersCount,
       treasuryDisplay,
       progression,
+      userRewards: "0.00 USDC", // Placeholder for now, could be calculated
+      dbUserStatus,
+      isWhitelisted,
       metadata: {
-        estimatedApy: (project as any).estimatedApy || "12.5%", // Fallback to standard
-        targetAmount: project.targetAmount,
-        tokenPriceUsd: (project as any).tokenPriceUsd,
+        estimatedApy: project.estimatedApy || "12.5%",
+        targetAmount: (project.targetAmount && project.targetAmount !== "NaN") ? project.targetAmount : "23000", // Fallback to $23k ($50 * 460)
+        tokenPriceUsd: project.tokenPriceUsd || "50",
       },
       metrics: {
         urgency: progression?.urgencyLevel || "low"
