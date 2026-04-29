@@ -7,7 +7,7 @@ import { prepareContractCall, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useConnectModal } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import useSWR from 'swr';
@@ -25,6 +25,21 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function CheckoutClient({ project, rawPhase, tierName }: { project: any, rawPhase: any, tierName: string }) {
     const router = useRouter();
     const account = useActiveAccount();
+    const searchParams = useSearchParams();
+    const externalOrigin = searchParams.get('origin');
+    
+    // Determine the base portal URL. If origin is present, use it.
+    const portalUrl = useMemo(() => {
+        if (externalOrigin) {
+            try {
+                const url = new URL(externalOrigin);
+                return `${url.origin}/portal`;
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    }, [externalOrigin]);
     const [step, setStep] = useState<'checkout' | 'processing' | 'success' | 'fast_lane'>('checkout');
     const [amount, setAmount] = useState("1");
     const [contractPrice, setContractPrice] = useState<bigint | undefined>(undefined);
@@ -720,13 +735,19 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
                                     <div className="space-y-3">
                                         <button
-                                            onClick={() => router.push(`/projects/${project.slug}/dao`)}
+                                            onClick={() => {
+                                                if (portalUrl) {
+                                                    window.location.href = portalUrl;
+                                                } else {
+                                                    router.push(`/projects/${project.slug}/dao`);
+                                                }
+                                            }}
                                             className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
                                         >
-                                            Ver mi participación <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                            {portalUrl ? "Ir a mi portal" : "Ver mi participación"} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                         </button>
                                         <button
-                                            onClick={() => window.open(`${window.location.origin}/projects/${project.slug}/dao`, '_blank')}
+                                            onClick={() => window.open(portalUrl || `${window.location.origin}/projects/${project.slug}/dao`, '_blank')}
                                             className="w-full py-4 text-center text-[10px] uppercase font-black tracking-widest text-zinc-400 hover:text-white transition-colors block border border-zinc-800 rounded-2xl"
                                         >
                                             Abrir en nueva pestaña <ArrowRight className="w-3 h-3 inline ml-1 opacity-50" />

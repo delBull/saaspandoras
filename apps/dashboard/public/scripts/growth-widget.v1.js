@@ -169,6 +169,7 @@
 
         let finalSlug = slug;
         let finalTier = tier;
+        let finalOrigin = window.location.origin;
 
         const findAttr = (el, attrs) => {
             let curr = el;
@@ -184,11 +185,12 @@
             return null;
         };
 
-        // 🛡️ DATA OBJECT SUPPORT: Handle manual calls with objects (e.g. Narai: {slug, tier})
+        // 🛡️ DATA OBJECT SUPPORT: Handle manual calls with objects (e.g. Narai: {slug, tier, origin})
         if (slug && typeof slug === 'object' && !slug.preventDefault && !slug.target) {
             finalSlug = slug.slug || slug.projectId || slug.id;
             finalTier = slug.tier || slug.tierName || slug.phase;
-            console.log('[Pandoras] Data Object extracted:', { finalSlug, finalTier });
+            finalOrigin = slug.origin || slug.redirectUrl || window.location.origin;
+            console.log('[Pandoras] Data Object extracted:', { finalSlug, finalTier, finalOrigin });
         }
         else if (slug && typeof slug === 'object' && (slug.preventDefault || slug.target)) {
             const event = slug;
@@ -197,6 +199,7 @@
             if (!extractedSlug) return;
             finalSlug = extractedSlug;
             finalTier = findAttr(target, ['data-pd-checkout-tier', 'data-tier', 'data-pd-tier', 'data-phase']);
+            finalOrigin = findAttr(target, ['data-pd-checkout-origin', 'data-origin', 'data-pd-origin']) || window.location.origin;
         }
 
         if (!finalSlug || typeof finalSlug !== 'string' || finalSlug === '[object Object]') {
@@ -204,13 +207,13 @@
         }
         if (!finalTier || typeof finalTier !== 'string') finalTier = 'standard';
 
-        console.log('[Pandoras] Final Parameters Ready:', { finalSlug, finalTier });
+        console.log('[Pandoras] Final Parameters Ready:', { finalSlug, finalTier, finalOrigin });
         
         const triggerBtn = document.getElementById('pd-growth-trigger');
         if (triggerBtn) triggerBtn.style.display = 'none';
 
         const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
-        const url = `${absoluteBase}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        const url = `${absoluteBase}/pay/${finalSlug}/${finalTier}?widget=true&origin=${encodeURIComponent(finalOrigin)}`;
         
         track('COMMERCE_MODAL_OPEN', { slug: finalSlug, tier: finalTier });
 
