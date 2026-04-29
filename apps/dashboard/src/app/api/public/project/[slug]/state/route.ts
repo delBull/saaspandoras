@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { projects as projectsSchema, daoMembers as daoMembersSchema, userBalances as userBalancesSchema } from "@/db/schema";
+import { projects as projectsSchema, daoMembers as daoMembersSchema, userBalances as userBalancesSchema, daoActivities as daoActivitiesSchema } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
 import { client as twClient } from "@/lib/thirdweb-client";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
+import { getProjectPhasesWithStats } from "@/lib/phase-utils";
 import { headers } from "next/headers";
 
 export const runtime = "nodejs";
@@ -169,21 +170,24 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     // 4.6 Fetch User Rewards & Voting Power (Dynamic for any project)
-    let userVotingPower = 0;
+    // GROUND TRUTH: 1 Certificate = 1 Voting Power (as requested)
+    let userVotingPower = wallet && userArtifactCount > 0 ? userArtifactCount : 0; 
     let userRewards = "0.00 USDC";
+    let userRewardsValue = 0;
     
     if (wallet && wallet.startsWith("0x") && project.id) {
         const normalizedWallet = wallet.toLowerCase();
         
-        // Voting Power from DAO Members
+        // If DB has higher voting power (e.g. delegated), we prioritize it, 
+        // but user balance is the minimum viable power.
         const member = await db.query.daoMembers.findFirst({
             where: and(
                 eq(daoMembersSchema.projectId, project.id),
                 eq(daoMembersSchema.wallet, normalizedWallet)
             )
         });
-        if (member) {
-            userVotingPower = Number(member.votingPower || 0);
+        if (member && Number(member.votingPower || 0) > userVotingPower) {
+            userVotingPower = Number(member.votingPower);
         }
 
         // Rewards from User Balances (Platform-wide or specific if needed)
@@ -197,11 +201,24 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             // Heuristic: If project is on Base (8453), prioritize USDC display
             if (Number(chainId) === 8453) {
                 userRewards = `${usdc.toFixed(2)} USDC`;
+                userRewardsValue = usdc;
             } else {
                 userRewards = `${pbox.toFixed(2)} PBOX`;
+                userRewardsValue = pbox;
             }
         }
     }
+
+    // 4.7 Phase & Availability Analytics (Dynamic Metrics)
+    const phases = getProjectPhasesWithStats(project, currentSupply);
+    const activePhase = phases.find((p: any) => p.status === 'active') || phases[0];
+
+    // 4.8 DAO Activities Integration
+    const activities = await db.query.daoActivities.findMany({
+        where: eq(daoActivitiesSchema.projectId, project.id),
+        orderBy: desc(daoActivitiesSchema.createdAt),
+        limit: 5
+    });
 
     // 5. Calculate Progression via Engine
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
@@ -226,14 +243,50 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       userBalance: userArtifactCount,
       userVotingPower,
       userRewards,
+      userRewardsValue,
+      canClaim: userRewardsValue > 0,
+      activities: activities.map(a => ({
+        id: a.id,
+        title: a.title,
+        description: a.description,
+        reward: `${a.rewardAmount} ${a.rewardTokenSymbol}`,
+        type: a.type,
+        category: a.category,
+        link: a.externalLink
+      })),
+      onboarding: {
+        title: "¿Qué Sigue?",
+        steps: [
+            { 
+              title: "Verifica tu Posición", 
+              description: "Tu certificado ya es inmutable en la red Blockchain. Puedes verlo en la sección de 'Mis Activos' dentro de este portal." 
+            },
+            { 
+              title: "Participa en el DAO", 
+              description: "Usa tu Poder de Voto para influir en las decisiones del proyecto y participa en las actividades exclusivas para holders." 
+            },
+            { 
+              title: "Reclama tus Utilidades", 
+              description: "Cuando el proyecto genere rendimientos, aparecerán en tu balance. Podrás retirarlos a tu wallet en cualquier momento." 
+            }
+        ]
+      },
       holdersCount,
       treasuryDisplay,
       dbUserStatus,
       isWhitelisted,
       metadata: {
         estimatedApy: project.estimatedApy || "12.5%",
-        targetAmount: (project.targetAmount && project.targetAmount !== "NaN") ? project.targetAmount : "23000", // Fallback to $23k ($50 * 460)
-        tokenPriceUsd: project.tokenPriceUsd || "50",
+        targetAmount: (project.targetAmount && project.targetAmount !== "NaN" && Number(project.targetAmount) > 0) 
+            ? project.targetAmount 
+            : (activePhase?.cap?.toString() || "23000"),
+        tokenPriceUsd: project.tokenPriceUsd || activePhase?.tokenPrice?.toString() || "50",
+        deliveryDate: "Q4 2027",
+        totalUnits: activePhase?.stats?.tokensAllocated || 8,
+        soldUnits: activePhase?.stats?.tokensSold || (currentSupply % 8),
+        availableUnits: activePhase?.stats?.remainingTokens || (8 - (currentSupply % 8)),
+        progressPercentage: activePhase?.stats?.percent || ((currentSupply % 8) / 8 * 100),
+        phaseName: activePhase?.name || "Fase Principal"
       },
       metrics: {
         urgency: progression?.urgencyLevel || "low"
