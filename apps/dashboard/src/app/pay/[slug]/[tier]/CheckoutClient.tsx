@@ -53,6 +53,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [fastLanePhone, setFastLanePhone] = useState('');
     const [isSubmittingFastLane, setIsSubmittingFastLane] = useState(false);
     const [cameFromFastLane, setCameFromFastLane] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
     const { connect } = useConnectModal();
 
     // Deep Styling Configuration
@@ -788,6 +789,58 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     )}
                 </motion.div>
             </AnimatePresence>
+
+            {/* User Onboarding Guide (Smart Wallet & Persistence) */}
+            <div className="mt-8 pt-8 border-t border-white/5 pb-20 max-w-md mx-auto">
+                <button 
+                    onClick={() => setShowGuide(!showGuide)}
+                    className="flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em] text-zinc-500 hover:text-zinc-300 transition-colors mx-auto mb-4"
+                >
+                    {showGuide ? "Ocultar Guía de Usuario" : "¿Cómo funciona mi acceso? (Guía)"}
+                    <ChevronRight className={`w-3 h-3 transition-transform ${showGuide ? 'rotate-90' : ''}`} />
+                </button>
+                
+                <AnimatePresence>
+                    {showGuide && (
+                        <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden space-y-6"
+                        >
+                            <div className="bg-zinc-900/40 rounded-2xl p-5 border border-zinc-800/50">
+                                <h5 className="text-[11px] font-black uppercase text-white tracking-widest mb-3 flex items-center gap-2">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Identidad Digital (Smart Wallet)
+                                </h5>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed mb-4">
+                                    Al usar tu correo o redes sociales, creamos una <strong>Smart Wallet</strong> inmutable. 
+                                    Tu participación en <strong>{project.title}</strong> queda ligada a esta identidad de forma permanente.
+                                </p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">Persistencia</p>
+                                        <p className="text-[10px] text-zinc-500 leading-tight">Si cierras sesión, solo vuelve a conectar el mismo correo para recuperar tu acceso.</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">Seguridad</p>
+                                        <p className="text-[10px] text-zinc-500 leading-tight">No necesitas frases semilla. Tu correo es tu llave maestra mediante Passkeys.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-900/40 rounded-2xl p-5 border border-zinc-800/50">
+                                <h5 className="text-[11px] font-black uppercase text-white tracking-widest mb-3 flex items-center gap-2">
+                                    <Zap className="w-3.5 h-3.5 text-lime-400" /> Acceso al Portal
+                                </h5>
+                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                    Una vez completado el pago, podrás ver tus métricas, votar en el DAO y reclamar recompensas en el <strong>Portal S'Narai</strong>. 
+                                    El sistema detectará tu wallet automáticamente.
+                                </p>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
 
             {/* Context/Trust Narrative Wrapper (Bottom) */}
             <div className="fixed bottom-6 text-center left-0 right-0 z-0">
