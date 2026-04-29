@@ -436,7 +436,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                         <>
                             {/* Header Section */}
                             <div className="text-center mb-8 relative">
-                                <div className="absolute -top-4 -right-4 scale-75 origin-top-right">
+                                <div className="absolute -top-4 -right-4 scale-75 origin-top-right flex flex-col items-end gap-1">
                                     <ConnectButton
                                         client={client}
                                         chain={chain}
@@ -448,6 +448,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             createWallet("io.metamask"),
                                         ]}
                                     />
+                                    <span className="text-[8px] font-black uppercase text-zinc-600 tracking-[0.2em] mr-2">Sesión</span>
                                 </div>
                                 {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
                                     <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-6 border border-zinc-800 group" style={{ boxShadow: `0 10px 40px -10px ${brandColor}40` }}>
@@ -621,6 +622,33 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                         )}
                                                     </div>
                                                 )}
+
+                                                {/* User Guide Section */}
+                                                <div className="mt-8 pt-6 border-t border-zinc-800/50 space-y-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
+                                                            <Zap className="w-3 h-3" />
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Tu Acceso Inteligente</h5>
+                                                            <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
+                                                                Al usar métodos tradicionales (Google, Apple, Facebook), se crea automáticamente una <strong>Smart Wallet</strong> vinculada a tu cuenta. Tu conexión estará siempre asegurada mediante tu login habitual.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-1.5 bg-zinc-500/10 rounded-lg text-zinc-400">
+                                                            <Lock className="w-3 h-3" />
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Gestión de Sesión</h5>
+                                                            <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
+                                                                ¿Quieres usar un método diferente? Puedes desconectarte haciendo clic en el botón de billetera arriba a la derecha y seleccionar <strong>"Disconnect"</strong> para iniciar con otra cuenta.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
 
                                                 <button 
                                                     onClick={() => setStep('fast_lane')}
