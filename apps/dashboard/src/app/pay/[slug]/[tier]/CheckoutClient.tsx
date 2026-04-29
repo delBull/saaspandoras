@@ -33,13 +33,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         if (externalOrigin) {
             try {
                 const url = new URL(externalOrigin);
-                return `${url.origin}/portal`;
+                const walletParam = account?.address ? `&wallet=${account.address}` : '';
+                return `${url.origin}/portal?membership=active${walletParam}`;
             } catch (e) {
                 return null;
             }
         }
         return null;
-    }, [externalOrigin]);
+    }, [externalOrigin, account?.address]);
     const [step, setStep] = useState<'checkout' | 'processing' | 'success' | 'fast_lane'>('checkout');
     const [amount, setAmount] = useState("1");
     const [contractPrice, setContractPrice] = useState<bigint | undefined>(undefined);

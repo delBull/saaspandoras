@@ -272,12 +272,27 @@
         }
     }
 
+    /**
+     * Public API - Project State Fetcher
+     */
+    async function getProjectState(wallet) {
+        try {
+            const walletParam = wallet ? `&wallet=${wallet}` : '';
+            const response = await fetch(`${BASE_URL}/api/public/project/${projectId}/state?apiKey=${apiKey}${walletParam}`);
+            return await response.json();
+        } catch (e) {
+            console.error('[Pandoras] Failed to fetch project state:', e);
+            return { success: false, error: 'API unreachable' };
+        }
+    }
+
     // --- Public API ---
     window.PandorasGrowth = {
         registerLead,
         open: openModal,
         openCheckout,
         track,
+        getProjectState,
         emit: track, // Alias for protocol standardization
         login: openModal // Legacy compatibility for external projects
     };
