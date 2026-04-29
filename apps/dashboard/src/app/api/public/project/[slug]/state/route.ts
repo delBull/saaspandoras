@@ -171,12 +171,15 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // 4.6 Fetch User Rewards & Voting Power (Dynamic for any project)
     let userVotingPower = 0;
     let userRewards = "0.00 USDC";
-    if (wallet && wallet.startsWith("0x")) {
+    
+    if (wallet && wallet.startsWith("0x") && project.id) {
+        const normalizedWallet = wallet.toLowerCase();
+        
         // Voting Power from DAO Members
         const member = await db.query.daoMembers.findFirst({
             where: and(
                 eq(daoMembersSchema.projectId, project.id),
-                eq(daoMembersSchema.wallet, wallet)
+                eq(daoMembersSchema.wallet, normalizedWallet)
             )
         });
         if (member) {
@@ -185,7 +188,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
         // Rewards from User Balances (Platform-wide or specific if needed)
         const balance = await db.query.userBalances.findFirst({
-            where: eq(userBalancesSchema.walletAddress, wallet)
+            where: eq(userBalancesSchema.walletAddress, normalizedWallet)
         });
         if (balance) {
             const pbox = Number(balance.pboxBalance || 0);
