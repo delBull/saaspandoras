@@ -45,19 +45,43 @@ function AuthContent() {
 
     // Handle Authentication Completion
     useEffect(() => {
-        if (account?.address && authStatus === 'authenticated') {
-            console.log("🛡️ [Auth] Authenticated! Notifying parent...");
+        // High-certainty success states
+        const isSuccess = authStatus === 'authenticated' || authStatus === 'has_access' || authStatus === 'no_access';
+        
+        console.log(`🛡️ [Auth] Current Status: ${authStatus}, Wallet: ${account?.address?.slice(0,6)}... Success: ${isSuccess}`);
+
+        if (account?.address && isSuccess) {
+            console.log("🛡️ [Auth] Authenticated! Notifying parent with wallet:", account.address);
             if (window.opener) {
-                window.opener.postMessage('growth_os:auth_success', origin || '*');
-                setTimeout(() => window.close(), 1000);
+                const targetOrigin = origin || '*';
+                
+                // Send specific success message with wallet address
+                window.opener.postMessage({
+                    type: 'growth_os:auth_success',
+                    wallet: account.address
+                }, targetOrigin);
+                
+                // Also send legacy message for compatibility
+                window.opener.postMessage('growth_os:auth_success', targetOrigin);
+                
+                console.log("🛡️ [Auth] Messages sent. Closing in 1.5s...");
+                setTimeout(() => window.close(), 1500);
+            } else {
+                console.warn("🛡️ [Auth] No window.opener found. Cannot notify parent.");
             }
         }
     }, [account?.address, authStatus, origin]);
 
     // Trigger SIWE if connected but not authenticated
     useEffect(() => {
-        if (account?.address && authStatus === 'unauthenticated') {
-            runAuthFlow().catch(console.error);
+        // We trigger SIWE if we are unauthenticated OR if we've been stuck in idle/booting with an account connected
+        const shouldTrigger = authStatus === 'unauthenticated' || authStatus === 'idle';
+        
+        if (account?.address && shouldTrigger) {
+            console.log("🛡️ [Auth] Account connected but unauthenticated. Starting SIWE flow...");
+            runAuthFlow().catch(err => {
+                console.error("🛡️ [Auth] Auth flow failed:", err);
+            });
         }
     }, [account?.address, authStatus, runAuthFlow]);
 

@@ -510,19 +510,28 @@
 
     // --- External Login Bridge ---
     window.addEventListener('message', (event) => {
-        if (event.data === 'growth_os:auth_success') {
-            console.log('[Pandoras] External Auth Success detected via bridge.');
+        const isLegacyMsg = event.data === 'growth_os:auth_success';
+        const isNewMsg = event.data?.type === 'growth_os:auth_success';
+        
+        if (isLegacyMsg || isNewMsg) {
+            const wallet = event.data?.wallet || null;
+            console.log('[Pandoras] External Auth Success detected. Wallet:', wallet);
             
             state.joined = true;
             localStorage.setItem(`pd_joined_${projectId}`, 'true');
+            if (wallet) localStorage.setItem(`pd_wallet_${projectId}`, wallet);
             
             // Dispatch event for parent applications (like React) to react to
-            window.dispatchEvent(new CustomEvent('pd-session-changed', { detail: { authenticated: true } }));
+            window.dispatchEvent(new CustomEvent('pd-session-changed', { 
+                detail: { 
+                    authenticated: true,
+                    wallet: wallet,
+                    address: wallet // for compatibility
+                } 
+            }));
             
-            // For external projects that use standard widget setup
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
+            // Note: Removed forced reload to allow SPA state management.
+            // If the parent app doesn't react to pd-session-changed, it might need a reload.
         }
     });
 
