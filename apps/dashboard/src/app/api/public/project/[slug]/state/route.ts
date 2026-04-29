@@ -8,8 +8,25 @@ import { defineChain } from "thirdweb/chains";
 import { client as twClient } from "@/lib/thirdweb-client";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
+import { headers } from "next/headers";
 
 export const runtime = "nodejs";
+
+// CORS Headers Helper
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin": origin || "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, x-api-key, Authorization",
+  "Access-Control-Max-Age": "86400",
+});
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  return new NextResponse(null, {
+    status: 204,
+    headers: getCorsHeaders(origin),
+  });
+}
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -50,7 +67,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     });
 
     if (!project) {
-      return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
+      return NextResponse.json({ error: "Project not found" }, { 
+        status: 404,
+        headers: getCorsHeaders(req.headers.get("origin"))
+      });
     }
 
     const w2e = typeof project.w2eConfig === 'string' 
@@ -99,6 +119,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const progression = wallet ? ProgressionEngine.calculate(userArtifactCount, normalizedTiers) : null;
 
     // 5. Build Response with Caching
+    const origin = req.headers.get("origin");
     const response = NextResponse.json({
       title: project.title,
       slug: project.slug,
@@ -116,6 +137,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         urgency: progression?.urgencyLevel || "low"
       },
       timestamp: new Date().toISOString()
+    }, {
+      headers: getCorsHeaders(origin)
     });
 
     // Caching Strategy: s-maxage=15, stale-while-revalidate=30
@@ -130,6 +153,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
   } catch (error) {
     console.error("❌ Public State API Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to fetch project state", 
+      message: (error as Error).message 
+    }, { 
+      status: 500,
+      headers: getCorsHeaders(req.headers.get("origin"))
+    });
   }
 }
