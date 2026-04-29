@@ -4,6 +4,7 @@ import { marketingLeadEvents, marketingLeads, marketingIdentities, projects } fr
 import { eq, and, gt, sql, or, ilike } from 'drizzle-orm';
 import { createHash } from 'crypto';
 import { IdentityService } from '@/lib/marketing/identity-service';
+import { resolveProjectSlug } from '@/lib/project-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,8 +70,9 @@ export async function POST(req: NextRequest) {
             });
             resolutionMethod = 'origin_autodiscovery';
         } else if (isNaN(Number(requestedProjectIdentifier))) {
+            const canonicalSlug = resolveProjectSlug(requestedProjectIdentifier);
             project = await db.query.projects.findFirst({
-                where: (projects, { ilike }) => ilike(projects.slug, requestedProjectIdentifier)
+                where: (projects, { ilike }) => ilike(projects.slug, canonicalSlug)
             });
             resolutionMethod = 'slug_match';
         } else {
