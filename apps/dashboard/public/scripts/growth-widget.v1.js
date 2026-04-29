@@ -382,7 +382,7 @@
                 const left = (window.screen.width / 2) - (width / 2);
                 const top = (window.screen.height / 2) - (height / 2);
                 
-                const authUrl = `${BASE_URL}/?project=${projectId}&bypass=ritual&origin=${encodeURIComponent(window.location.origin)}`;
+                const authUrl = `${BASE_URL}/auth?project=${projectId}&origin=${encodeURIComponent(window.location.origin)}`;
                 
                 console.log('[Pandoras] Bypassing lead capture for external project:', projectId);
                 window.open(authUrl, 'PandorasAuth', `width=${width},height=${height},top=${top},left=${left},scrollbars=no,resizable=no`);
