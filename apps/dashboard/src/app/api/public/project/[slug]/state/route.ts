@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { projects as projectsSchema, daoMembers as daoMembersSchema } from "@/db/schema";
+import { projects as projectsSchema, daoMembers as daoMembersSchema, userBalances as userBalancesSchema } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
@@ -168,6 +168,38 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         }
     }
 
+    // 4.6 Fetch User Rewards & Voting Power (Dynamic for any project)
+    let userVotingPower = 0;
+    let userRewards = "0.00 USDC";
+    if (wallet && wallet.startsWith("0x")) {
+        // Voting Power from DAO Members
+        const member = await db.query.daoMembers.findFirst({
+            where: and(
+                eq(daoMembersSchema.projectId, project.id),
+                eq(daoMembersSchema.wallet, wallet)
+            )
+        });
+        if (member) {
+            userVotingPower = Number(member.votingPower || 0);
+        }
+
+        // Rewards from User Balances (Platform-wide or specific if needed)
+        const balance = await db.query.userBalances.findFirst({
+            where: eq(userBalancesSchema.walletAddress, wallet)
+        });
+        if (balance) {
+            const pbox = Number(balance.pboxBalance || 0);
+            const usdc = Number(balance.usdcBalance || 0);
+            
+            // Heuristic: If project is on Base (8453), prioritize USDC display
+            if (Number(chainId) === 8453) {
+                userRewards = `${usdc.toFixed(2)} USDC`;
+            } else {
+                userRewards = `${pbox.toFixed(2)} PBOX`;
+            }
+        }
+    }
+
     // 5. Calculate Progression via Engine
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
     const normalizedTiers: Tier[] = rawTiers.map(t => ({
@@ -189,10 +221,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       status: project.status,
       currentSupply,
       userBalance: userArtifactCount,
+      userVotingPower,
+      userRewards,
       holdersCount,
       treasuryDisplay,
-      progression,
-      userRewards: "0.00 USDC", // Placeholder for now, could be calculated
       dbUserStatus,
       isWhitelisted,
       metadata: {

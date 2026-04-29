@@ -95,6 +95,24 @@ window.PandorasGrowth.registerLead({
 
 ---
 
+## 5. Recuperación de Estado del Proyecto (Real-time Stats)
+Puedes obtener las métricas del proyecto y la posición del usuario directamente desde el SDK. Esto es útil para mostrar dashboards personalizados o barras de progreso dinámicas.
+
+```javascript
+// Obtener estado general del proyecto y del usuario conectado
+const getStats = async (walletAddress) => {
+    const state = await window.PandorasGrowth.getProjectState(walletAddress);
+    
+    console.log('Nombre:', state.title);
+    console.log('Posición Usuario:', state.userBalance); // Cantidad de NFTs/Certificados
+    console.log('Poder de Voto:', state.userVotingPower); // VP en el DAO
+    console.log('Recompensas:', state.userRewards); // PBOX o USDC acumulados
+    console.log('Progreso Fondeo:', state.currentSupply); // Unidades vendidas
+};
+```
+
+---
+
 > [!IMPORTANT]
 > **API KEY:** Sustituye `TU_API_KEY_AQUI` por la llave que encuentras en tu Developer Hub (Admin Dashboard).
 
