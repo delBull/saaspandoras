@@ -1,6 +1,6 @@
-# Guía de Integración Narai V5 ⚡ (V5.1 - Session & Payments)
+# Guía de Integración Narai V5 ⚡ (V5.2 - Session & Portals)
 
-Esta guía detalla cómo integrar el ecosistema de **Pandoras Growth OS** en la landing page de Narai, incluyendo la gestión de sesiones (Login/Logout) y las opciones de pago híbrido.
+Esta guía detalla cómo integrar el ecosistema de **Pandoras Growth OS** en la landing page de Narai, incluyendo la gestión de sesiones (Login/Logout), las opciones de pago híbrido y el nuevo patrón de Portal Integrado.
 
 ---
 
@@ -110,6 +110,20 @@ const getStats = async (walletAddress) => {
     console.log('Progreso Fondeo:', state.currentSupply); // Unidades vendidas
 };
 ```
+
+---
+
+## 6. Portal Integrado (Mejor Práctica de UX)
+Para evitar la fricción de "sesiones fantasmas", se recomienda implementar una **Gated Login View** en el portal.
+
+**Flujo Recomendado:**
+1. Al abrir el modal del portal, verificar si hay una sesión activa (`pd-session-changed`).
+2. Si **NO** hay sesión, mostrar una pantalla de bienvenida con un botón de **"Desbloquear Portal"**.
+3. El botón debe ejecutar `window.PandorasGrowth.login()`.
+4. Una vez logueado, el SDK emitirá el evento y el portal deberá renderizar las estadísticas reales.
+
+> [!TIP]
+> Esto asegura que el usuario entienda por qué no ve sus datos inicialmente y proporciona una puerta de entrada segura y unificada con el checkout.
 
 ---
 
