@@ -4,13 +4,15 @@ import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import CheckoutClient from './CheckoutClient';
 import { matchPhase, getRawPhases, type Phase } from '@/lib/phase-utils';
+import { resolveProjectSlug } from '@/lib/project-utils';
 
 export default async function CheckoutHubPage({
     params
 }: {
     params: { slug: string, tier: string }
 }) {
-    const { slug, tier } = params;
+    const { slug: rawSlug, tier } = params;
+    const slug = resolveProjectSlug(rawSlug);
 
     // Fetch the project and its configurations
     const project = await db.query.projects.findFirst({

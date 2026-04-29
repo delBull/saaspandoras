@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { projects as projectsSchema } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { projects as projectsSchema, daoMembers as daoMembersSchema } from "@/db/schema";
+import { resolveProjectSlug } from "@/lib/project-utils";
+import { eq, sql } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
@@ -39,7 +40,8 @@ interface RouteParams {
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    const { slug } = await params;
+    const { slug: rawSlug } = await params;
+    const slug = resolveProjectSlug(rawSlug);
     const { searchParams } = new URL(req.url);
     const apiKey = req.headers.get("x-api-key") || searchParams.get("apiKey");
     const wallet = searchParams.get("wallet");
@@ -62,7 +64,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         id: true, slug: true, status: true, chainId: true, 
         licenseContractAddress: true, contractAddress: true, w2eConfig: true,
         title: true, tagline: true, targetAmount: true, tokenPriceUsd: true,
-        estimatedApy: true,
+        estimatedApy: true, treasuryAddress: true,
       }
     });
 
@@ -106,7 +108,50 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // 4. Calculate Progression via Engine
+    // 4. Fetch Treasury & DAO Metrics (New)
+    let treasuryDisplay = "0.00";
+    let holdersCount = 0;
+
+    try {
+        // Fetch holder count from DB
+        const holders = await db.select({ count: sql<number>`count(*)` })
+            .from(daoMembersSchema)
+            .where(eq(daoMembersSchema.projectId, project.id));
+        holdersCount = Number(holders[0]?.count || 0);
+
+        // Fetch Treasury Balance
+        if (project.treasuryAddress?.startsWith('0x')) {
+            const chain = defineChain(Number(chainId));
+            
+            if (Number(chainId) === 8453) {
+                const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+                const usdcContract = getContract({
+                    client: twClient, chain, address: USDC_BASE_ADDRESS
+                });
+                const usdcBalance = await readContract({
+                    contract: usdcContract,
+                    method: "function balanceOf(address) view returns (uint256)",
+                    params: [project.treasuryAddress]
+                }).catch(() => 0n);
+                
+                const treasuryUSD = Number(usdcBalance) / 1e6;
+                treasuryDisplay = treasuryUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+            } else {
+                const { getWalletBalance } = await import("thirdweb/wallets");
+                const balance = await getWalletBalance({
+                    client: twClient, chain, address: project.treasuryAddress
+                });
+                const treasuryVal = Number(balance.displayValue);
+                const isSepolia = Number(chainId) === 11155111;
+                const treasurySymbol = isSepolia ? "SepoliaETH" : (balance.symbol || "ETH");
+                treasuryDisplay = `${treasuryVal.toFixed(4)} ${treasurySymbol}`;
+            }
+        }
+    } catch (metricError) {
+        console.warn(`[API] Error fetching metrics for ${slug}:`, metricError);
+    }
+
+    // 5. Calculate Progression via Engine
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
     const normalizedTiers: Tier[] = rawTiers.map(t => ({
       id: t.id,
@@ -118,7 +163,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const progression = wallet ? ProgressionEngine.calculate(userArtifactCount, normalizedTiers) : null;
 
-    // 5. Build Response with Caching
+    // 6. Build Response with Caching
     const origin = req.headers.get("origin");
     const response = NextResponse.json({
       title: project.title,
@@ -127,9 +172,11 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       status: project.status,
       currentSupply,
       userBalance: userArtifactCount,
+      holdersCount,
+      treasuryDisplay,
       progression,
       metadata: {
-        estimatedApy: (project as any).estimatedApy,
+        estimatedApy: (project as any).estimatedApy || "12.5%", // Fallback to standard
         targetAmount: project.targetAmount,
         tokenPriceUsd: (project as any).tokenPriceUsd,
       },
