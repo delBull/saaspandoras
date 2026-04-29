@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   // 0. Global OPTIONS Handling (CORS Preflight)
   if (request.method === "OPTIONS") {
     const origin = request.headers.get("origin") || "*";
-    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing');
+    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public');
     return new NextResponse(null, {
       status: 204,
       headers: {
@@ -128,7 +128,7 @@ export function middleware(request: NextRequest) {
     const requestOrigin = request.headers.get("origin");
     
     // Public marketing API: open to any origin — protected by API keys at app level
-    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing');
+    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public');
     
     if (isPublicMarketingApi) {
       // Allow all external origins (Narai, other protocols, widgets)
