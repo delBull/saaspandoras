@@ -44,6 +44,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       columns: {
         id: true, slug: true, status: true, chainId: true, 
         licenseContractAddress: true, contractAddress: true, w2eConfig: true,
+        title: true, tagline: true, targetAmount: true, tokenPriceUsd: true,
+        estimatedApy: true,
       }
     });
 
@@ -98,10 +100,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     // 5. Build Response with Caching
     const response = NextResponse.json({
+      title: project.title,
       slug: project.slug,
+      tagline: project.tagline,
       status: project.status,
       currentSupply,
+      userBalance: userArtifactCount,
       progression,
+      metadata: {
+        estimatedApy: (project as any).estimatedApy,
+        targetAmount: project.targetAmount,
+        tokenPriceUsd: (project as any).tokenPriceUsd,
+      },
       metrics: {
         urgency: progression?.urgencyLevel || "low"
       },

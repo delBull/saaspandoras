@@ -2651,10 +2651,30 @@ window.PandorasGrowth.identify({
                 </div>
               </section>
 
-              {/* Step 4: Webhooks & Notifications */}
+              {/* Step 4: Data API & On-Chain State */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-amber-500 text-black font-black text-[10px]">PASO 04</Badge>
+                  <h3 className="text-lg font-black uppercase italic">Consumo de Datos On-Chain</h3>
+                </div>
+                <p className="text-zinc-400 text-sm font-medium">Utiliza el SDK para obtener el estado real del contrato, balances del usuario y métricas de fondeo del ecosistema.</p>
+                
+                <div className="bg-zinc-900 rounded-2xl p-6 font-mono text-[11px] border border-zinc-800">
+                  <pre className="text-zinc-300 leading-relaxed">
+{`// Obtener métricas reales del proyecto y balance del usuario
+const state = await window.PandorasGrowth.getProjectState(userWallet);
+
+console.log("Suministro Actual:", state.currentSupply);
+console.log("Balance Usuario:", state.userBalance);
+console.log("Poder de Voto:", state.progression?.votingPower);`}
+                  </pre>
+                </div>
+              </section>
+
+              {/* Step 5: Webhooks & Notifications */}
               <section className="space-y-4 pb-8">
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-purple-500 text-black font-black text-[10px]">PASO 04</Badge>
+                  <Badge className="bg-purple-500 text-black font-black text-[10px]">PASO 05</Badge>
                   <h3 className="text-lg font-black uppercase italic">Webhooks & Discord</h3>
                 </div>
                 <p className="text-zinc-400 text-sm font-medium">Recibe alertas en tiempo real en tus canales de Discord configurando el webhook en el panel anterior.</p>
