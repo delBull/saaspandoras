@@ -2665,8 +2665,10 @@ window.PandorasGrowth.identify({
 const state = await window.PandorasGrowth.getProjectState(userWallet);
 
 console.log("Suministro Actual:", state.currentSupply);
-console.log("Balance Usuario:", state.userBalance);
-console.log("Poder de Voto:", state.progression?.votingPower);`}
+console.log("Poder de Voto:", state.userVotingPower);
+console.log("¿Puede Reclamar?:", state.canClaim);
+console.log("Actividades DAO:", state.activities);
+console.log("Próximos Pasos:", state.onboarding.steps);`}
                   </pre>
                 </div>
               </section>

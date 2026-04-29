@@ -27,7 +27,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const account = useActiveAccount();
     const searchParams = useSearchParams();
     const externalOrigin = searchParams.get('origin');
-    
+
     // Determine the base portal URL. If origin is present, use it.
     const portalUrl = useMemo(() => {
         if (externalOrigin) {
@@ -58,7 +58,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
     // Deep Styling Configuration
     const brandColor = project.themeColor || '#10b981'; // Emerald 500 default
-    
+
     // Resolve clean tier name for display (handles URI encoding like %C3%A9)
     // ✨ FIX: Prioritize the actual phase name from the DB over the URL parameter
     const displayTierName = useMemo(() => {
@@ -128,16 +128,16 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const tokenConfig = CHAIN_TOKENS[safeChainId] || CHAIN_TOKENS[11155111]!;
     const decimals = BigInt(Math.pow(10, tokenConfig.decimals));
     const safeAmount = Math.max(1, Math.floor(Number(amount) || 1));
-    
+
     // Normalize Phase using unified engine (S'Narai & V2 handling)
     const normalizedPhases = getRawPhases(project);
-    const matchedPhase = rawPhase ? normalizedPhases.find((p: any) => 
-        String(p.id || "") === String(rawPhase?.id || "") || 
+    const matchedPhase = rawPhase ? normalizedPhases.find((p: any) =>
+        String(p.id || "") === String(rawPhase?.id || "") ||
         String(p.name || "").toLowerCase().trim() === String(rawPhase?.name || "").toLowerCase().trim()
     ) : undefined;
 
-    let effectivePriceInWei = (contractPrice && contractPrice > 0n) 
-        ? contractPrice 
+    let effectivePriceInWei = (contractPrice && contractPrice > 0n)
+        ? contractPrice
         : BigInt(Math.round((matchedPhase?.tokenPrice || rawPhase?.tokenPrice || 0) * Number(decimals)));
 
     const totalCostWei = BigInt(safeAmount) * effectivePriceInWei;
@@ -155,7 +155,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             let acc = 0;
             for (const p of phases) {
                 // Match by ID or Name (resilient)
-                if (String(p.id || "") === String(rawPhase.id || "") || 
+                if (String(p.id || "") === String(rawPhase.id || "") ||
                     String(p.name || "").toLowerCase().trim() === String(rawPhase.name || "").toLowerCase().trim()) {
                     break;
                 }
@@ -179,7 +179,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         if (!targetContract) return;
 
         const { readContract } = require("thirdweb");
-        
+
         async function syncStatus() {
             try {
                 const supply = await readContract({
@@ -187,13 +187,13 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     method: "function totalSupply() view returns (uint256)",
                     params: []
                 });
-                
-                // Normalization Engine: 
+
+                // Normalization Engine:
                 // If the supply is astronomical, it's likely an ERC-20 with 18 decimals.
                 // Otherwise, treat as an ERC-721/Artifact count.
                 const rawSupply = BigInt(supply);
                 const normalizedSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
-                
+
                 setTotalSupply(normalizedSupply);
             } catch (e) {
                 console.warn("[CheckoutHub] TotalSupply sync failed:", e);
@@ -223,19 +223,19 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             fetch('/api/v1/external-commerce/ensure-pandora-key', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     wallet: account.address,
-                    projectId: project.id 
+                    projectId: project.id
                 })
             })
             .then(res => res.json())
             .then(data => {
                 if (isMounted) {
                   console.log("🛡️ [CheckoutHub] Handshake Result:", data);
-                  // 🧬 Resilient Access: In staging/testnet, we allow the user to proceed 
+                  // 🧬 Resilient Access: In staging/testnet, we allow the user to proceed
                   // if the handshake call was successful, even if the background mint is still pending.
                   // The contract itself will act as the final guard.
-                  setHasEnsuredAccess(true); 
+                  setHasEnsuredAccess(true);
                   setIsCheckingAccess(false);
                 }
             })
@@ -304,14 +304,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             const res = await fetch(`/api/v1/external-commerce/${project.id}/fast-lane`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    email: fastLaneEmail, 
+                body: JSON.stringify({
+                    email: fastLaneEmail,
                     name: fastLaneName,
                     phone: fastLanePhone,
-                    tier: displayTierName, 
-                    amount: safeAmount, 
-                    source: 'checkout_hub', 
-                    wallet_connected: !!account 
+                    tier: displayTierName,
+                    amount: safeAmount,
+                    source: 'checkout_hub',
+                    wallet_connected: !!account
                 })
             });
             const data = await res.json();
@@ -342,26 +342,26 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 <div className="fixed inset-0 pointer-events-none z-0" style={{
                     background: `radial-gradient(ellipse at top, ${brandColor}30 0%, transparent 70%)`
                 }}></div>
-                
-                <motion.div 
+
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="z-10 w-full max-w-[380px] flex flex-col items-center space-y-8 p-10 bg-zinc-950/50 backdrop-blur-3xl border border-zinc-800/50 rounded-[2.5rem] shadow-2xl"
                 >
                     <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center bg-zinc-900 group">
                         {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
-                            <img 
-                                src={sanitizeUrl(project.logoUrl || project.imageUrl)!} 
-                                alt={project.title} 
-                                width={80} 
-                                height={80} 
-                                className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                            <img
+                                src={sanitizeUrl(project.logoUrl || project.imageUrl)!}
+                                alt={project.title}
+                                width={80}
+                                height={80}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
                             />
                         ) : (
                             <span className="text-2xl font-black text-white">{project.title.substring(0, 2).toUpperCase()}</span>
                         )}
                     </div>
-                    
+
                     <div className="text-center space-y-3">
                         <h2 className="text-2xl font-black text-white tracking-tight leading-tight">{project.title}</h2>
                         <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.2em]">Identificación Requerida</p>
@@ -388,7 +388,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             })}
                         />
                     </div>
-                    
+
                     <p className="text-[10px] text-zinc-600 font-medium text-center leading-relaxed">
                         Conecta tu billetera o usa tu correo para validar tu acceso al protocolo de forma segura.
                     </p>
@@ -407,7 +407,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
                 {/* Project Cover Photo as Background */}
                 {sanitizeUrl(project.coverPhotoUrl) && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, scale: 1.1 }}
                         animate={{ opacity: 0.3, scale: 1 }}
                         transition={{ duration: 1.5 }}
@@ -415,7 +415,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                         style={{ backgroundImage: `url(${sanitizeUrl(project.coverPhotoUrl)})` }}
                     />
                 )}
-                
+
                 {/* Deep Overlay Gradients */}
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
                 <div className="absolute inset-0" style={{
@@ -424,8 +424,32 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40"></div>
             </div>
 
+            {/* Global Session & Navigation Cluster */}
+            <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
+                <div className="scale-90 origin-top-right">
+                    <ConnectButton
+                        client={client}
+                        chain={chain}
+                        wallets={wallets}
+                        theme={darkTheme({
+                            colors: {
+                                primaryButtonBg: brandColor,
+                                primaryButtonText: "#000",
+                            }
+                        })}
+                    />
+                </div>
+                <button
+                    onClick={() => setShowGuide(!showGuide)}
+                    className="flex items-center gap-2 text-[8px] uppercase font-black tracking-[0.2em] text-zinc-600 hover:text-zinc-300 transition-colors mr-2"
+                >
+                    {showGuide ? "Ocultar Guía" : "Guía de Usuario"}
+                    <ChevronRight className={`w-2 h-2 transition-transform ${showGuide ? 'rotate-90' : ''}`} />
+                </button>
+            </div>
+
             <AnimatePresence mode="wait">
-                <motion.div 
+                <motion.div
                     key={step}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -437,28 +461,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                         <>
                             {/* Header Section */}
                             <div className="text-center mb-8 relative">
-                                <div className="absolute -top-4 -right-4 scale-75 origin-top-right flex flex-col items-end gap-1">
-                                    <ConnectButton
-                                        client={client}
-                                        chain={chain}
-                                        wallets={[
-                                            inAppWallet({
-                                                auth: { options: ["email", "google", "apple", "facebook", "passkey"] },
-                                                executionMode: { mode: "EIP7702", sponsorGas: true },
-                                            }),
-                                            createWallet("io.metamask"),
-                                        ]}
-                                    />
-                                    <span className="text-[8px] font-black uppercase text-zinc-600 tracking-[0.2em] mr-2">Sesión</span>
-                                </div>
                                 {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
                                     <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-6 border border-zinc-800 group" style={{ boxShadow: `0 10px 40px -10px ${brandColor}40` }}>
-                                        <img 
-                                            src={sanitizeUrl(project.logoUrl || project.imageUrl)!} 
-                                            alt={project.title} 
-                                            width={64} 
-                                            height={64} 
-                                            className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                                        <img
+                                            src={sanitizeUrl(project.logoUrl || project.imageUrl)!}
+                                            alt={project.title}
+                                            width={64}
+                                            height={64}
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
                                         />
                                     </div>
                                 ) : (
@@ -466,12 +476,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                         <span className="text-xl font-black text-white">{project.title.substring(0, 2).toUpperCase()}</span>
                                     </div>
                                 )}
-                                
+
                                 <h1 className="text-2xl font-black tracking-tight text-white mb-2 leading-tight">
                                     {isPhaseActive ? `Acceso Prioritario: ${project.title}` : `Tier ${displayTierName} No Disponible`}
                                 </h1>
                                 <p className="text-zinc-400 font-medium text-xs">
-                                    {isPhaseActive 
+                                    {isPhaseActive
                                         ? `Asegura tu participación en una de las fases exclusivas del protocolo.`
                                         : `Esta fase del protocolo ya no se encuentra abierta para contribución directa.`
                                     }
@@ -491,8 +501,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             <p className="text-[11px] text-zinc-400 mb-6 font-medium leading-relaxed">
                                                 La fase <strong>{displayTierName.toUpperCase()}</strong> se encuentra cerrada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima ventana.
                                             </p>
-                                            
-                                            <button 
+
+                                            <button
                                                 onClick={() => setStep('fast_lane')}
                                                 className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-white/5 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
                                             >
@@ -500,7 +510,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             </button>
                                         </div>
                                     ) : (
-                                        /* This is where Fast Lane Form will render via the shared block below, 
+                                        /* This is where Fast Lane Form will render via the shared block below,
                                            facilitated by step condition. */
                                         null
                                     )}
@@ -519,15 +529,6 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                     <h4 className="text-[11px] font-black uppercase text-zinc-300 tracking-widest mt-0.5">Participación Asegurada</h4>
                                                     <p className="text-[11px] text-zinc-500 leading-tight">Registro inmutable en la red {chain.name || 'Blockchain'}.</p>
                                                 </div>
-                                            </div>
-                                            <div className="p-3 bg-black/40 rounded-xl border border-zinc-900">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Activo Subyacente</span>
-                                                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-md uppercase">{displayTierName}</span>
-                                                </div>
-                                                <p className="text-[11px] text-zinc-400 font-medium font-mono leading-relaxed truncate">
-                                                    {targetAddress}
-                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -551,20 +552,20 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                 <div className="text-right flex flex-col items-end">
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 block mb-1">Unidades</span>
                                                     <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg p-1">
-                                                        <button 
+                                                        <button
                                                             onClick={() => setAmount(prev => String(Math.max(1, Number(prev) - 1)))}
                                                             className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
                                                         >
                                                             -
                                                         </button>
-                                                        <input 
-                                                            type="number" 
+                                                        <input
+                                                            type="number"
                                                             min="1"
                                                             value={amount}
                                                             onChange={(e) => setAmount(e.target.value)}
                                                             className="w-10 bg-transparent text-white font-bold text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         />
-                                                        <button 
+                                                        <button
                                                             onClick={() => setAmount(prev => String(Number(prev) + 1))}
                                                             className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
                                                         >
@@ -597,25 +598,25 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                 console.error("Transacción Fallida:", error);
                                                                 let errorMsg = "Error en el protocolo.";
                                                                 const msg = error.message?.toLowerCase() || "";
-                                                                
+
                                                                 if (msg.includes('insufficient')) errorMsg = "Fondos insuficientes.";
                                                                 else if (msg.includes('user rejected')) errorMsg = "Transacción cancelada.";
                                                                 else if (msg.includes('already owned') || msg.includes('already minted')) errorMsg = "Ya posees esta participación.";
                                                                 else if (msg.includes('invalid key') || msg.includes('clientid')) errorMsg = "Error de configuración del protocolo.";
-                                                                
+
                                                                 toast.error(errorMsg);
                                                             }}
                                                             disabled={isPriceLoading || !txConfig.address}
                                                             className={`!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none ${(isPriceLoading || !txConfig.address) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
-                                                            style={{ 
-                                                                backgroundColor: !hasEnsuredAccess ? '#3f3f46' : brandColor, 
-                                                                color: !hasEnsuredAccess ? '#a1a1aa' : '#000', 
-                                                                transition: 'all 0.2s' 
+                                                            style={{
+                                                                backgroundColor: !hasEnsuredAccess ? '#3f3f46' : brandColor,
+                                                                color: !hasEnsuredAccess ? '#a1a1aa' : '#000',
+                                                                transition: 'all 0.2s'
                                                             }}
                                                         >
                                                             {isPriceLoading ? "Calculando..." : (hasEnsuredAccess ? "Confirmar Participación" : "Preparando Acceso...")}
                                                         </TransactionButton>
-                                                        
+
                                                         {!hasEnsuredAccess && !isCheckingAccess && (
                                                             <p className="text-[10px] text-zinc-500 text-center font-bold px-4">
                                                                 Estamos sincronizando tu llave de acceso para esta red. Espera un momento.
@@ -651,7 +652,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                     </div>
                                                 </div>
 
-                                                <button 
+                                                <button
                                                     onClick={() => setStep('fast_lane')}
                                                     className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
                                                 >
@@ -667,36 +668,36 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             {step === 'fast_lane' && (
                                 <div className="space-y-4 animate-in fade-in zoom-in-95">
                                     <div className="space-y-3">
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             placeholder="Nombre Completo"
                                             value={fastLaneName}
                                             onChange={(e) => setFastLaneName(e.target.value)}
                                             className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
                                         />
-                                        <input 
-                                            type="email" 
+                                        <input
+                                            type="email"
                                             placeholder="Correo electrónico"
                                             value={fastLaneEmail}
                                             onChange={(e) => setFastLaneEmail(e.target.value)}
                                             className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
                                         />
-                                        <input 
-                                            type="tel" 
+                                        <input
+                                            type="tel"
                                             placeholder="WhatsApp (Opcional)"
                                             value={fastLanePhone}
                                             onChange={(e) => setFastLanePhone(e.target.value)}
                                             className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
                                         />
                                     </div>
-                                    <button 
+                                    <button
                                         disabled={isSubmittingFastLane}
                                         onClick={submitFastLane}
                                         className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                                     >
                                         {isSubmittingFastLane ? <Loader2 className="w-4 h-4 animate-spin" /> : "Asegurar Reserva"}
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setStep('checkout')}
                                         className="w-full py-3 text-[10px] font-black uppercase text-zinc-500 hover:text-zinc-300 transition-colors"
                                     >
@@ -722,7 +723,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-6">
                                 <CheckCircle className="w-8 h-8 text-emerald-400" />
                             </div>
-                            
+
                             {cameFromFastLane ? (
                                 <>
                                     <h2 className="text-2xl font-black text-white tracking-tight mb-2">Validación en Progreso</h2>
@@ -730,12 +731,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                         Tu acceso está en proceso de validación. Un asesor del protocolo puede ayudarte a completar tu entrada prioritaria.
                                     </p>
                                     <p className="text-zinc-300 font-bold text-sm mb-6">¿Qué prefieres hacer ahora?</p>
-                                    
+
                                     <div className="space-y-3">
-                                        <a 
+                                        <a
                                             href={`https://wa.me/${project.whatsappPhone || '523222741987'}?text=${encodeURIComponent(`Hola, acabo de reservar mi lugar en ${project.title} (${displayTierName}) y quiero coordinar el pago.`)}`}
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="w-full h-14 bg-[#25D366] text-white font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
                                         >
                                             <Zap className="w-4 h-4 fill-current" /> Hablar por WhatsApp
@@ -751,7 +752,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                     <p className="text-zinc-400 font-medium text-sm mb-4">
                                         Tu posición ha sido registrada correctamente dentro del proyecto.
                                     </p>
-                                    
+
                                     <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800 mb-4">
                                         <h4 className="text-[10px] font-black uppercase text-zinc-300 tracking-widest mb-3">A partir de ahora puedes:</h4>
                                         <ul className="space-y-2">
@@ -760,7 +761,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Prepararte para las siguientes fases</li>
                                         </ul>
                                     </div>
-                                    
+
                                     <p className="text-[11px] text-emerald-400 font-bold mb-6 text-center">Bienvenido a una posición temprana dentro del protocolo.</p>
 
                                     <div className="space-y-3">
@@ -791,18 +792,11 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             </AnimatePresence>
 
             {/* User Onboarding Guide (Smart Wallet & Persistence) */}
-            <div className="mt-8 pt-8 border-t border-white/5 pb-20 max-w-md mx-auto">
-                <button 
-                    onClick={() => setShowGuide(!showGuide)}
-                    className="flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em] text-zinc-500 hover:text-zinc-300 transition-colors mx-auto mb-4"
-                >
-                    {showGuide ? "Ocultar Guía de Usuario" : "¿Cómo funciona mi acceso? (Guía)"}
-                    <ChevronRight className={`w-3 h-3 transition-transform ${showGuide ? 'rotate-90' : ''}`} />
-                </button>
-                
+            <div className="mt-4 pb-20 max-w-md mx-auto relative z-10">
+
                 <AnimatePresence>
                     {showGuide && (
-                        <motion.div 
+                        <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
@@ -813,7 +807,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Identidad Digital (Smart Wallet)
                                 </h5>
                                 <p className="text-[11px] text-zinc-400 leading-relaxed mb-4">
-                                    Al usar tu correo o redes sociales, creamos una <strong>Smart Wallet</strong> inmutable. 
+                                    Al usar tu correo o redes sociales, creamos una <strong>Smart Wallet</strong> inmutable.
                                     Tu participación en <strong>{project.title}</strong> queda ligada a esta identidad de forma permanente.
                                 </p>
                                 <div className="grid grid-cols-2 gap-4">
@@ -833,7 +827,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                     <Zap className="w-3.5 h-3.5 text-lime-400" /> Acceso al Portal
                                 </h5>
                                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                                    Una vez completado el pago, podrás ver tus métricas, votar en el DAO y reclamar recompensas en el <strong>Portal S'Narai</strong>. 
+                                    Una vez completado el pago, podrás ver tus métricas, votar en el DAO y reclamar recompensas en el <strong>Portal S&apos;Narai</strong>.
                                     El sistema detectará tu wallet automáticamente.
                                 </p>
                             </div>
@@ -845,7 +839,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             {/* Context/Trust Narrative Wrapper (Bottom) */}
             <div className="fixed bottom-6 text-center left-0 right-0 z-0">
                 <div className="flex flex-col items-center justify-center gap-1.5 px-4">
-                    <p className="text-[9px] text-zinc-600 font-medium leading-tight">Procesado de forma segura mediante infraestructura blockchain verificable.<br/>Pandoras actúa como capa de validación y registro de accesos.</p>
+                    <p className="text-[9px] text-zinc-600 font-medium leading-tight">Procesado de forma segura mediante infraestructura blockchain verificable.<br />Pandoras actúa como capa de validación y registro de accesos.</p>
                 </div>
             </div>
         </div>

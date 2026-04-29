@@ -33,15 +33,16 @@ export async function POST(
     const { IdentityService } = await import("@/lib/marketing/identity-service");
     const identityHash = IdentityService.getIdentityHash(email.toLowerCase(), null, null);
     
-    const [newLead] = await db.insert(marketingLeads).values({
+    // Upsert the lead to handle duplicates gracefully
+    const insertValues = {
         projectId: projectIdNum,
         email: email.toLowerCase(),
         name: name || null,
         phoneNumber: phone || null,
         walletAddress: null,
         identityHash: identityHash as string,
-        status: 'active',
-        intent: 'invest',
+        status: 'active' as const,
+        intent: 'invest' as const,
         score: isWhale ? 98 : 75,
         origin: 'Fastlane Checkout Hub',
         metadata: {
@@ -54,7 +55,20 @@ export async function POST(
            intentTimestamp: new Date().toISOString()
         },
         consent: true
-    }).returning({ id: marketingLeads.id });
+    };
+
+    const [newLead] = await db.insert(marketingLeads)
+        .values(insertValues)
+        .onConflictDoUpdate({
+            target: [marketingLeads.projectId, marketingLeads.identityHash],
+            set: {
+                name: name || undefined,
+                phoneNumber: phone || undefined,
+                metadata: insertValues.metadata,
+                updatedAt: new Date()
+            }
+        })
+        .returning({ id: marketingLeads.id });
 
     // Trigger Growth OS (Institutional Engine)
     if (newLead) {
