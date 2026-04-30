@@ -149,7 +149,7 @@ export function ActivitiesList({ projectId, compact = false, limit }: { projectI
                             className="px-4 py-2 bg-lime-500 hover:bg-lime-400 disabled:opacity-50 disabled:bg-zinc-700 text-black text-sm font-bold rounded-lg transition-colors shadow-lg shadow-lime-500/10 flex items-center gap-2"
                         >
                             <CheckCircle className="w-4 h-4" />
-                            {isSubmitting ? "Verificando..." : (activity.category === 'labor' ? "Verificar Staking" : "Reclamar Recompensa")}
+                            {isSubmitting ? "Verificando..." : (activity.category === 'labor' ? "Validar Participación" : "Reclamar Recompensa")}
                         </button>
                     ) : (
                         <Dialog open={isOpen && selectedActivity?.id === activity.id} onOpenChange={(open) => {

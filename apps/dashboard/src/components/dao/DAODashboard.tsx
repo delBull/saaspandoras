@@ -217,9 +217,9 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <TrendingUpIcon className="w-5 h-5 text-lime-400" />
-                        Utilidad y Labores
+                        Participación y Recompensas
                     </h3>
-                    <p className="text-xs text-zinc-500 mt-1">Realiza staking de tus artefactos o cumple misiones para ganar recompensas.</p>
+                    <p className="text-xs text-zinc-500 mt-1">Activa tus activos o cumple misiones para obtener beneficios del ecosistema.</p>
                 </div>
             </div>
 
@@ -346,7 +346,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     <p className="text-zinc-400 text-sm leading-relaxed">
                         El protocolo incentiva la participación activa. Puedes recibir recompensas por:
                         <br />• Participar en votaciones críticas.
-                        <br />• Proveer liquidez o hacer staking de tus activos.
+                        <br />• Participar activamente o activar tus activos.
                         <br />Estas recompensas provienen de ingresos del protocolo o distribución programada.
                     </p>
                 </div>

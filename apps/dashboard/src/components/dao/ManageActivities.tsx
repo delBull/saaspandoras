@@ -85,7 +85,7 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
             setMaxParticipants("");
         } else if (type === 'labor') {
             setTitle("Compromiso Semanal");
-            setDescription("Mantén tu staking activo durante 7 días consecutivos.");
+            setDescription("Mantén tu participación activa durante 7 días consecutivos.");
             setRewardAmount("50");
             setRewardToken("PBOX");
             setCategory("labor");
