@@ -15,6 +15,13 @@
       "when": 1775454678469,
       "tag": "0001_mean_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777585993325,
+      "tag": "0002_dashing_leader",
+      "breakpoints": true
     }
   ]
 }

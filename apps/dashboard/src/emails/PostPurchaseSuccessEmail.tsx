@@ -27,6 +27,10 @@ interface PostPurchaseSuccessEmailProps {
   ctaText?: string;
   ctaUrl?: string;
   shareUrl?: string;
+  // Legal Integrity Proofs (V3)
+  agreementId?: string;
+  agreementHash?: string;
+  legalPortalUrl?: string;
 }
 
 export const PostPurchaseSuccessEmail = ({
@@ -39,6 +43,9 @@ export const PostPurchaseSuccessEmail = ({
   ctaText = "ACCEDER A MI PANEL",
   ctaUrl = "https://dash.pandoras.finance/projects/snarai/dao",
   shareUrl = "https://twitter.com/intent/tweet?text=Acabo%20de%20asegurar%20mi%20participación%20en%20S'Narai.%20El%20futuro%20es%20vibrante.",
+  agreementId,
+  agreementHash,
+  legalPortalUrl,
 }: PostPurchaseSuccessEmailProps) => {
   return (
     <Html>
@@ -139,6 +146,39 @@ export const PostPurchaseSuccessEmail = ({
                     </Column>
                  </Row>
               </Section>
+
+              {/* Legal Integrity Layer (V3) */}
+              {agreementHash && (
+                <Section className="mt-8 p-6 bg-[#050505] border border-emerald-500/10 rounded-3xl">
+                  <Row>
+                    <Column className="w-[40px]">
+                       <Img src="https://dash.pandoras.finance/shield-check.png" width="32" height="32" />
+                    </Column>
+                    <Column>
+                      <Text className="text-[10px] font-black text-emerald-400 uppercase tracking-widest m-0">Certificación de Integridad</Text>
+                      <Text className="text-[9px] text-zinc-500 m-0 uppercase font-bold">Documento Verificado (NOM-151 COMPLIANT)</Text>
+                    </Column>
+                  </Row>
+                  <Hr className="border-zinc-800 my-4" />
+                  <Row>
+                    <Column className="w-1/2">
+                       <Text className="text-[9px] text-zinc-500 uppercase font-bold m-0 mb-1">ID DE ACUERDO</Text>
+                       <Text className="text-[11px] font-mono text-white m-0">{agreementId}</Text>
+                    </Column>
+                    <Column className="w-1/2">
+                       <Text className="text-[9px] text-zinc-500 uppercase font-bold m-0 mb-1">HASH SHA-256</Text>
+                       <Text className="text-[10px] font-mono text-zinc-500 m-0">{agreementHash.substring(0, 16)}...</Text>
+                    </Column>
+                  </Row>
+                  {legalPortalUrl && (
+                    <Section className="mt-4">
+                      <Link href={legalPortalUrl} className="text-emerald-400 text-[10px] font-black uppercase tracking-widest no-underline">
+                        VER DOSSIER LEGAL COMPLETO →
+                      </Link>
+                    </Section>
+                  )}
+                </Section>
+              )}
             </Section>
 
             {/* Premium Footer */}

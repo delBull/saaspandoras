@@ -740,6 +740,53 @@ To ensure protocol founders receive real-time alerts:
 `
       },
       {
+        id: "legal-tech",
+        title: "Legal-Tech & Integrity Proofs",
+        content: `# Legal-Tech: Verifiable Integrity Layer
+
+Pandoras Growth OS includes a built-in **Legal-Tech Engine** that ensures every participation is backed by a verifiable, immutable legal record.
+
+## 🛡️ Proof of Integrity (NOM-151)
+
+Every purchase or mint triggers the generation of a **Participation Agreement**. Instead of storing heavy PDFs on-chain, Pandoras generates a deterministic SHA-256 hash of the legal terms combined with user metadata.
+
+This hash serves as a "Proof of Integrity," ensuring that the terms accepted by the user at the time of purchase are the same terms they can download later. This practice is compatible with digital integrity standards like **NOM-151-SCFI-2016**.
+
+## 🛠️ Developer Implementation
+
+### 1. API Metadata
+When calling the \`GET /api/public/project/[slug]/state\` endpoint, the response now includes a \`legal\` object if a wallet is provided:
+
+\`\`\`json
+{
+  "legal": {
+    "isVerifiable": true,
+    "agreementId": "AG-SNA-00123",
+    "agreementHash": "7f83b16...",
+    "legalPortalUrl": "https://...",
+    "status": "certified"
+  }
+}
+\`\`\`
+
+### 2. Frontend Integration (Widget & Portal)
+The standard **Sovereign Portal** (\`PortalView\`) automatically detects this object and renders:
+- ✅ **Integrity Badge**: A visual indicator of certification.
+- ✅ **Download Link**: A direct button to view the signed agreement.
+- ✅ **Hash Verification**: A field for technical audit of the document integrity.
+
+### 3. Customizing Agreements
+Project admins can customize the **Participation Agreement** template directly from the Pandoras Dashboard. The engine supports dynamic variables:
+- \`{token_id}\`: The on-chain NFT ID.
+- \`{wallet_address}\`: The participant's wallet.
+- \`{timestamp}\`: Date of emission.
+- \`{agreement_hash}\`: The unique integrity seal.
+
+## 🤝 Compliance & Trust
+By separating the **Capa de Valor (Token)** from the **Capa de Integridad (Legal)**, Pandoras allows projects to be legally robust without the high costs and complexity of on-chain document storage.
+`
+      },
+      {
         id: "growth-os-dev",
         title: "Developer Integration: Smart Widgets",
         content: `# Developer Integration: Smart Widgets

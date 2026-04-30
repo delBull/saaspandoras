@@ -7,6 +7,7 @@ import { WebhookService } from "@/lib/integrations/webhook-service";
 import { integrationClients } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
+import { LegalEngine } from "@/lib/legal/engine";
 
 // Security: Verify Thirdweb Signature
 function isValidSignature(req: Request, body: string, secret: string) {
@@ -221,6 +222,13 @@ export async function POST(req: Request) {
         const isMint = fromAddress === "0x0000000000000000000000000000000000000000" || fromAddress === "0x0";
         if (isMint) {
             try {
+                const tokenId = log?.args?.tokenId || log?.args?.[0] || "unknown";
+
+                // ⚖️ V3: Generate Legal Integrity Proof & Certification
+                if (purchaseId && tokenId !== "unknown") {
+                    await LegalEngine.certifyPurchase(purchaseId, tokenId.toString());
+                }
+
                 // Broadcast to all active clients
                 const clients = await db.query.integrationClients.findMany({
                     where: eq(integrationClients.isActive, true)
@@ -229,7 +237,7 @@ export async function POST(req: Request) {
                 for (const client of clients) {
                     await WebhookService.queueEvent(client.id, 'nft.minted', {
                         contractAddress: log?.address || "unknown",
-                        tokenId: log?.args?.tokenId || log?.args?.[0] || "unknown",
+                        tokenId: tokenId,
                         recipient: toAddress,
                         txHash: txHash,
                         isSandbox: client.environment === 'staging'

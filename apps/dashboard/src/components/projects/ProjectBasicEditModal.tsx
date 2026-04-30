@@ -74,6 +74,9 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
         adquireStrategy: '',
         // Legal
         legalStatus: '',
+        legalTemplate: '',
+        masterDocumentUrl: '',
+        certPrefix: '',
     });
 
     const resolveIpfs = (url: string) => {
@@ -105,6 +108,9 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                 monetizationModel: project.monetizationModel || project.monetization_model || '',
                 adquireStrategy: project.adquireStrategy || project.adquire_strategy || '',
                 legalStatus: project.legalStatus || project.legal_status || '',
+                legalTemplate: project.legalConfig?.template || '',
+                masterDocumentUrl: project.legalConfig?.masterDocumentUrl || '',
+                certPrefix: project.legalConfig?.certPrefix || '',
             });
             setActiveTab('basic');
         }
@@ -166,6 +172,11 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                     monetizationModel: formData.monetizationModel,
                     adquireStrategy: formData.adquireStrategy,
                     legalStatus: formData.legalStatus,
+                    legalConfig: {
+                        template: formData.legalTemplate,
+                        masterDocumentUrl: formData.masterDocumentUrl,
+                        certPrefix: formData.certPrefix,
+                    },
                     isBasicEdit: true,
                 }),
             });
@@ -427,12 +438,52 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                                     </div>
                                 )}
 
-                                <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                                 <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
                                     <p className="text-xs text-amber-400 font-semibold mb-1">⚠️ Nota sobre estatus legal</p>
                                     <p className="text-xs text-zinc-500 leading-relaxed">
                                         Esta información es visible en la sección de Transparencia y Legal del protocolo. 
                                         Asegúrate de que corresponda a la estructura legal real o planificada, ya que es un factor clave de confianza para los participantes.
                                     </p>
+                                </div>
+
+                                {/* Legal-Tech Configuration */}
+                                <div className="space-y-4 pt-4 border-t border-zinc-800">
+                                    <h4 className="text-sm font-bold text-lime-400 flex items-center gap-2">
+                                        Configuración Legal-Tech (NOM-151)
+                                    </h4>
+                                    
+                                    <div className="space-y-1.5">
+                                        <Label>Dossier Legal Maestro (PDF)</Label>
+                                        <Input 
+                                            value={formData.masterDocumentUrl}
+                                            onChange={e => set('masterDocumentUrl', e.target.value)}
+                                            className="bg-zinc-900 border-zinc-800 focus:border-lime-500"
+                                            placeholder="https://tu-proyecto.com/legal/dossier.pdf"
+                                        />
+                                        <p className="text-[10px] text-zinc-500">URL del documento legal completo que rige el protocolo.</p>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label>Prefijo de Certificado</Label>
+                                        <Input 
+                                            value={formData.certPrefix}
+                                            onChange={e => set('certPrefix', e.target.value)}
+                                            className="bg-zinc-900 border-zinc-800 focus:border-lime-500"
+                                            placeholder="Ej: AG-SNA-"
+                                        />
+                                        <p className="text-[10px] text-zinc-500">Identificador para los certificados de integridad.</p>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label>Template de Acuerdo (Markdown/Texto)</Label>
+                                        <Textarea
+                                            value={formData.legalTemplate}
+                                            onChange={e => set('legalTemplate', e.target.value)}
+                                            className="bg-zinc-900 border-zinc-800 min-h-[150px] focus:border-lime-500 font-mono text-xs"
+                                            placeholder="Ej: Este Acuerdo vincula a la wallet {wallet_address}..."
+                                        />
+                                        <p className="text-[10px] text-zinc-500">El texto que se firmará digitalmente en cada compra.</p>
+                                    </div>
                                 </div>
                             </div>
                         )}

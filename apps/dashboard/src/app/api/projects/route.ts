@@ -92,7 +92,13 @@ export async function GET() {
           imageUrl: projects.imageUrl,
           socials: projects.socials,
           returnsPaid: projects.returnsPaid,
-          featuredButtonText: projects.featuredButtonText
+          featuredButtonText: projects.featuredButtonText,
+          protoclMecanism: projects.protoclMecanism,
+          artefactUtility: projects.artefactUtility,
+          worktoearnMecanism: projects.worktoearnMecanism,
+          monetizationModel: projects.monetizationModel,
+          adquireStrategy: projects.adquireStrategy,
+          legalConfig: projects.legalConfig
         })
         .from(projects)
         .where(
