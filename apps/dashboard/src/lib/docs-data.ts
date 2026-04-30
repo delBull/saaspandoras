@@ -1462,6 +1462,25 @@ This is the recommended endpoint for external portals and widgets. It returns a 
 }
 \`\`\`
 
+## Metric Authority & Ground Truth
+
+Pandora's Growth OS implements a **"Ground Truth"** synchronization policy to ensure absolute consistency between the Dashboard, external widgets, and on-chain state.
+
+### 1. On-Chain Dominance
+Supply metrics (\`currentSupply\`, \`availableUnits\`, \`progressPercentage\`) are derived directly from the blockchain using the \`totalSupply()\` method of the license contract. This ensures that even if database records are temporarily desynchronized, the user-facing availability is always 100% accurate.
+
+### 2. Phase Calculation Logic
+Availability is calculated sequentially across defined phases. If a project has 3 tokens in its total supply, the engine automatically attributes them to the active phase's consumption, reducing the \`availableUnits\` in real-time.
+
+### 3. Self-Healing Infrastructure
+The State API automatically performs "Self-Healing" on-chain lookups if:
+- Database holder counts are missing or zero.
+- The project status is marked as 'Live' but metadata is stale.
+- On-chain supply exceeds documented database purchases.
+
+### 4. Developer Tip: Sequential vs Artifact Specific
+For V2 projects with multiple artifacts, availability is calculated per contract. Ensure your external UI respects the \`contractAddress\` returned in the metadata to filter project-specific tokens correctly.
+
 ### List Webhook Events
 
 \`\`\`http
