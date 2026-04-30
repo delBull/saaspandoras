@@ -1,45 +1,21 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { projects } from "~/db/schema";
-import { inArray, desc, ne, and, eq } from "drizzle-orm";
+import { inArray, desc, ne, and, eq, or } from "drizzle-orm";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 
-export const dynamic = 'force-dynamic'; // Asegura que la ruta sea siempre dinámica
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log('🔍 Public API: Starting GET request...');
+    const { session } = await getAuth(await headers());
+    const userWallet = session?.address?.toLowerCase();
+    const userIsAdmin = userWallet ? await isAdmin(userWallet) : false;
 
-    // Test database connection first - handle quota exceeded gracefully
+    console.log('🔍 Projects API: Request from', userWallet || 'Public');
+
     try {
-      await db.select({ test: projects.id }).from(projects).limit(1);
-      console.log('✅ Public API: Database connection test passed');
-    } catch (dbError) {
-      console.error('❌ Public API: Database connection failed:', dbError);
-
-      // Check if it's a quota issue
-      if (dbError instanceof Error && dbError.message.includes('quota')) {
-        return NextResponse.json(
-          {
-            message: "Database quota exceeded",
-            error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
-            quotaExceeded: true
-          },
-          { status: 503 } // Service Unavailable
-        );
-      }
-
-      return NextResponse.json(
-        { message: "Database connection failed", error: dbError instanceof Error ? dbError.message : 'Unknown DB error' },
-        { status: 500 }
-      );
-    }
-
-    console.log('🔍 Public API: Fetching projects from database...');
-
-    // Use Drizzle ORM query builder for proper field mapping
-    try {
-      console.log('🔍 Public API: Executing Drizzle query with proper field mapping...');
-
       const projectsData = await db
         .select({
           id: projects.id,
@@ -103,69 +79,40 @@ export async function GET() {
         .from(projects)
         .where(
           and(
-            inArray(projects.status, ['draft', 'pending', 'active_client', 'approved', 'live', 'completed']),
-            ne(projects.businessCategory, 'infrastructure'), // Exclude NFT Passes/System contracts
-            eq(projects.isDeleted, false)
+            eq(projects.isDeleted, false),
+            ne(projects.businessCategory, 'infrastructure'),
+            or(
+              userIsAdmin ? eq(projects.isDeleted, false) : undefined,
+              userWallet ? eq(projects.applicantWalletAddress, userWallet) : undefined,
+              inArray(projects.status, ['approved', 'live', 'completed'])
+            )
           )
         )
         .orderBy(desc(projects.createdAt));
 
-      console.log(`📊 Public API: Found ${projectsData.length} projects with Drizzle query`);
+      // REDACTION: Redact sensitive info if not admin and not owner
+      const sanitizedProjects = projectsData.map(p => {
+        const isOwner = userWallet && p.applicantWalletAddress?.toLowerCase() === userWallet;
+        const canSeeDetails = userIsAdmin || isOwner;
 
-      if (projectsData.length > 0) {
-        const firstProject = projectsData[0];
-        console.log('📊 Public API: First project sample:', {
-          id: firstProject?.id,
-          title: firstProject?.title,
-          applicantWalletAddress: firstProject?.applicantWalletAddress,
-          status: firstProject?.status
-        });
+        if (canSeeDetails) return p;
 
-        // Enhanced debugging for wallet addresses
-        console.log('📊 Public API: WALLET ADDRESSES DEBUG:', {
-          totalProjects: projectsData.length,
-          projectsWithWallet: projectsData.filter(p => p.applicantWalletAddress).length,
-          projectsWithoutWallet: projectsData.filter(p => !p.applicantWalletAddress).length,
-          sampleWallets: projectsData.slice(0, 3).map(p => ({
-            id: p.id,
-            title: p.title,
-            wallet: p.applicantWalletAddress,
-            walletLower: p.applicantWalletAddress?.toLowerCase()
-          }))
-        });
-      }
+        return {
+          ...p,
+          applicantEmail: null,
+          applicantPhone: null,
+          applicantName: p.applicantName ? `${p.applicantName.split(' ')[0]}...` : null,
+          treasuryAddress: p.treasuryAddress ? `${p.treasuryAddress.substring(0, 6)}...${p.treasuryAddress.slice(-4)}` : null,
+        };
+      });
 
-      return NextResponse.json(projectsData);
+      return NextResponse.json(sanitizedProjects);
     } catch (queryError) {
-      console.error('❌ Public API: Drizzle query failed:', queryError);
-
-      // Try basic diagnostic query
-      try {
-        const basicQuery = await db.select({ test: projects.id }).from(projects).limit(1);
-        console.log('📊 Public API: Basic Drizzle query works:', basicQuery.length);
-
-        return NextResponse.json({
-          message: "Database connection works but projects query failed",
-          basicQueryWorks: basicQuery.length > 0,
-          error: queryError instanceof Error ? queryError.message : 'Unknown error'
-        });
-      } catch (basicError) {
-        console.error('❌ Public API: Even basic Drizzle query failed:', basicError);
-        return NextResponse.json(
-          {
-            message: "Database connection failed",
-            error: basicError instanceof Error ? basicError.message : 'Unknown error'
-          },
-          { status: 500 }
-        );
-      }
+      console.error('❌ Projects API: Query failed:', queryError);
+      return NextResponse.json({ message: "Error al consultar proyectos" }, { status: 500 });
     }
   } catch (error) {
-    console.error("💥 Public API: Critical error:", error);
-    console.error("💥 Public API: Error stack:", error instanceof Error ? error.stack : 'No stack');
-    return NextResponse.json(
-      { message: "Error interno del servidor", error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.error("💥 Projects API: Critical error:", error);
+    return NextResponse.json({ message: "Error interno" }, { status: 500 });
   }
 }
