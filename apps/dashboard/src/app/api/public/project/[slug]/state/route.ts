@@ -111,18 +111,41 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // 4. Fetch Treasury & DAO Metrics (New)
+    // 4. Fetch Treasury & DAO Metrics (Synchronized with Dashboard Truth)
     let treasuryDisplay = "0.00";
     let holdersCount = 0;
 
     try {
-        // Fetch holder count from DB
+        // a) DB Check for holders
         const holders = await db.select({ count: sql<number>`count(*)` })
             .from(daoMembersSchema)
             .where(eq(daoMembersSchema.projectId, project.id));
         holdersCount = Number(holders[0]?.count || 0);
 
-        // Fetch Treasury Balance
+        // b) On-chain SYNC (Self-Healing)
+        // If DB says 0 but we have a contract, fetch from chain to ensure Source of Truth
+        if (holdersCount === 0 && resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
+            try {
+                const chain = defineChain(Number(chainId));
+                const contract = getContract({
+                    client: twClient, chain, address: resolvedContract
+                });
+                const onChainParticipants = await readContract({
+                    contract,
+                    method: "function totalParticipants() view returns (uint256)",
+                    params: []
+                }).catch(() => 0n);
+                
+                if (onChainParticipants > 0n) {
+                    holdersCount = Number(onChainParticipants);
+                    console.log(`[API] 📡 Synchronized holdersCount from chain: ${holdersCount}`);
+                }
+            } catch (e) {
+                console.warn("[API] Failed to sync holdersCount from chain", e);
+            }
+        }
+
+        // c) Fetch Treasury Balance
         if (project.treasuryAddress?.startsWith('0x')) {
             const chain = defineChain(Number(chainId));
             
@@ -239,21 +262,21 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // 6. Build Response with Caching
     const origin = req.headers.get("origin");
     
-    // DYNAMIC METRICS CALCULATION: 
-    // We prioritize phase-specific stats, but fallback to project-level metadata if phases are incomplete.
+    // DYNAMIC METRICS CALCULATION (Refined for Audit Consistency)
     const metadataPrice = Number(project.tokenPriceUsd || activePhase?.tokenPrice || 50);
     const metadataTarget = Number(project.targetAmount || activePhase?.cap || (metadataPrice * 8));
     
-    // Dynamic total units based on current target/price if phase allocation is missing
-    const totalUnitsFallback = metadataTarget > 0 ? Math.floor(metadataTarget / metadataPrice) : 8;
-
+    // Total Units Ground Truth: Active Phase allocation is the primary source.
     const totalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
         ? activePhase.stats.tokensAllocated 
-        : (totalUnitsFallback > 0 ? totalUnitsFallback : 1);
+        : (metadataTarget > 0 ? Math.floor(metadataTarget / metadataPrice) : 8);
 
-    const soldUnits = activePhase?.stats?.tokensSold !== undefined && activePhase.stats.tokensSold !== null
+    // Sold Units Ground Truth:
+    // 1. Check if DB phase stats are injected (consumptionsUsed)
+    // 2. Fallback to currentSupply (on-chain) relative to this phase
+    const soldUnits = (activePhase?.stats?.tokensSold !== undefined && activePhase.stats.tokensSold !== null && activePhase.stats.tokensSold > 0)
         ? activePhase.stats.tokensSold 
-        : (currentSupply > 0 ? (currentSupply % totalUnits) : 0);
+        : currentSupply; // On-chain supply is the most reliable cumulative sold count
 
     const availableUnits = Math.max(0, totalUnits - soldUnits);
     

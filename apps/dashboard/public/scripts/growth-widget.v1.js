@@ -286,11 +286,56 @@
         }
     }
 
+    function openPortal(slug) {
+        const modalId = 'pd-portal-modal';
+        if (document.getElementById(modalId)) return;
+
+        const targetSlug = slug || projectId;
+        const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
+        
+        // Use the portal route with projectId parameter
+        const url = `${absoluteBase}/portal?projectId=${targetSlug}&widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        
+        track('PORTAL_OPEN', { slug: targetSlug });
+
+        let container = document.createElement('div');
+        container.id = modalId;
+        Object.assign(container.style, {
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.95)', zIndex: '2147483647',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            opacity: '0', transition: 'opacity 0.4s ease'
+        });
+
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        Object.assign(iframe.style, { width: '100%', height: '100%', border: 'none', background: 'transparent' });
+
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        Object.assign(closeBtn.style, {
+            position: 'absolute', top: '24px', right: '24px', width: '44px', height: '44px',
+            borderRadius: '50%', background: 'rgba(255,255,255,0.08)', color: '#fff', border: 'none',
+            cursor: 'pointer', fontSize: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: '2147483648', transition: 'all 0.2s'
+        });
+        closeBtn.onclick = () => container.remove();
+        closeBtn.onmouseover = () => { closeBtn.style.background = 'rgba(255,255,255,0.15)'; };
+        closeBtn.onmouseout = () => { closeBtn.style.background = 'rgba(255,255,255,0.08)'; };
+
+        container.appendChild(closeBtn);
+        container.appendChild(iframe);
+        document.body.appendChild(container);
+        
+        setTimeout(() => { container.style.opacity = '1'; }, 10);
+    }
+
     // --- Public API ---
     window.PandorasGrowth = {
         registerLead,
         open: openModal,
         openCheckout,
+        openPortal,
         track,
         getProjectState,
         emit: track, // Alias for protocol standardization
@@ -463,8 +508,16 @@
         };
 
         document.addEventListener('click', (e) => {
-            const target = e.target.closest('a, button, [data-pd-checkout-slug], [data-slug]');
+            const target = e.target.closest('a, button, [data-pd-checkout-slug], [data-slug], [data-pd-portal]');
             if (!target) return;
+
+            let portalSlug = findAttr(target, ['data-pd-portal']);
+            if (portalSlug) {
+                e.preventDefault();
+                e.stopPropagation();
+                openPortal(portalSlug === 'true' ? projectId : portalSlug);
+                return;
+            }
 
             let slug = findAttr(target, ['data-pd-checkout-slug', 'data-slug', 'data-pd-slug']);
             let tier = findAttr(target, ['data-pd-checkout-tier', 'data-tier', 'data-pd-tier', 'data-phase']);
