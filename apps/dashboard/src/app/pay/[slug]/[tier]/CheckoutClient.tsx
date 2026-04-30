@@ -448,15 +448,16 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 </button>
             </div>
 
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={step}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.05 }}
-                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative w-full max-w-[420px] bg-zinc-950/80 backdrop-blur-3xl border border-zinc-800/40 rounded-[2.5rem] shadow-2xl overflow-hidden z-10 p-8"
-                >
+            <div className="relative z-10 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 w-full max-w-[900px]">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={step}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 1.05 }}
+                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                        className="relative w-full max-w-[420px] bg-zinc-950/80 backdrop-blur-3xl border border-zinc-800/40 rounded-[2.5rem] shadow-2xl overflow-hidden p-8"
+                    >
                     {(step === 'checkout' || step === 'fast_lane') && (
                         <>
                             {/* Header Section */}
@@ -788,53 +789,51 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             )}
                         </div>
                     )}
-                </motion.div>
-            </AnimatePresence>
+                    </motion.div>
+                </AnimatePresence>
 
-            {/* User Onboarding Guide (Smart Wallet & Persistence) */}
-            <div className="mt-4 pb-20 max-w-md mx-auto relative z-10">
-
+                {/* User Onboarding Guide (Smart Wallet & Persistence) - Sidebar Layout */}
                 <AnimatePresence>
                     {showGuide && (
                         <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden space-y-6"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className="w-full lg:w-[320px] space-y-6"
                         >
-                            <div className="bg-zinc-900/40 rounded-2xl p-5 border border-zinc-800/50">
-                                <h5 className="text-[11px] font-black uppercase text-white tracking-widest mb-3 flex items-center gap-2">
+                            <div className="bg-zinc-950/50 backdrop-blur-xl rounded-[2rem] p-8 border border-zinc-800/50 shadow-2xl">
+                                <h5 className="text-[11px] font-black uppercase text-white tracking-widest mb-6 flex items-center gap-2">
                                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Identidad Digital (Smart Wallet)
                                 </h5>
-                                <p className="text-[11px] text-zinc-400 leading-relaxed mb-4">
+                                <p className="text-[11px] text-zinc-400 leading-relaxed mb-6 font-medium">
                                     Al usar tu correo o redes sociales, creamos una <strong>Smart Wallet</strong> inmutable.
                                     Tu participación en <strong>{project.title}</strong> queda ligada a esta identidad de forma permanente.
                                 </p>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-6">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">Persistencia</p>
-                                        <p className="text-[10px] text-zinc-500 leading-tight">Si cierras sesión, solo vuelve a conectar el mismo correo para recuperar tu acceso.</p>
+                                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Persistencia</p>
+                                        <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">Si cierras sesión, solo vuelve a conectar el mismo correo para recuperar tu acceso.</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">Seguridad</p>
-                                        <p className="text-[10px] text-zinc-500 leading-tight">No necesitas frases semilla. Tu correo es tu llave maestra mediante Passkeys.</p>
+                                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Seguridad</p>
+                                        <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">No necesitas frases semilla. Tu correo es tu llave maestra mediante Passkeys.</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-zinc-900/40 rounded-2xl p-5 border border-zinc-800/50">
-                                <h5 className="text-[11px] font-black uppercase text-white tracking-widest mb-3 flex items-center gap-2">
+                            <div className="bg-zinc-950/50 backdrop-blur-xl rounded-[2rem] p-8 border border-zinc-800/50 shadow-2xl">
+                                <h5 className="text-[11px] font-black uppercase text-white tracking-widest mb-4 flex items-center gap-2">
                                     <Zap className="w-3.5 h-3.5 text-lime-400" /> Acceso al Portal
                                 </h5>
-                                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
                                     Una vez completado el pago, podrás ver tus métricas, votar en el DAO y reclamar recompensas en el <strong>Portal S&apos;Narai</strong>.
-                                    El sistema detectará tu wallet automáticamente.
                                 </p>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
+
 
             {/* Context/Trust Narrative Wrapper (Bottom) */}
             <div className="fixed bottom-6 text-center left-0 right-0 z-0">
