@@ -247,14 +247,26 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const totalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
         ? activePhase.stats.tokensAllocated 
-        : totalUnitsFallback;
+        : (totalUnitsFallback > 0 ? totalUnitsFallback : 8);
 
-    const soldUnits = activePhase?.stats?.tokensSold !== undefined 
+    const soldUnits = activePhase?.stats?.tokensSold !== undefined && activePhase.stats.tokensSold !== null
         ? activePhase.stats.tokensSold 
         : (currentSupply > 0 ? (currentSupply % totalUnits) : 0);
 
     const availableUnits = Math.max(0, totalUnits - soldUnits);
-    const progressPercentage = totalUnits > 0 ? (soldUnits / totalUnits * 100) : 0;
+    
+    // 🔥 CRITICAL FIX: Ensure progress is never NaN or Infinity
+    let progressPercentage = 0;
+    if (totalUnits > 0) {
+        progressPercentage = Math.min(100, Math.max(0, (soldUnits / totalUnits) * 100));
+    }
+    
+    // Handle specific S'Narai case where supply might be reported as 0 but we want to show some movement
+    const isSnarai = project.slug === 'snarai';
+    if (isSnarai && soldUnits === 0 && currentSupply > 0) {
+        // Fallback for visual progress if supply is > 0 but tokensSold is 0
+        progressPercentage = Math.min(25, (currentSupply / totalUnits) * 100);
+    }
 
     const response = NextResponse.json({
       title: project.title,
