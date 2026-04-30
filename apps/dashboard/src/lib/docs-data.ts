@@ -806,11 +806,12 @@ For external HTML sites, the Portal is available via the Growth Widget SDK. You 
 window.PandorasGrowth.openPortal('your-project-slug');
 \`\`\`
 
-### Dynamic Context
-When a project ID is provided, the portal automatically adjusts:
-- **API Endpoints**: Fetches supply, prices, and state for that specific slug.
-- **DAO Governance**: Lists only the activities and votes related to that project.
-- **Documentation**: Updates Whitepaper and Support links to the project's own channels.
+### Dynamic Context & Ground Truth
+When a project ID is provided, the portal automatically adjusts its internal logic to ensure absolute consistency with the protocol's on-chain state:
+- **Ground Truth Synchronization**: Metrics like \`holdersCount\` and \`soldUnits\` are synchronized directly with the blockchain (via \`totalParticipants()\` and \`totalSupply()\`) to ensure the dashboard remains accurate even if database syncs are pending.
+- **Reward Normalization**: The portal automatically detects the project's network. For protocols on **Base Mainnet**, rewards are displayed in **USDC** (using the official 100:1 PBOX conversion). For other networks, it defaults to **PBOX**.
+- **DAO Activity Tracking**: Users can view and participate in project-specific "Labores" (Staking activities) directly. Participation triggers real-time updates to the \`user_balances\` layer, visible across all integrated platforms.
+- **Unified Metadata**: Whitepaper links, support channels, and legal documents are dynamically routed to the project's specific resources.
 `
       }
     ]
@@ -1430,6 +1431,34 @@ GET /api/protocols/{slug}
   "licenseContractAddress": "0x1234...",
   "treasuryAddress": "0x5678...",
   "w2eConfig": { ... }
+}
+\`\`\`
+
+### Get Public Project State (Ground Truth)
+
+\`\`\`http
+GET /api/public/project/{slug}/state?apiKey={your_public_key}&wallet={user_address}
+\`\`\`
+
+This is the recommended endpoint for external portals and widgets. It returns a unified object containing both protocol-level metrics and user-specific data (balances, rewards, whitelist status).
+
+**Response**:
+\`\`\`json
+{
+  "success": true,
+  "holdersCount": 142,
+  "currentSupply": 1200,
+  "treasuryDisplay": "15,400.00 USDC",
+  "userBalance": 5,
+  "userVotingPower": 5,
+  "userRewards": "150.00 USDC",
+  "metadata": {
+    "totalUnits": 8000,
+    "availableUnits": 6800,
+    "progressPercentage": 15,
+    "nextPhasePriceUsd": 75
+  },
+  "activities": [ ... ]
 }
 \`\`\`
 
