@@ -311,6 +311,7 @@ export const projects = pgTable("projects", {
   price: decimal("price", { precision: 18, scale: 6 }).default("0.000000"),
   allowedDomains: jsonb("allowed_domains").default([]).notNull(), // URLs permitidas para el widget
   isDeleted: boolean("is_deleted").default(false).notNull(),
+  legalConfig: jsonb("legal_config").default({}).notNull(), // V3: Legal agreement templates & NOM-151 config
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
   isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
@@ -1464,6 +1465,12 @@ export const purchases = pgTable("purchases", {
   stripeSessionId: varchar("stripe_session_id", { length: 255 }),
 
   metadata: jsonb("metadata").default({}),
+  
+  // V3: Legal-Tech & Integrity Proofs
+  tokenId: varchar("token_id", { length: 255 }),      // On-chain NFT ID
+  agreementHash: text("agreement_hash"),            // SHA-256 integrity hash
+  agreementId: varchar("agreement_id", { length: 255 }), // Unique readable agreement ref
+  legalPortalUrl: text("legal_portal_url"),         // Direct link to certificate
 
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

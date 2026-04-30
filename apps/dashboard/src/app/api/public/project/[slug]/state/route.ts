@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { harmonizeProject } from "@/lib/projects/harmonizer";
 import { db } from "@/db";
-import { projects as projectsSchema, daoMembers as daoMembersSchema, userBalances as userBalancesSchema, daoActivities as daoActivitiesSchema } from "@/db/schema";
+import { 
+  projects as projectsSchema, 
+  daoMembers as daoMembersSchema, 
+  userBalances as userBalancesSchema, 
+  daoActivities as daoActivitiesSchema,
+  purchases as purchasesSchema
+} from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
@@ -241,6 +247,42 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         limit: 5
     });
 
+    // 4.9 Fetch Legal Metadata (Integrity Proofs)
+    let legal: {
+        isVerifiable: boolean;
+        agreementId: string | null;
+        agreementHash: string | null;
+        legalPortalUrl: string | null;
+        status: string;
+    } = {
+        isVerifiable: false,
+        agreementId: null,
+        agreementHash: null,
+        legalPortalUrl: null,
+        status: "none"
+    };
+
+    if (wallet && project.id) {
+        const latestPurchase = await db.query.purchases.findFirst({
+            where: and(
+                eq(purchasesSchema.projectId, project.id),
+                eq(purchasesSchema.userId, wallet.toLowerCase()),
+                eq(purchasesSchema.status, 'completed')
+            ),
+            orderBy: desc(purchasesSchema.createdAt)
+        });
+
+        if (latestPurchase && latestPurchase.agreementHash) {
+            legal = {
+                isVerifiable: true,
+                agreementId: latestPurchase.agreementId as string,
+                agreementHash: latestPurchase.agreementHash,
+                legalPortalUrl: latestPurchase.legalPortalUrl,
+                status: "certified"
+            };
+        }
+    }
+
     // 5. Calculate Progression via Engine
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
     const normalizedTiers: Tier[] = rawTiers.map(t => ({
@@ -317,6 +359,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             }
         ]
       },
+      legal,
       holdersCount,
       treasuryDisplay,
       dbUserStatus,

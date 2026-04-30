@@ -19,6 +19,7 @@ import { ProjectSection4 } from "./sections/ProjectSection4";
 import { ProjectSection5 } from "./sections/ProjectSection5";
 import { ProjectSection6 } from "./sections/ProjectSection6";
 import { ProjectSection7 } from "./sections/ProjectSection7";
+import { ProjectSection8 } from "./sections/ProjectSection8";
 
 interface Project {
   id?: number;
@@ -65,6 +66,7 @@ interface Project {
   applicantPhone?: string | null;
   applicantWalletAddress?: string | null;
   verificationAgreement?: boolean | string | null;
+  legalConfig?: any;
   createdAt?: Date;
   raisedAmount?: string | number | null;
   returnsPaid?: string | number | null;
@@ -205,6 +207,12 @@ const fullProjectSchema = z.object({
   whatsappPhone: z.string().optional(),
   applicantWalletAddress: z.string().optional(),
   verificationAgreement: z.boolean(),
+  // Sección 8: Legal-Tech (V3)
+  legalConfig: z.object({
+    template: z.string().optional(),
+    masterDocumentUrl: z.string().optional(),
+    certPrefix: z.string().optional(),
+  }).optional(),
 });
 
 export type FullProjectFormData = z.infer<typeof fullProjectSchema>;
@@ -288,7 +296,7 @@ export function MultiStepForm({
     }
   }, [account?.address, isAdminUser, isPublic, router]);
 
-  const totalSteps = 7;
+  const totalSteps = 8;
 
   // Funciones de parseo seguro para inicializar el formulario
   function safeParseArray<T>(input: unknown): T[] {
@@ -384,6 +392,8 @@ export function MultiStepForm({
       whatsappPhone: project?.whatsappPhone ?? undefined,
       applicantWalletAddress: project?.applicantWalletAddress ?? undefined,
       verificationAgreement: Boolean(project?.verificationAgreement ?? false),
+      // Sección 8
+      legalConfig: safeParseObject(project?.legalConfig, { template: "", masterDocumentUrl: "", certPrefix: "" }),
     },
   });
 
@@ -566,6 +576,7 @@ export function MultiStepForm({
       5: { legalStatus: true, valuationDocumentUrl: true, fiduciaryEntity: true, dueDiligenceReportUrl: true },
       6: { isMintable: true, isMutable: true, updateAuthorityAddress: true },
       7: { applicantName: true, applicantPosition: true, applicantEmail: true, applicantPhone: true, verificationAgreement: true },
+      8: { legalConfig: true },
     };
     return fieldMap[step] ?? {};
   };
@@ -997,6 +1008,7 @@ export function MultiStepForm({
             {currentStep === 5 && <ProjectSection5 />}
             {currentStep === 6 && <ProjectSection6 />}
             {currentStep === 7 && <ProjectSection7 />}
+            {currentStep === 8 && <ProjectSection8 />}
 
             {/* Navegación inferior */}
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-800">
