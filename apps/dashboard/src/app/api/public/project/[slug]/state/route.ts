@@ -211,7 +211,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     // 4.7 Phase & Availability Analytics (Dynamic Metrics)
     const phases = getProjectPhasesWithStats(project, currentSupply);
-    const activePhase = phases.find((p: any) => p.status === 'active') || phases[0];
+    const activePhaseIndex = phases.findIndex((p: any) => p.status === 'active');
+    const activePhase = activePhaseIndex !== -1 ? phases[activePhaseIndex] : phases[0];
+    const nextPhase = phases[activePhaseIndex + 1] || null;
 
     // 4.8 DAO Activities Integration
     const activities = await db.query.daoActivities.findMany({
@@ -234,6 +236,26 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     // 6. Build Response with Caching
     const origin = req.headers.get("origin");
+    
+    // DYNAMIC METRICS CALCULATION: 
+    // We prioritize phase-specific stats, but fallback to project-level metadata if phases are incomplete.
+    const metadataPrice = Number(project.tokenPriceUsd || activePhase?.tokenPrice || 50);
+    const metadataTarget = Number(project.targetAmount || activePhase?.cap || (metadataPrice * 8));
+    
+    // Dynamic total units based on current target/price if phase allocation is missing
+    const totalUnitsFallback = metadataTarget > 0 ? Math.floor(metadataTarget / metadataPrice) : 8;
+
+    const totalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
+        ? activePhase.stats.tokensAllocated 
+        : totalUnitsFallback;
+
+    const soldUnits = activePhase?.stats?.tokensSold !== undefined 
+        ? activePhase.stats.tokensSold 
+        : (currentSupply > 0 ? (currentSupply % totalUnits) : 0);
+
+    const availableUnits = Math.max(0, totalUnits - soldUnits);
+    const progressPercentage = totalUnits > 0 ? (soldUnits / totalUnits * 100) : 0;
+
     const response = NextResponse.json({
       title: project.title,
       slug: project.slug,
@@ -279,13 +301,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         estimatedApy: project.estimatedApy || "12.5%",
         targetAmount: (project.targetAmount && project.targetAmount !== "NaN" && Number(project.targetAmount) > 0) 
             ? project.targetAmount 
-            : (activePhase?.cap?.toString() || "23000"),
+            : (activePhase?.cap?.toString() || (totalUnits * Number(project.tokenPriceUsd || 50)).toString()),
         tokenPriceUsd: project.tokenPriceUsd || activePhase?.tokenPrice?.toString() || "50",
+        nextPhasePriceUsd: nextPhase?.tokenPrice?.toString() || "75",
         deliveryDate: "Q4 2027",
-        totalUnits: activePhase?.stats?.tokensAllocated || 8,
-        soldUnits: activePhase?.stats?.tokensSold || (currentSupply % 8),
-        availableUnits: activePhase?.stats?.remainingTokens || (8 - (currentSupply % 8)),
-        progressPercentage: activePhase?.stats?.percent || ((currentSupply % 8) / 8 * 100),
+        totalUnits,
+        soldUnits,
+        availableUnits,
+        progressPercentage,
         phaseName: activePhase?.name || "Fase Principal"
       },
       metrics: {
