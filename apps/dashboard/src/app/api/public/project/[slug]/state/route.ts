@@ -96,13 +96,15 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         const supplyData = await readContract({
           contract, method: "function totalSupply() view returns (uint256)", params: []
         });
-        currentSupply = Number(supplyData);
+        const rawSupply = BigInt(supplyData);
+        currentSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
 
         if (wallet && wallet.startsWith("0x")) {
           const balance = await readContract({
               contract, method: "function balanceOf(address) view returns (uint256)", params: [wallet as `0x${string}`]
           });
-          userArtifactCount = Number(balance);
+          const rawBalance = BigInt(balance);
+          userArtifactCount = rawBalance > BigInt(1e12) ? Number(rawBalance / BigInt(1e18)) : Number(rawBalance);
         }
       } catch (e) {
         console.warn(`[API] Contract read error for ${slug}:`, e);
@@ -247,7 +249,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const totalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
         ? activePhase.stats.tokensAllocated 
-        : (totalUnitsFallback > 0 ? totalUnitsFallback : 8);
+        : (totalUnitsFallback > 0 ? totalUnitsFallback : 1);
 
     const soldUnits = activePhase?.stats?.tokensSold !== undefined && activePhase.stats.tokensSold !== null
         ? activePhase.stats.tokensSold 
@@ -258,14 +260,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // 🔥 CRITICAL FIX: Ensure progress is never NaN or Infinity
     let progressPercentage = 0;
     if (totalUnits > 0) {
-        progressPercentage = Math.min(100, Math.max(0, (soldUnits / totalUnits) * 100));
-    }
-    
-    // Handle specific S'Narai case where supply might be reported as 0 but we want to show some movement
-    const isSnarai = project.slug === 'snarai';
-    if (isSnarai && soldUnits === 0 && currentSupply > 0) {
-        // Fallback for visual progress if supply is > 0 but tokensSold is 0
-        progressPercentage = Math.min(25, (currentSupply / totalUnits) * 100);
+        progressPercentage = Math.round(Math.min(100, Math.max(0, (soldUnits / totalUnits) * 100)));
     }
 
     const response = NextResponse.json({

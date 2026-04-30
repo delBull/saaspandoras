@@ -30,6 +30,7 @@ export interface PhaseStatus {
   hasStarted: boolean;
   hasEnded: boolean;
   isClickable: boolean;
+  currentPhaseRaisedTokens: number;
 }
 
 /**
@@ -132,7 +133,8 @@ export function calculatePhaseStatus(
     isSoldOut,
     hasStarted,
     hasEnded,
-    isClickable
+    isClickable,
+    currentPhaseRaisedTokens
   };
 }
 
@@ -219,8 +221,8 @@ export function getProjectPhasesWithStats(project: any, currentSupply: number) {
       stats: {
         ...statusData,
         tokensAllocated: Number(phase.tokenAllocation || 0),
-        tokensSold: statusData.raised,
-        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - (statusData.metric === 'Tokens' ? statusData.raised : statusData.raised / Number(phase.tokenPrice || 1))),
+        tokensSold: statusData.currentPhaseRaisedTokens, // Use the raw token count
+        remainingTokens: Math.max(0, Number(phase.tokenAllocation || 0) - statusData.currentPhaseRaisedTokens),
         participants: 0, 
         velocity: `+${(phase.name?.length || 4) % 3 + 2}`
       },
