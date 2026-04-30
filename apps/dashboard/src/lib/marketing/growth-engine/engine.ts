@@ -257,6 +257,10 @@ export function resolveGrowthAction(
       if (isVip) {
         nextState = 'HOT';
         actions = ['SEND_VIP_CONCIERGE_WELCOME', 'NOTIFY_TEAM'];
+      } else if (project?.slug === 'snarai' || project?.slug === 'narai') {
+        // Institutional Override: Align all Narai leads to the Explore Welcome email
+        nextState = 'AWARE';
+        actions = ['SEND_WELCOME_EXPLORE_D1', 'NOTIFY_TEAM'];
       } else {
         nextState = 'AWARE';
         actions = lead.scope === 'b2b' ? ['SEND_WELCOME_B2B_D1', 'NOTIFY_TEAM'] : ['SEND_WAITLIST_WELCOME_D0', 'NOTIFY_TEAM'];

@@ -71,6 +71,12 @@ export const ExploreStep1Email = ({
               Por eso hicimos algo distinto. Te dejamos aquí un acceso rápido para entender exactamente qué es {projectName} y cómo usamos {differentiator} en menos de 5 minutos:
             </Text>
 
+            {(projectSlug === 'narai' || projectSlug === 'snarai') && (
+              <Text className="text-black text-[14px] leading-[24px] mt-4">
+                <strong>Acceso Exclusivo:</strong> También puedes descargar el <Link href="https://snarai.aztecaz.xyz/docs/Narai_Private_Dossier.pdf" className="text-blue-600 underline">Narai Private Dossier</Link> para ver los detalles técnicos y financieros del proyecto.
+              </Text>
+            )}
+
             <Section className="text-center mt-[32px] mb-[32px]">
               <Button
                 className="bg-[#000000] rounded-lg text-white text-[14px] font-bold no-underline text-center px-10 py-4 inline-block"

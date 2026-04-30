@@ -72,6 +72,12 @@ export default function WaitlistEmail({
                     {paragraph}
                   </Text>
                 ))}
+
+                {projectName === "S'Narai" && (
+                  <Text className="text-zinc-700 text-sm leading-relaxed m-0 mb-4">
+                    <strong>Acceso Exclusivo:</strong> Puedes descargar el <Link href="https://snarai.aztecaz.xyz/docs/Narai_Private_Dossier.pdf" className="text-blue-600 underline font-bold">Narai Private Dossier</Link> para profundizar en la visión y números del proyecto.
+                  </Text>
+                )}
               </Section>
 
               {showPathway && (
