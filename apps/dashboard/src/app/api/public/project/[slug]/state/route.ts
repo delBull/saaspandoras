@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { harmonizeProject } from "@/lib/projects/harmonizer";
 import { db } from "@/db";
 import { projects as projectsSchema, daoMembers as daoMembersSchema, userBalances as userBalancesSchema, daoActivities as daoActivitiesSchema } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
@@ -59,30 +60,23 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     // 2. Fetch Project
-    const project = await db.query.projects.findFirst({
+    const rawProject = await db.query.projects.findFirst({
       where: eq(projectsSchema.slug, slug),
-      columns: {
-        id: true, slug: true, status: true, chainId: true, 
-        licenseContractAddress: true, contractAddress: true, w2eConfig: true,
-        title: true, tagline: true, targetAmount: true, tokenPriceUsd: true,
-        estimatedApy: true, treasuryAddress: true, applicantWalletAddress: true
-      }
     });
 
-    if (!project) {
+    if (!rawProject) {
       return NextResponse.json({ error: "Project not found" }, { 
         status: 404,
         headers: getCorsHeaders(req.headers.get("origin"))
       });
     }
 
-    const w2e = typeof project.w2eConfig === 'string' 
-      ? JSON.parse(project.w2eConfig) 
-      : (project.w2eConfig || {});
+    const project = harmonizeProject(rawProject);
+    const w2e = project.w2eConfig;
 
     // 3. Fetch Real-time Contract Data
-    const chainId = project.chainId || 11155111;
-    const resolvedContract = project.licenseContractAddress || w2e.licenseToken?.address || project.contractAddress;
+    const chainId = project.chainId;
+    const resolvedContract = project.licenseContractAddress || project.contractAddress;
 
     let userArtifactCount = 0;
     let currentSupply = 0;
