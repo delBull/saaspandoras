@@ -776,6 +776,41 @@ If the widget is in a "Learn More" section, use the \`explore\` intent:
 Using the correct \`data-intent\` allows the Growth Engine to trigger different nurturing flows immediately:
 - **Invest**: Triggers an invitation to a strategy call and alerts the team.
 - **Explore**: Triggers an automated educational course (Moat) to move the lead towards the next stage.
+
+---
+
+## 🏰 Sovereign Portal: Unified Dashboard
+The Portal is a high-conversion interface that allows users to monitor their participation, participate in governance, and track rewards without leaving your site.
+
+### Integration (React / Next.js)
+If you are using React, you can import and use the \`PortalView\` component from our SDK. It is fully dynamic and project-agnostic.
+
+\`\`\`tsx
+import { PortalView } from '@pandoras/growth-sdk';
+
+// Pass your project slug to load specific metrics and DAO activities
+<PortalView projectId="your-project-slug" />
+\`\`\`
+
+### Integration (Universal Widget)
+For external HTML sites, the Portal is available via the Growth Widget SDK. You can trigger it using a data attribute or a direct JS call.
+
+**Attribute Trigger:**
+\`\`\`html
+<button data-pd-portal="your-project-slug">Open My Portal</button>
+\`\`\`
+
+**JavaScript API:**
+\`\`\`javascript
+// Opens the portal in a premium focused modal
+window.PandorasGrowth.openPortal('your-project-slug');
+\`\`\`
+
+### Dynamic Context
+When a project ID is provided, the portal automatically adjusts:
+- **API Endpoints**: Fetches supply, prices, and state for that specific slug.
+- **DAO Governance**: Lists only the activities and votes related to that project.
+- **Documentation**: Updates Whitepaper and Support links to the project's own channels.
 `
       }
     ]

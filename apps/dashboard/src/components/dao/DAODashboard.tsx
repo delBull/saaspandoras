@@ -564,7 +564,14 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 <div className="flex items-center gap-3">
                     <div className="bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700 flex items-center gap-2">
                         <TrophyIcon className="w-4 h-4 text-yellow-400" />
-                        <span className="text-sm text-zinc-300">Mis Puntos: <span className="text-white font-bold font-mono">{Number(pboxBalance).toFixed(0)} PBOX</span></span>
+                        <span className="text-sm text-zinc-300">
+                            Mis Recompensas: <span className="text-white font-bold font-mono">
+                                {isBaseMainnet 
+                                    ? `${(Number(pboxBalance) * 0.01).toFixed(2)} USDC` 
+                                    : `${Number(pboxBalance).toFixed(0)} PBOX`
+                                }
+                            </span>
+                        </span>
                     </div>
 
                     <Dialog open={isRedeemOpen} onOpenChange={setIsRedeemOpen}>
