@@ -110,7 +110,7 @@ export function LaboresList({ project }: LaboresListProps) {
     if (labores.length === 0) {
         return (
             <div className="text-center py-10 bg-zinc-900 border border-zinc-800 rounded-xl">
-                <p className="text-zinc-500">No hay labores de staking disponibles.</p>
+                <p className="text-zinc-500">No hay misiones de activación disponibles en este momento.</p>
             </div>
         );
     }
@@ -160,7 +160,7 @@ export function LaboresList({ project }: LaboresListProps) {
                                     onClick={() => handleStart(labor.id)}
                                     className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-700"
                                 >
-                                    <PlayCircle className="w-4 h-4" /> Iniciar Labor
+                                    <PlayCircle className="w-4 h-4" /> Iniciar Participación
                                 </button>
                             )}
 

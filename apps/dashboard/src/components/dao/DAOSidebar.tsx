@@ -47,7 +47,7 @@ export function DAOSidebar({
         { id: 'overview', label: 'Resumen DAO', icon: HomeIcon },
         { id: 'proposals', label: 'Propuestas y Votación', icon: VoteIcon },
         { id: 'chat', label: 'Foro Global', icon: MessageSquare }, // New Chat Item
-        { id: 'staking', label: 'Utilidad y Recompensas', icon: CoinsIcon },
+        { id: 'staking', label: 'Beneficios y Recompensas', icon: CoinsIcon },
         { id: 'members', label: 'Miembros', icon: UsersIcon },
         { id: 'docs', label: 'Documentación', icon: BookOpenIcon },
         { id: 'info', label: 'Ayuda', icon: HelpCircleIcon },
