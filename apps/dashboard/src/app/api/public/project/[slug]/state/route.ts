@@ -316,11 +316,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         userTotalAmount = (certificates || []).reduce((acc, cert) => acc + (Number(cert.amount) || 0), 0); 
         
         if (certificates && certificates.length > 0) {
+            const apiBase = apiKey.startsWith('pk_live_') ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
             globalCertificate = {
                 isVerifiable: certificates.some(c => c.isVerifiable),
                 totalUnits: userTotalUnits,
                 totalAmount: userTotalAmount,
-                globalPortalUrl: certificates[0].legalPortalUrl, 
+                globalPortalUrl: `${apiBase}/legal/certificate/global-${wallet}?project=${slug}&units=${userTotalUnits}`, 
                 status: certificates.every(c => c.status === "certified") ? "certified" : "pending"
             };
         }
