@@ -267,19 +267,31 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             where: and(
                 eq(purchasesSchema.projectId, project.id),
                 eq(purchasesSchema.userId, wallet.toLowerCase()),
-                eq(purchasesSchema.status, 'completed')
+                sql`${purchasesSchema.status} IN ('completed', 'active')`
             ),
             orderBy: desc(purchasesSchema.createdAt)
         });
 
-        if (latestPurchase && latestPurchase.agreementHash) {
-            legal = {
-                isVerifiable: true,
-                agreementId: latestPurchase.agreementId as string,
-                agreementHash: latestPurchase.agreementHash,
-                legalPortalUrl: latestPurchase.legalPortalUrl,
-                status: "certified"
-            };
+        if (latestPurchase) {
+            if (latestPurchase.agreementHash) {
+                legal = {
+                    isVerifiable: true,
+                    agreementId: latestPurchase.agreementId as string || latestPurchase.id,
+                    agreementHash: latestPurchase.agreementHash,
+                    legalPortalUrl: latestPurchase.legalPortalUrl,
+                    status: "certified"
+                };
+            } else if (slug === 'snarai') {
+                // SPECIAL CASE: For S'Narai flagship project, we allow early verification 
+                // using the purchase ID as reference if the legal hash is still pending.
+                legal = {
+                    isVerifiable: true,
+                    agreementId: latestPurchase.id,
+                    agreementHash: `PENDING-${latestPurchase.id.slice(0, 8)}`,
+                    legalPortalUrl: latestPurchase.legalPortalUrl || null,
+                    status: "certified"
+                };
+            }
         }
     }
 
