@@ -207,32 +207,36 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     let userRewardsValue = 0;
     
     if (wallet && wallet.startsWith("0x") && project.id) {
-        const normalizedWallet = wallet.toLowerCase();
-        
-        const member = await db.query.daoMembers.findFirst({
-            where: and(
-                eq(daoMembersSchema.projectId, project.id),
-                eq(daoMembersSchema.wallet, normalizedWallet)
-            )
-        });
-        if (member && Number(member.votingPower || 0) > userVotingPower) {
-            userVotingPower = Number(member.votingPower);
-        }
-
-        const balance = await db.query.userBalances.findFirst({
-            where: eq(userBalancesSchema.walletAddress, normalizedWallet)
-        });
-        if (balance) {
-            const pbox = Number(balance.pboxBalance || 0);
-            const usdc = Number(balance.usdcBalance || 0);
+        try {
+            const normalizedWallet = wallet.toLowerCase();
             
-            if (Number(chainId) === 8453) {
-                userRewards = `${usdc.toFixed(2)} USDC`;
-                userRewardsValue = usdc;
-            } else {
-                userRewards = `${pbox.toFixed(2)} PBOX`;
-                userRewardsValue = pbox;
+            const member = await db.query.daoMembers.findFirst({
+                where: and(
+                    eq(daoMembersSchema.projectId, project.id),
+                    eq(daoMembersSchema.wallet, normalizedWallet)
+                )
+            });
+            if (member && Number(member.votingPower || 0) > userVotingPower) {
+                userVotingPower = Number(member.votingPower);
             }
+
+            const balance = await db.query.userBalances.findFirst({
+                where: eq(userBalancesSchema.walletAddress, normalizedWallet)
+            });
+            if (balance) {
+                const pbox = Number(balance.pboxBalance || 0);
+                const usdc = Number(balance.usdcBalance || 0);
+                
+                if (Number(chainId) === 8453) {
+                    userRewards = `${usdc.toFixed(2)} USDC`;
+                    userRewardsValue = usdc;
+                } else {
+                    userRewards = `${pbox.toFixed(2)} PBOX`;
+                    userRewardsValue = pbox;
+                }
+            }
+        } catch (userDataError) {
+            console.warn("[API] Failed to fetch extended user data (rewards/VP):", userDataError);
         }
     }
 
@@ -253,16 +257,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     let certificates: any[] = [];
 
     if (wallet && project.id) {
-        const allPurchases = await db.query.purchases.findMany({
-            where: and(
-                eq(purchasesSchema.projectId, project.id),
-                eq(purchasesSchema.userId, wallet.toLowerCase()),
-                sql`${purchasesSchema.status} IN ('completed', 'active')`
-            ),
-            orderBy: desc(purchasesSchema.createdAt)
-        });
+        try {
+            const allPurchases = await db.query.purchases.findMany({
+                where: and(
+                    eq(purchasesSchema.projectId, project.id),
+                    eq(purchasesSchema.userId, wallet.toLowerCase()),
+                    sql`${purchasesSchema.status} IN ('completed', 'processing', 'pending')`
+                ),
+                orderBy: desc(purchasesSchema.createdAt)
+            });
 
-        certificates = allPurchases.map(p => {
+            certificates = allPurchases.map(p => {
             const isVerifiable = !!p.agreementHash || slug === 'snarai';
             const tokenPrice = Number(project.tokenPriceUsd || 50);
             const units = Math.floor(Number(p.amount) / (tokenPrice > 0 ? tokenPrice : 50));
@@ -278,6 +283,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 date: p.createdAt
             };
         });
+        } catch (certError) {
+            console.error("[API] Error fetching certificates for user:", certError);
+        }
     }
 
     // 4.10 Build Global Consolidated Certificate (Global Title) - PROTECTED BLOCK
@@ -419,10 +427,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error("❌ Public State API Error:", error);
     return NextResponse.json({ 
-      error: "Failed to fetch project state", 
+      error: "Temporary data unavailability", 
       message: (error as Error).message 
     }, { 
-      status: 500,
+      status: 200, 
       headers: getCorsHeaders(req.headers.get("origin"))
     });
   }
