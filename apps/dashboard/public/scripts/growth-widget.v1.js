@@ -298,9 +298,14 @@
         const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
         
         // Use the portal route with projectId parameter
-        const url = `${absoluteBase}/portal?projectId=${targetSlug}&widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        let url = `${absoluteBase}/portal?projectId=${targetSlug}&widget=true&origin=${encodeURIComponent(window.location.origin)}`;
         
-        track('PORTAL_OPEN', { slug: targetSlug });
+        // 🔐 AUTO-WALLET SYNC: Pass current session to portal
+        if (state.session.address) {
+            url += `&wallet=${state.session.address}`;
+        }
+        
+        track('PORTAL_OPEN', { slug: targetSlug, hasSession: !!state.session.address });
 
         let container = document.createElement('div');
         container.id = modalId;

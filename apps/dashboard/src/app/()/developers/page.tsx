@@ -319,7 +319,10 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                     )}
                   >
                     <Coins className="w-4 h-4" />
-                    <span>Commerce & Checkout</span>
+                    <div className="flex flex-col items-start">
+                      <span>Commerce & Checkout</span>
+                      <span className="text-[9px] text-emerald-400 font-black uppercase tracking-widest leading-none mt-1">Case-Insensitive</span>
+                    </div>
                   </button>
                   <button 
                     onClick={() => setActiveTab('portal')}
@@ -415,8 +418,11 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                       </div>
 
                       <div className="pt-4 border-t border-white/5 mt-4">
-                        <p className="text-zinc-500 text-[10px] uppercase font-black">Nota Legal</p>
-                        <p className="text-zinc-400 text-xs italic">El portal gestiona automáticamente la visualización de Títulos de Participación y Certificados Legales.</p>
+                        <p className="text-zinc-500 text-[10px] uppercase font-black">Nomenclatura Oficial</p>
+                        <p className="text-zinc-400 text-xs italic mt-1">
+                          • <span className="text-indigo-400 font-bold">Títulos</span>: Unidades de participación (artefactos).<br/>
+                          • <span className="text-indigo-400 font-bold">Certificado</span>: Documento legal PDF / On-chain Proof.
+                        </p>
                       </div>
                     </pre>
                   ) : activeTab === 'commerce' ? (
