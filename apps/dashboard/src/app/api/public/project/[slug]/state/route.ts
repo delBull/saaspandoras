@@ -268,6 +268,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             });
 
             if (allPurchases.length > 0) {
+                const origin = req.headers.get("origin") || "";
                 certificates = allPurchases.map(p => {
                     const isVerifiable = !!p.agreementHash || slug === 'snarai';
                     const tokenPrice = Number(project.tokenPriceUsd || 50);
@@ -278,7 +279,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                         isVerifiable,
                         agreementId: p.agreementId || p.id,
                         agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
-                        legalPortalUrl: p.legalPortalUrl || `${apiBase}/legal/certificate/${p.agreementId || p.id}?project=${slug}&units=${units}`,
+                        legalPortalUrl: p.legalPortalUrl || `${apiBase}/legal/certificate/${p.agreementId || p.id}?project=${slug}&units=${units}&origin=${encodeURIComponent(origin)}`,
                         status: p.agreementHash ? "certified" : "pending",
                         units: units || 1, 
                         amount: Number(p.amount) || 0, 
@@ -289,11 +290,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 // 🔥 SELF-HEALING: If no DB purchases but has on-chain balance, synthesize a virtual certificate
                 console.log(`[API] 🛡️ Synthesizing virtual certificate for ${wallet} (Balance: ${userArtifactCount})`);
                 const apiBase = apiKey.startsWith('pk_live_') ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
+                const origin = req.headers.get("origin") || "";
                 certificates = [{
                     isVerifiable: true,
                     agreementId: `ONCHAIN-${wallet.slice(2, 10).toUpperCase()}`,
                     agreementHash: `VERIFIED-ONCHAIN-${wallet.slice(-8).toUpperCase()}`,
-                    legalPortalUrl: `${apiBase}/legal/certificate/virtual-${wallet}?project=${slug}&units=${userArtifactCount}`,
+                    legalPortalUrl: `${apiBase}/legal/certificate/virtual-${wallet}?project=${slug}&units=${userArtifactCount}&origin=${encodeURIComponent(origin)}`,
                     status: "certified",
                     units: userArtifactCount,
                     amount: userArtifactCount * Number(project.tokenPriceUsd || 50),
@@ -317,11 +319,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         
         if (certificates && certificates.length > 0) {
             const apiBase = apiKey.startsWith('pk_live_') ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
+            const origin = req.headers.get("origin") || "";
             globalCertificate = {
                 isVerifiable: certificates.some(c => c.isVerifiable),
                 totalUnits: userTotalUnits,
                 totalAmount: userTotalAmount,
-                globalPortalUrl: `${apiBase}/legal/certificate/global-${wallet}?project=${slug}&units=${userTotalUnits}`, 
+                globalPortalUrl: `${apiBase}/legal/certificate/global-${wallet}?project=${slug}&units=${userTotalUnits}&origin=${encodeURIComponent(origin)}`, 
                 status: certificates.every(c => c.status === "certified") ? "certified" : "pending"
             };
         }
