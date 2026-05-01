@@ -2651,10 +2651,66 @@ window.PandorasGrowth.identify({
                 </div>
               </section>
 
-              {/* Step 4: Data API & On-Chain State */}
+              {/* Step 4: Consolidated Assets API (V3) */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-narai-gold text-black font-black text-[10px]">NEW: V3.0</Badge>
+                  <h3 className="text-lg font-black uppercase italic tracking-tight">Consolidated Assets API</h3>
+                </div>
+                <p className="text-zinc-400 text-sm font-medium">Accede a la posición total del usuario y sus certificados dinámicos para visualización externa.</p>
+                
+                <div className="bg-zinc-900/60 rounded-[2rem] p-8 border border-narai-gold/20">
+                   <div className="flex items-center gap-2 mb-6">
+                      <Terminal size={18} className="text-narai-gold" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Endpoint: /api/public/project/[slug]/state</span>
+                   </div>
+                   
+                   <div className="space-y-4">
+                      <div className="p-5 bg-zinc-950 rounded-2xl border border-zinc-800">
+                         <h5 className="text-xs font-black text-white uppercase mb-3 flex items-center gap-2">
+                            <ShieldCheck size={14} className="text-emerald-400" />
+                            Certificates Array
+                         </h5>
+                         <pre className="text-[10px] text-zinc-500 leading-relaxed">
+{`"certificates": [
+  {
+    "agreementId": "UUID",
+    "agreementHash": "SHA256",
+    "units": 10,
+    "status": "certified" | "pending"
+  }
+]`}
+                         </pre>
+                      </div>
+
+                      <div className="p-5 bg-zinc-950 rounded-2xl border border-narai-gold/10">
+                         <h5 className="text-xs font-black text-white uppercase mb-3 flex items-center gap-2">
+                            <Zap size={14} className="text-narai-gold" />
+                            Global Consolidated Title
+                         </h5>
+                         <pre className="text-[10px] text-zinc-500 leading-relaxed">
+{`"globalCertificate": {
+  "totalUnits": 300,
+  "totalAmount": "15000.00",
+  "globalPortalUrl": "https://...",
+  "status": "certified"
+}`}
+                         </pre>
+                      </div>
+                   </div>
+
+                   <div className="mt-8 p-4 bg-narai-gold/5 rounded-xl border border-narai-gold/10">
+                      <p className="text-[10px] text-narai-gold italic leading-relaxed">
+                        <strong>Uso Sugerido:</strong> Ideal para wallets institucionales o paneles de control que requieran mostrar la legitimidad total del activo sin listar cada transacción individual.
+                      </p>
+                   </div>
+                </div>
+              </section>
+
+              {/* Step 5: Data API & On-Chain State */}
               <section className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-amber-500 text-black font-black text-[10px]">PASO 04</Badge>
+                  <Badge className="bg-amber-500 text-black font-black text-[10px]">PASO 05</Badge>
                   <h3 className="text-lg font-black uppercase italic">Consumo de Datos On-Chain</h3>
                 </div>
                 <p className="text-zinc-400 text-sm font-medium">Utiliza el SDK para obtener el estado real del contrato, balances del usuario y métricas de fondeo del ecosistema.</p>

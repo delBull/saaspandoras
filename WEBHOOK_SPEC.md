@@ -183,6 +183,11 @@ Triggered when an NFT access pass is minted.
 
 ---
 
+  }
+}
+
+---
+
 ### `gamification.event`
 
 Triggered when a user earns points or a badge within the Pandora ecosystem.
@@ -200,6 +205,29 @@ Triggered when a user earns points or a badge within the Pandora ecosystem.
       "projectId": "uuid",
       "projectTitle": "Example DAO"
     }
+  }
+}
+```
+
+---
+
+### `purchase.certified`
+
+Triggered when a purchase is officially certified (individual or global consolidation).
+
+**Payload**:
+```json
+{
+  "event": "purchase.certified",
+  "version": "v1",
+  "data": {
+    "userWallet": "0x...",
+    "projectId": "uuid",
+    "agreementId": "AG-12345",
+    "agreementHash": "0x...",
+    "legalPortalUrl": "https://...",
+    "isConsolidated": true,
+    "totalUnits": 300
   }
 }
 ```
