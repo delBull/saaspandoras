@@ -10,11 +10,15 @@ export default async function CertificatePage({
   searchParams 
 }: { 
   params: { id: string }, 
-  searchParams: { project?: string, units?: string } 
+  searchParams: { project?: string, units?: string, origin?: string } 
 }) {
   const { id } = params;
   const projectSlug = searchParams.project || 'snarai';
   const units = searchParams.units || '3';
+  const origin = searchParams.origin || '';
+  
+  // URL de retorno inteligente: si viene de una landing, intenta abrir el portal por defecto
+  const returnUrl = origin ? `${origin}?openPortal=true` : '/';
   
   let wallet = null;
 
@@ -58,7 +62,7 @@ export default async function CertificatePage({
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-black">Verification System v2.0</p>
             </div>
           </div>
-          <a href="/portal" className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
+          <a href={returnUrl} className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
             <ArrowLeft size={14} /> Volver al Portal
           </a>
         </div>
