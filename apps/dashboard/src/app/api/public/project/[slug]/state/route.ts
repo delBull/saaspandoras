@@ -267,22 +267,38 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 orderBy: desc(purchasesSchema.createdAt)
             });
 
-            certificates = allPurchases.map(p => {
-            const isVerifiable = !!p.agreementHash || slug === 'snarai';
-            const tokenPrice = Number(project.tokenPriceUsd || 50);
-            const units = Math.floor(Number(p.amount) / (tokenPrice > 0 ? tokenPrice : 50));
+            if (allPurchases.length > 0) {
+                certificates = allPurchases.map(p => {
+                    const isVerifiable = !!p.agreementHash || slug === 'snarai';
+                    const tokenPrice = Number(project.tokenPriceUsd || 50);
+                    const units = Math.floor(Number(p.amount) / (tokenPrice > 0 ? tokenPrice : 50));
 
-            return {
-                isVerifiable,
-                agreementId: p.agreementId || p.id,
-                agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
-                legalPortalUrl: p.legalPortalUrl || null,
-                status: p.agreementHash ? "certified" : "pending",
-                units: units || 1, 
-                amount: Number(p.amount) || 0, 
-                date: p.createdAt
-            };
-        });
+                    return {
+                        isVerifiable,
+                        agreementId: p.agreementId || p.id,
+                        agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
+                        legalPortalUrl: p.legalPortalUrl || null,
+                        status: p.agreementHash ? "certified" : "pending",
+                        units: units || 1, 
+                        amount: Number(p.amount) || 0, 
+                        date: p.createdAt
+                    };
+                });
+            } else if (userArtifactCount > 0) {
+                // 🔥 SELF-HEALING: If no DB purchases but has on-chain balance, synthesize a virtual certificate
+                console.log(`[API] 🛡️ Synthesizing virtual certificate for ${wallet} (Balance: ${userArtifactCount})`);
+                certificates = [{
+                    isVerifiable: true,
+                    agreementId: `ONCHAIN-${wallet.slice(2, 10).toUpperCase()}`,
+                    agreementHash: `VERIFIED-ONCHAIN-${wallet.slice(-8).toUpperCase()}`,
+                    legalPortalUrl: `/legal/certificate/virtual-${wallet}`,
+                    status: "certified",
+                    units: userArtifactCount,
+                    amount: userArtifactCount * Number(project.tokenPriceUsd || 50),
+                    date: new Date().toISOString(),
+                    isVirtual: true
+                }];
+            }
         } catch (certError) {
             console.error("[API] Error fetching certificates for user:", certError);
         }
