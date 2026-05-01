@@ -47,6 +47,7 @@ interface RouteParams {
  * Caching: 15s default, bypass with ?live=true
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
+  console.log(`[API] 📡 Incoming request for project state: ${req.url}`);
   try {
     const { slug: rawSlug } = await params;
     const slug = resolveProjectSlug(rawSlug);
@@ -56,13 +57,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const isLive = searchParams.get("live") === "true";
 
     if (!apiKey) {
-      return NextResponse.json({ error: "No se proporcionó API Key" }, { status: 401 });
+      return NextResponse.json({ error: "No se proporcionó API Key" }, { 
+        status: 401,
+        headers: getCorsHeaders(req.headers.get("origin"))
+      });
     }
 
     // 1. Validate API Key
     const authClient = await IntegrationKeyService.validateKey(apiKey);
     if (!authClient) {
-      return NextResponse.json({ error: "API Key inválida o expirada" }, { status: 401 });
+      return NextResponse.json({ error: "API Key inválida o expirada" }, { 
+        status: 401,
+        headers: getCorsHeaders(req.headers.get("origin"))
+      });
     }
 
     // 2. Fetch Project
@@ -271,11 +278,23 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
                 legalPortalUrl: p.legalPortalUrl || null,
                 status: p.agreementHash ? "certified" : "pending",
-                units: units || 1, // Calculate based on amount / price
+                units: units || 1, 
+                amount: Number(p.amount) || 0, // Ensure amount is passed for aggregation
                 date: p.createdAt
             };
         });
     }
+
+    // 4.10 Build Global Consolidated Certificate (Global Title)
+    const userTotalUnits = (certificates || []).reduce((acc, cert) => acc + (Number(cert.units) || 0), 0);
+    const userTotalAmount = (certificates || []).reduce((acc, cert) => acc + (Number(cert.amount) || 0), 0); 
+    
+    const globalCertificate = certificates.length > 0 ? {
+        isVerifiable: certificates.some(c => c.isVerifiable),
+        totalUnits: userTotalUnits,
+        globalPortalUrl: `https://snarai.aztecaz.xyz/legal/global/${wallet}`,
+        status: certificates.every(c => c.status === 'certified') ? 'certified' : 'pending_consolidation'
+    } : null;
 
     // 5. Calculate Progression via Engine
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
@@ -297,7 +316,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const metadataTarget = Number(project.targetAmount || activePhase?.cap || (metadataPrice * 8));
     
     // Total Units Ground Truth: Active Phase allocation is the primary source.
-    const totalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
+    const projectTotalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
         ? activePhase.stats.tokensAllocated 
         : (metadataTarget > 0 ? Math.floor(metadataTarget / metadataPrice) : 8);
 
@@ -308,12 +327,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         ? activePhase.stats.tokensSold 
         : currentSupply; // On-chain supply is the most reliable cumulative sold count
 
-    const availableUnits = Math.max(0, totalUnits - soldUnits);
+    const availableUnits = Math.max(0, projectTotalUnits - soldUnits);
     
     // 🔥 CRITICAL FIX: Ensure progress is never NaN or Infinity
     let progressPercentage = 0;
-    if (totalUnits > 0) {
-        progressPercentage = Math.round(Math.min(100, Math.max(0, (soldUnits / totalUnits) * 100)));
+    if (projectTotalUnits > 0) {
+        progressPercentage = Math.round(Math.min(100, Math.max(0, (soldUnits / projectTotalUnits) * 100)));
     }
 
     const response = NextResponse.json({
@@ -354,6 +373,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         ]
       },
       certificates,
+      globalCertificate,
       holdersCount,
       treasuryDisplay,
       dbUserStatus,
@@ -362,11 +382,11 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         estimatedApy: project.estimatedApy || "12.5%",
         targetAmount: (project.targetAmount && project.targetAmount !== "NaN" && Number(project.targetAmount) > 0) 
             ? project.targetAmount 
-            : (activePhase?.cap?.toString() || (totalUnits * Number(project.tokenPriceUsd || 50)).toString()),
+            : (activePhase?.cap?.toString() || (projectTotalUnits * Number(project.tokenPriceUsd || 50)).toString()),
         tokenPriceUsd: project.tokenPriceUsd || activePhase?.tokenPrice?.toString() || "50",
         nextPhasePriceUsd: nextPhase?.tokenPrice?.toString() || "75",
         deliveryDate: "Q4 2027",
-        totalUnits,
+        totalUnits: projectTotalUnits,
         soldUnits,
         availableUnits,
         progressPercentage,
