@@ -1,6 +1,6 @@
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, sql, desc } from 'drizzle-orm';
 import { db } from '@/db';
-import { marketingLeads, courses, growthActionsLog, projects } from '@/db/schema';
+import { marketingLeads, courses, growthActionsLog, projects, purchases } from '@/db/schema';
 import { GrowthActionType, LeadContextPayload, ProjectContextPayload, GrowthMetadata, LeadState } from './types';
 import { notificationService, ensureNotificationServiceConfigured } from '@/lib/notifications';
 
@@ -411,6 +411,16 @@ export async function executeGrowthActions(
                         const raised = Number(freshProject?.raisedAmount || 0);
                         const target = Number(freshProject?.targetAmount || 1);
                         const fundingPercentage = Math.min(100, Math.round((raised / target) * 100));
+
+                        // 🔍 [Audit 9.2] Fetch latest legal data for certificate delivery
+                        const latestPurchase = await tx.query.purchases.findFirst({
+                            where: and(
+                                eq(purchases.projectId, project.id),
+                                eq(purchases.userId, (lockedLead.walletAddress || '').toLowerCase()),
+                                sql`status IN ('completed', 'active')`
+                            ),
+                            orderBy: desc(purchases.createdAt)
+                        });
                         
                         const res = await sendPostPurchaseSuccessEmail({
                             to: lead.email as string,
@@ -418,7 +428,10 @@ export async function executeGrowthActions(
                             projectSlug: project.slug,
                             businessCategory: project.businessCategory || 'other',
                             fundingPercentage,
-                            currentPhase: freshProject?.status === 'live' ? 'Participación Abierta' : 'Fase Privada'
+                            currentPhase: freshProject?.status === 'live' ? 'Participación Abierta' : 'Fase Privada',
+                            agreementId: latestPurchase?.agreementId as string || latestPurchase?.id,
+                            agreementHash: latestPurchase?.agreementHash || (project.slug === 'snarai' ? `PENDING-${latestPurchase?.id?.slice(0, 8)}` : undefined),
+                            legalPortalUrl: latestPurchase?.legalPortalUrl || undefined
                         });
                         success = res.success;
                     } else {
