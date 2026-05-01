@@ -900,6 +900,9 @@ export async function sendPostPurchaseSuccessEmail(context: {
   fundingPercentage?: number;
   currentPhase?: string;
   brandHeader?: string;
+  agreementId?: string;
+  agreementHash?: string;
+  legalPortalUrl?: string;
 }) {
   const { projectName, projectSlug, intentMap } = resolveNicheContext(context);
   console.log(`[Growth Engine] Sending Post-Purchase Success Email for ${projectName} to ${context.to}`);
@@ -942,7 +945,10 @@ export async function sendPostPurchaseSuccessEmail(context: {
         fundingPercentage: context.fundingPercentage || 0,
         currentPhase: context.currentPhase || 'Public Sale',
         ctaText,
-        ctaUrl
+        ctaUrl,
+        agreementId: context.agreementId,
+        agreementHash: context.agreementHash,
+        legalPortalUrl: context.legalPortalUrl
       }) as React.ReactElement,
     });
 

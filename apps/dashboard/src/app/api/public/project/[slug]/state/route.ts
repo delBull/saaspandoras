@@ -247,23 +247,11 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         limit: 5
     });
 
-    // 4.9 Fetch Legal Metadata (Integrity Proofs)
-    let legal: {
-        isVerifiable: boolean;
-        agreementId: string | null;
-        agreementHash: string | null;
-        legalPortalUrl: string | null;
-        status: string;
-    } = {
-        isVerifiable: false,
-        agreementId: null,
-        agreementHash: null,
-        legalPortalUrl: null,
-        status: "none"
-    };
+    // 4.9 Fetch Legal Metadata (Integrity Proofs) - MULTI-CERTIFICATE SUPPORT
+    let certificates: any[] = [];
 
     if (wallet && project.id) {
-        const latestPurchase = await db.query.purchases.findFirst({
+        const allPurchases = await db.query.purchases.findMany({
             where: and(
                 eq(purchasesSchema.projectId, project.id),
                 eq(purchasesSchema.userId, wallet.toLowerCase()),
@@ -272,27 +260,21 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             orderBy: desc(purchasesSchema.createdAt)
         });
 
-        if (latestPurchase) {
-            if (latestPurchase.agreementHash) {
-                legal = {
-                    isVerifiable: true,
-                    agreementId: latestPurchase.agreementId as string || latestPurchase.id,
-                    agreementHash: latestPurchase.agreementHash,
-                    legalPortalUrl: latestPurchase.legalPortalUrl,
-                    status: "certified"
-                };
-            } else if (slug === 'snarai') {
-                // SPECIAL CASE: For S'Narai flagship project, we allow early verification 
-                // using the purchase ID as reference if the legal hash is still pending.
-                legal = {
-                    isVerifiable: true,
-                    agreementId: latestPurchase.id,
-                    agreementHash: `PENDING-${latestPurchase.id.slice(0, 8)}`,
-                    legalPortalUrl: latestPurchase.legalPortalUrl || null,
-                    status: "certified"
-                };
-            }
-        }
+        certificates = allPurchases.map(p => {
+            const isVerifiable = !!p.agreementHash || slug === 'snarai';
+            const tokenPrice = Number(project.tokenPriceUsd || 50);
+            const units = Math.floor(Number(p.amount) / (tokenPrice > 0 ? tokenPrice : 50));
+
+            return {
+                isVerifiable,
+                agreementId: p.agreementId || p.id,
+                agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
+                legalPortalUrl: p.legalPortalUrl || null,
+                status: p.agreementHash ? "certified" : "pending",
+                units: units || 1, // Calculate based on amount / price
+                date: p.createdAt
+            };
+        });
     }
 
     // 5. Calculate Progression via Engine
@@ -371,7 +353,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             }
         ]
       },
-      legal,
+      certificates,
       holdersCount,
       treasuryDisplay,
       dbUserStatus,
