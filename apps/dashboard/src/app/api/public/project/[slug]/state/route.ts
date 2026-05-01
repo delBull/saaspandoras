@@ -202,7 +202,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     // 4.6 Fetch User Rewards & Voting Power (Dynamic for any project)
-    // GROUND TRUTH: 1 Certificate = 1 Voting Power (as requested)
     let userVotingPower = wallet && userArtifactCount > 0 ? userArtifactCount : 0; 
     let userRewards = "0.00 USDC";
     let userRewardsValue = 0;
@@ -210,8 +209,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     if (wallet && wallet.startsWith("0x") && project.id) {
         const normalizedWallet = wallet.toLowerCase();
         
-        // If DB has higher voting power (e.g. delegated), we prioritize it, 
-        // but user balance is the minimum viable power.
         const member = await db.query.daoMembers.findFirst({
             where: and(
                 eq(daoMembersSchema.projectId, project.id),
@@ -222,7 +219,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             userVotingPower = Number(member.votingPower);
         }
 
-        // Rewards from User Balances (Platform-wide or specific if needed)
         const balance = await db.query.userBalances.findFirst({
             where: eq(userBalancesSchema.walletAddress, normalizedWallet)
         });
@@ -230,7 +226,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             const pbox = Number(balance.pboxBalance || 0);
             const usdc = Number(balance.usdcBalance || 0);
             
-            // Heuristic: If project is on Base (8453), prioritize USDC display
             if (Number(chainId) === 8453) {
                 userRewards = `${usdc.toFixed(2)} USDC`;
                 userRewardsValue = usdc;
@@ -279,22 +274,33 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 legalPortalUrl: p.legalPortalUrl || null,
                 status: p.agreementHash ? "certified" : "pending",
                 units: units || 1, 
-                amount: Number(p.amount) || 0, // Ensure amount is passed for aggregation
+                amount: Number(p.amount) || 0, 
                 date: p.createdAt
             };
         });
     }
 
-    // 4.10 Build Global Consolidated Certificate (Global Title)
-    const userTotalUnits = (certificates || []).reduce((acc, cert) => acc + (Number(cert.units) || 0), 0);
-    const userTotalAmount = (certificates || []).reduce((acc, cert) => acc + (Number(cert.amount) || 0), 0); 
-    
-    const globalCertificate = certificates.length > 0 ? {
-        isVerifiable: certificates.some(c => c.isVerifiable),
-        totalUnits: userTotalUnits,
-        globalPortalUrl: `https://snarai.aztecaz.xyz/legal/global/${wallet}`,
-        status: certificates.every(c => c.status === 'certified') ? 'certified' : 'pending_consolidation'
-    } : null;
+    // 4.10 Build Global Consolidated Certificate (Global Title) - PROTECTED BLOCK
+    let userTotalUnits = 0;
+    let userTotalAmount = 0;
+    let globalCertificate = null;
+
+    try {
+        userTotalUnits = (certificates || []).reduce((acc, cert) => acc + (Number(cert.units) || 0), 0);
+        userTotalAmount = (certificates || []).reduce((acc, cert) => acc + (Number(cert.amount) || 0), 0); 
+        
+        if (certificates && certificates.length > 0) {
+            globalCertificate = {
+                isVerifiable: certificates.some(c => c.isVerifiable),
+                totalUnits: userTotalUnits,
+                totalAmount: userTotalAmount,
+                globalPortalUrl: certificates[0].legalPortalUrl, 
+                status: certificates.every(c => c.status === "certified") ? "certified" : "pending"
+            };
+        }
+    } catch (e) {
+        console.error("⚠️ Error building global certificate:", e);
+    }
 
     // 5. Calculate Progression via Engine
     const rawTiers = (w2e.tiers || w2e.packages || []) as any[];
