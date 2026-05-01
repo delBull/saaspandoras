@@ -38,9 +38,9 @@ export default async function CertificatePage({
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-black">Verification System v2.0</p>
             </div>
           </div>
-          <button onClick={() => {}} className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
+          <a href="/portal" className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
             <ArrowLeft size={14} /> Volver al Portal
-          </button>
+          </a>
         </div>
 
         {/* MAIN CERTIFICATE CARD */}
