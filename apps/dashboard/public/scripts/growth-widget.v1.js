@@ -205,7 +205,11 @@
         if (!finalSlug || typeof finalSlug !== 'string' || finalSlug === '[object Object]') {
             finalSlug = projectId;
         }
-        if (!finalTier || typeof finalTier !== 'string') finalTier = 'standard';
+        if (!finalTier || typeof finalTier !== 'string') {
+            finalTier = 'standard';
+        } else {
+            finalTier = finalTier.toLowerCase().trim(); // 🛡️ CASE INSENSITIVE NORMALIZATION
+        }
 
         console.log('[Pandoras] Final Parameters Ready:', { finalSlug, finalTier, finalOrigin });
         

@@ -31,7 +31,7 @@ interface Project {
 
 export default function DevelopersPage() {
   const [copied, setCopied] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'widget' | 'commerce' | 'api'>('widget');
+  const [activeTab, setActiveTab] = useState<'widget' | 'commerce' | 'portal' | 'api'>('widget');
   
   // Dynamic State
   const [projects, setProjects] = useState<Project[]>([]);
@@ -118,6 +118,11 @@ export default function DevelopersPage() {
 
 // Option B: Programmable Popup - Resilient Matching
 window.PandorasGrowth.openCheckout('${projectSlug}', '${secondTier}');`,
+    portal: `// Option A: Data Attributes (Investor Portal)
+<button data-pd-portal="true"> Mi Portal </button>
+
+// Option B: Programmable Portal Launch
+window.PandorasGrowth.openPortal('${projectSlug}');`,
     api: `// Option A: SDK Implementation (Recommended)
 window.PandorasGrowth.registerLead({
   email: "builder@example.com",
@@ -317,6 +322,16 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                     <span>Commerce & Checkout</span>
                   </button>
                   <button 
+                    onClick={() => setActiveTab('portal')}
+                    className={cn(
+                      "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
+                      activeTab === 'portal' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                    )}
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span>Investor Portal</span>
+                  </button>
+                  <button 
                     onClick={() => setActiveTab('api')}
                     className={cn(
                       "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
@@ -383,6 +398,25 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                         {'    metadata: { tags: ['}<span className="text-emerald-300">"FULL_UNIT"</span>{'] } '}<span className="text-zinc-600">// Triggers VIP Bypass</span><br/>
                         {'  })'}<br/>
                         {'});'}
+                      </div>
+                    </pre>
+                  ) : activeTab === 'portal' ? (
+                    <pre className="space-y-4">
+                      <div>
+                        <div className="text-zinc-600 mb-2">// Option A: Data Attributes (Investor Portal)</div>
+                        <span className="text-zinc-400">&lt;</span><span className="text-blue-400">button</span><br/>
+                        <span className="pl-6 text-indigo-400">data-pd-portal</span>=<span className="text-emerald-300">"true"</span><br/>
+                        <span className="text-zinc-400">&gt;</span> Mi Portal <span className="text-zinc-400">&lt;/</span><span className="text-blue-400">button</span><span className="text-zinc-400">&gt;</span>
+                      </div>
+                      
+                      <div>
+                        <div className="text-zinc-600 mb-2">// Option B: Programmable Portal Launch</div>
+                        <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openPortal</span>(<span className="text-emerald-300">'{projectSlug}'</span>);
+                      </div>
+
+                      <div className="pt-4 border-t border-white/5 mt-4">
+                        <p className="text-zinc-500 text-[10px] uppercase font-black">Nota Legal</p>
+                        <p className="text-zinc-400 text-xs italic">El portal gestiona automáticamente la visualización de Títulos de Participación y Certificados Legales.</p>
                       </div>
                     </pre>
                   ) : activeTab === 'commerce' ? (
