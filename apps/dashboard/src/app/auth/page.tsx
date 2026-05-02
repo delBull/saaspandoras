@@ -86,7 +86,7 @@ function AuthContent() {
                     const returnUrl = new URL(origin);
                     returnUrl.searchParams.set('wallet', account.address);
                     returnUrl.searchParams.set('openPortal', 'true');
-                    window.location.replace(returnUrl.toString());
+                    window.location.href = returnUrl.toString();
                 } catch (e) {
                     console.error("Failed to construct return URL", e);
                 }
@@ -192,7 +192,7 @@ function AuthContent() {
                             const returnUrl = new URL(origin);
                             returnUrl.searchParams.set('wallet', account?.address || '');
                             returnUrl.searchParams.set('openPortal', 'true');
-                            window.location.replace(returnUrl.toString());
+                            window.location.href = returnUrl.toString();
                         }}
                         className="mt-4 px-6 py-3 bg-white text-black text-[11px] font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
                     >
