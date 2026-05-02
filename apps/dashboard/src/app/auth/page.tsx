@@ -15,8 +15,30 @@ function AuthContent() {
     const searchParams = useSearchParams();
     const { runAuthFlow, status: authStatus } = useAuth();
     
-    const projectSlug = searchParams.get('project') || 'pandoras';
-    const origin = searchParams.get('origin');
+    // Persist params to localStorage to survive OAuth redirects (Google/Apple drop query params)
+    const [projectSlug, setProjectSlug] = useState('pandoras');
+    const [origin, setOrigin] = useState('');
+
+    useEffect(() => {
+        const urlProject = searchParams.get('project');
+        const urlOrigin = searchParams.get('origin');
+        
+        if (urlProject) {
+            localStorage.setItem('auth_pending_project', urlProject);
+            setProjectSlug(urlProject);
+        } else {
+            const stored = localStorage.getItem('auth_pending_project');
+            if (stored) setProjectSlug(stored);
+        }
+
+        if (urlOrigin) {
+            localStorage.setItem('auth_pending_origin', urlOrigin);
+            setOrigin(urlOrigin);
+        } else {
+            const stored = localStorage.getItem('auth_pending_origin');
+            if (stored) setOrigin(stored);
+        }
+    }, [searchParams]);
     
     const [project, setProject] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -45,34 +67,34 @@ function AuthContent() {
 
     // Handle Authentication Completion
     useEffect(() => {
-        // High-certainty success states
         const isSuccess = authStatus === 'authenticated' || authStatus === 'has_access' || authStatus === 'no_access';
-        
-        console.log(`🛡️ [Auth] Current Status: ${authStatus}, Wallet: ${account?.address?.slice(0,6)}... Success: ${isSuccess}`);
+        console.log(`🛡️ [Auth] Current Status: ${authStatus}, Wallet: ${account?.address?.slice(0,6)}...`);
 
-        if (account?.address && isSuccess) {
-            console.log("🛡️ [Auth] Authenticated! Notifying parent with wallet:", account.address);
+        if (account?.address) {
             if (window.opener) {
-                const targetOrigin = origin || '*';
-                
-                // Send specific success message with wallet address
-                window.opener.postMessage({
-                    type: 'growth_os:auth_success',
-                    wallet: account.address
-                }, targetOrigin);
-                
-                // Also send legacy message for compatibility
-                window.opener.postMessage('growth_os:auth_success', targetOrigin);
-                
-                console.log("🛡️ [Auth] Messages sent. Closing in 1.5s...");
-                setTimeout(() => window.close(), 1500);
-            } else {
-                console.warn("🛡️ [Auth] No window.opener found. Cannot notify parent.");
+                // DESKTOP: Wait for strict SIWE auth to send message back
+                if (isSuccess) {
+                    const targetOrigin = origin || '*';
+                    window.opener.postMessage({ type: 'growth_os:auth_success', wallet: account.address }, targetOrigin);
+                    window.opener.postMessage('growth_os:auth_success', targetOrigin);
+                    setTimeout(() => window.close(), 1500);
+                }
+            } else if (origin) {
+                // MOBILE: Instant redirect! No SIWE wait. If we have the address, return immediately.
+                console.log("🛡️ [Auth] Mobile flow: Instant redirect back to:", origin);
+                try {
+                    const returnUrl = new URL(origin);
+                    returnUrl.searchParams.set('wallet', account.address);
+                    returnUrl.searchParams.set('openPortal', 'true');
+                    window.location.replace(returnUrl.toString());
+                } catch (e) {
+                    console.error("Failed to construct return URL", e);
+                }
             }
         }
     }, [account?.address, authStatus, origin]);
 
-    // Trigger SIWE if connected but not authenticated
+    // Trigger SIWE if connected but not authenticated (Only really needed for desktop popup flow)
     useEffect(() => {
         // We trigger SIWE if we are unauthenticated OR if we've been stuck in idle/booting with an account connected
         const shouldTrigger = authStatus === 'unauthenticated' || authStatus === 'idle';
@@ -163,6 +185,20 @@ function AuthContent() {
                         ? "Sincronizando sesión con el protocolo. Esta ventana se cerrará automáticamente."
                         : "Conecta tu billetera o usa tu correo para validar tu acceso al protocolo de forma segura."}
                 </p>
+
+                {account?.address && !window.opener && origin && (
+                    <button 
+                        onClick={() => {
+                            const returnUrl = new URL(origin);
+                            returnUrl.searchParams.set('wallet', account?.address || '');
+                            returnUrl.searchParams.set('openPortal', 'true');
+                            window.location.replace(returnUrl.toString());
+                        }}
+                        className="mt-4 px-6 py-3 bg-white text-black text-[11px] font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
+                    >
+                        Volver al Portal
+                    </button>
+                )}
             </motion.div>
 
             <div className="fixed bottom-8 text-center opacity-30">
