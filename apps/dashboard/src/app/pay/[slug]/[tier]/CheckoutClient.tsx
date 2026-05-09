@@ -528,25 +528,28 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             ) : (
                                 /* Active Phase UI */
                                 <>
-                                    {/* Trust Layer */}
-                                    <div className="bg-zinc-900/40 rounded-2xl p-5 mb-6 border border-zinc-800/50">
-                                        <div className="space-y-4">
-                                            <div className="flex items-start gap-3">
-                                                <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
-                                                    <ShieldCheck className="w-4 h-4" />
+                                    {/* Consolidated Info Row */}
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        {/* Trust Layer */}
+                                        <div className="bg-zinc-900/40 rounded-xl p-3 border border-zinc-800/50 flex flex-col justify-center">
+                                            <div className="flex items-start gap-2">
+                                                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400 shrink-0">
+                                                    <ShieldCheck className="w-3.5 h-3.5" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-[11px] font-black uppercase text-zinc-300 tracking-widest mt-0.5">Participación Asegurada</h4>
-                                                    <p className="text-[11px] text-zinc-500 leading-tight">Registro inmutable en la red {chain.name || 'Blockchain'}.</p>
+                                                    <h4 className="text-[8px] font-black uppercase text-zinc-300 tracking-widest mt-0.5 mb-0.5">Participación Asegurada</h4>
+                                                    <p className="text-[8px] text-zinc-500 leading-tight">Registro inmutable en la red.</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Status Indicator */}
-                                    <div className="bg-emerald-500/10 rounded-xl p-4 mb-4 border border-emerald-500/20 text-center">
-                                        <h4 className="text-[11px] font-black uppercase text-emerald-400 tracking-widest mb-1 flex items-center justify-center gap-1.5"><Zap className="w-3 h-3" /> {activityData?.count > 0 ? `VENTA ACTIVA (+${activityData.count} usuarios)` : "VENTA ACTIVA — VERIFICADA"}</h4>
-                                        <p className="text-[10px] text-emerald-400/80 font-medium">Condiciones preferentes habilitadas para esta fase.</p>
+                                        {/* Status Indicator */}
+                                        <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20 flex flex-col justify-center">
+                                            <h4 className="text-[8px] font-black uppercase text-emerald-400 tracking-widest mb-1 flex items-center gap-1.5">
+                                                <Zap className="w-3 h-3" /> {activityData?.count > 0 ? `VENTA ACTIVA (+${activityData.count})` : "VENTA ACTIVA — VERIFICADA"}
+                                            </h4>
+                                            <p className="text-[8px] text-emerald-400/80 font-medium leading-tight">Condiciones preferentes habilitadas.</p>
+                                        </div>
                                     </div>
 
                                     {/* Action Flow */}

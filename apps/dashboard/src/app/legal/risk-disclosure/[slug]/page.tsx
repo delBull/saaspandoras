@@ -1,15 +1,16 @@
 import React from 'react';
 import { ShieldAlert, FileWarning, Globe, CheckCircle2, Building, Scale, ArrowLeft } from 'lucide-react';
 
-export default function RiskDisclosurePage({ 
+export default async function RiskDisclosurePage({ 
   params, 
   searchParams 
 }: { 
-  params: { slug: string }, 
-  searchParams: { origin?: string } 
+  params: Promise<{ slug: string }>, 
+  searchParams: Promise<{ origin?: string }> 
 }) {
-  const { slug } = params;
-  const origin = searchParams.origin || '';
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const origin = resolvedSearchParams.origin || '';
   const returnUrl = origin ? `${origin}?openPortal=true` : '/';
   
   const projectName = slug.toUpperCase().replace('SNARAI', "S'NARAI");
