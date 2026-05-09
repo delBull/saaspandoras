@@ -6,7 +6,7 @@ import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, d
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
-import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap } from 'lucide-react';
+import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useConnectModal } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
@@ -55,6 +55,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [cameFromFastLane, setCameFromFastLane] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const { connect } = useConnectModal();
+
+    // Legal Stack State
+    const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+    const [legalChecks, setLegalChecks] = useState({
+        agreement: false,
+        nature: false,
+        risk: false
+    });
+    const allLegalChecked = legalChecks.agreement && legalChecks.nature && legalChecks.risk;
 
     // Deep Styling Configuration
     const brandColor = project.themeColor || '#10b981'; // Emerald 500 default
@@ -543,6 +552,13 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                     {/* Action Flow */}
                                     {step === 'checkout' ? (
                                         <div className="space-y-4">
+                                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4 text-center">
+                                                <h4 className="text-[10px] font-black uppercase text-red-400 tracking-widest mb-1 flex items-center justify-center gap-1.5"><AlertTriangle className="w-3 h-3" /> Aviso Importante</h4>
+                                                <p className="text-[9px] text-red-400/80 font-medium">
+                                                    Los Certificados son instrumentos de participación digital. <strong>NO representan:</strong> propiedad inmobiliaria directa, acciones societarias ni rendimientos garantizados. Participación sujeta a los términos del ecosistema.
+                                                </p>
+                                            </div>
+
                                             <div className="flex justify-between items-center bg-black/50 rounded-2xl p-4 mb-2 border border-zinc-800/80">
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-1">Inversión Estimada</span>
@@ -583,40 +599,85 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                     </button>
                                                 ) : (
                                                     <div className="space-y-4">
-                                                        <TransactionButton
-                                                            transaction={() => {
-                                                                if (!txConfig.address) throw new Error("Configuración de contrato no válida.");
-                                                                return prepareContractCall({
-                                                                    contract: getContract({ client, chain, address: txConfig.address }),
-                                                                    method: txConfig.method as any,
-                                                                    params: txConfig.params as any,
-                                                                    value: txConfig.value
-                                                                });
-                                                            }}
-                                                            onTransactionSent={() => setStep('processing')}
-                                                            onTransactionConfirmed={handleSuccess}
-                                                            onError={(error) => {
-                                                                console.error("Transacción Fallida:", error);
-                                                                let errorMsg = "Error en el protocolo.";
-                                                                const msg = error.message?.toLowerCase() || "";
+                                                        {!isLegalModalOpen ? (
+                                                            <button
+                                                                onClick={() => setIsLegalModalOpen(true)}
+                                                                disabled={isPriceLoading || !txConfig.address || !hasEnsuredAccess}
+                                                                className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] border-none ${(isPriceLoading || !txConfig.address || !hasEnsuredAccess) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
+                                                                style={{
+                                                                    backgroundColor: !hasEnsuredAccess ? '#3f3f46' : brandColor,
+                                                                    color: !hasEnsuredAccess ? '#a1a1aa' : '#000',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                {isPriceLoading ? "Calculando..." : (hasEnsuredAccess ? "Continuar con la Participación" : "Preparando Acceso...")}
+                                                            </button>
+                                                        ) : (
+                                                            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 space-y-4 animate-in fade-in zoom-in-95">
+                                                                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                                                                    <h3 className="text-[11px] font-black uppercase tracking-widest text-white flex items-center gap-2"><FileText className="w-3 h-3 text-narai-gold" /> Validación Legal Requerida</h3>
+                                                                    <button onClick={() => setIsLegalModalOpen(false)} className="text-zinc-500 hover:text-white text-xs">Cerrar</button>
+                                                                </div>
+                                                                
+                                                                <div className="space-y-4 py-2">
+                                                                    <label className="flex items-start gap-3 cursor-pointer group">
+                                                                        <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, agreement: !prev.agreement}))}>
+                                                                            {legalChecks.agreement ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
+                                                                        </div>
+                                                                        <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <a href={`/legal/agreement/${project.slug}`} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Acuerdo Marco de Participación Digital</a>.</p>
+                                                                    </label>
 
-                                                                if (msg.includes('insufficient')) errorMsg = "Fondos insuficientes.";
-                                                                else if (msg.includes('user rejected')) errorMsg = "Transacción cancelada.";
-                                                                else if (msg.includes('already owned') || msg.includes('already minted')) errorMsg = "Ya posees esta participación.";
-                                                                else if (msg.includes('invalid key') || msg.includes('clientid')) errorMsg = "Error de configuración del protocolo.";
+                                                                    <label className="flex items-start gap-3 cursor-pointer group">
+                                                                        <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, nature: !prev.nature}))}>
+                                                                            {legalChecks.nature ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
+                                                                        </div>
+                                                                        <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">Entiendo que <strong>NO</strong> estoy adquiriendo propiedad inmobiliaria directa, acciones societarias ni rendimientos garantizados.</p>
+                                                                    </label>
 
-                                                                toast.error(errorMsg);
-                                                            }}
-                                                            disabled={isPriceLoading || !txConfig.address}
-                                                            className={`!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none ${(isPriceLoading || !txConfig.address) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
-                                                            style={{
-                                                                backgroundColor: !hasEnsuredAccess ? '#3f3f46' : brandColor,
-                                                                color: !hasEnsuredAccess ? '#a1a1aa' : '#000',
-                                                                transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            {isPriceLoading ? "Calculando..." : (hasEnsuredAccess ? "Confirmar Participación" : "Preparando Acceso...")}
-                                                        </TransactionButton>
+                                                                    <label className="flex items-start gap-3 cursor-pointer group">
+                                                                        <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, risk: !prev.risk}))}>
+                                                                            {legalChecks.risk ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
+                                                                        </div>
+                                                                        <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <a href={`/legal/risk-disclosure/${project.slug}`} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Aviso Integral de Riesgos</a>.</p>
+                                                                    </label>
+                                                                </div>
+
+                                                                <TransactionButton
+                                                                    transaction={() => {
+                                                                        if (!txConfig.address) throw new Error("Configuración de contrato no válida.");
+                                                                        return prepareContractCall({
+                                                                            contract: getContract({ client, chain, address: txConfig.address }),
+                                                                            method: txConfig.method as any,
+                                                                            params: txConfig.params as any,
+                                                                            value: txConfig.value
+                                                                        });
+                                                                    }}
+                                                                    onTransactionSent={() => setStep('processing')}
+                                                                    onTransactionConfirmed={handleSuccess}
+                                                                    onError={(error) => {
+                                                                        console.error("Transacción Fallida:", error);
+                                                                        let errorMsg = "Error en el protocolo.";
+                                                                        const msg = error.message?.toLowerCase() || "";
+
+                                                                        if (msg.includes('insufficient')) errorMsg = "Fondos insuficientes.";
+                                                                        else if (msg.includes('user rejected')) errorMsg = "Transacción cancelada.";
+                                                                        else if (msg.includes('already owned') || msg.includes('already minted')) errorMsg = "Ya posees esta participación.";
+                                                                        else if (msg.includes('invalid key') || msg.includes('clientid')) errorMsg = "Error de configuración del protocolo.";
+
+                                                                        toast.error(errorMsg);
+                                                                    }}
+                                                                    disabled={!allLegalChecked || isPriceLoading || !txConfig.address}
+                                                                    className={`!w-full !h-14 !rounded-2xl !font-black !uppercase !tracking-widest !text-[11px] !border-none ${(!allLegalChecked || isPriceLoading || !txConfig.address) ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
+                                                                    style={{
+                                                                        backgroundColor: brandColor,
+                                                                        color: '#000',
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                >
+                                                                    {isPriceLoading ? "Calculando..." : "Confirmar Participación"}
+                                                                </TransactionButton>
+                                                            </div>
+                                                        )}
 
                                                         {!hasEnsuredAccess && !isCheckingAccess && (
                                                             <p className="text-[10px] text-zinc-500 text-center font-bold px-4">
@@ -755,11 +816,11 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                     </p>
 
                                     <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800 mb-4">
-                                        <h4 className="text-[10px] font-black uppercase text-zinc-300 tracking-widest mb-3">A partir de ahora puedes:</h4>
+                                        <h4 className="text-[10px] font-black uppercase text-zinc-300 tracking-widest mb-3">Documentación Legal Asignada:</h4>
                                         <ul className="space-y-2">
-                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Visualizar tu participación</li>
-                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Acceder a tu panel privado</li>
-                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Prepararte para las siguientes fases</li>
+                                            <li className="flex items-center gap-2 text-xs text-emerald-400 font-medium"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Certificado Individual de Participación</li>
+                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><a href={`/legal/agreement/${project.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-zinc-500" /> Acuerdo Marco de Participación</a></li>
+                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><a href={`/legal/risk-disclosure/${project.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-zinc-500" /> Aviso Integral de Riesgos</a></li>
                                         </ul>
                                     </div>
 
