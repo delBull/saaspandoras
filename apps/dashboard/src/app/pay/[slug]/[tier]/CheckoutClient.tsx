@@ -6,7 +6,8 @@ import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, d
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
-import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square } from 'lucide-react';
+import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square, X } from 'lucide-react';
+import { LegalDocModal } from '@/components/legal/LegalDocModal';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useConnectModal } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
@@ -58,12 +59,17 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
     // Legal Stack State
     const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+    const [activeLegalDoc, setActiveLegalDoc] = useState<'agreement' | 'risk-disclosure' | null>(null);
     const [legalChecks, setLegalChecks] = useState({
         agreement: false,
         nature: false,
         risk: false
     });
     const allLegalChecked = legalChecks.agreement && legalChecks.nature && legalChecks.risk;
+
+    const openLegalDoc = (type: 'agreement' | 'risk-disclosure') => {
+        setActiveLegalDoc(type);
+    };
 
     // Deep Styling Configuration
     const brandColor = project.themeColor || '#10b981'; // Emerald 500 default
@@ -412,6 +418,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
     return (
         <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative overflow-x-hidden md:items-center md:justify-center p-4 py-12 md:py-8 lg:p-4">
+            {/* Legal Document Modal */}
+            {activeLegalDoc && (
+                <LegalDocModal
+                    type={activeLegalDoc}
+                    projectName={project.slug || 'snarai'}
+                    onClose={() => setActiveLegalDoc(null)}
+                />
+            )}
             {/* Deep Branding Background Effects */}
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
                 {/* Project Cover Photo as Background */}
@@ -627,7 +641,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                         <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, agreement: !prev.agreement}))}>
                                                                             {legalChecks.agreement ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
                                                                         </div>
-                                                                        <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <a href={`/legal/agreement/${project.slug}`} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Acuerdo Marco de Participación Digital</a>.</p>
+                                                                         <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <button type="button" onClick={() => openLegalDoc('agreement')} className="text-emerald-400 hover:underline">Acuerdo Marco de Participación Digital</button>.</p>
                                                                     </label>
 
                                                                     <label className="flex items-start gap-3 cursor-pointer group">
@@ -641,7 +655,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                         <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, risk: !prev.risk}))}>
                                                                             {legalChecks.risk ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
                                                                         </div>
-                                                                        <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <a href={`/legal/risk-disclosure/${project.slug}`} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Aviso Integral de Riesgos</a>.</p>
+                                                                         <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <button type="button" onClick={() => openLegalDoc('risk-disclosure')} className="text-emerald-400 hover:underline">Aviso Integral de Riesgos</button>.</p>
                                                                     </label>
                                                                 </div>
 
@@ -822,8 +836,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                         <h4 className="text-[10px] font-black uppercase text-zinc-300 tracking-widest mb-3">Documentación Legal Asignada:</h4>
                                         <ul className="space-y-2">
                                             <li className="flex items-center gap-2 text-xs text-emerald-400 font-medium"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Certificado Individual de Participación</li>
-                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><a href={`/legal/agreement/${project.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-zinc-500" /> Acuerdo Marco de Participación</a></li>
-                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><a href={`/legal/risk-disclosure/${project.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-zinc-500" /> Aviso Integral de Riesgos</a></li>
+                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><button onClick={() => openLegalDoc('agreement')} className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-zinc-500" /> Acuerdo Marco de Participación</button></li>
+                                            <li className="flex items-center gap-2 text-xs text-zinc-400 font-medium"><button onClick={() => openLegalDoc('risk-disclosure')} className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-zinc-500" /> Aviso Integral de Riesgos</button></li>
                                         </ul>
                                     </div>
 
