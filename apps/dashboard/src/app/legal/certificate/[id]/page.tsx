@@ -9,13 +9,14 @@ export default async function CertificatePage({
   params, 
   searchParams 
 }: { 
-  params: { id: string }, 
-  searchParams: { project?: string, units?: string, origin?: string } 
+  params: Promise<{ id: string }>, 
+  searchParams: Promise<{ project?: string, units?: string, origin?: string }> 
 }) {
-  const { id } = params;
-  const projectSlug = searchParams.project || 'snarai';
-  const units = searchParams.units || '3';
-  const origin = searchParams.origin || '';
+  const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const projectSlug = resolvedSearchParams.project || 'snarai';
+  const units = resolvedSearchParams.units || '3';
+  const origin = resolvedSearchParams.origin || '';
   
   // URL de retorno inteligente: si viene de una landing, intenta abrir el portal por defecto
   const returnUrl = origin ? `${origin}?openPortal=true` : '/';
