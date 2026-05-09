@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck, FileText, Globe, CheckCircle2, Building, Scale, ArrowLeft } from 'lucide-react';
+import { PrintButton } from '@/components/legal/PrintButton';
 
 export default async function AgreementPage({ 
   params, 
@@ -35,9 +36,7 @@ export default async function AgreementPage({
             </div>
           </div>
           <div className="flex gap-4">
-            <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all flex items-center gap-2">
-              <FileText size={14} /> Imprimir / PDF
-            </button>
+            <PrintButton variant="default" />
             <a href={returnUrl} className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
               <ArrowLeft size={14} /> Volver
             </a>
