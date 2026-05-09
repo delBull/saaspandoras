@@ -95,9 +95,9 @@ export default async function CertificatePage({
 
             {/* TITLE */}
             <div className="space-y-6 text-center print:space-y-2">
-               <h2 className="text-4xl lg:text-6xl font-black italic tracking-tighter serif leading-none print:text-3xl print:text-black">Certificado de Adquisición</h2>
+               <h2 className="text-3xl lg:text-5xl font-black italic tracking-tighter serif leading-none print:text-2xl print:text-black">Certificado Individual de Participación y Constancia de Asignación</h2>
                <p className="text-white/40 max-w-2xl mx-auto leading-relaxed text-sm lg:text-base font-light print:text-[10px] print:text-zinc-600 print:max-w-none">
-                 Este documento certifica legalmente la participación del titular en el protocolo de Real Estate fraccionado bajo los términos del <span className="text-white font-medium italic print:text-black">Master Services Agreement</span> de Pandoras Growth OS.
+                 Este documento certifica legalmente la participación estructurada del titular en el ecosistema <strong>{projectName}</strong>, operado bajo <strong>AZTECAZ HUB S.A.P.I. DE C.V.</strong>, conforme a los términos del Acuerdo Marco de Participación Digital.
                </p>
             </div>
 
@@ -187,7 +187,7 @@ export default async function CertificatePage({
 
         {/* BOTTOM METADATA */}
         <div className="mt-16 text-center space-y-6 print:mt-4 print:space-y-2">
-           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 print:text-[8px] print:text-black">Documento Emitido Oficialmente por Pandoras Growth OS © 2026</p>
+           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 print:text-[8px] print:text-black">Documento Emitido Oficialmente por AZTECAZ HUB S.A.P.I. DE C.V. vía Pandoras Growth OS © 2026</p>
            <div className="flex justify-center gap-8 opacity-20 print:hidden">
               <div className="w-12 h-1 border-t border-white" />
               <div className="w-12 h-1 border-t border-white" />
