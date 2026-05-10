@@ -9,7 +9,8 @@ import {
   purchases as purchasesSchema,
   users as usersSchema,
   governanceProposals as proposalsSchema,
-  marketingLeads as leadsSchema
+  marketingLeads as leadsSchema,
+  marketingIdentities
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc } from "drizzle-orm";
@@ -22,6 +23,7 @@ import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
 import { getProjectPhasesWithStats } from "@/lib/phase-utils";
 import { InventoryService } from "@/lib/inventory/effective-supply";
 import { headers } from "next/headers";
+import { getWalletBalance } from "thirdweb/wallets";
 
 export const runtime = "nodejs";
 
@@ -91,30 +93,46 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const project = harmonizeProject(rawProject);
     const w2e = project.w2eConfig;
 
-    // 3. Fetch Real-time Contract Data
+    // 3. Fetch Real-time Contract Data (Parallelized)
     const chainId = project.chainId;
     const resolvedContract = project.licenseContractAddress || project.contractAddress;
 
     let userArtifactCount = 0;
     let currentSupply = 0;
 
-    if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
+    const contractActive = resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000";
+    
+    if (contractActive) {
       const contract = getContract({
         client: twClient, chain: defineChain(Number(chainId)), address: resolvedContract
       });
 
       try {
-        const supplyData = await readContract({
-          contract, method: "function totalSupply() view returns (uint256)", params: []
-        });
-        const rawSupply = BigInt(supplyData);
+        const rpcCalls = [
+          readContract({
+            contract, method: "function totalSupply() view returns (uint256)", params: []
+          })
+        ];
+
+        if (wallet && wallet.startsWith("0x")) {
+          rpcCalls.push(
+            readContract({
+              contract, method: "function balanceOf(address) view returns (uint256)", params: [wallet as `0x${string}`]
+            })
+          );
+        }
+
+        // Add 4s timeout to contract reads
+        const results = await Promise.race([
+          Promise.all(rpcCalls),
+          new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error("RPC Timeout")), 4000))
+        ]).catch(() => [0n, 0n]);
+
+        const rawSupply = BigInt(results[0] || 0n);
         currentSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
 
         if (wallet && wallet.startsWith("0x")) {
-          const balance = await readContract({
-              contract, method: "function balanceOf(address) view returns (uint256)", params: [wallet as `0x${string}`]
-          });
-          const rawBalance = BigInt(balance);
+          const rawBalance = BigInt(results[1] || 0n);
           userArtifactCount = rawBalance > BigInt(1e12) ? Number(rawBalance / BigInt(1e18)) : Number(rawBalance);
         }
       } catch (e) {
@@ -181,7 +199,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 const treasuryUSD = Number(usdcBalance) / 1e6;
                 treasuryDisplay = treasuryUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
             } else {
-                const { getWalletBalance } = await import("thirdweb/wallets");
                 const balance = await getWalletBalance({
                     client: twClient, chain, address: project.treasuryAddress
                 });
@@ -211,7 +228,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         }
     }
 
-    // 4.6 Fetch User Rewards & Voting Power (Dynamic for any project)
+    // 4.6 Fetch User Rewards & Voting Power (Parallelized)
     let userVotingPower = wallet && userArtifactCount > 0 ? userArtifactCount : 0; 
     let userRewards = "0.00 USDC";
     let userRewardsValue = 0;
@@ -220,19 +237,22 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         try {
             const normalizedWallet = wallet.toLowerCase();
             
-            const member = await db.query.daoMembers.findFirst({
-                where: and(
-                    eq(daoMembersSchema.projectId, project.id),
-                    eq(daoMembersSchema.wallet, normalizedWallet)
-                )
-            });
+            const [member, balance] = await Promise.all([
+                db.query.daoMembers.findFirst({
+                    where: and(
+                        eq(daoMembersSchema.projectId, project.id),
+                        eq(daoMembersSchema.wallet, normalizedWallet)
+                    )
+                }).catch(() => null),
+                db.query.userBalances.findFirst({
+                    where: eq(userBalancesSchema.walletAddress, normalizedWallet)
+                }).catch(() => null)
+            ]);
+
             if (member && Number(member.votingPower || 0) > userVotingPower) {
                 userVotingPower = Number(member.votingPower);
             }
 
-            const balance = await db.query.userBalances.findFirst({
-                where: eq(userBalancesSchema.walletAddress, normalizedWallet)
-            });
             if (balance) {
                 const pbox = Number(balance.pboxBalance || 0);
                 const usdc = Number(balance.usdcBalance || 0);
@@ -256,20 +276,24 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const activePhase = activePhaseIndex !== -1 ? phases[activePhaseIndex] : phases[0];
     const nextPhase = phases[activePhaseIndex + 1] || null;
 
-    // 4.8 DAO Activities & Proposals Integration
-    const activities = await db.query.daoActivities.findMany({
-        where: eq(daoActivitiesSchema.projectId, project.id),
-        orderBy: desc(daoActivitiesSchema.createdAt),
-        limit: 5
-    });
-
-    const activeProposals = await db.query.governanceProposals.findMany({
-        where: and(
-            eq(proposalsSchema.protocolId, project.id),
-            eq(proposalsSchema.status, 1) // 1 = Active
-        ),
-        limit: 5
-    });
+    // 4.9 Parallel DB Queries for secondary data
+    const [activities, activeProposals, user] = await Promise.all([
+        db.query.daoActivities.findMany({
+            where: eq(daoActivitiesSchema.projectId, project.id),
+            orderBy: desc(daoActivitiesSchema.createdAt),
+            limit: 5
+        }).catch(() => []),
+        db.query.governanceProposals.findMany({
+            where: and(
+                eq(proposalsSchema.protocolId, project.id),
+                eq(proposalsSchema.status, 1)
+            ),
+            limit: 5
+        }).catch(() => []),
+        (wallet && wallet.startsWith("0x")) 
+            ? db.query.users.findFirst({ where: eq(usersSchema.walletAddress, wallet.toLowerCase()) }).catch(() => null)
+            : Promise.resolve(null)
+    ]);
 
     // 4.9 Fetch Legal Metadata (Integrity Proofs) - MULTI-CERTIFICATE SUPPORT
     let certificates: any[] = [];
@@ -278,19 +302,25 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         try {
             const normalizedWallet = wallet.toLowerCase();
             
-            // 🛡️ Resolve User ID from Wallet
-            const user = await db.query.users.findFirst({
-                where: eq(usersSchema.walletAddress, normalizedWallet)
-            });
+            // Resolve identity with fallback to marketing identities if user is not in 'users'
+            let finalUserId = user?.id;
+            if (!finalUserId) {
+                const identity = await db.query.marketingIdentities.findFirst({
+                    where: eq(marketingIdentities.walletAddress, normalizedWallet)
+                }).catch(() => null);
+                finalUserId = (identity as any)?.userId || (identity as any)?.linkedCoreUserId;
+            }
 
             const allPurchases = await db.query.purchases.findMany({
                 where: and(
                     eq(purchasesSchema.projectId, project.id),
-                    user ? eq(purchasesSchema.userId, user.id) : eq(purchasesSchema.userId, normalizedWallet),
+                    finalUserId 
+                        ? eq(purchasesSchema.userId, finalUserId) 
+                        : eq(purchasesSchema.userId, normalizedWallet),
                     sql`${purchasesSchema.status} IN ('completed', 'processing', 'pending', 'on_hold')`
                 ),
                 orderBy: desc(purchasesSchema.createdAt)
-            });
+            }).catch(() => []);
 
             if (allPurchases.length > 0) {
                 const origin = req.headers.get("origin") || "";

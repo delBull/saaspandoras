@@ -14,35 +14,23 @@ export class InventoryService {
   /**
    * Returns the count of units currently in 'on_hold' status for a project.
    */
-  static async getOnHoldCount(projectId: number): Promise<number> {
+  static async getOnHoldCount(project: any): Promise<number> {
     try {
-      // We assume each purchase record has an 'amount' field representing the total USD.
-      // We need to resolve how many 'units' that represents based on the project's tokenPriceUsd.
-      // For simplicity in the first iteration, we query the purchases and calculate units.
-      
       const onHoldPurchases = await db.query.purchases.findMany({
         where: and(
-          eq(purchases.projectId, projectId),
+          eq(purchases.projectId, project.id),
           eq(purchases.status, 'on_hold')
         )
       });
 
       if (!onHoldPurchases.length) return 0;
 
-      // Fetch project to get current price if needed, 
-      // but usually the purchase record should store units or we calculate here.
-      // Assuming 1 unit = tokenPriceUsd.
-      
-      const project = await db.query.projects.findFirst({
-        where: eq(projectsSchema.id, projectId)
-      });
-      
       const price = Number(project?.tokenPriceUsd || 50);
       
       let totalUnits = 0;
       for (const p of onHoldPurchases) {
         const units = Math.floor(Number(p.amount) / price);
-        totalUnits += units > 0 ? units : 1; // Minimum 1 unit if record exists
+        totalUnits += units > 0 ? units : 1; 
       }
 
       return totalUnits;
@@ -52,11 +40,8 @@ export class InventoryService {
     }
   }
 
-  /**
-   * Returns a complete breakdown of the project's inventory.
-   */
   static async getEffectiveMetrics(project: any, onChainSupply: number) {
-    const onHoldUnits = await this.getOnHoldCount(project.id);
+    const onHoldUnits = await this.getOnHoldCount(project);
     const totalSoldUnits = onChainSupply + onHoldUnits;
     
     // Calculate progress relative to target
