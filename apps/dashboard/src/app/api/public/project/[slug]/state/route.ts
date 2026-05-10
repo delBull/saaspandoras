@@ -138,11 +138,15 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 const contract = getContract({
                     client: twClient, chain, address: resolvedContract
                 });
-                const onChainParticipants = await readContract({
-                    contract,
-                    method: "function totalParticipants() view returns (uint256)",
-                    params: []
-                }).catch(() => 0n);
+                // Timeout for on-chain calls (3s) to prevent hanging
+                const onChainParticipants = await Promise.race([
+                    readContract({
+                        contract,
+                        method: "function totalParticipants() view returns (uint256)",
+                        params: []
+                    }),
+                    new Promise<bigint>((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+                ]).catch(() => 0n);
                 
                 if (onChainParticipants > 0n) {
                     holdersCount = Number(onChainParticipants);
@@ -162,11 +166,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 const usdcContract = getContract({
                     client: twClient, chain, address: USDC_BASE_ADDRESS
                 });
-                const usdcBalance = await readContract({
-                    contract: usdcContract,
-                    method: "function balanceOf(address) view returns (uint256)",
-                    params: [project.treasuryAddress]
-                }).catch(() => 0n);
+                const usdcBalance = await Promise.race([
+                    readContract({
+                        contract: usdcContract,
+                        method: "function balanceOf(address) view returns (uint256)",
+                        params: [project.treasuryAddress]
+                    }),
+                    new Promise<bigint>((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+                ]).catch(() => 0n);
                 
                 const treasuryUSD = Number(usdcBalance) / 1e6;
                 treasuryDisplay = treasuryUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
