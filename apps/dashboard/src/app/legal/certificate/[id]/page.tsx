@@ -2,7 +2,7 @@ import React from 'react';
 import { ShieldCheck, ArrowLeft, CheckCircle2, Globe, Lock, Calendar, Hash, FileText } from 'lucide-react';
 import { CertificateActions } from '@/components/legal/CertificateActions';
 import { db } from '@/db';
-import { purchases as purchasesSchema } from '@/db/schema';
+import { purchases as purchasesSchema, projects as projectsSchema } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export default async function CertificatePage({ 
@@ -40,8 +40,13 @@ export default async function CertificatePage({
     }
   }
 
-  // Normalización del nombre del proyecto
-  const projectName = projectSlug.toUpperCase().replace('SNARAI', "S'NARAI");
+  // 3. Fetch Project for Dynamic Legal Entity
+  const project = await db.query.projects.findFirst({
+    where: eq(projectsSchema.slug, projectSlug)
+  });
+
+  const legalEntity = project?.fiduciaryEntity || "Pandoras Protocol Entity";
+  const projectName = project?.title || projectSlug.toUpperCase().replace('SNARAI', "S'NARAI");
   
   return (
     <div className="min-h-screen bg-[#050a05] text-white font-sans selection:bg-narai-gold/30">
@@ -98,7 +103,7 @@ export default async function CertificatePage({
             <div className="space-y-6 text-center print:space-y-2">
                <h2 className="text-3xl lg:text-5xl font-black italic tracking-tighter serif leading-none print:text-2xl print:text-black">Certificado Individual de Participación y Constancia de Asignación</h2>
                <p className="text-white/40 max-w-2xl mx-auto leading-relaxed text-sm lg:text-base font-light print:text-[10px] print:text-zinc-600 print:max-w-none">
-                 Este documento certifica legalmente la participación estructurada del titular en el ecosistema <strong>{projectName}</strong>, operado bajo <strong>AZTECAZ HUB S.A.P.I. DE C.V.</strong>, conforme a los términos del Acuerdo Marco de Participación Digital.
+                 Este documento certifica legalmente la participación estructurada del titular en el ecosistema <strong>{projectName}</strong>, operado bajo <strong>{legalEntity}</strong>, conforme a los términos del Acuerdo Marco de Participación Digital.
                </p>
             </div>
 
@@ -188,7 +193,7 @@ export default async function CertificatePage({
 
         {/* BOTTOM METADATA */}
         <div className="mt-16 text-center space-y-6 print:mt-4 print:space-y-2">
-           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 print:text-[8px] print:text-black">Documento Emitido Oficialmente por AZTECAZ HUB S.A.P.I. DE C.V. vía Pandoras Growth OS © 2026</p>
+           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 print:text-[8px] print:text-black">Documento Emitido Oficialmente por {legalEntity} vía Pandoras Growth OS © 2026</p>
            <div className="flex justify-center gap-8 opacity-20 print:hidden">
               <div className="w-12 h-1 border-t border-white" />
               <div className="w-12 h-1 border-t border-white" />

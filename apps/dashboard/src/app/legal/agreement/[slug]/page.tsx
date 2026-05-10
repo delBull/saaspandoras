@@ -1,6 +1,9 @@
 import React from 'react';
 import { ShieldCheck, FileText, Globe, CheckCircle2, Building, Scale, ArrowLeft } from 'lucide-react';
 import { PrintButton } from '@/components/legal/PrintButton';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function AgreementPage({ 
   params, 
@@ -14,7 +17,13 @@ export default async function AgreementPage({
   const origin = resolvedSearchParams.origin || '';
   const returnUrl = origin ? `${origin}?openPortal=true` : '/';
   
-  const projectName = slug.toUpperCase().replace('SNARAI', "S'NARAI");
+  // 1. Fetch Project for Dynamic Legal Entity
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.slug, slug)
+  });
+
+  const legalEntity = project?.fiduciaryEntity || "Pandoras Protocol Entity";
+  const projectName = project?.title || slug.toUpperCase().replace('SNARAI', "S'NARAI");
   const effectiveDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
@@ -60,7 +69,7 @@ export default async function AgreementPage({
             <div className="space-y-8 text-sm lg:text-base text-white/70 font-light leading-relaxed print:text-xs print:text-zinc-700">
               <p>Entre:</p>
               <p className="font-bold text-white print:text-black">
-                AZTECAZ HUB S.A.P.I. DE C.V., sociedad mercantil debidamente constituida conforme a las leyes de los Estados Unidos Mexicanos, así como sus vehículos, fideicomisos, contratos auxiliares y estructuras operativas relacionadas operando bajo la marca registrada S'Narai (en conjunto, “Narai”, la “Estructura” o el “Protocolo”),
+                {legalEntity}, sociedad mercantil debidamente constituida conforme a las leyes de los Estados Unidos Mexicanos, así como sus vehículos, fideicomisos, contratos auxiliares y estructuras operativas relacionadas operando bajo la marca registrada {projectName} (en conjunto, “{projectName}”, la “Estructura” o el “Protocolo”),
               </p>
               <p>y</p>
               <p className="font-bold text-white print:text-black">el usuario adquirente de Certificados de Participación Digital (el “Participante”).</p>
@@ -78,7 +87,7 @@ export default async function AgreementPage({
                 <ul className="list-disc pl-6 space-y-2">
                   <li>NO constituyen escritura pública.</li>
                   <li>NO representan copropiedad inmobiliaria directa.</li>
-                  <li>NO constituyen acciones societarias de AZTECAZ HUB S.A.P.I DE C.V.</li>
+                  <li>NO constituyen acciones societarias de {legalEntity}.</li>
                   <li>NO constituyen títulos de crédito ni valores mobiliarios listados.</li>
                   <li>NO implican garantía de rendimiento fijo o devolución de capital.</li>
                 </ul>

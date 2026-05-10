@@ -1353,7 +1353,8 @@ export const transactionStatusEnum = pgEnum("transaction_status", [
   "completed",
   "failed",
   "refunded",
-  "rejected"
+  "rejected",
+  "on_hold"
 ]);
 
 // 1. CLIENTS (CRM IDENTITY)
@@ -1759,7 +1760,8 @@ export const marketingLeadStatusEnum = pgEnum("marketing_lead_status", [
   "cold",
   "frio",
   "archived",
-  "nurturing"
+  "nurturing",
+  "on_hold"
 ]);
 
 export const marketingLeadIntentEnum = pgEnum("marketing_lead_intent", [

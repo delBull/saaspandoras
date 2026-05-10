@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     BuildingLibraryIcon,
@@ -15,7 +15,17 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import DaoWizard from '@/components/admin/DaoWizard';
 
-// ... (existing imports)
+import { useActiveAccount } from 'thirdweb/react';
+import { getContract, prepareContractCall, sendTransaction } from 'thirdweb';
+import { defineChain } from 'thirdweb/chains';
+import { client } from '@/lib/thirdweb-client';
+import {
+    ClockIcon,
+    CheckCircleIcon,
+    XCircleIcon,
+    UserIcon,
+    ExclamationTriangleIcon
+} from '@heroicons/react/24/solid';
 
 interface ProjectFounderDashboardProps {
     project: any; // Type strictly later
@@ -23,8 +33,30 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases'>('overview');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    const account = useActiveAccount();
+
+    const fetchPendingCount = async () => {
+        if (!account?.address) return;
+        try {
+            const res = await fetch(`/api/v1/projects/${project.id}/admin/purchases`, {
+                headers: { 'x-wallet-address': account.address }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPendingCount(data.length);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    useEffect(() => {
+        fetchPendingCount();
+    }, [account?.address, project.id]);
 
     // Safe Config Access
     const config = project.w2eConfig || {};
@@ -55,8 +87,50 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
     // ... (tabs config)
 
     return (
-        <div className="max-w-7xl mx-auto">
-            {/* ... (Header & Nav) ... */}
+        <div className="max-w-7xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => router.back()} className="p-2 bg-zinc-900 rounded-lg border border-zinc-800 hover:bg-zinc-800 transition-colors">
+                        <ArrowLeftIcon className="w-5 h-5 text-zinc-400" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">{project.title}</h1>
+                        <p className="text-zinc-500 text-sm font-medium">Panel de Control del Fundador</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Link href={`/projects/${project.slug}`} target="_blank" className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-800 transition-all text-sm font-bold">
+                        VER PÁGINA PÚBLICA
+                    </Link>
+                </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-1 p-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl w-fit">
+                {[
+                    { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                    { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+                    { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                    { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                    { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
+                ].map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id
+                                ? 'bg-zinc-800 text-white shadow-lg'
+                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                            }`}
+                    >
+                        {tab.icon}
+                        {tab.label}
+                        {tab.id === 'purchases' && pendingCount > 0 && (
+                            <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                        )}
+                    </button>
+                ))}
+            </div>
 
             {/* Content Area */}
             <div className="min-h-[400px]">
@@ -79,6 +153,9 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         {activeTab === 'treasury' && <TreasuryTab address={treasuryAddress} />}
                         {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
+                        {activeTab === 'purchases' && (
+                            <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </div>
@@ -305,6 +382,172 @@ function SettingsTab({ project }: { project: any }) {
                     Ir al Editor de Perfil
                 </button>
             </Link>
+        </div>
+    );
+}
+function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePending?: () => void }) {
+    const account = useActiveAccount();
+    const [purchases, setPurchases] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [processingId, setProcessingId] = useState<string | null>(null);
+
+    const fetchPurchases = async () => {
+        if (!account?.address) return;
+        try {
+            setLoading(true);
+            const res = await fetch(`/api/v1/projects/${project.id}/admin/purchases`, {
+                headers: { 'x-wallet-address': account.address }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPurchases(data);
+                if (onUpdatePending) onUpdatePending();
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPurchases();
+    }, [account?.address, project.id]);
+
+    const handleAction = async (id: string, action: 'approve' | 'reject') => {
+        if (!account?.address) return;
+
+        let reason = "";
+        if (action === 'reject') {
+            reason = window.prompt("Ingresa la razón del rechazo (se enviará al usuario):") || "";
+            if (!reason) return;
+        }
+
+        setProcessingId(id);
+        try {
+            const res = await fetch(`/api/v1/projects/${project.id}/admin/purchases/approve`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-wallet-address": account.address
+                },
+                body: JSON.stringify({ purchaseId: id, action, reason })
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+
+                // ⚠️ BLOCKCHAIN SYNC (One-Click)
+                if (action === 'approve' && result.targetWallet && project.contractAddress) {
+                    toast.loading("Sincronizando con Blockchain...", { id: "bc-sync" });
+                    try {
+                        const contract = getContract({
+                            client,
+                            chain: defineChain(Number(project.chainId || 84532)),
+                            address: project.contractAddress
+                        });
+
+                        const transaction = prepareContractCall({
+                            contract,
+                            method: "function mintTo(address to, uint256 amount)", // Common pattern
+                            params: [result.targetWallet as any, BigInt(result.units || 1)]
+                        });
+
+                        const tx = await sendTransaction({
+                            account,
+                            transaction
+                        });
+
+                        toast.success("¡Blockchain Sincronizada!", { id: "bc-sync" });
+                        console.log("Tx Hash:", tx.transactionHash);
+                    } catch (bcError) {
+                        console.error("Blockchain Sync Error:", bcError);
+                        toast.error("Aprobado en DB, pero error al firmar en Blockchain. Sincroniza manualmente.", { id: "bc-sync" });
+                    }
+                } else {
+                    toast.success(action === 'approve' ? 'Inversión aprobada correctamente' : 'Inversión rechazada');
+                }
+
+                fetchPurchases();
+            } else {
+                const err = await res.json();
+                toast.error(err.error || "Error al procesar la acción");
+            }
+        } catch (error) {
+            toast.error("Error de conexión con el servidor");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    if (loading) return <div className="py-20 text-center text-zinc-500 animate-pulse">Cargando cola de autorizaciones...</div>;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-white">Cola de Autorización de Inversiones</h3>
+                <span className="px-3 py-1 bg-zinc-800 text-zinc-400 rounded-full text-xs font-mono">
+                    {purchases.length} Pendientes
+                </span>
+            </div>
+
+            {purchases.length === 0 ? (
+                <div className="p-12 bg-zinc-900/50 border border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500">
+                    No hay inversiones pendientes de validación en este momento.
+                </div>
+            ) : (
+                <div className="grid gap-4">
+                    {purchases.map((p) => (
+                        <div key={p.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                            <div className="space-y-4 flex-1">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-zinc-800 rounded-xl text-zinc-400">
+                                        <UserIcon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-zinc-500 uppercase font-black tracking-widest">Inversionista (Wallet)</p>
+                                        <p className="font-mono text-sm text-white">{p.userId}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div>
+                                        <p className="text-[10px] text-zinc-500 uppercase font-black">Monto</p>
+                                        <p className="text-lg font-bold text-green-400">${Number(p.amount).toLocaleString()} <span className="text-xs opacity-50">{p.currency}</span></p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-zinc-500 uppercase font-black">Referencia</p>
+                                        <div className="font-mono text-xs font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded inline-block">
+                                            {p.purchaseId}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-3 min-w-[200px]">
+                                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500">
+                                    <ClockIcon className="w-3 h-3" /> Expiración: {new Date(p.expiresAt).toLocaleDateString()}
+                                </div>
+                                <div className="flex gap-2 w-full">
+                                    <button
+                                        disabled={processingId === p.id}
+                                        onClick={() => handleAction(p.id, 'reject')}
+                                        className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                                    >
+                                        RECHAZAR
+                                    </button>
+                                    <button
+                                        disabled={processingId === p.id}
+                                        onClick={() => handleAction(p.id, 'approve')}
+                                        className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-black rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {processingId === p.id ? '...' : <><CheckCircleIcon className="w-4 h-4" /> APROBAR</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
