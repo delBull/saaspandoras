@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { purchases } from '@/db/schema';
+import { purchases, projects as projectsSchema } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 
 /**
@@ -33,9 +33,8 @@ export class InventoryService {
       // but usually the purchase record should store units or we calculate here.
       // Assuming 1 unit = tokenPriceUsd.
       
-      const { projects } = await import('@/db/schema');
       const project = await db.query.projects.findFirst({
-        where: eq(projects.id, projectId)
+        where: eq(projectsSchema.id, projectId)
       });
       
       const price = Number(project?.tokenPriceUsd || 50);

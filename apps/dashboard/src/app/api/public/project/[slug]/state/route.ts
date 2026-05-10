@@ -6,7 +6,10 @@ import {
   daoMembers as daoMembersSchema, 
   userBalances as userBalancesSchema, 
   daoActivities as daoActivitiesSchema,
-  purchases as purchasesSchema
+  purchases as purchasesSchema,
+  users as usersSchema,
+  governanceProposals as proposalsSchema,
+  marketingLeads as leadsSchema
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc } from "drizzle-orm";
@@ -196,7 +199,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     let isWhitelisted = false;
     let dbUserStatus = "visitor";
     if (wallet && wallet.startsWith("0x")) {
-        const { marketingLeads: leadsSchema } = await import("@/db/schema");
         const lead = await db.query.marketingLeads.findFirst({
             where: and(
                 eq(leadsSchema.projectId, project.id),
@@ -261,7 +263,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         limit: 5
     });
 
-    const { governanceProposals: proposalsSchema } = await import("@/db/schema");
     const activeProposals = await db.query.governanceProposals.findMany({
         where: and(
             eq(proposalsSchema.protocolId, project.id),
@@ -275,10 +276,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     if (wallet && project.id) {
         try {
+            const normalizedWallet = wallet.toLowerCase();
+            
+            // 🛡️ Resolve User ID from Wallet
+            const user = await db.query.users.findFirst({
+                where: eq(usersSchema.walletAddress, normalizedWallet)
+            });
+
             const allPurchases = await db.query.purchases.findMany({
                 where: and(
                     eq(purchasesSchema.projectId, project.id),
-                    eq(purchasesSchema.userId, wallet.toLowerCase()),
+                    user ? eq(purchasesSchema.userId, user.id) : eq(purchasesSchema.userId, normalizedWallet),
                     sql`${purchasesSchema.status} IN ('completed', 'processing', 'pending', 'on_hold')`
                 ),
                 orderBy: desc(purchasesSchema.createdAt)
