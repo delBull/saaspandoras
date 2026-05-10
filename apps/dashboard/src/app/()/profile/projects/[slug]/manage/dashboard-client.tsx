@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import DaoWizard from '@/components/admin/DaoWizard';
 
 import { useActiveAccount } from 'thirdweb/react';
-import { getContract, prepareContractCall, sendTransaction } from 'thirdweb';
+import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
 import { defineChain } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import {
@@ -441,15 +441,20 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                 if (action === 'approve' && result.targetWallet && project.contractAddress) {
                     toast.loading("Sincronizando con Blockchain...", { id: "bc-sync" });
                     try {
+                        const chain = defineChain(Number(project.chainId || 84532));
                         const contract = getContract({
                             client,
-                            chain: defineChain(Number(project.chainId || 84532)),
+                            chain,
                             address: project.contractAddress
                         });
 
+                        // Dynamic Method from config
+                        const config = project.w2eConfig as any;
+                        const mintMethod = config?.mintMethod || "function mintTo(address to, uint256 amount)";
+
                         const transaction = prepareContractCall({
                             contract,
-                            method: "function mintTo(address to, uint256 amount)", // Common pattern
+                            method: mintMethod,
                             params: [result.targetWallet as any, BigInt(result.units || 1)]
                         });
 
@@ -458,8 +463,25 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                             transaction
                         });
 
+                        // Wait for confirmation
+                        const receipt = await waitForReceipt({
+                            client,
+                            chain,
+                            transactionHash: tx.transactionHash
+                        });
+
+                        // Sync Hash with DB
+                        await fetch(`/api/v1/projects/${project.id}/admin/purchases/sync-hash`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "x-wallet-address": account.address
+                            },
+                            body: JSON.stringify({ purchaseId: id, txHash: receipt.transactionHash })
+                        });
+
                         toast.success("¡Blockchain Sincronizada!", { id: "bc-sync" });
-                        console.log("Tx Hash:", tx.transactionHash);
+                        console.log("Tx Hash:", receipt.transactionHash);
                     } catch (bcError) {
                         console.error("Blockchain Sync Error:", bcError);
                         toast.error("Aprobado en DB, pero error al firmar en Blockchain. Sincroniza manualmente.", { id: "bc-sync" });

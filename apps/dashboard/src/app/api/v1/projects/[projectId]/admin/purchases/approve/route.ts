@@ -77,7 +77,26 @@ export async function POST(
                 })
                 .where(eq(purchases.id, purchaseId));
 
-            console.log(`✅ Project ${projectId}: Purchase ${purchaseId} approved by owner.`);
+            // ⚠️ DAO SYNC: Register/Update member in DAO Statistics
+            if (targetWallet) {
+                const { daoMembers } = await import('@/db/schema');
+                await db.insert(daoMembers).values({
+                    projectId: projectIdNum,
+                    wallet: targetWallet.toLowerCase(),
+                    artifactsCount: units,
+                    votingPower: String(units),
+                    joinedAt: new Date()
+                }).onConflictDoUpdate({
+                    target: [daoMembers.projectId, daoMembers.wallet],
+                    set: { 
+                        artifactsCount: sql`${daoMembers.artifactsCount} + ${units}`,
+                        votingPower: sql`CAST(CAST(${daoMembers.votingPower} AS NUMERIC) + ${units} AS VARCHAR)`,
+                        lastActiveAt: new Date()
+                    }
+                });
+            }
+
+            console.log(`✅ Project ${projectId}: Purchase ${purchaseId} approved and synced to DAO.`);
 
         } else if (action === 'reject') {
             await db.update(purchases)
