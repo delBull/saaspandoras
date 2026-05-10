@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
 import { db } from "@/db";
-import { purchases, projects, users } from "@/db/schema";
+import { purchases, projects, users, marketingIdentities } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -18,18 +18,28 @@ export async function GET(
     const { wallet } = params;
 
     try {
-        // 1. Find user by wallet
+        // 1. Find user by wallet (Direct or via Marketing Identity)
         const user = await db.query.users.findFirst({
             where: eq(users.walletAddress, wallet)
         });
 
-        if (!user) {
+        let targetUserId = user?.id;
+
+        if (!targetUserId) {
+            // Check in marketing identities (common for Telegram linked accounts)
+            const identity = await db.query.marketingIdentities.findFirst({
+                where: eq(marketingIdentities.walletAddress, wallet)
+            });
+            targetUserId = identity?.userId || undefined;
+        }
+
+        if (!targetUserId) {
             return NextResponse.json({ success: true, wallet, purchases: [] });
         }
 
         // 2. Get purchases for this user
         const userPurchases = await db.query.purchases.findMany({
-            where: eq(purchases.userId, user.id),
+            where: eq(purchases.userId, targetUserId),
             orderBy: [desc(purchases.createdAt)],
             with: {
                 project: true
