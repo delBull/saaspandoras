@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
 import { db } from "@/db";
-import { daoMembers, projects, purchases } from "@/db/schema";
+import { daoMembers, projects, purchases, userBalances } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -26,8 +26,12 @@ export async function GET(
             }
         });
 
-        // 2. Map with rewards (this is a simplified version, real yield might be complex)
-        // For now, we return the voting power and a placeholder for rewards if not yet distributed
+        // 2. Get user balances (for global claimable rewards)
+        const balance = await db.query.userBalances.findFirst({
+            where: eq(userBalances.walletAddress, wallet)
+        });
+
+        // 3. Map with rewards
         const portfolio = memberships.map(m => ({
             projectId: m.projectId,
             projectSlug: (m as any).project?.slug || "",
@@ -36,7 +40,8 @@ export async function GET(
             artifactsCount: m.artifactsCount,
             // In a real scenario, you'd fetch distributed rewards from a distributions table
             // For now, we'll return 0 or fetch from a hypothetical rewards field if it existed
-            claimableRewards: "0.00", 
+            // Global claimable rewards from userBalances
+            claimableRewards: balance?.usdcBalance || "0.00", 
             currency: "USDC"
         }));
 
