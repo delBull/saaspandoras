@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const statusFilter = url.searchParams.get("status"); // name like "Active"
+    const protocolId = url.searchParams.get("protocolId");
     const limit  = Math.min(parseInt(url.searchParams.get("limit") ?? "20"), 50);
     const offset = parseInt(url.searchParams.get("offset") ?? "0");
 
@@ -46,9 +47,19 @@ export async function GET(req: NextRequest) {
       ? Object.entries(PROPOSAL_STATUS).find(([, v]) => v.toLowerCase() === statusFilter.toLowerCase())?.[0]
       : null;
 
-    const whereClause = statusCode !== null && statusCode !== undefined
+    let whereClause = statusCode !== null && statusCode !== undefined
       ? eq(governanceProposals.status, parseInt(statusCode))
       : undefined;
+
+    // Filter by protocolId if provided
+    if (protocolId) {
+      const parsedProtocolId = parseInt(protocolId);
+      if (!isNaN(parsedProtocolId)) {
+        whereClause = whereClause 
+          ? and(whereClause, eq(governanceProposals.protocolId, parsedProtocolId))
+          : eq(governanceProposals.protocolId, parsedProtocolId);
+      }
+    }
 
     const proposals = await db.query.governanceProposals.findMany({
       where: whereClause,
@@ -85,13 +96,18 @@ export async function GET(req: NextRequest) {
     });
 
     // Summary stats
-    const summary = await db
+    const summaryQuery = db
       .select({
         status: governanceProposals.status,
         count: sql<number>`count(*)::int`,
       })
-      .from(governanceProposals)
-      .groupBy(governanceProposals.status);
+      .from(governanceProposals);
+
+    if (whereClause) {
+      summaryQuery.where(whereClause);
+    }
+
+    const summary = await summaryQuery.groupBy(governanceProposals.status);
 
     return NextResponse.json({
       success: true,

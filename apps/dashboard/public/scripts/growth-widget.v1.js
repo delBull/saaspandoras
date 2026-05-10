@@ -298,7 +298,7 @@
         const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
         
         // Use the portal route with projectId parameter
-        let url = `${absoluteBase}/portal?projectId=${targetSlug}&widget=true&origin=${encodeURIComponent(window.location.origin)}`;
+        let url = `${absoluteBase}/portal/${targetSlug}?widget=true&origin=${encodeURIComponent(window.location.origin)}`;
         
         // 🔐 AUTO-WALLET SYNC: Pass current session to portal
         if (state.session.address) {
@@ -348,7 +348,7 @@
         track,
         getProjectState,
         emit: track, // Alias for protocol standardization
-        login: openModal // Legacy compatibility for external projects
+        login: openModal, // Legacy compatibility for external projects
     };
 
     // --- UI ENGINE ---
