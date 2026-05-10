@@ -1,6 +1,9 @@
 import React from 'react';
 import { ShieldAlert, FileWarning, Globe, CheckCircle2, Building, Scale, ArrowLeft } from 'lucide-react';
 import { PrintButton } from '@/components/legal/PrintButton';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function RiskDisclosurePage({ 
   params, 
@@ -14,7 +17,13 @@ export default async function RiskDisclosurePage({
   const origin = resolvedSearchParams.origin || '';
   const returnUrl = origin ? `${origin}?openPortal=true` : '/';
   
-  const projectName = slug.toUpperCase().replace('SNARAI', "S'NARAI");
+  // 1. Fetch Project for Dynamic Legal Entity
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.slug, slug)
+  });
+
+  const legalEntity = project?.fiduciaryEntity || "Pandoras Protocol Entity";
+  const projectName = project?.title || slug.toUpperCase().replace('SNARAI', "S'NARAI");
   const effectiveDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
@@ -60,7 +69,7 @@ export default async function RiskDisclosurePage({
             <div className="space-y-8 text-sm lg:text-base text-white/70 font-light leading-relaxed print:text-xs print:text-zinc-700">
               <p className="font-bold text-red-400 print:text-red-700">LEA ESTE DOCUMENTO DETENIDAMENTE ANTES DE PARTICIPAR.</p>
               
-              <p>Al adquirir Certificados de Participación Digital en el ecosistema {projectName} operado bajo AZTECAZ HUB S.A.P.I. DE C.V., el Participante declara bajo protesta de decir verdad que comprende, evalúa y asume íntegramente los siguientes riesgos:</p>
+              <p>Al adquirir Certificados de Participación Digital en el ecosistema {projectName} operado bajo {legalEntity}, el Participante declara bajo protesta de decir verdad que comprende, evalúa y asume íntegramente los siguientes riesgos:</p>
 
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white print:text-black flex items-center gap-2">

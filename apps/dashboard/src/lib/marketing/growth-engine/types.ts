@@ -14,6 +14,7 @@ export type GrowthChannel = 'email' | 'whatsapp' | 'push' | 'in_app' | 'sales_te
 
 export type GrowthEvent =
   | 'LEAD_CAPTURED'
+  | 'INTENT_CONFIRMED'
   | 'EMAIL_OPENED'
   | 'CLICKED_PROJECT'
   | 'WALLET_CONNECTED'

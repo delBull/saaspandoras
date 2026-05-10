@@ -17,6 +17,7 @@ import { client as twClient } from "@/lib/thirdweb-client";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
 import { getProjectPhasesWithStats } from "@/lib/phase-utils";
+import { InventoryService } from "@/lib/inventory/effective-supply";
 import { headers } from "next/headers";
 
 export const runtime = "nodejs";
@@ -262,7 +263,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 where: and(
                     eq(purchasesSchema.projectId, project.id),
                     eq(purchasesSchema.userId, wallet.toLowerCase()),
-                    sql`${purchasesSchema.status} IN ('completed', 'processing', 'pending')`
+                    sql`${purchasesSchema.status} IN ('completed', 'processing', 'pending', 'on_hold')`
                 ),
                 orderBy: desc(purchasesSchema.createdAt)
             });
@@ -356,20 +357,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         ? activePhase.stats.tokensAllocated 
         : (metadataTarget > 0 ? Math.floor(metadataTarget / metadataPrice) : 8);
 
-    // Sold Units Ground Truth:
-    // 1. Check if DB phase stats are injected (consumptionsUsed)
-    // 2. Fallback to currentSupply (on-chain) relative to this phase
-    const soldUnits = (activePhase?.stats?.tokensSold !== undefined && activePhase.stats.tokensSold !== null && activePhase.stats.tokensSold > 0)
-        ? activePhase.stats.tokensSold 
-        : currentSupply; // On-chain supply is the most reliable cumulative sold count
+    // 🔥 HYBRID INVENTORY CALCULATION (Blockchain + DB Soft-Lock)
+    const { 
+        onHoldUnits, 
+        totalSoldUnits: hybridSoldUnits, 
+        availableUnits: hybridAvailableUnits, 
+        progressPercentage: hybridProgress 
+    } = await InventoryService.getEffectiveMetrics(project, currentSupply);
 
-    const availableUnits = Math.max(0, projectTotalUnits - soldUnits);
-    
-    // 🔥 CRITICAL FIX: Ensure progress is never NaN or Infinity
-    let progressPercentage = 0;
-    if (projectTotalUnits > 0) {
-        progressPercentage = Math.round(Math.min(100, Math.max(0, (soldUnits / projectTotalUnits) * 100)));
-    }
+    const soldUnits = hybridSoldUnits;
+    const availableUnits = hybridAvailableUnits;
+    const progressPercentage = hybridProgress;
 
     const response = NextResponse.json({
       title: project.title,

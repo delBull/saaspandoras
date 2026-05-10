@@ -54,6 +54,10 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [fastLanePhone, setFastLanePhone] = useState('');
     const [isSubmittingFastLane, setIsSubmittingFastLane] = useState(false);
     const [cameFromFastLane, setCameFromFastLane] = useState(false);
+    const [fastLaneStage, setFastLaneStage] = useState<'form' | 'intent' | 'instructions' | 'success'>('form');
+    const [purchaseRef, setPurchaseRef] = useState<string | null>(null);
+    const [bankInstructions, setBankInstructions] = useState<any>(null);
+    const [isConfirmedIntent, setIsConfirmedIntent] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const { connect } = useConnectModal();
 
@@ -309,7 +313,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         } catch (e) {}
     };
 
-    const submitFastLane = async () => {
+    const submitFastLane = async (confirm = false) => {
         if (!fastLaneEmail || !fastLaneEmail.includes('@')) {
             toast.error("Ingresa un correo electrónico válido.");
             return;
@@ -326,14 +330,22 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     tier: displayTierName,
                     amount: safeAmount,
                     source: 'checkout_hub',
-                    wallet_connected: !!account
+                    wallet_connected: !!account,
+                    confirmIntent: confirm
                 })
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success("Reserva enviada con éxito.");
+                if (confirm) {
+                    setPurchaseRef(data.purchaseRef);
+                    setBankInstructions(data.bankInstructions);
+                    setFastLaneStage('instructions');
+                    toast.success("Referencia de pago generada.");
+                } else {
+                    toast.success("Datos registrados. Procediendo a instrucciones.");
+                    setFastLaneStage('intent');
+                }
                 setCameFromFastLane(true);
-                setStep('success');
             } else {
                 toast.error(data.error || "Ocurrió un error");
             }
@@ -743,45 +755,130 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                 </>
                             )}
 
-                            {/* Shared Fast Lane Form (Visible in both active/inactive states when step is fast_lane) */}
+                            {/* 🚀 INSTITUTIONAL FAST LANE / OFFLINE FLOW */}
                             {step === 'fast_lane' && (
-                                <div className="space-y-4 animate-in fade-in zoom-in-95">
-                                    <div className="space-y-3">
-                                        <input
-                                            type="text"
-                                            placeholder="Nombre Completo"
-                                            value={fastLaneName}
-                                            onChange={(e) => setFastLaneName(e.target.value)}
-                                            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
-                                        />
-                                        <input
-                                            type="email"
-                                            placeholder="Correo electrónico"
-                                            value={fastLaneEmail}
-                                            onChange={(e) => setFastLaneEmail(e.target.value)}
-                                            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
-                                        />
-                                        <input
-                                            type="tel"
-                                            placeholder="WhatsApp (Opcional)"
-                                            value={fastLanePhone}
-                                            onChange={(e) => setFastLanePhone(e.target.value)}
-                                            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors"
-                                        />
-                                    </div>
-                                    <button
-                                        disabled={isSubmittingFastLane}
-                                        onClick={submitFastLane}
-                                        className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        {isSubmittingFastLane ? <Loader2 className="w-4 h-4 animate-spin" /> : "Asegurar Reserva"}
-                                    </button>
-                                    <button
-                                        onClick={() => setStep('checkout')}
-                                        className="w-full py-3 text-[10px] font-black uppercase text-zinc-500 hover:text-zinc-300 transition-colors"
-                                    >
-                                        Volver Atrás
-                                    </button>
+                                <div className="space-y-6">
+                                    {fastLaneStage === 'form' && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="text-center mb-4">
+                                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-narai-gold/10 border border-narai-gold/20 rounded-full mb-2">
+                                                    <ShieldCheck className="w-3 h-3 text-narai-gold" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-narai-gold">Acceso Institucional</span>
+                                                </div>
+                                                <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                                                    Completa tus datos para recibir las instrucciones de transferencia bancaria (CLABE).
+                                                </p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nombre Completo"
+                                                    value={fastLaneName}
+                                                    onChange={(e) => setFastLaneName(e.target.value)}
+                                                    className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-narai-gold transition-colors"
+                                                />
+                                                <input
+                                                    type="email"
+                                                    placeholder="Correo electrónico"
+                                                    value={fastLaneEmail}
+                                                    onChange={(e) => setFastLaneEmail(e.target.value)}
+                                                    className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-narai-gold transition-colors"
+                                                />
+                                                <input
+                                                    type="tel"
+                                                    placeholder="WhatsApp (Opcional)"
+                                                    value={fastLanePhone}
+                                                    onChange={(e) => setFastLanePhone(e.target.value)}
+                                                    className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-narai-gold transition-colors"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => submitFastLane(false)}
+                                                disabled={isSubmittingFastLane}
+                                                className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-white/5 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                            >
+                                                {isSubmittingFastLane ? <Loader2 className="w-5 h-5 animate-spin" /> : "Continuar"}
+                                            </button>
+                                            <button
+                                                onClick={() => setStep('checkout')}
+                                                className="w-full py-2 text-[10px] uppercase font-black tracking-widest text-zinc-600 hover:text-zinc-300 transition-colors"
+                                            >
+                                                Volver al checkout
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {fastLaneStage === 'intent' && (
+                                        <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
+                                            <div className="w-16 h-16 bg-narai-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-narai-gold/20">
+                                                <Zap className="text-narai-gold w-8 h-8 fill-narai-gold/20" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black text-white italic">¿Estás listo para invertir?</h3>
+                                                <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">
+                                                    Al confirmar, bloquearemos tu posición por un monto de <strong>${safeAmount.toLocaleString()} USD</strong> y generaremos tu referencia única de transferencia.
+                                                </p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <button
+                                                    onClick={() => submitFastLane(true)}
+                                                    disabled={isSubmittingFastLane}
+                                                    className="w-full h-14 bg-narai-gold text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-narai-gold/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                                >
+                                                    {isSubmittingFastLane ? <Loader2 className="w-5 h-5 animate-spin text-black" /> : "YA ESTOY LISTO PARA INVERTIR"}
+                                                </button>
+                                                <button
+                                                    onClick={() => setFastLaneStage('form')}
+                                                    className="text-[10px] uppercase font-black tracking-widest text-zinc-600 hover:text-zinc-300 transition-colors"
+                                                >
+                                                    Volver a editar datos
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {fastLaneStage === 'instructions' && bankInstructions && (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="bg-narai-gold/5 border border-narai-gold/20 rounded-2xl p-6 space-y-4">
+                                                <div className="text-center pb-2 border-b border-narai-gold/10">
+                                                    <p className="text-[10px] font-black uppercase text-narai-gold tracking-widest">Instrucciones de Transferencia</p>
+                                                </div>
+                                                <div className="space-y-4 py-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[10px] uppercase font-black text-zinc-500">Beneficiario</span>
+                                                        <span className="text-xs font-bold text-white">{bankInstructions.beneficiary}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[10px] uppercase font-black text-zinc-500">Banco</span>
+                                                        <span className="text-xs font-bold text-white">{bankInstructions.bank}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[10px] uppercase font-black text-zinc-500">CLABE</span>
+                                                        <span className="text-sm font-black font-mono text-narai-gold">{bankInstructions.clabe}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
+                                                        <span className="text-[10px] uppercase font-black text-white/40">Referencia</span>
+                                                        <span className="text-sm font-black font-mono text-white select-all">{bankInstructions.reference}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[10px] uppercase font-black text-zinc-500">Monto exacto</span>
+                                                        <span className="text-lg font-black text-white italic">${bankInstructions.amount.toLocaleString()} USD</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-center space-y-4">
+                                                <p className="text-[10px] text-zinc-500 leading-relaxed italic">
+                                                    Tu posición aparecerá como <strong>"PENDIENTE"</strong> en tu portal hasta que validemos la transferencia. Por favor, asegúrate de incluir la referencia exacta.
+                                                </p>
+                                                <button
+                                                    onClick={() => setStep('success')}
+                                                    className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] hover:bg-zinc-200 transition-colors"
+                                                >
+                                                    YA REALICÉ MI TRANSFERENCIA
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>
