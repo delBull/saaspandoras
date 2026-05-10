@@ -1471,6 +1471,7 @@ export const purchases = pgTable("purchases", {
   tokenId: varchar("token_id", { length: 255 }),      // On-chain NFT ID
   agreementHash: text("agreement_hash"),            // SHA-256 integrity hash
   agreementId: varchar("agreement_id", { length: 255 }), // Unique readable agreement ref
+  transactionHash: varchar("transaction_hash", { length: 66 }), // Blockchain TX hash
   legalPortalUrl: text("legal_portal_url"),         // Direct link to certificate
 
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
