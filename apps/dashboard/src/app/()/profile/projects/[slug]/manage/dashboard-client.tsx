@@ -150,7 +150,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                                 loadingPhase={isLoadingPhase}
                             />
                         )}
-                        {activeTab === 'treasury' && <TreasuryTab address={treasuryAddress} />}
+                        {activeTab === 'treasury' && <TreasuryTab project={project} address={treasuryAddress} />}
                         {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
                         {activeTab === 'purchases' && (
@@ -249,12 +249,56 @@ function OverviewTab({ project, config, onTogglePhase, loadingPhase }: {
     );
 }
 
-function TreasuryTab({ address }: { address?: string }) {
+function TreasuryTab({ project, address }: { project: any, address?: string }) {
+    const account = useActiveAccount();
+    const [isDistributing, setIsDistributing] = useState(false);
+    const [distAmount, setDistAmount] = useState("");
+    const [distDesc, setDistDesc] = useState("");
+
     if (!address) return (
         <div className="p-12 text-center bg-zinc-900 rounded-xl border border-zinc-800 text-gray-500">
             No hay dirección de tesorería asignada. Despliega el protocolo primero.
         </div>
     );
+
+    const handleDistribute = async () => {
+        if (!distAmount || isNaN(Number(distAmount))) {
+            toast.error("Ingresa un monto válido.");
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de distribuir ${distAmount} USDC entre todos los holders? Esta acción es irreversible.`)) {
+            return;
+        }
+
+        setIsDistributing(true);
+        try {
+            const res = await fetch(`/api/v1/projects/${project.id}/admin/distribute`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-wallet-address": account?.address || ""
+                },
+                body: JSON.stringify({
+                    amount: Number(distAmount),
+                    description: distDesc
+                })
+            });
+
+            if (res.ok) {
+                toast.success("¡Distribución completada exitosamente!");
+                setDistAmount("");
+                setDistDesc("");
+            } else {
+                const err = await res.json();
+                toast.error(err.error || "Error en la distribución");
+            }
+        } catch (e) {
+            toast.error("Error de conexión");
+        } finally {
+            setIsDistributing(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -269,7 +313,6 @@ function TreasuryTab({ address }: { address?: string }) {
                             </button>
                         </div>
                     </div>
-                    {/* Placeholder Balance - would use standard hook in real app */}
                     <div className="text-right">
                         <p className="text-sm text-gray-400">Balance Total Estimado</p>
                         <p className="text-3xl font-mono text-white">$0.00 <span className="text-lg text-gray-500">USD</span></p>
@@ -277,8 +320,8 @@ function TreasuryTab({ address }: { address?: string }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <button className="py-3 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg transition-colors">
-                        Depositar Fondos
+                    <button className="py-3 bg-green-500/10 border border-green-500/20 text-green-400 font-bold rounded-lg transition-colors">
+                        Sincronizar Balance On-Chain
                     </button>
                     <button className="py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-lg transition-colors">
                         Solicitar Retiro (Propuesta)
@@ -286,10 +329,51 @@ function TreasuryTab({ address }: { address?: string }) {
                 </div>
             </div>
 
+            {/* Distribution Module */}
             <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Transacciones Recientes</h3>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <CurrencyDollarIcon className="w-5 h-5 text-yellow-500" />
+                    Distribución de Utilidades
+                </h3>
+                <p className="text-sm text-gray-400 mb-6">
+                    Envía rendimientos directamente a las cuentas de tus holders. El sistema calculará automáticamente la parte proporcional basada en el Poder de Voto de cada inversor.
+                </p>
+                
+                <div className="space-y-4 max-w-md">
+                    <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">Monto Total a Distribuir (USDC)</label>
+                        <input 
+                            type="number"
+                            value={distAmount}
+                            onChange={(e) => setDistAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white font-mono focus:border-yellow-500 outline-none transition-colors"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">Descripción / Concepto</label>
+                        <input 
+                            type="text"
+                            value={distDesc}
+                            onChange={(e) => setDistDesc(e.target.value)}
+                            placeholder="Ej: Utilidades Q1 2026 - Fase Preventa"
+                            className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-white text-sm focus:border-yellow-500 outline-none transition-colors"
+                        />
+                    </div>
+                    <button 
+                        onClick={handleDistribute}
+                        disabled={isDistributing}
+                        className="w-full py-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg shadow-yellow-900/20"
+                    >
+                        {isDistributing ? "Procesando Distribución..." : "Ejecutar Distribución Pro-Rata"}
+                    </button>
+                </div>
+            </div>
+
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+                <h3 className="text-lg font-bold text-white mb-4">Historial de Tesorería</h3>
                 <div className="text-center py-8 text-gray-500 text-sm">
-                    No hay transacciones recientes en la tesorería.
+                    No hay transacciones registradas.
                 </div>
             </div>
         </div>

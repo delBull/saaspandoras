@@ -118,7 +118,7 @@ export default function DevelopersPage() {
 
 // Option B: Programmable Popup - Resilient Matching
 window.PandorasGrowth.openCheckout('${projectSlug}', '${secondTier}');`,
-    portal: `// Option A: Data Attributes (Investor Portal)
+    portal: `// Option A: Data Attributes (Zero Friction - Now with DAO & Claims)
 <button data-pd-portal="true"> Mi Portal </button>
 
 // Option B: Programmable Portal Launch
@@ -406,7 +406,7 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                   ) : activeTab === 'portal' ? (
                     <pre className="space-y-4">
                       <div>
-                        <div className="text-zinc-600 mb-2">// Option A: Data Attributes (Investor Portal)</div>
+                        <div className="text-zinc-600 mb-2">// Option A: Data Attributes (Zero Friction - Now with DAO & Claims)</div>
                         <span className="text-zinc-400">&lt;</span><span className="text-blue-400">button</span><br/>
                         <span className="pl-6 text-indigo-400">data-pd-portal</span>=<span className="text-emerald-300">"true"</span><br/>
                         <span className="text-zinc-400">&gt;</span> Mi Portal <span className="text-zinc-400">&lt;/</span><span className="text-blue-400">button</span><span className="text-zinc-400">&gt;</span>

@@ -247,10 +247,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const activePhase = activePhaseIndex !== -1 ? phases[activePhaseIndex] : phases[0];
     const nextPhase = phases[activePhaseIndex + 1] || null;
 
-    // 4.8 DAO Activities Integration
+    // 4.8 DAO Activities & Proposals Integration
     const activities = await db.query.daoActivities.findMany({
         where: eq(daoActivitiesSchema.projectId, project.id),
         orderBy: desc(daoActivitiesSchema.createdAt),
+        limit: 5
+    });
+
+    const { governanceProposals: proposalsSchema } = await import("@/db/schema");
+    const activeProposals = await db.query.governanceProposals.findMany({
+        where: and(
+            eq(proposalsSchema.protocolId, project.id),
+            eq(proposalsSchema.status, 1) // 1 = Active
+        ),
         limit: 5
     });
 
@@ -389,6 +398,15 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         category: a.category,
         link: a.externalLink
       })),
+      governance: {
+        activeProposalsCount: activeProposals.length,
+        proposals: activeProposals.map(p => ({
+          id: p.id,
+          proposalId: p.proposalId,
+          title: p.description?.split('\n')[0] || "Propuesta de Gobernanza",
+          status: "Active"
+        }))
+      },
       onboarding: {
         title: "¿Qué Sigue?",
         steps: [
