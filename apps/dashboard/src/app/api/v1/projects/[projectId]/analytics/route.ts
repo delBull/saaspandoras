@@ -28,7 +28,7 @@ const getCachedProjectAnalytics = unstable_cache(
  */
 export async function GET(
     req: NextRequest,
-    { params }: { params: Promise<{ slug: string }> }
+    { params }: { params: Promise<{ projectId: string }> }
 ) {
     try {
         // 1. Authenticate Request
@@ -42,7 +42,7 @@ export async function GET(
             return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
         }
 
-        const { slug } = await params;
+        const { projectId: slug } = await params;
 
         // 2. Resolve Project (Prioritize ID as source of truth)
         const projectIdFromSlug = Number(slug);
