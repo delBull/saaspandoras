@@ -9,8 +9,7 @@ import postgres from "postgres";
 const DATABASE_URL = process.env.DATABASE_URL || "";
 if (DATABASE_URL && !DATABASE_URL.includes("-pooler") && DATABASE_URL.includes("neon.tech")) {
   console.warn("⚠️ DATABASE_URL detected without '-pooler' suffix. This may cause connection exhaustion in serverless environments.");
-  // Optional: throw Error in production if you want to be strict
-  // if (process.env.NODE_ENV === 'production') throw new Error("Production DB must use Neon Pooler (-pooler)");
+  console.warn("⚠️ Force Redeploy Triggered: If you updated your variables in Vercel, this commit will apply them.");
 }
 
 // Standard Next.js Postgres caching mechanism for Serverless
