@@ -254,6 +254,21 @@ function TreasuryTab({ project, address }: { project: any, address?: string }) {
     const [isDistributing, setIsDistributing] = useState(false);
     const [distAmount, setDistAmount] = useState("");
     const [distDesc, setDistDesc] = useState("");
+    const [treasuryBalance, setTreasuryBalance] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!address) return;
+        fetch(`/api/v1/projects/${project.id}/admin/treasury-balance`, {
+            headers: { "x-wallet-address": account?.address || "" }
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data?.balance !== undefined) {
+                    setTreasuryBalance(Number(data.balance).toFixed(2));
+                }
+            })
+            .catch(() => {});
+    }, [project.id, address, account?.address]);
 
     if (!address) return (
         <div className="p-12 text-center bg-zinc-900 rounded-xl border border-zinc-800 text-gray-500">
@@ -315,7 +330,7 @@ function TreasuryTab({ project, address }: { project: any, address?: string }) {
                     </div>
                     <div className="text-right">
                         <p className="text-sm text-gray-400">Balance Total Estimado</p>
-                        <p className="text-3xl font-mono text-white">$0.00 <span className="text-lg text-gray-500">USD</span></p>
+                        <p className="text-3xl font-mono text-white">{treasuryBalance !== null ? `$${treasuryBalance}` : '$0.00'} <span className="text-lg text-gray-500">USD</span></p>
                     </div>
                 </div>
 
@@ -565,7 +580,20 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                         });
 
                         toast.success("¡Blockchain Sincronizada!", { id: "bc-sync" });
-                        console.log("Tx Hash:", receipt.transactionHash);
+
+                        // Structured log (txHash already persisted in DB via sync-hash route)
+                        fetch(`/api/dao/activity`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            type: "mint_sync",
+                            projectId: project.id,
+                            purchaseId: id,
+                            txHash: receipt.transactionHash,
+                            wallet: account.address,
+                            timestamp: new Date().toISOString()
+                          })
+                        });
                     } catch (bcError) {
                         console.error("Blockchain Sync Error:", bcError);
                         toast.error("Aprobado en DB, pero error al firmar en Blockchain. Sincroniza manualmente.", { id: "bc-sync" });
