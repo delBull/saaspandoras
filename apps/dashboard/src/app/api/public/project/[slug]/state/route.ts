@@ -178,7 +178,27 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             }
         }
 
-        // c) Fetch Treasury Balance
+        // c) Tertiary Fallback: Count completed purchases if still 0
+        // This ensures we show real governance participants even before on-chain mint occurs
+        if (holdersCount === 0) {
+            try {
+                const completedPurchases = await db.select({ count: sql<number>`count(distinct ${purchasesSchema.userId})` })
+                    .from(purchasesSchema)
+                    .where(and(
+                        eq(purchasesSchema.projectId, project.id),
+                        eq(purchasesSchema.status, 'completed')
+                    ));
+                const purchaseBasedHolders = Number(completedPurchases[0]?.count || 0);
+                if (purchaseBasedHolders > 0) {
+                    holdersCount = purchaseBasedHolders;
+                    console.log(`[API] 📊 Fallback holdersCount from completed purchases: ${holdersCount}`);
+                }
+            } catch (e) {
+                console.warn("[API] Failed to get holdersCount from purchases fallback", e);
+            }
+        }
+
+        // d) Fetch Treasury Balance
         if (project.treasuryAddress?.startsWith('0x')) {
             const chain = defineChain(Number(chainId));
             
