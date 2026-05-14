@@ -110,14 +110,14 @@ export default function DevelopersPage() {
   data-theme="premium"
   defer
 ></script>`,
-    commerce: `// Option A: Data Attributes (Zero Code) - Now Case-Insensitive
+    commerce: `// Option A: Data Attributes — Usa "default" para fase activa automática
 <button 
   data-pd-checkout-slug="${projectSlug}" 
-  data-pd-checkout-tier="${firstTier}"
-> Buy Now </button>
+  data-pd-checkout-tier="default"
+> Comprar Ahora </button>
 
-// Option B: Programmable Popup - Resilient Matching
-window.PandorasGrowth.openCheckout('${projectSlug}', '${secondTier}');`,
+// Option B: Programmatic Popup — Resilient Matching
+window.PandorasGrowth.openCheckout('${projectSlug}', 'default');`,
     portal: `// Option A: Data Attributes (Zero Friction - Now with DAO & Claims)
 <button data-pd-portal="true"> Mi Portal </button>
 
