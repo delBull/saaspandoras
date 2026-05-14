@@ -495,6 +495,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       treasuryDisplay,
       dbUserStatus,
       isWhitelisted,
+      phases: phases.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        allocation: p.stats?.tokensAllocated || 0,
+        sold: p.stats?.tokensSold || 0,
+        remaining: p.stats?.remainingTokens || 0,
+        price: p.tokenPrice,
+        progress: p.progressPercentage || 0,
+        isSoldOut: p.status === 'sold_out'
+      })),
       metadata: {
         estimatedApy: project.estimatedApy || "12.5%",
         targetAmount: (project.targetAmount && project.targetAmount !== "NaN" && Number(project.targetAmount) > 0) 
