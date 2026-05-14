@@ -514,12 +514,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                 )}
 
                                 <h1 className="text-2xl font-black tracking-tight text-white mb-2 leading-tight">
-                                    {isPhaseActive ? `Acceso Prioritario: ${project.title}` : `Tier ${displayTierName} No Disponible`}
+                                    {isPhaseActive ? `Acceso Prioritario: ${project.title}` : `Fondo ${displayTierName} Finalizado`}
                                 </h1>
                                 <p className="text-zinc-400 font-medium text-xs">
                                     {isPhaseActive
-                                        ? `Asegura tu participación en una de las fases exclusivas del protocolo.`
-                                        : `Esta fase del protocolo ya no se encuentra abierta para contribución directa.`
+                                        ? `Asegura tu participación en una de las fases exclusivas del proyecto.`
+                                        : `Este fondo de inversión ya no se encuentra abierto para contribución directa.`
                                     }
                                 </p>
                             </div>
@@ -535,7 +535,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                             </div>
                                             <h3 className="text-lg font-bold text-white mb-2 font-mono uppercase tracking-tighter">Acceso Restringido</h3>
                                             <p className="text-[11px] text-zinc-400 mb-6 font-medium leading-relaxed">
-                                                La fase <strong>{displayTierName.toUpperCase()}</strong> se encuentra cerrada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima ventana.
+                                                La fase <strong>{displayTierName.toUpperCase()}</strong> se encuentra completada. <br/> Puedes unirte a la lista de espera para acceso prioritario en la próxima etapa.
                                             </p>
 
                                             <button
