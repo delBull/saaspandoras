@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
-import { projects, daoMembers } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import CheckoutClient from './CheckoutClient';
-import { matchPhase, getRawPhases, getProjectPhasesWithStats, type Phase } from '@/lib/phase-utils';
+import { matchPhase, getRawPhases, type Phase } from '@/lib/phase-utils';
 import { resolveProjectSlug } from '@/lib/project-utils';
 
 export default async function CheckoutHubPage({
@@ -35,28 +35,15 @@ export default async function CheckoutHubPage({
     }
 
     // 🛡️ Resilient Fallback: If 'standard' or 'default' requested but not found, 
-    // we try to resolve to the FIRST truly active phase (not sold out).
+    // we try to resolve to the LAST non-paused phase (most recent/active).
+    // The CheckoutClient independently verifies with on-chain totalSupply().
     if (!activePhase && (tier === 'standard' || tier === 'default')) {
-        console.log(`🧭 [CheckoutHub] Resilient fallback for "${tier}". Finding first active phase...`);
+        console.log(`🧭 [CheckoutHub] Resilient fallback for "${tier}". Finding last active phase...`);
         
-        const supplyResult = await db.select({ 
-            count: sql<number>`coalesce(sum(artifacts_count), 0)` 
-        }).from(daoMembers)
-          .where(eq(daoMembers.projectId, project.id));
-        const totalSupply = supplyResult[0]?.count || 0;
-        
-        // Use phase-utils to get real status (handles sold_out vs active)
-        const phasesWithStats = getProjectPhasesWithStats(project, totalSupply);
-        const firstActivePhase = phasesWithStats.find((p: any) => p.status === 'active');
-        
-        if (firstActivePhase) {
-            activePhase = matchPhase(phases, firstActivePhase.name);
-            console.log(`🧭 [CheckoutHub] Resolved to active phase: "${firstActivePhase.name}" (${firstActivePhase.status})`);
-        }
-        
-        // Ultimate fallback: first non-paused phase
-        if (!activePhase) {
-            activePhase = phases.find((p: Phase) => p.isActive !== false);
+        // Pick the last non-paused phase — usually the most recent/active one
+        activePhase = [...phases].reverse().find((p: Phase) => p.isActive !== false);
+        if (activePhase) {
+            console.log(`🧭 [CheckoutHub] Fallback resolved to: "${activePhase.name}"`);
         }
     }
 
