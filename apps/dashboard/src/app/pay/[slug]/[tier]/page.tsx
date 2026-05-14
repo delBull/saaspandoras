@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { projects, daoMembers } from '@/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import CheckoutClient from './CheckoutClient';
-import { matchPhase, getRawPhases, type Phase } from '@/lib/phase-utils';
+import { matchPhase, getRawPhases, getProjectPhasesWithStats, type Phase } from '@/lib/phase-utils';
 import { resolveProjectSlug } from '@/lib/project-utils';
 
 export default async function CheckoutHubPage({
@@ -35,11 +35,29 @@ export default async function CheckoutHubPage({
     }
 
     // 🛡️ Resilient Fallback: If 'standard' or 'default' requested but not found, 
-    // we try to resolve to the FIRST active phase available in the project.
-    // This handles cases where external projects haven't renamed their buttons.
+    // we try to resolve to the FIRST truly active phase (not sold out).
     if (!activePhase && (tier === 'standard' || tier === 'default')) {
         console.log(`🧭 [CheckoutHub] Resilient fallback for "${tier}". Finding first active phase...`);
-        activePhase = phases.find((p: Phase) => p.isActive !== false);
+        
+        const supplyResult = await db.select({ 
+            count: sql<number>`coalesce(sum(artifacts_count), 0)` 
+        }).from(daoMembers)
+          .where(eq(daoMembers.projectId, project.id));
+        const totalSupply = supplyResult[0]?.count || 0;
+        
+        // Use phase-utils to get real status (handles sold_out vs active)
+        const phasesWithStats = getProjectPhasesWithStats(project, totalSupply);
+        const firstActivePhase = phasesWithStats.find((p: any) => p.status === 'active');
+        
+        if (firstActivePhase) {
+            activePhase = matchPhase(phases, firstActivePhase.name);
+            console.log(`🧭 [CheckoutHub] Resolved to active phase: "${firstActivePhase.name}" (${firstActivePhase.status})`);
+        }
+        
+        // Ultimate fallback: first non-paused phase
+        if (!activePhase) {
+            activePhase = phases.find((p: Phase) => p.isActive !== false);
+        }
     }
 
     // NOTE: If the specific phase requested doesn't exist, we STILL proceed to the client.
