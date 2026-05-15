@@ -60,34 +60,7 @@ export function harmonizeProject(project: any): HarmonizedProject {
         ? JSON.parse(project.w2eConfig || '{}') 
         : (project.w2eConfig || {});
 
-    // ✨ EMERGENCY NORMALIZATION: Ensure S'Narai prices are correct at the source
-    // This fixes the API response for all consumers (Dashboard, Telegram, etc.)
-    if (project.slug === 'snarai' || project.id === 12) {
-        const normalize = (p: any) => {
-            const currentPrice = Number(p.tokenPrice || p.price || 0);
-            if (currentPrice < 0.0005) {
-                const forcedPrice = (p.name || "").toLowerCase().includes('fundador') ? 0.0015 : 0.003;
-                return { 
-                    ...p, 
-                    tokenPrice: forcedPrice, 
-                    price: forcedPrice,
-                    tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || 0
-                };
-            }
-            return p;
-        };
-
-        if (Array.isArray(artifacts)) {
-            artifacts.forEach((a: any) => {
-                if (Array.isArray(a.phases)) {
-                    a.phases = a.phases.map(normalize);
-                }
-            });
-        }
-        if (Array.isArray(w2eConfig.phases)) {
-            w2eConfig.phases = w2eConfig.phases.map(normalize);
-        }
-    }
+    // Emergency Normalization: No longer needed, handled by DB.
 
     // 1. Resolve Chain ID
     // Priority: chainId field > chain_id field > network name string > environment default

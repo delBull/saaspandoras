@@ -365,6 +365,17 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     if (!account?.address) {
         return (
             <div className="flex flex-col min-h-[100dvh] bg-[#050505] relative items-center justify-center p-6 overflow-hidden">
+                {/* Global Session & Navigation Cluster (Auth Gate version) */}
+                <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
+                    <button
+                        onClick={() => setShowGuide(!showGuide)}
+                        className="flex items-center gap-2 text-[8px] uppercase font-black tracking-[0.2em] text-zinc-600 hover:text-zinc-300 transition-colors mr-2"
+                    >
+                        {showGuide ? "Ocultar Guía" : "Guía de Usuario"}
+                        <ChevronRight className={`w-2 h-2 transition-transform ${showGuide ? 'rotate-90' : ''}`} />
+                    </button>
+                </div>
+
                 {/* Deep Branding Background Effects */}
                 <div className="fixed inset-0 pointer-events-none z-0" style={{
                     background: `radial-gradient(ellipse at top, ${brandColor}30 0%, transparent 70%)`
@@ -460,8 +471,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             </div>
 
             {/* Global Session & Navigation Cluster */}
-            <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
-                <div className="scale-90 origin-top-right">
+            <div className="fixed top-8 right-8 z-50 flex flex-col items-end gap-3">
+                <div className="scale-90 origin-top-right shadow-2xl">
                     <ConnectButton
                         client={client}
                         chain={chain}
@@ -476,14 +487,15 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                 </div>
                 <button
                     onClick={() => setShowGuide(!showGuide)}
-                    className="flex items-center gap-2 text-[8px] uppercase font-black tracking-[0.2em] text-zinc-600 hover:text-zinc-300 transition-colors mr-2"
+                    className="flex items-center gap-2 text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500 hover:text-white transition-colors px-2 py-1 bg-black/40 backdrop-blur-md rounded-lg border border-zinc-800/50"
                 >
                     {showGuide ? "Ocultar Guía" : "Guía de Usuario"}
-                    <ChevronRight className={`w-2 h-2 transition-transform ${showGuide ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`w-3 h-3 transition-transform ${showGuide ? 'rotate-90' : ''}`} />
                 </button>
             </div>
 
-            <div className="relative z-10 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 w-full max-w-[900px]">
+            <div className="flex-1 flex flex-col items-center justify-center w-full py-12 md:py-20 lg:py-8">
+                <div className="relative z-10 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 w-full max-w-[900px]">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={step}
@@ -514,12 +526,18 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                 )}
 
                                 <h1 className="text-2xl font-black tracking-tight text-white mb-2 leading-tight">
-                                    {isPhaseActive ? `Acceso Prioritario: ${project.title}` : `Fondo ${displayTierName} Finalizado`}
+                                    {isPhaseActive ? `Acceso Prioritario: ${project.title}` : (
+                                        (calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore).status === 'upcoming') 
+                                            ? `Fondo ${displayTierName} Próximamente` 
+                                            : `Fondo ${displayTierName} Finalizado`
+                                    )}
                                 </h1>
                                 <p className="text-zinc-400 font-medium text-xs">
                                     {isPhaseActive
                                         ? `Asegura tu participación en una de las fases exclusivas del proyecto.`
-                                        : `Este fondo de inversión ya no se encuentra abierto para contribución directa.`
+                                        : (calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore).status === 'upcoming' 
+                                            ? `Esta fase aún no ha comenzado. Regresa pronto o entra por Fast Lane para recibir noticias.`
+                                            : `Este fondo de inversión ya no se encuentra abierto para contribución directa.`)
                                     }
                                 </p>
                             </div>
@@ -1008,6 +1026,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     )}
                 </AnimatePresence>
             </div>
+        </div>
 
 
             {/* Context/Trust Narrative Wrapper (Bottom) */}

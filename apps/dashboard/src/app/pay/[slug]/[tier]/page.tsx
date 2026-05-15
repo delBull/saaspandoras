@@ -27,39 +27,39 @@ export default async function CheckoutHubPage({
 
     // Find the requested phase using the resilient matchPhase helper
     let activePhase = matchPhase(phases, tier);
-    
+
     if (!activePhase) {
         console.log(`[CheckoutHub] No match for tier: "${tier}" in project: ${slug}. Available: ${phases.map((p: any) => p.name).join(', ')}`);
     } else {
         console.log(`[CheckoutHub] Resolved phase: "${activePhase.name}" (requested: "${tier}"). Active: ${activePhase.isActive !== false}`);
     }
 
-    // 🛡️ Resilient Fallback: If 'standard' or 'default' requested but not found, 
+    // 🛡️ Resilient Fallback: If requested phase not found OR 'standard'/'default' requested,
     // we strictly resolve the currently ACTIVE phase based on on-chain data.
-    if (!activePhase && (tier === 'standard' || tier === 'default')) {
-        console.log(`🧭 [CheckoutHub] Strict dynamic resolution for "${tier}". Finding active phase...`);
-        
+    if (!activePhase || tier === 'standard' || tier === 'default') {
+        console.log(`🧭 [CheckoutHub] Resilient dynamic resolution for "${tier}". Finding active phase...`);
+
         let currentSupply = 0;
         const resolvedContract = project.licenseContractAddress || project.contractAddress;
-        
+
         if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
             try {
                 const { getContract, readContract } = await import("thirdweb");
                 const { defineChain } = await import("thirdweb/chains");
                 const { client: twClient } = await import("@/lib/thirdweb-client");
-                
+
                 const contract = getContract({
-                    client: twClient, 
-                    chain: defineChain(Number(project.chainId || 137)), 
+                    client: twClient,
+                    chain: defineChain(Number(project.chainId || 137)),
                     address: resolvedContract as any
                 });
-                
+
                 const rawSupply = await readContract({
-                    contract, 
-                    method: "function totalSupply() view returns (uint256)", 
+                    contract,
+                    method: "function totalSupply() view returns (uint256)",
                     params: []
                 }).catch(() => 0n);
-                
+
                 currentSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
             } catch (e) {
                 console.warn("[CheckoutHub] Failed to fetch on-chain supply for phase resolution", e);
@@ -67,11 +67,11 @@ export default async function CheckoutHubPage({
         }
 
         const { calculatePhaseStatus } = await import("@/lib/phase-utils");
-        
+
         let accumulated = 0;
         let foundActive = null;
         let lastSoldOut = null;
-        
+
         for (const p of phases) {
             const statusData = calculatePhaseStatus(p as any, currentSupply, accumulated);
             if (statusData.status === 'active' || statusData.isClickable) {
@@ -83,11 +83,14 @@ export default async function CheckoutHubPage({
             }
             accumulated += Number(p.tokenAllocation || 0);
         }
-        
+
         // Strict resolution: Active > Last Sold Out > Last Phase (if upcoming)
-        activePhase = foundActive || lastSoldOut || phases[phases.length - 1];
-        if (activePhase) {
-            console.log(`🧭 [CheckoutHub] Dynamic fallback resolved to: "${activePhase.name}" (Strictly Active: ${!!foundActive})`);
+        // Only override if we found something or if tier was generic
+        const resolvedFallback = foundActive || lastSoldOut || phases[phases.length - 1];
+        
+        if (resolvedFallback && (!activePhase || tier === 'standard' || tier === 'default')) {
+            activePhase = resolvedFallback;
+            console.log(`🧭 [CheckoutHub] Dynamic fallback resolved to: "${activePhase.name}" (Strictly Active: ${!!foundActive}, Requested: "${tier}", Supply: ${currentSupply})`);
         }
     }
 

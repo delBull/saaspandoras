@@ -171,32 +171,7 @@ export function getRawPhases(project: any) {
       }
     }
 
-    // ✨ GLOBAL EMERGENCY NORMALIZATION (Matches Checkout Hub Logic)
-    // Ensures S'Narai and future projects have the correct prices regardless of DB source
-    if (Array.isArray(phases)) {
-      phases = phases.map((p: any) => {
-        if (project.slug === 'snarai' || project.id === 12 || project.id === 1) {
-          const currentPrice = Number(p.tokenPrice || p.price || 0);
-          const isFundador = (p.name || "").toLowerCase().includes('fundador');
-          
-          // 🛡️ S'Narai Aliases for Landing Page Tiers
-          if (isFundador) {
-            p.slug = 'explorer'; // Map Explorer -> Fundador
-          } else if ((p.name || "").toLowerCase().includes('estrat')) {
-            // Strategic phase covers all higher tiers
-            p.slug = 'residente'; 
-            p.aliases = ['embajador', 'riviera']; 
-          }
-
-          if (currentPrice < 0.0005) {
-            const forcedPrice = isFundador ? 0.0015 : 0.003;
-            return { ...p, tokenPrice: forcedPrice, price: forcedPrice, tokenAllocation: p.tokenAllocation || p.allocation || p.limit || p.amount || p.maxSupply || 0 };
-          }
-        }
-        return p;
-      });
-    }
-
+    // Emergency Normalization: Handled dynamically by the Hub.
     return phases;
   } catch (e) {
     console.error("[PhaseUtils] Error parsing phases:", e);
