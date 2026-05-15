@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
         title: shortlinks.title,
         description: shortlinks.description,
         isActive: shortlinks.isActive,
+        type: shortlinks.type,
+        landingConfig: shortlinks.landingConfig,
         createdAt: shortlinks.createdAt,
         updatedAt: shortlinks.updatedAt,
         fullUrl: shortlinks.slug,
