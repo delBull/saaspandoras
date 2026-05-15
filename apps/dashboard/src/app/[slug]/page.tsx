@@ -180,6 +180,12 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
       return { type: 'landing', config: link.landingConfig };
     }
 
+    // 🎭 NEW: Masking Logic (Iframe)
+    if (link.landingConfig && (link.landingConfig as any).isMasked) {
+      console.log(`🎭 Masking shortlink: ${slug} -> ${link.destinationUrl}`);
+      return { type: 'mask', url: ensureAbsoluteUrl(link.destinationUrl) };
+    }
+
     // Return a bot preview state if a scraper is accessing a redirect link
     if (isBot) {
       console.log(`🤖 Detected bot for redirect link: ${slug}`);
@@ -190,9 +196,10 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
     const safeUrl = ensureAbsoluteUrl(link.destinationUrl);
     const destinationUrl = new URL(safeUrl);
 
-    // Add shortlink info so the landing page knows it came from a shortlink
-    destinationUrl.searchParams.set('via_shortlink', slug);
-    destinationUrl.searchParams.set('via_domain', host);
+    // 🚀 CLEAN REDIRECT: We don't add query params by default to avoid "slug largo" in the browser
+    // unless it's explicitly needed for internal tracking that doesn't change the address bar
+    // destinationUrl.searchParams.set('via_shortlink', slug);
+    // destinationUrl.searchParams.set('via_domain', host);
 
     const redirectUrl = destinationUrl.toString();
 
@@ -250,6 +257,20 @@ export default async function ShortlinkPage({ params, searchParams }: PageProps)
 
     if (result?.type === 'landing') {
       return <SmartQRLanding config={result.config} slug={slug} />;
+    }
+
+    if (result?.type === 'mask') {
+      return (
+        <div className="fixed inset-0 w-full h-full bg-white z-[9999] overflow-hidden">
+          <iframe 
+            src={result.url} 
+            className="w-full h-full border-none shadow-none"
+            title={slug}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
     }
 
     // For social media bots parsing OpenGraph tags

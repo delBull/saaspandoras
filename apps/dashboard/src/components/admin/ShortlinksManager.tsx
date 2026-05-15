@@ -16,6 +16,8 @@ interface Shortlink {
   createdAt: string;
   updatedAt: string;
   fullUrl: string;
+  type: string;
+  landingConfig: any;
 }
 
 export function ShortlinksManager() {
@@ -30,6 +32,7 @@ export function ShortlinksManager() {
     destinationUrl: '',
     title: '',
     description: '',
+    masking: false,
   });
 
   const fetchShortlinks = async () => {
@@ -60,17 +63,22 @@ export function ShortlinksManager() {
 
     setCreating(true);
     try {
+      const payload = {
+        ...formData,
+        type: 'redirect', // Keep as redirect type to avoid DB enum issues
+        landingConfig: formData.masking ? { isMasked: true } : null
+      };
+
       const response = await fetch('/api/admin/shortlinks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Enlace creado: /${data.data.slug}\n\nURL: ${window.location.origin}/${data.data.slug}`);
-        setFormData({ slug: '', destinationUrl: '', title: '', description: '' });
+        setFormData({ slug: '', destinationUrl: '', title: '', description: '', masking: false });
         setShowCreateForm(false);
         fetchShortlinks();
       } else {
@@ -189,15 +197,18 @@ export function ShortlinksManager() {
               />
             </div>
             <div>
-              <label htmlFor="description" className="block text-sm font-medium mb-1">Descripción (opcional)</label>
-              <textarea
-                id="description"
-                placeholder="Descripción detallada..."
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                className="w-full bg-zinc-900/30 p-2 border rounded"
-              />
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.masking}
+                  onChange={(e) => setFormData(prev => ({ ...prev, masking: e.target.checked }))}
+                  className="rounded border-gray-300 text-lime-400 focus:ring-lime-400 h-4 w-4"
+                />
+                <span className="text-sm font-medium">Persistir URL (Masking)</span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1 ml-6">
+                Mantiene la URL de tu dominio en la barra de direcciones (usa un iframe).
+              </p>
             </div>
 
             {/* URL Preview */}
@@ -270,6 +281,11 @@ export function ShortlinksManager() {
                           }`}>
                           {shortlink.isActive ? 'Activo' : 'Inactivo'}
                         </span>
+                        {shortlink.landingConfig?.isMasked && (
+                          <span className="text-xs px-2 py-1 rounded bg-blue-400 text-zinc-800 font-bold">
+                            Masked
+                          </span>
+                        )}
                       </div>
                       {shortlink.title && (
                         <h4 className="font-medium text-gray-100">{shortlink.title}</h4>
