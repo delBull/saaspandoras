@@ -4,17 +4,22 @@ import { projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { calculatePhaseStats, fetchProjectOnChainData } from '@/lib/projects/stats';
+import { InventoryService } from '@/lib/inventory/effective-supply';
 import { unstable_cache } from 'next/cache';
 
 // Cache project data and analytics for 60 seconds to prevent RPC bottlenecks
 const getCachedProjectAnalytics = unstable_cache(
     async (project: any) => {
         const onChainData = await fetchProjectOnChainData(project);
+        
+        // 🔥 HYBRID INVENTORY: Combine on-chain supply with pending bank transfers (on-hold)
+        const { totalSoldUnits } = await InventoryService.getEffectiveMetrics(project, onChainData.totalSupply);
+        
         const phasesWithStats = calculatePhaseStats(
             project,
-            onChainData.totalSupply
+            totalSoldUnits
         );
-        return { onChainData, phasesWithStats };
+        return { onChainData, phasesWithStats, effectiveSupply: totalSoldUnits };
     },
     ['project-analytics'],
     { revalidate: 60, tags: ['analytics'] }
@@ -65,7 +70,8 @@ export async function GET(
         }
 
         // 4. Fetch Analytics (Cached)
-        const { onChainData, phasesWithStats } = await getCachedProjectAnalytics(projectResult);
+        const cachedResult = await getCachedProjectAnalytics(projectResult);
+        const { onChainData, phasesWithStats } = cachedResult;
 
         // 5. Format Response
         const analytics = {
@@ -78,10 +84,11 @@ export async function GET(
             },
             metrics: {
                 totalSupply: onChainData.totalSupply,
+                effectiveSupply: (cachedResult as any).effectiveSupply || onChainData.totalSupply,
                 raisedAmount: projectResult.raisedAmount || "0",
                 targetAmount: projectResult.targetAmount || "0",
             },
-            phases: phasesWithStats.map(p => ({
+            phases: phasesWithStats.map((p, idx) => ({
                 id: p.id,
                 name: p.name,
                 allocation: p.tokenAllocation,
@@ -90,7 +97,10 @@ export async function GET(
                 remaining: p.stats?.remainingTokens || 0,
                 progress: p.stats?.percent || 0,
                 isSoldOut: p.stats?.isSoldOut || false,
-                status: p.stats?.isSoldOut ? 'SOLD_OUT' : (p.isActive ? 'ACTIVE' : 'UPCOMING')
+                // Determine status: first non-soldOut phase is ACTIVE
+                status: p.stats?.isSoldOut 
+                    ? 'SOLD_OUT' 
+                    : (!phasesWithStats.slice(0, idx).some(prev => !prev.stats?.isSoldOut) ? 'ACTIVE' : 'UPCOMING')
             }))
         };
 

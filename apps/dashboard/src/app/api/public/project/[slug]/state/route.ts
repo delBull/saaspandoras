@@ -423,8 +423,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const origin = req.headers.get("origin");
     
     // DYNAMIC METRICS CALCULATION (Refined for Audit Consistency)
-    const metadataPrice = Number(project.tokenPriceUsd || activePhase?.tokenPrice || 50);
-    const metadataTarget = Number(project.targetAmount || activePhase?.cap || (metadataPrice * 8));
+    // Guard: activePhase.tokenPrice may be ETH-scale (< 1.0) on testnet — always prefer DB USD price
+    const dbUsdPrice = Number(project.tokenPriceUsd);
+    const phasePriceCandidate = Number(activePhase?.tokenPrice || 0);
+    const metadataPrice = dbUsdPrice > 1 ? dbUsdPrice : (phasePriceCandidate > 1 ? phasePriceCandidate : 50);
+    
+    // targetAmount from DB is the truth — ignore phase cap if it's in ETH (too small)
+    const dbTargetAmount = Number(project.targetAmount);
+    const metadataTarget = dbTargetAmount > 1000 ? dbTargetAmount : (metadataPrice * 100); // Fallback: 100 units
     
     // Total Units Ground Truth: Active Phase allocation is the primary source.
     const projectTotalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
@@ -508,11 +514,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       })),
       metadata: {
         estimatedApy: project.estimatedApy || "12.5%",
-        targetAmount: (project.targetAmount && project.targetAmount !== "NaN" && Number(project.targetAmount) > 0) 
-            ? project.targetAmount 
-            : (activePhase?.cap?.toString() || (projectTotalUnits * Number(project.tokenPriceUsd || 50)).toString()),
-        tokenPriceUsd: project.tokenPriceUsd || activePhase?.tokenPrice?.toString() || "50",
-        nextPhasePriceUsd: nextPhase?.tokenPrice?.toString() || "75",
+        targetAmount: (() => {
+          // Priority: w2eConfig tokenomics > phase calculation > DB value (DB may be wrong)
+          const w2eTarget = project.w2eConfig?.tokenomics?.targetUsd;
+          if (w2eTarget && Number(w2eTarget) > 0 && Number(w2eTarget) < 50_000_000) return w2eTarget.toString();
+          const phaseCalc = projectTotalUnits * metadataPrice;
+          if (phaseCalc > 0 && phaseCalc < 50_000_000) return phaseCalc.toString();
+          // DB fallback (only if sane: between $1k and $50M USD)
+          const dbVal = Number(project.targetAmount);
+          if (dbVal > 1000 && dbVal < 50_000_000) return project.targetAmount;
+          return "5000000"; // S'Narai hard fallback
+        })(),
+        tokenPriceUsd: (Number(project.tokenPriceUsd) > 1) ? project.tokenPriceUsd : (activePhase?.tokenPrice?.toString() || "50"),
+        nextPhasePriceUsd: (Number(nextPhase?.tokenPrice) > 1) ? nextPhase?.tokenPrice?.toString() : "75",
         deliveryDate: "Q4 2027",
         totalUnits: projectTotalUnits,
         soldUnits,

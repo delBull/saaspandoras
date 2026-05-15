@@ -9,26 +9,26 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
-    const { projectId } = await params;
+    const { projectId: rawProjectId } = await params;
+    const projectId = Number(rawProjectId);
+    
+    if (isNaN(projectId)) {
+        return NextResponse.json({ error: "Invalid Project ID" }, { status: 400 });
+    }
     const body = await req.json();
     const { email, name, phone, amount, tier, source, wallet_connected, confirmIntent } = body;
-    const projectIdNum = parseInt(projectId, 10);
-
-    if (!email || isNaN(projectIdNum)) {
-      return NextResponse.json({ error: 'Email y proyecto son requeridos' }, { status: 400 });
+    
+    if (!email || !amount || parseFloat(amount) <= 0) {
+        return NextResponse.json({ error: "Email y monto son requeridos" }, { status: 400 });
     }
 
+    const safeAmount = parseFloat(amount);
     const project = await db.query.projects.findFirst({
-      where: eq(projects.id, projectIdNum)
+      where: eq(projects.id, projectId)
     });
 
     if (!project) {
       return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
-    }
-
-    const safeAmount = parseInt(amount, 10);
-    if (!safeAmount || safeAmount <= 0) {
-      return NextResponse.json({ error: 'Monto de inversión inválido o no proporcionado' }, { status: 400 });
     }
     
     const isWhale = safeAmount >= 500;
@@ -39,7 +39,7 @@ export async function POST(
     const identityHash = IdentityService.getIdentityHash(normalizedEmail, null, null);
     
     const insertValues = {
-        projectId: projectIdNum,
+        projectId: projectId,
         email: normalizedEmail,
         name: name || null,
         phoneNumber: phone || null,
@@ -117,35 +117,36 @@ export async function POST(
         const purchaseId = `SNARAI-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
         const idempotencyKey = `fastlane-${lead.id}-${tier || 'base'}-${new Date().toISOString().split('T')[0]}`;
 
+        let newPurchase;
         try {
-            const [newPurchase] = await db.insert(purchases).values({
+            newPurchase = (await db.insert(purchases).values({
+                projectId: Number(projectId),
                 userId: user!.id,
-                projectId: projectIdNum,
                 amount: safeAmount.toString(),
-                currency: "USD",
-                paymentMethod: 'wire',
-                status: "on_hold" as any,
+                status: 'on_hold',
+                paymentMethod: 'bank_transfer',
+                idempotencyKey,
                 purchaseId: purchaseId,
-                idempotencyKey: idempotencyKey,
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
                 metadata: {
-                    source: 'fast_lane_intent',
-                    leadId: lead.id,
-                    tier: tier,
-                    clabe: "058375000151370094",
-                    beneficiary: "AZTECAZ HUB S.A.P.I. DE C.V.",
-                    bank: "Banco Base"
+                    name,
+                    phone,
+                    tier: tier || 'default',
+                    source: source || 'external_commerce',
+                    wallet_connected
                 }
-            }).onConflictDoNothing().returning({ purchaseId: purchases.purchaseId });
-            
-            purchaseRef = newPurchase?.purchaseId || purchaseId;
+            }).returning())[0];
         } catch (e) {
-            console.warn("Purchase record already exists or error:", e);
+            console.warn("Purchase record creation error:", e);
             // If it already exists, fetch it
             const existing = await db.query.purchases.findFirst({
                 where: eq(purchases.idempotencyKey, idempotencyKey)
             });
             purchaseRef = existing?.purchaseId;
+        }
+
+        if (newPurchase) {
+            purchaseRef = newPurchase.purchaseId;
         }
 
         bankInstructions = {
@@ -159,19 +160,23 @@ export async function POST(
 
     // 3. Trigger Growth OS
     if (lead) {
-        const { processGrowthEvent } = await import("@/lib/marketing/growth-engine/engine-service");
-        await processGrowthEvent(confirmIntent ? 'INTENT_CONFIRMED' : 'LEAD_CAPTURED', {
-            id: lead.id,
-            email: normalizedEmail,
-            projectId: projectIdNum,
-            intent: 'invest',
-            metadata: { 
-                tier, 
-                amount: safeAmount,
-                fast_lane: true,
-                purchaseRef
-            }
-        });
+        try {
+            const { processGrowthEvent } = await import("@/lib/marketing/growth-engine/engine-service");
+            await processGrowthEvent(confirmIntent ? 'INTENT_CONFIRMED' : 'LEAD_CAPTURED', {
+                id: lead.id,
+                email: normalizedEmail,
+                projectId: projectId,
+                intent: 'invest',
+                metadata: { 
+                    tier, 
+                    amount: safeAmount,
+                    fast_lane: true,
+                    purchaseRef
+                }
+            });
+        } catch (growthErr) {
+            console.warn('[FastLane] Growth engine event failed (non-critical):', growthErr);
+        }
     }
 
     return NextResponse.json({ 
