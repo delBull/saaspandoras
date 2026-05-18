@@ -236,9 +236,13 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     // 🛡️ Pandora Key Handshake (Blocking Pre-requisite)
     useEffect(() => {
         let isMounted = true;
-        if (account?.address) {
-            console.log("🛡️ [CheckoutHub] Starting Handshake for:", account.address);
+        let pollInterval: NodeJS.Timeout | null = null;
+        let handshakeTimeout: NodeJS.Timeout | null = null;
+
+        function runHandshake() {
+            if (!account?.address) return;
             setIsCheckingAccess(true);
+            
             fetch('/api/v1/external-commerce/ensure-pandora-key', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -249,28 +253,74 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             })
             .then(res => res.json())
             .then(data => {
-                if (isMounted) {
-                  console.log("🛡️ [CheckoutHub] Handshake Result:", data);
-                  // 🧬 Resilient Access: In staging/testnet, we allow the user to proceed
-                  // if the handshake call was successful, even if the background mint is still pending.
-                  // The contract itself will act as the final guard.
-                  setHasEnsuredAccess(true);
-                  setIsCheckingAccess(false);
+                if (!isMounted) return;
+                console.log("🛡️ [CheckoutHub] Handshake Result:", data);
+
+                if (data.mintPending) {
+                    // Sponsored mint is in progress. Start polling to wait for it to finish!
+                    setIsCheckingAccess(false);
+                    setHasEnsuredAccess(false);
+                    
+                    if (!pollInterval) {
+                        pollInterval = setInterval(() => {
+                            console.log("🛡️ [CheckoutHub] Polling for background mint completion...");
+                            fetch('/api/v1/external-commerce/ensure-pandora-key', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    wallet: account.address,
+                                    projectId: project.id
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(pollData => {
+                                if (isMounted && !pollData.mintPending && pollData.success) {
+                                    console.log("🛡️ [CheckoutHub] Background mint finished successfully!");
+                                    if (pollInterval) clearInterval(pollInterval);
+                                    setHasEnsuredAccess(true);
+                                }
+                            }).catch(() => {});
+                        }, 3000);
+                    }
+                } else {
+                    if (pollInterval) clearInterval(pollInterval);
+                    if (handshakeTimeout) clearTimeout(handshakeTimeout);
+                    setHasEnsuredAccess(true);
+                    setIsCheckingAccess(false);
                 }
             })
             .catch(err => {
-              console.warn("🛡️ [CheckoutHub] Handshake Error (API Path: /api/v1/external-commerce/ensure-pandora-key):", err);
+              console.warn("🛡️ [CheckoutHub] Handshake Error:", err);
               if (isMounted) {
-                // Fail-safe: allow proceeding to let the wallet/contract handle the error
+                if (pollInterval) clearInterval(pollInterval);
+                if (handshakeTimeout) clearTimeout(handshakeTimeout);
                 setHasEnsuredAccess(true);
                 setIsCheckingAccess(false);
               }
             });
+        }
+
+        if (account?.address) {
+            runHandshake();
+            
+            handshakeTimeout = setTimeout(() => {
+                if (isMounted) {
+                    console.warn("🛡️ [CheckoutHub] Handshake safety timeout reached. Bypassing...");
+                    if (pollInterval) clearInterval(pollInterval);
+                    setHasEnsuredAccess(true);
+                    setIsCheckingAccess(false);
+                }
+            }, 8000); // Safe 8-second timeout
         } else {
             setHasEnsuredAccess(false);
             setIsCheckingAccess(false);
         }
-        return () => { isMounted = false; };
+
+        return () => {
+            isMounted = false;
+            if (pollInterval) clearInterval(pollInterval);
+            if (handshakeTimeout) clearTimeout(handshakeTimeout);
+        };
     }, [account?.address, project.id]);
 
     const txConfig = useMemo(() => {

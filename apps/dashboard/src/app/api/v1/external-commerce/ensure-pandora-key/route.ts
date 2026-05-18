@@ -46,6 +46,7 @@ export async function POST(req: Request) {
             abi: PANDORAS_KEY_ABI
         });
 
+        let mintPending = false;
         let hasPandorasKey = user?.hasPandorasKey || false;
 
         if (!hasPandorasKey) {
@@ -64,15 +65,55 @@ export async function POST(req: Request) {
         if (!hasPandorasKey) {
             const relayKey = process.env.RELAY_PRIVATE_KEY;
             if (relayKey && relayKey !== "0x_production_private_key") {
-                try {
-                    const adminAccount = privateKeyToAccount({ client, privateKey: relayKey as `0x${string}` });
-                    const tx = prepareContractCall({ contract: keyContract, method: "adminMint", params: [walletLower] });
-                    await sendTransaction({ transaction: tx, account: adminAccount });
-                    hasPandorasKey = true;
-                    console.log(`✅ [Handshake] Global Key minted for ${walletLower}`);
-                } catch (e) {
-                    console.error("[Handshake] Global Key mint failed:", e);
-                }
+                mintPending = true;
+                // Fire-and-forget: execute mint in the background without blocking the HTTP response
+                (async () => {
+                    try {
+                        const adminAccount = privateKeyToAccount({ client, privateKey: relayKey as `0x${string}` });
+                        const tx = prepareContractCall({ contract: keyContract, method: "adminMint", params: [walletLower] });
+                        await sendTransaction({ transaction: tx, account: adminAccount });
+                        console.log(`✅ [Handshake] Global Key minted for ${walletLower}`);
+                        
+                        // Sync Database & Trigger Marketing Events once on-chain tx is successful
+                        let dbUserId = user?.id;
+                        if (user) {
+                            await db.update(users).set({ hasPandorasKey: true, updatedAt: new Date() }).where(eq(users.id, user.id));
+                        } else {
+                            dbUserId = crypto.randomUUID();
+                            await db.insert(users).values({
+                                id: dbUserId,
+                                walletAddress: walletLower,
+                                hasPandorasKey: true,
+                                connectionCount: 1,
+                                lastConnectionAt: new Date(),
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                                acquisitionSource: "external_handshake",
+                                walletVerified: true
+                            }).onConflictDoNothing();
+                            console.log(`🆕 [Handshake] Silent registration for ${walletLower}`);
+                        }
+
+                        // Trigger Marketing Events
+                        const origin = new URL(req.url).origin;
+                        const events = [{
+                            event: 'IDENTITY_VERIFIED',
+                            walletAddress: walletLower,
+                            userId: dbUserId || user?.id,
+                            metadata: { source: 'external_handshake', hasPandorasKey: true }
+                        }];
+
+                        for (const ev of events) {
+                            fetch(`${origin}/api/v1/marketing/events`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(ev)
+                            }).catch(() => {});
+                        }
+                    } catch (e) {
+                        console.error("[Handshake] Global Key background mint failed:", e);
+                    }
+                })();
             }
         }
 
@@ -104,36 +145,69 @@ export async function POST(req: Request) {
             if (!hasProtocolAccess) {
                 const relayKey = process.env.RELAY_PRIVATE_KEY;
                 if (relayKey && relayKey !== "0x_production_private_key") {
-                    try {
-                        const adminAccount = privateKeyToAccount({ client, privateKey: relayKey as `0x${string}` });
-                        
-                        // Try adminMint first (Standard Pass), fallback to mint (SBT)
-                        let mintTx;
+                    mintPending = true;
+                    // Fire-and-forget: execute mint in the background without blocking the HTTP response
+                    (async () => {
                         try {
-                            mintTx = prepareContractCall({
-                                contract: licenseContract,
-                                method: "function adminMint(address to)",
-                                params: [walletLower]
-                            });
-                        } catch (e) {
-                            mintTx = prepareContractCall({
-                                contract: licenseContract,
-                                method: "function mint(address to)",
-                                params: [walletLower]
-                            });
-                        }
+                            const adminAccount = privateKeyToAccount({ client, privateKey: relayKey as `0x${string}` });
+                            
+                            // Try adminMint first (Standard Pass), fallback to mint (SBT)
+                            let mintTx;
+                            try {
+                                mintTx = prepareContractCall({
+                                    contract: licenseContract,
+                                    method: "function adminMint(address to)",
+                                    params: [walletLower]
+                                });
+                            } catch (e) {
+                                mintTx = prepareContractCall({
+                                    contract: licenseContract,
+                                    method: "function mint(address to)",
+                                    params: [walletLower]
+                                });
+                            }
 
-                        await sendTransaction({ transaction: mintTx, account: adminAccount });
-                        hasProtocolAccess = true;
-                        console.log(`✅ [Handshake] Protocol Access Card minted for ${walletLower} (Project: ${project.slug})`);
-                    } catch (e) {
-                        console.error("[Handshake] Protocol Access Card mint failed:", e);
-                    }
+                            await sendTransaction({ transaction: mintTx, account: adminAccount });
+                            console.log(`✅ [Handshake] Protocol Access Card minted for ${walletLower} (Project: ${project.slug})`);
+
+                            // Queue webhook and marketing event on success
+                            try {
+                                const { WebhookService } = await import('@/lib/integrations/webhook-service');
+                                await WebhookService.queueEvent('system', 'lead.converted', {
+                                    event: 'lead.converted',
+                                    timestamp: new Date().toISOString(),
+                                    data: {
+                                        wallet: walletLower,
+                                        project_id: project.id,
+                                        project_slug: project.slug,
+                                        has_pandoras_key: true,
+                                        has_protocol_access: true,
+                                        source: 'external_handshake',
+                                    }
+                                });
+                            } catch (_) {}
+
+                            const origin = new URL(req.url).origin;
+                            fetch(`${origin}/api/v1/marketing/events`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    event: 'ACCESS_CARD_ACQUIRED',
+                                    projectId: project?.id,
+                                    walletAddress: walletLower,
+                                    metadata: { source: 'external_handshake', projectSlug: project?.slug }
+                                })
+                            }).catch(() => {});
+
+                        } catch (e) {
+                            console.error("[Handshake] Protocol Access Card mint failed:", e);
+                        }
+                    })();
                 }
             }
         }
 
-        // ── 3. GLOBAL SYNC: DB & MARKETING ─────────────────────────────────────
+        // ── 3. GLOBAL SYNC: DB & MARKETING (For existing/instant access users) ──
         
         let dbUserId = user?.id;
 
@@ -142,7 +216,6 @@ export async function POST(req: Request) {
                 await db.update(users).set({ hasPandorasKey: true, updatedAt: new Date() }).where(eq(users.id, user.id));
             } else {
                 // 🧬 Phase 90: Silent Pre-Registration
-                // Creates the user record so the platform recognizes them immediately
                 dbUserId = crypto.randomUUID();
                 try {
                     await db.insert(users).values({
@@ -162,7 +235,7 @@ export async function POST(req: Request) {
                 }
             }
 
-            // Trigger Marketing Events
+            // Trigger Marketing Events (Synchronous for cached users)
             try {
                 const origin = new URL(req.url).origin;
                 const events = [];
@@ -196,8 +269,8 @@ export async function POST(req: Request) {
             }
         }
 
-        // 🔔 Notify Bull's Lab when a user earns protocol access (lead.converted)
-        if (hasProtocolAccess && project) {
+        // 🔔 Notify Bull's Lab when a user earns protocol access (lead.converted - Synchronous for cached users)
+        if (hasProtocolAccess && project && !mintPending) {
             try {
                 const { WebhookService } = await import('@/lib/integrations/webhook-service');
                 await WebhookService.queueEvent('system', 'lead.converted', {
@@ -219,6 +292,7 @@ export async function POST(req: Request) {
             success: true, 
             hasPandorasKey, 
             hasProtocolAccess,
+            mintPending,
             wallet: walletLower 
         });
 
