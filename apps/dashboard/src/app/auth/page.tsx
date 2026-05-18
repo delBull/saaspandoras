@@ -69,15 +69,27 @@ function AuthContent() {
     useEffect(() => {
         const isSuccess = authStatus === 'authenticated' || authStatus === 'has_access' || authStatus === 'no_access';
         console.log(`🛡️ [Auth] Current Status: ${authStatus}, Wallet: ${account?.address?.slice(0,6)}...`);
+        let closeTimeout: NodeJS.Timeout | null = null;
 
         if (account?.address) {
+            const targetOrigin = origin || '*';
+
             if (window.opener) {
-                // DESKTOP: Wait for strict SIWE auth to send message back
+                // DESKTOP: Send wallet info to parent window IMMEDIATELY to avoid getting stuck in SIWE
+                console.log("🛡️ [Auth] Desktop popup: Sending immediate wallet sync:", account.address);
+                window.opener.postMessage({ type: 'growth_os:auth_success', wallet: account.address }, targetOrigin);
+                window.opener.postMessage('growth_os:auth_success', targetOrigin);
+                
+                // Close window after a short delay so the user session is registered
+                closeTimeout = setTimeout(() => {
+                    try {
+                        window.close();
+                    } catch (e) {}
+                }, 2000);
+                
                 if (isSuccess) {
-                    const targetOrigin = origin || '*';
-                    window.opener.postMessage({ type: 'growth_os:auth_success', wallet: account.address }, targetOrigin);
-                    window.opener.postMessage('growth_os:auth_success', targetOrigin);
-                    setTimeout(() => window.close(), 1500);
+                    if (closeTimeout) clearTimeout(closeTimeout);
+                    window.close();
                 }
             } else if (origin) {
                 // MOBILE: Instant redirect! No SIWE wait. If we have the address, return immediately.
@@ -92,6 +104,10 @@ function AuthContent() {
                 }
             }
         }
+
+        return () => {
+            if (closeTimeout) clearTimeout(closeTimeout);
+        };
     }, [account?.address, authStatus, origin]);
 
     // Trigger SIWE if connected but not authenticated (Only really needed for desktop popup flow)
