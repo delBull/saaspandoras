@@ -5,9 +5,10 @@ import { eq, sql } from "drizzle-orm";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const projectId = parseInt(params.projectId);
+  const { projectId: rawProjectId } = await params;
+  const projectId = parseInt(rawProjectId);
   const walletAddress = req.headers.get("x-wallet-address");
 
   if (!walletAddress) {

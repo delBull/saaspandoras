@@ -18,9 +18,10 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
     req: Request,
-    { params }: { params: { tokenId: string } }
+    { params }: { params: Promise<{ tokenId: string }> }
 ) {
-    const tokenId = BigInt(params.tokenId);
+    const { tokenId: rawTokenId } = await params;
+    const tokenId = BigInt(rawTokenId);
 
     try {
         // 1. Resolve Owner from Chain (Using Thirdweb)

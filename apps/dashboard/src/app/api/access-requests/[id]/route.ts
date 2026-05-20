@@ -14,10 +14,11 @@ export const dynamic = "force-dynamic";
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = Number(params.id);
+    const { id: rawId } = await params;
+    const id = Number(rawId);
     if (isNaN(id)) {
       return NextResponse.json({ error: "ID inválido." }, { status: 400 });
     }
@@ -70,9 +71,10 @@ export async function PATCH(
  */
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (isNaN(id)) return NextResponse.json({ error: "ID inválido." }, { status: 400 });
 
   const item = await db.query.accessRequests.findFirst({

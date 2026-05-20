@@ -8,14 +8,14 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { wallet: string } }
+    { params }: { params: Promise<{ wallet: string }> }
 ) {
     const { client, error } = await validateExternalKey(req, "read:users");
     if (error || !client) {
         return NextResponse.json({ error: error ?? "Unauthorized" }, { status: 401 });
     }
 
-    const { wallet } = params;
+    const { wallet } = await params;
 
     try {
         // 1. Get all memberships for this wallet
