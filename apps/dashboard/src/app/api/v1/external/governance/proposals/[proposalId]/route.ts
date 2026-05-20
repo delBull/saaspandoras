@@ -24,14 +24,14 @@ const PROPOSAL_STATUS = {
  */
 export async function GET(
     req: NextRequest,
-    { params }: { params: { proposalId: string } }
+    { params }: { params: Promise<{ proposalId: string }> }
 ) {
     const { client, error } = await validateExternalKey(req, "read:governance");
     if (error || !client) {
         return NextResponse.json({ error: error ?? "Unauthorized" }, { status: 401 });
     }
 
-    const { proposalId } = params;
+    const { proposalId } = await params;
     const url = new URL(req.url);
     const protocolId = url.searchParams.get("protocolId");
 

@@ -9,9 +9,9 @@ import { resolveProjectSlug } from '@/lib/project-utils';
 export default async function CheckoutHubPage({
     params
 }: {
-    params: { slug: string, tier: string }
+    params: Promise<{ slug: string, tier: string }>
 }) {
-    const { slug: rawSlug, tier } = params;
+    const { slug: rawSlug, tier } = await params;
     const slug = resolveProjectSlug(rawSlug);
 
     // Fetch the project and its configurations
