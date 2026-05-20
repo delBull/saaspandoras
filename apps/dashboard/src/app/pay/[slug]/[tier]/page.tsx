@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -101,11 +102,20 @@ export default async function CheckoutHubPage({
     // Pass data to the deep-styled client component
     return (
         <div className="min-h-screen bg-black text-white font-sans selection:bg-purple-500/30">
-            <CheckoutClient
-                project={project}
-                rawPhase={activePhase}
-                tierName={tier}
-            />
+            <Suspense fallback={
+                <div className="min-h-screen bg-black flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-zinc-400 text-sm">Cargando checkout...</p>
+                    </div>
+                </div>
+            }>
+                <CheckoutClient
+                    project={project}
+                    rawPhase={activePhase}
+                    tierName={tier}
+                />
+            </Suspense>
         </div>
     );
 }
