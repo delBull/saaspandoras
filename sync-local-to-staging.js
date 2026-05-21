@@ -18,7 +18,7 @@ async function syncDatabases() {
   console.log('📊 Connecting to local database...');
 
   // Staging database connection (hardcoded for staging)
-  var stagingConnectionString = 'postgresql://neondb_owner:npg_uj0h1LpbAQxi@ep-withered-thunder-adt88vka-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+  var stagingConnectionString = 'postgresql://neondb_owner:npg_9lRfvsopJ2UM@ep-cool-feather-ambh76vv-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
   console.log('🌍 Connecting to staging database...');
 
   var localSql, stagingSql;
