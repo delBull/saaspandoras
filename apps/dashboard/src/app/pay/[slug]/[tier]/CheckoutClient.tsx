@@ -660,7 +660,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-1">Inversión Estimada</span>
                                                     <span className="text-2xl font-black text-white font-mono flex items-center gap-2">
-                                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay < 1 ? totalCostDisplay.toFixed(4) : totalCostDisplay.toLocaleString()} ${currencySymbol}`}
+                                                        {isPriceLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-700" /> : `${totalCostDisplay < 1 ? Number(totalCostDisplay.toFixed(8)).toString() : totalCostDisplay.toLocaleString()} ${currencySymbol}`}
                                                     </span>
                                                 </div>
                                                 <div className="text-right flex flex-col items-end">
