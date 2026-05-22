@@ -22,74 +22,85 @@ export default async function CheckoutHubPage({
 
     if (!project) return notFound();
 
-    // 🧭 Strict Tier Resolution: Only honor the EXACT tier requested by the user
+    // 🧭 Strict Tier Resolution: Resolve the phase and its active status.
     // Using centralized getRawPhases to support both V1 and V2 (artifact-based) projects.
     const phases = getRawPhases(project);
 
-    // Find the requested phase using the resilient matchPhase helper
-    let activePhase = matchPhase(phases, tier);
+    // Fetch current supply to accurately determine phase statuses
+    let currentSupply = 0;
+    const resolvedContract = project.licenseContractAddress || project.contractAddress;
 
-    if (!activePhase) {
-        console.log(`[CheckoutHub] No match for tier: "${tier}" in project: ${slug}. Available: ${phases.map((p: any) => p.name).join(', ')}`);
-    } else {
-        console.log(`[CheckoutHub] Resolved phase: "${activePhase.name}" (requested: "${tier}"). Active: ${activePhase.isActive !== false}`);
+    if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
+        try {
+            const { getContract, readContract } = await import("thirdweb");
+            const { defineChain } = await import("thirdweb/chains");
+            const { client: twClient } = await import("@/lib/thirdweb-client");
+
+            const contract = getContract({
+                client: twClient,
+                chain: defineChain(Number(project.chainId || 137)),
+                address: resolvedContract as any
+            });
+
+            const rawSupply = await readContract({
+                contract,
+                method: "function totalSupply() view returns (uint256)",
+                params: []
+            }).catch(() => 0n);
+
+            currentSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
+        } catch (e) {
+            console.warn("[CheckoutHub] Failed to fetch on-chain supply for phase resolution", e);
+        }
     }
 
-    // 🛡️ Resilient Fallback: If requested phase not found OR 'standard'/'default' requested,
+    const { calculatePhaseStatus } = await import("@/lib/phase-utils");
+
+    let accumulated = 0;
+    let foundActive = null;
+    let lastSoldOut = null;
+    const phasesWithStatus = [];
+
+    for (const p of phases) {
+        const statusData = calculatePhaseStatus(p as any, currentSupply, accumulated);
+        phasesWithStatus.push({
+            phase: p,
+            statusData
+        });
+        if (!foundActive && (statusData.status === 'active' || statusData.isClickable)) {
+            foundActive = p;
+        }
+        if (statusData.status === 'sold_out') {
+            lastSoldOut = p;
+        }
+        accumulated += Number(p.tokenAllocation || 0);
+    }
+
+    // Find the requested phase using the resilient matchPhase helper
+    let resolvedMatch = matchPhase(phases, tier);
+    let activePhase = null;
+
+    if (resolvedMatch) {
+        // Retrieve calculated status for the matched phase
+        const matchedWithStatus = phasesWithStatus.find(pws => pws.phase === resolvedMatch);
+        if (matchedWithStatus && (matchedWithStatus.statusData.status === 'active' || matchedWithStatus.statusData.isClickable)) {
+            // Matched phase is active/clickable, use it!
+            activePhase = resolvedMatch;
+            console.log(`[CheckoutHub] Resolved active requested phase: "${activePhase.name}" (requested: "${tier}")`);
+        } else {
+            console.log(`[CheckoutHub] Matched phase "${resolvedMatch.name}" is not active/clickable. Finding active phase fallback...`);
+        }
+    }
+
+    // 🛡️ Resilient Fallback: If requested phase not found, not active/clickable, OR generic 'standard'/'default' requested,
     // we strictly resolve the currently ACTIVE phase based on on-chain data.
     if (!activePhase || tier === 'standard' || tier === 'default') {
-        console.log(`🧭 [CheckoutHub] Resilient dynamic resolution for "${tier}". Finding active phase...`);
-
-        let currentSupply = 0;
-        const resolvedContract = project.licenseContractAddress || project.contractAddress;
-
-        if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
-            try {
-                const { getContract, readContract } = await import("thirdweb");
-                const { defineChain } = await import("thirdweb/chains");
-                const { client: twClient } = await import("@/lib/thirdweb-client");
-
-                const contract = getContract({
-                    client: twClient,
-                    chain: defineChain(Number(project.chainId || 137)),
-                    address: resolvedContract as any
-                });
-
-                const rawSupply = await readContract({
-                    contract,
-                    method: "function totalSupply() view returns (uint256)",
-                    params: []
-                }).catch(() => 0n);
-
-                currentSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
-            } catch (e) {
-                console.warn("[CheckoutHub] Failed to fetch on-chain supply for phase resolution", e);
-            }
-        }
-
-        const { calculatePhaseStatus } = await import("@/lib/phase-utils");
-
-        let accumulated = 0;
-        let foundActive = null;
-        let lastSoldOut = null;
-
-        for (const p of phases) {
-            const statusData = calculatePhaseStatus(p as any, currentSupply, accumulated);
-            if (statusData.status === 'active' || statusData.isClickable) {
-                foundActive = p;
-                break;
-            }
-            if (statusData.status === 'sold_out') {
-                lastSoldOut = p;
-            }
-            accumulated += Number(p.tokenAllocation || 0);
-        }
+        console.log(`🧭 [CheckoutHub] Resilient dynamic resolution for "${tier}".`);
 
         // Strict resolution: Active > Last Sold Out > Last Phase (if upcoming)
-        // Only override if we found something or if tier was generic
         const resolvedFallback = foundActive || lastSoldOut || phases[phases.length - 1];
         
-        if (resolvedFallback && (!activePhase || tier === 'standard' || tier === 'default')) {
+        if (resolvedFallback) {
             activePhase = resolvedFallback;
             console.log(`🧭 [CheckoutHub] Dynamic fallback resolved to: "${activePhase.name}" (Strictly Active: ${!!foundActive}, Requested: "${tier}", Supply: ${currentSupply})`);
         }
