@@ -176,7 +176,7 @@ export async function POST(
     if (lead) {
         try {
             const { processGrowthEvent } = await import("@/lib/marketing/growth-engine/engine-service");
-            await processGrowthEvent(confirmIntent ? 'INTENT_CONFIRMED' : 'LEAD_CAPTURED', {
+            await processGrowthEvent(confirmIntent ? 'FAST_LANE_CHECKOUT' as any : 'LEAD_CAPTURED', {
                 id: lead.id,
                 email: normalizedEmail,
                 projectId: projectId,

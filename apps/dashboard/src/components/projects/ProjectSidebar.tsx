@@ -148,9 +148,24 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const dbRaised = Number(project.raised_amount ?? 0);
   const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
 
+  const { data: dynamicName } = useReadContract({
+    contract: licenseContract || dummyContract,
+    queryOptions: { enabled: !!licenseContract },
+    method: "function name() view returns (string)",
+    params: []
+  });
+
+  const { data: dynamicMaxSupply } = useReadContract({
+    contract: licenseContract || dummyContract,
+    queryOptions: { enabled: !!licenseContract && tokenType === 'erc20' },
+    method: "function maxSupply() view returns (uint256)",
+    params: []
+  });
+
   // Calculate Progress Logic
   const price = Number(project.w2eConfig?.licenseToken?.price ?? 0);
-  const maxSupply = Number(project.w2eConfig?.licenseToken?.maxSupply ?? 0);
+  const dbMaxSupply = Number(project.w2eConfig?.licenseToken?.maxSupply ?? 0);
+  const maxSupply = dynamicMaxSupply ? Number(dynamicMaxSupply) : dbMaxSupply;
 
   // Financial Progress
   const financialProgress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
@@ -184,6 +199,8 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   };
 
   const accessCardImage = sanitizeUrl(config.accessCardImage || project.image_url);
+
+  const displayTitle = dynamicName ? String(dynamicName) : String(project.title);
 
   // --- Smooth Scroll Logic ---
   const scrollToPhases = (e?: React.MouseEvent) => {
@@ -593,7 +610,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
             <button
               onClick={() => {
-                window.open(`https://wa.me/?text=Check out ${project.title} on Pandoras: ${window.location.href}`, '_blank');
+                window.open(`https://wa.me/?text=Check out ${displayTitle} on Pandoras: ${window.location.href}`, '_blank');
                 setIsShareModalOpen(false);
               }}
               className="flex flex-col items-center gap-2 p-4 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"

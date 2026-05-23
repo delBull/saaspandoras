@@ -17,7 +17,8 @@ import {
   sendGenesisWelcomeEmail,
   sendEducationalNurtureEmail,
   sendVIPConciergeEmail,
-  sendPostPurchaseSuccessEmail
+  sendPostPurchaseSuccessEmail,
+  sendFastLaneSuccessEmail
 } from '@/lib/marketing/growth-engine/email-senders';
 
 export async function executeGrowthActions(
@@ -394,6 +395,45 @@ export async function executeGrowthActions(
                             courseUrl
                         });
                         success = res.success;
+                    } else {
+                        success = true;
+                    }
+                    break;
+                }
+
+                case 'SEND_FAST_LANE_SUCCESS': {
+                    if (lead.email) {
+                        const res = await sendFastLaneSuccessEmail({
+                            to: lead.email as string,
+                            projectName: project.name,
+                            projectSlug: project.slug,
+                            baseUrl: (project as any).baseUrl,
+                            metadata: lead.metadata
+                        });
+                        success = res.success;
+
+                        // 🔔 Emit to dynamic widget webhooks
+                        try {
+                            const { WebhookService } = await import('@/lib/integrations/webhook-service');
+                            await WebhookService.queueEvent('system', 'lead.fastlane_checkout', {
+                                event: 'lead.fastlane_checkout',
+                                timestamp: new Date().toISOString(),
+                                data: {
+                                    lead_id: lead.id,
+                                    email: lead.email,
+                                    name: lead.name,
+                                    project_id: project.id,
+                                    project_slug: project.slug,
+                                    status: 'fast_lane_email_sent'
+                                }
+                            });
+
+                            // Fast Path dispatch
+                            const { WebhookProcessor } = await import('@/lib/integrations/webhook-processor');
+                            WebhookProcessor.processPendingEvents(5).catch(() => {});
+                        } catch (e) {
+                            console.error("[Webhook] Fast-Lane emit failed:", e);
+                        }
                     } else {
                         success = true;
                     }

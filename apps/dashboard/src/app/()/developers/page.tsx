@@ -31,7 +31,7 @@ interface Project {
 
 export default function DevelopersPage() {
   const [copied, setCopied] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'widget' | 'commerce' | 'portal' | 'api'>('widget');
+  const [activeTab, setActiveTab] = useState<'widget' | 'commerce' | 'portal' | 'api' | 'webhooks'>('widget');
   
   // Dynamic State
   const [projects, setProjects] = useState<Project[]>([]);
@@ -138,6 +138,23 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
     email: "builder@example.com",
     metadata: { tags: ["FULL_UNIT"] } 
   })
+});`,
+    webhooks: `// Escucha eventos del Growth OS en tu propio backend
+// Configura tu URL en Panel Pandoras > Proyectos > Webhooks
+app.post("/webhook/pandoras", (req, res) => {
+  const { event, data } = req.body;
+  
+  if (event === 'lead.fastlane_checkout') {
+    // 🚀 Se disparó el flujo de Fast-Lane (Email enviado)
+    console.log("Fast-Lane Intent:", data.email, data.status);
+  }
+  
+  if (event === 'lead.new' || event === 'lead.returning') {
+    // 👤 Lead capturado por el Widget (B2B/B2C)
+    console.log("Lead Profile:", data.email, data.intent);
+  }
+
+  res.send({ received: true });
 });`
   };
 
@@ -344,6 +361,19 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                     <Puzzle className="w-4 h-4" />
                     <span>Advanced Lead API</span>
                   </button>
+                  <button 
+                    onClick={() => setActiveTab('webhooks')}
+                    className={cn(
+                      "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
+                      activeTab === 'webhooks' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                    )}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <div className="flex flex-col items-start">
+                      <span>Webhook Events</span>
+                      <span className="text-[9px] text-indigo-400 font-black uppercase tracking-widest leading-none mt-1">Real-Time</span>
+                    </div>
+                  </button>
                 </div>
 
                 <div className="mt-10 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -438,6 +468,27 @@ await fetch("https://${getDashboardDomain()}/api/v1/leads/register", {
                       <div>
                         <div className="text-zinc-600 mb-2">// Option B: Programmable Popup - Resilient Matching</div>
                         <span className="text-indigo-400">window</span>.<span className="text-indigo-300">PandorasGrowth</span>.<span className="text-emerald-400">openCheckout</span>(<span className="text-emerald-300">'{projectSlug}'</span>, <span className="text-emerald-300">'{secondTier}'</span>);
+                      </div>
+                    </pre>
+                  ) : activeTab === 'webhooks' ? (
+                    <pre className="space-y-4">
+                      <div>
+                        <div className="text-zinc-600 mb-2">// Escucha eventos del Growth OS en tu propio backend (Node.js/Express)</div>
+                        <span className="text-indigo-400">app</span>.<span className="text-blue-400">post</span>(<span className="text-emerald-300">"/webhook/pandoras"</span>, (<span className="text-orange-300">req</span>, <span className="text-orange-300">res</span>) {`=>`} {'{'}<br/>
+                        <span className="pl-6 text-purple-400">const</span> {'{ event, data } = '}<span className="text-orange-300">req</span>.<span className="text-indigo-300">body</span>;<br/>
+                        <br/>
+                        <span className="pl-6 text-purple-400">if</span> (event === <span className="text-emerald-300">'lead.fastlane_checkout'</span>) {'{'}<br/>
+                        <span className="pl-12 text-zinc-500">// Fast-Lane desencadenado y Email de instrucciones enviado</span><br/>
+                        <span className="pl-12 text-indigo-400">console</span>.<span className="text-blue-400">log</span>(<span className="text-emerald-300">"🚀 Fast-Lane Intent:"</span>, data.email);<br/>
+                        <span className="pl-6">{'}'}</span><br/>
+                        <br/>
+                        <span className="pl-6 text-purple-400">if</span> (event === <span className="text-emerald-300">'lead.new'</span> || event === <span className="text-emerald-300">'lead.returning'</span>) {'{'}<br/>
+                        <span className="pl-12 text-zinc-500">// Lead sincronizado (Autenticación agnóstica o Widget)</span><br/>
+                        <span className="pl-12 text-indigo-400">console</span>.<span className="text-blue-400">log</span>(<span className="text-emerald-300">"👤 Lead Data:"</span>, data.intent);<br/>
+                        <span className="pl-6">{'}'}</span><br/>
+                        <br/>
+                        <span className="pl-6 text-orange-300">res</span>.<span className="text-blue-400">send</span>({'{ received: true }'});<br/>
+                        {'});'}
                       </div>
                     </pre>
                   ) : (

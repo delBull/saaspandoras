@@ -170,7 +170,9 @@ export async function GET(req: Request) {
                 if (onChainSupply > 0n) {
                     // For ERC20, artifacts count is often equivalent to whole units
                     totalArtifactsNum = Number(onChainSupply) / divisor;
-                    totalMembersNum = onChainParticipants > 0n ? Number(onChainParticipants) : totalArtifactsNum;
+                    
+                    // If totalParticipants() failed/doesn't exist, fallback to DB unique wallets, or default to 1 to avoid NaN
+                    totalMembersNum = onChainParticipants > 0n ? Number(onChainParticipants) : (totalMembersNum > 0 ? totalMembersNum : 1);
                     
                     // If no power from DB, the total possible power is the current supply
                     // (This assumes 1 token = 1 vote unit at the base level)
@@ -205,6 +207,9 @@ export async function GET(req: Request) {
             }
         }
 
+        // Final fallback to 1 to prevent division by zero in PCI, but display as 0 if truly empty
+        const safeMembersNumForPCI = totalMembersNum > 0 ? totalMembersNum : 1;
+
         // b) Power Concentration (Top 10)
         let topWallets: { votingPower: string | number | null }[] = [];
         try {
@@ -223,9 +228,9 @@ export async function GET(req: Request) {
         
         // PCI: Power Concentration Index (Gini-like for DAO)
         let pci = 0;
-        if (totalPowerNum > 0 && totalMembersNum > 1) {
+        if (totalPowerNum > 0 && safeMembersNumForPCI > 1) {
             pci = top10Power / totalPowerNum;
-        } else if (totalPowerNum > 0 && totalMembersNum === 1) {
+        } else if (totalPowerNum > 0 && safeMembersNumForPCI === 1) {
             // If only 1 member has all tokens, PCI is 1 (Max concentration)
             pci = 1;
         } else {

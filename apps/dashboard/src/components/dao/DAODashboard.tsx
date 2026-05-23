@@ -228,7 +228,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     );
 
     const ProposalsView = () => {
-        const govAddress = project?.governorContractAddress;
+        const govAddress = project?.governorContractAddress || project?.votingContractAddress || (project as any).governor_contract_address || (project as any).voting_contract_address;
 
         return (
             <div className="space-y-6">
@@ -505,7 +505,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         if (!account) return;
         setIsRedeeming(true);
         try {
-            const outputToken = redemptionType === 'TOKEN' ? 'PBOX_GOV' : 'USDC';
+            const outputToken = redemptionType === 'TOKEN' ? project.licenseContractAddress : 'USDC';
 
             const res = await fetch("/api/dao/redemption", {
                 method: "POST",
@@ -537,7 +537,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     account
                 });
 
-                toast.success(`Canjeado exitosamente! Has recibido ${redeemAmount} $PBOX`);
+                toast.success(`Canjeado exitosamente! Has recibido ${redeemAmount} tokens de Gobernanza`);
             } else {
                 toast.success(`Canjeado exitosamente! Recibirás ${data.payout} ${data.symbol}`);
             }
@@ -566,10 +566,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         <TrophyIcon className="w-4 h-4 text-yellow-400" />
                         <span className="text-sm text-zinc-300">
                             Mis Recompensas: <span className="text-white font-bold font-mono">
-                                {isBaseMainnet 
-                                    ? `${(Number(pboxBalance) * 0.01).toFixed(2)} USDC` 
-                                    : `${Number(pboxBalance).toFixed(0)} PBOX`
-                                }
+                                {`${Number(pboxBalance).toFixed(0)} Puntos`}
                             </span>
                         </span>
                     </div>
@@ -583,7 +580,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         </DialogTrigger>
                         <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
                             <DialogHeader>
-                                <DialogTitle>Canjear PBOX</DialogTitle>
+                                <DialogTitle>Canjear Puntos por Tokens del DAO</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 pt-4">
                                 <div className="flex bg-zinc-950 p-1 rounded-lg">
@@ -597,14 +594,14 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                                         onClick={() => setRedemptionType('TOKEN')}
                                         className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${redemptionType === 'TOKEN' ? 'bg-zinc-800 text-lime-400 shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
                                     >
-                                        $PBOX (Governance)
+                                        Tokens del Proyecto (DAO)
                                     </button>
                                 </div>
 
                                 <p className="text-sm text-zinc-400">
                                     {redemptionType === 'CRYPTO'
-                                        ? <span>Convierte puntos en dinero real.<br />Tasa: <span className="text-lime-400">100 PBOX = 1 USDC</span></span>
-                                        : <span>Obtén poder de voto en el DAO.<br />Tasa: <span className="text-lime-400">1 PBOX = 1 $PBOX</span></span>
+                                        ? <span>Convierte puntos en ganancias directas.<br />Tasa: <span className="text-lime-400">Según métricas del proyecto</span></span>
+                                        : <span>Obtén poder de voto en el DAO.<br />Tasa: <span className="text-lime-400">1 Punto = 1 Token de Gobernanza</span></span>
                                     }
                                 </p>
 
@@ -625,14 +622,14 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                                             MAX
                                         </button>
                                     </div>
-                                    <p className="text-xs text-zinc-500 text-right">Disponible: {Number(pboxBalance).toFixed(2)} PBOX</p>
+                                    <p className="text-xs text-zinc-500 text-right">Disponible: {Number(pboxBalance).toFixed(2)} Puntos</p>
                                 </div>
                                 <div className="p-3 bg-zinc-950 rounded-lg flex justify-between items-center text-sm">
                                     <span className="text-zinc-400">Recibirás (Estimado):</span>
                                     <span className="font-mono font-bold text-white">
                                         {redemptionType === 'CRYPTO'
-                                            ? `${(Number(redeemAmount || 0) * 0.01).toFixed(2)} ${process.env.NODE_ENV === 'production' ? 'USDC' : 'ETH'}`
-                                            : `${Number(redeemAmount || 0)} $PBOX`
+                                            ? `${(Number(redeemAmount || 0) * 0.01).toFixed(2)} Stablecoins (Aprox)`
+                                            : `${Number(redeemAmount || 0)} Tokens`
                                         }
                                     </span>
                                 </div>

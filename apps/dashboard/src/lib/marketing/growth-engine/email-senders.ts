@@ -9,6 +9,7 @@ import B2BNoShowRecoveryEmail from '@/emails/b2b-no-show-recovery';
 import WaitlistEmail from '@/emails/WaitlistEmail';
 import ProjectEducationalEmail from '@/emails/educational-nurture';
 import PostPurchaseSuccessEmail from '@/emails/PostPurchaseSuccessEmail';
+import FastLaneSuccessEmail from '@/emails/FastLaneSuccessEmail';
 
 import { EngagementLevel } from './types';
 import { db } from '@/db';
@@ -970,3 +971,58 @@ export async function sendPostPurchaseSuccessEmail(context: {
   }
 }
 
+export async function sendFastLaneSuccessEmail(context: {
+  to: string;
+  projectName: string;
+  projectSlug?: string;
+  baseUrl?: string;
+  metadata?: any;
+}) {
+  const { projectName, projectSlug } = resolveNicheContext(context);
+  console.log(`[Growth Engine] Sending Fast Lane Success Email to ${context.to} for ${projectName}`);
+
+  const isProd = process.env.NODE_ENV === 'production';
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+      if (isProd) {
+          throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
+      }
+      return { success: true, mocked: true };
+  }
+
+  const subject = `Intención de Participación (Fast-Lane) Recibida en ${projectName}`;
+
+  try {
+    const data = await resend.emails.send({
+      from: `${projectName} <${FROM_EMAIL}>`,
+      to: [context.to],
+      subject,
+      tags: [{ name: 'audience', value: 'fast_lane_success' }],
+      react: FastLaneSuccessEmail({
+        projectName: projectName,
+        projectSlug: projectSlug,
+        subject,
+        ctaUrl: projectSlug !== 'pandoras'
+          ? `https://dash.pandoras.finance/pay/${projectSlug}/default`
+          : `https://dash.pandoras.finance/accessv2?project=pandoras&returning=true`
+      }) as React.ReactElement,
+    });
+
+    if (data && 'id' in data && data.id) {
+      const resendId = (data as any).id;
+      await trackEmailMetadata({
+        emailId: String(resendId),
+        recipient: context.to,
+        subject,
+        type: 'fast_lane_success'
+      });
+    }
+
+    console.log(`[Growth Engine] Resend Success (Fast-Lane):`, data);
+    return { success: true, data };
+  } catch (error) {
+    console.error(`[Growth Engine] Resend Error (Fast-Lane):`, error);
+    throw error;
+  }
+}

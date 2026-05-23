@@ -67,6 +67,7 @@ export type GrowthActionType =
   | 'GENERATE_LEAD_BRIEF'
   | 'SEND_EDUCATIONAL_NURTURE'
   | 'SEND_POST_PURCHASE_SUCCESS'
+  | 'SEND_FAST_LANE_SUCCESS'
   | 'SEND_SOW';
 
 export interface GrowthEngineResult {

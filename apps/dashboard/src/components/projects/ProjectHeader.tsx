@@ -38,6 +38,24 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   };
 
 
+  // Dynamic Name Resolution
+  const rawChainId = Number(projectObj.chainId || 11155111);
+  const licenseAddress = projectObj.licenseContractAddress || (projectObj.w2eConfig as any)?.licenseToken?.address;
+  const contractInstance = (licenseAddress && typeof licenseAddress === 'string' && licenseAddress.startsWith('0x')) ? {
+      client: require('@/lib/thirdweb-client').client,
+      chain: require('thirdweb').defineChain(rawChainId),
+      address: licenseAddress
+  } : undefined;
+
+  const { data: dynamicName } = require('thirdweb/react').useReadContract({
+      contract: contractInstance ? require('thirdweb').getContract(contractInstance) : undefined,
+      method: "function name() view returns (string)",
+      params: [],
+      queryOptions: { enabled: !!contractInstance }
+  });
+
+  const displayTitle = dynamicName ? String(dynamicName) : String(project.title);
+
   // Debug ownership in console
   useEffect(() => {
     if (account?.address) {
@@ -55,7 +73,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={coverPhotoUrl as string}
-        alt={`Portada de ${project.title}`}
+        alt={`Portada de ${displayTitle}`}
         className="absolute inset-0 w-full h-full object-cover"
       />
 
@@ -70,14 +88,14 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={(logoUrl as string) || '/images/default-logo.jpg'}
-                  alt={`${project.title} logo`}
+                  alt={`${displayTitle} logo`}
                   className="object-contain w-full h-full"
                 />
               </div>
             </div>
             <div className="flex flex-col">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
-                <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight">{project.title}</h1>
+                <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight">{displayTitle}</h1>
                 <StatusTag status={project.status} />
               </div>
               <p className="text-sm md:text-xl text-lime-400 mt-1">{tagline as string}</p>
