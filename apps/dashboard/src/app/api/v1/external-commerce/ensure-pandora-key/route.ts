@@ -69,6 +69,24 @@ export async function POST(req: Request) {
                 // Fire-and-forget: execute mint in the background without blocking the HTTP response
                 (async () => {
                     try {
+                        // 🛑 DOUBLE VERIFICATION: Check on-chain immediately before minting
+                        let confirmBalance = false;
+                        try {
+                            confirmBalance = await readContract({
+                                contract: keyContract,
+                                method: "isGateHolder",
+                                params: [walletLower]
+                            });
+                        } catch(e) {}
+                        
+                        if (confirmBalance) {
+                            console.log(`⚠️ [Handshake] Double verification skipped mint: ${walletLower} already has Pandora's Key`);
+                            if (user) {
+                                await db.update(users).set({ hasPandorasKey: true, updatedAt: new Date() }).where(eq(users.id, user.id));
+                            }
+                            return; // Stop the mint execution!
+                        }
+
                         const adminAccount = privateKeyToAccount({ client, privateKey: relayKey as `0x${string}` });
                         const tx = prepareContractCall({ contract: keyContract, method: "adminMint", params: [walletLower] });
                         await sendTransaction({ transaction: tx, account: adminAccount });

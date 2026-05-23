@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, darkTheme } from "thirdweb/react";
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
@@ -235,9 +235,9 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
     // 🛡️ Pandora Key Handshake (Blocking Pre-requisite)
     useEffect(() => {
-        let isMounted = true;
-        let pollInterval: NodeJS.Timeout | null = null;
-        let handshakeTimeout: NodeJS.Timeout | null = null;
+        const isMountedRef = useRef(true);
+        const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+        const handshakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
         function runHandshake() {
             if (!account?.address) return;
@@ -253,7 +253,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             })
             .then(res => res.json())
             .then(data => {
-                if (!isMounted) return;
+                if (!isMountedRef.current) return;
                 console.log("🛡️ [CheckoutHub] Handshake Result:", data);
 
                 if (data.mintPending) {
@@ -261,8 +261,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     setIsCheckingAccess(false);
                     setHasEnsuredAccess(false);
                     
-                    if (!pollInterval) {
-                        pollInterval = setInterval(() => {
+                    if (!pollIntervalRef.current) {
+                        pollIntervalRef.current = setInterval(() => {
                             console.log("🛡️ [CheckoutHub] Polling for background mint completion...");
                             fetch('/api/v1/external-commerce/ensure-pandora-key', {
                                 method: 'POST',
@@ -274,26 +274,41 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             })
                             .then(res => res.json())
                             .then(pollData => {
-                                if (isMounted && !pollData.mintPending && pollData.success) {
+                                if (isMountedRef.current && !pollData.mintPending && pollData.success) {
                                     console.log("🛡️ [CheckoutHub] Background mint finished successfully!");
-                                    if (pollInterval) clearInterval(pollInterval);
+                                    if (pollIntervalRef.current) {
+                                        clearInterval(pollIntervalRef.current);
+                                        pollIntervalRef.current = null;
+                                    }
                                     setHasEnsuredAccess(true);
                                 }
                             }).catch(() => {});
                         }, 3000);
                     }
                 } else {
-                    if (pollInterval) clearInterval(pollInterval);
-                    if (handshakeTimeout) clearTimeout(handshakeTimeout);
+                    if (pollIntervalRef.current) {
+                        clearInterval(pollIntervalRef.current);
+                        pollIntervalRef.current = null;
+                    }
+                    if (handshakeTimeoutRef.current) {
+                        clearTimeout(handshakeTimeoutRef.current);
+                        handshakeTimeoutRef.current = null;
+                    }
                     setHasEnsuredAccess(true);
                     setIsCheckingAccess(false);
                 }
             })
             .catch(err => {
               console.warn("🛡️ [CheckoutHub] Handshake Error:", err);
-              if (isMounted) {
-                if (pollInterval) clearInterval(pollInterval);
-                if (handshakeTimeout) clearTimeout(handshakeTimeout);
+              if (isMountedRef.current) {
+                if (pollIntervalRef.current) {
+                    clearInterval(pollIntervalRef.current);
+                    pollIntervalRef.current = null;
+                }
+                if (handshakeTimeoutRef.current) {
+                    clearTimeout(handshakeTimeoutRef.current);
+                    handshakeTimeoutRef.current = null;
+                }
                 setHasEnsuredAccess(true);
                 setIsCheckingAccess(false);
               }
@@ -303,10 +318,13 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         if (account?.address) {
             runHandshake();
             
-            handshakeTimeout = setTimeout(() => {
-                if (isMounted) {
+            handshakeTimeoutRef.current = setTimeout(() => {
+                if (isMountedRef.current) {
                     console.warn("🛡️ [CheckoutHub] Handshake safety timeout reached. Bypassing...");
-                    if (pollInterval) clearInterval(pollInterval);
+                    if (pollIntervalRef.current) {
+                        clearInterval(pollIntervalRef.current);
+                        pollIntervalRef.current = null;
+                    }
                     setHasEnsuredAccess(true);
                     setIsCheckingAccess(false);
                 }
@@ -317,9 +335,9 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         }
 
         return () => {
-            isMounted = false;
-            if (pollInterval) clearInterval(pollInterval);
-            if (handshakeTimeout) clearTimeout(handshakeTimeout);
+            isMountedRef.current = false;
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            if (handshakeTimeoutRef.current) clearTimeout(handshakeTimeoutRef.current);
         };
     }, [account?.address, project.id]);
 

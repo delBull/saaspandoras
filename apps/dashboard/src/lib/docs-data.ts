@@ -859,6 +859,35 @@ When a project ID is provided, the portal automatically adjusts its internal log
 - **Reward Normalization**: The portal automatically detects the project's network. For protocols on **Base Mainnet**, rewards are displayed in **USDC** (using the official 100:1 PBOX conversion). For other networks, it defaults to **PBOX**.
 - **DAO Activity Tracking**: Users can view and participate in project-specific "Labores" (Staking activities) directly. Participation triggers real-time updates to the \`user_balances\` layer, visible across all integrated platforms.
 - **Unified Metadata**: Whitepaper links, support channels, and legal documents are dynamically routed to the project's specific resources.
+
+### Custom Portal: The Plug & Play API
+If you decide to build a 100% custom Portal instead of using our SDK's \`PortalView\`, the Growth OS Engine handles all mathematical complexity for you. The API (\`GET /api/public/project/[slug]/state\`) calculates phase tolerances, user holdings, and intelligent capital gains (plusvalía) server-side.
+
+Simply read the \`userPortfolio\` object from the JSON response and map it directly to your UI:
+
+\`\`\`tsx
+// 1. Fetch State from Growth OS Engine
+const { userPortfolio } = await fetch(\`https://dash.pandoras.finance/api/public/project/\${slug}/state\`).then(res => res.json());
+
+// 2. Render your Custom UI
+const renderMyPortal = () => (
+  <div>
+    <h1>Total Titles: {userPortfolio.totalTitles}</h1>
+    <h2>Estimated Value: \${userPortfolio.currentTotalValueUsd}</h2>
+    
+    <div className="phases">
+      {userPortfolio.phaseBreakdown.map(phase => (
+        <div key={phase.id}>
+          <h3>{phase.name} (Holdings: {phase.titlesHeld})</h3>
+          <p>Capital Gains: +{phase.plusvalia}%</p>
+          {phase.isActive && <span>Active Phase</span>}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+\`\`\`
+**Important:** The \`phaseBreakdown\` array is already prioritized (showing phases where the user holds titles first) and capped dynamically to prevent UI clutter. You do not need to implement any sorting or tolerance logic on your frontend.
 `
       }
     ]

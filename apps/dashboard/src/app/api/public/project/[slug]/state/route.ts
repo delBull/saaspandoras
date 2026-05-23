@@ -449,6 +449,52 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const availableUnits = hybridAvailableUnits;
     const progressPercentage = hybridProgress;
 
+    // --- Growth OS Engine: Mathematical Phase Calculation ---
+    // Make the backend the single source of truth for portfolio mathematics
+    const activePhaseMath = phases.find((p: any) => p.status === 'active' || p.status === 'ACTIVE') || phases[0];
+    const activePhasePrice = Number(project.tokenPriceUsd) > 1 ? Number(project.tokenPriceUsd) : Number(activePhaseMath?.tokenPrice || 50);
+
+    const fullPhaseBreakdown = phases.map((phase: any, index: number) => {
+        const phasePrice = Number(phase.tokenPrice || 0);
+        // 1. Calculate holdings per phase using 20% tolerance
+        const phaseCerts = certificates.filter(c => {
+            if (!c.units || c.units === 0) return false;
+            const unitPrice = Number(c.amount) / Number(c.units);
+            const tolerance = phasePrice * 0.20;
+            return Math.abs(unitPrice - phasePrice) <= tolerance;
+        });
+        const titlesHeld = phaseCerts.reduce((acc, c) => acc + Number(c.units), 0);
+
+        // 2. Intelligent Capital Gains (Plusvalía)
+        let plusvalia = 0;
+        if (activePhasePrice > phasePrice && phasePrice > 0) {
+            plusvalia = Math.max(0, Math.round(((activePhasePrice - phasePrice) / phasePrice) * 100));
+        }
+
+        return {
+            id: `phase-${index}`,
+            name: phase.name || `Fase ${index + 1}`,
+            price: phasePrice,
+            titlesHeld,
+            plusvalia,
+            isActive: phase.status === 'active' || phase.status === 'ACTIVE'
+        };
+    });
+
+    // Prioritize phases where user holds titles, then cap at 3 dynamically
+    const phasesWithHoldings = fullPhaseBreakdown.filter((p: any) => p.titlesHeld > 0);
+    const phasesWithoutHoldings = fullPhaseBreakdown.filter((p: any) => p.titlesHeld === 0);
+    const prioritizedPhases = [...phasesWithHoldings, ...phasesWithoutHoldings].slice(0, 3);
+
+    const currentTotalValueUsd = userArtifactCount * activePhasePrice;
+
+    const userPortfolio = {
+        totalTitles: userArtifactCount,
+        currentTotalValueUsd,
+        phaseBreakdown: prioritizedPhases
+    };
+    // --------------------------------------------------------
+
     const response = NextResponse.json({
       title: project.title,
       slug: project.slug,
@@ -501,6 +547,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       treasuryDisplay,
       dbUserStatus,
       isWhitelisted,
+      userPortfolio,
       phases: phases.map((p: any) => ({
         id: p.id,
         name: p.name,
