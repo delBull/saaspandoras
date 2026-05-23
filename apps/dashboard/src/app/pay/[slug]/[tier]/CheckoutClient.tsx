@@ -234,10 +234,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     );
 
     // 🛡️ Pandora Key Handshake (Blocking Pre-requisite)
+    const isMountedRef = useRef(true);
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const handshakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
-        const isMountedRef = useRef(true);
-        const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-        const handshakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+        isMountedRef.current = true;
 
         function runHandshake() {
             if (!account?.address) return;
