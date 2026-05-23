@@ -246,6 +246,11 @@ export function resolveGrowthAction(
 
   // Funnel Logic
   switch (event) {
+    case 'INTENT_CONFIRMED' as any:
+      nextState = 'HOT';
+      actions = ['SEND_VIP_CONCIERGE_WELCOME', 'NOTIFY_TEAM'];
+      break;
+
     case 'VIEW_ACCESS' as any: 
     case 'VIEW_ONBOARDING' as any:
     case 'LEAD_CAPTURED': {

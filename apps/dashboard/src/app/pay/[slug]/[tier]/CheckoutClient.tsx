@@ -42,6 +42,10 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         }
         return null;
     }, [externalOrigin, account?.address]);
+    const isMountedRef = useRef(true);
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const handshakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const [step, setStep] = useState<'checkout' | 'processing' | 'success' | 'fast_lane'>('checkout');
     const [amount, setAmount] = useState("1");
     const [contractPrice, setContractPrice] = useState<bigint | undefined>(undefined);
@@ -234,9 +238,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     );
 
     // 🛡️ Pandora Key Handshake (Blocking Pre-requisite)
-    const isMountedRef = useRef(true);
-    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const handshakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -911,7 +913,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                 <button
                                                     onClick={() => submitFastLane(true)}
                                                     disabled={isSubmittingFastLane}
-                                                    className="w-full h-14 bg-narai-gold text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-narai-gold/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                                    className="w-full h-14 bg-[#D4AF37] text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-[#D4AF37]/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
                                                 >
                                                     {isSubmittingFastLane ? <Loader2 className="w-5 h-5 animate-spin text-black" /> : "YA ESTOY LISTO PARA INVERTIR"}
                                                 </button>
