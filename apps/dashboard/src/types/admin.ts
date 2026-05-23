@@ -65,6 +65,7 @@ export interface Project {
   registryContractAddress?: string;
   artifacts?: Array<{ type: string; address: string; name?: string }>;
   protocolVersion?: number;
+  legalConfig?: any;
 }
 
 export interface AdminData {

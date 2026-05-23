@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { marketingLeads, projects, purchases, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import crypto from 'crypto';
-
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ projectId: string }> }
@@ -125,8 +123,9 @@ export async function POST(
             }
         }
 
-        // Generate Unique Reference
-        const purchaseId = `SNARAI-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        // Generate Unique Reference without Node.js crypto module to ensure Edge compatibility
+        const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const purchaseId = `SNARAI-${randomString}`;
         const idempotencyKey = `fastlane-${lead.id}-${tier || 'base'}-${new Date().toISOString().split('T')[0]}`;
 
         let newPurchase;
@@ -161,10 +160,13 @@ export async function POST(
             purchaseRef = newPurchase.purchaseId;
         }
 
+        const legalConfig = project.legalConfig as any || {};
+        const customBank = legalConfig.bankInstructions || {};
+
         bankInstructions = {
-            beneficiary: process.env.BANK_BENEFICIARY || "AZTECAZ HUB S.A.P.I. DE C.V.",
-            clabe: process.env.BANK_CLABE || "058375000151370094",
-            bank: process.env.BANK_NAME || "Banco Base",
+            beneficiary: customBank.beneficiary || process.env.BANK_BENEFICIARY || "AZTECAZ HUB S.A.P.I. DE C.V.",
+            clabe: customBank.clabe || process.env.BANK_CLABE || "058375000151370094",
+            bank: customBank.bank || process.env.BANK_NAME || "Banco Base",
             reference: purchaseRef,
             amount: safeAmount
         };

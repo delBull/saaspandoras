@@ -101,4 +101,19 @@ export const projectApiSchema = z.object({
   adquireStrategy: z.string().optional(),
   mitigationPlan: z.string().optional(),
   legalStatusDetails: z.string().optional(),
+  
+  // Sección 8: Legal Config
+  legalConfig: z.preprocess(
+    safeJsonParse,
+    z.object({
+      template: z.string().optional(),
+      masterDocumentUrl: z.string().optional(),
+      certPrefix: z.string().optional(),
+      bankInstructions: z.object({
+        beneficiary: z.string().optional(),
+        clabe: z.string().optional(),
+        bank: z.string().optional(),
+      }).optional(),
+    }).optional()
+  ).optional(),
 });

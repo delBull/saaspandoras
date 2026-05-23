@@ -10,8 +10,12 @@ export async function GET(request: Request) {
   const requestId = Math.random().toString(36).substring(7);
   try {
     console.log(`🔍 [${requestId}] Admin API: Starting GET /api/admin/verify...`);
-    const { session } = await getAuth(request.headers);
-    console.log(`🔍 [${requestId}] Admin API: Session resolved:`, session?.address || 'no-session');
+    const clientWallet = request.headers.get('x-thirdweb-address');
+    
+    // Pass the client wallet from the header to bypass stale cookies
+    const { session } = await getAuth(request.headers, clientWallet ?? undefined);
+    
+    console.log(`🔍 [${requestId}] Admin API: Session resolved:`, session?.address || 'no-session', 'Client Header:', clientWallet);
     const userIsSuperAdmin = session?.address === SUPER_ADMIN_WALLET.toLowerCase();
 
     let userIsAdmin = false;

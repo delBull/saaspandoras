@@ -445,6 +445,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if ('monetizationModel' in rawBody) updateSet.monetizationModel = data.monetizationModel ?? null;
     if ('adquireStrategy' in rawBody) updateSet.adquireStrategy = data.adquireStrategy ?? null;
     if ('mitigationPlan' in rawBody) updateSet.mitigationPlan = data.mitigationPlan ?? null;
+    if ('legalConfig' in rawBody) updateSet.legalConfig = data.legalConfig ?? null;
 
     // Actualizar el proyecto en la base de datos (MERGE strategy)
     await db

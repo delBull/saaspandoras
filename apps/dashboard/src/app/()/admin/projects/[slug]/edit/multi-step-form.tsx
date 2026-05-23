@@ -212,6 +212,11 @@ const fullProjectSchema = z.object({
     template: z.string().optional(),
     masterDocumentUrl: z.string().optional(),
     certPrefix: z.string().optional(),
+    bankInstructions: z.object({
+      beneficiary: z.string().optional(),
+      clabe: z.string().optional(),
+      bank: z.string().optional(),
+    }).optional(),
   }).optional(),
 });
 
@@ -393,7 +398,7 @@ export function MultiStepForm({
       applicantWalletAddress: project?.applicantWalletAddress ?? undefined,
       verificationAgreement: Boolean(project?.verificationAgreement ?? false),
       // Sección 8
-      legalConfig: safeParseObject(project?.legalConfig, { template: "", masterDocumentUrl: "", certPrefix: "" }),
+      legalConfig: safeParseObject(project?.legalConfig, { template: "", masterDocumentUrl: "", certPrefix: "", bankInstructions: { beneficiary: "", clabe: "", bank: "" } }),
     },
   });
 

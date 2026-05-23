@@ -199,6 +199,29 @@ export function ProjectDetailModal({
                   </div>
                 </div>
               </div>
+
+              {/* Datos Bancarios Confidenciales */}
+              {project.legalConfig?.bankInstructions && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-400" /> Datos Bancarios
+                  </h4>
+                  <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 space-y-3">
+                    <div className="flex flex-col gap-1 text-sm">
+                      <span className="text-zinc-500 text-xs uppercase tracking-widest">Beneficiario</span>
+                      <span className="text-white">{project.legalConfig.bankInstructions.beneficiary || 'N/A'}</span>
+                    </div>
+                    <div className="flex flex-col gap-1 text-sm">
+                      <span className="text-zinc-500 text-xs uppercase tracking-widest">Banco</span>
+                      <span className="text-white">{project.legalConfig.bankInstructions.bank || 'N/A'}</span>
+                    </div>
+                    <div className="flex flex-col gap-1 text-sm">
+                      <span className="text-zinc-500 text-xs uppercase tracking-widest">CLABE</span>
+                      <span className="text-emerald-400 font-mono">{project.legalConfig.bankInstructions.clabe || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">

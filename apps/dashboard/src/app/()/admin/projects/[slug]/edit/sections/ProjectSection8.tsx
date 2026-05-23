@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import { Shield, FileText, Link as LinkIcon, AlertCircle } from "lucide-react";
+import { Shield, FileText, Link as LinkIcon, AlertCircle, Landmark } from "lucide-react";
 import type { FullProjectFormData } from "../multi-step-form";
 
 const Input = ({ id, type = "text", className = "", placeholder, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { placeholder?: string }) => (
@@ -123,6 +123,48 @@ export function ProjectSection8() {
           <p className="text-xs text-gray-500 mt-2">
             Identificador para tus acuerdos (ej: AG-SNA-001).
           </p>
+        </div>
+      </div>
+
+      {/* Datos Bancarios Confidenciales */}
+      <div className="bg-zinc-900/30 p-6 rounded-xl border border-zinc-800">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-3 bg-emerald-500/10 rounded-lg">
+            <Landmark className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <Label className="text-base mb-1">Datos Bancarios para Fondeo Manual</Label>
+            <p className="text-xs text-gray-500">
+              Instrucciones de transferencia para los inversores. Estos datos son confidenciales y solo se muestran de forma privada en el flujo de Fast Lane.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="bankBeneficiary">Beneficiario (Empresa/Razón Social)</Label>
+            <Input 
+              id="bankBeneficiary"
+              placeholder="Ej: AZTECAZ HUB S.A.P.I. DE C.V."
+              {...register("legalConfig.bankInstructions.beneficiary")}
+            />
+          </div>
+          <div>
+            <Label htmlFor="bankName">Banco</Label>
+            <Input 
+              id="bankName"
+              placeholder="Ej: Banco Base"
+              {...register("legalConfig.bankInstructions.bank")}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="bankClabe">CLABE Interbancaria</Label>
+            <Input 
+              id="bankClabe"
+              placeholder="18 dígitos"
+              {...register("legalConfig.bankInstructions.clabe")}
+            />
+          </div>
         </div>
       </div>
     </div>
