@@ -61,19 +61,31 @@ export async function POST(
         consent: true
     };
 
-    const [lead] = await db.insert(marketingLeads)
-        .values(insertValues)
-        .onConflictDoUpdate({
-            target: [marketingLeads.projectId, marketingLeads.identityHash],
-            set: {
+    // Manual Upsert to avoid PostgreSQL ON CONFLICT constraint issues with nullable indexes
+    const existingLead = await db.query.marketingLeads.findFirst({
+        where: and(
+            eq(marketingLeads.projectId, projectId),
+            eq(marketingLeads.identityHash, identityHash as string)
+        )
+    });
+
+    let lead;
+    if (existingLead) {
+        [lead] = await db.update(marketingLeads)
+            .set({
                 name: name || undefined,
                 phoneNumber: phone || undefined,
                 status: insertValues.status,
                 metadata: insertValues.metadata,
                 updatedAt: new Date()
-            }
-        })
-        .returning({ id: marketingLeads.id });
+            })
+            .where(eq(marketingLeads.id, existingLead.id))
+            .returning({ id: marketingLeads.id });
+    } else {
+        [lead] = await db.insert(marketingLeads)
+            .values(insertValues)
+            .returning({ id: marketingLeads.id });
+    }
 
     // 2. Handle Purchase Creation (The "Hold" Mechanism)
     let purchaseRef = null;
