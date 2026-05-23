@@ -403,6 +403,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     amount: safeAmount,
                     source: 'checkout_hub',
                     wallet_connected: !!account,
+                    wallet_address: account?.address || null,
                     confirmIntent: confirm
                 })
             });

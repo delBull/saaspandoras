@@ -16,7 +16,7 @@ export async function POST(
         return NextResponse.json({ error: "Invalid Project ID" }, { status: 400 });
     }
     const body = await req.json();
-    const { email, name, phone, amount, tier, source, wallet_connected, confirmIntent } = body;
+    const { email, name, phone, amount, tier, source, wallet_connected, wallet_address, confirmIntent } = body;
     
     if (!email || !amount || parseFloat(amount) <= 0) {
         return NextResponse.json({ error: "Email y monto son requeridos" }, { status: 400 });
@@ -99,13 +99,13 @@ export async function POST(
 
         if (!user) {
             // If we have a connected wallet, use it as the primary ID
-            const userId = (wallet_connected && wallet_connected.startsWith('0x')) 
-                ? wallet_connected 
+            const userId = (wallet_address && typeof wallet_address === 'string' && wallet_address.startsWith('0x')) 
+                ? wallet_address 
                 : `lead-${lead.id.slice(0, 8)}`;
 
             // Check if a user with this wallet already exists
-            const existingByWallet = (wallet_connected && wallet_connected.startsWith('0x'))
-                ? await db.query.users.findFirst({ where: eq(users.id, wallet_connected) })
+            const existingByWallet = (wallet_address && typeof wallet_address === 'string' && wallet_address.startsWith('0x'))
+                ? await db.query.users.findFirst({ where: eq(users.id, wallet_address) })
                 : null;
 
             if (existingByWallet) {
