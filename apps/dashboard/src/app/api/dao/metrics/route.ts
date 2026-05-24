@@ -227,12 +227,15 @@ export async function GET(req: Request) {
         const top10Power = topWallets.reduce((acc, w) => acc + Number(w?.votingPower || 0), 0);
         
         // PCI: Power Concentration Index (Gini-like for DAO)
-        let pci = 0;
-        if (totalPowerNum > 0 && safeMembersNumForPCI > 1) {
+        let pci: number | null = 0;
+        if (totalPowerNum > 0 && safeMembersNumForPCI > 1 && top10Power > 0) {
             pci = top10Power / totalPowerNum;
-        } else if (totalPowerNum > 0 && safeMembersNumForPCI === 1) {
+        } else if (totalPowerNum > 0 && safeMembersNumForPCI === 1 && top10Power > 0) {
             // If only 1 member has all tokens, PCI is 1 (Max concentration)
             pci = 1;
+        } else if (top10Power === 0 && totalMembersNum > 0) {
+            // Indexer is empty but we fell back to on-chain for total members
+            pci = null; 
         } else {
             // Default to 0 (Perfect distribution or no data)
             pci = 0; 
@@ -254,7 +257,7 @@ export async function GET(req: Request) {
             treasury: treasuryUSD,
             treasuryDisplay,
             treasurySymbol,
-            pci: (isNaN(pci) || !isFinite(pci)) ? 0 : pci,
+            pci: pci === null ? null : ((isNaN(pci) || !isFinite(pci)) ? 0 : pci),
             attribution: [] 
         };
 

@@ -15,7 +15,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { TransactionButton, useActiveAccount } from "thirdweb/react";
+import { TransactionButton, useActiveAccount, useReadContract } from "thirdweb/react";
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
@@ -55,6 +55,27 @@ export function DAOSidebar({
 
     const needsDelegation = tokenBalance > 0 && votingPower === 0;
 
+    // Fetch on-chain name as primary truth
+    const govTokenAddress = project?.governance_token_address || project?.licenseContractAddress;
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(project?.chainId || 11155111),
+        address: "0x0000000000000000000000000000000000000000"
+    });
+
+    const { data: onChainName } = useReadContract({
+        contract: (govTokenAddress && govTokenAddress.startsWith('0x')) ? getContract({
+            client,
+            chain: defineChain(project?.chainId || 11155111),
+            address: govTokenAddress,
+        }) : dummyContract,
+        method: "function name() view returns (string)",
+        params: [],
+        queryOptions: { enabled: !!govTokenAddress }
+    });
+
+    const displayTitle = onChainName || project.title;
+
     return (
         <div className={cn("w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col h-[calc(100vh-6rem)] sticky top-24 overflow-hidden", className)}>
             {/* Header - Fixed at top */}
@@ -65,7 +86,7 @@ export function DAOSidebar({
                     className="group flex items-center gap-2"
                 >
                     <h2 className="text-xl font-bold text-white leading-tight group-hover:text-lime-400 transition-colors">
-                        {project.title}
+                        {displayTitle}
                     </h2>
                 </Link>
                 <div className="mt-2 flex items-center gap-2">

@@ -2,9 +2,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useActiveAccount } from "thirdweb/react";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { getContract, defineChain } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import { Loader2, PlayCircle, CheckCircle, Clock } from "lucide-react";
+import { ethers } from "ethers";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -26,7 +29,47 @@ export function LaboresList({ project }: LaboresListProps) {
     const [isStartModalOpen, setIsStartModalOpen] = useState(false);
     const [selectedLaborId, setSelectedLaborId] = useState<number | null>(null);
     const [artifactInput, setArtifactInput] = useState("");
+    const [stakeAmount, setStakeAmount] = useState("");
     const [isStarting, setIsStarting] = useState(false);
+
+    // Fetch user balance for "Max" button
+    const govTokenAddress = project?.governance_token_address || project?.licenseContractAddress;
+    
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(project?.chainId || 11155111),
+        address: "0x0000000000000000000000000000000000000000"
+    });
+
+    const { data: balanceData } = useReadContract({
+        contract: (govTokenAddress && govTokenAddress.startsWith('0x')) ? getContract({
+            client,
+            chain: defineChain(project?.chainId || 11155111),
+            address: govTokenAddress,
+        }) : dummyContract,
+        method: "function balanceOf(address) view returns (uint256)",
+        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { enabled: !!account && !!govTokenAddress }
+    });
+
+    const { data: decimalsData } = useReadContract({
+        contract: (govTokenAddress && govTokenAddress.startsWith('0x')) ? getContract({
+            client,
+            chain: defineChain(project?.chainId || 11155111),
+            address: govTokenAddress,
+        }) : dummyContract,
+        method: "function decimals() view returns (uint8)",
+        params: [],
+        queryOptions: { enabled: !!govTokenAddress }
+    });
+
+    const handleMaxClick = () => {
+        if (balanceData !== undefined) {
+            const decimals = decimalsData !== undefined ? Number(decimalsData) : 18;
+            const formattedBalance = ethers.utils.formatUnits(balanceData, decimals);
+            setStakeAmount(formattedBalance);
+        }
+    };
 
     useEffect(() => {
         if (project?.id) {
@@ -81,7 +124,8 @@ export function LaboresList({ project }: LaboresListProps) {
                     activityId: selectedLaborId,
                     userWalletAddress: account.address,
                     action: 'start',
-                    artifactData: artifactInput // Pasa al Growth Engine
+                    artifactData: artifactInput, // Pasa al Growth Engine
+                    stakeAmount: stakeAmount ? Number(stakeAmount) : 0
                 })
             });
 
@@ -234,6 +278,27 @@ export function LaboresList({ project }: LaboresListProps) {
                                 onChange={(e) => setArtifactInput(e.target.value)}
                                 className="bg-zinc-800 border-zinc-700"
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <Label>Cantidad a Stakear</Label>
+                                <button 
+                                    onClick={handleMaxClick}
+                                    className="text-[10px] text-lime-400 font-bold bg-lime-900/30 px-2 py-0.5 rounded border border-lime-500/30 hover:bg-lime-900/50 transition-colors"
+                                >
+                                    MAX
+                                </button>
+                            </div>
+                            <Input
+                                type="number"
+                                placeholder="Ej: 1000"
+                                value={stakeAmount}
+                                onChange={(e) => setStakeAmount(e.target.value)}
+                                className="bg-zinc-800 border-zinc-700"
+                                min="0"
+                                step="any"
+                            />
+                            <p className="text-[10px] text-zinc-500">Puedes stakear una porción parcial o el total de tus tokens. Tus recompensas dependerán del monto stakeado.</p>
                         </div>
                         <button
                             onClick={confirmStart}

@@ -634,10 +634,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                   <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Precio Inicial (Deployment)</p>
                   <p className="text-xl font-mono text-white">${project.w2eConfig.tokenomics.price}</p>
                 </div>
-                <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Suministro Inicial</p>
-                  <p className="text-xl font-mono text-white">{Number(project.w2eConfig.tokenomics.initialSupply).toLocaleString()}</p>
-                </div>
+                {Number(project.w2eConfig.tokenomics.initialSupply) > 0 && (
+                  <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Suministro Inicial</p>
+                    <p className="text-xl font-mono text-white">{Number(project.w2eConfig.tokenomics.initialSupply).toLocaleString()}</p>
+                  </div>
+                )}
                 <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
                   <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Poder de Voto</p>
                   <p className="text-xl font-mono text-white">{project.w2eConfig.tokenomics.votingPowerMultiplier}x</p>

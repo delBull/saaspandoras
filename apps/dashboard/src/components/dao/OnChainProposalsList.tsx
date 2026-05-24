@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useReadContract, useActiveAccount, TransactionButton } from "thirdweb/react";
-import { getContract, defineChain, prepareContractCall } from "thirdweb";
+import { useReadContract, useActiveAccount, TransactionButton, useContractEvents } from "thirdweb/react";
+import { getContract, defineChain, prepareContractCall, prepareEvent } from "thirdweb";
 import { client } from "@/lib/thirdweb-client"; // Verify correct path
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
@@ -30,13 +30,28 @@ export function OnChainProposalsList({ votingContractAddress, chainId, governanc
         address: "0x0000000000000000000000000000000000000000"
     });
 
-    // Fetch Proposals
-    const { data: proposals, isLoading, refetch } = useReadContract({
-        contract: contract || dummyContract,
-        method: "function getAll() view returns ((uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)[])",
-        params: [],
-        queryOptions: { enabled: !!contract }
+    // Fetch Proposals via Events (Governors don't have getAll() function)
+    const proposalCreatedEvent = prepareEvent({
+        signature: "event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)"
     });
+
+    const { data: proposalEvents, isLoading } = useContractEvents({
+        contract: contract || dummyContract,
+        events: [proposalCreatedEvent]
+    });
+
+    // Map events to proposal structure expected by UI
+    const proposals = proposalEvents?.map(event => {
+        // Different governor versions have different args, try to handle generically or cast
+        const args = event.args as any;
+        return {
+            proposalId: args.proposalId || args[0],
+            proposer: args.proposer || args[1],
+            description: args.description || args[8] || "Propuesta sin descripción",
+            startBlock: args.startBlock || args[6],
+            endBlock: args.endBlock || args[7],
+        };
+    }).reverse() || [];
 
     // Helper to get state
     // state: 0=Pending, 1=Active, 2=Canceled, 3=Defeated, 4=Succeeded, 5=Queued, 6=Expired, 7=Executed

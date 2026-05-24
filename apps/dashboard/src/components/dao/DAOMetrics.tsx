@@ -91,22 +91,23 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
                             <h4 className="text-2xl font-black text-white italic">Governance IQ</h4>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                            (data?.pci || 0) > 0.6 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 
-                            (data?.pci || 0) > 0.4 ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 
+                            data?.pci === null ? 'bg-zinc-500/10 text-zinc-500 border border-zinc-500/20' : 
+                            data?.pci > 0.6 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 
+                            data?.pci > 0.4 ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 
                             'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                         }`}>
-                            {(data?.pci || 0) > 0.6 ? 'Riesgo: Centralizado' : (data?.pci || 0) > 0.4 ? 'Aviso: Concentración' : 'Estado: Saludable'}
+                            {data?.pci === null ? 'Sincronizando...' : data?.pci > 0.6 ? 'Riesgo: Centralizado' : data?.pci > 0.4 ? 'Aviso: Concentración' : 'Estado: Saludable'}
                         </div>
                     </div>
                     
                     <div className="flex items-end gap-4">
                         <div className="text-5xl font-black font-mono text-white">
-                            {Math.round((data?.pci || 0) * 100)}%
+                            {data?.pci === null ? 'N/A' : `${Math.round(data?.pci * 100)}%`}
                         </div>
                         <div className="flex-1 mb-2 h-2 bg-zinc-800 rounded-full overflow-hidden">
                             <div 
                                 className={`h-full transition-all duration-1000 ${
-                                    (data?.pci || 0) > 0.6 ? 'bg-red-500' : (data?.pci || 0) > 0.4 ? 'bg-yellow-500' : 'bg-emerald-500'
+                                    data?.pci === null ? 'bg-zinc-500' : data?.pci > 0.6 ? 'bg-red-500' : data?.pci > 0.4 ? 'bg-yellow-500' : 'bg-emerald-500'
                                 }`}
                                 style={{ width: `${(data?.pci || 0) * 100}%` }}
                             />
@@ -127,13 +128,13 @@ export function DAOMetrics({ projectId, project }: DAOMetricsProps) {
                         {data?.members > 0 ? (
                             <>
                                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-zinc-300 font-medium">
-                                    {data.pci > 0.6 ? (
-                                        <span className="text-red-400 font-bold">⚠️ Alerta:</span>
+                                    {data?.pci === null ? (
+                                        <><span className="text-zinc-400 font-bold">🔄 Pendiente:</span> El indexador está analizando la distribución on-chain. Vuelve más tarde.</>
+                                    ) : data.pci > 0.6 ? (
+                                        <><span className="text-red-400 font-bold">⚠️ Alerta:</span> Alta concentración de poder detectada. Riesgo de manipulación en gobernanza.</>
                                     ) : (
-                                        <span className="text-emerald-400 font-bold">✨ Salud:</span>
-                                    )} {data.pci > 0.6 
-                                        ? "Alta concentración de poder detectada. Riesgo de manipulación en gobernanza." 
-                                        : "Distribución de poder equilibrada. El protocolo mantiene una descentralización saludable."}
+                                        <><span className="text-emerald-400 font-bold">✨ Salud:</span> Distribución de poder equilibrada. El protocolo mantiene una descentralización saludable.</>
+                                    )}
                                 </div>
                                 {data?.attribution?.[0] && (
                                     <div className="p-3 bg-purple-500/5 rounded-xl border border-purple-500/10 text-xs text-zinc-300 font-medium">
