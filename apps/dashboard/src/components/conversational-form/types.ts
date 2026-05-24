@@ -94,6 +94,11 @@ export const projectSchema = z.object({
   monetizationModel: z.string().min(3, "El modelo de monetización es requerido").max(256),
   adquireStrategy: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
   mitigationPlan: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
+
+  // Datos Bancarios (Opcional)
+  bankBeneficiary: z.string().optional(),
+  bankName: z.string().optional(),
+  bankClabe: z.string().optional(),
 });
 
 // Tipos

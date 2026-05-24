@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { projectSchema, type ProjectFormData } from '../conversational-form/types';
 import type { Project } from '@/types/admin';
-import { Loader2, Globe, FileText, Twitter, MessageSquare, Send, Linkedin, Image as ImageIcon, Video, Settings2, Coins } from 'lucide-react';
+import { Loader2, Globe, FileText, Twitter, MessageSquare, Send, Linkedin, Image as ImageIcon, Video, Settings2, Coins, Shield } from 'lucide-react';
 
 interface EditProjectModalProps {
   isOpen: boolean;
@@ -70,6 +70,9 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
       applicantPosition: project?.applicantPosition || '',
       legalStatus: (project?.legalStatus as any) || 'sin_entidad_juridica',
       monetizationModel: project?.monetizationModel || '',
+      bankBeneficiary: project?.legalConfig?.bankInstructions?.beneficiary || '',
+      bankName: project?.legalConfig?.bankInstructions?.bank || '',
+      bankClabe: project?.legalConfig?.bankInstructions?.clabe || '',
     },
   });
 
@@ -108,6 +111,9 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
         applicantPosition: project.applicantPosition || '',
         legalStatus: (project.legalStatus as any) || 'sin_entidad_juridica',
         monetizationModel: project.monetizationModel || '',
+        bankBeneficiary: project.legalConfig?.bankInstructions?.beneficiary || '',
+        bankName: project.legalConfig?.bankInstructions?.bank || '',
+        bankClabe: project.legalConfig?.bankInstructions?.clabe || '',
       });
     }
   }, [project, methods]);
@@ -127,6 +133,14 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
         },
         body: JSON.stringify({
           ...data,
+          legalConfig: {
+            ...project.legalConfig,
+            bankInstructions: {
+              beneficiary: data.bankBeneficiary,
+              bank: data.bankName,
+              clabe: data.bankClabe
+            }
+          },
           // Ensure validationAgreement is sent if required by schema
           verificationAgreement: true, 
         }),
@@ -254,6 +268,26 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
                     <Label className="flex items-center gap-2">Teléfono del Solicitante (Privado)</Label>
                     <Input {...register('applicantPhone')} className="bg-zinc-900 border-zinc-800" placeholder="+52..." />
                     <p className="text-[10px] text-zinc-500 italic">Número de contacto directo con el representante.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-zinc-800">
+                <h4 className="text-sm font-bold text-lime-400 mb-4 flex items-center gap-2">
+                  <Shield className="w-4 h-4" /> Datos Bancarios (Confidencial)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Beneficiario / Razón Social</Label>
+                    <Input {...register('bankBeneficiary')} className="bg-zinc-900 border-zinc-800" placeholder="Nombre completo o empresa..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Banco</Label>
+                    <Input {...register('bankName')} className="bg-zinc-900 border-zinc-800" placeholder="Ej: BBVA, Santander..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CLABE / IBAN</Label>
+                    <Input {...register('bankClabe')} className="bg-zinc-900 border-zinc-800 font-mono" placeholder="18 dígitos..." />
                   </div>
                 </div>
               </div>
