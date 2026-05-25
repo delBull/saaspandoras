@@ -5,6 +5,7 @@ import { SUPER_ADMIN_WALLET } from "./constants";
 import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { unstable_cache } from "next/cache";
 
 interface JWTPayload {
   userId?: string;
@@ -37,12 +38,19 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
   if (lower === superAdmin && superAdmin !== "0x_undefined_admin") return true;
 
   try {
-    const result = await db
-      .select()
-      .from(administrators)
-      .where(eq(administrators.walletAddress, lower));
+    const getCachedAdmin = unstable_cache(
+      async (wallet: string) => {
+        const result = await db
+          .select()
+          .from(administrators)
+          .where(eq(administrators.walletAddress, wallet));
+        return result.length > 0;
+      },
+      [`admin-check-${lower}`],
+      { revalidate: 300 } // Cache for 5 minutes
+    );
 
-    return result.length > 0;
+    return await getCachedAdmin(lower);
   } catch (error) {
     console.error("💥 isAdmin: Database query FAILED for", lower, ":", error);
     return false;
