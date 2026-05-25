@@ -47,8 +47,14 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
       address: licenseAddress
   } : undefined;
 
+  const dummyContract = require('thirdweb').getContract({
+      client: require('@/lib/thirdweb-client').client,
+      chain: require('thirdweb').defineChain(11155111),
+      address: "0x0000000000000000000000000000000000000000"
+  });
+
   const { data: dynamicName } = require('thirdweb/react').useReadContract({
-      contract: contractInstance ? require('thirdweb').getContract(contractInstance) : undefined,
+      contract: contractInstance ? require('thirdweb').getContract(contractInstance) : dummyContract,
       method: "function name() view returns (string)",
       params: [],
       queryOptions: { enabled: !!contractInstance }

@@ -572,19 +572,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       metadata: {
         estimatedApy: project.estimatedApy || "12.5%",
         targetAmount: (() => {
-          // Priority: w2eConfig tokenomics > phase calculation > DB value (DB may be wrong)
           const w2eTarget = project.w2eConfig?.tokenomics?.targetUsd;
-          if (w2eTarget && Number(w2eTarget) > 0 && Number(w2eTarget) < 50_000_000) return w2eTarget.toString();
+          if (w2eTarget && Number(w2eTarget) > 0) return w2eTarget.toString();
           const phaseCalc = projectTotalUnits * metadataPrice;
-          if (phaseCalc > 0 && phaseCalc < 50_000_000) return phaseCalc.toString();
-          // DB fallback (only if sane: between $1k and $50M USD)
+          if (phaseCalc > 0) return phaseCalc.toString();
           const dbVal = Number(project.targetAmount);
-          if (dbVal > 1000 && dbVal < 50_000_000) return project.targetAmount;
-          return "5000000"; // S'Narai hard fallback
+          if (dbVal > 0) return project.targetAmount;
+          return "5000000"; 
         })(),
-        tokenPriceUsd: (Number(project.tokenPriceUsd) > 1) ? project.tokenPriceUsd : (activePhase?.tokenPrice?.toString() || "50"),
-        nextPhasePriceUsd: (Number(nextPhase?.tokenPrice) > 1) ? nextPhase?.tokenPrice?.toString() : "75",
-        deliveryDate: "Q4 2027",
+        tokenPriceUsd: (Number(project.tokenPriceUsd) > 0) ? project.tokenPriceUsd : (activePhase?.tokenPrice?.toString() || "0.0005"),
+        nextPhasePriceUsd: (Number(nextPhase?.tokenPrice) > 0) ? nextPhase?.tokenPrice?.toString() : undefined,
+        deliveryDate: project.w2eConfig?.deliveryDate || "Q4 2027",
         totalUnits: projectTotalUnits,
         soldUnits,
         availableUnits,
