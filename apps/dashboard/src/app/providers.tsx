@@ -11,7 +11,6 @@ import { WalletDebugger } from "@/components/debug/WalletDebugger";
 import { SmartWalletGuard } from "@/components/auth/SmartWalletGuard";
 import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
 import React, { useState, useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 function ConnectedProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -31,7 +30,6 @@ export function Providers({
   children: React.ReactNode;
 }) {
   const [autoConnectDisabled, setAutoConnectDisabled] = useState(false);
-  const [queryClient] = useState(() => new QueryClient());
   
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -40,33 +38,31 @@ export function Providers({
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="dark"
-        enableSystem={false}
-      >
-        <ThirdwebProvider>
-          {!autoConnectDisabled && (
-            <AutoConnect
-              client={client}
-              wallets={wallets}
-              timeout={15000}
-            />
-          )}
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={false}
+    >
+      <ThirdwebProvider>
+        {!autoConnectDisabled && (
+          <AutoConnect
+            client={client}
+            wallets={wallets}
+            timeout={15000}
+          />
+        )}
 
-          <AuthProvider>
-            <SmartWalletGuard>
-              <ConnectedProviders>
-                {children}
-              </ConnectedProviders>
-            </SmartWalletGuard>
-          </AuthProvider>
+        <AuthProvider>
+          <SmartWalletGuard>
+            <ConnectedProviders>
+              {children}
+            </ConnectedProviders>
+          </SmartWalletGuard>
+        </AuthProvider>
 
-          <Toaster theme="dark" richColors position="top-center" />
-        </ThirdwebProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+        <Toaster theme="dark" richColors position="top-center" />
+      </ThirdwebProvider>
+    </ThemeProvider>
   );
 }
 

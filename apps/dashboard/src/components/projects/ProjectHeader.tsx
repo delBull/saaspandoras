@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
-import { useActiveAccount } from "thirdweb/react";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { getContract, defineChain } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
 import { useRouter } from "next/navigation";
 import type { ProjectData } from "@/app/()/projects/types";
 import { StatusTag } from "./ProjectStatusIndicators";
@@ -42,19 +44,19 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   const rawChainId = Number(projectObj.chainId || 11155111);
   const licenseAddress = projectObj.licenseContractAddress || (projectObj.w2eConfig as any)?.licenseToken?.address;
   const contractInstance = (licenseAddress && typeof licenseAddress === 'string' && licenseAddress.startsWith('0x')) ? {
-      client: require('@/lib/thirdweb-client').client,
-      chain: require('thirdweb').defineChain(rawChainId),
+      client: client,
+      chain: defineChain(rawChainId),
       address: licenseAddress
   } : undefined;
 
-  const dummyContract = require('thirdweb').getContract({
-      client: require('@/lib/thirdweb-client').client,
-      chain: require('thirdweb').defineChain(11155111),
+  const dummyContract = getContract({
+      client: client,
+      chain: defineChain(11155111),
       address: "0x0000000000000000000000000000000000000000"
   });
 
-  const { data: dynamicName } = require('thirdweb/react').useReadContract({
-      contract: contractInstance ? require('thirdweb').getContract(contractInstance) : dummyContract,
+  const { data: dynamicName } = useReadContract({
+      contract: contractInstance ? getContract(contractInstance) : dummyContract,
       method: "function name() view returns (string)",
       params: [],
       queryOptions: { enabled: !!contractInstance }
