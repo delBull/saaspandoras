@@ -25,7 +25,12 @@ export class InventoryService {
 
       if (!onHoldPurchases.length) return 0;
 
-      const price = Number(project?.tokenPriceUsd || 50);
+      // Extract real crypto price instead of defaulting to 50
+      let price = Number(project?.tokenPriceUsd);
+      if (!price || price <= 0) {
+          const phases = project?.w2eConfig?.phases || [];
+          price = Number(phases[0]?.tokenPrice) || 0.0005; 
+      }
       
       let totalUnits = 0;
       for (const p of onHoldPurchases) {
@@ -44,10 +49,23 @@ export class InventoryService {
     const onHoldUnits = await this.getOnHoldCount(project);
     const totalSoldUnits = onChainSupply + onHoldUnits;
     
-    // Calculate progress relative to target
-    const price = Number(project.tokenPriceUsd || 50);
-    const targetAmount = Number(project.targetAmount || 0);
-    const totalCapUnits = targetAmount > 0 ? Math.floor(targetAmount / price) : 100;
+    // Calculate progress relative to true crypto target
+    let price = Number(project?.tokenPriceUsd);
+    if (!price || price <= 0) {
+        const phases = project?.w2eConfig?.phases || [];
+        price = Number(phases[0]?.tokenPrice) || 0.0005; 
+    }
+
+    let targetAmount = Number(project.targetAmount || 0);
+    if (targetAmount <= 0) {
+        targetAmount = Number(project?.w2eConfig?.tokenomics?.targetUsd || 0);
+    }
+    
+    // If we have a targetAmount in USD, calculate units. If not, use maxSupply from tokenomics
+    let totalCapUnits = targetAmount > 0 ? Math.floor(targetAmount / price) : 0;
+    if (totalCapUnits <= 0) {
+        totalCapUnits = Number(project?.w2eConfig?.tokenomics?.maxSupply || 100000);
+    }
 
     return {
       onChainUnits: onChainSupply,

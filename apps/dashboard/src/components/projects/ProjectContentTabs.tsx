@@ -118,8 +118,16 @@ const TagIconInner = ({ className }: { className?: string }) => (
 );
 
 function ArtifactsStats({ licenseContract }: { licenseContract: any }) {
+  // Fallback to prevent Thirdweb V5 QueryClient crash when contract is undefined
+  const dummyContract = getContract({
+    client,
+    chain: defineChain(11155111),
+    address: "0x0000000000000000000000000000000000000000"
+  });
+
   const { data: artifactsMinted } = useReadContract({
-    contract: licenseContract,
+    contract: licenseContract || dummyContract,
+    queryOptions: { enabled: !!licenseContract },
     method: "function totalSupply() view returns (uint256)",
     params: []
   });

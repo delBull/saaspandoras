@@ -197,6 +197,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 console.warn("[API] Failed to get holdersCount from purchases fallback", e);
             }
         }
+        
+        // d) Final Safety Net: If we have supply but no known holders, there is at least 1 holder (the creator/treasury)
+        if (holdersCount === 0 && currentSupply > 0) {
+            holdersCount = 1;
+            console.log(`[API] 🛡️ Fallback holdersCount to 1 (supply exists but indexer is empty)`);
+        }
 
         // d) Fetch Treasury Balance
         if (project.treasuryAddress?.startsWith('0x')) {
@@ -366,6 +372,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 console.log(`[API] 🛡️ Synthesizing virtual certificate for ${wallet} (Balance: ${userArtifactCount})`);
                 const apiBase = apiKey.startsWith('pk_live_') ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
                 const origin = req.headers.get("origin") || "";
+                const virtualPrice = Number(project.tokenPriceUsd) > 0 ? Number(project.tokenPriceUsd) : Number(phases[0]?.tokenPrice || 0.0005);
                 certificates = [{
                     isVerifiable: true,
                     agreementId: `ONCHAIN-${wallet.slice(2, 10).toUpperCase()}`,
@@ -373,7 +380,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                     legalPortalUrl: `${apiBase}/legal/certificate/virtual-${wallet}?project=${slug}&units=${userArtifactCount}&origin=${encodeURIComponent(origin)}`,
                     status: "certified",
                     units: userArtifactCount,
-                    amount: userArtifactCount * Number(project.tokenPriceUsd || 50),
+                    amount: userArtifactCount * virtualPrice,
                     date: new Date().toISOString(),
                     isVirtual: true
                 }];
@@ -422,15 +429,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // 6. Build Response with Caching
     const origin = req.headers.get("origin");
     
-    // DYNAMIC METRICS CALCULATION (Refined for Audit Consistency)
-    // Guard: activePhase.tokenPrice may be ETH-scale (< 1.0) on testnet — always prefer DB USD price
+    // DYNAMIC METRICS CALCULATION (Refined for Audit Consistency & Crypto Prices)
     const dbUsdPrice = Number(project.tokenPriceUsd);
     const phasePriceCandidate = Number(activePhase?.tokenPrice || 0);
-    const metadataPrice = dbUsdPrice > 1 ? dbUsdPrice : (phasePriceCandidate > 1 ? phasePriceCandidate : 50);
+    // Use true crypto prices, no artificial $50 floor unless completely zero
+    const metadataPrice = dbUsdPrice > 0 ? dbUsdPrice : (phasePriceCandidate > 0 ? phasePriceCandidate : 50);
     
-    // targetAmount from DB is the truth — ignore phase cap if it's in ETH (too small)
     const dbTargetAmount = Number(project.targetAmount);
-    const metadataTarget = dbTargetAmount > 1000 ? dbTargetAmount : (metadataPrice * 100); // Fallback: 100 units
+    const metadataTarget = dbTargetAmount > 0 ? dbTargetAmount : (metadataPrice * 100);
     
     // Total Units Ground Truth: Active Phase allocation is the primary source.
     const projectTotalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
@@ -452,13 +458,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // --- Growth OS Engine: Mathematical Phase Calculation ---
     // Make the backend the single source of truth for portfolio mathematics
     const activePhaseMath = phases.find((p: any) => p.status === 'active' || p.status === 'ACTIVE') || phases[0];
-    const activePhasePrice = Number(project.tokenPriceUsd) > 1 ? Number(project.tokenPriceUsd) : Number(activePhaseMath?.tokenPrice || 50);
+    const activePhasePrice = Number(activePhaseMath?.tokenPrice) > 0 ? Number(activePhaseMath.tokenPrice) : (Number(project.tokenPriceUsd) || 50);
 
     const fullPhaseBreakdown = phases.map((phase: any, index: number) => {
         const phasePrice = Number(phase.tokenPrice || 0);
         // 1. Calculate holdings per phase using 20% tolerance
         const phaseCerts = certificates.filter(c => {
             if (!c.units || c.units === 0) return false;
+            // Virtual certificates default to Phase 0 (Fundador) unless price clearly matches another phase
+            if (c.isVirtual && index === 0) return true;
+            if (c.isVirtual && index !== 0) return false;
+
             const unitPrice = Number(c.amount) / Number(c.units);
             const tolerance = phasePrice * 0.20;
             return Math.abs(unitPrice - phasePrice) <= tolerance;
