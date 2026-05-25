@@ -1,6 +1,7 @@
 import { db } from '@/db';
 import { purchases, projects as projectsSchema } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
+import { getRawPhases } from '../phase-utils';
 
 /**
  * 📊 Effective Supply Service
@@ -28,7 +29,7 @@ export class InventoryService {
       // Extract real crypto price instead of defaulting to 50
       let price = Number(project?.tokenPriceUsd);
       if (!price || price <= 0) {
-          const phases = project?.w2eConfig?.phases || [];
+          const phases = getRawPhases(project);
           price = Number(phases[0]?.tokenPrice) || 0.0005; 
       }
       
@@ -49,20 +50,29 @@ export class InventoryService {
     const onHoldUnits = await this.getOnHoldCount(project);
     const totalSoldUnits = onChainSupply + onHoldUnits;
     
-    // Calculate progress relative to true crypto target
-    let price = Number(project?.tokenPriceUsd);
-    if (!price || price <= 0) {
-        const phases = project?.w2eConfig?.phases || [];
-        price = Number(phases[0]?.tokenPrice) || 0.0005; 
-    }
-
-    let targetAmount = Number(project.targetAmount || 0);
-    if (targetAmount <= 0) {
-        targetAmount = Number(project?.w2eConfig?.tokenomics?.targetUsd || 0);
+    let totalCapUnits = 0;
+    const phases = getRawPhases(project);
+    if (phases && phases.length > 0) {
+        totalCapUnits = phases.reduce((acc: number, phase: any) => {
+            return acc + Number(phase.tokenAllocation || phase.allocation || phase.limit || phase.maxSupply || 0);
+        }, 0);
     }
     
-    // If we have a targetAmount in USD, calculate units. If not, use maxSupply from tokenomics
-    let totalCapUnits = targetAmount > 0 ? Math.floor(targetAmount / price) : 0;
+    // Fallbacks if phases don't define token allocation
+    if (totalCapUnits <= 0) {
+        let price = Number(project?.tokenPriceUsd);
+        if (!price || price <= 0) {
+            price = Number(phases[0]?.tokenPrice) || 0.0005; 
+        }
+
+        let targetAmount = Number(project.targetAmount || 0);
+        if (targetAmount <= 0) {
+            targetAmount = Number(project?.w2eConfig?.tokenomics?.targetUsd || 0);
+        }
+        
+        totalCapUnits = (targetAmount > 0 && price > 0) ? Math.floor(targetAmount / price) : 0;
+    }
+
     if (totalCapUnits <= 0) {
         totalCapUnits = Number(project?.w2eConfig?.tokenomics?.maxSupply || 100000);
     }

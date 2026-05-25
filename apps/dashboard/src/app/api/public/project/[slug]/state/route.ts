@@ -429,19 +429,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // 6. Build Response with Caching
     const origin = req.headers.get("origin");
     
-    // DYNAMIC METRICS CALCULATION (Refined for Audit Consistency & Crypto Prices)
-    const dbUsdPrice = Number(project.tokenPriceUsd);
+    // DYNAMIC METRICS CALCULATION
+    // CRITICAL: Phase prices are in ETH (e.g. 0.00075 ETH). The DB tokenPriceUsd may be
+    // a legacy USD value ($50) from the initial form — DO NOT use it for supply calculations.
+    // Always prefer the active phase tokenPrice.
     const phasePriceCandidate = Number(activePhase?.tokenPrice || 0);
-    // Use true crypto prices, no artificial $50 floor unless completely zero
-    const metadataPrice = dbUsdPrice > 0 ? dbUsdPrice : (phasePriceCandidate > 0 ? phasePriceCandidate : 50);
+    const dbUsdPrice = Number(project.tokenPriceUsd);
+    // metadataPrice is the active phase price; DB price only used if no phase price exists
+    const metadataPrice = phasePriceCandidate > 0 ? phasePriceCandidate : (dbUsdPrice > 0 ? dbUsdPrice : 0.0005);
     
-    const dbTargetAmount = Number(project.targetAmount);
-    const metadataTarget = dbTargetAmount > 0 ? dbTargetAmount : (metadataPrice * 100);
-    
-    // Total Units Ground Truth: Active Phase allocation is the primary source.
-    const projectTotalUnits = (activePhase?.stats?.tokensAllocated && activePhase.stats.tokensAllocated > 0) 
-        ? activePhase.stats.tokensAllocated 
-        : (metadataTarget > 0 ? Math.floor(metadataTarget / metadataPrice) : 8);
+    // Total Units: Sum ALL phase allocations for the complete project cap
+    const projectTotalUnits = phases.reduce((acc: number, p: any) => acc + Number(p.stats?.tokensAllocated || 0), 0)
+        || (activePhase?.stats?.tokensAllocated || 0);
 
     // 🔥 HYBRID INVENTORY CALCULATION (Blockchain + DB Soft-Lock)
     const { 
@@ -458,7 +457,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // --- Growth OS Engine: Mathematical Phase Calculation ---
     // Make the backend the single source of truth for portfolio mathematics
     const activePhaseMath = phases.find((p: any) => p.status === 'active' || p.status === 'ACTIVE') || phases[0];
-    const activePhasePrice = Number(activePhaseMath?.tokenPrice) > 0 ? Number(activePhaseMath.tokenPrice) : (Number(project.tokenPriceUsd) || 50);
+    // Portfolio price: use active phase price (ETH), NOT the legacy DB USD price
+    const activePhasePrice = Number(activePhaseMath?.tokenPrice) > 0 ? Number(activePhaseMath.tokenPrice) : metadataPrice;
 
     const fullPhaseBreakdown = phases.map((phase: any, index: number) => {
         const phasePrice = Number(phase.tokenPrice || 0);
@@ -572,15 +572,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       metadata: {
         estimatedApy: project.estimatedApy || "12.5%",
         targetAmount: (() => {
+          // Use w2eConfig explicit target first, then calculate from phases
           const w2eTarget = project.w2eConfig?.tokenomics?.targetUsd;
           if (w2eTarget && Number(w2eTarget) > 0) return w2eTarget.toString();
-          const phaseCalc = projectTotalUnits * metadataPrice;
+          // Calculate from ALL phase allocations × phase price
+          const phaseCalc = phases.reduce((acc: number, p: any) => {
+            return acc + (Number(p.stats?.tokensAllocated || 0) * Number(p.tokenPrice || 0));
+          }, 0);
           if (phaseCalc > 0) return phaseCalc.toString();
-          const dbVal = Number(project.targetAmount);
-          if (dbVal > 0) return project.targetAmount;
-          return "5000000"; 
+          return (projectTotalUnits * metadataPrice).toString() || "0";
         })(),
-        tokenPriceUsd: (Number(project.tokenPriceUsd) > 0) ? project.tokenPriceUsd : (activePhase?.tokenPrice?.toString() || "0.0005"),
+        // Always return the active phase price (ETH/crypto), NOT the legacy $50 DB value
+        tokenPriceUsd: phasePriceCandidate > 0 ? phasePriceCandidate.toString() : (activePhase?.tokenPrice?.toString() || "0.0005"),
         nextPhasePriceUsd: (Number(nextPhase?.tokenPrice) > 0) ? nextPhase?.tokenPrice?.toString() : undefined,
         deliveryDate: project.w2eConfig?.deliveryDate || "Q4 2027",
         totalUnits: projectTotalUnits,

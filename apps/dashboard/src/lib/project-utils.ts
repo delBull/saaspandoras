@@ -140,7 +140,14 @@ export function getTargetAmount(project: any): number {
   if (!project) return 0;
   
   try {
-    // Use the unified phase extractor
+    // Priority 1: Use the explicit database targetAmount if it exists and is > 0
+    // This avoids currency mismatches (e.g. phases priced in ETH but target is in USD)
+    const dbAmount = Number(project.target_amount || project.targetAmount || project.goal || project.target_amount_usd);
+    if (!isNaN(dbAmount) && dbAmount > 0) {
+      return dbAmount;
+    }
+
+    // Priority 2: Use the unified phase extractor
     const phases = getRawPhases(project);
 
     if (Array.isArray(phases) && phases.length > 0) {
@@ -160,16 +167,6 @@ export function getTargetAmount(project: any): number {
       }, 0);
       
       if (totalPhasesAmount > 0) return totalPhasesAmount;
-    }
-
-    // Fallback to DB fields if no phases found
-    // 🛡️ RECOVERY: Some projects use project.goal or project.targetAmount (camelCase)
-    const dbAmount = Number(project.target_amount || project.targetAmount || project.goal || project.target_amount_usd);
-    
-    // Valid DB amounts (not dummy placeholders like 100000 or 10000 unless they are the real target)
-    if (!isNaN(dbAmount) && dbAmount > 0) {
-        // If it looks like a dummy placeholder but we have no other data, use it as last resort
-        return dbAmount;
     }
 
     // Absolute fallback
