@@ -42,6 +42,16 @@ export async function GET(req: NextRequest) {
     const limit  = Math.min(parseInt(url.searchParams.get("limit") ?? "20"), 50);
     const offset = parseInt(url.searchParams.get("offset") ?? "0");
 
+    // FIX #8: Scope validation - if API key has projectId restriction, only allow that project
+    if (client.projectId !== null && client.projectId !== undefined && protocolId) {
+      const parsedProtocolId = parseInt(protocolId);
+      if (parsedProtocolId !== client.projectId) {
+        return NextResponse.json({ 
+          error: `API key restricted to project ${client.projectId}. You cannot access project ${parsedProtocolId}.` 
+        }, { status: 403 });
+      }
+    }
+
     // Map status name → numeric code
     const statusCode = statusFilter
       ? Object.entries(PROPOSAL_STATUS).find(([, v]) => v.toLowerCase() === statusFilter.toLowerCase())?.[0]
@@ -50,6 +60,11 @@ export async function GET(req: NextRequest) {
     let whereClause = statusCode !== null && statusCode !== undefined
       ? eq(governanceProposals.status, parseInt(statusCode))
       : undefined;
+
+    // FIX #8: If key is scoped to a project, filter by it automatically
+    if (client.projectId !== null && client.projectId !== undefined && !protocolId) {
+      whereClause = eq(governanceProposals.protocolId, client.projectId);
+    }
 
     // Filter by protocolId if provided
     if (protocolId) {

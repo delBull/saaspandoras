@@ -48,7 +48,7 @@ export async function GET(req: Request) {
                     console.log(`✅ [Metrics API] Recovered artifacts from job ${lastJob.id}`);
                     const result = lastJob.result as any;
                     rawProject.artifacts = result.artifacts;
-                    
+
                     // Also update main contract addresses if missing
                     if (!rawProject.licenseContractAddress) rawProject.licenseContractAddress = result.licenseContractAddress;
                     if (!rawProject.governorContractAddress) rawProject.governorContractAddress = result.governorContractAddress;
@@ -67,7 +67,7 @@ export async function GET(req: Request) {
         if (project?.treasuryAddress?.startsWith('0x') && project.chainId) {
             try {
                 const chain = defineChain(Number(project.chainId));
-                
+
                 // If on Base Mainnet, check USDC balance primarily
                 if (Number(project.chainId) === 8453) {
                     const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -81,7 +81,7 @@ export async function GET(req: Request) {
                         method: "function balanceOf(address) view returns (uint256)",
                         params: [project.treasuryAddress]
                     }).catch(() => 0n);
-                    
+
                     treasuryUSD = Number(usdcBalance) / 1e6;
                     treasuryDisplay = treasuryUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
                     treasurySymbol = "USDC";
@@ -113,8 +113,8 @@ export async function GET(req: Request) {
                 totalMembers: count(daoMembers.wallet),
                 totalArtifacts: sum(daoMembers.artifactsCount)
             })
-            .from(daoMembers)
-            .where(eq(daoMembers.projectId, projectId));
+                .from(daoMembers)
+                .where(eq(daoMembers.projectId, projectId));
         } catch (dbError: any) {
             console.error(`❌ [Metrics API] DB select failed for project ${projectId}:`, dbError.message);
             throw dbError; // re-throw to be caught by main catch
@@ -130,7 +130,7 @@ export async function GET(req: Request) {
 
         // If no members, or if Postgres returns a single row with all nulls (common for empty sum/count)
         const firstStat = totalStats?.[0];
-        
+
         let totalPowerNum = Number(firstStat?.totalPower || 0);
         let totalMembersNum = Number(firstStat?.totalMembers || 0);
         let totalArtifactsNum = Number(firstStat?.totalArtifacts || 0);
@@ -170,17 +170,17 @@ export async function GET(req: Request) {
                 if (onChainSupply > 0n) {
                     // For ERC20, artifacts count is often equivalent to whole units
                     totalArtifactsNum = Number(onChainSupply) / divisor;
-                    
+
                     if (onChainParticipants > 0n) {
                         totalMembersNum = Number(onChainParticipants);
                     }
-                    
+
                     // If no power from DB, the total possible power is the current supply
                     // (This assumes 1 token = 1 vote unit at the base level)
                     if (totalPowerNum === 0) {
                         totalPowerNum = totalArtifactsNum;
                     }
-                    
+
                     console.log(`✅ [Metrics API] On-chain recovery successful: ${totalMembersNum} members, ${totalPowerNum} power`);
                 }
             } catch (onChainError) {
@@ -196,13 +196,13 @@ export async function GET(req: Request) {
                     count: count(purchases.id),
                     uniqueWallets: sql<number>`count(distinct ${purchases.userId})`
                 })
-                .from(purchases)
-                .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')));
-                
+                    .from(purchases)
+                    .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')));
+
                 if (purchaseStats[0] && Number(purchaseStats[0].uniqueWallets) > 0) {
                     totalMembersNum = Number(purchaseStats[0].uniqueWallets);
                     if (totalArtifactsNum === 0) {
-                       totalArtifactsNum = Number(purchaseStats[0].count);
+                        totalArtifactsNum = Number(purchaseStats[0].count);
                     }
                 }
             } catch (fallbackError) {
@@ -219,19 +219,19 @@ export async function GET(req: Request) {
             topWallets = await db.select({
                 votingPower: daoMembers.votingPower
             })
-            .from(daoMembers)
-            .where(eq(daoMembers.projectId, projectId))
-            .orderBy(desc(daoMembers.votingPower))
-            .limit(10);
+                .from(daoMembers)
+                .where(eq(daoMembers.projectId, projectId))
+                .orderBy(desc(daoMembers.votingPower))
+                .limit(10);
         } catch (subError) {
             console.warn('⚠️ [Metrics API] Error fetching top wallets:', subError);
         }
 
         let top10Power = topWallets.reduce((acc, w) => acc + Number(w?.votingPower || 0), 0);
-        
+
         // PCI: Power Concentration Index (Gini-like for DAO)
         let pci: number | null = 0;
-        
+
         // Secondary fallback for PCI if dao_members is empty
         if (top10Power === 0 && totalPowerNum > 0) {
             try {
@@ -239,16 +239,16 @@ export async function GET(req: Request) {
                 const topPurchaseWallets = await db.select({
                     votingPower: count(purchases.id)
                 })
-                .from(purchases)
-                .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')))
-                .groupBy(purchases.userId)
-                .orderBy(desc(count(purchases.id)))
-                .limit(10);
+                    .from(purchases)
+                    .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')))
+                    .groupBy(purchases.userId)
+                    .orderBy(desc(count(purchases.id)))
+                    .limit(10);
 
                 if (topPurchaseWallets.length > 0) {
                     top10Power = topPurchaseWallets.reduce((acc, w) => acc + Number(w.votingPower), 0);
                 }
-            } catch (pErr) {}
+            } catch (pErr) { }
         }
 
         if (totalPowerNum > 0 && safeMembersNumForPCI > 1 && top10Power > 0) {
@@ -258,10 +258,10 @@ export async function GET(req: Request) {
             pci = 1;
         } else if (top10Power === 0 && (totalMembersNum > 0 || totalPowerNum > 0)) {
             // Indexer is empty but we fell back to on-chain for total members or power
-            pci = null; 
+            pci = null;
         } else {
             // Default to 0 (Perfect distribution or no data)
-            pci = 0; 
+            pci = 0;
         }
 
         // unique Member Wallets and Artifact Holders
@@ -281,7 +281,7 @@ export async function GET(req: Request) {
             treasuryDisplay,
             treasurySymbol,
             pci: pci === null ? null : ((isNaN(pci) || !isFinite(pci)) ? 0 : pci),
-            attribution: [] 
+            attribution: []
         };
 
         return NextResponse.json(response);
@@ -292,10 +292,10 @@ export async function GET(req: Request) {
             stack: error.stack,
             projectId
         });
-        return NextResponse.json({ 
-            error: 'Internal Server Error', 
+        return NextResponse.json({
+            error: 'Internal Server Error',
             details: error.message,
-            projectId 
+            projectId
         }, { status: 500 });
     }
 }

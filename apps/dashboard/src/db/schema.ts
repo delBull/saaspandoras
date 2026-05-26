@@ -2137,3 +2137,31 @@ export type DemandDraft = typeof demandDrafts.$inferSelect;
 export type Campaign = typeof campaigns.$inferSelect;
 export type DemandEvent = typeof demandEvents.$inferSelect;
 export type CampaignStat = typeof campaignStats.$inferSelect;
+
+// =========================================================
+// DAO INTENT VOTING TABLE (Social voting before on-chain)
+// =========================================================
+
+export const intentVotes = pgTable("intent_votes", {
+    id: serial("id").primaryKey(),
+    proposalId: varchar("proposal_id", { length: 255 }).notNull(),
+    voterAddress: varchar("voter_address", { length: 42 }).notNull(),
+    
+    // Support: 1=For, 0=Against, 2=Abstain
+    support: integer("support").notNull(),
+    
+    // Optional reason for vote
+    reason: text("reason"),
+    
+    // Timestamp
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    
+    // Composite unique: same voter can only vote once per proposal
+    // But we keep it simple: one vote per (proposal, voter) = one row
+}, (table) => ({
+    uniqueVote: uniqueIndex("unique_proposal_voter").on(table.proposalId, table.voterAddress),
+    proposalIdx: index("intent_votes_proposal_idx").on(table.proposalId),
+    voterIdx: index("intent_votes_voter_idx").on(table.voterAddress),
+}));
+
+export type IntentVote = typeof intentVotes.$inferSelect;

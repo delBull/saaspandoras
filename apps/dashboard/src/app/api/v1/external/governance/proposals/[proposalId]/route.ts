@@ -35,9 +35,24 @@ export async function GET(
     const url = new URL(req.url);
     const protocolId = url.searchParams.get("protocolId");
 
+    // FIX #8: Scope validation
+    if (client.projectId !== null && client.projectId !== undefined && protocolId) {
+        const parsedProtocolId = parseInt(protocolId);
+        if (parsedProtocolId !== client.projectId) {
+            return NextResponse.json({ 
+                error: `API key restricted to project ${client.projectId}. You cannot access project ${parsedProtocolId}.` 
+            }, { status: 403 });
+        }
+    }
+
     try {
         let whereClause = eq(governanceProposals.proposalId, proposalId);
         
+        // FIX #8: If key is scoped to a project, filter by it automatically
+        if (client.projectId !== null && client.projectId !== undefined && !protocolId) {
+            whereClause = and(whereClause, eq(governanceProposals.protocolId, client.projectId)) as any;
+        }
+
         if (protocolId) {
             const parsedProtocolId = parseInt(protocolId);
             if (!isNaN(parsedProtocolId)) {

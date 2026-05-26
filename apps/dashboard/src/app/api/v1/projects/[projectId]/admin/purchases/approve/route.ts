@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { purchases, projects, users } from '@/db/schema';
+import { purchases, projects, users, daoMembers } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 
@@ -64,39 +64,53 @@ export async function POST(
         const tokenPrice = Number(project.tokenPriceUsd || 50);
         const units = Math.floor(Number(purchase.amount) / (tokenPrice > 0 ? tokenPrice : 50));
 
+        // Fix #9: Validate units against max possible (prevent overflow/abuse)
+        // Default max: 1M tokens (1,000,000) - reasonable limit for most DAOs
+        const maxUnits = 1000000;
+        if (units > maxUnits) {
+            return NextResponse.json({ 
+                error: `Units exceed maximum allowed (${maxUnits}). Contact support.` 
+            }, { status: 400 });
+        }
+
         if (action === 'approve') {
             // Generate integrity proof (Agreement Hash)
             const agreementContent = `Agreement for Project ${project.title} - Purchase ${purchaseId} - User ${purchase.userId} - Units ${purchase.amount}`;
             const agreementHash = crypto.createHash('sha256').update(agreementContent).digest('hex');
 
-            await db.update(purchases)
-                .set({
-                    status: 'completed' as any,
-                    agreementHash: agreementHash,
-                    updatedAt: new Date()
-                })
-                .where(eq(purchases.id, purchaseId));
+            // 🔒 FIX #1: WRAP BOTH UPDATES IN A SINGLE TRANSACTION to prevent race conditions
+            // This ensures either BOTH the purchase update AND daoMembers sync succeed,
+            // or NEITHER does - atomic operation.
+            await db.transaction(async (tx) => {
+                // Step 1: Update purchase status
+                await tx.update(purchases)
+                    .set({
+                        status: 'completed' as any,
+                        agreementHash: agreementHash,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(purchases.id, purchaseId));
 
-            // ⚠️ DAO SYNC: Register/Update member in DAO Statistics
-            if (targetWallet) {
-                const { daoMembers } = await import('@/db/schema');
-                await db.insert(daoMembers).values({
-                    projectId: projectIdNum,
-                    wallet: targetWallet.toLowerCase(),
-                    artifactsCount: units,
-                    votingPower: String(units),
-                    joinedAt: new Date()
-                }).onConflictDoUpdate({
-                    target: [daoMembers.projectId, daoMembers.wallet],
-                    set: { 
-                        artifactsCount: sql`${daoMembers.artifactsCount} + ${units}`,
-                        votingPower: sql`CAST(CAST(${daoMembers.votingPower} AS NUMERIC) + ${units} AS VARCHAR)`,
-                        lastActiveAt: new Date()
-                    }
-                });
-            }
+                // Step 2: Register/Update member in DAO Statistics (isolated in transaction)
+                if (targetWallet) {
+                    await tx.insert(daoMembers).values({
+                        projectId: projectIdNum,
+                        wallet: targetWallet.toLowerCase(),
+                        artifactsCount: units,
+                        votingPower: String(units),
+                        joinedAt: new Date()
+                    }).onConflictDoUpdate({
+                        target: [daoMembers.projectId, daoMembers.wallet],
+                        set: { 
+                            artifactsCount: sql`${daoMembers.artifactsCount} + ${units}`,
+                            votingPower: sql`CAST(${daoMembers.votingPower} + CAST(${units} AS DECIMAL) AS VARCHAR)`,
+                            lastActiveAt: new Date()
+                        }
+                    });
+                }
+            });
 
-            console.log(`✅ Project ${projectId}: Purchase ${purchaseId} approved and synced to DAO.`);
+            console.log(`✅ Project ${projectId}: Purchase ${purchaseId} approved and synced to DAO (transactional).`);
 
         } else if (action === 'reject') {
             await db.update(purchases)

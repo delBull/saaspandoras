@@ -114,10 +114,12 @@ export async function POST(req: Request) {
 
         if (purchaseId) {
             try {
-                // Update Purchase record
+                // Update Purchase record with transactionHash (FIX #4)
                 await db.execute(sql`
                     UPDATE purchases 
-                    SET status = 'completed', updated_at = now() 
+                    SET status = 'completed', 
+                        transaction_hash = ${txHash}, -- ✅ Store blockchain TX hash
+                        updated_at = now() 
                     WHERE purchaseId = ${purchaseId}
                 `);
 
@@ -221,6 +223,8 @@ export async function POST(req: Request) {
         // 6. WEBHOOK: Notify external clients if it's a MINT (from null address)
         const isMint = fromAddress === "0x0000000000000000000000000000000000000000" || fromAddress === "0x0";
         if (isMint) {
+            console.log(`✅ [Webhook] DETECTED MINT EVENT - from: ${fromAddress}, to: ${toAddress}`);
+            
             try {
                 const tokenId = log?.args?.tokenId || log?.args?.[0] || "unknown";
 
@@ -248,6 +252,50 @@ export async function POST(req: Request) {
                 }
             } catch (webhookError) {
                 console.warn('⚠️ Failed to queue mint webhook:', webhookError);
+            }
+
+            // 🏛️ FIX #2: DAO Membership Sync for MINTS
+            // MINT events don't have purchaseId, but we still need to register holder
+            // The recipient (toAddress) received the tokens, so they should be in daoMembers
+            const mintWallet = toAddress.toLowerCase();
+            
+            // Validate it's an actual wallet address (42 chars, 0x prefix)
+            const isWallet = mintWallet.length === 42 && mintWallet.startsWith('0x');
+            
+            if (isWallet) {
+                try {
+                    // For mints, we don't have a direct purchase link, so we use a default count
+                    // The actual count will come from on-chain totalSupply or user query
+                    const projectId = body.metadata?.projectId || body.projectId || 1; // Default to project 1 if unknown
+                    
+                    console.log(`🏛️ [Webhook] Registering MINT holder: ${mintWallet} for project ${projectId}`);
+                    
+                    const { daoMembers } = await import("@/db/schema");
+                    
+                    await db.insert(daoMembers)
+                        .values({
+                            projectId,
+                            wallet: mintWallet,
+                            artifactsCount: 1, // Default count for mint
+                            votingPower: "1",
+                            joinedAt: new Date(),
+                            lastActiveAt: new Date(),
+                        })
+                        .onConflictDoUpdate({
+                            target: [daoMembers.projectId, daoMembers.wallet],
+                            set: {
+                                artifactsCount: sql`${daoMembers.artifactsCount} + 1`,
+                                votingPower: sql`CAST(CAST(${daoMembers.votingPower} AS NUMERIC) + 1 AS VARCHAR)`,
+                                lastActiveAt: new Date(),
+                            }
+                        });
+                    
+                    console.log(`✅ [Webhook] DAO member synchronized for MINT wallet ${mintWallet} in project ${projectId}`);
+                } catch (mintError: any) {
+                    console.error("❌ [Webhook] Failed to sync MINT DAO member:", mintError.message);
+                }
+            } else {
+                console.warn(`⚠️ [Webhook] MINT recipient is not a valid wallet: ${toAddress}`);
             }
         }
 
