@@ -210,11 +210,6 @@ export async function GET(req: Request) {
             }
         }
 
-        // Final sanity check fallback to 1 if we have power/supply but no members yet
-        if (totalMembersNum === 0 && totalPowerNum > 0) {
-            totalMembersNum = 1;
-        }
-
         // Final fallback to 1 to prevent division by zero in PCI, but display as 0 if truly empty
         const safeMembersNumForPCI = totalMembersNum > 0 ? totalMembersNum : 1;
 
@@ -261,8 +256,8 @@ export async function GET(req: Request) {
         } else if (totalPowerNum > 0 && safeMembersNumForPCI === 1 && top10Power > 0) {
             // If only 1 member has all tokens, PCI is 1 (Max concentration)
             pci = 1;
-        } else if (top10Power === 0 && totalMembersNum > 0) {
-            // Indexer is empty but we fell back to on-chain for total members
+        } else if (top10Power === 0 && (totalMembersNum > 0 || totalPowerNum > 0)) {
+            // Indexer is empty but we fell back to on-chain for total members or power
             pci = null; 
         } else {
             // Default to 0 (Perfect distribution or no data)
