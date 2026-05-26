@@ -171,8 +171,9 @@ export async function GET(req: Request) {
                     // For ERC20, artifacts count is often equivalent to whole units
                     totalArtifactsNum = Number(onChainSupply) / divisor;
                     
-                    // If totalParticipants() failed/doesn't exist, fallback to DB unique wallets, or default to 1 to avoid NaN
-                    totalMembersNum = onChainParticipants > 0n ? Number(onChainParticipants) : (totalMembersNum > 0 ? totalMembersNum : 1);
+                    if (onChainParticipants > 0n) {
+                        totalMembersNum = Number(onChainParticipants);
+                    }
                     
                     // If no power from DB, the total possible power is the current supply
                     // (This assumes 1 token = 1 vote unit at the base level)
@@ -200,11 +201,18 @@ export async function GET(req: Request) {
                 
                 if (purchaseStats[0] && Number(purchaseStats[0].uniqueWallets) > 0) {
                     totalMembersNum = Number(purchaseStats[0].uniqueWallets);
-                    totalArtifactsNum = Number(purchaseStats[0].count);
+                    if (totalArtifactsNum === 0) {
+                       totalArtifactsNum = Number(purchaseStats[0].count);
+                    }
                 }
             } catch (fallbackError) {
                 // console.warn('⚠️ [Metrics API] Fallback to purchases failed:', fallbackError);
             }
+        }
+
+        // Final sanity check fallback to 1 if we have power/supply but no members yet
+        if (totalMembersNum === 0 && totalPowerNum > 0) {
+            totalMembersNum = 1;
         }
 
         // Final fallback to 1 to prevent division by zero in PCI, but display as 0 if truly empty
@@ -224,10 +232,30 @@ export async function GET(req: Request) {
             console.warn('⚠️ [Metrics API] Error fetching top wallets:', subError);
         }
 
-        const top10Power = topWallets.reduce((acc, w) => acc + Number(w?.votingPower || 0), 0);
+        let top10Power = topWallets.reduce((acc, w) => acc + Number(w?.votingPower || 0), 0);
         
         // PCI: Power Concentration Index (Gini-like for DAO)
         let pci: number | null = 0;
+        
+        // Secondary fallback for PCI if dao_members is empty
+        if (top10Power === 0 && totalPowerNum > 0) {
+            try {
+                const { purchases } = await import('@/db/schema');
+                const topPurchaseWallets = await db.select({
+                    votingPower: count(purchases.id)
+                })
+                .from(purchases)
+                .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')))
+                .groupBy(purchases.userId)
+                .orderBy(desc(count(purchases.id)))
+                .limit(10);
+
+                if (topPurchaseWallets.length > 0) {
+                    top10Power = topPurchaseWallets.reduce((acc, w) => acc + Number(w.votingPower), 0);
+                }
+            } catch (pErr) {}
+        }
+
         if (totalPowerNum > 0 && safeMembersNumForPCI > 1 && top10Power > 0) {
             pci = top10Power / totalPowerNum;
         } else if (totalPowerNum > 0 && safeMembersNumForPCI === 1 && top10Power > 0) {
