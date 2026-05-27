@@ -198,9 +198,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             }
         }
         
-        // d) Final Safety Net: If we have supply but no known holders, there is at least 1 holder (the creator/treasury)
+        // d) Final Safety Net: If we have supply on-chain but no known holders,
+        // there is at least 1 holder (the treasury/creator owns the unminted supply)
+        if (holdersCount === 0 && currentSupply > 0) {
+            holdersCount = 1;
+        }
 
-        // d) Fetch Treasury Balance
+        // e) Fetch Treasury Balance
         if (project.treasuryAddress?.startsWith('0x')) {
             const chain = defineChain(Number(chainId));
             
