@@ -199,10 +199,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         }
         
         // d) Final Safety Net: If we have supply but no known holders, there is at least 1 holder (the creator/treasury)
-        if (holdersCount === 0 && currentSupply > 0) {
-            holdersCount = 1;
-            console.log(`[API] 🛡️ Fallback holdersCount to 1 (supply exists but indexer is empty)`);
-        }
 
         // d) Fetch Treasury Balance
         if (project.treasuryAddress?.startsWith('0x')) {
