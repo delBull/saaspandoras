@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { purchases, projects } from '@/db/schema';
-import { eq, desc, and, lt } from 'drizzle-orm';
+import { eq, desc, and, lt, or } from 'drizzle-orm';
 
 export async function GET(
     req: Request,
@@ -48,7 +48,10 @@ export async function GET(
         const projectPurchases = await db.query.purchases.findMany({
             where: and(
                 eq(purchases.projectId, projectIdNum),
-                eq(purchases.status, 'on_hold')
+                or(
+                    eq(purchases.status, 'on_hold'),
+                    eq(purchases.status, 'processing')
+                )
             ),
             orderBy: [desc(purchases.createdAt)]
         });

@@ -64,6 +64,20 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [isConfirmedIntent, setIsConfirmedIntent] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const { connect } = useConnectModal();
+    const [mxnRate, setMxnRate] = useState<number | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        fetch('https://api.exchangerate-api.com/v4/latest/USD')
+            .then(res => res.json())
+            .then(data => {
+                if (isMounted && data?.rates?.MXN) {
+                    setMxnRate(data.rates.MXN);
+                }
+            })
+            .catch(() => {});
+        return () => { isMounted = false; };
+    }, []);
 
     // Legal Stack State
     const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
@@ -400,7 +414,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     name: fastLaneName,
                     phone: fastLanePhone,
                     tier: displayTierName,
-                    amount: safeAmount,
+                    amount: totalCostDisplay,
+                    quantity: safeAmount,
                     source: 'checkout_hub',
                     wallet_connected: !!account,
                     wallet_address: account?.address || null,
@@ -951,9 +966,18 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                         <span className="text-[10px] uppercase font-black text-white/40">Referencia</span>
                                                         <span className="text-sm font-black font-mono text-white select-all">{bankInstructions.reference}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center">
+                                                    <div className="flex justify-between items-center mt-2">
                                                         <span className="text-[10px] uppercase font-black text-zinc-500">Monto exacto</span>
-                                                        <span className="text-lg font-black text-white italic">${bankInstructions.amount.toLocaleString()} USD</span>
+                                                        <div className="flex flex-col items-end">
+                                                            {mxnRate ? (
+                                                                <>
+                                                                    <span className="text-lg font-black text-white italic">${(bankInstructions.amount * mxnRate).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})} MXN</span>
+                                                                    <span className="text-[10px] text-zinc-400 font-medium">(${bankInstructions.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD)</span>
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-lg font-black text-white italic">${bankInstructions.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -962,7 +986,19 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                     Tu posición aparecerá como <strong>"PENDIENTE"</strong> en tu portal hasta que validemos la transferencia. Por favor, asegúrate de incluir la referencia exacta.
                                                 </p>
                                                 <button
-                                                    onClick={() => setStep('success')}
+                                                    onClick={async () => {
+                                                        try {
+                                                            await fetch(`/api/v1/external-commerce/${project.id}/fast-lane/confirm`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ purchaseRef: bankInstructions.reference })
+                                                            });
+                                                        } catch (e) {
+                                                            console.warn("Failed to notify intent", e);
+                                                        } finally {
+                                                            setStep('success');
+                                                        }
+                                                    }}
                                                     className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] hover:bg-zinc-200 transition-colors"
                                                 >
                                                     YA REALICÉ MI TRANSFERENCIA

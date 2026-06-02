@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { purchases, projects as projectsSchema } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, or } from 'drizzle-orm';
 import { getRawPhases } from '../phase-utils';
 
 /**
@@ -20,7 +20,10 @@ export class InventoryService {
       const onHoldPurchases = await db.query.purchases.findMany({
         where: and(
           eq(purchases.projectId, project.id),
-          eq(purchases.status, 'on_hold')
+          or(
+            eq(purchases.status, 'on_hold'),
+            eq(purchases.status, 'processing')
+          )
         )
       });
 

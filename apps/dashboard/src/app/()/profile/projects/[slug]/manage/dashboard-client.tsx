@@ -649,9 +649,20 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                                         <p className="text-lg font-bold text-green-400">${Number(p.amount).toLocaleString()} <span className="text-xs opacity-50">{p.currency}</span></p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-zinc-500 uppercase font-black">Referencia</p>
-                                        <div className="font-mono text-xs font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded inline-block">
-                                            {p.purchaseId}
+                                        <p className="text-[10px] text-zinc-500 uppercase font-black">Referencia / Estatus</p>
+                                        <div className="flex flex-col gap-1 items-start mt-1">
+                                            <div className="font-mono text-xs font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded inline-block">
+                                                {p.purchaseId}
+                                            </div>
+                                            {p.status === 'processing' ? (
+                                                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] uppercase font-black rounded-full animate-pulse shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                                                    Transferencia Notificada
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 text-[9px] uppercase font-black rounded-full">
+                                                    Intención en Espera
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
