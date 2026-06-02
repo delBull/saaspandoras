@@ -10,6 +10,7 @@ import WaitlistEmail from '@/emails/WaitlistEmail';
 import ProjectEducationalEmail from '@/emails/educational-nurture';
 import PostPurchaseSuccessEmail from '@/emails/PostPurchaseSuccessEmail';
 import FastLaneSuccessEmail from '@/emails/FastLaneSuccessEmail';
+import CheckoutRecoveryEmail from '@/emails/CheckoutRecoveryEmail';
 
 import { EngagementLevel } from './types';
 import { db } from '@/db';
@@ -1023,6 +1024,52 @@ export async function sendFastLaneSuccessEmail(context: {
     return { success: true, data };
   } catch (error) {
     console.error(`[Growth Engine] Resend Error (Fast-Lane):`, error);
+    throw error;
+  }
+}
+
+export async function sendCheckoutRecoveryEmail(context: {
+  to: string;
+  projectName: string;
+  projectSlug?: string;
+}) {
+  console.log(`[Growth Engine] Sending Checkout Recovery Email to ${context.to}`);
+  
+  const isProd = process.env.NODE_ENV === 'production';
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+      if (isProd) throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
+      return { success: true, mocked: true };
+  }
+
+  const subject = `Tu asignación en ${context.projectName} expira pronto`;
+  const ctaUrl = `https://staging.dash.pandoras.finance/pay/${context.projectSlug || 'snarai'}/default`;
+
+  try {
+    const data = await resend.emails.send({
+      from: `${context.projectName} <${FROM_EMAIL}>`,
+      to: [context.to],
+      subject,
+      tags: [{ name: 'audience', value: 'checkout_recovery' }],
+      react: CheckoutRecoveryEmail({ 
+        projectName: context.projectName,
+        ctaUrl
+      }) as React.ReactElement,
+    });
+
+    if (data && 'id' in data && data.id) {
+      await trackEmailMetadata({
+        emailId: String((data as any).id),
+        recipient: context.to,
+        subject,
+        type: 'checkout_recovery'
+      });
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error(`[Growth Engine] Resend Error (Checkout Recovery):`, error);
     throw error;
   }
 }

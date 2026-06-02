@@ -18,7 +18,8 @@ import {
   sendEducationalNurtureEmail,
   sendVIPConciergeEmail,
   sendPostPurchaseSuccessEmail,
-  sendFastLaneSuccessEmail
+  sendFastLaneSuccessEmail,
+  sendCheckoutRecoveryEmail
 } from '@/lib/marketing/growth-engine/email-senders';
 
 export async function executeGrowthActions(
@@ -478,6 +479,20 @@ export async function executeGrowthActions(
                         success = true;
                     }
                     break;
+                }
+
+                case 'SEND_CHECKOUT_RECOVERY_D1': {
+                  if (lead.email) {
+                    const res = await sendCheckoutRecoveryEmail({
+                      to: lead.email as string,
+                      projectName: project.name,
+                      projectSlug: project.slug
+                    });
+                    success = res.success;
+                  } else {
+                    success = true;
+                  }
+                  break;
                 }
 
                 default:

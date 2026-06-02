@@ -211,6 +211,13 @@ export function resolveGrowthAction(
         actions.push('SEND_FOLLOWUP_B2B_D2');
       }
     } else {
+      const hasCheckoutIntent = lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('CHECKOUT_INTENT'));
+
+      // Checkout Recovery Rule (2 hours delay)
+      if (hasCheckoutIntent && currentLeadState !== 'INVESTOR' && hoursSinceJoin > 2 && !lead.metadata?.growth?.executedActions?.['SEND_CHECKOUT_RECOVERY_D1']) {
+        actions.push('SEND_CHECKOUT_RECOVERY_D1');
+      }
+
       // B2C (Protocols) Routing
       if (config && hoursSinceJoin > (config.d3 * multiplier) && !lead.metadata?.growth?.executedActions?.['SEND_WAITLIST_ACTIVATION_D3']) {
         actions.push('SEND_WAITLIST_ACTIVATION_D3');

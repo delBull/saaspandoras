@@ -505,7 +505,7 @@ export default function GrowthOSSubTab() {
   const [isTogglingCourse, setIsTogglingCourse] = useState<string | null>(null);
 
   // Section Navigation
-  const [activeSection, setActiveSection] = useState<'overview' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence' | 'developers'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'crm' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence' | 'developers'>('overview');
 
   // States for testing live data
   const [isTestingData, setIsTestingData] = useState(false);
@@ -1122,6 +1122,7 @@ export default function GrowthOSSubTab() {
         <div className="flex bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800/50 w-full overflow-x-auto no-scrollbar">
           {[
             { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+            { id: 'crm', label: 'CRM & Leads', icon: <Users className="w-4 h-4 text-blue-400" /> },
             { id: 'monetization', label: 'Strategy', icon: <Coins className="w-4 h-4" /> },
             { id: 'roadmap', label: 'Roadmap', icon: <BookOpen className="w-4 h-4 text-purple-400" /> },
             { id: 'intelligence', label: 'Governance IQ', icon: <Sparkles className="w-4 h-4 text-blue-400" /> },
@@ -1542,9 +1543,13 @@ export default function GrowthOSSubTab() {
             </div>
           )}
         </div>
+          </div>
+        )}
 
-        {/* Lead List Table (New Section) */}
-        <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        {activeSection === 'crm' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* Lead List Table (New Section) */}
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
           <div className="p-8 border-b border-zinc-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div className="flex-1">
               <h3 className="text-xl font-black text-white flex items-center gap-3">
