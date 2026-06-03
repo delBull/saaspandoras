@@ -38,6 +38,8 @@ interface EditProjectModalProps {
 
 export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAddress }: EditProjectModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [botTokenInput, setBotTokenInput] = useState('');
+  const [isRegisteringBot, setIsRegisteringBot] = useState(false);
 
   const methods = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema as any),
@@ -162,6 +164,30 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
     }
   };
 
+  const handleRegisterBot = async () => {
+    if (!project || !botTokenInput) return;
+    setIsRegisteringBot(true);
+    try {
+      const response = await fetch(`/api/v1/projects/${project.id}/bot/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ botToken: botTokenInput })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        toast.success('Bot vinculado exitosamente y Webhook registrado');
+        setBotTokenInput('');
+        onSuccess();
+      } else {
+        toast.error(data.message || 'Error al vincular el bot');
+      }
+    } catch (err) {
+      toast.error('Error de conexión al registrar el bot');
+    } finally {
+      setIsRegisteringBot(false);
+    }
+  };
+
   if (!project) return null;
 
   return (
@@ -179,11 +205,12 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="identity" className="w-full">
-            <TabsList className="grid grid-cols-4 bg-zinc-900 border border-zinc-800 p-1 mb-6">
+            <TabsList className="grid grid-cols-5 bg-zinc-900 border border-zinc-800 p-1 mb-6">
               <TabsTrigger value="identity" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Identidad</TabsTrigger>
               <TabsTrigger value="visuals" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Visuales</TabsTrigger>
               <TabsTrigger value="community" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Comunidad</TabsTrigger>
               <TabsTrigger value="mechanics" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Mecánicas</TabsTrigger>
+              <TabsTrigger value="bots" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">IA / Bots</TabsTrigger>
             </TabsList>
 
             {/* TAB: IDENTITY */}
@@ -487,6 +514,49 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
                       {...register('tokenPriceUsd', { valueAsNumber: true })} 
                       className="bg-zinc-900 border-zinc-800" 
                     />
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* TAB: BOTS */}
+            <TabsContent value="bots" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
+                <h4 className="text-sm font-bold text-emerald-400 mb-4 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" /> Configuración de Asistente IA
+                </h4>
+                <p className="text-sm text-zinc-400 mb-6">
+                  Activa el bot de soporte en Telegram para tu protocolo. Nuestro Growth OS Engine manejará la inteligencia artificial y las respuestas automáticamente.
+                </p>
+
+                <div className="space-y-4">
+                  <Label className="flex items-center gap-2 font-bold text-zinc-300">
+                    Token del Bot (API Token)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="password"
+                      value={botTokenInput}
+                      onChange={(e) => setBotTokenInput(e.target.value)}
+                      className="bg-zinc-950 border-zinc-800 focus:ring-emerald-500 flex-1" 
+                      placeholder="Ej: 8639272150:AAEVRsfHMP-9EzWRRvkZFR..."
+                    />
+                    <Button 
+                      type="button"
+                      onClick={handleRegisterBot}
+                      disabled={isRegisteringBot || !botTokenInput}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
+                    >
+                      {isRegisteringBot ? <Loader2 className="w-4 h-4 animate-spin" /> : "Vincular"}
+                    </Button>
+                  </div>
+                  <div className="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50 mt-4 text-xs text-zinc-400 leading-relaxed">
+                    <strong className="text-zinc-300 block mb-2">Instrucciones rápidas:</strong>
+                    <ol className="list-decimal pl-4 space-y-1">
+                      <li>Abre Telegram y busca a <a href="https://t.me/botfather" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">@BotFather</a>.</li>
+                      <li>Envía el comando <code className="text-lime-400">/newbot</code> y sigue los pasos para crear tu bot.</li>
+                      <li>Copia el "HTTP API Token" que te dará al finalizar y pégalo aquí arriba.</li>
+                    </ol>
                   </div>
                 </div>
               </div>

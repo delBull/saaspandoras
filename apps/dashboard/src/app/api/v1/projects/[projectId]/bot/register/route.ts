@@ -35,7 +35,19 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
       }, { status: 400 });
     }
 
-    // 2. Save the token into the database (w2eConfig.botConfig)
+    // 1.5. Call Telegram getMe to get the bot username
+    let botUsername = null;
+    try {
+      const meRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+      const meData = await meRes.json();
+      if (meData.ok && meData.result?.username) {
+        botUsername = meData.result.username;
+      }
+    } catch (e) {
+      console.warn("[Telegram Registration] Failed to fetch bot username:", e);
+    }
+
+    // 2. Save the token and username into the database (w2eConfig)
     const projectRecord = await db.query.projects.findFirst({
       where: eq(projects.slug, projectId)
     });
@@ -45,9 +57,11 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
       
       const newConfig = {
         ...config,
+        aiBotUrl: botUsername ? `https://t.me/${botUsername}` : config.aiBotUrl, // Expose aiBotUrl directly in w2eConfig for TMA to read
         botConfig: {
           ...config.botConfig,
           telegramToken: botToken,
+          telegramUsername: botUsername,
           enabled: true
         }
       };
@@ -60,7 +74,8 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
     return NextResponse.json({ 
       success: true, 
       message: "Webhook registered successfully",
-      webhookUrl
+      webhookUrl,
+      botUsername
     });
 
   } catch (error: any) {
