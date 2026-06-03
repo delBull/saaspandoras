@@ -13,7 +13,7 @@ import {
   marketingIdentities
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
-import { eq, sql, and, desc } from "drizzle-orm";
+import { eq, sql, and, desc, inArray } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                     .from(purchasesSchema)
                     .where(and(
                         eq(purchasesSchema.projectId, project.id),
-                        eq(purchasesSchema.status, 'completed')
+                        inArray(purchasesSchema.status, ['completed', 'on_hold', 'processing'])
                     ));
                 const purchaseBasedHolders = Number(completedPurchases[0]?.count || 0);
                 if (purchaseBasedHolders > 0) {
