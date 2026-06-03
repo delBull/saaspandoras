@@ -195,12 +195,12 @@ export function sanitizeUrl(url: any): string | null {
   // Handle IPFS: ipfs://CID or ipfs:CID or just a raw CID (starting with Qm or ba)
   if (cleanUrl.startsWith('ipfs:') || cleanUrl.startsWith('ipfs://')) {
     const path = cleanUrl.replace(/^ipfs:(\/*)/, '');
-    return `https://ipfs.io/ipfs/${path}`;
+    return `https://ipfs.thirdwebcdn.com/ipfs/${path}`;
   }
   
   // Detect raw CID (Common in Web3/Thirdweb)
   if (cleanUrl.startsWith('Qm') && cleanUrl.length >= 46) {
-    return `https://ipfs.io/ipfs/${cleanUrl}`;
+    return `https://ipfs.thirdwebcdn.com/ipfs/${cleanUrl}`;
   }
 
   // Handle standard absolute URLs

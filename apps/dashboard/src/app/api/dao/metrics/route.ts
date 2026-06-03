@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoMembers, projects } from '@/db/schema';
-import { eq, sql, count, sum, desc, and } from 'drizzle-orm';
+import { eq, sql, count, sum, desc, and, inArray } from 'drizzle-orm';
 import { defineChain, getContract, readContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { getWalletBalance } from "thirdweb/wallets";
@@ -197,7 +197,7 @@ export async function GET(req: Request) {
                     uniqueWallets: sql<number>`count(distinct ${purchases.userId})`
                 })
                     .from(purchases)
-                    .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')));
+                    .where(and(eq(purchases.projectId, projectId), inArray(purchases.status, ['completed', 'on_hold', 'processing'])));
 
                 if (purchaseStats[0] && Number(purchaseStats[0].uniqueWallets) > 0) {
                     totalMembersNum = Number(purchaseStats[0].uniqueWallets);
@@ -240,7 +240,7 @@ export async function GET(req: Request) {
                     votingPower: count(purchases.id)
                 })
                     .from(purchases)
-                    .where(and(eq(purchases.projectId, projectId), eq(purchases.status, 'completed')))
+                    .where(and(eq(purchases.projectId, projectId), inArray(purchases.status, ['completed', 'on_hold', 'processing'])))
                     .groupBy(purchases.userId)
                     .orderBy(desc(count(purchases.id)))
                     .limit(10);

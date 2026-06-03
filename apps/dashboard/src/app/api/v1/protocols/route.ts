@@ -28,6 +28,10 @@ export async function GET() {
                 licenseContractAddress: projects.licenseContractAddress,
                 contractAddress: projects.contractAddress,
                 chainId: projects.chainId,
+                raisedAmount: projects.raisedAmount,
+                targetAmount: projects.targetAmount,
+                whitepaperUrl: projects.whitepaperUrl,
+                imageUrl: projects.imageUrl,
                 artifacts: projects.artifacts,
                 w2eConfig: projects.w2eConfig,
                 featured: projects.featured,
@@ -49,8 +53,12 @@ export async function GET() {
             .orderBy(desc(projects.updatedAt));
 
         const resolveIpfs = (url: any) => {
-            if (typeof url === 'string' && url.startsWith('ipfs://')) {
-                return url.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+            if (typeof url !== 'string') return url;
+            if (url.startsWith('ipfs://')) {
+                return url.replace('ipfs://', 'https://ipfs.thirdwebcdn.com/ipfs/');
+            }
+            if (/^Qm[1-9A-HJ-NP-Za-km-z]{44,}$/.test(url) || /^b[A-Za-z2-7]{58,}$/.test(url)) {
+                return `https://ipfs.thirdwebcdn.com/ipfs/${url}`;
             }
             return url;
         };
@@ -65,6 +73,10 @@ export async function GET() {
 
             return {
                 id: String(p.id),
+                raisedAmount: p.raisedAmount || "0.00",
+                targetAmount: p.targetAmount || "0.00",
+                whitepaperUrl: p.whitepaperUrl || null,
+                imageUrl: p.imageUrl || null,
                 slug: p.slug,
                 name: p.title,
                 description: p.description,

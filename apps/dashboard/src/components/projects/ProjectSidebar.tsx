@@ -25,6 +25,7 @@ import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
 import { usePathname, useRouter } from 'next/navigation';
 import type { ProjectData } from "@/app/()/projects/types";
+import { sanitizeUrl } from "@/lib/project-utils";
 import AccessCardPurchaseModal from "../modals/AccessCardPurchaseModal";
 import ArtifactPurchaseModal from "../modals/ArtifactPurchaseModal"; // Unified Modal
 import PerksModal from "../modals/PerksModal";
@@ -186,18 +187,6 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
     ? JSON.parse(project.w2eConfig)
     : (project.w2eConfig || {});
   
-  const sanitizeUrl = (url: any) => {
-    if (!url || typeof url !== 'string') return null;
-    const cleanUrl = url.trim();
-    if (['image', 'logo', 'icon', 'undefined', 'null', 'cover'].includes(cleanUrl.toLowerCase())) return null;
-    if (cleanUrl.startsWith('http') || cleanUrl.startsWith('/') || cleanUrl.startsWith('data:')) return cleanUrl;
-    if (cleanUrl.startsWith('ipfs:')) {
-      const path = cleanUrl.replace(/^ipfs:(\/*)/, '');
-      return `https://ipfs.io/ipfs/${path}`;
-    }
-    return `/${cleanUrl}`;
-  };
-
   const accessCardImage = sanitizeUrl(config.accessCardImage || project.image_url);
 
   const displayTitle = dynamicName ? String(dynamicName) : String(project.title);
