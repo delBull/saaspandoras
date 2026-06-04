@@ -5,6 +5,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Configure Custom Provider (Ollama / Local LLM) if provided
+const isOllamaEnabled = !!process.env.OLLAMA_API_KEY || !!process.env.OLLAMA_BASE_URL;
+const customLLM = isOllamaEnabled ? new OpenAI({
+  apiKey: process.env.OLLAMA_API_KEY || "dummy-key-for-local",
+  baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1", // Default Ollama OpenAI-compatible endpoint
+}) : null;
+
 // Create a singleton Redis client safely
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
 
@@ -62,8 +69,12 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
   ];
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    // Use the custom LLM if configured, otherwise fallback to standard OpenAI
+    const aiClient = customLLM ? customLLM : openai;
+    const aiModel = customLLM ? (process.env.OLLAMA_MODEL || 'llama3') : 'gpt-4o-mini';
+
+    const response = await aiClient.chat.completions.create({
+      model: aiModel,
       messages: messages,
       temperature: 0.3, // Low temperature for deterministic, factual responses
       max_tokens: 300,
