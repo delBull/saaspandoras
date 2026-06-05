@@ -113,7 +113,7 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
         <div className="relative">
           <div className="relative inline-block">
             <Image
-              src={profile?.image ?? '/images/avatars/onlybox2.png'}
+              src={profile?.image || '/images/avatars/onlybox2.png'}
               alt="Profile Avatar"
               width={64}
               height={64}
@@ -232,7 +232,7 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
       {/* Avatar Display */}
       <div className="relative mb-5">
         <Image
-          src={profile?.image ?? '/images/avatars/onlybox2.png'}
+          src={profile?.image || '/images/avatars/onlybox2.png'}
           alt="Profile"
           width={64}
           height={64}

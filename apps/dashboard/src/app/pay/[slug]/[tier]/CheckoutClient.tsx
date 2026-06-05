@@ -65,6 +65,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const [showGuide, setShowGuide] = useState(false);
     const { connect } = useConnectModal();
     const [mxnRate, setMxnRate] = useState<number | null>(null);
+    const [buyerEmail, setBuyerEmail] = useState('');
+    const [newsletterConsent, setNewsletterConsent] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
@@ -81,7 +83,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
 
     // Legal Stack State
     const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
-    const [activeLegalDoc, setActiveLegalDoc] = useState<'agreement' | 'risk-disclosure' | null>(null);
+    const [activeLegalDoc, setActiveLegalDoc] = useState<'agreement' | 'risk-disclosure' | 'phase-dynamics' | null>(null);
     const [legalChecks, setLegalChecks] = useState({
         agreement: false,
         nature: false,
@@ -89,7 +91,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     });
     const allLegalChecked = legalChecks.agreement && legalChecks.nature && legalChecks.risk;
 
-    const openLegalDoc = (type: 'agreement' | 'risk-disclosure') => {
+    const openLegalDoc = (type: 'agreement' | 'risk-disclosure' | 'phase-dynamics') => {
         setActiveLegalDoc(type);
     };
 
@@ -394,6 +396,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     wallet: account?.address,
                     projectId: project.id,
                     artifactsAcquired: safeAmount,
+                    buyerEmail: buyerEmail || undefined,
+                    newsletterConsent
                 })
             }).catch(() => {});
         } catch (e) {}
@@ -773,7 +777,26 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                         <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, risk: !prev.risk}))}>
                                                                             {legalChecks.risk ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
                                                                         </div>
-                                                                         <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <button type="button" onClick={() => openLegalDoc('risk-disclosure')} className="text-emerald-400 hover:underline">Aviso Integral de Riesgos</button>.</p>
+                                                                         <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">He leído y acepto el <button type="button" onClick={() => openLegalDoc('risk-disclosure')} className="text-emerald-400 hover:underline">Aviso Integral de Riesgos</button> y las <button type="button" onClick={() => openLegalDoc('phase-dynamics')} className="text-emerald-400 hover:underline">Cláusulas de Fases de proyecto</button>.</p>
+                                                                    </label>
+                                                                </div>
+
+                                                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
+                                                                    <div className="flex flex-col gap-1.5">
+                                                                        <label className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold ml-1">Correo Electrónico (Opcional)</label>
+                                                                        <input
+                                                                            type="email"
+                                                                            value={buyerEmail}
+                                                                            onChange={(e) => setBuyerEmail(e.target.value)}
+                                                                            placeholder="tu@correo.com"
+                                                                            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+                                                                        />
+                                                                    </div>
+                                                                    <label className="flex items-start gap-3 cursor-pointer group px-1">
+                                                                        <div className="mt-0.5" onClick={() => setNewsletterConsent(prev => !prev)}>
+                                                                            {newsletterConsent ? <CheckSquare className="w-4 h-4 text-emerald-500" /> : <Square className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
+                                                                        </div>
+                                                                        <p className="text-[9px] text-zinc-500 leading-relaxed">Deseo recibir actualizaciones de este proyecto y mi comprobante por correo.</p>
                                                                     </label>
                                                                 </div>
 

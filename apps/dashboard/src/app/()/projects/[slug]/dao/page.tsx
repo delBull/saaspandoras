@@ -37,25 +37,7 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
     const [activeView, setActiveView] = useState('overview');
     const account = useActiveAccount();
     const connectionStatus = useActiveWalletConnectionStatus(); // "connected" | "connecting" | "disconnected"
-    const [isOwner, setIsOwner] = useState(false);
-
-    // Initial check and effect for updates
-    useEffect(() => {
-        if (connectionStatus === 'connecting') return; // Wait
-
-        if (project?.applicant_wallet_address && account?.address) {
-            const isMatch = account.address.toLowerCase() === project.applicant_wallet_address.toLowerCase().trim();
-            setIsOwner(isMatch);
-        } else {
-            setIsOwner(false);
-        }
-    }, [account?.address, project?.applicant_wallet_address, connectionStatus]);
-
-    console.log("DEBUG: DAO Ownership Check", {
-        account: account?.address,
-        stored: project?.applicant_wallet_address,
-        match: isOwner
-    });
+    const isOwner = false; // Owner logic moved to Founder Dashboard
 
     // -- Voting Power Fetching (Artifacts / Licenses) --
     // We use the License Contract for voting power, not the Utility Token.

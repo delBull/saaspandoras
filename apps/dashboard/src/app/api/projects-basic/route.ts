@@ -65,6 +65,7 @@ export async function GET() {
           "slug",
           "created_at" as "createdAt",
           "cover_photo_url" as "coverPhotoUrl",
+          "image_url" as "imageUrl",
           "target_amount" as "targetAmount",
           "raised_amount" as "raisedAmount",
           "business_category" as "businessCategory",
@@ -82,12 +83,12 @@ export async function GET() {
         ORDER BY "created_at" DESC
       `);
 
-      const projects = realProjects as unknown as ProjectQueryResult[];
+      const projects = realProjects as unknown as (ProjectQueryResult & { imageUrl?: string | null })[];
       console.log(`✅ Basic API: Found ${projects.length} real projects in database`);
       console.log('🔍 Basic API: Real project IDs and titles:', projects.map(p => ({ id: p.id, title: p.title, slug: p.slug })));
 
       if (projects.length > 0) {
-        const formattedProjects: FormattedProject[] = projects.map((project: ProjectQueryResult): FormattedProject => ({
+        const formattedProjects: FormattedProject[] = projects.map((project): FormattedProject => ({
           id: Number(project.id),
           title: project.title,
           description: project.description,
@@ -95,7 +96,7 @@ export async function GET() {
           status: project.status,
           businessCategory: project.businessCategory ?? 'other',
           createdAt: project.createdAt,
-          coverPhotoUrl: project.coverPhotoUrl ?? '/images/default-project.jpg',
+          coverPhotoUrl: project.coverPhotoUrl || project.imageUrl || '/images/default-project.jpg',
           targetAmount: project.targetAmount ? String(project.targetAmount) : null,
           raisedAmount: project.raisedAmount ? String(project.raisedAmount) : '0',
           contractAddress: project.contractAddress ? String(project.contractAddress) : undefined,

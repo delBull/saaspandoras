@@ -16,7 +16,9 @@ import {
     PlusIcon,
     FireIcon,
     InformationCircleIcon,
-    CalendarDaysIcon
+    CalendarDaysIcon,
+    TrophyIcon,
+    Cog8ToothIcon
 } from '@heroicons/react/24/outline';
 import { GovernanceCalendar } from './GovernanceCalendar';
 import { SimpleTooltip } from '../ui/simple-tooltip';
@@ -26,6 +28,7 @@ import { useSendTransaction, TransactionButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { W2EUtilityABI } from "@/lib/abi/W2EUtility";
 import { encodeFunctionData } from "viem";
+import { toast } from 'sonner';
 
 
 interface DaoWizardProps {
@@ -35,7 +38,7 @@ interface DaoWizardProps {
 }
 
 export default function DaoWizard({ project, governorAddress, onClose }: DaoWizardProps) {
-    const [activeMode, setActiveMode] = useState<'list' | 'proposal' | 'rules' | 'mechanics' | 'emergency' | 'calendar'>('list');
+    const [activeMode, setActiveMode] = useState<'list' | 'proposal' | 'rules' | 'mechanics' | 'emergency' | 'calendar' | 'missions' | 'settings'>('list');
     const [isLoading, setIsLoading] = useState(false);
 
     // Form States
@@ -201,6 +204,26 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
                     <div className="flex items-center justify-center gap-2">
                         <CalendarDaysIcon className="w-4 h-4" />
                         Calendario
+                    </div>
+                </button>
+                <button
+                    onClick={() => setActiveMode('missions')}
+                    className={`flex-1 py-4 text-sm font-medium transition-colors border-b-2 ${activeMode === 'missions' ? 'border-orange-500 text-orange-400 bg-orange-500/5' : 'border-transparent text-gray-400 hover:text-white hover:bg-zinc-800'
+                        }`}
+                >
+                    <div className="flex items-center justify-center gap-2">
+                        <TrophyIcon className="w-4 h-4" />
+                        Misiones
+                    </div>
+                </button>
+                <button
+                    onClick={() => setActiveMode('settings')}
+                    className={`flex-1 py-4 text-sm font-medium transition-colors border-b-2 ${activeMode === 'settings' ? 'border-zinc-300 text-zinc-200 bg-zinc-500/5' : 'border-transparent text-gray-400 hover:text-white hover:bg-zinc-800'
+                        }`}
+                >
+                    <div className="flex items-center justify-center gap-2">
+                        <Cog8ToothIcon className="w-4 h-4" />
+                        Configuración
                     </div>
                 </button>
             </div>
@@ -531,6 +554,134 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
                                 <p className="text-xs text-center text-gray-500 mt-2">
                                     Esta acción solo se habilita si el protocolo detecta inactividad total superior al periodo de emergencia.
                                 </p>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeMode === 'missions' && (
+                        <motion.div
+                            key="missions"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-orange-900/20 border border-orange-900/50 p-4 rounded-lg flex gap-3 text-orange-300 text-sm">
+                                <TrophyIcon className="w-5 h-5 flex-shrink-0" />
+                                <p>
+                                    <strong>Gestor de Misiones:</strong> Crea, edita y administra las misiones disponibles para la comunidad (Gamificación & Incentivos).
+                                </p>
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                                <h4 className="text-white font-bold">Plantillas Rápidas</h4>
+                                <button className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+                                    <PlusIcon className="w-4 h-4" /> Nueva Actividad
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-orange-500/50 transition-colors cursor-pointer">
+                                    <h5 className="font-bold text-white mb-1">Misión Social</h5>
+                                    <p className="text-xs text-orange-400 font-mono">10 PBOX • Única</p>
+                                    <p className="text-xs text-zinc-500 mt-2">Seguimiento en redes, likes, RTs.</p>
+                                </div>
+                                <div className="p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-orange-500/50 transition-colors cursor-pointer">
+                                    <h5 className="font-bold text-white mb-1">Labor Semanal</h5>
+                                    <p className="text-xs text-orange-400 font-mono">50 PBOX • 7 Días</p>
+                                    <p className="text-xs text-zinc-500 mt-2">Creación de contenido o promoción.</p>
+                                </div>
+                                <div className="p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-orange-500/50 transition-colors cursor-pointer">
+                                    <h5 className="font-bold text-white mb-1">Staking</h5>
+                                    <p className="text-xs text-orange-400 font-mono">Variable • Dinámica</p>
+                                    <p className="text-xs text-zinc-500 mt-2">Bloqueo de liquidez a cambio de rendimientos.</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeMode === 'settings' && (
+                        <motion.div
+                            key="settings"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-6"
+                        >
+                            <div className="bg-zinc-800 p-6 rounded-lg border border-zinc-700">
+                                <h4 className="text-white font-bold mb-4 flex items-center gap-2">
+                                    <Cog8ToothIcon className="w-5 h-5 text-zinc-400" />
+                                    Configuración del DAO
+                                </h4>
+                                
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-zinc-900/50 p-4 rounded-lg">
+                                            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Nombre del Token de Gobernanza</p>
+                                            <p className="text-white font-mono text-lg">{project.w2eConfig?.utilityToken?.symbol || '--'}</p>
+                                        </div>
+                                        <div className="bg-zinc-900/50 p-4 rounded-lg">
+                                            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Timelock (Retraso)</p>
+                                            <p className="text-white font-mono text-lg">2 Días</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-zinc-700/50 pt-6 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-white font-bold">Incentivos & Gamificación</p>
+                                            <p className="text-xs text-zinc-400">Activa el sistema de logros para recompensar a tu comunidad por su participación.</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                toast.success("Sistema de Logros activado");
+                                            }}
+                                            className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm transition-colors font-bold border border-zinc-600"
+                                        >
+                                            Activar Sistema de Logros
+                                        </button>
+                                    </div>
+
+                                    <div className="border-t border-zinc-700/50 pt-6 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-white font-bold">Gestión de Tesorería</p>
+                                            <p className="text-xs text-zinc-400">Inicia propuestas para mover fondos de la tesorería o cambiar fees.</p>
+                                        </div>
+                                        <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors font-bold shadow-[0_0_15px_rgba(52,211,153,0.3)] border border-emerald-500/50">
+                                            Crear Propuesta de Fondos
+                                        </button>
+                                    </div>
+
+                                    <div className="border-t border-zinc-700/50 pt-6 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-white font-bold">Sincronización de Datos</p>
+                                            <p className="text-xs text-zinc-400">Recalcula miembros y poder de voto desde el historial de eventos. Útil para backfills.</p>
+                                        </div>
+                                        <button 
+                                            onClick={async () => {
+                                                setIsLoading(true);
+                                                try {
+                                                    const res = await fetch(`/api/v1/projects/${project.id}/admin/sync-dao`, {
+                                                        method: 'POST'
+                                                    });
+                                                    const data = await res.json();
+                                                    if (res.ok) {
+                                                        toast.success(data.message || "Miembros sincronizados correctamente");
+                                                    } else {
+                                                        toast.error(data.error || "Error al sincronizar miembros");
+                                                    }
+                                                } catch (e) {
+                                                    toast.error("Error de red");
+                                                } finally {
+                                                    setIsLoading(false);
+                                                }
+                                            }}
+                                            disabled={isLoading}
+                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm transition-colors font-bold shadow-[0_0_15px_rgba(59,130,246,0.3)] border border-blue-500/50"
+                                        >
+                                            {isLoading ? 'Sincronizando...' : 'Sincronizar Miembros Ahora'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
                     )}

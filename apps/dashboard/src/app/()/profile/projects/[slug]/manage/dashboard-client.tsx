@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import DaoWizard from '@/components/admin/DaoWizard';
+import { ManageActivities } from '@/components/dao/ManageActivities';
+import { LegalTab } from './tabs/LegalTab';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -33,7 +35,7 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal'>('overview');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -113,6 +115,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
                     { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                    { id: 'missions', label: 'Gamificación', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
+                    { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                 ].map((tab) => (
                     <button
@@ -152,6 +156,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         )}
                         {activeTab === 'treasury' && <TreasuryTab project={project} address={treasuryAddress} />}
                         {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
+                        {activeTab === 'missions' && <MissionsTab project={project} />}
+                        {activeTab === 'legal' && <LegalTab project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
                         {activeTab === 'purchases' && (
                             <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />
@@ -164,6 +170,22 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
 }
 
 // Sub-components
+
+function MissionsTab({ project }: { project: any }) {
+    return (
+        <div className="space-y-6">
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+                <h3 className="text-xl font-bold text-white mb-2">Gestor de Gamificación y Staking</h3>
+                <p className="text-zinc-400 text-sm mb-6">
+                    Crea y administra las misiones sociales o labores de staking para incentivar a tu comunidad. 
+                    Las misiones de tipo "Labor (Staking)" validan automáticamente la participación continua.
+                </p>
+                <ManageActivities projectId={project.id ? Number(project.id) : 0} />
+            </div>
+        </div>
+    );
+}
+
 function OverviewTab({ project, config, onTogglePhase, loadingPhase }: {
     project: any,
     config: any,
@@ -539,6 +561,58 @@ function SettingsTab({ project }: { project: any }) {
                       <li>Envía el comando <code className="text-lime-400">/newbot</code> y sigue los pasos para crear tu bot.</li>
                       <li>Copia el "HTTP API Token" que te dará al finalizar y pégalo aquí arriba.</li>
                     </ol>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Gamificación DAO */}
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+                    <h3 className="text-xl font-bold text-white mb-2">Incentivos & Gamificación</h3>
+                    <p className="text-sm text-zinc-400 mb-4">
+                        Activa el sistema de logros base para recompensar a tu comunidad por su participación inicial.
+                    </p>
+                    <button
+                        onClick={() => {
+                            fetch('/api/gamification/track-event', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    eventType: 'dao_activated',
+                                    metadata: { project: project?.slug || project?.id }
+                                })
+                            })
+                                .then(() => toast.success("¡Sistema de Gamificación Activado!", { description: "Has desbloqueado el logro 'Pionero DAO'." }))
+                                .catch(e => console.error(e));
+                        }}
+                        className="w-full py-2 bg-purple-900/20 text-purple-400 border border-purple-500/30 hover:bg-purple-900/30 rounded-lg text-sm transition-colors font-bold"
+                    >
+                        Activar Sistema de Logros
+                    </button>
+                </div>
+
+                {/* Sincronización de Datos */}
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+                    <h3 className="text-xl font-bold text-white mb-2">Sincronización de Datos</h3>
+                    <p className="text-sm text-zinc-400 mb-4">
+                        Recalcula miembros y poder de voto desde el historial de eventos. Útil para backfills.
+                    </p>
+                    <button
+                        onClick={async () => {
+                            const res = await fetch('/api/admin/dao/reconcile', { 
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ projectId: project.id })
+                            });
+                            if (res.ok) {
+                                toast.success("DAO Sincronizado correctamente", { description: "Los miembros y el poder de voto han sido actualizados." });
+                            } else {
+                                toast.error("Error al sincronizar DAO");
+                            }
+                        }}
+                        className="w-full py-2 bg-blue-900/20 text-blue-400 border border-blue-500/30 hover:bg-blue-900/30 rounded-lg text-sm transition-colors font-bold"
+                    >
+                        Sincronizar Miembros Ahora
+                    </button>
                 </div>
             </div>
         </div>

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoMembers, purchases } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
+import { sendPurchaseEmail } from '@/lib/email/purchase-mailer';
+import { projects } from '@/db/schema';
 
 // Public endpoint called after a confirmed on-chain artifact purchase
 // to register/update the buyer as a unique holder in daoMembers
@@ -18,6 +20,8 @@ export async function POST(req: Request) {
             phaseIndex,
             txHash,
             contractAddress,
+            buyerEmail,
+            newsletterConsent
         } = body;
 
         if (!wallet || !projectId) {
@@ -31,7 +35,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid projectId' }, { status: 400 });
         }
 
-        // 1. Upsert: insert new holder or increment their artifact count
+        // 1. Check if returning buyer
+        const existingHolder = await db.query.daoMembers.findFirst({
+            where: and(eq(daoMembers.projectId, projectIdNum), eq(daoMembers.wallet, walletLower))
+        });
+        const isReturning = !!existingHolder;
+
+        // 2. Upsert: insert new holder or increment their artifact count
         await db.insert(daoMembers)
             .values({
                 projectId: projectIdNum,
@@ -81,6 +91,31 @@ export async function POST(req: Request) {
             } catch (purchaseErr) {
                 // Non-critical — holder registration succeeded, purchase record is bonus
                 console.warn('[register-holder] Purchase record insert skipped (likely duplicate):', (purchaseErr as Error).message);
+            }
+        }
+
+        // 3. Send Transactonal Welcome / Addon Email
+        if (buyerEmail && newsletterConsent) {
+            try {
+                const project = await db.query.projects.findFirst({
+                    where: eq(projects.id, projectIdNum)
+                });
+                if (project) {
+                    const originUrl = req.headers.get('origin') || 'https://dash.pandoras.finance';
+                    const portalUrl = `${originUrl}/portal?membership=active`;
+
+                    await sendPurchaseEmail(buyerEmail, {
+                        projectName: project.title,
+                        projectSlug: project.slug || 'snarai',
+                        amount: artifactsAcquired,
+                        isReturning,
+                        legalConfig: project.legalConfig || {},
+                        portalUrl
+                    });
+                    console.log(`[register-holder] Email sent successfully to ${buyerEmail}`);
+                }
+            } catch (emailErr) {
+                console.error('[register-holder] Failed to send transactional email:', emailErr);
             }
         }
 

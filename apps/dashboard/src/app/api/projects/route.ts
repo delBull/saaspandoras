@@ -95,10 +95,15 @@ export async function GET() {
         const isOwner = userWallet && p.applicantWalletAddress?.toLowerCase() === userWallet;
         const canSeeDetails = userIsAdmin || isOwner;
 
-        if (canSeeDetails) return p;
+        const baseProject = {
+          ...p,
+          coverPhotoUrl: p.coverPhotoUrl || p.imageUrl || '/images/default-project.jpg'
+        };
+
+        if (canSeeDetails) return baseProject;
 
         return {
-          ...p,
+          ...baseProject,
           applicantEmail: null,
           applicantPhone: null,
           applicantName: p.applicantName ? `${p.applicantName.split(' ')[0]}...` : null,

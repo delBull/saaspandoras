@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { purchases, projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { getAuth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
 export async function POST(
     req: Request,
@@ -11,10 +13,12 @@ export async function POST(
         const { projectId } = await params;
         const projectIdNum = parseInt(projectId);
         const { purchaseId, txHash } = await req.json();
-        const walletAddress = req.headers.get('x-wallet-address');
+
+        const { session } = await getAuth(await headers());
+        const walletAddress = session?.address;
 
         if (!walletAddress || !purchaseId || !txHash) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+            return NextResponse.json({ error: 'Unauthorized or missing fields' }, { status: 400 });
         }
 
         // 1. Verify Project Ownership

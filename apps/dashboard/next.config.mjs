@@ -14,6 +14,14 @@ const nextConfig = {
     // Enable webpack build worker to prevent main thread memory leaks
     webpackBuildWorker: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
   // Ensure we can bundle Node.js built-ins correctly if they are referenced
   webpack: (config, { isServer }) => {
     if (!isServer) {

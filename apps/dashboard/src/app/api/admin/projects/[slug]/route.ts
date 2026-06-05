@@ -265,6 +265,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (body.adquireStrategy !== undefined) updates.adquireStrategy = body.adquireStrategy;
       if (body.legalStatus !== undefined) updates.legalStatus = body.legalStatus;
       if (body.w2eConfig !== undefined) updates.w2eConfig = body.w2eConfig;
+      if (body.legalConfig !== undefined) updates.legalConfig = body.legalConfig;
       if (body.protocolVersion !== undefined) updates.protocolVersion = Number(body.protocolVersion);
 
       // Optional: generate new slug if title changed

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { X, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface LegalDocModalProps {
-  type: 'agreement' | 'risk-disclosure';
+  type: 'agreement' | 'risk-disclosure' | 'phase-dynamics';
   projectName: string;
   onClose: () => void;
 }
@@ -35,10 +35,10 @@ export function LegalDocModal({ type, projectName, onClose }: LegalDocModalProps
         <div className="flex items-center gap-3">
           {isAgreement
             ? <ShieldCheck className="text-emerald-400" size={18} />
-            : <ShieldAlert className="text-red-400" size={18} />
+            : type === 'phase-dynamics' ? <ShieldCheck className="text-narai-gold" size={18} /> : <ShieldAlert className="text-red-400" size={18} />
           }
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
-            {isAgreement ? 'Acuerdo Marco de Participación Digital' : 'Aviso Integral de Riesgos'}
+            {isAgreement ? 'Acuerdo Marco de Participación Digital' : type === 'phase-dynamics' ? 'Anexo Comercial y Operativo' : 'Aviso Integral de Riesgos'}
           </span>
         </div>
         <button
@@ -59,7 +59,7 @@ export function LegalDocModal({ type, projectName, onClose }: LegalDocModalProps
             <h2 className="text-2xl lg:text-4xl font-black italic tracking-tighter leading-tight text-white">
               {isAgreement
                 ? `Acuerdo Marco de Participación Digital y Uso del Ecosistema ${displayName}`
-                : 'Aviso Integral de Riesgos y Declaraciones del Participante'
+                : type === 'phase-dynamics' ? `Anexo Operativo y Comercial: Dinámicas de Fases y Cláusulas de Salida` : 'Aviso Integral de Riesgos y Declaraciones del Participante'
               }
             </h2>
             <div className="flex justify-center gap-8 text-[10px] font-bold uppercase tracking-widest text-white/40">
@@ -154,16 +154,87 @@ export function LegalDocModal({ type, projectName, onClose }: LegalDocModalProps
             </>
           )}
 
+          {/* ── PHASE DYNAMICS CONTENT ── */}
+          {type === 'phase-dynamics' && (
+            <>
+              <p className="font-bold text-white">
+                El presente documento es parte integrante de los acuerdos legales de {displayName}. Establece las reglas operativas para la emisión de participaciones, fijación de precios, y lineamientos para la liquidación o transmisión de derechos en el mercado secundario.
+              </p>
+
+              {(projectName.toLowerCase() === 'snarai' || projectName.toLowerCase() === "s'narai") ? (
+                <>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-narai-gold">1. ESTRUCTURA DE LEVANTAMIENTO DE CAPITAL Y FASES DE EMISIÓN</h3>
+                    <p>El proyecto {displayName} ejecuta un modelo de levantamiento escalonado diseñado para ir en paralelo a la vida de la obra civil y construcción. Esto beneficia directamente a los inversionistas tempranos al reducir los costos de entrada y capitalizar la adquisición anticipada de materiales, mitigando así el riesgo conforme avanza el proyecto.</p>
+                    
+                    <ul className="list-disc pl-6 space-y-4 mt-4">
+                      <li>
+                        <strong className="text-white">Fase 1 (Seed / Terreno y Permisos):</strong><br/>
+                        Precio por Título: $50 USD. Meta de recaudación: $0 a $10,000,000 MXN.<br/>
+                        <em>Propósito:</em> Asegurar estratégicamente el terreno, licencias, permisos y capital inicial para el arranque de la obra. Es la fase de mayor apreciación latente.
+                      </li>
+                      <li>
+                        <strong className="text-white">Fase 2 (Obra Negra y Materiales):</strong><br/>
+                        Precio por Título: $75 USD. Meta de recaudación: $30,000,000 a $50,000,000 MXN.<br/>
+                        <em>Propósito:</em> Aprovechar la liquidez temprana inyectada para congelar y pre-comprar materiales clave de construcción (ej. acero y cemento) hasta un 30% más baratos, asegurando así los márgenes del proyecto en etapas formativas.
+                      </li>
+                      <li>
+                        <strong className="text-white">Fase 3 (Acabados y Preventa Comercial):</strong><br/>
+                        Precio por Título: $100 USD. Meta de recaudación: $50,000,000 a $100,000,000 MXN.<br/>
+                        <em>Propósito:</em> La obra ya presenta avances tangibles y el riesgo operativo se ha reducido en un 50% o más. Se habilita el inicio de la preventa comercial paralela al mercado minorista (clientes finales).
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-narai-gold">2. CLÁUSULA DE SALIDA Y MERCADO SECUNDARIO (ÁGORA MARKET)</h3>
+                    <p>Con el fin de asegurar la viabilidad del proyecto, existen restricciones temporales para la liquidación o transmisión anticipada de los títulos:</p>
+                    <ul className="list-disc pl-6 space-y-2">
+                      <li><strong>Periodo de Bloqueo:</strong> Las transferencias, ventas o cesiones a terceros están <strong>estrictamente bloqueadas</strong> durante toda la Fase 1 y el inicio de la Fase 2.</li>
+                      <li><strong>Apertura del Mercado:</strong> La ventana de salida anticipada (transferencia) se habilitará exclusivamente a partir de la <strong>mitad de la Fase 2</strong>.</li>
+                      <li><strong>Infraestructura Oficial:</strong> Toda transacción, cuando se habilite, deberá ocurrir <strong>exclusivamente</strong> a través del Ágora Market integrado en el Portal de S'Narai. No se reconocerán ventas realizadas fuera de esta infraestructura.</li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-narai-gold">3. REGLAS DE FIJACIÓN DE PRECIO Y PROTECCIÓN (OTC)</h3>
+                    <p>Para proteger al ecosistema, la comunidad de inversionistas y evitar manipulaciones de mercado (dumping), rigen las siguientes condiciones durante las operaciones en Ágora Market:</p>
+                    <ul className="list-disc pl-6 space-y-2">
+                      <li><strong>Límite Superior (Cap):</strong> El Participante no podrá listar sus títulos para venta a un precio que exceda el límite máximo estipulado dinámicamente por la Estructura en ese momento.</li>
+                      <li><strong>Límite Inferior y Derecho del Tanto (OTC a Pandoras):</strong> El Participante tiene derecho a ofertar sus títulos a un precio menor al valor de mercado actual. Sin embargo, en cualquier oferta con descuento (menor al precio vigente de la fase actual), el protocolo <strong>Pandoras Growth OS</strong> y/o sus entidades fiduciarias tendrán <strong>Prioridad y Derecho del Tanto</strong> para adquirir dichos títulos a través de una transacción OTC (Over The Counter) automática, antes de que lleguen al mercado público.</li>
+                      <li><strong>Penalizaciones de Salida Anticipada:</strong> Salir de forma prematura durante las fases de construcción podría implicar tarifas de re-estructuración o <em>fees</em> operacionales del sistema.</li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-narai-gold">4. TRANSMISIÓN DE DERECHOS</h3>
+                    <p>Al concretarse exitosamente la venta o transmisión de un título en el mercado secundario autorizado (Ágora Market u OTC de Pandoras), el Participante enajenante cede de forma <strong>absoluta, automática e irrevocable</strong> la totalidad de los derechos vinculados a dichos títulos. Esto incluye:</p>
+                    <ul className="list-disc pl-6 space-y-2">
+                      <li>Derechos de Gobernanza (votos en DAO).</li>
+                      <li>Rendimientos pasados no reclamados o acumulados.</li>
+                      <li>Utilidades, proyecciones y beneficios de liquidez futuros originados por el activo subyacente.</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-10 space-y-6">
+                  <h3 className="text-xl font-bold text-white">Dinámicas por Definirse</h3>
+                  <p className="text-zinc-500 max-w-md mx-auto">El desarrollador u operador responsable de <strong>{displayName}</strong> aún no ha publicado el anexo de comercialización, fases y mercado secundario para este protocolo.</p>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Footer */}
           <div className="border-t border-white/10 pt-8 flex items-center gap-4">
             {isAgreement
               ? <ShieldCheck className="text-emerald-400 shrink-0" size={20} />
-              : <ShieldAlert className="text-red-400 shrink-0" size={20} />
+              : type === 'phase-dynamics' ? <ShieldCheck className="text-narai-gold shrink-0" size={20} /> : <ShieldAlert className="text-red-400 shrink-0" size={20} />
             }
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">Verificable Digitalmente</p>
               <p className="text-[9px] font-mono text-white/20">
-                {isAgreement ? 'PANDORAS_LEGAL_INFRASTRUCTURE' : 'PANDORAS_RISK_DISCLOSURE'} — AZTECAZ HUB S.A.P.I. DE C.V.
+                {isAgreement ? 'PANDORAS_LEGAL_INFRASTRUCTURE' : type === 'phase-dynamics' ? 'PANDORAS_COMMERCIAL_DYNAMICS' : 'PANDORAS_RISK_DISCLOSURE'} — AZTECAZ HUB S.A.P.I. DE C.V.
               </p>
             </div>
           </div>

@@ -349,7 +349,7 @@ export function TopNavbar({
                   title="Perfil"
                 >
                   <Image
-                    src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
+                    src={userProfile?.image || '/images/avatars/onlybox2.png'}
                     alt="Profile Avatar"
                     width={32}
                     height={32}

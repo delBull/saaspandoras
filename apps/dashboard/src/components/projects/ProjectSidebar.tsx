@@ -239,10 +239,6 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   };
 
   const isDeployed = ['approved', 'live', 'deployed', 'active'].includes(project.status?.toLowerCase() || '') || project.deploymentStatus === 'deployed';
-  // Check if current connected wallet is the protocol creator (owner)
-  const isOwner = !!account?.address &&
-    !!(project.applicant_wallet_address) &&
-    account.address.toLowerCase() === (project.applicant_wallet_address as string).toLowerCase();
 
   return (
     <>
@@ -296,24 +292,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               </div>
 
               {/* === BUTTON LOGIC === */}
-              {isOwner ? (
-                // Owner: show DAO management button
-                <div className="space-y-2 w-full mb-4">
-                  <Link
-                    href={`/projects/${project.slug}/dao`}
-                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:scale-[1.02]"
-                  >
-                    <Shield className="w-4 h-4" />
-                    Gestión de DAO
-                  </Link>
-                  {hasAccess && (
-                    <div className="w-full bg-lime-500/10 border border-lime-500/30 text-lime-400 py-2 px-6 rounded-lg flex items-center justify-center gap-2 text-sm">
-                      <Unlock className="w-3 h-3" />
-                      Tu acceso está activo
-                    </div>
-                  )}
-                </div>
-              ) : hasAccess ? (
+              {hasAccess ? (
                 <div className="space-y-2 w-full mb-4">
                   <div className="w-full bg-lime-500/10 border border-lime-500/30 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2 backdrop-blur-sm">
                     <Unlock className="w-3 h-3" />
@@ -326,10 +305,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <span>Ver Fases</span>
                     <ArrowDown className="w-3 h-3" />
                   </button>
-                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-white/5 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/5">
-                    <Shield className="w-3 h-3 text-sm text-lime-400" />
-                    Ir al DAO
-                  </Link>
+
 
                   {/* Dynamic Perks Button */}
                   <button

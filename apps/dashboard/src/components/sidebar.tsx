@@ -542,7 +542,7 @@ export function Sidebar({
                     title="Menú de perfil"
                   >
                     <Image
-                      src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
+                      src={userProfile?.image || '/images/avatars/onlybox2.png'}
                       alt="Profile Avatar"
                       width={32}
                       height={32}
@@ -1036,7 +1036,7 @@ export function Sidebar({
                         title="Menú de perfil"
                       >
                         <Image
-                          src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
+                          src={userProfile?.image || '/images/avatars/onlybox2.png'}
                           alt="Profile Avatar"
                           width={32}
                           height={32}

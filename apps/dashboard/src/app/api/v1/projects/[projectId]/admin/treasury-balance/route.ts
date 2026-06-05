@@ -2,16 +2,19 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getAuth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
     const { projectId } = await params;
-    const walletAddress = req.headers.get("x-wallet-address");
+    const { session } = await getAuth(await headers());
+    const walletAddress = session?.address;
 
     if (!walletAddress) {
-        return NextResponse.json({ error: "Missing wallet address" }, { status: 401 });
+        return NextResponse.json({ error: "Missing or invalid session" }, { status: 401 });
     }
 
     try {
