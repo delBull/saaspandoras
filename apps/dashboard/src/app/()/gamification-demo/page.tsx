@@ -25,14 +25,14 @@ interface GamificationData {
   isLoading: boolean;
 }
 
+import { getProfile, getRewards, getLeaderboard, trackEvent } from './actions';
+
 async function loadGamificationDataForClient() {
   try {
-    const { getUserGamificationProfile, getAvailableGamificationRewards, getGamificationLeaderboard } = await import('@/lib/gamification/service');
-
     const [profile, rewards, leaderboard] = await Promise.all([
-      getUserGamificationProfile('demo-user-123'),
-      getAvailableGamificationRewards('demo-user-123'),
-      getGamificationLeaderboard('points', 10)
+      getProfile('demo-user-123'),
+      getRewards('demo-user-123'),
+      getLeaderboard()
     ]);
 
     return {
@@ -52,8 +52,7 @@ async function loadGamificationDataForClient() {
 
 async function handleTrackEventForClient(eventType: string) {
   try {
-    const { trackGamificationEvent } = await import('@/lib/gamification/service');
-    await trackGamificationEvent('demo-user-123', eventType);
+    await trackEvent('demo-user-123', eventType);
   } catch (error) {
     console.error('Error tracking event:', error);
   }

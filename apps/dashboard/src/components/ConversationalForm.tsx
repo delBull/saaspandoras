@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
 import { useRouter } from 'next/navigation';
 // 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
-import { gamificationEngine, EventType } from "@pandoras/gamification";
+import { trackEventAction } from '@/lib/gamification/actions';
 // 📖 MODAL DE INFORMACIÓN
 import { InfoModal } from './InfoModal';
 // 🔄 MODAL DE RESULTADO (Loading/Success/Error)
@@ -234,10 +234,8 @@ export default function ConversationalForm() {
       if (userWallet) {
         try {
           console.log('🎮 Triggering project application event for user:', userWallet);
-          // Importar la función del service directamente
-          const { trackGamificationEvent } = await import('@/lib/gamification/service');
-
-          await trackGamificationEvent(
+          // Utilizar la server action
+          await trackEventAction(
             userWallet,
             'project_application_submitted',
             {
