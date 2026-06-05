@@ -7,7 +7,7 @@ export const metadata = {
 
 export default async function Page(props: {
   params: Promise<{
-    lang: Locale;
+    lang: string;
   }>;
 }) {
   const params = await props.params;
@@ -15,11 +15,11 @@ export default async function Page(props: {
   const { lang } = params;
 
   const supportedLangs = ["en", "es", "ja", "ko", "zh"] as const;
-  const selectedLang = supportedLangs.includes(lang) ? lang : "en";
+  const selectedLang = supportedLangs.includes(lang as any) ? lang : "en";
 
   return (
     <div className="flex w-full flex-col gap-16 py-8 md:py-8">
-      <PropertiesPage lang={selectedLang} />
+      <PropertiesPage lang={selectedLang as any} />
     </div>
   );
 }

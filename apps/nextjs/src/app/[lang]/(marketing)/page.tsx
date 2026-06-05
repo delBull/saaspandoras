@@ -14,7 +14,7 @@ import { FaqSection } from "~/components/faq-section";
 
 export default async function IndexPage(props: {
   params: Promise<{
-    lang: Locale;
+    lang: string;
   }>;
 }) {
   const params = await props.params;

@@ -3,7 +3,7 @@ export const i18n = {
   locales: ["es", "en", "zh", "ko", "ja"],
 } as const;
 
-export type Locale = (typeof i18n)["locales"][number];
+export type Locale = string; // Relaxed for Next.js 15 LayoutProps constraint
 
 export const localeMap = {
   es: "Español",

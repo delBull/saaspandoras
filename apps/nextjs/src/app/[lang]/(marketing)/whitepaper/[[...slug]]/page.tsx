@@ -83,7 +83,7 @@ export async function generateMetadata(
   };
 }
 
-export function generateStaticParams(): Promise<WhitepaperPageProps["params"][]> {
+export function generateStaticParams() {
   return Promise.resolve(allWhitepapers.map((doc) => ({
     slug: doc.slugAsParams.split("/"),
     lang: doc.locale,

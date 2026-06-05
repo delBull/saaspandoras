@@ -79,7 +79,7 @@ export async function generateMetadata(
   };
 }
 
-export function generateStaticParams(): { slug: string[] }[] {
+export function generateStaticParams() {
   return allPosts.map((post) => ({
     slug: post.slugAsParams.split("/"),
   }));

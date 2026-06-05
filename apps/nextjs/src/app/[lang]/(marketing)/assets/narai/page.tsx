@@ -377,13 +377,13 @@ const propertyData: PropertyDataByLang = {
 };
 
 export default function NaraiPage(props: {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 }) {
   const params = use(props.params);
 
   const { lang } = params;
 
-  const data = propertyData[lang] || propertyData.en;
+  const data = propertyData[lang as keyof typeof propertyData] || propertyData.en;
   const [activeSection, setActiveSection] = React.useState<string | null>(null);
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 

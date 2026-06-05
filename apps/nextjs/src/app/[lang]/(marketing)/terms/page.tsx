@@ -3,7 +3,7 @@ import { TermsContent } from "~/components/terms-content";
 import type { Locale } from "~/config/i18n-config";
 
 export default async function TermsPage(props: {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 }) {
   const params = await props.params;
 

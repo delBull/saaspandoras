@@ -5,7 +5,7 @@ import { getDocsConfig } from "~/config/ui/docs";
 export default async function DocsLayout(props: {
   children: React.ReactNode;
   params: Promise<{
-    lang: Locale;
+    lang: string;
   }>;
 }) {
   const params = await props.params;

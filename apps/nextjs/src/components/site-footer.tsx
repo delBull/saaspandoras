@@ -16,7 +16,7 @@ import { useFitText } from '~/hooks/use-fit-text';
 import type { Dictionary } from '~/types';
 import type { Locale } from '~/config/i18n-config';
 
-export const SiteFooter: React.FC<{ dict: Dictionary, params: { lang: Locale } }> = ({ dict, params: { lang } }) => {
+export const SiteFooter: React.FC<{ dict: Dictionary, params: { lang: Locale }, className?: string }> = ({ dict, params: { lang }, className }) => {
     const { fontSize, ref } = useFitText<HTMLHeadingElement>({ maxFontSize: 150, minFontSize: 50 });
     const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
 
@@ -29,7 +29,7 @@ export const SiteFooter: React.FC<{ dict: Dictionary, params: { lang: Locale } }
     }, []);
 
     return (
-        <footer className="text-white">
+        <footer className={`text-white ${className || ""}`}>
             <div className="container mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     {/* Left Column */}

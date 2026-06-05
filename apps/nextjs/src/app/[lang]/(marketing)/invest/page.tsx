@@ -3,7 +3,7 @@ import type { Locale } from "~/config/i18n-config";
 import InvestClientWrapper from './invest-client-wrapper'; 
 
 export default async function Page(props: {
-  params: Promise<{ lang: Locale }>;
+  params: Promise<{ lang: string }>;
 }) {
   const params = await props.params;
   const { lang } = params;

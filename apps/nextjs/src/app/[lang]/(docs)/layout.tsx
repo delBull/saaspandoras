@@ -9,7 +9,7 @@ import { getDictionary } from "~/lib/get-dictionary";
 interface DocsLayoutProps {
   children: React.ReactNode;
   params: Promise<{
-    lang: Locale;
+    lang: string;
   }>;
 }
 
@@ -20,9 +20,9 @@ export default async function DocsLayout(props: DocsLayoutProps) {
 
   const { children } = props;
 
-  const dict = await getDictionary(lang); // Removed type assertion
+  const dict = await getDictionary(lang as Locale); // Removed type assertion
   //const user = await getCurrentUser();
-  const marketingConfig = await getMarketingConfig({ params: { lang } });
+  const marketingConfig = await getMarketingConfig({ params: { lang: lang as Locale } });
 
   return (
     <div className="flex min-h-screen flex-col">

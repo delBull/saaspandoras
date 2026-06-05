@@ -4,7 +4,7 @@ import { ActivosClient } from "~/components/marketing/activos-client";
 
 // This is the main page component. It fetches data on the server and passes it to the client component.
 export default async function ActivosPage(props: {
-  params: Promise<{ lang: Locale; }> 
+  params: Promise<{ lang: string; }> 
 }) {
   const params = await props.params;
   const dict = await getDictionary(params.lang);
