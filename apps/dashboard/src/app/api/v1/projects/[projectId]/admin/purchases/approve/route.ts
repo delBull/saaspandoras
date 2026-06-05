@@ -3,6 +3,9 @@ import { db } from '@/db';
 import { purchases, projects, users, daoMembers } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
+import { getAuth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { TelemetryService } from '@/lib/security/telemetry';
 
 export async function POST(
     req: Request,
@@ -12,10 +15,11 @@ export async function POST(
         const { projectId } = await params;
         const projectIdNum = parseInt(projectId);
         const { purchaseId, action, reason } = await req.json();
-        const walletAddress = req.headers.get('x-wallet-address');
+        const { session } = await getAuth(await headers());
+        const walletAddress = session?.address;
 
         if (!walletAddress || !purchaseId || !action) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+            return NextResponse.json({ error: 'Missing required fields or Unauthorized' }, { status: 400 });
         }
 
         // 1. Verify Project Ownership
@@ -111,6 +115,18 @@ export async function POST(
             });
 
             console.log(`✅ Project ${projectId}: Purchase ${purchaseId} approved and synced to DAO (transactional).`);
+
+            TelemetryService.sendAlert(
+              '💰 Purchase Approved',
+              `El creador del proyecto ha aprobado una compra manualmente y se han sincronizado los tokens al DAO.`,
+              'INFO',
+              { 
+                project: project.title,
+                purchaseId,
+                units,
+                targetWallet
+              }
+            );
 
         } else if (action === 'reject') {
             await db.update(purchases)

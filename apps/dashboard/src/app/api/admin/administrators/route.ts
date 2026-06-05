@@ -8,6 +8,7 @@ import { administrators } from "@/db/schema";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { logger } from "@/lib/logger";
+import { TelemetryService } from "@/lib/security/telemetry";
 
 // Force dynamic runtime
 export const runtime = "nodejs";
@@ -117,6 +118,12 @@ export async function POST(request: Request) {
       userId,
       event: "POST_ADMIN_FORBIDDEN"
     });
+    TelemetryService.sendAlert(
+      '⚠️ Unauthorized Admin Creation Attempt',
+      `La wallet \`${userId}\` intentó añadir un nuevo administrador sin tener privilegios de Super Admin.`,
+      'CRITICAL',
+      { attemptedToAdd: (body as any)?.walletAddress }
+    );
     return NextResponse.json({ message: "No autorizado. Solo Super Admin.", requestId }, { status: 403 });
   }
 
@@ -146,6 +153,17 @@ export async function POST(request: Request) {
       event: "POST_ADMIN_SUCCESS",
       metadata: { added: newAddress }
     });
+
+    TelemetryService.sendAlert(
+      '🛡️ New Administrator Added',
+      `Se ha concedido acceso administrativo a una nueva wallet.`,
+      'HIGH',
+      { 
+        newAdminWallet: newAddress,
+        alias: validation.data.alias?.trim() ?? "Sin Alias",
+        addedBy: userId 
+      }
+    );
 
     return NextResponse.json(newAdmin, { status: 201 });
   } catch (error) {

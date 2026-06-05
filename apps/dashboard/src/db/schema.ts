@@ -1105,7 +1105,22 @@ export const userBalances = pgTable("user_balances", {
   pboxBalance: decimal("pbox_balance", { precision: 18, scale: 2 }).default("0").notNull(),
   usdcBalance: decimal("usdc_balance", { precision: 18, scale: 6 }).default("0").notNull(),
   ethBalance: decimal("eth_balance", { precision: 18, scale: 18 }).default("0").notNull(),
+  nonce: integer("nonce").default(0).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const withdrawals = pgTable("withdrawals", {
+  id: serial("id").primaryKey(),
+  walletAddress: varchar("wallet_address", { length: 42 }).notNull(),
+  amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
+  token: varchar("token", { length: 20 }).default('USDC').notNull(),
+  status: varchar("status", { length: 20 }).default('pending').notNull(), // pending, processed, failed, rejected
+  txHash: varchar("tx_hash", { length: 66 }),
+  nonce: integer("nonce").notNull(),
+  signature: text("signature").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
+  error: text("error"),
 });
 
 // Platform Settings (Global Configuration)
@@ -1910,7 +1925,7 @@ export const growthActionsLog = pgTable("growth_actions_log", {
  */
 export const marketingLeadAttributions = pgTable("marketing_lead_attributions", {
   id: serial("id").primaryKey(),
-  leadId: integer("lead_id").references(() => marketingLeads.id).notNull(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   
   attributionType: leadAttributionTypeEnum("attribution_type").default("shared").notNull(),

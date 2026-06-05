@@ -86,7 +86,7 @@ export async function POST(
         // Use Treasury Address or fallback to Applicant Wallet (Founder)
         let treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
         let isProvisionalTreasury = false;
-        const fallbackEmail = project.applicantEmail || project.creatorEmail || "support@pandoras.com";
+        const fallbackEmail = project.applicantEmail || "support@pandoras.com";
 
         if (!treasuryAddress || treasuryAddress === "0x0000000000000000000000000000000000000000") {
             console.warn(`🛡️ API: Project ${slug} missing treasury. Falling back to SUPER_ADMIN_WALLET (Provisional Mode).`);

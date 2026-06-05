@@ -22,7 +22,7 @@ import { Skeleton } from "../../ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface PerformanceData {
-  id: string;
+  id: number;
   name: string;
   platform: string;
   source: string;
@@ -282,10 +282,10 @@ function calculateWinningPatterns(data: PerformanceData[]) {
     if (!patterns[angle]) {
       patterns[angle] = { angle, campaigns: 0, totalRevenue: 0, totalLeads: 0, totalClicks: 0 };
     }
-    patterns[angle].campaigns++;
-    patterns[angle].totalRevenue += parseFloat(c.revenue);
-    patterns[angle].totalLeads += c.leads;
-    patterns[angle].totalClicks += c.clicks;
+    patterns[angle]!.campaigns++;
+    patterns[angle]!.totalRevenue += parseFloat(c.revenue);
+    patterns[angle]!.totalLeads += c.leads;
+    patterns[angle]!.totalClicks += c.clicks;
   });
 
   return Object.values(patterns)

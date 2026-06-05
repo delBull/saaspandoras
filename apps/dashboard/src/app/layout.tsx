@@ -69,33 +69,6 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
-        <Script
-          id="lockdown-override"
-          type="module"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  if (typeof window !== 'undefined') {
-                    // Protect window.closed
-                    var originalClosed = Object.getOwnPropertyDescriptor(window, 'closed');
-                    Object.defineProperty(window, 'closed', {
-                      get: function() {
-                        try { return (window._originalClosed) || false; } catch { return true; }
-                      },
-                      configurable: false,
-                      enumerable: true
-                    });
-                    // Disable SES if possible
-                    window.SES_LOCKDOWN_DISABLED = true;
-                    console.log('🛡️ [Lockdown Override] Protected window.closed');
-                  }
-                } catch (e) { console.warn('Lockdown override failed', e); }
-              })();
-            `
-          }}
-        />
       </body>
     </html>
   );

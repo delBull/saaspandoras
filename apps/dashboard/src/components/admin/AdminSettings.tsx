@@ -791,15 +791,42 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                 </h4>
                 <ul className="text-xs text-gray-400 space-y-2 list-disc pl-4">
                   <li><strong>Market Exploit:</strong> Activate Global Pause immediately. It bypasses governance delays.</li>
-                  <li><strong>Oracle Failure:</strong> If NAV drifts unexpectedly, pause relevant protocol configs.</li>
+                <li><strong>Oracle Failure:</strong> If NAV drifts unexpectedly, pause relevant protocol configs.</li>
                   <li><strong>Liquidity Crunch:</strong> Check Buyback Pools; if empty, settlements will fail automatically.</li>
                   <li><strong>Reactivation:</strong> Settlement unpausing ALWAYS requires a 6h Governance Delay.</li>
                 </ul>
               </div>
-              <div className="flex gap-2 text-xs text-yellow-500">
+              <div className="flex gap-2 text-xs text-yellow-500 mb-4">
                 <span>{effectiveIsSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
-                <span>•</span>
-                <span>⚠️ High Risk Area</span>
+              </div>
+
+              {/* Telemetry Control */}
+              <div className="mt-6 p-4 bg-zinc-900/80 rounded border border-blue-900/50">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold text-blue-400 flex items-center gap-2">
+                    <Activity className="w-4 h-4" />
+                    Security Telemetry System
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold tracking-wider uppercase">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mb-4">
+                  El bot de seguridad pasiva está monitoreando eventos críticos (Tesorería, Ataques, Sold Outs). 
+                  Haz un ping de prueba para verificar que las notificaciones lleguen a tu Telegram.
+                </p>
+                <Button 
+                  size="sm" 
+                  onClick={async () => {
+                    const res = await fetch('/api/admin/telemetry/ping', { method: 'POST', headers: { 'x-wallet-address': currentWallet || '' } });
+                    if (res.ok) toast.success("Ping enviado a Telegram");
+                    else toast.error("Error al enviar Ping");
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 text-xs"
+                >
+                  <Activity className="w-3 h-3 mr-2" />
+                  Enviar Test Ping
+                </Button>
               </div>
             </div>
             <div className="flex flex-col gap-3">

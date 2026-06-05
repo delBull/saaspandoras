@@ -33,6 +33,19 @@ export function validateTelegramInitData(initData: string): { isValid: boolean; 
             return { isValid: false };
         }
 
+        const authDate = Number(urlParams.get('auth_date'));
+        if (!authDate) {
+            console.warn("⚠️ Telegram auth_date missing");
+            return { isValid: false };
+        }
+
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        // Expiration: 24 hours (86400 seconds)
+        if (nowInSeconds - authDate > 86400) {
+            console.warn("⚠️ Telegram initData expired");
+            return { isValid: false };
+        }
+
         const userJson = urlParams.get('user');
         const user = userJson ? JSON.parse(userJson) : null;
 

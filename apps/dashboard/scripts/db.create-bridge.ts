@@ -6,7 +6,7 @@
  * 
  * Run: bun run create-bridge-tables.ts
  */
-import { db } from './src/db';
+import { db } from '../src/db';
 import { sql } from 'drizzle-orm';
 
 async function main() {

@@ -1,5 +1,5 @@
 
-import { IntegrationKeyService } from './src/lib/integrations/auth';
+import { IntegrationKeyService } from '../src/lib/integrations/auth';
 
 async function main() {
   try {

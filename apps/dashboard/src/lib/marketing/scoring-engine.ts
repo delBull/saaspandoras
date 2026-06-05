@@ -58,7 +58,7 @@ export class AttributionManager {
    */
   static async logTouch(
     leadId: string, 
-    campaignId: string | null, 
+    campaignId: number | null, 
     touchType: string, 
     metadata: any = {}
   ) {

@@ -33,7 +33,7 @@ export async function validateAdminSession(reqHeaders?: Headers): Promise<{ sess
       };
     }
 
-    const authorized = await isAdmin(address, isVerified);
+    const authorized = await isAdmin(address);
     if (!authorized) {
       logger.warn({
         requestId,

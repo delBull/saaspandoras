@@ -55,7 +55,7 @@ export async function createDemandDraft(data: {
  */
 export async function launchCampaign(data: {
   projectId: number;
-  draftId: string;
+  draftId: number;
   name: string;
   platform: string;
   type?: string;
@@ -107,7 +107,7 @@ export async function launchCampaign(data: {
  * Tracks a telemetry event and updates the performance cache.
  */
 export async function trackCampaignEvent(data: {
-  campaignId: string;
+  campaignId: number;
   eventType: 'impression' | 'click' | 'lead' | 'purchase';
   value?: number;
   source?: string;

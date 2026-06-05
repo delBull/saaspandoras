@@ -322,7 +322,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!loginRes.ok) throw new Error("Login verification failed");
             toast({ title: "Welcome!", description: "Identity verified successfully." });
         } catch (e: any) {
-            console.error("[AuthMachine] Login error:", e);
+            console.error("[AuthMachine] Login error object:", e);
+            console.error("[AuthMachine] Login error stringified:", JSON.stringify(e, Object.getOwnPropertyNames(e)));
             throw e;
         }
     };
@@ -384,7 +385,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }, id);
             } catch (err: any) {
                 if (err.name === "AbortError") return;
-                console.error(`[AuthMachine] ❌ Flow #${id} failed:`, err);
+                console.error(`[AuthMachine] ❌ Flow #${id} failed (object):`, err);
+                console.error(`[AuthMachine] ❌ Flow #${id} failed (stringified):`, JSON.stringify(err, Object.getOwnPropertyNames(err)));
                 safeDispatch({ type: "SET_ERROR", error: err.message || "Error desconocido" }, id);
                 safeDispatch({ type: "SET_STATUS", status: "error" }, id);
             }

@@ -1,4 +1,4 @@
-import { crypto } from "ghost-cursor"; // Using standard crypto or similar
+
 import { db } from "@/db";
 import { purchases, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";

@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 
-const DATABASE_URL_STAGING = "postgresql://neondb_owner:npg_9lRfvsopJ2UM@ep-cool-feather-ambh76vv-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+const DATABASE_URL_STAGING = "postgresql://neondb_owner:REMOVED_ROTATE_PASSWORD@ep-cool-feather-ambh76vv-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 async function main() {
   console.log("Connecting to Staging Database...");

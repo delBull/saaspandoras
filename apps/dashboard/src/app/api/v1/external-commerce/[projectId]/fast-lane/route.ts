@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { marketingLeads, projects, purchases, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-export async function POST(
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+
+async function handler(
   req: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
@@ -14,10 +16,10 @@ export async function POST(
         return NextResponse.json({ error: "Invalid Project ID" }, { status: 400 });
     }
     const body = await req.json();
-    const { email, name, phone, amount, tier, source, wallet_connected, wallet_address, confirmIntent } = body;
+    const { email, name, phone, amount, quantity, tier, source, wallet_connected, wallet_address, confirmIntent } = body;
     
-    if (!email || !amount || parseFloat(amount) <= 0) {
-        return NextResponse.json({ error: "Email y monto son requeridos" }, { status: 400 });
+    if (!email || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > 100000000) {
+        return NextResponse.json({ error: "Email y monto válido son requeridos" }, { status: 400 });
     }
 
     const safeAmount = parseFloat(amount);
@@ -144,7 +146,8 @@ export async function POST(
                     phone,
                     tier: tier || 'default',
                     source: source || 'external_commerce',
-                    wallet_connected
+                    wallet_connected,
+                    quantity: quantity || 1
                 }
             }).returning())[0];
         } catch (e) {
@@ -204,3 +207,6 @@ export async function POST(
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
+
+export const POST = (req: Request, ctx: { params: Promise<{ projectId: string }> }) => 
+  withSecurity(handler, { rateLimit: apiRateLimiter, maxBodySize: 1024 * 100 })(req, ctx);

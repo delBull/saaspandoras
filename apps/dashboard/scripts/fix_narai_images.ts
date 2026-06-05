@@ -15,7 +15,7 @@ async function fixNaraiImages() {
       .where(eq(projects.slug, 'narai'))
       .returning();
 
-    console.log("Updated project successfully:", result.length > 0 ? result[0].slug : "Not found");
+    console.log("Updated project successfully:", result.length > 0 ? result[0]?.slug : "Not found");
   } catch (error) {
     console.error("Error updating DB:", error);
   } finally {

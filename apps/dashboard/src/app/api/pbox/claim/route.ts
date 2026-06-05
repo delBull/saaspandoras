@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { gamificationProfiles, pboxClaims, securityEvents, users } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { ethers } from 'ethers';
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
 // Import ABI and config
 import PBOXTokenArtifact from '../../../../../../../packages/protocol-deployer/artifacts/contracts/core/PBOXToken.sol/PBOXToken.json';
@@ -19,7 +20,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
  * Endpoint to claim PBOX tokens (Approach A: Backend Minting)
  * Requires valid JWT in Authorization header or cookie.
  */
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest) {
     try {
         console.log("🚀 [PBOX Claim API] Received claim request");
 
@@ -92,23 +93,40 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 5. Initialize Claim Tracking for Idempotency
-        // This prevents race conditions or double clicks
-        console.log(`📝 [PBOX Claim API] Registering pending claim...`);
-        const pendingClaimResult = await db.insert(pboxClaims).values({
-            userId: userId,
-            walletAddress: user.walletAddress,
-            amount: claimablePBOX,
-            status: 'PENDING',
-        }).returning({ claimId: pboxClaims.id });
+        // 5. Initialize Claim Tracking & Deduct Points Atomically
+        console.log(`📝 [PBOX Claim API] Deducting points and registering pending claim...`);
+        let claimId: string | undefined;
 
-        const claimRecord = pendingClaimResult[0];
+        await db.transaction(async (tx) => {
+            // Deduct points FIRST to prevent race conditions
+            const updateResult = await tx.update(gamificationProfiles)
+                .set({
+                    claimedPoints: sql`${gamificationProfiles.claimedPoints} + ${claimablePBOX}`,
+                    lastClaimedAt: new Date(),
+                    updatedAt: new Date()
+                })
+                .where(and(
+                    eq(gamificationProfiles.userId, userId),
+                    sql`${gamificationProfiles.totalPoints} - ${gamificationProfiles.claimedPoints} >= ${claimablePBOX}`
+                )).returning({ id: gamificationProfiles.id });
+            
+            if (updateResult.length === 0) {
+                throw new Error("Concurrent claim detected or insufficient points.");
+            }
 
-        if (!claimRecord?.claimId) {
-            throw new Error("Failed to initialize claim record.");
+            const pendingClaimResult = await tx.insert(pboxClaims).values({
+                userId: userId,
+                walletAddress: user.walletAddress as string,
+                amount: claimablePBOX,
+                status: 'PENDING',
+            }).returning({ claimId: pboxClaims.id });
+            
+            claimId = pendingClaimResult[0]?.claimId;
+        });
+
+        if (!claimId) {
+            return NextResponse.json({ error: "Failed to initialize claim." }, { status: 500 });
         }
-
-        const claimId = claimRecord.claimId;
 
         console.log(`🔗 [PBOX Claim API] Executing Minting Transaction...`);
         let txHash: string | null = null;
@@ -145,23 +163,25 @@ export async function POST(request: NextRequest) {
         } catch (chainError: any) {
             console.error(`❌ [PBOX Claim API] Blockchain transaction failed:`, chainError);
 
-            // Update claim record as failed
-            await db.update(pboxClaims)
-                .set({ status: 'FAILED', updatedAt: new Date() })
-                .where(eq(pboxClaims.id, claimId));
+            // Revert points and mark failed
+            await db.transaction(async (tx) => {
+                await tx.update(gamificationProfiles)
+                    .set({
+                        claimedPoints: sql`${gamificationProfiles.claimedPoints} - ${claimablePBOX}`,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(gamificationProfiles.userId, userId));
+
+                await tx.update(pboxClaims)
+                    .set({ status: 'FAILED', updatedAt: new Date() })
+                    .where(eq(pboxClaims.id, claimId!));
+            });
 
             return NextResponse.json({ error: "Failed to mint tokens on the blockchain. Try again later." }, { status: 500 });
         }
 
         // 7. Settlement (Transaction successful, update database)
-        console.log(`💾 [PBOX Claim API] Updating gamification profile...`);
-        await db.update(gamificationProfiles)
-            .set({
-                claimedPoints: profile.claimedPoints + claimablePBOX,
-                lastClaimedAt: new Date(),
-                updatedAt: new Date()
-            })
-            .where(eq(gamificationProfiles.userId, userId));
+        console.log(`💾 [PBOX Claim API] Marking claim as confirmed...`);
 
         // Mark claim as Confirmed
         await db.update(pboxClaims)
@@ -175,7 +195,7 @@ export async function POST(request: NextRequest) {
             metadata: {
                 amount: claimablePBOX,
                 txHash: txHash,
-                walletAddress: user.walletAddress,
+                walletAddress: user.walletAddress as string,
                 claimId: claimId
             }
         });
@@ -194,3 +214,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter, maxBodySize: 1024 * 10 });

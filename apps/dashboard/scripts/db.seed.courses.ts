@@ -1,5 +1,5 @@
-import { db } from "./src/db";
-import { courses } from "./src/db/schema";
+import { db } from "../src/db";
+import { courses } from "../src/db/schema";
 import { eq } from "drizzle-orm";
 
 const REAL_SEED_COURSES = [

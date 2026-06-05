@@ -2,17 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { daoMembers, userBalances, projects, daoActivities } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { getAuth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
-export async function POST(
+async function handler(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId: rawProjectId } = await params;
   const projectId = parseInt(rawProjectId);
-  const walletAddress = req.headers.get("x-wallet-address");
+  const { session } = await getAuth(await headers());
+  const walletAddress = session?.address;
 
   if (!walletAddress) {
-    return NextResponse.json({ error: "Missing wallet address" }, { status: 401 });
+    return NextResponse.json({ error: "Missing wallet address or unauthorized" }, { status: 401 });
   }
 
   try {
@@ -28,7 +32,6 @@ export async function POST(
     });
 
     if (!project || project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
-       // In a real production app, we would also verify a signature or session
        return NextResponse.json({ error: "Unauthorized. Only project owner can distribute rewards." }, { status: 403 });
     }
 
@@ -47,40 +50,41 @@ export async function POST(
       return NextResponse.json({ error: "Total voting power is zero. Cannot distribute." }, { status: 400 });
     }
 
-    // 3. Batch Update Balances (Simulated via loop for simplicity, in high-scale use a bulk SQL update)
-    const updates = holders.map(async (holder) => {
-      const share = (Number(holder.votingPower) / totalVP) * amount;
-      
-      // Upsert user balance
-      return db.insert(userBalances)
-        .values({
-          walletAddress: holder.wallet.toLowerCase(),
-          usdcBalance: share.toString(),
-          pboxBalance: "0",
-          updatedAt: new Date()
-        })
-        .onConflictDoUpdate({
-          target: [userBalances.walletAddress],
-          set: {
-            usdcBalance: sql`${userBalances.usdcBalance} + ${share.toString()}`,
-            updatedAt: new Date()
-          }
+    // 3. Batch Update Balances (Transactional to prevent partial failures)
+    await db.transaction(async (tx) => {
+        const updates = holders.map(async (holder) => {
+          const share = (Number(holder.votingPower) / totalVP) * amount;
+          
+          return tx.insert(userBalances)
+            .values({
+              walletAddress: holder.wallet.toLowerCase(),
+              usdcBalance: share.toString(),
+              pboxBalance: "0",
+              updatedAt: new Date()
+            })
+            .onConflictDoUpdate({
+              target: [userBalances.walletAddress],
+              set: {
+                usdcBalance: sql`${userBalances.usdcBalance} + ${share.toString()}`,
+                updatedAt: new Date()
+              }
+            });
         });
-    });
 
-    await Promise.all(updates);
+        await Promise.all(updates);
 
-    // 4. Log Activity
-    await db.insert(daoActivities).values({
-      projectId: projectId,
-      title: "Distribución de Utilidades",
-      description: description || `Distribución pro-rata de ${amount} USDC entre holders.`,
-      rewardAmount: amount.toString(),
-      rewardTokenSymbol: "USDC",
-      type: "payout" as any,
-      category: "governance",
-      status: "active",
-      createdAt: new Date()
+        // 4. Log Activity
+        await tx.insert(daoActivities).values({
+          projectId: projectId,
+          title: "Distribución de Utilidades",
+          description: description || `Distribución pro-rata de ${amount} USDC entre holders.`,
+          rewardAmount: amount.toString(),
+          rewardTokenSymbol: "USDC",
+          type: "payout" as any,
+          category: "governance",
+          status: "active",
+          createdAt: new Date()
+        });
     });
 
     return NextResponse.json({ 
@@ -93,3 +97,6 @@ export async function POST(
     return NextResponse.json({ error: "Internal Server Error", detail: error.message }, { status: 500 });
   }
 }
+
+export const POST = (req: NextRequest, ctx: { params: Promise<{ projectId: string }> }) => 
+  withSecurity(handler as any, { rateLimit: apiRateLimiter, maxBodySize: 1024 * 500 })(req, ctx);

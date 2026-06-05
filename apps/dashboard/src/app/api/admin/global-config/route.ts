@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { TelemetryService } from '@/lib/security/telemetry';
+import { validateAdminSession } from '@/lib/admin-auth';
 
 /**
  * GET /api/admin/global-config
@@ -24,7 +26,7 @@ export async function GET() {
             });
         }
 
-        const w2eConfig = (result[0].w2eConfig as any) || {};
+        const w2eConfig = (result[0]?.w2eConfig as any) || {};
 
         return NextResponse.json({
             betaOpen: w2eConfig.betaOpen ?? false,
@@ -44,6 +46,18 @@ export async function GET() {
  */
 export async function POST(request: Request) {
     try {
+        const { errorResponse } = await validateAdminSession(request.headers);
+        
+        if (errorResponse) {
+            TelemetryService.sendAlert(
+              '⚠️ Unauthorized Access Attempt',
+              'Alguien intentó modificar la configuración global (Global Config) sin privilegios de Super Admin.',
+              'CRITICAL',
+              { endpoint: 'POST /api/admin/global-config' }
+            );
+            return errorResponse;
+        }
+
         const body = await request.json();
         const { betaOpen, ritualEnabled, apiBaseUrlProduction, apiBaseUrlStaging } = body;
 
@@ -72,6 +86,16 @@ export async function POST(request: Request) {
                 updatedAt: new Date()
             })
             .where(eq(projects.id, 15));
+
+        TelemetryService.sendAlert(
+            '⚙️ Global Config Updated',
+            'Se ha modificado la configuración global del ecosistema.',
+            'MEDIUM',
+            { 
+              betaOpen: newW2eConfig.betaOpen,
+              ritualEnabled: newW2eConfig.ritualEnabled
+            }
+        );
 
         return NextResponse.json({
             success: true,

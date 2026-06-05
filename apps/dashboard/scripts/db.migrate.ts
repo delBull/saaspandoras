@@ -9,10 +9,10 @@
  *   bun run migrate-v1-to-v2.ts --slug abc  # single protocol
  */
 
-import { db } from './src/db';
+import { db } from '../src/db';
 import { sql } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import type { ArtifactType } from './src/app/()/projects/types';
+import type { ArtifactType } from '../src/app/()/projects/types';
 
 const isDryRun = !process.argv.includes('--apply');
 const targetSlug = process.argv.includes('--slug')

@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getAuth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
-export async function POST(req: Request, props: { params: Promise<{ projectId: string }> }) {
+async function handler(req: Request, props: { params: Promise<{ projectId: string }> }) {
   try {
     const params = await props.params;
     const { projectId } = params;
@@ -13,6 +16,21 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
 
     if (!botToken) {
       return NextResponse.json({ success: false, error: "Bot token is required" }, { status: 400 });
+    }
+
+    const { session } = await getAuth(await headers());
+    const walletAddress = session?.address;
+
+    if (!walletAddress) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const projectRecord = await db.query.projects.findFirst({
+      where: eq(projects.slug, projectId)
+    });
+
+    if (!projectRecord || projectRecord.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
+      return NextResponse.json({ success: false, error: "Forbidden: Only project owner can register bot" }, { status: 403 });
     }
 
     // Get the base URL from the request (e.g. https://staging.dash.pandoras.finance)
@@ -48,10 +66,6 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
     }
 
     // 2. Save the token and username into the database (w2eConfig)
-    const projectRecord = await db.query.projects.findFirst({
-      where: eq(projects.slug, projectId)
-    });
-
     if (projectRecord) {
       const config = (projectRecord.w2eConfig as any) || {};
       
@@ -83,3 +97,5 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter, maxBodySize: 1024 * 50 });

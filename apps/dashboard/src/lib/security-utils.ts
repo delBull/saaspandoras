@@ -107,6 +107,7 @@ class SimpleRateLimiter {
 // Instancias globales de rate limiters
 export const apiRateLimiter = new SimpleRateLimiter(1000, 60000); // 1000 requests per minute for APIs
 export const authRateLimiter = new SimpleRateLimiter(5, 60000); // 5 auth attempts per minute
+export const withdrawRateLimiter = new SimpleRateLimiter(5, 60000); // 5 withdraws per minute
 
 /**
  * Valida estructura básica de request body
