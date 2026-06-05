@@ -1,16 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: true,
+  },
+  // Disable source maps in production to save memory
+  productionBrowserSourceMaps: false,
+  experimental: {
+    // Reduce memory usage during build
+    memoryBasedWorkersCount: true,
+    // Enable webpack build worker to prevent main thread memory leaks
+    webpackBuildWorker: true,
   },
   // Ensure we can bundle Node.js built-ins correctly if they are referenced
   webpack: (config, { isServer }) => {
