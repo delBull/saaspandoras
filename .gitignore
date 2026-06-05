@@ -47,7 +47,7 @@ nft_lab.md
 
 # compiled output
 dist
-lib
+/lib
 *.tsbuildinfo
 
 # IDEs and editors
