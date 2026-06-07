@@ -1,17 +1,6 @@
 import OpenAI from 'openai';
 import Redis from 'ioredis';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Configure Custom Provider (Ollama / Local LLM) if provided
-const isOllamaEnabled = !!process.env.OLLAMA_API_KEY || !!process.env.OLLAMA_BASE_URL;
-const customLLM = isOllamaEnabled ? new OpenAI({
-  apiKey: process.env.OLLAMA_API_KEY || "dummy-key-for-local",
-  baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1", // Default Ollama OpenAI-compatible endpoint
-}) : null;
-
 // Create a singleton Redis client safely
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
 
@@ -69,18 +58,52 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
   ];
 
   try {
-    // Use the custom LLM if configured, otherwise fallback to standard OpenAI
-    const aiClient = customLLM ? customLLM : openai;
-    const aiModel = customLLM ? (process.env.OLLAMA_MODEL || 'llama3') : 'gpt-4o-mini';
+    const isOllamaEnabled = !!process.env.OLLAMA_API_KEY || !!process.env.OLLAMA_BASE_URL;
+    let botResponseText = "";
 
-    const response = await aiClient.chat.completions.create({
-      model: aiModel,
-      messages: messages,
-      temperature: 0.3, // Low temperature for deterministic, factual responses
-      max_tokens: 300,
-    });
+    if (isOllamaEnabled) {
+      const baseUrl = (process.env.OLLAMA_BASE_URL || "http://localhost:11434").replace(/\/v1\/?$/, '');
+      const aiModel = process.env.OLLAMA_MODEL || 'llama3';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (process.env.OLLAMA_API_KEY) {
+        headers['Authorization'] = `Bearer ${process.env.OLLAMA_API_KEY}`;
+      }
 
-    const botResponseText = response.choices[0]?.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
+      const ollamaResponse = await fetch(`${baseUrl}/api/chat`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: aiModel,
+          messages: messages,
+          stream: false,
+          options: {
+            temperature: 0.3
+          }
+        })
+      });
+
+      if (!ollamaResponse.ok) {
+        const errText = await ollamaResponse.text();
+        throw new Error(`Ollama API error (${ollamaResponse.status}): ${errText}`);
+      }
+
+      const data = await ollamaResponse.json();
+      botResponseText = data.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
+    } else {
+      const aiClient = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "missing-key",
+      });
+
+      const response = await aiClient.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: messages,
+        temperature: 0.3,
+        max_tokens: 300,
+      });
+      botResponseText = response.choices[0]?.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
+    }
 
     // Save updated conversational memory back to Redis
     if (redis && redisKey) {
@@ -102,8 +125,8 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     }
 
     return botResponseText;
-  } catch (error) {
+  } catch (error: any) {
     console.error("[BotEngine] Error generating response:", error);
-    return "Lo siento, ha ocurrido un error temporal en mis servidores. Por favor, intenta de nuevo más tarde.";
+    return `Error técnico (Temporal para Debug): ${error?.message || error}. Por favor avisa a soporte.`;
   }
 }
