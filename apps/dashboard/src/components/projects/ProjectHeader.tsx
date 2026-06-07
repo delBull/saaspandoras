@@ -79,9 +79,8 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   return (
     <div className="relative w-full h-64 md:h-96 overflow-hidden rounded-xl mb-8">
       {/* Imagen de Portada */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={resolveIpfsUrl(coverPhotoUrl as string)}
+        src={resolveIpfsUrl(coverPhotoUrl as string) || undefined}
         alt={`Portada de ${displayTitle}`}
         className="absolute inset-0 w-full h-full object-cover"
       />
