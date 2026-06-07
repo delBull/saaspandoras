@@ -55,7 +55,9 @@
     "JWT_PRIVATE_KEY",
     "PANDORAS_FACTORY_ADDRESS",
     "RELAYER_PRIVATE_KEY",
-    "OPENAI_API_KEY"
+    "OPENAI_API_KEY",
+    "MARCO_ADMIN_WALLET",
+    "REDIS_URL"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

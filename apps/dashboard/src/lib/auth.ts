@@ -29,9 +29,9 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
     return false; 
   }
 
-  // ⚡ ADMIN BYPASS: Marco's Admin Wallet (Always Authorized)
-  const MARCO_ADMIN = "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9".toLowerCase();
-  if (lower === MARCO_ADMIN) return true;
+  // ⚡ ADMIN BYPASS: Marco's Admin Wallet (from env var)
+  const MARCO_ADMIN = (process.env.MARCO_ADMIN_WALLET || "").toLowerCase();
+  if (MARCO_ADMIN && lower === MARCO_ADMIN) return true;
 
   // ⚡ Optimistic check for Super Admin (No DB call)
   const superAdmin = (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || "0x_undefined_admin").toLowerCase();

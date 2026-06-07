@@ -38,12 +38,12 @@ export default async function AdminDashboardLayout({
     const { session } = await getAuth(hdrs);
     const userAddress = session?.address?.toLowerCase();
     
-    // 🔥 FIX: Explicit support for Marco's Admin Wallet on Staging
-    const MARCO_ADMIN = "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9".toLowerCase();
-    const userIsAdmin = (await isAdmin(userAddress)) || (isStaging && userAddress === MARCO_ADMIN);
+    // 🔥 FIX: Explicit support for Marco's Admin Wallet on Staging (from env var)
+    const MARCO_ADMIN = (process.env.MARCO_ADMIN_WALLET || "").toLowerCase();
+    const userIsAdmin = (await isAdmin(userAddress)) || (isStaging && MARCO_ADMIN && userAddress === MARCO_ADMIN);
 
     // Check super admin fallback
-    const userIsSuperAdmin = userAddress === SUPER_ADMIN_WALLET.toLowerCase() || (isStaging && userAddress === MARCO_ADMIN);
+    const userIsSuperAdmin = userAddress === SUPER_ADMIN_WALLET.toLowerCase() || (isStaging && MARCO_ADMIN && userAddress === MARCO_ADMIN);
 
     const isAuthorized = userIsAdmin || userIsSuperAdmin;
 

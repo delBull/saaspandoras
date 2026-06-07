@@ -1,7 +1,13 @@
 /**
  * Utilidades de seguridad básicas para protección inmediata
  * Implementación simple y efectiva sin romper funcionalidad existente
+ * 
+ * Rate limiting: usa Redis (ioredis) cuando REDIS_URL está configurado,
+ * fallback a in-memory Map cuando no hay Redis disponible.
+ * Compatible con Railway Redis add-on y Vercel serverless (Node.js runtime).
  */
+
+import { getRedis, isRedisHealthy } from './redis';
 
 /**
  * Campos sensibles que deben ser ocultados en logs
@@ -104,14 +110,57 @@ class SimpleRateLimiter {
   }
 }
 
-// Instancias globales de rate limiters
-export const apiRateLimiter = new SimpleRateLimiter(1000, 60000); // 1000 requests per minute for APIs
-export const authRateLimiter = new SimpleRateLimiter(5, 60000); // 5 auth attempts per minute
-export const withdrawRateLimiter = new SimpleRateLimiter(5, 60000); // 5 withdraws per minute
-export const distributeRateLimiter = new SimpleRateLimiter(3, 60000); // 3 distributions per minute
-export const redemptionRateLimiter = new SimpleRateLimiter(1, 60000); // 1 redemption per minute
-export const claimRateLimiter = new SimpleRateLimiter(10, 60000); // 10 claims per minute per user
-export const registerRateLimiter = new SimpleRateLimiter(5, 60000); // 5 registrations per minute
+/**
+ * Rate limiter con soporte dual Redis / in-memory
+ * Usa Redis cuando está disponible (escalable en serverless),
+ * fallback a in-memory cuando no (desarrollo local sin Redis).
+ */
+class RedisRateLimiter {
+  private fallback: SimpleRateLimiter;
+
+  constructor(private maxRequests: number, private windowMs: number) {
+    this.fallback = new SimpleRateLimiter(maxRequests, windowMs);
+  }
+
+  async isAllowed(identifier: string): Promise<boolean> {
+    const redis = getRedis();
+    if (redis && isRedisHealthy()) {
+      try {
+        const key = `ratelimit:${this.maxRequests}:${this.windowMs}:${identifier}`;
+        const now = Date.now();
+        const windowStart = now - this.windowMs;
+
+        const multi = redis.multi();
+        multi.zremrangebyscore(key, 0, windowStart);
+        multi.zadd(key, now, `${now}:${Math.random()}`);
+        multi.zcard(key);
+        multi.pexpire(key, this.windowMs);
+
+        const results = await multi.exec();
+        const count = results?.[2]?.[1] as number | undefined ?? 0;
+
+        if (count >= this.maxRequests) {
+          return false;
+        }
+        return true;
+      } catch (e) {
+        console.error('Redis rate limit error, falling back to in-memory:', e);
+        return this.fallback.isAllowed(identifier);
+      }
+    }
+
+    return this.fallback.isAllowed(identifier);
+  }
+}
+
+// Instancias globales de rate limiters (Redis-backed)
+export const apiRateLimiter = new RedisRateLimiter(1000, 60000); // 1000 requests per minute for APIs
+export const authRateLimiter = new RedisRateLimiter(5, 60000); // 5 auth attempts per minute
+export const withdrawRateLimiter = new RedisRateLimiter(5, 60000); // 5 withdraws per minute
+export const distributeRateLimiter = new RedisRateLimiter(3, 60000); // 3 distributions per minute
+export const redemptionRateLimiter = new RedisRateLimiter(1, 60000); // 1 redemption per minute
+export const claimRateLimiter = new RedisRateLimiter(10, 60000); // 10 claims per minute per user
+export const registerRateLimiter = new RedisRateLimiter(5, 60000); // 5 registrations per minute
 
 /**
  * Valida estructura básica de request body
@@ -161,13 +210,17 @@ export function isValidWalletAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
+interface RateLimiterLike {
+  isAllowed(identifier: string): boolean | Promise<boolean>;
+}
+
 /**
  * Middleware de seguridad básico para API routes
  */
 export function withSecurity<T extends unknown[]>(
   handler: (request: Request, ...args: T) => Promise<Response>,
   options: {
-    rateLimit?: SimpleRateLimiter;
+    rateLimit?: RateLimiterLike;
     requireAuth?: boolean;
     maxBodySize?: number;
   } = {}
@@ -180,7 +233,7 @@ export function withSecurity<T extends unknown[]>(
                           request.headers.get('x-real-ip') ??
                           'unknown';
 
-        if (!options.rateLimit.isAllowed(identifier)) {
+        if (!(await options.rateLimit.isAllowed(identifier))) {
           return new Response(
             JSON.stringify({ message: 'Rate limit exceeded' }),
             {
