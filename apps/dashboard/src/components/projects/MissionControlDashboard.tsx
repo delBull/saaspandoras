@@ -25,6 +25,7 @@ import { getContract, prepareContractCall, sendTransaction, waitForReceipt } fro
 import { defineChain } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import DaoWizard from '@/components/admin/DaoWizard';
+import { LegalTab } from '@/components/projects/LegalTab';
 import type { Project } from '@/types/admin';
 
 interface MissionControlProps {
@@ -40,7 +41,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
         initialProject?.id || (projects.length > 0 ? projects[0]?.id ?? '' : '')
     );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'purchases' | 'treasury' | 'tokenomics' | 'governance'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'purchases' | 'treasury' | 'tokenomics' | 'governance' | 'legal'>('overview');
     const [pendingCount, setPendingCount] = useState(0);
 
     const project = projects.find(p => p.id === selectedProjectId) || projects[0];
@@ -153,6 +154,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                         { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                         { id: 'tokenomics', label: 'Tokenomics & Bots', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                         { id: 'governance', label: 'DAO & Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                        { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -189,6 +191,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                             {activeTab === 'treasury' && <TreasuryTab project={project} address={treasuryAddress} />}
                             {activeTab === 'tokenomics' && <TokenomicsTab project={project} config={config} />}
                             {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
+                            {activeTab === 'legal' && <LegalTab project={project} />}
                         </motion.div>
                     </AnimatePresence>
                 </div>

@@ -55,3 +55,31 @@ export function validateTelegramInitData(initData: string): { isValid: boolean; 
         return { isValid: false };
     }
 }
+
+/**
+ * Envia una alerta de seguridad u operativa al canal de admins de Telegram
+ */
+export async function sendTelegramAlert(message: string): Promise<void> {
+    if (!BOT_TOKEN) return;
+    
+    // Configura TELEGRAM_ADMIN_CHAT_ID en tu .env.local
+    const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; 
+    if (!adminChatId) {
+        console.warn("⚠️ TELEGRAM_ADMIN_CHAT_ID no configurado, no se enviará alerta.");
+        return;
+    }
+
+    try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: adminChatId,
+                text: `🚨 <b>Pandora's Growth OS Alert</b>\n\n${message}`,
+                parse_mode: 'HTML'
+            })
+        });
+    } catch (e) {
+        console.error("❌ Error enviando alerta de Telegram:", e);
+    }
+}

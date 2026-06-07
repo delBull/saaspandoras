@@ -4,6 +4,7 @@ import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import crypto from 'crypto';
 import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
 async function handler(req: Request, props: { params: Promise<{ projectId: string }> }) {
@@ -33,16 +34,17 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       return NextResponse.json({ success: false, error: "Forbidden: Only project owner can register bot" }, { status: 403 });
     }
 
-    // Get the base URL from the request (e.g. https://staging.dash.pandoras.finance)
-    // We assume this endpoint is called by the frontend on the correct domain.
+    // Generate a unique secret token for webhook validation
+    const webhookSecret = crypto.randomUUID();
+
     const host = req.headers.get('host');
     const protocol = host?.includes('localhost') ? 'http' : 'https';
     
-    // Construct the Webhook URL using the exact route we created earlier
+    // Register webhook with Telegram, including secret_token for request validation
     const webhookUrl = `${protocol}://${host}/api/v1/projects/${projectId}/bot/webhook`;
-
-    // 1. Call Telegram API to register the webhook
-    const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook?url=${webhookUrl}`);
+    const telegramRes = await fetch(
+      `https://api.telegram.org/bot${botToken}/setWebhook?url=${webhookUrl}&secret_token=${webhookSecret}`
+    );
     const telegramData = await telegramRes.json();
 
     if (!telegramData.ok) {
@@ -53,7 +55,6 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       }, { status: 400 });
     }
 
-    // 1.5. Call Telegram getMe to get the bot username
     let botUsername = null;
     try {
       const meRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
@@ -65,18 +66,19 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       console.warn("[Telegram Registration] Failed to fetch bot username:", e);
     }
 
-    // 2. Save the token and username into the database (w2eConfig)
+    // Save token, username, and webhookSecret into the database
     if (projectRecord) {
       const config = (projectRecord.w2eConfig as any) || {};
       
       const newConfig = {
         ...config,
-        aiBotUrl: botUsername ? `https://t.me/${botUsername}` : config.aiBotUrl, // Expose aiBotUrl directly in w2eConfig for TMA to read
+        aiBotUrl: botUsername ? `https://t.me/${botUsername}` : config.aiBotUrl,
         botConfig: {
           ...config.botConfig,
           telegramToken: botToken,
           telegramUsername: botUsername,
-          enabled: true
+          webhookSecret,
+          enabled: true,
         }
       };
 

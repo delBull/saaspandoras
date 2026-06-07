@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import type { UserData, UserRole } from '@/types/admin';
 import { UserKeyStatus } from './UserKeyStatus';
+import { resolveIpfsUrl } from '@/lib/utils';
 
 interface UsersTableProps {
   users: UserData[];
@@ -183,7 +184,7 @@ export function UsersTable({ users }: UsersTableProps) {
                     <div className="flex items-center gap-3">
                       {user.image && (
                         <Image
-                          src={user.image}
+                          src={resolveIpfsUrl(user.image) || '/images/avatars/onlybox2.png'}
                           alt="Avatar"
                           width={32}
                           height={32}

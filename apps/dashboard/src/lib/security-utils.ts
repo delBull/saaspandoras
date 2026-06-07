@@ -108,6 +108,9 @@ class SimpleRateLimiter {
 export const apiRateLimiter = new SimpleRateLimiter(1000, 60000); // 1000 requests per minute for APIs
 export const authRateLimiter = new SimpleRateLimiter(5, 60000); // 5 auth attempts per minute
 export const withdrawRateLimiter = new SimpleRateLimiter(5, 60000); // 5 withdraws per minute
+export const distributeRateLimiter = new SimpleRateLimiter(3, 60000); // 3 distributions per minute
+export const redemptionRateLimiter = new SimpleRateLimiter(1, 60000); // 1 redemption per minute
+export const claimRateLimiter = new SimpleRateLimiter(10, 60000); // 10 claims per minute per user
 
 /**
  * Valida estructura básica de request body
@@ -190,7 +193,7 @@ export function withSecurity<T extends unknown[]>(
       // 2. Body validation for POST/PUT/PATCH
       if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
         try {
-          const body = await request.json() as unknown;
+          const body = await request.clone().json() as unknown;
           const validation = validateRequestBody(body);
 
           if (!validation.isValid) {

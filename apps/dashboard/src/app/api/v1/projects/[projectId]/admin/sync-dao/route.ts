@@ -4,8 +4,9 @@ import { purchases, projects, daoMembers } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
-export async function POST(
+async function handler(
     req: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
@@ -40,8 +41,6 @@ export async function POST(
         // Group by user/wallet and sum amounts
         const userTotals = new Map<string, number>();
         for (const p of completedPurchases) {
-            // Assume userId is the wallet for on-chain, or we could resolve it just like in approve.
-            // For simplicity, we use userId as wallet if it starts with 0x.
             if (p.userId.startsWith('0x')) {
                 const current = userTotals.get(p.userId) || 0;
                 userTotals.set(p.userId, current + Number(p.amount));
@@ -52,7 +51,6 @@ export async function POST(
 
         // Transactionally update daoMembers
         await db.transaction(async (tx) => {
-            // Optional: clear existing members to do a full fresh sync
             await tx.delete(daoMembers).where(eq(daoMembers.projectId, projectIdNum));
 
             for (const [wallet, totalUsd] of userTotals.entries()) {
@@ -80,3 +78,5 @@ export async function POST(
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter });

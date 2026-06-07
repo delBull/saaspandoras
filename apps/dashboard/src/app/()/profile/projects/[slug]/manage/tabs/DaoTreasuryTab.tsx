@@ -1,0 +1,1 @@
+export { DaoTreasuryTab } from '@/components/projects/DaoTreasuryTab';

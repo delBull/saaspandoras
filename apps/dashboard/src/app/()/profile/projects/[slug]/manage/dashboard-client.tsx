@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import DaoWizard from '@/components/admin/DaoWizard';
 import { ManageActivities } from '@/components/dao/ManageActivities';
 import { LegalTab } from './tabs/LegalTab';
+import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -35,7 +36,7 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao'>('overview');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -116,6 +117,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'missions', label: 'Gamificación', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
+                    { id: 'dao', label: 'DAO Treasury', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                 ].map((tab) => (
@@ -156,6 +158,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         )}
                         {activeTab === 'treasury' && <TreasuryTab project={project} address={treasuryAddress} />}
                         {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
+                        {activeTab === 'dao' && <DaoTreasuryTab project={project} />}
                         {activeTab === 'missions' && <MissionsTab project={project} />}
                         {activeTab === 'legal' && <LegalTab project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}

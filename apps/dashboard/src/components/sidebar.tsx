@@ -26,6 +26,8 @@ import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/component
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { Hash, PackageCheckIcon, BookOpen, Lock, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { useRealGamification } from '@/hooks/useRealGamification';
+import { resolveIpfsUrl } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -542,7 +544,7 @@ export function Sidebar({
                     title="Menú de perfil"
                   >
                     <Image
-                      src={userProfile?.image || '/images/avatars/onlybox2.png'}
+                      src={resolveIpfsUrl(userProfile?.image) || '/images/avatars/onlybox2.png'}
                       alt="Profile Avatar"
                       width={32}
                       height={32}
@@ -1036,7 +1038,7 @@ export function Sidebar({
                         title="Menú de perfil"
                       >
                         <Image
-                          src={userProfile?.image || '/images/avatars/onlybox2.png'}
+                          src={resolveIpfsUrl(userProfile?.image) || '/images/avatars/onlybox2.png'}
                           alt="Profile Avatar"
                           width={32}
                           height={32}

@@ -6,8 +6,9 @@ import crypto from 'crypto';
 import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { TelemetryService } from '@/lib/security/telemetry';
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
-export async function POST(
+async function handler(
     req: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
@@ -154,3 +155,5 @@ export async function POST(
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter });

@@ -3,12 +3,34 @@ import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateBotResponse } from '@/lib/marketing/bot-engine';
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
-export async function POST(req: Request, props: { params: Promise<{ projectId: string }> }) {
+async function handler(req: Request, props: { params: Promise<{ projectId: string }> }) {
   try {
     const params = await props.params;
     const { projectId } = params;
-    
+
+    // 0. Validate Telegram secret token (anti-forgery)
+    const projectRecord = await db.query.projects.findFirst({
+      where: eq(projects.slug, projectId),
+    });
+
+    if (!projectRecord) {
+      console.warn(`[Telegram Bot] Webhook received for unknown project: ${projectId}`);
+      return NextResponse.json({ success: true });
+    }
+
+    const metadata = (projectRecord.w2eConfig as any) || {};
+    const storedSecret = metadata?.botConfig?.webhookSecret;
+
+    if (storedSecret) {
+      const requestSecret = req.headers.get('x-telegram-bot-api-secret-token');
+      if (!requestSecret || requestSecret !== storedSecret) {
+        console.warn(`[Telegram Bot] Invalid secret token for project: ${projectId}`);
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const { message } = body;
 
@@ -21,22 +43,9 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
     const chatId = message.chat.id;
     const text = message.text;
 
-    // 1. Fetch the project configuration
-    const projectRecord = await db.query.projects.findFirst({
-      where: eq(projects.slug, projectId) // e.g., 'snarai'
-    });
-
-    if (!projectRecord) {
-      console.warn(`[Telegram Bot] Webhook received for unknown project: ${projectId}`);
-      return NextResponse.json({ success: true });
-    }
-
-    const metadata = (projectRecord.w2eConfig as any) || {};
-    
-    // Fallback security for S'Narai during setup (since DB script failed earlier due to pooler auth)
     let botToken = metadata?.botConfig?.telegramToken;
     let botInstructions = metadata?.aiKnowledgeBase || metadata?.botConfig?.instructions;
-    
+
     if (projectId === 'snarai') {
        botToken = botToken || "8639272150:AAEVRsfHMP-9EzWRRvkZFRaKIiiFvp0K9tY";
        botInstructions = botInstructions || `Eres el Conserje Oficial de S'Narai, un proyecto inmobiliario premium de Riviera Nayarit (México) operado por Aztecas Tokenización y Pandoras Protocol. Tu objetivo es asistir a los usuarios de manera cortés, premium y muy profesional.`;
@@ -50,7 +59,7 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
     // Intercept /start command for a custom welcome message
     if (text.trim() === '/start') {
       const welcomeMessage = `¡Hola! Soy el Conserje Oficial de *${projectRecord.title}*. 🏛️\n\nEstoy aquí para resolver cualquier duda que tengas sobre el proyecto, las fases de inversión y cómo adquirir tus Títulos Digitales.\n\n¿En qué te puedo ayudar hoy?`;
-      
+
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,14 +72,14 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
       return NextResponse.json({ success: true });
     }
 
-    // 2. Build live context (In production, this could query your /api/v1/projects/[id]/analytics)
+    // 2. Build live context
     const projectContext = {
       title: projectRecord.title,
       currentPrice: metadata?.tokenPriceUsd || 50,
       totalUnits: metadata?.totalUnits || 8,
       availableUnits: metadata?.availableUnits || 8,
       progressPercentage: metadata?.progressPercentage || 0,
-      treasury: '0' // Could be mapped from DB
+      treasury: '0'
     };
 
     // 3. Generate AI Response
@@ -101,3 +110,5 @@ export async function POST(req: Request, props: { params: Promise<{ projectId: s
     return NextResponse.json({ success: true });
   }
 }
+
+export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter });

@@ -256,6 +256,39 @@ All deployments undergo:
 `
       },
       {
+        id: "institutional-treasury",
+        title: "Institutional Web2.5 Treasury",
+        content: `# Institutional Web2.5 Treasury
+
+La infraestructura de tesorería de Pandora's está diseñada para cumplir con los estándares institucionales más exigentes, garantizando la inmutabilidad de Web3 con la velocidad de Fintech.
+
+## Arquitectura de Custodia (Gnosis Safe + Allowance)
+
+Pandora's implementa una arquitectura de segregación de capital basada en **Gnosis Safe**:
+- **Cero Honeypots**: Los fondos no se guardan en un Smart Contract monolítico. Cada proyecto despliega su propia bóveda (Safe multisig 2/3).
+- **Delegación Operativa**: Se utiliza un \`AllowanceController\` para autorizar al "Growth OS" a distribuir recompensas (PULL) con un límite de retiro diario estricto (Daily Limit).
+- **Control Absoluto**: El proyecto (DAO o Creador) mantiene el control de la bóveda, y en caso de emergencia, puede revocar el acceso del AllowanceController inmediatamente.
+
+## PULL vs PUSH Architecture
+
+Los sistemas tradicionales colapsan al intentar distribuir dividendos masivos (PUSH) debido a los costos de gas de la red. Nuestra solución híbrida implementa la **PULL Architecture**:
+1. **Distribución Contable (Base de Datos)**: Los balances se actualizan instantáneamente y sin costo on-chain a través de PostgreSQL, pro-rateando los fondos por poder de voto.
+2. **Reclamo a Demanda (On-Chain)**: El usuario solicita su retiro (Claim) cuando lo desea.
+3. **Firma Criptográfica (EIP-712)**: El reclamo está blindado mediante la firma del usuario y la validación de un \`nonce\` secuencial, evitando ataques de repetición.
+
+## Dynamic Gas Griefing Protection
+
+Dado que el protocolo subsidia el gas para ejecutar las transacciones on-chain de los Allowance Controllers, estamos expuestos a ataques de *Gas Griefing*. Para evitar que la tesorería de gas (ETH) se agote:
+- El protocolo calcula el **MIN_WITHDRAW** en tiempo real.
+- La fórmula compara el \`Gas Price\` actual y la conversión \`ETH/USD\`, exigiendo que el valor a retirar sea siempre económicamente viable respecto al costo transaccional.
+
+## Atomic DB-Chain Sync (Seguridad Anti-Reentrancy)
+
+Todas las transacciones que involucran movimientos de saldo (Retiros y Reclamos) utilizan un **Lock de Concurrencia FOR UPDATE** en la base de datos (PostgreSQL), atado al sistema de \`nonce\`.
+- Esto garantiza que es matemáticamente imposible duplicar retiros, bloqueando a nivel de fila cualquier solicitud paralela hasta que la transacción se liquide por completo.
+`
+      },
+      {
         id: "agora",
         title: "AGORA: Disciplined Economic Model",
         content: `

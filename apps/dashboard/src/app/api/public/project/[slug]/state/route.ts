@@ -558,6 +558,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       dbUserStatus,
       isWhitelisted,
       userPortfolio,
+      legal: project.legalConfig || {},
       phases: phases.map((p: any) => ({
         id: p.id,
         name: p.name,

@@ -27,6 +27,7 @@ import { useTour } from "@/components/onboarding/TourEngine";
 import { RocketLaunchIcon, BeakerIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 import { useRealGamification } from "@/hooks/useRealGamification";
 import { SandboxTransition } from "./SandboxTransition";
+import { resolveIpfsUrl } from "@/lib/utils";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -349,7 +350,7 @@ export function TopNavbar({
                   title="Perfil"
                 >
                   <Image
-                    src={userProfile?.image || '/images/avatars/onlybox2.png'}
+                    src={resolveIpfsUrl(userProfile?.image) || '/images/avatars/onlybox2.png'}
                     alt="Profile Avatar"
                     width={32}
                     height={32}

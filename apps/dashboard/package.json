@@ -9,6 +9,7 @@
     "dev:staging": "dotenv -e .env.staging -- next dev --turbo",
     "lint": "next lint --quiet",
     "format": "prettier --write '**/*.{js,cjs,mjs,ts,tsx,md,json}'",
+    "e2e": "node ../../e2e/run-all.mjs",
     "start": "next start",
     "update:token-hosts": "node generar-dominios.js",
     "db:generate": "turbo db:generate",

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
+import { resolveIpfsUrl } from "@/lib/utils";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
@@ -80,7 +81,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
       {/* Imagen de Portada */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={coverPhotoUrl as string}
+        src={resolveIpfsUrl(coverPhotoUrl as string)}
         alt={`Portada de ${displayTitle}`}
         className="absolute inset-0 w-full h-full object-cover"
       />
@@ -95,7 +96,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
               <div className="rounded-xl border-2 md:border-4 border-zinc-900 bg-zinc-800 w-[80px] h-[80px] md:w-[100px] md:h-[100px] flex items-center justify-center p-3 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={(logoUrl as string) || '/images/default-logo.jpg'}
+                  src={resolveIpfsUrl(logoUrl as string) || '/images/default-logo.jpg'}
                   alt={`${displayTitle} logo`}
                   className="object-contain w-full h-full"
                 />

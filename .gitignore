@@ -62,3 +62,4 @@ tmp/
 query.ts
 inspect_*.ts
 sync-*.js
+.docs/

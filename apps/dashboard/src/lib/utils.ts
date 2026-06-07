@@ -20,3 +20,11 @@ export function getDashboardDomain() {
   
   return 'dash.pandoras.finance';
 }
+
+export function resolveIpfsUrl(url?: string | null): string | null {
+  if (!url || url === 'null' || url === 'undefined') return null;
+  if (url.startsWith('ipfs://')) {
+    return url.replace('ipfs://', 'https://cloudflare-ipfs.com/ipfs/');
+  }
+  return url;
+}

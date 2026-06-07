@@ -210,7 +210,8 @@ export function sanitizeUrl(url: any): string | null {
   
   // Handle relative paths - Force pointing back to the Dashboard to ensure assets load correctly on Narai/External
   if (cleanUrl.startsWith('/')) {
-    return `https://dash.pandoras.finance${cleanUrl}`;
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+    return `${baseUrl}${cleanUrl}`;
   }
 
   // Handle data URLs
@@ -219,6 +220,7 @@ export function sanitizeUrl(url: any): string | null {
   }
   
   // Default fallback: Assume it might be a relative asset on the dashboard
-  return `https://dash.pandoras.finance/${cleanUrl}`;
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+  return `${baseUrl}/${cleanUrl}`;
 }
 

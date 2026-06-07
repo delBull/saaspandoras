@@ -4,8 +4,9 @@ import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
-export async function GET(
+async function handler(
     req: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
@@ -39,3 +40,5 @@ export async function GET(
         return NextResponse.json({ error: "Internal Server Error", detail: error.message }, { status: 500 });
     }
 }
+
+export const GET = withSecurity(handler as any, { rateLimit: apiRateLimiter });

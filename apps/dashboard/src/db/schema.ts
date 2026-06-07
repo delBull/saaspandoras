@@ -295,6 +295,7 @@ export const projects = pgTable("projects", {
   returnsPaid: decimal("returns_paid", { precision: 18, scale: 2 }).default("0.00"),
   // Deployment & Contracts (Refs above)
   votingContractAddress: varchar("voting_contract_address", { length: 42 }), // For On-Chain Governance
+  allowanceControllerAddress: varchar("allowance_controller_address", { length: 42 }), // Per-project AllowanceController for daily-limited withdrawals
 
 
   // --- AJUSTE 2: Estado por defecto corregido a 'draft' ---
@@ -1111,16 +1112,33 @@ export const userBalances = pgTable("user_balances", {
 
 export const withdrawals = pgTable("withdrawals", {
   id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(), // FK to projects (needed for treasury lookups & cooldown scoping)
   walletAddress: varchar("wallet_address", { length: 42 }).notNull(),
   amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
   token: varchar("token", { length: 20 }).default('USDC').notNull(),
-  status: varchar("status", { length: 20 }).default('pending').notNull(), // pending, processed, failed, rejected
+  status: varchar("status", { length: 20 }).default('pending').notNull(), // pending, processing, completed, failed
   txHash: varchar("tx_hash", { length: 66 }),
   nonce: integer("nonce").notNull(),
   signature: text("signature").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   processedAt: timestamp("processed_at"),
   error: text("error"),
+});
+
+export const distributionBatches = pgTable("distribution_batches", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(),
+  totalAmount: decimal("total_amount", { precision: 18, scale: 6 }).notNull(),
+  totalHolders: integer("total_holders").notNull(),
+  currency: varchar("currency", { length: 10 }).default('USDC').notNull(),
+  status: varchar("status", { length: 20 }).default('pending').notNull(),
+  txHash: varchar("tx_hash", { length: 66 }),
+  executedBy: varchar("executed_by", { length: 42 }).notNull(),
+  batchMetadata: jsonb("batch_metadata").default('{}'),
+  failureReason: text("failure_reason"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Platform Settings (Global Configuration)
@@ -1143,6 +1161,21 @@ export type DaoPost = typeof daoPosts.$inferSelect;
 export type UserBalance = typeof userBalances.$inferSelect;
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type AuthChallenge = typeof authChallenges.$inferSelect;
+export type DaoReward = typeof daoRewards.$inferSelect;
+
+// DAO Financial Rewards (claims)
+export const daoRewards = pgTable("dao_rewards", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(),
+  walletAddress: varchar("wallet_address", { length: 42 }).notNull(),
+  amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
+  token: varchar("token", { length: 20 }).default('USDC').notNull(),
+  reason: text("reason").notNull(),
+  claimBatchId: integer("claim_batch_id"),
+  claimedAt: timestamp("claimed_at"),
+  txHash: varchar("tx_hash", { length: 66 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // =========================================================
 // MARKETING OS TABLES

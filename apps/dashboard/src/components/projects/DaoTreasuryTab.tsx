@@ -1,0 +1,420 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useActiveAccount } from 'thirdweb/react';
+import { toast } from 'sonner';
+
+interface DaoTreasuryTabProps {
+  project: any;
+}
+
+export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
+  const account = useActiveAccount();
+
+  const [controllerInfo, setControllerInfo] = useState<{
+    address: string;
+    balance: string;
+    dailyLimit: string;
+    spentToday: string;
+    remaining: string;
+    owner: string;
+    delegate: string;
+  } | null>(null);
+
+  const [safeAddress, setSafeAddress] = useState(project.allowanceControllerAddress || '');
+  const [controllerAddress, setControllerAddress] = useState('');
+  const [pendingRewards, setPendingRewards] = useState<{
+    total: string;
+    count: number;
+    nonce: number;
+    usdcBalance: string;
+  } | null>(null);
+
+  const [deployingSafe, setDeployingSafe] = useState(false);
+  const [deployingController, setDeployingController] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawTo, setWithdrawTo] = useState('');
+  const [preparingWithdraw, setPreparingWithdraw] = useState(false);
+  const [broadcastingWithdraw, setBroadcastingWithdraw] = useState(false);
+  const [preparedWithdraw, setPreparedWithdraw] = useState<any>(null);
+  const [withdrawResult, setWithdrawResult] = useState<string | null>(null);
+
+  const fetchControllerInfo = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/dao/controller-info?projectId=${project.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.error) setControllerInfo(data);
+      }
+    } catch {}
+  }, [project.id]);
+
+  const fetchPendingRewards = useCallback(async () => {
+    if (!account?.address) return;
+    try {
+      const res = await fetch(`/api/dao/rewards?address=${account.address}&projectId=${project.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPendingRewards(data);
+      }
+    } catch {}
+  }, [account?.address, project.id]);
+
+  useEffect(() => {
+    fetchControllerInfo();
+    fetchPendingRewards();
+  }, [fetchControllerInfo, fetchPendingRewards]);
+
+  const handleDeploySafe = async () => {
+    if (!account?.address) return toast.error('Connect wallet first');
+    setDeployingSafe(true);
+    try {
+      const res = await fetch('/api/dao/deploy-safe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSafeAddress(data.safeAddress);
+      toast.success(`Safe deployed: ${data.safeAddress.slice(0, 10)}...`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setDeployingSafe(false);
+    }
+  };
+
+  const handleDeployController = async () => {
+    if (!account?.address) return toast.error('Connect wallet first');
+    setDeployingController(true);
+    try {
+      const res = await fetch('/api/dao/deploy-controller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id, ownerAddress: account.address }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setControllerAddress(data.controllerAddress);
+      toast.success(`Controller deployed: ${data.controllerAddress.slice(0, 10)}...`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setDeployingController(false);
+    }
+  };
+
+  const handleClaim = async () => {
+    if (!account?.address || !pendingRewards || pendingRewards.count === 0) return;
+
+    setClaiming(true);
+    try {
+      const message = `Claim ${pendingRewards.total} USDC rewards | Project ${project.id} | Nonce ${pendingRewards.nonce}`;
+      const signature = await account.signMessage({ message });
+
+      const res = await fetch('/api/dao/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: account.address,
+          projectId: project.id,
+          walletSignature: signature,
+          message,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      toast.success(`Claimed ${data.amount} USDC`);
+      setPendingRewards(null);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handlePrepareWithdraw = async () => {
+    if (!account?.address) return toast.error('Connect wallet first');
+    if (!withdrawTo || !withdrawAmount) return toast.error('Enter recipient and amount');
+
+    setPreparingWithdraw(true);
+    setPreparedWithdraw(null);
+    setWithdrawResult(null);
+
+    try {
+      const res = await fetch('/api/dao/owner-withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: project.id,
+          mode: 'prepare',
+          amount: withdrawAmount,
+          to: withdrawTo,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setPreparedWithdraw(data);
+      toast.success('Transaction prepared — review and sign in your wallet');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setPreparingWithdraw(false);
+    }
+  };
+
+  const handleBroadcastWithdraw = async () => {
+    if (!account?.address || !preparedWithdraw) return;
+
+    setBroadcastingWithdraw(true);
+    try {
+      const raw = preparedWithdraw.tx;
+      const result = await account.sendTransaction({
+        to: raw.to,
+        data: raw.data,
+        value: 0n,
+        gas: BigInt(raw.gas),
+        maxFeePerGas: BigInt(raw.maxFeePerGas),
+        maxPriorityFeePerGas: BigInt(raw.maxPriorityFeePerGas),
+        nonce: raw.nonce,
+        chainId: raw.chainId as number,
+      });
+
+      const txHash = typeof result === 'string' ? result : result.transactionHash;
+      setWithdrawResult(`Broadcasted! TX: ${txHash}`);
+      toast.success(`Withdraw broadcasted: ${txHash.slice(0, 14)}...`);
+      fetchControllerInfo();
+    } catch (e: any) {
+      toast.error(e.message || 'Transaction rejected');
+    } finally {
+      setBroadcastingWithdraw(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">DAO Treasury</h2>
+        {account?.address && (
+          <span className="text-sm text-zinc-500 font-mono">
+            {account.address.slice(0, 6)}...{account.address.slice(-4)}
+          </span>
+        )}
+      </div>
+
+      {/* Controller Status */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-4">
+        <h3 className="text-lg font-bold text-white">AllowanceController</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-zinc-800/30 rounded-xl p-3">
+            <p className="text-xs text-zinc-500 mb-1">Address</p>
+            <p className="text-sm text-white font-mono truncate">
+              {controllerAddress || project.allowanceControllerAddress || 'Not deployed'}
+            </p>
+          </div>
+          <div className="bg-zinc-800/30 rounded-xl p-3">
+            <p className="text-xs text-zinc-500 mb-1">Balance</p>
+            <p className="text-xl text-emerald-400 font-bold">
+              {controllerInfo ? `${controllerInfo.balance} USDC` : '...'}
+            </p>
+          </div>
+          <div className="bg-zinc-800/30 rounded-xl p-3">
+            <p className="text-xs text-zinc-500 mb-1">Daily Limit</p>
+            <p className="text-xl text-white font-bold">
+              {controllerInfo ? `${controllerInfo.dailyLimit} USDC` : '...'}
+            </p>
+          </div>
+          <div className="bg-zinc-800/30 rounded-xl p-3">
+            <p className="text-xs text-zinc-500 mb-1">Spent Today</p>
+            <p className="text-xl text-yellow-400 font-bold">
+              {controllerInfo ? `${controllerInfo.spentToday} USDC` : '...'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Deploy Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-3">
+          <h3 className="text-lg font-bold text-white">
+            Safe Multisig
+            {safeAddress && <span className="text-emerald-400 text-sm ml-2">✅</span>}
+          </h3>
+          <p className="text-sm text-zinc-400">
+            Deploy a Safe multisig wallet for this project. The Safe can become the owner of the AllowanceController.
+          </p>
+          {safeAddress ? (
+            <p className="text-xs text-zinc-500 font-mono bg-zinc-800/30 rounded-lg p-2 truncate">
+              {safeAddress}
+            </p>
+          ) : (
+            <button
+              onClick={handleDeploySafe}
+              disabled={deployingSafe}
+              className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-colors"
+            >
+              {deployingSafe ? 'Deploying...' : 'Deploy Safe'}
+            </button>
+          )}
+        </div>
+
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-3">
+          <h3 className="text-lg font-bold text-white">
+            Project Controller
+            {(controllerAddress || project.allowanceControllerAddress) && (
+              <span className="text-emerald-400 text-sm ml-2">✅</span>
+            )}
+          </h3>
+          <p className="text-sm text-zinc-400">
+            Deploy a per-project AllowanceController. You will be the owner and the admin wallet is the delegate.
+          </p>
+          <button
+            onClick={handleDeployController}
+            disabled={deployingController || !!project.allowanceControllerAddress}
+            className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-colors"
+          >
+            {project.allowanceControllerAddress
+              ? 'Deployed'
+              : deployingController
+                ? 'Deploying...'
+                : 'Deploy Controller'}
+          </button>
+        </div>
+      </div>
+
+      {/* Transfer Ownership to Safe (visible when both Safe and Controller exist) */}
+      {safeAddress && (controllerAddress || project.allowanceControllerAddress) && (
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <h3 className="text-lg font-bold text-white">Transfer Ownership to Safe</h3>
+          <p className="text-sm text-zinc-400">
+            Make the Safe the owner of the AllowanceController. Only Safe signers will be able to change delegate, limit, or withdraw without limit.
+          </p>
+          <ol className="text-sm text-zinc-400 list-decimal list-inside space-y-2">
+            <li>Call <code className="text-emerald-400">POST /api/dao/controller-transfer</code> with <code className="text-zinc-300">mode: &quot;prepare&quot;</code></li>
+            <li>Sign the returned tx data in your wallet (MetaMask / Ledger)</li>
+            <li>Call <code className="text-emerald-400">POST /api/dao/controller-transfer</code> with <code className="text-zinc-300">mode: &quot;execute&quot;</code> and the signed tx</li>
+          </ol>
+        </div>
+      )}
+
+      {/* Controller Operations — Owner Withdraw */}
+      {(controllerAddress || project.allowanceControllerAddress) && (
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <h3 className="text-lg font-bold text-white">Controller Operations</h3>
+          <p className="text-sm text-zinc-400">
+            Manage funds inside the AllowanceController. The Owner can withdraw USDC without daily limit.
+          </p>
+
+          <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-4 space-y-4">
+            <h4 className="font-bold text-red-400">Owner Withdraw</h4>
+            <p className="text-xs text-zinc-400">
+              Withdraw USDC directly from the AllowanceController. Only the contract owner can execute this.
+            </p>
+
+            {!preparedWithdraw && !withdrawResult && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Recipient address (0x...)"
+                  value={withdrawTo}
+                  onChange={(e) => setWithdrawTo(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 font-mono"
+                />
+                <input
+                  type="number"
+                  placeholder="Amount in USDC"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500"
+                />
+                <button
+                  onClick={handlePrepareWithdraw}
+                  disabled={preparingWithdraw || !withdrawAmount || !withdrawTo}
+                  className="w-full py-2 bg-red-600 hover:bg-red-500 disabled:bg-zinc-700 text-white rounded-lg font-bold text-sm transition-colors"
+                >
+                  {preparingWithdraw ? 'Preparing...' : 'Prepare Withdraw'}
+                </button>
+              </div>
+            )}
+
+            {preparedWithdraw && !withdrawResult && (
+              <div className="space-y-3">
+                <div className="bg-zinc-900 rounded-lg p-3 space-y-1 text-xs font-mono">
+                  <p className="text-zinc-400">Controller: <span className="text-white">{preparedWithdraw.controllerAddress}</span></p>
+                  <p className="text-zinc-400">Recipient: <span className="text-white">{preparedWithdraw.recipient}</span></p>
+                  <p className="text-zinc-400">Amount: <span className="text-white">{preparedWithdraw.amount} USDC</span></p>
+                  <p className="text-zinc-400">Nonce: <span className="text-white">{preparedWithdraw.tx.nonce}</span></p>
+                  <p className="text-zinc-400">Gas: <span className="text-white">{preparedWithdraw.tx.gas}</span></p>
+                </div>
+                <button
+                  onClick={handleBroadcastWithdraw}
+                  disabled={broadcastingWithdraw}
+                  className="w-full py-2 bg-red-600 hover:bg-red-500 disabled:bg-zinc-700 text-white rounded-lg font-bold text-sm transition-colors"
+                >
+                  {broadcastingWithdraw ? 'Broadcasting...' : 'Sign & Broadcast in Wallet'}
+                </button>
+                <button
+                  onClick={() => { setPreparedWithdraw(null); setWithdrawResult(null); setWithdrawAmount(''); setWithdrawTo(''); }}
+                  className="w-full py-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {withdrawResult && (
+              <div className="space-y-3">
+                <p className="text-xs text-zinc-400 font-mono break-all">{withdrawResult}</p>
+                <button
+                  onClick={() => { setPreparedWithdraw(null); setWithdrawResult(null); setWithdrawAmount(''); setWithdrawTo(''); }}
+                  className="w-full py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg font-bold text-sm transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Claim Rewards */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-4">
+        <h3 className="text-lg font-bold text-white">Claim Rewards</h3>
+        {!account?.address ? (
+          <p className="text-sm text-zinc-500">Connect your wallet to see pending rewards</p>
+        ) : pendingRewards && pendingRewards.count > 0 ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between bg-zinc-800/30 rounded-xl p-4">
+              <div>
+                <p className="text-sm text-zinc-400">Pending Rewards</p>
+                <p className="text-2xl text-emerald-400 font-bold">{pendingRewards.total} USDC</p>
+                <p className="text-xs text-zinc-500">{pendingRewards.count} rewards</p>
+              </div>
+              <button
+                onClick={handleClaim}
+                disabled={claiming}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-colors"
+              >
+                {claiming ? 'Claiming...' : 'Claim All'}
+              </button>
+            </div>
+            <p className="text-xs text-zinc-500">Balance: {pendingRewards.usdcBalance} USDC | Nonce: {pendingRewards.nonce}</p>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-zinc-500">No pending rewards</p>
+            <p className="text-xs text-zinc-600 mt-1">Rewards appear here after a distribution is processed</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
