@@ -34,7 +34,7 @@ const PROXY_FACTORY_ABI = parseAbi([
 ]);
 
 const SAFE_ABI = parseAbi([
-  "function setup(address[] calldata _owners, uint256 _threshold, address to, bytes calldata data, address fallbackHandler, address paymentToken, uint256 payment, address payable paymentReceiver)",
+  "function setup(address[] _owners, uint256 _threshold, address to, bytes data, address fallbackHandler, address paymentToken, uint256 payment, address paymentReceiver)",
 ]);
 
 function getViemChain() {
