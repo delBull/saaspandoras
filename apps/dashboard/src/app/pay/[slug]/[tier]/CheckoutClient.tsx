@@ -89,6 +89,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         nature: false,
         risk: false
     });
+    const [imageError, setImageError] = useState(false);
     const allLegalChecked = legalChecks.agreement && legalChecks.nature && legalChecks.risk;
 
     const openLegalDoc = (type: 'agreement' | 'risk-disclosure' | 'phase-dynamics') => {
@@ -384,7 +385,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         }
     }, [project, rawPhase, safeAmount, account, safeChainId, effectivePriceInWei]);
 
-    const handleSuccess = async () => {
+    const handleSuccess = async (receipt?: any) => {
         setStep('success');
         toast.success("¡Participación Confirmada!");
 
@@ -396,6 +397,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     wallet: account?.address,
                     projectId: project.id,
                     artifactsAcquired: safeAmount,
+                    txHash: receipt?.transactionHash || receipt?.receipt?.transactionHash,
                     buyerEmail: buyerEmail || undefined,
                     newsletterConsent
                 })
@@ -479,13 +481,14 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     className="z-10 w-full max-w-[380px] flex flex-col items-center space-y-8 p-10 bg-zinc-950/50 backdrop-blur-3xl border border-zinc-800/50 rounded-[2.5rem] shadow-2xl"
                 >
                     <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center bg-zinc-900 group">
-                        {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
+                        {sanitizeUrl(project.logoUrl || project.logo_url || project.imageUrl) ? (
                             <img
-                                src={sanitizeUrl(project.logoUrl || project.imageUrl)!}
+                                src={sanitizeUrl(project.logoUrl || project.logo_url || project.imageUrl)!}
                                 alt={project.title}
                                 width={80}
                                 height={80}
                                 className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
                             />
                         ) : (
                             <span className="text-2xl font-black text-white">{project.title.substring(0, 2).toUpperCase()}</span>
@@ -591,11 +594,12 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             <div className="flex flex-col gap-4">
                                 <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group">
                                     <div className="absolute inset-0 blur-md group-hover:opacity-70 transition-opacity" style={{ backgroundColor: brandColor, opacity: 0.3 }} />
-                                    {sanitizeUrl(project.logoUrl || project.imageUrl) ? (
+                                    {sanitizeUrl(project.logoUrl || project.imageUrl) && !imageError ? (
                                         <img 
                                             src={sanitizeUrl(project.logoUrl || project.imageUrl)!} 
                                             alt={project.title} 
                                             className="w-full h-full object-cover relative z-10 transition-transform group-hover:scale-110"
+                                            onError={() => setImageError(true)}
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-zinc-900 border border-zinc-800 flex items-center justify-center relative z-10">
@@ -818,7 +822,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                     <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, risk: !prev.risk}))}>
                                                                         {legalChecks.risk ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
                                                                     </div>
-                                                                    <p className="text-xs text-zinc-400 leading-relaxed">Acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('risk-disclosure'); }} className="text-emerald-400 hover:underline">Aviso de Riesgos</button> y las <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('phase-dynamics'); }} className="text-emerald-400 hover:underline">Cláusulas de Fases</button>.</p>
+                                                                    <p className="text-xs text-zinc-400 leading-relaxed">He leído y acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('risk-disclosure'); }} className="text-emerald-400 hover:underline">Aviso Integral de Riesgos</button> y las <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('phase-dynamics'); }} className="text-emerald-400 hover:underline">Cláusulas de Fases de proyecto</button>.</p>
                                                                 </label>
                                                             </div>
 

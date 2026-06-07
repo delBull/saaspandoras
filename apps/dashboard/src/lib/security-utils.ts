@@ -190,29 +190,17 @@ export function withSecurity<T extends unknown[]>(
         }
       }
 
-      // 2. Body validation for POST/PUT/PATCH
+      // 2. Body validation for POST/PUT/PATCH using Content-Length to avoid stream consumption issues
       if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
-        try {
-          const body = await request.clone().json() as unknown;
-          const validation = validateRequestBody(body);
-
-          if (!validation.isValid) {
+        const contentLength = request.headers.get('content-length');
+        if (contentLength && parseInt(contentLength, 10) > (options.maxBodySize || 1024 * 1024)) {
             return new Response(
-              JSON.stringify({ message: validation.error }),
+              JSON.stringify({ message: 'Request body too large' }),
               {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' }
               }
             );
-          }
-        } catch (error) {
-          return new Response(
-            JSON.stringify({ message: 'Invalid JSON body' }),
-            {
-              status: 400,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
         }
       }
 

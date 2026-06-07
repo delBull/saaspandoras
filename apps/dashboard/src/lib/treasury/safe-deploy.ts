@@ -21,21 +21,67 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const PROXY_CREATION_EVENT = keccak256(toHex("ProxyCreation(address,address)"));
 
-const MULTICALL3_ABI = parseAbi([
-  "struct Call { address target; bytes callData; }",
-  "struct Result { bool success; bytes returnData; }",
-  "function aggregate(Call[] calls) payable returns (uint256 blockNumber, bytes[] returnData)",
-  "function tryAggregate(bool requireSuccess, Call[] calls) payable returns (Result[] returnData)",
-]);
+const MULTICALL3_ABI = [
+  {
+    type: "function",
+    name: "aggregate",
+    stateMutability: "payable",
+    inputs: [
+      {
+        name: "calls",
+        type: "tuple[]",
+        components: [
+          { name: "target", type: "address" },
+          { name: "callData", type: "bytes" }
+        ]
+      }
+    ],
+    outputs: [
+      { name: "blockNumber", type: "uint256" },
+      { name: "returnData", type: "bytes[]" }
+    ]
+  }
+] as const;
 
-const PROXY_FACTORY_ABI = parseAbi([
-  "function createProxyWithNonce(address _singleton, bytes memory initializer, uint256 saltNonce) returns (address proxy)",
-  "function proxyCreationCode() pure returns (bytes memory)",
-]);
+const PROXY_FACTORY_ABI = [
+  {
+    type: "function",
+    name: "createProxyWithNonce",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_singleton", type: "address" },
+      { name: "initializer", type: "bytes" },
+      { name: "saltNonce", type: "uint256" }
+    ],
+    outputs: [{ name: "proxy", type: "address" }]
+  },
+  {
+    type: "function",
+    name: "proxyCreationCode",
+    stateMutability: "pure",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes" }]
+  }
+] as const;
 
-const SAFE_ABI = parseAbi([
-  "function setup(address[] _owners, uint256 _threshold, address to, bytes data, address fallbackHandler, address paymentToken, uint256 payment, address paymentReceiver)",
-]);
+const SAFE_ABI = [
+  {
+    type: "function",
+    name: "setup",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_owners", type: "address[]" },
+      { name: "_threshold", type: "uint256" },
+      { name: "to", type: "address" },
+      { name: "data", type: "bytes" },
+      { name: "fallbackHandler", type: "address" },
+      { name: "paymentToken", type: "address" },
+      { name: "payment", type: "uint256" },
+      { name: "paymentReceiver", type: "address" }
+    ],
+    outputs: []
+  }
+] as const;
 
 function getViemChain() {
   return process.env.NODE_ENV === 'production' ? base : sepolia;

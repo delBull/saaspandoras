@@ -5,6 +5,10 @@ import { eq, and, sql } from 'drizzle-orm';
 import { sendPurchaseEmail } from '@/lib/email/purchase-mailer';
 import { projects } from '@/db/schema';
 
+import { defineChain } from "thirdweb/chains";
+import { client as twClient } from "@/lib/thirdweb-client";
+import { eth_getTransactionReceipt, getRpcClient } from "thirdweb/rpc";
+
 // Public endpoint called after a confirmed on-chain artifact purchase
 // to register/update the buyer as a unique holder in daoMembers
 // and record phase metadata in the purchases table.
@@ -33,6 +37,40 @@ export async function POST(req: Request) {
 
         if (isNaN(projectIdNum)) {
             return NextResponse.json({ error: 'Invalid projectId' }, { status: 400 });
+        }
+
+        const project = await db.query.projects.findFirst({
+            where: eq(projects.id, projectIdNum)
+        });
+
+        if (!project) {
+            return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+        }
+
+        // 🛡️ CYBER SECURITY FIX: Verify txHash ON-CHAIN before incrementing DAO Members
+        if (!txHash || !txHash.startsWith('0x')) {
+            console.warn(`[register-holder] Rejected DAO registration for ${walletLower}: Missing txHash`);
+            return NextResponse.json({ error: 'Missing or invalid txHash for verification' }, { status: 403 });
+        }
+
+        try {
+            const chain = defineChain(Number(project.chainId));
+            const provider = getRpcClient({ client: twClient, chain });
+            const receipt = await eth_getTransactionReceipt(provider, { hash: txHash as `0x${string}` });
+
+            if (!receipt || receipt.status !== "success") {
+                console.warn(`[register-holder] Rejected DAO registration for ${walletLower}: TX failed or not found`);
+                return NextResponse.json({ error: 'Transaction failed or not found on blockchain' }, { status: 403 });
+            }
+
+            // Verify the sender of the transaction matches the wallet claiming the purchase
+            if (receipt.from.toLowerCase() !== walletLower) {
+                console.warn(`[register-holder] Rejected DAO registration for ${walletLower}: tx.from mismatch (${receipt.from})`);
+                return NextResponse.json({ error: 'Transaction sender does not match claiming wallet' }, { status: 403 });
+            }
+        } catch (rpcError) {
+            console.error(`[register-holder] RPC Verification failed for ${txHash}:`, rpcError);
+            return NextResponse.json({ error: 'Failed to verify transaction signature via RPC' }, { status: 502 });
         }
 
         // 1. Check if returning buyer

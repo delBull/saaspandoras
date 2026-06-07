@@ -186,7 +186,12 @@ export function getTargetAmount(project: any): number {
 export function sanitizeUrl(url: any): string | null {
   if (!url || typeof url !== 'string') return null;
   
-  const cleanUrl = url.trim();
+  let cleanUrl = url.trim();
+  
+  // Temporary fix for staging DB having the wrong logo for S'Narai
+  if (cleanUrl === '/images/default-logo.jpg') {
+    cleanUrl = '/images/narai.jpg';
+  }
   
   // Ignore common placeholder strings or invalid values
   const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder'];

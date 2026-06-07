@@ -457,11 +457,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // --- Growth OS Engine: Mathematical Phase Calculation ---
     // Make the backend the single source of truth for portfolio mathematics
     const activePhaseMath = phases.find((p: any) => p.status === 'active' || p.status === 'ACTIVE') || phases[0];
-    // Portfolio price: use active phase price (ETH), NOT the legacy DB USD price
+    // Portfolio price: use active phase price (ETH) for crypto comparison, but USD for fiat portfolio
     const activePhasePrice = Number(activePhaseMath?.tokenPrice) > 0 ? Number(activePhaseMath.tokenPrice) : metadataPrice;
+    const activePhasePriceUsd = Number(activePhaseMath?.price) > 0 ? Number(activePhaseMath.price) : dbUsdPrice;
 
     const fullPhaseBreakdown = phases.map((phase: any, index: number) => {
-        const phasePrice = Number(phase.tokenPrice || 0);
+        const cryptoPrice = Number(phase.tokenPrice || 0);
+        const phaseUsdPrice = Number(phase.price) > 0 ? Number(phase.price) : dbUsdPrice;
         // 1. Calculate holdings per phase using 20% tolerance
         const phaseCerts = certificates.filter(c => {
             if (!c.units || c.units === 0) return false;
@@ -470,21 +472,21 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             if (c.isVirtual && index !== 0) return false;
 
             const unitPrice = Number(c.amount) / Number(c.units);
-            const tolerance = phasePrice * 0.20;
-            return Math.abs(unitPrice - phasePrice) <= tolerance;
+            const tolerance = cryptoPrice * 0.20;
+            return Math.abs(unitPrice - cryptoPrice) <= tolerance;
         });
         const titlesHeld = phaseCerts.reduce((acc, c) => acc + Number(c.units), 0);
 
-        // 2. Intelligent Capital Gains (Plusvalía)
+        // 2. Intelligent Capital Gains (Plusvalía) using USD prices
         let plusvalia = 0;
-        if (activePhasePrice > phasePrice && phasePrice > 0) {
-            plusvalia = Math.max(0, Math.round(((activePhasePrice - phasePrice) / phasePrice) * 100));
+        if (activePhasePriceUsd > phaseUsdPrice && phaseUsdPrice > 0) {
+            plusvalia = Math.max(0, Math.round(((activePhasePriceUsd - phaseUsdPrice) / phaseUsdPrice) * 100));
         }
 
         return {
             id: `phase-${index}`,
             name: phase.name || `Fase ${index + 1}`,
-            price: phasePrice,
+            price: phaseUsdPrice,
             titlesHeld,
             plusvalia,
             isActive: phase.status === 'active' || phase.status === 'ACTIVE'
@@ -496,7 +498,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const phasesWithoutHoldings = fullPhaseBreakdown.filter((p: any) => p.titlesHeld === 0);
     const prioritizedPhases = [...phasesWithHoldings, ...phasesWithoutHoldings].slice(0, 3);
 
-    const currentTotalValueUsd = userArtifactCount * activePhasePrice;
+    const currentTotalValueUsd = userArtifactCount * (activePhasePriceUsd > 0 ? activePhasePriceUsd : 50);
 
     const userPortfolio = {
         totalTitles: userArtifactCount,
@@ -566,7 +568,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         allocation: p.stats?.tokensAllocated || 0,
         sold: p.stats?.tokensSold || 0,
         remaining: p.stats?.remainingTokens || 0,
-        price: p.tokenPrice,
+        price: Number(p.price) > 0 ? p.price : (dbUsdPrice > 0 ? dbUsdPrice : 50),
+        cryptoPrice: p.tokenPrice,
         progress: p.progressPercentage || 0,
         isSoldOut: p.status === 'sold_out'
       })),
@@ -583,9 +586,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           if (phaseCalc > 0) return phaseCalc.toString();
           return (projectTotalUnits * metadataPrice).toString() || "0";
         })(),
-        // Always return the active phase price (ETH/crypto), NOT the legacy $50 DB value
-        tokenPriceUsd: phasePriceCandidate > 0 ? phasePriceCandidate.toString() : (activePhase?.tokenPrice?.toString() || "0.0005"),
-        nextPhasePriceUsd: (Number(nextPhase?.tokenPrice) > 0) ? nextPhase?.tokenPrice?.toString() : undefined,
+        // Provide the USD price for frontend display instead of ETH
+        tokenPriceUsd: (Number(activePhase?.price) > 0) ? activePhase?.price?.toString() : (dbUsdPrice > 0 ? dbUsdPrice.toString() : "50"),
+        nextPhasePriceUsd: (Number(nextPhase?.price) > 0) ? nextPhase?.price?.toString() : (dbUsdPrice > 0 ? (dbUsdPrice * 1.5).toString() : "75"),
+        tokenPriceCrypto: phasePriceCandidate > 0 ? phasePriceCandidate.toString() : (activePhase?.tokenPrice?.toString() || "0.0005"),
         deliveryDate: project.w2eConfig?.deliveryDate || "Q4 2027",
         totalUnits: projectTotalUnits,
         soldUnits,

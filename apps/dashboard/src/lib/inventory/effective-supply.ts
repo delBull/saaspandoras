@@ -85,7 +85,7 @@ export class InventoryService {
       onHoldUnits: onHoldUnits,
       totalSoldUnits,
       availableUnits: Math.max(0, totalCapUnits - totalSoldUnits),
-      progressPercentage: totalCapUnits > 0 ? Math.min(100, Math.round((totalSoldUnits / totalCapUnits) * 100)) : 0
+      progressPercentage: totalCapUnits > 0 ? Math.min(100, Number(((totalSoldUnits / totalCapUnits) * 100).toFixed(2))) : 0
     };
   }
 }
