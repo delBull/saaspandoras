@@ -95,3 +95,46 @@ export async function sendApplicationAlert(data: ApplicationData) {
         console.error("❌ Failed to send Discord Application alert:", err);
     }
 }
+
+export async function sendAmbassadorAlert(data: any, projectWebhookUrl?: string | null) {
+    const webhookUrl = projectWebhookUrl || DISCORD_ALERTS_WEBHOOK;
+    
+    if (!webhookUrl) {
+        console.warn("⚠️ No Discord webhook URL defined for ambassador alert.");
+        return;
+    }
+
+    const embed = {
+        title: "🤝 Nueva Aplicación: Gestor Patrimonial / Ambassador",
+        description: `Un candidato ha aplicado para el programa de embajadores${data.origin === 'pandoras' ? ' de Pandoras' : ' de un proyecto'}.`,
+        color: 0x3b82f6, // Blue-500
+        fields: [
+            { name: "Nombre", value: data.fullName, inline: true },
+            { name: "Correo", value: data.email, inline: true },
+            { name: "Teléfono", value: data.phone || "No especificado", inline: true },
+            { name: "LinkedIn / Social", value: data.socialUrl || "No especificado" },
+            { name: "Wallet", value: data.walletAddress || "No especificada" },
+            { name: "Origen", value: data.origin, inline: true }
+        ],
+        timestamp: new Date().toISOString(),
+        footer: { text: "Pandoras Growth Bot" }
+    };
+
+    if (data.projectId) {
+        embed.fields.push({ name: "Project ID", value: data.projectId.toString(), inline: true });
+    }
+
+    try {
+        await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                username: "Pandoras Partners",
+                avatar_url: "https://dash.pandoras.finance/images/safety-shield.png",
+                embeds: [embed],
+            }),
+        });
+    } catch (err) {
+        console.error("❌ Failed to send Discord Ambassador alert:", err);
+    }
+}

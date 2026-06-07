@@ -401,6 +401,14 @@ export function Sidebar({
         disabled: false,
       },
       {
+        label: "Embajadores",
+        href: "/ambassadors/dashboard",
+        icon: (
+          <UserIcon className="h-5 w-5 shrink-0 text-gray-400" />
+        ),
+        disabled: false,
+      },
+      {
         label: "Feed",
         type: "path",
         href: "#",

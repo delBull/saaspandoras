@@ -10,7 +10,9 @@ import {
   users as usersSchema,
   governanceProposals as proposalsSchema,
   marketingLeads as leadsSchema,
-  marketingIdentities
+  marketingIdentities,
+  ambassadors,
+  ambassadorCommissions
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc, inArray } from "drizzle-orm";
@@ -303,7 +305,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const nextPhase = phases[activePhaseIndex + 1] || null;
 
     // 4.9 Parallel DB Queries for secondary data
-    const [activities, activeProposals, user] = await Promise.all([
+    const [activities, activeProposals, user, ambassador] = await Promise.all([
         db.query.daoActivities.findMany({
             where: eq(daoActivitiesSchema.projectId, project.id),
             orderBy: desc(daoActivitiesSchema.createdAt),
@@ -318,8 +320,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         }).catch(() => []),
         (wallet && wallet.startsWith("0x")) 
             ? db.query.users.findFirst({ where: eq(usersSchema.walletAddress, wallet.toLowerCase()) }).catch(() => null)
+            : Promise.resolve(null),
+        (wallet && wallet.startsWith("0x"))
+            ? db.query.ambassadors.findFirst({ where: eq(ambassadors.walletAddress, wallet.toLowerCase()) }).catch(() => null)
             : Promise.resolve(null)
     ]);
+
+    let ambassadorCommissionsList: any[] = [];
+    if (ambassador) {
+        ambassadorCommissionsList = await db.query.ambassadorCommissions.findMany({
+            where: eq(ambassadorCommissions.ambassadorId, ambassador.id)
+        }).catch(() => []);
+    }
 
     // 4.9 Fetch Legal Metadata (Integrity Proofs) - MULTI-CERTIFICATE SUPPORT
     let certificates: any[] = [];
@@ -559,6 +571,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       treasuryDisplay,
       dbUserStatus,
       isWhitelisted,
+      isAmbassador: !!ambassador,
+      referralCode: ambassador ? ambassador.referralCode : null,
+      ambassadorStats: ambassador ? {
+        totalReferrals: ambassadorCommissionsList.filter(c => c.type === 'DIRECT_4').length,
+        directCommissions: ambassadorCommissionsList.filter(c => c.type === 'DIRECT_4').reduce((acc, c) => acc + Number(c.amount || 0), 0),
+        residualYield: ambassadorCommissionsList.filter(c => c.type === 'RESIDUAL_YIELD_1').reduce((acc, c) => acc + Number(c.amount || 0), 0)
+      } : null,
       userPortfolio,
       legal: project.legalConfig || {},
       phases: phases.map((p: any) => ({

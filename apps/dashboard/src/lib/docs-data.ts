@@ -659,6 +659,28 @@ Grow your protocol's community through our built-in, automated referral system.
 - **Sybil Protection**: Built-in logic to prevent self-referral and bot abuse.
 - **Dashboard Tracking**: See your referral stats, pending rewards, and conversion rates.
 `
+      },
+      {
+        id: "ambassadors-program",
+        title: "Ambassadors & Gestores",
+        content: `# Programa de Embajadores (Gestores Patrimoniales)
+
+El Programa de Embajadores es el siguiente nivel del Referral Program, diseñado para socios comerciales serios, brokers y líderes comunitarios que desean construir un negocio sobre la infraestructura de Pandora's.
+
+## Beneficios Exclusivos
+- **4% Bono Directo**: Recibe comisiones líquidas instantáneas en USDC por cada inversionista o usuario que adquiera activos a través de tu enlace.
+- **1% Yield Residual de por Vida**: Te conviertes en "Socio de tu Cliente". Ganas de forma perpetua el 1% de todos los rendimientos que genere tu referido durante toda la vida útil del protocolo.
+
+## Cómo Funciona
+1. **Aplicación Curada**: Debido al potencial financiero, este programa no es abierto. Debes [aplicar al programa](/ambassadors) para ser evaluado por los administradores de los proyectos.
+2. **Aprobación On-Chain**: Una vez que el creador del proyecto te aprueba, recibes un correo de confirmación y se te habilita un panel exclusivo.
+3. **Distribución Automática**: Las comisiones no dependen de aprobaciones manuales; los pagos iniciales y los residuales están garantizados criptográficamente mediante el *AllowanceController* institucional del protocolo.
+
+## Transparencia Total
+Al ser aceptado, podrás ver en tiempo real cada transacción originada desde tu código oficial.
+
+👉 [**Aplicar para ser Embajador Oficial**](/ambassadors)
+`
       }
     ]
   },

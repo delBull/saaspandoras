@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { daoMembers, userBalances, projects, daoActivities } from "@/db/schema";
+import { daoMembers, userBalances, projects, daoActivities, ambassadorClients, ambassadorCommissions } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -53,11 +53,32 @@ async function handler(
     // 3. Batch Update Balances (Transactional to prevent partial failures)
     await db.transaction(async (tx) => {
         const updates = holders.map(async (holder) => {
-          const share = (Number(holder.votingPower) / totalVP) * amount;
+          let share = (Number(holder.votingPower) / totalVP) * amount;
+          const walletLowerCase = holder.wallet.toLowerCase();
           
+          // --- 1% Residual Yield Logic for Ambassadors ---
+          const ambClient = await tx.query.ambassadorClients.findFirst({
+             where: eq(ambassadorClients.clientWallet, walletLowerCase)
+          });
+
+          if (ambClient) {
+             const residual = share * 0.01; // 1%
+             share = share - residual; // Deduct 1% from the investor
+
+             // Credit the ambassador with the 1% residual yield
+             await tx.insert(ambassadorCommissions).values({
+               ambassadorId: ambClient.ambassadorId,
+               clientWallet: walletLowerCase,
+               amountUsdc: residual.toString(),
+               type: 'RESIDUAL_YIELD_1',
+               status: 'pending' // Pending until they claim it via withdraw endpoint
+             });
+          }
+          // -----------------------------------------------
+
           return tx.insert(userBalances)
             .values({
-              walletAddress: holder.wallet.toLowerCase(),
+              walletAddress: walletLowerCase,
               usdcBalance: share.toString(),
               pboxBalance: "0",
               updatedAt: new Date()

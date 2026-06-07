@@ -41,7 +41,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
         initialProject?.id || (projects.length > 0 ? projects[0]?.id ?? '' : '')
     );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'purchases' | 'treasury' | 'tokenomics' | 'governance' | 'legal'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'purchases' | 'treasury' | 'tokenomics' | 'governance' | 'legal' | 'ambassadors'>('overview');
     const [pendingCount, setPendingCount] = useState(0);
 
     const project = projects.find(p => p.id === selectedProjectId) || projects[0];
@@ -151,6 +151,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                     {[
                         { id: 'overview', label: 'Overview', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                         { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+                        { id: 'ambassadors', label: 'Gestores Patrimoniales', icon: <UserIcon className="w-4 h-4" /> },
                         { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                         { id: 'tokenomics', label: 'Tokenomics & Bots', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                         { id: 'governance', label: 'DAO & Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
@@ -192,6 +193,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                             {activeTab === 'tokenomics' && <TokenomicsTab project={project} config={config} />}
                             {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
                             {activeTab === 'legal' && <LegalTab project={project} />}
+                            {activeTab === 'ambassadors' && <AmbassadorsTab project={project} />}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -634,6 +636,123 @@ function GovernanceTab({ address, project }: { address?: string, project: any })
                     <DaoWizard project={project} governorAddress={address} />
                 </div>
             </div>
+        </div>
+    );
+}
+
+// ----------------------------------------------------------------------
+
+function AmbassadorsTab({ project }: { project: any }) {
+    const [ambassadors, setAmbassadors] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [processingId, setProcessingId] = useState<string | null>(null);
+
+    const fetchAmbassadors = async () => {
+        try {
+            setLoading(true);
+            const res = await fetch(`/api/projects/${project.slug}/ambassadors`);
+            if (res.ok) {
+                const data = await res.json();
+                setAmbassadors(data);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchAmbassadors(); }, [project.slug]);
+
+    const handleApprove = async (id: string) => {
+        setProcessingId(id);
+        try {
+            const res = await fetch(`/api/projects/${project.slug}/ambassadors/${id}/approve`, {
+                method: "POST"
+            });
+            if (res.ok) {
+                toast.success('Gestor Patrimonial Aprobado');
+                fetchAmbassadors();
+            } else {
+                const err = await res.json();
+                toast.error(err.error || "Error al aprobar");
+            }
+        } catch (error) {
+            toast.error("Error de red");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    if (loading) return <div className="py-20 text-center text-zinc-500 animate-pulse">Cargando gestores patrimoniales...</div>;
+
+    const pendingCount = ambassadors.filter(a => a.status === 'pending').length;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-xl font-bold text-white">Red de Ventas Oficial (Gestores)</h3>
+                <span className="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-bold border border-white/20">
+                    {pendingCount} Solicitudes Pendientes
+                </span>
+            </div>
+
+            {ambassadors.length === 0 ? (
+                <div className="p-16 bg-white/[0.02] border border-white/5 rounded-3xl text-center text-zinc-500 backdrop-blur-md">
+                    <UserIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg">No hay gestores patrimoniales registrados en este proyecto.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {ambassadors.map((a) => (
+                        <div key={a.id} className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl relative overflow-hidden flex flex-col justify-between h-full">
+                            {/* Glow */}
+                            <div className={`absolute -top-10 -right-10 w-32 h-32 blur-[40px] rounded-full pointer-events-none ${a.status === 'active' ? 'bg-emerald-500/10' : 'bg-yellow-500/10'}`} />
+                            
+                            <div>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
+                                        <UserIcon className="w-6 h-6 text-zinc-300" />
+                                    </div>
+                                    <span className={`px-2 py-1 text-[10px] uppercase font-black rounded border ${
+                                        a.status === 'active' 
+                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                            : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                    }`}>
+                                        {a.status === 'active' ? 'Oficial' : 'Pendiente'}
+                                    </span>
+                                </div>
+                                
+                                <h4 className="text-lg font-black tracking-tight text-white mb-1">{a.fullName}</h4>
+                                <p className="text-xs text-zinc-400 mb-4">{a.email}</p>
+
+                                {a.walletAddress && (
+                                    <p className="text-xs font-mono text-zinc-500 mb-4 bg-black/40 p-2 rounded-lg break-all">
+                                        Wallet: {a.walletAddress}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="mt-6 pt-4 border-t border-white/5">
+                                {a.status === 'active' ? (
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] uppercase font-black text-zinc-500 mb-1">Código de Referido</span>
+                                        <span className="font-mono text-emerald-400 text-lg">{a.referralCode}</span>
+                                    </div>
+                                ) : (
+                                    <button 
+                                        disabled={processingId === a.id}
+                                        onClick={() => handleApprove(a.id)}
+                                        className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(234,179,8,0.2)] disabled:opacity-50"
+                                    >
+                                        {processingId === a.id ? 'Aprobando...' : 'Aprobar Ingreso'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

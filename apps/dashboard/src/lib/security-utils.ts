@@ -111,6 +111,7 @@ export const withdrawRateLimiter = new SimpleRateLimiter(5, 60000); // 5 withdra
 export const distributeRateLimiter = new SimpleRateLimiter(3, 60000); // 3 distributions per minute
 export const redemptionRateLimiter = new SimpleRateLimiter(1, 60000); // 1 redemption per minute
 export const claimRateLimiter = new SimpleRateLimiter(10, 60000); // 10 claims per minute per user
+export const registerRateLimiter = new SimpleRateLimiter(5, 60000); // 5 registrations per minute
 
 /**
  * Valida estructura básica de request body

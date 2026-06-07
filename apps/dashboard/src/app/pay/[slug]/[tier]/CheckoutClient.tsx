@@ -28,6 +28,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const account = useActiveAccount();
     const searchParams = useSearchParams();
     const externalOrigin = searchParams.get('origin');
+    const referralCode = searchParams.get('ref');
 
     // Determine the base portal URL. If origin is present, use it.
     const portalUrl = useMemo(() => {
@@ -399,7 +400,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     artifactsAcquired: safeAmount,
                     txHash: receipt?.transactionHash || receipt?.receipt?.transactionHash,
                     buyerEmail: buyerEmail || undefined,
-                    newsletterConsent
+                    newsletterConsent,
+                    referralCode
                 })
             }).catch(() => {});
         } catch (e) {}

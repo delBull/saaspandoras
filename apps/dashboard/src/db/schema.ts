@@ -2213,3 +2213,94 @@ export const intentVotes = pgTable("intent_votes", {
 }));
 
 export type IntentVote = typeof intentVotes.$inferSelect;
+
+// =========================================================
+// PANDORAS AMBASSADORS (REALTORS) SYSTEM
+// =========================================================
+
+export const ambassadorOriginEnum = pgEnum("ambassador_origin", [
+  "pandoras",
+  "snarai",
+  "aztecas"
+]);
+
+export const ambassadorStatusEnum = pgEnum("ambassador_status", [
+  "active",
+  "pending",
+  "suspended"
+]);
+
+export const commissionTypeEnum = pgEnum("commission_type", [
+  "DIRECT_SALE_4",
+  "RESIDUAL_YIELD_1"
+]);
+
+export const commissionStatusEnum = pgEnum("commission_status", [
+  "pending",
+  "paid",
+  "cancelled"
+]);
+
+export const ambassadors = pgTable("ambassadors", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: integer("project_id").references(() => projects.id), // Link ambassador directly to a project
+  referralCode: varchar("referral_code", { length: 255 }).notNull().unique(), // e.g. MARIO-123
+  walletAddress: varchar("wallet_address", { length: 42 }), // Web3 ID
+  
+  // KYC / Contact
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  phone: varchar("phone", { length: 50 }),
+  socialUrl: varchar("social_url", { length: 255 }), // LinkedIn / Instagram
+  
+  // Verification
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  verificationToken: varchar("verification_token", { length: 6 }),
+  
+  // Track where they came from
+  origin: ambassadorOriginEnum("origin").default("pandoras").notNull(),
+  status: ambassadorStatusEnum("status").default("active").notNull(),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const ambassadorClients = pgTable("ambassador_clients", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ambassadorId: uuid("ambassador_id").references(() => ambassadors.id).notNull(),
+  clientWallet: varchar("client_wallet", { length: 42 }).notNull().unique(), // The investor
+  
+  linkedAt: timestamp("linked_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  ambassadorIdx: index("ambassador_clients_amb_idx").on(t.ambassadorId),
+}));
+
+export const ambassadorCommissions = pgTable("ambassador_commissions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ambassadorId: uuid("ambassador_id").references(() => ambassadors.id).notNull(),
+  clientWallet: varchar("client_wallet", { length: 42 }).notNull(),
+  
+  amountUsdc: decimal("amount_usdc", { precision: 18, scale: 6 }).notNull(),
+  type: commissionTypeEnum("type").notNull(), // DIRECT_SALE_4 or RESIDUAL_YIELD_1
+  status: commissionStatusEnum("status").default("pending").notNull(),
+  
+  // Link to the purchase or distribution batch
+  sourceTxHash: varchar("source_tx_hash", { length: 66 }),
+  sourceReference: varchar("source_reference", { length: 255 }), // e.g., purchase_id
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+}, (t) => ({
+  sourceTxHashIdx: uniqueIndex("ambassador_commissions_txhash_idx").on(t.sourceTxHash),
+  ambassadorIdx: index("ambassador_commissions_amb_idx").on(t.ambassadorId),
+  statusIdx: index("ambassador_commissions_status_idx").on(t.status),
+}));
+
+export const ambassadorsRelations = relations(ambassadors, ({ many }) => ({
+  clients: many(ambassadorClients),
+  commissions: many(ambassadorCommissions),
+}));
+
+export type Ambassador = typeof ambassadors.$inferSelect;
+export type AmbassadorClient = typeof ambassadorClients.$inferSelect;
+export type AmbassadorCommission = typeof ambassadorCommissions.$inferSelect;
