@@ -22,8 +22,10 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const PROXY_CREATION_EVENT = keccak256(toHex("ProxyCreation(address,address)"));
 
 const MULTICALL3_ABI = parseAbi([
-  "function aggregate(tuple(address target, bytes callData)[] calls) payable returns (uint256 blockNumber, bytes[] returnData)",
-  "function tryAggregate(bool requireSuccess, tuple(address target, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[] returnData)",
+  "struct Call { address target; bytes callData; }",
+  "struct Result { bool success; bytes returnData; }",
+  "function aggregate(Call[] calls) payable returns (uint256 blockNumber, bytes[] returnData)",
+  "function tryAggregate(bool requireSuccess, Call[] calls) payable returns (Result[] returnData)",
 ]);
 
 const PROXY_FACTORY_ABI = parseAbi([
