@@ -8,6 +8,7 @@ config({ path: resolve(__dirname, "../apps/dashboard/.env.local") });
 export const ENV = {
   RPC_URL: "https://ethereum-sepolia.publicnode.com",
   ADMIN_KEY: process.env.PROTOCOL_ADMIN_PRIVATE_KEY,
+  DELEGATE_KEY: process.env.RELAYER_PRIVATE_KEY || process.env.PRIVATE_KEY_ORACLE_RELAYER || process.env.PANDORA_ORACLE_PRIVATE_KEY,
   CONTROLLER: process.env.ALLOWANCE_CONTROLLER_ADDRESS || "0x2E15a2e05a7d7399dB003e014aCB1De03Cea5cc9",
   USDC: process.env.USDC_SEPOLIA_ADDRESS || "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
   ADMIN: "0x5aeaE3D13F480a4231dD09D873f5A094424A2ed6",
@@ -22,6 +23,7 @@ export const ENV = {
 export function checkEnv() {
   const missing = [];
   if (!ENV.ADMIN_KEY) missing.push("PROTOCOL_ADMIN_PRIVATE_KEY");
+  if (!ENV.DELEGATE_KEY) missing.push("RELAYER_PRIVATE_KEY or PANDORA_ORACLE_PRIVATE_KEY");
   if (!ENV.DB_URL) missing.push("DATABASE_URL");
   if (missing.length) throw new Error(`Missing env: ${missing.join(", ")}`);
 }

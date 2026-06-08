@@ -10,18 +10,33 @@ const app = express();
 // ☁️ Trust Proxy (Railway / Vercel Load Balancers)
 app.set("trust proxy", 1);
 
-// 🔍 DEBUG MIDDLEWARE (Trace Cookies and Origin)
+// 🔍 DEBUG MIDDLEWARE (Trace only in dev, never log cookies)
 app.use((req, res, next) => {
-    if (process.env.DEBUG_AUTH === 'true' || process.env.NODE_ENV === 'production') {
-        console.log(`🔍 [DEBUG API] ${req.method} ${req.url} | Origin: ${req.headers.origin} | Has Cookies: ${Object.keys(req.cookies || {}).join(', ')}`);
+    if (process.env.DEBUG_AUTH === 'true' && process.env.NODE_ENV !== 'production') {
+        console.log(`🔍 [DEBUG API] ${req.method} ${req.url} | Origin: ${req.headers.origin}`);
     }
     next();
 });
 
 // 🌐 CORS Configuration (MUST BE FIRST)
+const ALLOWED_ORIGINS = [
+    'https://pandoras.finance',
+    'https://dash.pandoras.finance',
+    'https://staging.dash.pandoras.finance',
+    'https://www.pandoras.finance',
+    'http://localhost:3000',
+    'http://localhost:3001',
+];
 app.use(
     cors({
-        origin: true, // Allow ANY origin (Reflects the request origin)
+        origin: (origin, callback) => {
+            if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+                callback(null, true);
+            } else {
+                console.warn(`🚫 CORS blocked origin: ${origin}`);
+                callback(null, false);
+            }
+        },
         credentials: true, // Required for cookies
     })
 );
@@ -94,7 +109,9 @@ import externalProxy from "./routes/external-proxy.js";
 // 🚀 Routes
 app.use("/auth", authRoutes);
 app.use("/webhooks", webhookRoutes);
-app.use("/debug", debugRoutes); // DEBUG ONLY - Remove in production
+if (process.env.NODE_ENV !== 'production') {
+    app.use("/debug", debugRoutes); // DEBUG ONLY
+}
 app.use("/tenants", tenantRoutes);
 
 // 📡 External API Proxy (MUST cover /api/v1/external and /external)

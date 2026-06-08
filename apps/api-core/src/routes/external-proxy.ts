@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import { resolve, normalize } from "path";
 
 const router = Router();
 
@@ -52,7 +53,7 @@ router.all(EXTERNAL_PATHS, async (req: Request, res: Response) => {
     }
 
     // Normalize the path: Ensure it always uses the /api/v1/external prefix for the dashboard
-    let targetPath = req.originalUrl;
+    let targetPath = normalize('/' + (req.originalUrl || '').split('?')[0].replace(/\.\./g, ''));
     
     // Strip query string for matching
     const purePath = targetPath.split('?')[0];
@@ -95,8 +96,8 @@ router.all(EXTERNAL_PATHS, async (req: Request, res: Response) => {
     try {
         const headers: Record<string, string> = {};
         
-        // Forward essential headers for auth and content
-        ["x-api-key", "authorization", "content-type", "accept"].forEach(h => {
+        // Forward content headers only (auth headers are NOT forwarded — the dashboard validates via cookie/integration key)
+        ["content-type", "accept"].forEach(h => {
             if (req.headers[h]) headers[h] = req.headers[h] as string;
         });
 

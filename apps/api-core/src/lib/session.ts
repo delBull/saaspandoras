@@ -228,11 +228,26 @@ export async function revokeSessionBySid(sid: string, reason: string = 'REVOKED'
 }
 
 /**
+ * Scan Redis for session keys matching a pattern (non-blocking SCAN instead of KEYS)
+ */
+async function scanSessionKeys(pattern: string): Promise<string[]> {
+    const redis = getRedis();
+    const keys: string[] = [];
+    let cursor = '0';
+    do {
+        const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        cursor = result[0];
+        keys.push(...result[1]);
+    } while (cursor !== '0');
+    return keys;
+}
+
+/**
  * Invalidate all sessions for an address (legacy)
  */
 export async function invalidateAllSessions(address: string): Promise<void> {
     const redis = getRedis();
-    const sessionKeys = await redis.keys(`${SESSION_PREFIX}:*`);
+    const sessionKeys = await scanSessionKeys(`${SESSION_PREFIX}*`);
 
     for (const key of sessionKeys) {
         const data = await redis.get(key);
@@ -251,7 +266,7 @@ export async function invalidateAllSessions(address: string): Promise<void> {
  */
 export async function invalidateAllSessionsByUserId(userId: string): Promise<void> {
     const redis = getRedis();
-    const sessionKeys = await redis.keys(`${SESSION_PREFIX}:*`);
+    const sessionKeys = await scanSessionKeys(`${SESSION_PREFIX}*`);
 
     for (const key of sessionKeys) {
         const data = await redis.get(key);
@@ -270,7 +285,7 @@ export async function invalidateAllSessionsByUserId(userId: string): Promise<voi
  */
 export async function invalidateAllSessionsByScope(userId: string, scope: string): Promise<void> {
     const redis = getRedis();
-    const sessionKeys = await redis.keys(`${SESSION_PREFIX}:*`);
+    const sessionKeys = await scanSessionKeys(`${SESSION_PREFIX}*`);
 
     for (const key of sessionKeys) {
         const data = await redis.get(key);

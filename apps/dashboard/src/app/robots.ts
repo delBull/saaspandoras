@@ -6,8 +6,7 @@ export default function robots(): MetadataRoute.Robots {
     return {
         rules: {
             userAgent: '*',
-            allow: '/',
-            disallow: ['/api/', '/admin/'], // Protect API and Admin routes from crawlers
+            disallow: ['/'], // Block ALL crawlers from indexing this private dashboard
         },
         sitemap: `${baseUrl}/sitemap.xml`,
     }

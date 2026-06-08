@@ -208,7 +208,13 @@ export function tenantGate(req: Request, res: Response, next: NextFunction) {
         })
         .catch(error => {
             console.error('[TenantGate] Error:', error);
-            // On error, allow through (fail open for UX)
+            if (req.method !== 'GET') {
+                return res.status(503).json({
+                    success: false,
+                    error: 'Authorization service unavailable',
+                    code: 'AUTH_UNAVAILABLE'
+                });
+            }
             next();
         });
 }

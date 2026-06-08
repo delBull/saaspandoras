@@ -8,6 +8,7 @@ pragma solidity ^0.8.28;
 /// @dev Intended to be deployed once per project, holding that project's USDC.
 contract AllowanceController {
     address public owner;
+    address public pendingOwner;
     address public delegate;
     address public token;
     uint256 public dailyLimit;
@@ -17,6 +18,7 @@ contract AllowanceController {
     event AllowanceSet(address indexed delegate, uint256 dailyLimit);
     event Withdraw(address indexed to, uint256 amount, string reason);
     event OwnerWithdraw(address indexed to, uint256 amount);
+    event OwnershipTransferStarted(address indexed currentOwner, address indexed pendingOwner);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     modifier onlyOwner() {
@@ -33,6 +35,15 @@ contract AllowanceController {
         require(msg.sender == delegate, "AC: only delegate");
     }
 
+    modifier nonReentrant() {
+        uint256 _status;
+        assembly { _status := tload(address()) }
+        require(_status == 0, "AC: reentrancy");
+        assembly { tstore(address(), 1) }
+        _;
+        assembly { tstore(address(), 0) }
+    }
+
     constructor(address _owner, address _delegate, address _token, uint256 _dailyLimit) {
         require(_owner != address(0), "AC: owner zero");
         require(_delegate != address(0), "AC: delegate zero");
@@ -45,7 +56,7 @@ contract AllowanceController {
     }
 
     /// @notice Delegate withdraws USDC to `to` (respects daily limit)
-    function withdraw(address to, uint256 amount) external onlyDelegate {
+    function withdraw(address to, uint256 amount) external onlyDelegate nonReentrant {
         _resetDailyIfNeeded();
         require(spentToday + amount <= dailyLimit, "AC: daily limit exceeded");
         spentToday += amount;
@@ -68,11 +79,19 @@ contract AllowanceController {
         emit AllowanceSet(_delegate, _dailyLimit);
     }
 
-    /// @notice Owner transfers ownership
+    /// @notice Owner nominates a new owner (two-step transfer)
     function transferOwnership(address newOwner) external onlyOwner {
         require(newOwner != address(0), "AC: new owner zero");
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
+
+    /// @notice Pending owner accepts the ownership
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "AC: not nominated");
+        emit OwnershipTransferred(owner, pendingOwner);
+        owner = pendingOwner;
+        pendingOwner = address(0);
     }
 
     /// @notice Check remaining allowance for today

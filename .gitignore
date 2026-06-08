@@ -56,6 +56,11 @@ dist
 *.swp
 *.swo
 
+# Foundry (forge)
+contracts/broadcast/
+contracts/cache/
+contracts/out/
+
 # scratch files
 scratch/
 tmp/

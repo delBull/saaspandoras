@@ -8,6 +8,8 @@ interface DaoTreasuryTabProps {
   project: any;
 }
 
+type TransferStep = 'idle' | 'nominate' | 'accept';
+
 export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
   const account = useActiveAccount();
 
@@ -18,6 +20,7 @@ export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
     spentToday: string;
     remaining: string;
     owner: string;
+    pendingOwner: string;
     delegate: string;
   } | null>(null);
 
@@ -40,6 +43,15 @@ export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
   const [broadcastingWithdraw, setBroadcastingWithdraw] = useState(false);
   const [preparedWithdraw, setPreparedWithdraw] = useState<any>(null);
   const [withdrawResult, setWithdrawResult] = useState<string | null>(null);
+
+  // Transfer ownership (two-step)
+  const [transferStep, setTransferStep] = useState<TransferStep>('idle');
+  const [preparingTransfer, setPreparingTransfer] = useState(false);
+  const [preparedTransfer, setPreparedTransfer] = useState<any>(null);
+  const [broadcastingTransfer, setBroadcastingTransfer] = useState(false);
+
+  // Modal toggle
+  const [showGuide, setShowGuide] = useState<'transfer' | 'rescue' | null>(null);
 
   const fetchControllerInfo = useCallback(async () => {
     try {
@@ -197,6 +209,76 @@ export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
     }
   };
 
+  // ── Transfer ownership (two-step) ────────────────────────────────────
+  const handlePrepareTransfer = async () => {
+    if (!account?.address) return toast.error('Connect wallet first');
+    setPreparingTransfer(true);
+    setTransferStep('idle');
+    try {
+      const res = await fetch('/api/dao/controller-transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      if (data.step === 'done') {
+        toast.success('Already owned by Safe');
+        fetchControllerInfo();
+        return;
+      }
+      if (data.step === 'accept') {
+        setTransferStep('accept');
+        setPreparedTransfer(data);
+        toast.success('Safe is nominated — ready for Step 2');
+        return;
+      }
+      // step === 'nominate'
+      setTransferStep('nominate');
+      setPreparedTransfer(data);
+      toast.success('Transfer prepared — sign in wallet');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setPreparingTransfer(false);
+    }
+  };
+
+  const handleBroadcastTransfer = async () => {
+    if (!account?.address || !preparedTransfer) return;
+    setBroadcastingTransfer(true);
+    try {
+      const raw = preparedTransfer.tx;
+      const result = await account.sendTransaction({
+        to: raw.to,
+        data: raw.data,
+        value: 0n,
+        gas: BigInt(raw.gas),
+        maxFeePerGas: BigInt(raw.maxFeePerGas),
+        maxPriorityFeePerGas: BigInt(raw.maxPriorityFeePerGas),
+        nonce: raw.nonce,
+        chainId: raw.chainId as number,
+      });
+
+      const txHash = typeof result === 'string' ? result : result.transactionHash;
+      toast.success(`Nomination broadcasted: ${txHash.slice(0, 14)}...`);
+      setPreparedTransfer(null);
+      setTransferStep('idle');
+      // Refetch — should show pendingOwner now
+      setTimeout(fetchControllerInfo, 2000);
+    } catch (e: any) {
+      toast.error(e.message || 'Transaction rejected');
+    } finally {
+      setBroadcastingTransfer(false);
+    }
+  };
+
+  const currentOwner = controllerInfo?.owner ?? '';
+  const pendingOwner = controllerInfo?.pendingOwner ?? '';
+  const isOwner = account?.address && currentOwner.toLowerCase() === account.address.toLowerCase();
+  const isPendingSafe = pendingOwner && safeAddress && pendingOwner.toLowerCase() === safeAddress.toLowerCase();
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -237,6 +319,22 @@ export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
             </p>
           </div>
         </div>
+        {/* Owner + Pending Owner status */}
+        {controllerInfo && (
+          <div className="flex flex-wrap gap-4 text-xs">
+            <div className="bg-zinc-800/20 rounded-lg px-3 py-1.5">
+              <span className="text-zinc-500">Owner: </span>
+              <span className="text-white font-mono">{controllerInfo.owner.slice(0, 8)}...{controllerInfo.owner.slice(-4)}</span>
+            </div>
+            {controllerInfo.pendingOwner && controllerInfo.pendingOwner !== '0x0000000000000000000000000000000000000000' && (
+              <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg px-3 py-1.5">
+                <span className="text-amber-400">⏳ Pending Owner: </span>
+                <span className="text-amber-200 font-mono">{controllerInfo.pendingOwner.slice(0, 8)}...{controllerInfo.pendingOwner.slice(-4)}</span>
+                <span className="text-amber-400 ml-2">(awaiting accept)</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Deploy Actions */}
@@ -288,18 +386,118 @@ export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
         </div>
       </div>
 
-      {/* Transfer Ownership to Safe (visible when both Safe and Controller exist) */}
+      {/* Transfer Ownership (two-step) */}
       {safeAddress && (controllerAddress || project.allowanceControllerAddress) && (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-4">
-          <h3 className="text-lg font-bold text-white">Transfer Ownership to Safe</h3>
-          <p className="text-sm text-zinc-400">
-            Make the Safe the owner of the AllowanceController. Only Safe signers will be able to change delegate, limit, or withdraw without limit.
-          </p>
-          <ol className="text-sm text-zinc-400 list-decimal list-inside space-y-2">
-            <li>Call <code className="text-emerald-400">POST /api/dao/controller-transfer</code> with <code className="text-zinc-300">mode: &quot;prepare&quot;</code></li>
-            <li>Sign the returned tx data in your wallet (MetaMask / Ledger)</li>
-            <li>Call <code className="text-emerald-400">POST /api/dao/controller-transfer</code> with <code className="text-zinc-300">mode: &quot;execute&quot;</code> and the signed tx</li>
-          </ol>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-white">Transfer Ownership to Safe</h3>
+            <button
+              onClick={() => setShowGuide(showGuide === 'transfer' ? null : 'transfer')}
+              className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+            >
+              {showGuide === 'transfer' ? '▲ Hide guide' : '▼ How this works'}
+            </button>
+          </div>
+
+          {/* Guide modal / toggle */}
+          {showGuide === 'transfer' && (
+            <div className="bg-blue-950/30 border border-blue-800/50 rounded-xl p-4 space-y-3 text-sm">
+              <h4 className="font-bold text-blue-300">How ownership transfer works</h4>
+              <div className="space-y-2 text-zinc-300">
+                <p><span className="text-blue-400 font-bold">Step 1 — Nominate:</span> The current owner calls <code className="text-emerald-400">transferOwnership(Safe)</code>. This nominates the Safe as the new owner. The current owner <strong>does not lose any powers yet</strong>.</p>
+                <p><span className="text-blue-400 font-bold">Step 2 — Accept:</span> The Safe calls <code className="text-emerald-400">acceptOwnership()</code>. This completes the transfer. Only the nominated Safe can call this.</p>
+                <p className="text-xs text-zinc-500 mt-2">💡 The current owner can cancel any time before Step 2 by nominating a different address (including themselves).</p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 1: Nominate */}
+          {transferStep !== 'accept' && (
+            <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-400 font-bold text-sm">Step 1</span>
+                <span className="text-zinc-400 text-sm">— Nominate Safe as pending owner</span>
+                {isPendingSafe && <span className="text-amber-400 text-xs ml-auto">⏳ Pending</span>}
+              </div>
+              <p className="text-xs text-zinc-400">
+                Sign a transaction to nominate <code className="text-emerald-400 font-mono">{safeAddress.slice(0, 8)}...{safeAddress.slice(-4)}</code> as the new owner.
+                {isOwner && ' You are the current owner.'}
+              </p>
+
+              {!preparedTransfer && transferStep !== 'accept' && (
+                <button
+                  onClick={handlePrepareTransfer}
+                  disabled={preparingTransfer || !isOwner}
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white rounded-lg font-bold text-sm transition-colors"
+                >
+                  {preparingTransfer ? 'Preparing...' : isOwner ? 'Prepare Nomination' : 'Connect as owner to nominate'}
+                </button>
+              )}
+
+              {preparedTransfer && preparedTransfer.tx && (
+                <div className="space-y-3">
+                  <div className="bg-zinc-900 rounded-lg p-3 space-y-1 text-xs font-mono">
+                    <p className="text-zinc-400">Controller: <span className="text-white">{preparedTransfer.controllerAddress}</span></p>
+                    <p className="text-zinc-400">Nominate: <span className="text-white">{preparedTransfer.newOwner || safeAddress}</span></p>
+                    <p className="text-zinc-400">Nonce: <span className="text-white">{preparedTransfer.tx.nonce}</span></p>
+                    <p className="text-zinc-400">Gas: <span className="text-white">{preparedTransfer.tx.gas}</span></p>
+                  </div>
+                  <button
+                    onClick={handleBroadcastTransfer}
+                    disabled={broadcastingTransfer}
+                    className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white rounded-lg font-bold text-sm transition-colors"
+                  >
+                    {broadcastingTransfer ? 'Broadcasting...' : 'Sign & Broadcast in Wallet'}
+                  </button>
+                  <button
+                    onClick={() => { setPreparedTransfer(null); setTransferStep('idle'); }}
+                    className="w-full py-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 2: Accept */}
+          {(transferStep === 'accept' || isPendingSafe) && (
+            <div className="bg-amber-900/20 border border-amber-700/50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400 font-bold text-sm">Step 2</span>
+                <span className="text-zinc-400 text-sm">— Accept ownership from Safe</span>
+              </div>
+              <p className="text-xs text-zinc-400">
+                The Safe has been nominated. Go to your Safe multisig interface and execute a transaction calling{' '}
+                <code className="text-emerald-400">acceptOwnership()</code> on the AllowanceController at{' '}
+                <code className="text-zinc-300 font-mono text-xs break-all">{controllerAddress || project.allowanceControllerAddress}</code>.
+              </p>
+              <div className="bg-zinc-900 rounded-lg p-3 text-xs font-mono space-y-1">
+                <p className="text-zinc-400">Contract to call:</p>
+                <p className="text-white break-all">{controllerAddress || project.allowanceControllerAddress}</p>
+                <p className="text-zinc-400 mt-1">Method:</p>
+                <p className="text-emerald-400">acceptOwnership()</p>
+                <p className="text-zinc-400 mt-1">Calldata:</p>
+                <p className="text-zinc-300 break-all">{preparedTransfer?.acceptTx?.data || '0xe96b6566' /* acceptOwnership() sig */}</p>
+              </div>
+              <p className="text-xs text-zinc-500">
+                💡 Only the nominated Safe can call this. After successful execution, refresh to confirm.
+              </p>
+              <button
+                onClick={fetchControllerInfo}
+                className="w-full py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg font-bold text-sm transition-colors"
+              >
+                Refresh Status
+              </button>
+            </div>
+          )}
+
+          {/* Already done */}
+          {currentOwner && safeAddress && currentOwner.toLowerCase() === safeAddress.toLowerCase() && (
+            <div className="bg-emerald-900/20 border border-emerald-700/50 rounded-xl p-4 text-center">
+              <p className="text-emerald-400 font-bold text-sm">✅ Ownership transferred to Safe</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -381,6 +579,44 @@ export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Rescue Tokens — with security info */}
+      {(controllerAddress || project.allowanceControllerAddress) && (
+        <div className="bg-zinc-900/50 border border-amber-800/30 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-white">Rescue Tokens</h3>
+            <button
+              onClick={() => setShowGuide(showGuide === 'rescue' ? null : 'rescue')}
+              className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1"
+            >
+              {showGuide === 'rescue' ? '▲ Hide guide' : '▼ Security info'}
+            </button>
+          </div>
+
+          {showGuide === 'rescue' && (
+            <div className="bg-amber-950/30 border border-amber-800/50 rounded-xl p-4 space-y-3 text-sm">
+              <h4 className="font-bold text-amber-300">RescueERC20 — Security Model</h4>
+              <div className="space-y-2 text-zinc-300">
+                <p><span className="text-emerald-400">✅ Safe by default:</span> The Pool contracts block rescue of their own USDC (depositor funds). Only non-USDC tokens can be rescued.</p>
+                <p><span className="text-amber-400">⚠️ Use with multisig:</span> For mainnet, the Pool owner should be a Safe multisig (not an EOA). This prevents a single compromised key from draining rescued tokens.</p>
+                <p><span className="text-zinc-400">🔐 Recommended flow:</span> Transfer Pool ownership to Safe → Only Safe signers can execute rescue → Hardware wallet for Safe signers.</p>
+                <p className="text-xs text-zinc-500 mt-2">This feature is read-only in the dashboard. Rescue execution requires a Safe multisig transaction.</p>
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-zinc-400">
+            If non-USDC tokens get stuck in the Pool, the admin can rescue them. USDC is permanently protected.
+            Requires Pool ownership in a Safe multisig for secure execution.
+          </p>
+
+          <div className="bg-zinc-800/20 rounded-xl p-4 text-center">
+            <p className="text-xs text-zinc-500">
+              🔒 Token rescue is handled on-chain via Safe multisig. Use your Safe interface to call <code className="text-emerald-400">rescueERC20(token, to, amount)</code> on the Pool contract.
+            </p>
           </div>
         </div>
       )}

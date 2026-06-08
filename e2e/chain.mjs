@@ -11,6 +11,9 @@ export const publicClient = createPublicClient({
 const key = ENV.ADMIN_KEY.startsWith("0x") ? ENV.ADMIN_KEY : `0x${ENV.ADMIN_KEY}`;
 export const adminAccount = privateKeyToAccount(key);
 
+const delegateKey = ENV.DELEGATE_KEY.startsWith("0x") ? ENV.DELEGATE_KEY : `0x${ENV.DELEGATE_KEY}`;
+export const delegateAccount = privateKeyToAccount(delegateKey);
+
 export const USDC_ABI = parseAbi([
   "function balanceOf(address) view returns (uint256)",
   "function transfer(address,uint256) returns (bool)",

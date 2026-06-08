@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 
 const CONTROLLER_ABI = parseAbi([
   "function owner() view returns (address)",
+  "function pendingOwner() view returns (address)",
   "function delegate() view returns (address)",
   "function token() view returns (address)",
   "function dailyLimit() view returns (uint256)",
@@ -42,10 +43,10 @@ export async function GET(request: Request) {
     const chain = getViemChain();
     const client = createPublicClient({ chain, transport: http() });
 
-    const [owner, delegate, token, dailyLimit, spentToday, remaining] = await Promise.all([
+    const [owner, pendingOwner, delegate, token, dailyLimit, spentToday, remaining] = await Promise.all([
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "owner" }),
+      client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "pendingOwner" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "delegate" }),
-      client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "token" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "dailyLimit" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "spentToday" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "remainingAllowance" }),
@@ -61,6 +62,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       address: addr,
       owner,
+      pendingOwner,
       delegate,
       token,
       balance: (Number(balance) / 1_000_000).toFixed(2),

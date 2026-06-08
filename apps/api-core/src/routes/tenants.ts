@@ -1,9 +1,35 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { db } from '../lib/db.js';
 import { tenants } from '../db/schema-extended.js';
 import { eq } from 'drizzle-orm';
 
 const router = Router();
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+    try {
+        const pubBase64 = process.env.JWT_PUBLIC_KEY;
+        if (!pubBase64) {
+            return res.status(500).json({ error: 'Auth configuration missing' });
+        }
+        const publicKey = Buffer.from(pubBase64, 'base64').toString('utf-8');
+        const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as any;
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+        (req as any).user = decoded;
+        next();
+    } catch {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+}
+
+// All tenant routes require admin auth
+router.use(requireAdmin);
 
 // GET /tenants - List all tenants
 router.get('/', async (req: Request, res: Response) => {

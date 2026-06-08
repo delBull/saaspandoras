@@ -66,8 +66,16 @@ export function middleware(request: NextRequest) {
     }
 
     if (rateLimitMap.size > 2000) {
-      const oldestResetTime = Array.from(rateLimitMap.values()).sort((a, b) => a.resetTime - b.resetTime)[0]?.resetTime;
-      if (oldestResetTime && now > oldestResetTime + 60000) {
+      let oldestResetTime = Infinity;
+      for (const value of rateLimitMap.values()) {
+        if (value.resetTime < oldestResetTime) {
+          oldestResetTime = value.resetTime;
+        }
+      }
+      if (oldestResetTime !== Infinity && now > oldestResetTime + 60000) {
+        rateLimitMap.clear();
+      } else if (rateLimitMap.size > 5000) {
+        // Hard limit to prevent memory leaks/CPU spikes under severe attack
         rateLimitMap.clear();
       }
     }

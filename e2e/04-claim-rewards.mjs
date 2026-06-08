@@ -1,7 +1,7 @@
 import { encodeFunctionData, parseAbi } from "viem";
 import { ENV } from "./config.mjs";
 import { getSql } from "./db.mjs";
-import { publicClient, adminAccount, CONTROLLER_ABI } from "./chain.mjs";
+import { publicClient, adminAccount, delegateAccount, CONTROLLER_ABI } from "./chain.mjs";
 
 export async function run() {
   console.log("\n=== Phase D: Claim Rewards (via AllowanceController) ===");
@@ -106,11 +106,11 @@ export async function run() {
       args: [user, BigInt(Math.round(userTotal * 1_000_000))],
     });
 
-    const nonce = await publicClient.getTransactionCount({ address: adminAccount.address });
+    const nonce = await publicClient.getTransactionCount({ address: delegateAccount.address });
     const fee = await publicClient.estimateFeesPerGas();
-    const gas = await publicClient.estimateGas({ account: adminAccount, to: ENV.CONTROLLER, data });
+    const gas = await publicClient.estimateGas({ account: delegateAccount, to: ENV.CONTROLLER, data });
 
-    const signedTx = await adminAccount.signTransaction({
+    const signedTx = await delegateAccount.signTransaction({
       to: ENV.CONTROLLER, data, gas,
       maxFeePerGas: fee.maxFeePerGas, maxPriorityFeePerGas: fee.maxPriorityFeePerGas,
       nonce, chainId: 11155111n,
