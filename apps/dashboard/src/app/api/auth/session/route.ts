@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { sql } from "@/lib/database";
 
@@ -7,23 +8,25 @@ export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request) {
   try {
-    const requestHeaders = await headers();
+    // Prefer JWT session
+    const auth = await getAuth();
+    let walletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
 
-    // Try multiple header names in case Vercel filters some
-    const headerWallet = requestHeaders.get('x-thirdweb-address') ??
-      requestHeaders.get('x-wallet-address') ??
-      requestHeaders.get('x-user-address') ??
-      requestHeaders.get('x-wallet-address'); // fallback to same header
+    if (!walletAddress) {
+      const requestHeaders = await headers();
+      const headerWallet = requestHeaders.get('x-thirdweb-address') ??
+        requestHeaders.get('x-wallet-address') ??
+        requestHeaders.get('x-user-address');
+      if (headerWallet) walletAddress = headerWallet.toLowerCase().trim();
+    }
 
-    if (!headerWallet) {
+    if (!walletAddress) {
       return NextResponse.json({
         message: "No wallet address provided",
         hasSession: false,
         address: null
       }, { status: 200 });
     }
-
-    const walletAddress = headerWallet.toLowerCase().trim();
 
     // Validate wallet format
     if (!walletAddress.startsWith('0x') || walletAddress.length !== 42) {

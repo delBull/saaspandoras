@@ -248,6 +248,37 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   return null;
 }
 
+/**
+ * Require a verified JWT session with optional admin check.
+ * Returns the authenticated address or throws a 401/403 error response.
+ * Use this in route handlers instead of reading x-wallet-address headers.
+ */
+export async function requireVerifiedAuth(requireAdmin = false): Promise<{ address: string; session: any }> {
+  const auth = await getAuth();
+
+  if (!auth.isVerified || !auth.session?.address) {
+    throw new AuthError("No autorizado. Debes iniciar sesión con tu wallet.", 401);
+  }
+
+  if (requireAdmin) {
+    const admin = await isAdmin(auth.session.address);
+    if (!admin) {
+      throw new AuthError("No autorizado. Se requieren permisos de administrador.", 403);
+    }
+  }
+
+  return { address: auth.session.address, session: auth.session };
+}
+
+export class AuthError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "AuthError";
+    this.status = status;
+  }
+}
+
 export const authConfig = {
   domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN || "",
   cookieOptions: {

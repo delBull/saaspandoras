@@ -1,11 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { getAuth } from "@/lib/auth";
 import { db } from "@/db";
 import { users, achievements, userAchievements, gamificationProfiles, userPoints } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
     try {
-        const walletAddress = req.headers.get("x-wallet-address");
+        // Require verified JWT session (fallback to header for TMA)
+        const auth = await getAuth();
+        let walletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
+        
+        // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address)
+        if (!walletAddress) {
+            const headerWallet = req.headers.get('x-thirdweb-address') ??
+                req.headers.get('x-wallet-address') ??
+                req.headers.get('x-user-address');
+            if (headerWallet) walletAddress = headerWallet.toLowerCase();
+        }
+        
         if (!walletAddress) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }

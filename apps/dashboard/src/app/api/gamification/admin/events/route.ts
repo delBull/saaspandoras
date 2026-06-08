@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { getAuth, isAdmin } from '@/lib/auth';
 import { trackGamificationEvent } from '@/lib/gamification/service';
 
 export async function POST(request: Request) {
   try {
-    // Check admin authorization
-    const headersList = await headers();
-    const userAddress = headersList.get('x-wallet-address');
-
-    // TODO: Add proper admin authorization check
-    // For now, just proceed
+    const auth = await getAuth();
+    if (!auth.isVerified || !auth.session?.address || !await isAdmin(auth.session.address)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
     const { eventType, walletAddress, projectId, metadata } = await request.json();
 

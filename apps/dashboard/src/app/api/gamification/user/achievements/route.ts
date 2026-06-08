@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import { getAuth } from '@/lib/auth';
 import { getUserGamificationAchievements } from '@/lib/gamification/service';
 
 export async function GET() {
   try {
-    const headersList = await headers();
-    const userWallet = headersList.get('x-wallet-address') ??
-                      headersList.get('x-user-address');
+    // Try JWT first, fallback to header
+    const auth = await getAuth();
+    let userWallet = auth.isVerified && auth.session?.address ? auth.session.address : null;
+
+    if (!userWallet) {
+      const headersList = await headers();
+      const headerWallet = headersList.get('x-wallet-address') ??
+                          headersList.get('x-user-address');
+      if (headerWallet) userWallet = headerWallet;
+    }
 
     if (!userWallet) {
       return NextResponse.json(

@@ -1,10 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
+import { getAuth } from '@/lib/auth';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from "drizzle-orm";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -13,18 +15,21 @@ export async function POST(request: NextRequest) {
   try {
     console.log('Avatar upload request received');
 
-    // Verify wallet address from headers
-    const walletAddress = request.headers.get('x-wallet-address') ??
-                         request.headers.get('x-thirdweb-address') ??
-                         request.headers.get('x-user-address');
-
-    console.log('Wallet address:', walletAddress ? 'present' : 'missing');
-
+    // Require verified JWT session for write operation (fallback to header for TMA)
+    const auth = await getAuth();
+    let walletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
+    
+    // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address)
     if (!walletAddress) {
-      return NextResponse.json(
-        { error: 'Wallet address required' },
-        { status: 401 }
-      );
+      const requestHeaders = await headers();
+      const headerWallet = requestHeaders.get('x-thirdweb-address') ??
+        requestHeaders.get('x-wallet-address') ??
+        requestHeaders.get('x-user-address');
+      if (headerWallet) walletAddress = headerWallet.toLowerCase();
+    }
+    
+    if (!walletAddress) {
+      return NextResponse.json({ error: 'Wallet address required' }, { status: 401 });
     }
 
     const formData = await request.formData();

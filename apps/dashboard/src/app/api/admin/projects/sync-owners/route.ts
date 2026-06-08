@@ -8,8 +8,7 @@ import { db } from "~/db";
 // const client = postgres(connectionString);
 // const db = drizzle(client, { schema: { projects: projectsSchema } });
 import { projects } from "@/db/schema"; // Importa tu esquema
-import { isAdmin } from "@/lib/auth";
-import { headers } from "next/headers";
+import { isAdmin, getAuth } from "@/lib/auth";
 import { sql, and, or, isNotNull, ne, isNull, eq } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
@@ -23,11 +22,11 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   console.log('🩺 DIAGNOSTIC: ===== STARTING DIAGNOSTIC REQUEST =====');
   try {
-    const requestHeaders = await headers();
-    const walletAddress = requestHeaders.get('x-wallet-address');
-    if (!await isAdmin(walletAddress)) {
+    const auth = await getAuth();
+    if (!auth.isVerified || !auth.session?.address || !await isAdmin(auth.session.address)) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
+    const walletAddress = auth.session.address;
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('id');
@@ -60,15 +59,9 @@ export async function POST() {
   console.log('🔄 SYNC: ===== STARTING OWNER SYNC REQUEST =====');
 
   try {
-    // 1. Verificar que el usuario es administrador
-    const requestHeaders = await headers();
-    const walletAddress = requestHeaders.get('x-thirdweb-address') ??
-                         requestHeaders.get('x-wallet-address') ??
-                         requestHeaders.get('x-user-address');
-
-    const userIsAdmin = await isAdmin(walletAddress);
-
-    if (!userIsAdmin) {
+    // 1. Verificar que el usuario es administrador via JWT session
+    const auth = await getAuth();
+    if (!auth.isVerified || !auth.session?.address || !await isAdmin(auth.session.address)) {
       console.log('🔄 SYNC: Access denied - user is not admin');
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }

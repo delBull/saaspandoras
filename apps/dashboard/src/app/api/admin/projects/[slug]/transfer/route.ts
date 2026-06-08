@@ -7,8 +7,7 @@ import { db } from "~/db";
 
 // const client = postgres(connectionString);
 // const db = drizzle(client, { schema: { projects: projectsSchema } });
-import { isAdmin } from "@/lib/auth";
-import { headers } from "next/headers";
+import { isAdmin, getAuth } from "@/lib/auth";
 import { sql, eq } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
@@ -36,13 +35,16 @@ export async function POST(request: Request, { params }: RouteParams) {
   console.log('🔄 TRANSFER: ===== STARTING TRANSFER REQUEST =====');
 
   try {
-    console.log('🔄 TRANSFER: Step 1 - Getting headers');
-    const requestHeaders = await headers();
+    console.log('🔄 TRANSFER: Step 1 - Authenticating via JWT session');
+    const auth = await getAuth();
+    const walletAddress = auth.session?.address ?? null;
 
-    console.log('🔄 TRANSFER: Step 2 - Extracting wallet address');
-    const walletAddress = requestHeaders.get('x-thirdweb-address') ??
-      requestHeaders.get('x-wallet-address') ??
-      requestHeaders.get('x-user-address');
+    console.log('🔄 TRANSFER: Step 2 - Session verified:', auth.isVerified, 'Address:', walletAddress);
+
+    if (!auth.isVerified || !walletAddress) {
+      console.log('🔄 TRANSFER: Access denied - no valid session');
+      return NextResponse.json({ message: "No autorizado. Debes iniciar sesión con tu wallet." }, { status: 401 });
+    }
 
     console.log('🔄 TRANSFER: Step 3 - Checking admin status');
     const userIsAdmin = await isAdmin(walletAddress);

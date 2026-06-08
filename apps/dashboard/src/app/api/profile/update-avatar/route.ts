@@ -1,21 +1,27 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import { getAuth } from '@/lib/auth';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from "drizzle-orm";
 
 export async function PATCH(request: NextRequest) {
   try {
-    // Verify wallet address from headers
-    const walletAddress = request.headers.get('x-wallet-address') ??
-                         request.headers.get('x-thirdweb-address') ??
-                         request.headers.get('x-user-address');
-
+    // Require verified JWT session (fallback to header for TMA)
+    const auth = await getAuth();
+    let walletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
+    
+    // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address)
     if (!walletAddress) {
-      return NextResponse.json(
-        { error: 'Wallet address required' },
-        { status: 401 }
-      );
+      const headerWallet = request.headers.get('x-thirdweb-address') ??
+        request.headers.get('x-wallet-address') ??
+        request.headers.get('x-user-address');
+      if (headerWallet) walletAddress = headerWallet.toLowerCase();
+    }
+    
+    if (!walletAddress) {
+      return NextResponse.json({ error: 'Wallet address required' }, { status: 401 });
     }
 
     const body = await request.json();

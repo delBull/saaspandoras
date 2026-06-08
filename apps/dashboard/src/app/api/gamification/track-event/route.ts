@@ -1,23 +1,30 @@
 import { NextResponse } from 'next/server';
+import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { EventType } from '@pandoras/gamification';
 import { GamificationService } from '@/lib/gamification/service';
 
 export async function POST(request: Request) {
   try {
-    const requestHeaders = await headers();
-    const headerWallet = requestHeaders.get('x-thirdweb-address') ??
-      requestHeaders.get('x-wallet-address') ??
-      requestHeaders.get('x-user-address');
+    // Prefer JWT session (verified) for write operations
+    const auth = await getAuth();
+    let userId = auth.isVerified && auth.session?.address ? auth.session.address : null;
+    let headerWallet: string | null = null;
 
-    if (!headerWallet) {
+    if (!userId) {
+      const requestHeaders = await headers();
+      headerWallet = requestHeaders.get('x-thirdweb-address') ??
+        requestHeaders.get('x-wallet-address') ??
+        requestHeaders.get('x-user-address');
+      if (headerWallet) userId = headerWallet.toLowerCase();
+    }
+
+    if (!userId) {
       return NextResponse.json({ error: 'Wallet address required' }, { status: 401 });
     }
 
     const body = await request.json();
     const { eventType, metadata } = body;
-
-    const userId = headerWallet.toLowerCase();
 
     // Validar eventType
     if (!Object.values(EventType).includes(eventType)) {
@@ -28,7 +35,7 @@ export async function POST(request: Request) {
     // Trackear evento usando el servicio que conecta a la BD
     const result = await GamificationService.trackEvent(userId, eventType, {
       ...metadata,
-      walletAddress: headerWallet,
+      walletAddress: headerWallet ?? userId,
       timestamp: new Date().toISOString()
     });
 

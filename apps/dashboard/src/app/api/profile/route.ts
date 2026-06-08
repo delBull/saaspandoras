@@ -20,50 +20,33 @@ export async function GET(request: Request) {
   // In production, you might want to use Redis or similar for proper rate limiting
   // For now, we'll just log excessive requests
   console.log(`Profile API request from ${clientIP} at ${new Date().toISOString()}`);
-  let walletAddress: string | undefined;
   let authMethod: 'header' | 'body' | 'session' | 'none' = 'none';
 
-  try {
+  const getWalletAddress = async (): Promise<string> => {
+    // Try JWT session first (verified)
+    const auth = await getAuth();
+    if (auth.isVerified && auth.session?.address) {
+      authMethod = 'session';
+      return auth.session.address;
+    }
+    
+    // Fallback to header for backward compatibility (TMA)
     const requestHeaders = await headers();
-
-    // First try to get wallet from header (same as admin API)
-    // Try multiple header names in case Vercel filters some
     const headerWallet = requestHeaders.get('x-thirdweb-address') ??
       requestHeaders.get('x-wallet-address') ??
       requestHeaders.get('x-user-address');
-
+    
     if (headerWallet) {
-      walletAddress = headerWallet.toLowerCase().trim(); // Ensure lowercase and trim
       authMethod = 'header';
-    } else {
-      // Fallback to session auth (if no header provided)
-      const { session } = await getAuth(requestHeaders);
-      walletAddress = session?.address ?? undefined;
-      authMethod = 'session';
-
-      if (!walletAddress) {
-        return NextResponse.json({
-          message: "No autorizado - No se encontró wallet ni sesión válida",
-          authMethod,
-          walletAddress: null,
-          noWallet: true,
-          noSession: true
-        }, { status: 401 });
-      }
+      return headerWallet.toLowerCase().trim();
     }
 
-    // Validate wallet format
-    if (!walletAddress.startsWith('0x') || walletAddress.length !== 42) {
-      console.error("❌ [Profile API] INVALID WALLET FORMAT:", walletAddress);
-      return NextResponse.json({
-        message: "Wallet address inválido",
-        walletAddress,
-        authMethod
-      }, { status: 401 });
-    }
+    throw new Error("No authorization found");
+  };
 
-    // Ensure user exists
-    await ensureUser(walletAddress);
+  let walletAddress: string = "unknown";
+  try {
+    walletAddress = await getWalletAddress();
 
     // Get user data directly from users table - optimized query
     const usersResult = await sql`
@@ -172,7 +155,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("💥 [Profile API] CRITICAL ERROR:", {
       authMethod,
-      walletAddress,
+      walletAddress: walletAddress || "unknown",
       errorName: error instanceof Error ? error.name : "Unknown",
       errorMessage: error instanceof Error ? error.message : "No message",
       errorStack: error instanceof Error ? error.stack : "No stack"
@@ -192,7 +175,7 @@ export async function GET(request: Request) {
         message: "Database quota exceeded",
         error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
         quotaExceeded: true,
-        walletAddress,
+        walletAddress: walletAddress || "unknown",
         authMethod
       }, { status: 503 }); // Service Unavailable
     }
@@ -200,27 +183,32 @@ export async function GET(request: Request) {
     return NextResponse.json({
       message: "Error interno del servidor",
       error: error instanceof Error ? error.message : "Unknown error",
-      walletAddress,
+      walletAddress: walletAddress || "unknown",
       authMethod
     }, { status: 500 });
   }
 }
 
 /**
- * POST: Unified endpoint for KYC completion + profile editing
- */
+  * POST: Unified endpoint for KYC completion + profile editing
+  */
 export async function POST(request: Request) {
   try {
-    const requestHeaders = await headers();
-
-    // Try multiple header names in case Vercel filters some
-    const headerWallet = requestHeaders.get('x-thirdweb-address') ??
-      requestHeaders.get('x-wallet-address') ??
-      requestHeaders.get('x-user-address');
-
-    const { session } = await getAuth(requestHeaders);
-    if (!session?.address && !headerWallet) {
-      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+    // Require verified JWT session for write operations (fallback to header for TMA)
+    const auth = await getAuth();
+    let profileWalletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
+    
+    // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address)
+    if (!profileWalletAddress) {
+      const requestHeaders = await headers();
+      const headerWallet = requestHeaders.get('x-thirdweb-address') ??
+        requestHeaders.get('x-wallet-address') ??
+        requestHeaders.get('x-user-address');
+      if (headerWallet) profileWalletAddress = headerWallet.toLowerCase();
+    }
+    
+    if (!profileWalletAddress) {
+      return NextResponse.json({ message: "No autorizado. Debes iniciar sesión con tu wallet." }, { status: 401 });
     }
 
     const body = await request.json() as {
@@ -247,13 +235,14 @@ export async function POST(request: Request) {
       };
     };
 
-    const walletAddress = body.walletAddress.toLowerCase();
-    if (session.address && walletAddress !== session.address.toLowerCase()) {
+    // Body wallet address should match the authenticated Wallet
+    const bodyWalletAddress = body.walletAddress.toLowerCase();
+    if (bodyWalletAddress !== profileWalletAddress.toLowerCase()) {
       return NextResponse.json({ message: "Wallet mismatch" }, { status: 403 });
     }
 
     // Ensure user exists
-    await ensureUser(walletAddress);
+    await ensureUser(bodyWalletAddress);
 
     const { profileData } = body;
 
@@ -274,7 +263,7 @@ export async function POST(request: Request) {
       nationality: profileData.nationality ?? null,
       address: profileData.address ?? null,
     })}
-      WHERE LOWER("walletAddress") = LOWER(${walletAddress})
+      WHERE LOWER("walletAddress") = LOWER(${bodyWalletAddress as string})
     `;
 
     // 🎯 UPDATE REFERRAL PROGRESS: Si el usuario completó KYC básico, actualizar progreso de referidos
@@ -282,8 +271,8 @@ export async function POST(request: Request) {
       try {
         // Usar GamificationService para actualizar progreso de referidos
         const { GamificationService } = await import('@/lib/gamification/service');
-        await GamificationService.checkReferralProgressForAchievements(walletAddress);
-        console.log(`✅ Referral progress updated for KYC completion: ${walletAddress.slice(0, 6)}...`);
+        await GamificationService.checkReferralProgressForAchievements(bodyWalletAddress);
+        console.log(`✅ Referral progress updated for KYC completion: ${bodyWalletAddress.slice(0, 6)}...`);
       } catch (referralError) {
         console.warn('⚠️ Failed to update referral progress for KYC completion:', referralError);
         // No bloquear la actualización del perfil si falla la actualización de referidos

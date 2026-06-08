@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { db } from '@/db';
 import { marketingRewardLogs, users } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql } from "drizzle-orm";
 import { getAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -13,24 +14,22 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
-    // 1. Authenticate (Session or X-Wallet-Address for TMA)
-    const { session, isVerified } = await getAuth(req.headers);
-    const walletAddressFromHeader = req.headers.get('x-wallet-address')?.toLowerCase();
-    
-    let userId: string | undefined;
+    // 1. Authenticate (Prefer verified JWT, fallback to header for TMA)
+    const auth = await getAuth();
+    let walletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
 
-    if (isVerified && session?.address) {
-      userId = session.address;
-    } else if (walletAddressFromHeader) {
-      const user = await db.query.users.findFirst({
-        where: eq(users.walletAddress, walletAddressFromHeader)
-      });
-      userId = user?.id;
+    if (!walletAddress) {
+      const headerWallet = req.headers.get('x-thirdweb-address') ??
+                          req.headers.get('x-wallet-address') ??
+                          req.headers.get('x-user-address');
+      if (headerWallet) walletAddress = headerWallet.toLowerCase();
     }
 
-    if (!userId) {
+    if (!walletAddress) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const userId = walletAddress.toLowerCase();
 
     // 2. Fetch Reward Logs Summary
     const summary = await db.select({

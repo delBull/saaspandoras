@@ -33,7 +33,22 @@ async function isAdminAuthorized(req: NextRequest): Promise<boolean> {
     if (xAdminSecret === secret || authHeader === `Bearer ${secret}`) return true;
   }
 
-  // Method 2: Same-origin admin dashboard — wallet verified against administrators table
+  // Method 2: Verified JWT session (browser dashboard)
+  const { getAuth } = await import("@/lib/auth");
+  const auth = await getAuth();
+  if (auth.isVerified && auth.session?.address) {
+    try {
+      const { administrators } = await import("@/db/schema");
+      const adminRow = await db.query.administrators.findFirst({
+        where: eq(administrators.walletAddress, auth.session.address),
+      });
+      if (adminRow) return true;
+    } catch { /* fallback */ }
+    const adminWallets = (process.env.ADMIN_WALLETS || "").toLowerCase().split(",").filter(Boolean);
+    if (adminWallets.includes(auth.session.address)) return true;
+  }
+
+  // Method 3: Legacy header-based (dashboard fallback — deprecated)
   const walletAddress =
     req.headers.get("x-thirdweb-address") ||
     req.headers.get("x-wallet-address") ||
@@ -50,7 +65,6 @@ async function isAdminAuthorized(req: NextRequest): Promise<boolean> {
       // Fallback: env-based allowlist
     }
 
-    // Env-based fallback (comma-separated list of admin wallets)
     const adminWallets = (process.env.ADMIN_WALLETS || "").toLowerCase().split(",").filter(Boolean);
     if (adminWallets.includes(walletAddress.toLowerCase())) return true;
   }

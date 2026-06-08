@@ -47,7 +47,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     let botInstructions = metadata?.aiKnowledgeBase || metadata?.botConfig?.instructions;
 
     if (projectId === 'snarai') {
-       botToken = botToken || "8639272150:AAEVRsfHMP-9EzWRRvkZFRaKIiiFvp0K9tY";
+       botToken = botToken || process.env.TELEGRAM_SNARAI_BOT_TOKEN;
        botInstructions = botInstructions || `Eres el Conserje Oficial de S'Narai, un proyecto inmobiliario premium de Riviera Nayarit (México) operado por Aztecas Tokenización y Pandoras Protocol. Tu objetivo es asistir a los usuarios de manera cortés, premium y muy profesional.`;
     }
 
