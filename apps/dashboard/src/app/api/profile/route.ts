@@ -182,7 +182,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       message: "Error interno del servidor",
-      error: error instanceof Error ? error.message : "Unknown error",
       walletAddress: walletAddress || "unknown",
       authMethod
     }, { status: 500 });
