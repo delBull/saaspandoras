@@ -114,6 +114,25 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), display-capture=(), fullscreen=(self), geolocation=(), microphone=(), payment=(), usb=()');
+
+  // CSP Report-Only: no bloquea nada, solo reporta violaciones
+  // para armar la política final sin romper funcionalidad
+  response.headers.set(
+    'Content-Security-Policy-Report-Only',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.thirdweb.com https://*.thirdwebstorage.com https://*.ipfscdn.io https://telegram.org https://*.telegram.org",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' blob: data: https:",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://*.pandoras.finance https://*.pandoras.org https://blob.vercel-storage.com",
+      "frame-src 'self' https://telegram.org",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "report-uri /api/csp-report",
+    ].join('; ')
+  );
 
   return response;
 }
