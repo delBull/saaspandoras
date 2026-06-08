@@ -305,6 +305,10 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <span>Ver Fases</span>
                     <ArrowDown className="w-3 h-3" />
                   </button>
+                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-white/5 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/5">
+                    <Shield className="w-4 h-4 text-lime-400" />
+                    Ir al DAO
+                  </Link>
 
 
                   {/* Dynamic Perks Button */}

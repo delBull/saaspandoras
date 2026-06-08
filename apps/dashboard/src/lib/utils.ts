@@ -24,7 +24,12 @@ export function getDashboardDomain() {
 export function resolveIpfsUrl(url?: string | null): string | null {
   if (!url || url === 'null' || url === 'undefined') return null;
   if (url.startsWith('ipfs://')) {
-    return url.replace('ipfs://', 'https://ipfs.thirdwebcdn.com/ipfs/');
+    const cid = url.replace('ipfs://', '');
+    const clientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || process.env.NEXT_PUBLIC_PANDORAS_PUBLIC_KEY;
+    if (clientId) {
+      return `https://${clientId}.ipfscdn.io/ipfs/${cid}`;
+    }
+    return `https://dweb.link/ipfs/${cid}`;
   }
   return url;
 }
