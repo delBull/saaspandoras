@@ -17,6 +17,8 @@ import DaoWizard from '@/components/admin/DaoWizard';
 import { ManageActivities } from '@/components/dao/ManageActivities';
 import { LegalTab } from './tabs/LegalTab';
 import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
+import { ResourceHubTab } from './tabs/ResourceHubTab';
+import { EventsTab } from './tabs/EventsTab';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -36,7 +38,7 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events'>('overview');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -119,6 +121,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     { id: 'missions', label: 'Gamificación', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
                     { id: 'dao', label: 'DAO Treasury', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                    { id: 'resource_hub', label: 'Hub de Recursos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                    { id: 'events', label: 'Eventos & Citas', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
                     { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                 ].map((tab) => (
                     <button
@@ -161,6 +165,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         {activeTab === 'dao' && <DaoTreasuryTab project={project} />}
                         {activeTab === 'missions' && <MissionsTab project={project} />}
                         {activeTab === 'legal' && <LegalTab project={project} />}
+                        {activeTab === 'resource_hub' && <ResourceHubTab project={project} />}
+                        {activeTab === 'events' && <EventsTab project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
                         {activeTab === 'purchases' && (
                             <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />

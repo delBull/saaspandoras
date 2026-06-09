@@ -622,7 +622,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                             <div className="space-y-2">
                                 <h2 className="text-xl font-bold text-zinc-300">
                                     {isPhaseActive ? `Fondo: ${displayTierName}` : (
-                                        (calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore).status === 'upcoming') 
+                                        rawPhase && calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore).status === 'upcoming'
                                             ? `Fondo ${displayTierName} Próximamente` 
                                             : `Fondo ${displayTierName} Finalizado`
                                     )}
@@ -630,7 +630,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                 <p className="text-sm text-zinc-400 leading-relaxed max-w-md">
                                     {isPhaseActive
                                         ? `Asegura tu participación en una de las fases exclusivas del proyecto mediante nuestra infraestructura institucional.`
-                                        : (calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore).status === 'upcoming' 
+                                        : (rawPhase && calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore).status === 'upcoming'
                                             ? `Esta fase aún no ha comenzado. Regresa pronto o entra por Fast Lane para recibir noticias.`
                                             : `Este fondo de inversión ya no se encuentra abierto para contribución directa.`)
                                     }

@@ -313,6 +313,7 @@ export const projects = pgTable("projects", {
   allowedDomains: jsonb("allowed_domains").default([]).notNull(), // URLs permitidas para el widget
   isDeleted: boolean("is_deleted").default(false).notNull(),
   legalConfig: jsonb("legal_config").default({}).notNull(), // V3: Legal agreement templates & NOM-151 config
+  extraConfig: jsonb("extra_config").default({}).notNull(), // V4: Resource Hub, Sovereign Calendar, Event Engine config
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
   isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
@@ -2304,3 +2305,66 @@ export const ambassadorsRelations = relations(ambassadors, ({ many }) => ({
 export type Ambassador = typeof ambassadors.$inferSelect;
 export type AmbassadorClient = typeof ambassadorClients.$inferSelect;
 export type AmbassadorCommission = typeof ambassadorCommissions.$inferSelect;
+
+// =========================================================
+// PANDORAS WHITELABEL MODULES (EVENTS & RESOURCE HUB)
+// =========================================================
+
+export const projectEventTypeEnum = pgEnum("project_event_type", [
+  "MACRO", // Large scale events (e.g. May 30th)
+  "1ON1"   // Recurring sovereign calendar slots
+]);
+
+export const eventRegistrationStatusEnum = pgEnum("event_registration_status", [
+  "CONFIRMED",
+  "CANCELLED",
+  "ATTENDED"
+]);
+
+export const projectEvents = pgTable("project_events", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  type: projectEventTypeEnum("type").default("MACRO").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  date: timestamp("date", { withTimezone: true }),
+  location: varchar("location", { length: 255 }),
+  config: jsonb("config").default({}), // Whatsapp, max capacity, ranges, etc
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const eventRegistrations = pgTable("event_registrations", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").references(() => projectEvents.id).notNull(),
+  projectId: integer("project_id").references(() => projects.id).notNull(), // Cross-reference for easy marketing queries
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  telefono: varchar("telefono", { length: 50 }).notNull(),
+  perfil: varchar("perfil", { length: 100 }),
+  montoInteres: varchar("monto_interes", { length: 100 }),
+  status: eventRegistrationStatusEnum("status").default("CONFIRMED").notNull(),
+  registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const projectEventsRelations = relations(projectEvents, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [projectEvents.projectId],
+    references: [projects.id],
+  }),
+  registrations: many(eventRegistrations),
+}));
+
+export const eventRegistrationsRelations = relations(eventRegistrations, ({ one }) => ({
+  event: one(projectEvents, {
+    fields: [eventRegistrations.eventId],
+    references: [projectEvents.id],
+  }),
+  project: one(projects, {
+    fields: [eventRegistrations.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export type ProjectEvent = typeof projectEvents.$inferSelect;
+export type EventRegistration = typeof eventRegistrations.$inferSelect;

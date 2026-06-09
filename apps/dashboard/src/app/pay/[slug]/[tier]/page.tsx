@@ -32,27 +32,36 @@ export default async function CheckoutHubPage({
 
     if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
         try {
-            const { getContract, readContract } = await import("thirdweb");
+            const thirdweb = await import("thirdweb");
             const { defineChain } = await import("thirdweb/chains");
             const { client: twClient } = await import("@/lib/thirdweb-client");
 
-            const contract = getContract({
+            const contract = thirdweb.getContract({
                 client: twClient,
                 chain: defineChain(Number(project.chainId || 137)),
                 address: resolvedContract as any
             });
 
-            const rawSupply = await readContract({
-                contract,
-                method: "function totalSupply() view returns (uint256)",
-                params: []
-            }).catch(() => 0n);
+            // Race against a 5s timeout so Vercel cold starts don't crash the page
+            const rawSupply = await Promise.race([
+                thirdweb.readContract({
+                    contract,
+                    method: "function totalSupply() view returns (uint256)",
+                    params: []
+                }),
+                new Promise<bigint>((_, reject) =>
+                    setTimeout(() => reject(new Error("timeout")), 5000)
+                ),
+            ]).catch(() => 0n);
 
-            currentSupply = rawSupply > BigInt(1e12) ? Number(rawSupply / BigInt(1e18)) : Number(rawSupply);
+            currentSupply = (rawSupply as bigint) > BigInt(1e12)
+                ? Number((rawSupply as bigint) / BigInt(1e18))
+                : Number(rawSupply);
         } catch (e) {
             console.warn("[CheckoutHub] Failed to fetch on-chain supply for phase resolution", e);
         }
     }
+
 
     const { calculatePhaseStatus } = await import("@/lib/phase-utils");
 
