@@ -154,7 +154,8 @@ export class MarketingEngine {
                 
                 if (project) {
                     contact.projectName = project.title;
-                    const domain = contact.ownerContext === 'protocol' ? 'dash.pandoras.finance' : 'staging.dash.pandoras.finance';
+                    const isProd = process.env.NODE_ENV === 'production';
+                    const domain = isProd ? 'dash.pandoras.finance' : 'staging.dash.pandoras.finance';
                     contact.payLink = `https://${domain}/pay/${project.slug}/silver`;
                     contact.price = project.tokenPriceUsd ? `$${project.tokenPriceUsd}` : '$50';
                 }

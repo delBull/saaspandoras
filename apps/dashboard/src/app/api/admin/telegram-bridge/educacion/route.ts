@@ -10,6 +10,12 @@ export const dynamic = 'force-dynamic';
 const EDGE_API_URL = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? '';
 const EDGE_KEY = process.env.PANDORA_CORE_KEY ?? '';
 
+function getDashboardBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  const isProd = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+  return isProd ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
+}
+
 /**
  * GET /api/admin/telegram-bridge/educacion
  * Returns the list of active courses for the Telegram bot to render as inline buttons.
@@ -88,7 +94,7 @@ export async function GET(request: Request) {
       moduleCount: Array.isArray(c.moduleCount) ? (c.moduleCount as unknown[]).length : 0,
       skills: (c.skillsCovered as string[] ?? []).slice(0, 4),
       // Deep link to course on web platform
-      deepLink: `https://staging.dash.pandoras.finance/education/course/${c.id}`,
+      deepLink: `${getDashboardBaseUrl()}/education/course/${c.id}`,
     }));
 
     return NextResponse.json({
@@ -154,7 +160,7 @@ export async function POST(request: Request) {
           creditsReward: course.creditsReward,
           moduleCount: (course.modules as unknown[]).length,
           skills: (course.skillsCovered as string[]).slice(0, 5),
-          deepLink: `https://staging.dash.pandoras.finance/education/course/${course.id}`,
+          deepLink: `${getDashboardBaseUrl()}/education/course/${course.id}`,
         }
       });
     }

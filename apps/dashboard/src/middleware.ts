@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, {
       status: 204,
       headers: {
-        "Access-Control-Allow-Origin": isPublicMarketingApi ? (origin) : (origin.endsWith(".pandoras.finance") || origin.endsWith(".pandoras.org") || origin.includes("localhost") ? origin : "https://dash.pandoras.finance"),
+        "Access-Control-Allow-Origin": isPublicMarketingApi ? (origin) : (origin.endsWith(".pandoras.finance") || origin.endsWith(".pandoras.org") || origin.startsWith("http://localhost:") ? origin : "https://dash.pandoras.finance"),
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": isPublicMarketingApi 
           ? "Content-Type, Authorization, x-api-key, x-stress-test"
@@ -103,7 +103,7 @@ export function middleware(request: NextRequest) {
     response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-stress-test');
-  } else if (requestOrigin && (requestOrigin.endsWith(".pandoras.finance") || requestOrigin.endsWith(".pandoras.org") || requestOrigin.includes("localhost"))) {
+  } else if (requestOrigin && (requestOrigin.endsWith(".pandoras.finance") || requestOrigin.endsWith(".pandoras.org") || requestOrigin.startsWith("http://localhost:"))) {
     response.headers.set('Access-Control-Allow-Origin', requestOrigin);
     response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -118,6 +118,13 @@ export function middleware(request: NextRequest) {
 
   // CSP Report-Only: no bloquea nada, solo reporta violaciones
   // para armar la política final sin romper funcionalidad
+  const isProduction = process.env.VERCEL_ENV === 'production'
+    || (process.env.VERCEL_ENV === undefined && process.env.NODE_ENV === 'production');
+
+  const connectSrc = isProduction
+    ? "'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://dash.pandoras.finance https://app.pandoras.org https://blob.vercel-storage.com"
+    : "'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://*.pandoras.finance https://*.pandoras.org https://blob.vercel-storage.com";
+
   response.headers.set(
     'Content-Security-Policy-Report-Only',
     [
@@ -126,7 +133,7 @@ export function middleware(request: NextRequest) {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' blob: data: https:",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://*.pandoras.finance https://*.pandoras.org https://blob.vercel-storage.com",
+      `connect-src ${connectSrc}`,
       "frame-src 'self' https://telegram.org",
       "base-uri 'self'",
       "form-action 'self'",

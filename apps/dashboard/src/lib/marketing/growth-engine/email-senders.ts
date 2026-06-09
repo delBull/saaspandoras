@@ -1043,8 +1043,9 @@ export async function sendCheckoutRecoveryEmail(context: {
       return { success: true, mocked: true };
   }
 
+  const dashboardBase = isProd ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
   const subject = `Tu asignación en ${context.projectName} expira pronto`;
-  const ctaUrl = `https://staging.dash.pandoras.finance/pay/${context.projectSlug || 'snarai'}/default`;
+  const ctaUrl = `${dashboardBase}/pay/${context.projectSlug || 'snarai'}/default`;
 
   try {
     const data = await resend.emails.send({
