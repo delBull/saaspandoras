@@ -120,10 +120,22 @@ Se corrigieron 4 archivos con URLs de staging que debían ser dinámicas:
 | VULN-03 | robots.txt revela rutas | 2.3 | ✅ YA CORREGIDO (sesión anterior) |
 | VULN-02 | Security Headers | Media | ✅ YA CORREGIDO (sesión anterior) |
 
+### S'Narai (repositorio externo → `/Users/Marco/Documents/Company/Aztecas/Proyectos/Narai/`)
+
+| Hallazgo | Severidad | Estado |
+|----------|-----------|--------|
+| THIRDWEB_SECRET_KEY en .env/.env.local | 🔴 CRÍTICO | ✅ MITIGADO (archivos en .gitignore, rotar key recomendado) |
+| Sin security headers (CSP, HSTS, XFO) | 🟠 ALTO | ✅ CORREGIDO en `apps/web/src/middleware.ts` (Narai) |
+| Staging URL hardcodeada | 🟡 MEDIO | ⚠️ NO APLICA (no existe `user-auth-form.tsx` en Narai) |
+| `host.includes("vercel.app")` en waitlist | 🟡 MEDIO | ⚠️ NO APLICA (no existe `waitlist/route.ts` en Narai) |
+| robots.ts permisivo (intencional) | 🟢 BAJO | ✅ OK (sitio público) |
+| next.config.mjs ignora errores build | 🟢 BAJO | ⚠️ NO TOCADO (requiere decisión, podría romper deploys) |
+
 ---
 
-## Archivos Modificados (6)
+## Archivos Modificados
 
+### Dashboard (saaspandoras — committed en `36528c98`)
 ```
 apps/dashboard/src/app/api/v1/analytics/route.ts          # VULN-05 + VULN-06
 apps/dashboard/src/middleware.ts                           # VULN-05 + VULN-07
@@ -133,11 +145,18 @@ apps/dashboard/src/lib/marketing/growth-engine/email-senders.ts  # VULN-04
 apps/dashboard/src/app/api/admin/telegram-bridge/educacion/route.ts  # VULN-04
 ```
 
+### S'Narai (repo externo — pendiente de commit)
+```
+apps/web/src/middleware.ts                                 # Security headers + CSP
+```
+
 ---
 
 ## Para Próxima Sesión
 
 1. **Verificar Vercel env vars:** Asegurar que `NEXT_PUBLIC_PANDORAS_EDGE_URL` apunte a producción en el deployment de producción
 2. **Legal pages 500:** Son errores de infraestructura en staging (datos faltantes), no bugs de código. Verificar que staging tenga la DB poblada.
-3. **Considerar migrar CSP de Report-Only a Enforce** cuando se haya validado que no hay falsos positivos
-4. **Considerar eliminar el endpoint legacy bridge** si ya no es necesario (Narai ya no lo usa)
+3. **Rotar THIRDWEB_SECRET_KEY** en Tercerweb Dashboard (por precaución, aunque está en .gitignore)
+4. **Considerar migrar CSP de Report-Only a Enforce** cuando se haya validado que no hay falsos positivos
+5. **Considerar eliminar el endpoint legacy bridge** si ya no es necesario (Narai ya no lo usa)
+6. **Decidir si reactivar TypeScript/ESLint validation** en `next.config.mjs` (riesgo: builds pueden fallar)
