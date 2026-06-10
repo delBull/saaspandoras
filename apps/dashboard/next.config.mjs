@@ -20,6 +20,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**',
       },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
   },
   // Ensure we can bundle Node.js built-ins correctly if they are referenced
