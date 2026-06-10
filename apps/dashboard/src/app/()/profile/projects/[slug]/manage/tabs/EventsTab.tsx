@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CalendarIcon, UserGroupIcon, PlusIcon, LinkIcon, ClipboardDocumentIcon, TrashIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, UserGroupIcon, PlusIcon, LinkIcon, ClipboardDocumentIcon, TrashIcon, ArrowTopRightOnSquareIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { AvailabilityScheduler, defaultAvailability } from '@/components/shared/AvailabilityScheduler';
 import type { AvailabilityConfig } from '@/components/shared/AvailabilityScheduler';
@@ -23,6 +23,7 @@ export function EventsTab({ project }: { project: any }) {
     const [events, setEvents] = useState<ProjectEvent[]>([]);
     const [isLoadingEvents, setIsLoadingEvents] = useState(true);
     const [showNewForm, setShowNewForm] = useState(false);
+    const [editingEvent, setEditingEvent] = useState<number | null>(null);
 
     const [calendarConfig, setCalendarConfig] = useState(
         (project.extraConfig as any)?.sovereignCalendar || {
@@ -79,41 +80,79 @@ export function EventsTab({ project }: { project: any }) {
             toast.error('La fecha es obligatoria para un Macro Evento');
             return;
         }
-        setIsCreatingEvent(true);
         try {
-            const dateTime = newEvent.type === 'CALENDAR' 
-                ? null 
-                : (newEvent.time
-                    ? `${newEvent.date}T${newEvent.time}:00`
-                    : `${newEvent.date}T00:00:00`);
+            setIsCreatingEvent(true);
+            const dateTime = newEvent.date && newEvent.time ? `${newEvent.date}T${newEvent.time}:00` : null;
+            
+            const payload = {
+                title: newEvent.title,
+                type: newEvent.type,
+                date: dateTime,
+                location: newEvent.location,
+                config: { 
+                    maxCapacity: newEvent.maxCapacity,
+                    durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined,
+                    availability: newEvent.type === 'CALENDAR' ? newEvent.availability : undefined
+                }
+            };
 
-            const res = await fetch(`/api/v1/projects/${project.id}/events`, {
-                method: 'POST',
+            const url = editingEvent 
+                ? `/api/v1/projects/${project.id}/events/${editingEvent}`
+                : `/api/v1/projects/${project.id}/events`;
+
+            const method = editingEvent ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: newEvent.title,
-                    type: newEvent.type,
-                    date: dateTime,
-                    location: newEvent.location,
-                    config: { 
-                        maxCapacity: newEvent.maxCapacity,
-                        durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined,
-                        availability: newEvent.type === 'CALENDAR' ? newEvent.availability : undefined
-                    },
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) throw new Error();
-            const created = await res.json();
-            setEvents(prev => [created, ...prev]);
+            const savedEvent = await res.json();
+            
+            if (editingEvent) {
+                setEvents(prev => prev.map(e => e.id === savedEvent.id ? { ...savedEvent, registrations: (e as any).registrations } : e));
+            } else {
+                setEvents(prev => [savedEvent, ...prev]);
+            }
+            
             setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, availability: defaultAvailability as AvailabilityConfig });
             setShowNewForm(false);
-            toast.success('Evento creado ✓');
-        } catch {
-            toast.error('Error al crear el evento');
+            setEditingEvent(null);
+            toast.success('Evento guardado ✓');
+        } catch (e) {
+            console.error('Error saving event:', e);
+            toast.error('Error al guardar evento');
         } finally {
             setIsCreatingEvent(false);
         }
+    };
+
+    const startEditEvent = (event: any) => {
+        let dateStr = '';
+        let timeStr = '';
+        if (event.date) {
+            const dateObj = new Date(event.date);
+            dateStr = dateObj.toISOString().split('T')[0] || '';
+            timeStr = dateObj.toTimeString().slice(0,5);
+        }
+        
+        const config = event.config || {};
+        
+        setNewEvent({
+            title: event.title,
+            type: event.type,
+            date: dateStr,
+            time: timeStr,
+            location: event.location || '',
+            maxCapacity: config.maxCapacity || 20,
+            durationMinutes: config.durationMinutes || 45,
+            availability: config.availability || defaultAvailability
+        });
+        
+        setEditingEvent(event.id);
+        setShowNewForm(true);
     };
 
     const copyEventLink = (eventId: number) => {
@@ -208,34 +247,38 @@ export function EventsTab({ project }: { project: any }) {
                     </button>
                 </div>
 
-                {/* NEW EVENT FORM */}
-                {showNewForm && (
+                {/* NEW OR EDIT EVENT FORM */}
+                {(showNewForm || editingEvent) && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         className="mb-6 p-5 bg-black/50 border border-blue-500/20 rounded-xl space-y-4"
                     >
                         <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold uppercase tracking-widest text-blue-400">Nuevo Evento</h4>
-                            <div className="flex bg-black rounded-lg p-1 border border-white/10">
-                                <button
-                                    onClick={() => setNewEvent({ ...newEvent, type: 'MACRO' })}
-                                    className={`px-3 py-1 text-xs rounded-md transition-colors ${newEvent.type === 'MACRO' ? 'bg-blue-500 text-white' : 'text-zinc-500 hover:text-white'}`}
-                                >
-                                    Macro Evento
-                                </button>
-                                <button
-                                    onClick={() => setNewEvent({ ...newEvent, type: 'CALENDAR' })}
-                                    className={`px-3 py-1 text-xs rounded-md transition-colors ${newEvent.type === 'CALENDAR' ? 'bg-blue-500 text-white' : 'text-zinc-500 hover:text-white'}`}
-                                >
-                                    Calendario Soberano
-                                </button>
-                            </div>
+                            <h4 className="text-sm font-bold uppercase tracking-widest text-blue-400">
+                                {editingEvent ? 'Editar Horarios de Evento' : 'Nuevo Evento'}
+                            </h4>
+                            {!editingEvent && (
+                                <div className="flex bg-black rounded-lg p-1 border border-white/10">
+                                    <button
+                                        onClick={() => setNewEvent({ ...newEvent, type: 'MACRO' })}
+                                        className={`px-3 py-1 text-xs rounded-md transition-colors ${newEvent.type === 'MACRO' ? 'bg-blue-500 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                    >
+                                        Macro Evento
+                                    </button>
+                                    <button
+                                        onClick={() => setNewEvent({ ...newEvent, type: 'CALENDAR' })}
+                                        className={`px-3 py-1 text-xs rounded-md transition-colors ${newEvent.type === 'CALENDAR' ? 'bg-blue-500 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                    >
+                                        Calendario Soberano
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Título del Evento *</label>
+                                    <label className="block text-xs text-zinc-500 mb-1">Título del Evento *</label>
                                 <input
                                     type="text"
                                     value={newEvent.title}
@@ -372,6 +415,13 @@ export function EventsTab({ project }: { project: any }) {
                                         </div>
                                         <div className="flex flex-col items-end gap-2 flex-shrink-0">
                                             <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => startEditEvent(event)}
+                                                    title="Editar evento"
+                                                    className="p-2 text-zinc-400 hover:text-white border border-white/10 rounded-lg transition-colors"
+                                                >
+                                                    <PencilIcon className="w-4 h-4" />
+                                                </button>
                                                 <button
                                                     onClick={() => copyEventLink(event.id)}
                                                     title="Copiar enlace"
