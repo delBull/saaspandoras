@@ -25,9 +25,8 @@ export function resolveIpfsUrl(url?: string | null): string | null {
   if (!url || url === 'null' || url === 'undefined') return null;
   if (url.startsWith('ipfs://')) {
     const cid = url.replace('ipfs://', '');
-    // El gateway de Thirdweb está regresando 401 Unauthorized (falta whitelist de dominios).
-    // Usamos cloudflare como gateway principal público para no romper las imágenes.
-    return `https://cloudflare-ipfs.com/ipfs/${cid}`;
+    // cloudflare-ipfs.com is offline, using ipfs.io or dweb.link
+    return `https://ipfs.io/ipfs/${cid}`;
   }
   return url;
 }

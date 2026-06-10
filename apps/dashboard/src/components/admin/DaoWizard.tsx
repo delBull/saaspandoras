@@ -72,22 +72,21 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
     const utilityContract = getContract({
         client,
         chain,
-        address: project.utilityContractAddress || ""
+        address: project.utilityContractAddress || project.w2eConfig?.utilityToken?.address || "0x0000000000000000000000000000000000000000"
     });
 
     // License Contract (Target for Royalties)
     const licenseContract = getContract({
         client,
         chain,
-        address: project.contractAddress || ""
+        address: project.contractAddress || project.w2eConfig?.licenseToken?.address || "0x0000000000000000000000000000000000000000"
     });
 
-    // Governor Contract (Executor)
     // Governor Contract (Executor)
     const governorContract = getContract({
         client,
         chain,
-        address: governorAddress || "" // Use passed prop
+        address: governorAddress || "0x0000000000000000000000000000000000000000" // Use passed prop
     });
 
 

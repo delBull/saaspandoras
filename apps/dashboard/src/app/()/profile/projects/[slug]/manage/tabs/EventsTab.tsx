@@ -78,9 +78,11 @@ export function EventsTab({ project }: { project: any }) {
         }
         setIsCreatingEvent(true);
         try {
-            const dateTime = newEvent.time
-                ? `${newEvent.date}T${newEvent.time}:00`
-                : `${newEvent.date}T00:00:00`;
+            const dateTime = newEvent.type === 'CALENDAR' 
+                ? null 
+                : (newEvent.time
+                    ? `${newEvent.date}T${newEvent.time}:00`
+                    : `${newEvent.date}T00:00:00`);
 
             const res = await fetch(`/api/v1/projects/${project.id}/events`, {
                 method: 'POST',
