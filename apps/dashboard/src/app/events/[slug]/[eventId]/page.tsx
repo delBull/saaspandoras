@@ -108,9 +108,6 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                     
                     {/* HERO */}
                     <section className="min-h-screen flex flex-col justify-center items-center text-center p-[60px_20px] lg:p-[80px_60px] bg-[radial-gradient(circle_at_20%_30%,#1a1a1a_0%,#000000_100%)] border-b border-[#D4A853]/10">
-                        {sanitizeUrl(project.logoUrl) && (
-                            <img src={sanitizeUrl(project.logoUrl)!} alt={project.title} className="max-w-[140px] mx-auto mb-[40px] block" />
-                        )}
                         <h1 className={`text-[clamp(3rem,8vw,5rem)] font-bold tracking-tight leading-[0.9] mb-[30px] uppercase ${playfair.className}`}>
                             {project.title}
                         </h1>
@@ -123,9 +120,15 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                         <p className="text-[#888888] font-light max-w-[450px] mx-auto mb-[40px]">
                             Presentación privada sobre cómo la infraestructura digital está redefiniendo quién puede participar temprano.
                         </p>
-                        <a href="#reg-form" className="inline-block p-[20px_40px] bg-[#D4A853] text-[#050505] font-semibold text-[0.9rem] uppercase tracking-[2px] transition-all duration-300 hover:bg-white hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(212,168,83,0.3)]">
-                            Solicitar Acceso
+                        
+                        {/* Mobile: Scroll to form. Desktop: Point to right */}
+                        <a href="#reg-form" className="lg:hidden inline-block p-[20px_40px] bg-[#D4A853] text-[#050505] font-semibold text-[0.9rem] uppercase tracking-[2px] transition-all duration-300 hover:bg-white hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(212,168,83,0.3)]">
+                            Confirmar Asistencia
                         </a>
+                        <div className="hidden lg:flex items-center gap-[15px] p-[20px_40px] border border-[#D4A853]/30 text-[#D4A853] font-semibold text-[0.9rem] uppercase tracking-[2px]">
+                            <span>Selecciona una fecha</span>
+                            <span className="animate-pulse">→</span>
+                        </div>
 
                         {!isCalendar && (
                             <div className="mt-[50px] p-[25px_40px] border border-[#D4A853]/30 text-center bg-[#D4A853]/5">
@@ -231,7 +234,7 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                     </section>
 
                     {/* EMOTIONAL QUOTE */}
-                    <section id="reg-form" className="text-center p-[80px_40px] border-t border-b border-[#D4A853]/20">
+                    <section className="text-center p-[80px_40px] border-t border-b border-[#D4A853]/20">
                         <p className={`text-[1.3rem] lg:text-[1.8rem] italic text-[#F5F5F5] leading-[1.5] max-w-[700px] mx-auto mb-[30px] ${playfair.className}`}>
                             Algunas oportunidades se vuelven evidentes cuando todos las ven.
                             <br/><br/>
@@ -249,7 +252,7 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                 </div>
 
                 {/* RIGHT COLUMN - FORM FIXED ON DESKTOP */}
-                <div className="relative lg:fixed lg:right-0 lg:top-0 w-full lg:w-[50vw] h-auto lg:h-screen bg-[#000000] flex justify-center lg:items-start p-[60px_20px] lg:p-[40px] lg:border-l border-[#D4A853]/20 z-10 lg:overflow-y-auto">
+                <div id="reg-form" className="relative lg:fixed lg:right-0 lg:top-0 w-full lg:w-[50vw] h-auto lg:h-screen bg-[#000000] flex justify-center lg:items-start p-[60px_20px] lg:p-[40px] lg:border-l border-[#D4A853]/20 z-10 lg:overflow-y-auto">
                     <div className="w-full max-w-[480px] bg-[#111111] p-[30px_20px] lg:p-[40px] border border-white/5 shadow-[0_40px_100px_rgba(0,0,0,0.8)] my-auto lg:my-[20px]">
                         <EventRegistrationForm 
                             eventId={eventData.id} 

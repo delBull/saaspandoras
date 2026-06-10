@@ -76,15 +76,19 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
             <div className="text-center p-5 md:p-10 animate-[fadeInUp_0.6s_ease_backwards]">
                 <h3 className={`text-[1.8rem] mb-[30px] ${playfair.className}`}>Solicitud <span className="text-[#D4A853]">recibida</span></h3>
                 <p className="text-[#888888] leading-[1.8] mb-[30px]">
-                    Gracias por tu interés en asistir.
+                    Tu registro ha sido exitoso.
                     <br /><br />
-                    En los próximos días recibirás los detalles del evento privado de presentación.
+                    A continuación los detalles de tu acceso:
                 </p>
                 <div className="border-t border-b border-[#D4A853]/30 py-[25px] my-[30px]">
-                    <div className={`text-[1.4rem] text-[#D4A853] ${playfair.className}`}>{eventDate}</div>
+                    <div className={`text-[1.4rem] text-[#D4A853] ${playfair.className}`}>
+                        {selectedDate && selectedTime 
+                            ? new Date(`${selectedDate}T${selectedTime}`).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Mexico_City' })
+                            : eventDate}
+                    </div>
                     <div className="text-[0.9rem] text-[#888888] mt-[5px]">{eventLocation}</div>
                 </div>
-                <p className="text-[0.9rem]">Mientras tanto, reserva la fecha.</p>
+                <p className="text-[0.9rem]">Te esperamos puntualmente. Revisa tu correo para más detalles.</p>
             </div>
         );
     }

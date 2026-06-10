@@ -9,7 +9,7 @@ const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "
 
 export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, projectName: string }) {
     const [showIntro, setShowIntro] = useState(false);
-    const [isMuted, setIsMuted] = useState(true);
+    const [isMuted, setIsMuted] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {

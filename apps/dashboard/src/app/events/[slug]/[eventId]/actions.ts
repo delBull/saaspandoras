@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { eventRegistrations, projectEvents, projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export async function registerForEvent(prevState: any, formData: FormData) {
     try {
@@ -21,6 +21,42 @@ export async function registerForEvent(prevState: any, formData: FormData) {
         const eventId = Number(eventIdStr);
         const projectId = Number(projectIdStr);
 
+        // Fetch project and event data early for capacity and notifications
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+        const [event] = await db.select().from(projectEvents).where(eq(projectEvents.id, eventId));
+
+        if (!event || !project) return { error: 'Evento o proyecto no encontrado' };
+
+        // Capacity check
+        const config = typeof event.config === 'string' ? JSON.parse(event.config) : event.config || {};
+        
+        if (event.type === 'CALENDAR' && selectedDateTimeStr) {
+            // Check slots for this specific date/time
+            const regs = await db.select().from(eventRegistrations).where(
+                and(
+                    eq(eventRegistrations.eventId, eventId),
+                    eq(eventRegistrations.selectedDateTime, new Date(selectedDateTimeStr)),
+                    eq(eventRegistrations.status, 'CONFIRMED')
+                )
+            );
+            const slotCapacity = config.maxCapacityPerSlot || 1;
+            if (regs.length >= slotCapacity) {
+                return { error: 'Este horario ya no está disponible. Por favor selecciona otro.' };
+            }
+        } else if (event.type === 'MACRO') {
+            // Check macro event capacity
+            const regs = await db.select().from(eventRegistrations).where(
+                and(
+                    eq(eventRegistrations.eventId, eventId),
+                    eq(eventRegistrations.status, 'CONFIRMED')
+                )
+            );
+            const maxCapacity = config.maxCapacity || 20;
+            if (regs.length >= maxCapacity) {
+                return { error: 'El cupo para este evento se ha agotado.' };
+            }
+        }
+
         await db.insert(eventRegistrations).values({
             eventId,
             projectId,
@@ -32,43 +68,40 @@ export async function registerForEvent(prevState: any, formData: FormData) {
             selectedDateTime: selectedDateTimeStr ? new Date(selectedDateTimeStr) : null
         });
 
-        // Fetch project and event data for notifications
-        const [project] = await db.select({ 
-            title: projects.title,
-            discordWebhookUrl: projects.discordWebhookUrl
-        }).from(projects).where(eq(projects.id, projectId));
-
-        const [event] = await db.select({ 
-            title: projectEvents.title,
-            date: projectEvents.date,
-            location: projectEvents.location
-        }).from(projectEvents).where(eq(projectEvents.id, eventId));
-
         // DISCORD WEBHOOK NOTIFICATION
         try {
-
             if (project?.discordWebhookUrl) {
+                const eventDateFormatted = selectedDateTimeStr 
+                    ? new Date(selectedDateTimeStr).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+                    : event?.date ? new Date(event.date).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) : 'Fecha por confirmar';
+
+                // Create a Google Calendar link
+                let gcalLink = '';
+                if (selectedDateTimeStr || event?.date) {
+                    const d = selectedDateTimeStr ? new Date(selectedDateTimeStr) : new Date(event.date as Date);
+                    const endD = new Date(d.getTime() + 60 * 60 * 1000); // add 1 hour
+                    const fmt = (dt: Date) => dt.toISOString().replace(/-|:|\.\d\d\d/g, '');
+                    const title = encodeURIComponent(event?.title || "Private Briefing");
+                    const details = encodeURIComponent(`Reunión con ${nombre} (${email} - ${telefono})`);
+                    const loc = encodeURIComponent(event?.location || '');
+                    gcalLink = `\n\n[📅 Agregar a Google Calendar](https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(d)}/${fmt(endD)}&details=${details}&location=${loc})`;
+                }
+
                 const embed = {
                     title: `🎫 Nueva Confirmación de Asistencia`,
                     color: 0xD4A853, // Gold color
+                    description: gcalLink,
                     fields: [
                         { name: "Proyecto", value: project.title, inline: true },
                         { name: "Evento", value: event?.title || "Evento Privado", inline: true },
                         { name: "Nombre", value: nombre, inline: false },
                         { name: "Email", value: email, inline: true },
                         { name: "Teléfono", value: telefono || "No especificado", inline: true },
-                        { name: "Perfil", value: perfil || "No especificado", inline: true }
+                        { name: "Perfil", value: perfil || "No especificado", inline: true },
+                        { name: "Fecha/Hora", value: eventDateFormatted, inline: false }
                     ],
                     timestamp: new Date().toISOString()
                 };
-
-                if (selectedDateTimeStr) {
-                    embed.fields.push({
-                        name: "Fecha/Hora Seleccionada",
-                        value: new Date(selectedDateTimeStr).toLocaleString('es-MX'),
-                        inline: false
-                    });
-                }
 
                 await fetch(project.discordWebhookUrl, {
                     method: 'POST',
@@ -89,21 +122,22 @@ export async function registerForEvent(prevState: any, formData: FormData) {
                 
             await sendEmail({
                 to: email,
+                from: `${project?.title} <${project?.slug || 'hello'}@pandoras.finance>`,
                 subject: `Confirmación de Asistencia - ${project?.title || "S'Narai"}`,
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #000; color: #fff; padding: 40px; border-radius: 8px;">
-                        <h1 style="color: #D4A853; text-transform: uppercase; font-size: 24px;">Confirmación de Asistencia</h1>
+                        <h1 style="color: #D4A853; text-transform: uppercase; font-size: 24px;">Asistencia Confirmada</h1>
                         <p style="color: #ccc; font-size: 16px; line-height: 1.6;">Hola ${nombre},</p>
-                        <p style="color: #ccc; font-size: 16px; line-height: 1.6;">Gracias por confirmar tu asistencia a la presentación privada de <strong>${project?.title || "S'Narai"}</strong>.</p>
+                        <p style="color: #ccc; font-size: 16px; line-height: 1.6;">Gracias por agendar tu espacio para la presentación privada de <strong>${project?.title || "S'Narai"}</strong>. Tu registro ha sido exitoso.</p>
                         
                         <div style="border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 20px 0; margin: 30px 0;">
                             <p style="margin: 0 0 10px 0; color: #D4A853; font-weight: bold;">Evento: <span style="color: #fff; font-weight: normal;">${event?.title || 'Private Briefing'}</span></p>
-                            <p style="margin: 0 0 10px 0; color: #D4A853; font-weight: bold;">Fecha: <span style="color: #fff; font-weight: normal;">${eventDateFormatted}</span></p>
-                            <p style="margin: 0; color: #D4A853; font-weight: bold;">Lugar: <span style="color: #fff; font-weight: normal;">${event?.location || 'Presencial'}</span></p>
+                            <p style="margin: 0 0 10px 0; color: #D4A853; font-weight: bold;">Fecha y Hora: <span style="color: #fff; font-weight: normal;">${eventDateFormatted}</span></p>
+                            <p style="margin: 0; color: #D4A853; font-weight: bold;">Lugar / Acceso: <span style="color: #fff; font-weight: normal;">${event?.location || 'Presencial'}</span></p>
                         </div>
                         
-                        <p style="color: #ccc; font-size: 14px;">En los próximos días recibirás más detalles sobre el acceso.</p>
-                        <p style="color: #666; font-size: 12px; margin-top: 40px;">Este es un mensaje automático, por favor no respondas a este correo.</p>
+                        <p style="color: #ccc; font-size: 14px;">Te esperamos puntualmente. Si necesitas hacer algún cambio, contáctanos respondiendo a este correo.</p>
+                        <p style="color: #666; font-size: 12px; margin-top: 40px;">Este es un mensaje automático generado por el sistema.</p>
                     </div>
                 `
             });
@@ -114,8 +148,6 @@ export async function registerForEvent(prevState: any, formData: FormData) {
         return { success: true };
     } catch (e: any) {
         console.error(e);
-        return { error: e.message?.includes('relation "event_registrations" does not exist')
-            ? 'La tabla de registros aún no está disponible. Ejecuta la migración de BD primero.'
-            : 'Ocurrió un error al procesar tu solicitud.' };
+        return { error: 'Ocurrió un error al procesar tu solicitud.' };
     }
 }

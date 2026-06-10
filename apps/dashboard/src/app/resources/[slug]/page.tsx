@@ -69,8 +69,8 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
         calendarConfig = (project.extraConfig as any).sovereignCalendar;
     }
 
-    // Portal link (Fallback to snarai portal for the test)
-    const portalUrl = `https://snarai.aztecaz.xyz/portal`;
+    // Portal link (Fallback to main website since portal is a modal)
+    const portalUrl = project.website || `https://snarai.aztecaz.xyz/`;
 
     return (
         <main className={`h-screen bg-[#050505] text-white flex flex-col overflow-hidden ${inter.className}`}>

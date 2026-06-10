@@ -213,12 +213,29 @@ export function sanitizeUrl(url: any): string | null {
     if (cleanUrl.includes('cloudflare-ipfs.com')) {
       return cleanUrl.replace('cloudflare-ipfs.com', 'ipfs.io');
     }
-    return cleanUrl;
+    
+    // Safety check: if the url is something like http://logo-gold.png (which happens if mistakenly entered),
+    // we should treat it as a relative filename instead of a domain.
+    try {
+      const parsed = new URL(cleanUrl);
+      if (!parsed.hostname.includes('.')) {
+        cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
+        // Proceed to fallback
+      } else {
+        return cleanUrl;
+      }
+    } catch (e) {
+      // Invalid URL, proceed to fallback
+      cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
+    }
   }
   
   // Handle relative paths - Force pointing back to the Dashboard to ensure assets load correctly on Narai/External
   if (cleanUrl.startsWith('/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+    let baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+    if (baseUrl === '/' || baseUrl === '//') baseUrl = 'https://dash.pandoras.finance';
+    // Remove trailing slash from baseUrl if present
+    baseUrl = baseUrl.replace(/\/$/, '');
     return `${baseUrl}${cleanUrl}`;
   }
 
@@ -228,7 +245,10 @@ export function sanitizeUrl(url: any): string | null {
   }
   
   // Default fallback: Assume it might be a relative asset on the dashboard
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+  let baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+  if (baseUrl === '/' || baseUrl === '//') baseUrl = 'https://dash.pandoras.finance';
+  // Remove trailing slash from baseUrl if present
+  baseUrl = baseUrl.replace(/\/$/, '');
   return `${baseUrl}/${cleanUrl}`;
 }
 

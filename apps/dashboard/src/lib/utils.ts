@@ -30,5 +30,17 @@ export function resolveIpfsUrl(url?: string | null): string | null {
   if (url.includes('cloudflare-ipfs.com')) {
     return url.replace('cloudflare-ipfs.com', 'ipfs.io');
   }
+  
+  if (url.startsWith('http')) {
+    try {
+      const parsed = new URL(url);
+      if (!parsed.hostname.includes('.')) {
+        return url.replace(/^https?:\/\//, '');
+      }
+    } catch (e) {
+      return url.replace(/^https?:\/\//, '');
+    }
+  }
+  
   return url;
 }
