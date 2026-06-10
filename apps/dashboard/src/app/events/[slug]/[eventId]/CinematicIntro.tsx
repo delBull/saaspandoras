@@ -49,7 +49,7 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                         muted={isMuted}
                         playsInline
                         onEnded={handleSkip}
-                        className="absolute inset-0 w-full h-full object-cover opacity-80"
+                        className="absolute inset-0 w-full h-full object-cover md:object-contain opacity-80"
                     />
 
                     {/* OVERLAY GRADIENT */}

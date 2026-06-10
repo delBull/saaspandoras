@@ -47,13 +47,14 @@ export async function GET(request: Request) {
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "owner" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "pendingOwner" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "delegate" }),
+      client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "token" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "dailyLimit" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "spentToday" }),
       client.readContract({ address: addr as `0x${string}`, abi: CONTROLLER_ABI, functionName: "remainingAllowance" }),
     ]);
 
     const balance = await client.readContract({
-      address: token as `0x${string}`,
+      address: token as unknown as `0x${string}`,
       abi: USDC_ABI,
       functionName: "balanceOf",
       args: [addr as `0x${string}`],

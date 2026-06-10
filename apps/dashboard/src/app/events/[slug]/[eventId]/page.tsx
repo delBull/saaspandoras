@@ -76,18 +76,22 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
         config: { maxCapacity: 20 }
     };
 
+    // Fix jsonb parsing and dates
+    const parsedConfig = typeof eventData.config === 'string' ? JSON.parse(eventData.config) : eventData.config || {};
+    const eventDateObj = typeof eventData.date === 'string' ? new Date(eventData.date) : eventData.date;
+
     const isCalendar = eventData.type === 'CALENDAR';
 
-    const maxCapacity = (eventData.config as any)?.maxCapacity || 20;
+    const maxCapacity = parsedConfig.maxCapacity || 20;
     const availableSpots = Math.max(0, maxCapacity - registrationsCount);
     
-    const formattedDate = eventData.date ? new Intl.DateTimeFormat('es-MX', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    }).format(eventData.date) : "Por definir";
+    const formattedDate = eventDateObj ? new Intl.DateTimeFormat('es-MX', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Mexico_City'
+    }).format(eventDateObj) : "Por definir";
     
-    const formattedTime = eventData.date ? new Intl.DateTimeFormat('es-MX', {
-        hour: 'numeric', minute: 'numeric', hour12: true
-    }).format(eventData.date) : "Por definir";
+    const formattedTime = eventDateObj ? new Intl.DateTimeFormat('es-MX', {
+        hour: 'numeric', minute: 'numeric', hour12: true, timeZone: 'America/Mexico_City'
+    }).format(eventDateObj) : "Por definir";
 
     return (
         <main className={`min-h-screen w-full overflow-x-hidden bg-[#000000] text-white ${inter.className}`}>
@@ -252,7 +256,7 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                             eventDate={formattedDate}
                             eventLocation={eventData.location || "Evento Presencial"}
                             isCalendar={isCalendar}
-                            config={eventData.config}
+                            config={parsedConfig}
                         />
 
                         <div className="mt-[40px] text-center text-[0.7rem] text-[#666666] uppercase tracking-[1px]">

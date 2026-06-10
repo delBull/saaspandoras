@@ -424,7 +424,7 @@ export function DaoTreasuryTab({ project }: DaoTreasuryTabProps) {
                 {isOwner && ' You are the current owner.'}
               </p>
 
-              {!preparedTransfer && transferStep !== 'accept' && (
+              {!preparedTransfer && (
                 <button
                   onClick={handlePrepareTransfer}
                   disabled={preparingTransfer || !isOwner}
