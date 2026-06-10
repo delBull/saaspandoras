@@ -21,26 +21,8 @@ export function getDashboardDomain() {
   return 'dash.pandoras.finance';
 }
 
+import { sanitizeUrl } from "./project-utils";
+
 export function resolveIpfsUrl(url?: string | null): string | null {
-  if (!url || url === 'null' || url === 'undefined') return null;
-  if (url.startsWith('ipfs://')) {
-    const cid = url.replace('ipfs://', '');
-    return `https://ipfs.io/ipfs/${cid}`;
-  }
-  if (url.includes('cloudflare-ipfs.com')) {
-    return url.replace('cloudflare-ipfs.com', 'ipfs.io');
-  }
-  
-  if (url.startsWith('http')) {
-    try {
-      const parsed = new URL(url);
-      if (!parsed.hostname.includes('.')) {
-        return url.replace(/^https?:\/\//, '');
-      }
-    } catch (e) {
-      return url.replace(/^https?:\/\//, '');
-    }
-  }
-  
-  return url;
+  return sanitizeUrl(url);
 }

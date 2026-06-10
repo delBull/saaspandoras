@@ -123,7 +123,7 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                         
                         {/* Mobile: Scroll to form. Desktop: Point to right */}
                         <a href="#reg-form" className="lg:hidden inline-block p-[20px_40px] bg-[#D4A853] text-[#050505] font-semibold text-[0.9rem] uppercase tracking-[2px] transition-all duration-300 hover:bg-white hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(212,168,83,0.3)]">
-                            Confirmar Asistencia
+                            Solicitar Acceso
                         </a>
                         <div className="hidden lg:flex items-center gap-[15px] p-[20px_40px] border border-[#D4A853]/30 text-[#D4A853] font-semibold text-[0.9rem] uppercase tracking-[2px]">
                             <span>Selecciona una fecha</span>

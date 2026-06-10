@@ -183,7 +183,7 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                         type="text" 
                         name="nombre" 
                         required 
-                        placeholder="Ej. Marco Bullslab"
+                        placeholder="Ej. Alejandro Torres"
                         className="w-full p-[10px_0] text-sm bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all"
                     />
                 </div>
