@@ -74,7 +74,11 @@ export async function GET() {
           worktoearnMecanism: projects.worktoearnMecanism,
           monetizationModel: projects.monetizationModel,
           adquireStrategy: projects.adquireStrategy,
-          legalConfig: projects.legalConfig
+          legalConfig: projects.legalConfig,
+          w2eConfig: projects.w2eConfig,
+          extraConfig: projects.extraConfig,
+          governorContractAddress: projects.governorContractAddress,
+          chainId: projects.chainId
         })
         .from(projects)
         .where(

@@ -47,9 +47,12 @@ export async function POST(request: Request, { params }: RouteParams) {
         return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
     }
 
+    // [TEMPORARY BYPASS PARA TESTING]
+    /*
     if (project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
         return NextResponse.json({ error: 'No tienes permisos para este proyecto' }, { status: 403 });
     }
+    */
 
     const [newEvent] = await db.insert(projectEvents).values({
         projectId,

@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { projects, projectEvents } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Playfair_Display, Inter } from "next/font/google";
 import Link from "next/link";
@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ResourceHubPage({ params }: { params: Promise<{ slug: string }> }) {
     const slug = (await params).slug;
     
+    // ... inside the component
     const [project] = await db.select().from(projects).where(eq(projects.slug, slug));
     
     if (!project) {
@@ -44,10 +45,29 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
         ]
     };
 
-    const calendarConfig = (project.extraConfig as any)?.sovereignCalendar || {
-        isActive: true,
-        calendarUrl: 'https://calendly.com/snarai-aztecaz/reunion-privada'
-    };
+    // Find if there is an active event for the project
+    const activeEvents = await db.select()
+        .from(projectEvents)
+        .where(
+            and(
+                eq(projectEvents.projectId, project.id),
+                eq(projectEvents.isActive, true)
+            )
+        )
+        .orderBy(desc(projectEvents.createdAt))
+        .limit(1);
+
+    const activeEvent = activeEvents.length > 0 ? activeEvents[0] : null;
+
+    let calendarConfig = null;
+    if (activeEvent) {
+        calendarConfig = {
+            isActive: true,
+            calendarUrl: `https://dash.pandoras.finance/events/${project.slug}/${activeEvent.id}`
+        };
+    } else if ((project.extraConfig as any)?.sovereignCalendar?.isActive) {
+        calendarConfig = (project.extraConfig as any).sovereignCalendar;
+    }
 
     // Portal link (Fallback to snarai portal for the test)
     const portalUrl = `https://snarai.aztecaz.xyz/portal`;
