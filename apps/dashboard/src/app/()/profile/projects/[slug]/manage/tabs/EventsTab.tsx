@@ -156,7 +156,8 @@ export function EventsTab({ project }: { project: any }) {
     };
 
     const copyEventLink = (eventId: number) => {
-        const url = `https://dash.pandoras.finance/events/${project.slug}/${eventId}`;
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dash.pandoras.finance';
+        const url = `${origin}/events/${project.slug}/${eventId}`;
         navigator.clipboard.writeText(url);
         toast.success('Enlace copiado ✓');
     };
@@ -382,7 +383,8 @@ export function EventsTab({ project }: { project: any }) {
                 ) : (
                     <div className="space-y-3">
                         {events.map(event => {
-                            const eventUrl = `https://dash.pandoras.finance/events/${project.slug}/${event.id}`;
+                            const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dash.pandoras.finance';
+                            const eventUrl = `${origin}/events/${project.slug}/${event.id}`;
                             const regs = (event as any).registrations || [];
                             return (
                                 <div key={event.id} className="flex flex-col p-4 bg-black/30 border border-white/5 rounded-xl gap-3">

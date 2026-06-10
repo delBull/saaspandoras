@@ -107,8 +107,8 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                     
                     {/* HERO */}
                     <section className="min-h-screen flex flex-col justify-center items-center text-center p-[60px_20px] lg:p-[80px_60px] bg-[radial-gradient(circle_at_20%_30%,#1a1a1a_0%,#000000_100%)] border-b border-[#D4A853]/10">
-                        {project.logoUrl && (
-                            <img src={resolveIpfsUrl(project.logoUrl) || undefined} alt={project.title} className="max-w-[140px] mx-auto mb-[40px] block" />
+                        {resolveIpfsUrl(project.logoUrl) && (
+                            <img src={resolveIpfsUrl(project.logoUrl)!} alt={project.title} className="max-w-[140px] mx-auto mb-[40px] block" />
                         )}
                         <h1 className={`text-[clamp(3rem,8vw,5rem)] font-bold tracking-tight leading-[0.9] mb-[30px] uppercase ${playfair.className}`}>
                             {project.title}
