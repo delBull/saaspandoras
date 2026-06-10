@@ -25,11 +25,9 @@ export function resolveIpfsUrl(url?: string | null): string | null {
   if (!url || url === 'null' || url === 'undefined') return null;
   if (url.startsWith('ipfs://')) {
     const cid = url.replace('ipfs://', '');
-    const clientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || process.env.NEXT_PUBLIC_PANDORAS_PUBLIC_KEY;
-    if (clientId) {
-      return `https://${clientId}.ipfscdn.io/ipfs/${cid}`;
-    }
-    return `https://dweb.link/ipfs/${cid}`;
+    // El gateway de Thirdweb está regresando 401 Unauthorized (falta whitelist de dominios).
+    // Usamos cloudflare como gateway principal público para no romper las imágenes.
+    return `https://cloudflare-ipfs.com/ipfs/${cid}`;
   }
   return url;
 }
