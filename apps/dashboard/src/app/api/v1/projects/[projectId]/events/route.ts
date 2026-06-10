@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { title, date, location, config } = body;
+    const { title, date, location, config, type } = body;
 
     if (!title) {
         return NextResponse.json({ error: 'El título es obligatorio' }, { status: 400 });
@@ -54,6 +54,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const [newEvent] = await db.insert(projectEvents).values({
         projectId,
         title,
+        type: type === 'CALENDAR' ? 'CALENDAR' : 'MACRO',
         date: date ? new Date(date) : null,
         location: location || null,
         config: config || { maxCapacity: 20 },

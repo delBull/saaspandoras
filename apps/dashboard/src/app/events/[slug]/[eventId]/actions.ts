@@ -12,6 +12,7 @@ export async function registerForEvent(prevState: any, formData: FormData) {
         const perfil = formData.get('perfil') as string;
         const eventIdStr = formData.get('eventId') as string;
         const projectIdStr = formData.get('projectId') as string;
+        const selectedDateTimeStr = formData.get('selectedDateTime') as string;
 
         if (!nombre || !email || !eventIdStr || !projectIdStr) {
             return { error: 'Faltan campos obligatorios' };
@@ -27,7 +28,8 @@ export async function registerForEvent(prevState: any, formData: FormData) {
             email,
             telefono: telefono || '',
             perfil: perfil || null,
-            status: 'CONFIRMED'
+            status: 'CONFIRMED',
+            selectedDateTime: selectedDateTimeStr ? new Date(selectedDateTimeStr) : null
         });
 
         return { success: true };

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 interface ProjectEvent {
     id: number;
     title: string;
+    type: 'MACRO' | 'CALENDAR';
     date: string | null;
     location: string | null;
     config: { maxCapacity?: number };
@@ -30,10 +31,12 @@ export function EventsTab({ project }: { project: any }) {
 
     const [newEvent, setNewEvent] = useState({
         title: '',
+        type: 'MACRO' as 'MACRO' | 'CALENDAR',
         date: '',
         time: '',
         location: '',
         maxCapacity: 20,
+        durationMinutes: 45,
     });
 
     // Load existing events
@@ -65,8 +68,12 @@ export function EventsTab({ project }: { project: any }) {
     };
 
     const handleCreateEvent = async () => {
-        if (!newEvent.title || !newEvent.date) {
-            toast.error('El título y la fecha son obligatorios');
+        if (!newEvent.title) {
+            toast.error('El título es obligatorio');
+            return;
+        }
+        if (newEvent.type === 'MACRO' && !newEvent.date) {
+            toast.error('La fecha es obligatoria para un Macro Evento');
             return;
         }
         setIsCreatingEvent(true);
@@ -80,16 +87,20 @@ export function EventsTab({ project }: { project: any }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: newEvent.title,
+                    type: newEvent.type,
                     date: dateTime,
                     location: newEvent.location,
-                    config: { maxCapacity: newEvent.maxCapacity },
+                    config: { 
+                        maxCapacity: newEvent.maxCapacity,
+                        durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined
+                    },
                 })
             });
 
             if (!res.ok) throw new Error();
             const created = await res.json();
             setEvents(prev => [created, ...prev]);
-            setNewEvent({ title: '', date: '', time: '', location: '', maxCapacity: 20 });
+            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45 });
             setShowNewForm(false);
             toast.success('Evento creado ✓');
         } catch {
@@ -198,7 +209,23 @@ export function EventsTab({ project }: { project: any }) {
                         animate={{ opacity: 1, height: 'auto' }}
                         className="mb-6 p-5 bg-black/50 border border-blue-500/20 rounded-xl space-y-4"
                     >
-                        <h4 className="text-sm font-bold uppercase tracking-widest text-blue-400">Nuevo Evento</h4>
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold uppercase tracking-widest text-blue-400">Nuevo Evento</h4>
+                            <div className="flex bg-black rounded-lg p-1 border border-white/10">
+                                <button
+                                    onClick={() => setNewEvent({ ...newEvent, type: 'MACRO' })}
+                                    className={`px-3 py-1 text-xs rounded-md transition-colors ${newEvent.type === 'MACRO' ? 'bg-blue-500 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                >
+                                    Macro Evento
+                                </button>
+                                <button
+                                    onClick={() => setNewEvent({ ...newEvent, type: 'CALENDAR' })}
+                                    className={`px-3 py-1 text-xs rounded-md transition-colors ${newEvent.type === 'CALENDAR' ? 'bg-blue-500 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                >
+                                    Calendario Soberano
+                                </button>
+                            </div>
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -212,35 +239,54 @@ export function EventsTab({ project }: { project: any }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Ubicación</label>
+                                <label className="block text-xs text-zinc-500 mb-1">Ubicación / Link Virtual</label>
                                 <input
                                     type="text"
                                     value={newEvent.location}
                                     onChange={e => setNewEvent({ ...newEvent, location: e.target.value })}
                                     className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
-                                    placeholder="626 Café · Bucerías, Nayarit"
+                                    placeholder={newEvent.type === 'MACRO' ? "626 Café · Bucerías, Nayarit" : "https://meet.google.com/... o presencial"}
                                 />
                             </div>
+                            {newEvent.type === 'MACRO' && (
+                                <>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Fecha *</label>
+                                        <input
+                                            type="date"
+                                            value={newEvent.date}
+                                            onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Hora</label>
+                                        <input
+                                            type="time"
+                                            value={newEvent.time}
+                                            onChange={e => setNewEvent({ ...newEvent, time: e.target.value })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            {newEvent.type === 'CALENDAR' && (
+                                <>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Duración (minutos)</label>
+                                        <input
+                                            type="number"
+                                            min={15}
+                                            step={15}
+                                            value={newEvent.durationMinutes}
+                                            onChange={e => setNewEvent({ ...newEvent, durationMinutes: Number(e.target.value) })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Fecha *</label>
-                                <input
-                                    type="date"
-                                    value={newEvent.date}
-                                    onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Hora</label>
-                                <input
-                                    type="time"
-                                    value={newEvent.time}
-                                    onChange={e => setNewEvent({ ...newEvent, time: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Cupo Máximo</label>
+                                <label className="block text-xs text-zinc-500 mb-1">{newEvent.type === 'MACRO' ? 'Cupo Máximo' : 'Cupo Máximo por Horario'}</label>
                                 <input
                                     type="number"
                                     min={1}
@@ -285,8 +331,17 @@ export function EventsTab({ project }: { project: any }) {
                             return (
                                 <div key={event.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-black/30 border border-white/5 rounded-xl gap-3">
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-sm truncate">{event.title}</div>
-                                        <div className="text-xs text-zinc-500 mt-0.5">{formatDate(event.date)}</div>
+                                        <div className="font-semibold text-sm truncate flex items-center gap-2">
+                                            {event.title}
+                                            <span className={`text-[0.65rem] px-1.5 py-0.5 rounded font-bold ${event.type === 'CALENDAR' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                                {event.type}
+                                            </span>
+                                        </div>
+                                        {event.type === 'MACRO' ? (
+                                            <div className="text-xs text-zinc-500 mt-0.5">{formatDate(event.date)}</div>
+                                        ) : (
+                                            <div className="text-xs text-zinc-500 mt-0.5">Calendario Interactivo</div>
+                                        )}
                                         {event.location && (
                                             <div className="text-xs text-zinc-600 mt-0.5">📍 {event.location}</div>
                                         )}

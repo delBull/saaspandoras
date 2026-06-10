@@ -6,7 +6,7 @@ import { Playfair_Display } from "next/font/google";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
-export function EventRegistrationForm({ eventId, projectId, eventDate, eventLocation }: { eventId: number, projectId: number, eventDate: string, eventLocation: string }) {
+export function EventRegistrationForm({ eventId, projectId, eventDate, eventLocation, isCalendar, config }: { eventId: number, projectId: number, eventDate: string, eventLocation: string, isCalendar?: boolean, config?: any }) {
     const [state, formAction, isPending] = useActionState(registerForEvent, null);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -43,6 +43,19 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
             <form action={formAction} className="space-y-[25px]">
                 <input type="hidden" name="eventId" value={eventId} />
                 <input type="hidden" name="projectId" value={projectId} />
+                
+                {isCalendar && (
+                    <div>
+                        <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[10px] font-bold">Selecciona Fecha y Hora *</label>
+                        <input 
+                            type="datetime-local" 
+                            name="selectedDateTime" 
+                            required 
+                            className="w-full p-[15px] bg-[#1a1a1a] border border-[#444444] rounded text-white focus:outline-none focus:border-[#D4A853] transition-all"
+                        />
+                        <p className="text-xs text-zinc-500 mt-2">Duración aproximada: {config?.durationMinutes || 45} minutos.</p>
+                    </div>
+                )}
                 
                 <div>
                     <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#888888] mb-[10px]">Nombre Completo</label>
@@ -99,7 +112,7 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                     disabled={isPending}
                     className="w-full p-[20px] bg-[#D4A853] text-[#050505] font-bold uppercase tracking-[2px] mt-[20px] transition-all hover:bg-white hover:scale-[1.02] disabled:opacity-50"
                 >
-                    {isPending ? 'Enviando...' : 'Confirmar Asistencia'}
+                    {isPending ? 'Enviando...' : (isCalendar ? 'Agendar Reunión' : 'Confirmar Asistencia')}
                 </button>
             </form>
         </div>

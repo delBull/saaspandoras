@@ -58,10 +58,13 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
     const eventData = event || {
         id: Number(eventIdStr),
         title: "Private Briefing",
+        type: "MACRO",
         date: new Date("2026-06-13T17:00:00-06:00"),
         location: "626 Café · Bucerías, Nayarit",
         config: { maxCapacity: 20 }
     };
+
+    const isCalendar = eventData.type === 'CALENDAR';
 
     const maxCapacity = (eventData.config as any)?.maxCapacity || 20;
     const availableSpots = Math.max(0, maxCapacity - registrationsCount);
@@ -107,11 +110,19 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                             Solicitar Acceso
                         </a>
 
-                        <div className="mt-[50px] p-[25px_40px] border border-[#D4A853]/30 text-center bg-[#D4A853]/5">
-                            <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Asistencia Limitada</div>
-                            <div className={`text-[3rem] font-bold text-[#D4A853] leading-none ${playfair.className}`}>{availableSpots}</div>
-                            <div className="text-[0.8rem] text-[#888888] mt-[5px]">Lugares disponibles</div>
-                        </div>
+                        {!isCalendar && (
+                            <div className="mt-[50px] p-[25px_40px] border border-[#D4A853]/30 text-center bg-[#D4A853]/5">
+                                <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Asistencia Limitada</div>
+                                <div className={`text-[3rem] font-bold text-[#D4A853] leading-none ${playfair.className}`}>{availableSpots}</div>
+                                <div className="text-[0.8rem] text-[#888888] mt-[5px]">Lugares disponibles</div>
+                            </div>
+                        )}
+                        {isCalendar && (
+                            <div className="mt-[50px] p-[25px_40px] border border-[#D4A853]/30 text-center bg-[#D4A853]/5">
+                                <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Reunión 1 a 1</div>
+                                <div className={`text-[1.5rem] font-bold text-[#D4A853] leading-none ${playfair.className}`}>Sovereign Calendar</div>
+                            </div>
+                        )}
                     </section>
 
                     {/* DETAILS */}
@@ -122,11 +133,11 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-[40px] lg:mt-[40px] max-w-[400px] md:max-w-none mx-auto md:mx-0 text-left">
                             <div className="border-l border-[#D4A853] pl-[20px]">
                                 <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Fecha</div>
-                                <div className={`text-[1.4rem] capitalize ${playfair.className}`}>{formattedDate}</div>
+                                <div className={`text-[1.4rem] capitalize ${playfair.className}`}>{isCalendar ? 'Por Definir' : formattedDate}</div>
                             </div>
                             <div className="border-l border-[#D4A853] pl-[20px]">
                                 <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Horario</div>
-                                <div className={`text-[1.4rem] ${playfair.className}`}>{formattedTime}</div>
+                                <div className={`text-[1.4rem] ${playfair.className}`}>{isCalendar ? 'A tu elección' : formattedTime}</div>
                             </div>
                             <div className="border-l border-[#D4A853] pl-[20px]">
                                 <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Ubicación</div>
@@ -227,7 +238,9 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                             eventId={eventData.id} 
                             projectId={project.id}
                             eventDate={formattedDate}
-                            eventLocation={eventData.location || "Evento Presencial"} 
+                            eventLocation={eventData.location || "Evento Presencial"}
+                            isCalendar={isCalendar}
+                            config={eventData.config}
                         />
 
                         <div className="mt-[40px] text-center text-[0.7rem] text-[#666666] uppercase tracking-[1px]">

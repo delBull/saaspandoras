@@ -2311,8 +2311,9 @@ export type AmbassadorCommission = typeof ambassadorCommissions.$inferSelect;
 // =========================================================
 
 export const projectEventTypeEnum = pgEnum("project_event_type", [
-  "MACRO", // Large scale events (e.g. May 30th)
-  "1ON1"   // Recurring sovereign calendar slots
+  "MACRO",
+  "CALENDAR",
+  "1ON1"
 ]);
 
 export const eventRegistrationStatusEnum = pgEnum("event_registration_status", [
@@ -2344,6 +2345,7 @@ export const eventRegistrations = pgTable("event_registrations", {
   perfil: varchar("perfil", { length: 100 }),
   montoInteres: varchar("monto_interes", { length: 100 }),
   status: eventRegistrationStatusEnum("status").default("CONFIRMED").notNull(),
+  selectedDateTime: timestamp("selected_date_time", { withTimezone: true }),
   registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
