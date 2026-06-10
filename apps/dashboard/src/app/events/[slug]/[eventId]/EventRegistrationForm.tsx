@@ -11,6 +11,42 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
     const [isSuccess, setIsSuccess] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
 
+    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [selectedTime, setSelectedTime] = useState<string>('');
+
+    // Extraemos la logica de getAvailableSlots
+    const getAvailableSlots = (dateStr: string) => {
+        if (!dateStr || !config?.availability) return [];
+        // Parse date carefully to avoid timezone shift
+        const [year, month, day] = dateStr.split('-');
+        const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+        
+        const daysMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+        const dayKey = daysMap[dateObj.getDay()];
+        if (!dayKey) return [];
+        const dayConfig = config.availability[dayKey];
+        
+        if (!dayConfig || !dayConfig.enabled) return [];
+
+        const slots = [];
+        const duration = config.durationMinutes || 30;
+        let [startH, startM] = dayConfig.start.split(':').map(Number);
+        let [endH, endM] = dayConfig.end.split(':').map(Number);
+        
+        let current = startH * 60 + startM;
+        const endTotal = endH * 60 + endM;
+
+        while (current + duration <= endTotal) {
+            const h = Math.floor(current / 60).toString().padStart(2, '0');
+            const m = (current % 60).toString().padStart(2, '0');
+            slots.push(`${h}:${m}`);
+            current += duration;
+        }
+        return slots;
+    };
+
+    const availableSlots = selectedDate ? getAvailableSlots(selectedDate) : [];
+
     useEffect(() => {
         if (state?.success) {
             setIsSuccess(true);
@@ -37,127 +73,99 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
     return (
         <div id="formSection" className="animate-[fadeInUp_0.6s_ease_backwards]">
-            <div className="text-center mb-[40px]">
-                <h2 className={`text-[2rem] tracking-[1px] ${playfair.className}`}>Confirma tu <span className="text-[#D4A853]">Asistencia</span></h2>
+            <div className="text-center mb-[25px]">
+                <h2 className={`text-[1.8rem] tracking-[1px] ${playfair.className}`}>Confirma tu <span className="text-[#D4A853]">Asistencia</span></h2>
             </div>
 
-            <form action={formAction} className="space-y-[25px]">
+            <form action={formAction} className="space-y-[20px]">
                 <input type="hidden" name="eventId" value={eventId} />
                 <input type="hidden" name="projectId" value={projectId} />
+                {isCalendar && (
+                    <input type="hidden" name="selectedDateTime" value={selectedDate && selectedTime ? `${selectedDate}T${selectedTime}` : ''} />
+                )}
                 
                 {isCalendar && (
-                    <div className="mb-[20px]">
-                        <div className="mb-[15px] p-[15px] bg-[#1a1a1a] border border-[#333333] rounded">
-                            <h4 className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[10px] font-bold">Horarios Disponibles</h4>
-                            {config?.availability ? (
-                                <ul className="text-xs text-zinc-400 space-y-1">
-                                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => {
-                                        const dayConfig = config.availability[dayKey];
-                                        if (!dayConfig || !dayConfig.enabled) return null;
-                                        
-                                        const labels: Record<string, string> = {
-                                            monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles',
-                                            thursday: 'Jueves', friday: 'Viernes', saturday: 'Sábado', sunday: 'Domingo'
-                                        };
-                                        return (
-                                            <li key={dayKey} className="flex justify-between border-b border-[#333333]/50 pb-1">
-                                                <span className="font-semibold text-white">{labels[dayKey]}</span>
-                                                <span>{dayConfig.start} - {dayConfig.end}</span>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            ) : (
-                                <p className="text-xs text-zinc-500">Contactar para coordinar horario.</p>
-                            )}
+                    <div className="mb-[15px]">
+                        <div className="mb-[15px]">
+                            <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px] font-bold">Selecciona una Fecha *</label>
+                            <input 
+                                type="date"
+                                min={new Date().toISOString().split('T')[0]}
+                                required
+                                value={selectedDate}
+                                onChange={(e) => {
+                                    setSelectedDate(e.target.value);
+                                    setSelectedTime('');
+                                }}
+                                className="w-full p-[12px] bg-[#1a1a1a] border border-[#444444] rounded text-white focus:outline-none focus:border-[#D4A853] transition-all text-sm [color-scheme:dark]"
+                            />
                         </div>
 
-                        <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[10px] font-bold">Selecciona Fecha y Hora *</label>
-                        <input 
-                            type="datetime-local" 
-                            name="selectedDateTime" 
-                            required 
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (!val || !config?.availability) {
-                                    setValidationError(null);
-                                    return;
-                                }
-                                const dateObj = new Date(val);
-                                const dayIndex = dateObj.getDay(); // 0 = sunday, 1 = monday
-                                const daysMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-                                const dayKey = daysMap[dayIndex];
-                                
-                                if (!dayKey) {
-                                    setValidationError("Fecha inválida.");
-                                    return;
-                                }
-
-                                const dayConfig = config.availability[dayKey];
-
-                                if (!dayConfig || !dayConfig.enabled) {
-                                    setValidationError("Ese día de la semana no está disponible para reuniones.");
-                                    return;
-                                }
-
-                                const selectedHours = dateObj.getHours();
-                                const selectedMins = dateObj.getMinutes();
-                                const timeStr = `${selectedHours.toString().padStart(2, '0')}:${selectedMins.toString().padStart(2, '0')}`;
-                                
-                                if (timeStr < dayConfig.start || timeStr > dayConfig.end) {
-                                    setValidationError(`El horario de atención es de ${dayConfig.start} a ${dayConfig.end}.`);
-                                    return;
-                                }
-
-                                setValidationError(null);
-                            }}
-                            className="w-full p-[15px] bg-[#1a1a1a] border border-[#444444] rounded text-white focus:outline-none focus:border-[#D4A853] transition-all"
-                        />
-                        {validationError && (
-                            <p className="text-red-400 text-xs mt-2 font-semibold">{validationError}</p>
+                        {selectedDate && (
+                            <div className="mb-[15px] animate-[fadeIn_0.3s_ease]">
+                                <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px] font-bold">Horarios Disponibles</label>
+                                {availableSlots.length > 0 ? (
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {availableSlots.map(time => (
+                                            <button
+                                                key={time}
+                                                type="button"
+                                                onClick={() => setSelectedTime(time)}
+                                                className={`py-2 px-1 text-sm border rounded transition-all ${selectedTime === time ? 'bg-[#D4A853] text-black border-[#D4A853] font-bold' : 'bg-[#1a1a1a] border-[#444444] text-white hover:border-[#D4A853] hover:text-[#D4A853]'}`}
+                                            >
+                                                {time}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-[15px] bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs text-center">
+                                        No hay horarios disponibles para la fecha seleccionada.
+                                    </div>
+                                )}
+                            </div>
                         )}
                         <p className="text-xs text-zinc-500 mt-2">Duración aproximada: {config?.durationMinutes || 45} minutos.</p>
                     </div>
                 )}
                 
                 <div>
-                    <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#888888] mb-[10px]">Nombre Completo</label>
+                    <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#888888] mb-[5px]">Nombre Completo</label>
                     <input 
                         type="text" 
                         name="nombre" 
                         required 
                         placeholder="Ej. Marco Bullslab"
-                        className="w-full p-[15px_0] bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all"
+                        className="w-full p-[10px_0] text-sm bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#888888] mb-[10px]">Correo Electrónico</label>
+                    <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#888888] mb-[5px]">Correo Electrónico</label>
                     <input 
                         type="email" 
                         name="email" 
                         required 
                         placeholder="email@ejemplo.com"
-                        className="w-full p-[15px_0] bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all"
+                        className="w-full p-[10px_0] text-sm bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#888888] mb-[10px]">Telefono (WhatsApp)</label>
+                    <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#888888] mb-[5px]">Telefono (WhatsApp)</label>
                     <input 
                         type="tel" 
                         name="telefono" 
                         placeholder="+52 123 456 7890"
-                        className="w-full p-[15px_0] bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all"
+                        className="w-full p-[10px_0] text-sm bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#888888] mb-[10px]">Perfil</label>
+                    <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#888888] mb-[5px]">Perfil</label>
                     <select 
                         name="perfil" 
                         required
-                        className="w-full p-[15px_0] bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all appearance-none"
+                        className="w-full p-[10px_0] text-sm bg-transparent border-b border-[#444444] text-white focus:outline-none focus:border-[#D4A853] transition-all appearance-none"
                     >
                         <option value="" className="text-black">Selecciona un perfil...</option>
                         <option value="inversor" className="text-black">Inversor / Accionista</option>
@@ -172,8 +180,8 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
                 <button 
                     type="submit" 
-                    disabled={isPending || !!validationError}
-                    className="w-full py-[15px] px-[30px] bg-[#D4A853] text-[#111111] font-bold tracking-[2px] uppercase rounded cursor-pointer transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(212,168,83,0.4)] disabled:opacity-50 disabled:cursor-not-allowed mt-[20px]"
+                    disabled={isPending || !!validationError || (isCalendar && (!selectedDate || !selectedTime))}
+                    className="w-full py-[12px] px-[30px] bg-[#D4A853] text-[#111111] font-bold text-sm tracking-[2px] uppercase rounded cursor-pointer transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(212,168,83,0.4)] disabled:opacity-50 disabled:cursor-not-allowed mt-[15px]"
                 >
                     {isPending ? 'Enviando...' : (isCalendar ? 'Agendar Reunión' : 'Confirmar Asistencia')}
                 </button>

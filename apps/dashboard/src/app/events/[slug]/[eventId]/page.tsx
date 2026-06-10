@@ -248,8 +248,8 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                 </div>
 
                 {/* RIGHT COLUMN - FORM FIXED ON DESKTOP */}
-                <div className="relative lg:fixed lg:right-0 lg:top-0 w-full lg:w-[50vw] h-auto lg:h-screen bg-[#000000] flex justify-center items-center p-[60px_20px] lg:p-[60px] lg:border-l border-[#D4A853]/20 z-10">
-                    <div className="w-full max-w-[480px] bg-[#111111] p-[40px_25px] lg:p-[50px] border border-white/5 shadow-[0_40px_100px_rgba(0,0,0,0.8)]">
+                <div className="relative lg:fixed lg:right-0 lg:top-0 w-full lg:w-[50vw] h-auto lg:h-screen bg-[#000000] flex justify-center lg:items-start p-[60px_20px] lg:p-[40px] lg:border-l border-[#D4A853]/20 z-10 lg:overflow-y-auto">
+                    <div className="w-full max-w-[480px] bg-[#111111] p-[30px_20px] lg:p-[40px] border border-white/5 shadow-[0_40px_100px_rgba(0,0,0,0.8)] my-auto lg:my-[20px]">
                         <EventRegistrationForm 
                             eventId={eventData.id} 
                             projectId={project.id}
