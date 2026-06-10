@@ -27,5 +27,8 @@ export function resolveIpfsUrl(url?: string | null): string | null {
     const cid = url.replace('ipfs://', '');
     return `https://ipfs.io/ipfs/${cid}`;
   }
+  if (url.includes('cloudflare-ipfs.com')) {
+    return url.replace('cloudflare-ipfs.com', 'ipfs.io');
+  }
   return url;
 }

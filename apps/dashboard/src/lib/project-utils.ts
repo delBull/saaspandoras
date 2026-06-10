@@ -210,6 +210,9 @@ export function sanitizeUrl(url: any): string | null {
 
   // Handle standard absolute URLs
   if (cleanUrl.startsWith('http')) {
+    if (cleanUrl.includes('cloudflare-ipfs.com')) {
+      return cleanUrl.replace('cloudflare-ipfs.com', 'ipfs.io');
+    }
     return cleanUrl;
   }
   

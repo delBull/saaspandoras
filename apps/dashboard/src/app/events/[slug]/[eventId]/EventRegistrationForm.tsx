@@ -3,6 +3,9 @@
 import { useActionState, useEffect, useState } from 'react';
 import { registerForEvent } from './actions';
 import { Playfair_Display } from "next/font/google";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, startOfDay, addMonths, subMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
@@ -13,6 +16,10 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
     const [selectedDate, setSelectedDate] = useState<string>('');
     const [selectedTime, setSelectedTime] = useState<string>('');
+    const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
+
+    const today = startOfDay(new Date());
+    const daysInMonth = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
 
     // Extraemos la logica de getAvailableSlots
     const getAvailableSlots = (dateStr: string) => {
@@ -86,20 +93,47 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                 
                 {isCalendar && (
                     <div className="mb-[15px]">
-                        <div className="mb-[15px]">
-                            <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px] font-bold">Selecciona una Fecha *</label>
-                            <input 
-                                type="date"
-                                min={new Date().toISOString().split('T')[0]}
-                                required
-                                value={selectedDate}
-                                onChange={(e) => {
-                                    setSelectedDate(e.target.value);
-                                    setSelectedTime('');
-                                }}
-                                className="w-full p-[12px] bg-[#1a1a1a] border border-[#444444] rounded text-white focus:outline-none focus:border-[#D4A853] transition-all text-sm [color-scheme:dark]"
-                            />
-                        </div>
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] font-bold">Selecciona una Fecha *</label>
+                                <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1 hover:text-[#D4A853] text-zinc-400 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                                    <span className="text-xs font-bold capitalize text-white w-[100px] text-center">{format(currentMonth, 'MMMM yyyy', { locale: es })}</span>
+                                    <button type="button" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1 hover:text-[#D4A853] text-zinc-400 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-[#1a1a1a] p-3 rounded-lg border border-[#444444]">
+                                <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                    {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map(d => <div key={d} className="text-[10px] text-[#888888] font-bold">{d}</div>)}
+                                </div>
+                                <div className="grid grid-cols-7 gap-1">
+                                    {Array.from({ length: daysInMonth[0]?.getDay() || 0 }).map((_, i) => <div key={`blank-${i}`} />)}
+                                    {daysInMonth.map(day => {
+                                        const dateStr = format(day, 'yyyy-MM-dd');
+                                        const isPast = isBefore(day, today);
+                                        const isSelected = selectedDate === dateStr;
+                                        const hasSlots = !isPast && getAvailableSlots(dateStr).length > 0;
+                                        
+                                        return (
+                                            <button
+                                                key={dateStr}
+                                                type="button"
+                                                disabled={isPast || !hasSlots}
+                                                onClick={() => {
+                                                    setSelectedDate(dateStr);
+                                                    setSelectedTime('');
+                                                }}
+                                                className={`aspect-square flex items-center justify-center text-xs rounded-full transition-all 
+                                                    ${isSelected ? 'bg-[#D4A853] text-[#111111] font-bold shadow-[0_0_10px_rgba(212,168,83,0.4)]' 
+                                                    : isPast || !hasSlots ? 'text-[#333333] cursor-not-allowed' 
+                                                    : 'text-white hover:bg-[#333333] hover:text-[#D4A853]'}`}
+                                            >
+                                                {format(day, 'd')}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
                         {selectedDate && (
                             <div className="mb-[15px] animate-[fadeIn_0.3s_ease]">
