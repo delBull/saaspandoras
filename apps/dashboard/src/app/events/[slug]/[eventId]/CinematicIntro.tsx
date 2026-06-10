@@ -10,7 +10,6 @@ const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "
 export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, projectName: string }) {
     const [showIntro, setShowIntro] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
-    const [requiresInteraction, setRequiresInteraction] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -22,29 +21,8 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
         }
     }, [projectName]);
 
-    useEffect(() => {
-        if (showIntro && videoRef.current) {
-            const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(() => {
-                    // Autoplay with sound was blocked by browser
-                    setRequiresInteraction(true);
-                });
-            }
-        }
-    }, [showIntro]);
-
     const handleSkip = () => {
         setShowIntro(false);
-    };
-
-    const handleEnter = () => {
-        setRequiresInteraction(false);
-        if (videoRef.current) {
-            videoRef.current.muted = false;
-            setIsMuted(false);
-            videoRef.current.play();
-        }
     };
 
     const toggleMute = () => {
@@ -67,27 +45,15 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                     <video
                         ref={videoRef}
                         src={videoSrc}
+                        autoPlay
                         muted={isMuted}
                         playsInline
                         onEnded={handleSkip}
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${requiresInteraction ? 'opacity-20 blur-sm' : 'opacity-80'}`}
+                        className="absolute inset-0 w-full h-full object-cover opacity-80"
                     />
 
                     {/* OVERLAY GRADIENT */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/60 pointer-events-none" />
-
-                    {/* INTERACTION OVERLAY (IF AUTOPLAY BLOCKED) */}
-                    {requiresInteraction && (
-                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
-                            <button
-                                onClick={handleEnter}
-                                className="px-[40px] py-[20px] bg-[#D4A853] text-[#050505] font-semibold text-[0.9rem] uppercase tracking-[2px] transition-all duration-300 hover:bg-white hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(212,168,83,0.3)]"
-                            >
-                                Iniciar Experiencia
-                            </button>
-                            <p className="text-white/50 text-xs mt-4 uppercase tracking-[2px]">Con sonido activado</p>
-                        </div>
-                    )}
 
                     {/* BRANDING */}
                     <div className="absolute top-10 left-0 w-full text-center z-10 pointer-events-none">
@@ -102,31 +68,29 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                     </div>
 
                     {/* CONTROLS */}
-                    {!requiresInteraction && (
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 2, duration: 1 }}
-                            className="absolute bottom-10 right-6 md:right-10 flex flex-col items-end gap-4 z-20"
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 2, duration: 1 }}
+                        className="absolute bottom-10 right-6 md:right-10 flex flex-col items-end gap-4 z-20"
+                    >
+                        {/* MUTE TOGGLE */}
+                        <button
+                            onClick={toggleMute}
+                            className="p-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white hover:bg-white/10 transition-colors"
                         >
-                            {/* MUTE TOGGLE */}
-                            <button
-                                onClick={toggleMute}
-                                className="p-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white hover:bg-white/10 transition-colors"
-                            >
-                                {isMuted ? <SpeakerXMarkIcon className="w-5 h-5" /> : <SpeakerWaveIcon className="w-5 h-5" />}
-                            </button>
+                            {isMuted ? <SpeakerXMarkIcon className="w-5 h-5" /> : <SpeakerWaveIcon className="w-5 h-5" />}
+                        </button>
 
-                            {/* SKIP BUTTON */}
-                            <button
-                                onClick={handleSkip}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all text-xs tracking-widest uppercase"
-                            >
-                                <span className="mt-0.5">Saltar Teaser</span>
-                                <XMarkIcon className="w-4 h-4" />
-                            </button>
-                        </motion.div>
-                    )}
+                        {/* SKIP BUTTON */}
+                        <button
+                            onClick={handleSkip}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all text-xs tracking-widest uppercase"
+                        >
+                            <span className="mt-0.5">Saltar Teaser</span>
+                            <XMarkIcon className="w-4 h-4" />
+                        </button>
+                    </motion.div>
                 </motion.div>
             )}
         </AnimatePresence>
