@@ -8,6 +8,7 @@ import { shortlinks, shortlinkEvents } from '~/db/schema';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import { SmartQRLanding } from '@/components/SmartQRLanding';
+import { MaskedShortlinkPage } from '@/components/MaskedShortlinkPage';
 
 // Force dynamic to prevent caching of 404s/redirects
 export const dynamic = 'force-dynamic';
@@ -260,17 +261,7 @@ export default async function ShortlinkPage({ params, searchParams }: PageProps)
     }
 
     if (result?.type === 'mask') {
-      return (
-        <div className="fixed inset-0 w-full h-full bg-white z-[9999] overflow-hidden">
-          <iframe 
-            src={result.url} 
-            className="w-full h-full border-none shadow-none"
-            title={slug}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      );
+      return <MaskedShortlinkPage url={result.url!} slug={slug} />;
     }
 
     // For social media bots parsing OpenGraph tags

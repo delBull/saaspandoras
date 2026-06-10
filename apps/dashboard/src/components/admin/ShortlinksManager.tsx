@@ -32,7 +32,7 @@ export function ShortlinksManager() {
     destinationUrl: '',
     title: '',
     description: '',
-    masking: false,
+    masking: true,
   });
 
   const fetchShortlinks = async () => {

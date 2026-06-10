@@ -75,8 +75,12 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
     }).format(eventData.date || new Date());
 
     return (
-        <CinematicIntro eventId={eventData.id}>
         <main className={`min-h-screen w-full overflow-x-hidden bg-[#000000] text-white ${inter.className}`}>
+            <CinematicIntro 
+                videoSrc="/final_de_finales_mobile.mp4" 
+                projectName={project.title} 
+            />
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
                 
                 {/* CONTENT COLUMN */}
@@ -234,6 +238,5 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
 
             </div>
         </main>
-        </CinematicIntro>
     );
 }
