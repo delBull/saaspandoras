@@ -213,10 +213,9 @@ export function sanitizeUrl(url: any): string | null {
     return cleanUrl;
   }
   
-  // Handle relative paths - Force pointing back to the Dashboard to ensure assets load correctly on Narai/External
+  // Handle relative paths - keep them relative so Next.js handles them properly for SSR/hydration
   if (cleanUrl.startsWith('/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
-    return `${baseUrl}${cleanUrl}`;
+    return cleanUrl;
   }
 
   // Handle data URLs
@@ -224,8 +223,7 @@ export function sanitizeUrl(url: any): string | null {
     return cleanUrl;
   }
   
-  // Default fallback: Assume it might be a relative asset on the dashboard
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
-  return `${baseUrl}/${cleanUrl}`;
+  // Default fallback: return as relative
+  return `/${cleanUrl}`;
 }
 

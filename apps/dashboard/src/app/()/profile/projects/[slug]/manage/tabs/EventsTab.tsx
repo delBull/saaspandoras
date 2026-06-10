@@ -317,7 +317,6 @@ export function EventsTab({ project }: { project: any }) {
                     </motion.div>
                 )}
 
-                {/* EVENT LIST */}
                 {isLoadingEvents ? (
                     <div className="text-zinc-500 text-sm text-center py-8">Cargando eventos...</div>
                 ) : events.length === 0 ? (
@@ -330,47 +329,80 @@ export function EventsTab({ project }: { project: any }) {
                     <div className="space-y-3">
                         {events.map(event => {
                             const eventUrl = `https://dash.pandoras.finance/events/${project.slug}/${event.id}`;
+                            const regs = (event as any).registrations || [];
                             return (
-                                <div key={event.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-black/30 border border-white/5 rounded-xl gap-3">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-sm truncate flex items-center gap-2">
-                                            {event.title}
-                                            <span className={`text-[0.65rem] px-1.5 py-0.5 rounded font-bold ${event.type === 'CALENDAR' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                                {event.type}
-                                            </span>
+                                <div key={event.id} className="flex flex-col p-4 bg-black/30 border border-white/5 rounded-xl gap-3">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-semibold text-sm truncate flex items-center gap-2">
+                                                {event.title}
+                                                <span className={`text-[0.65rem] px-1.5 py-0.5 rounded font-bold ${event.type === 'CALENDAR' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                                    {event.type}
+                                                </span>
+                                            </div>
+                                            {event.type === 'MACRO' ? (
+                                                <div className="text-xs text-zinc-500 mt-0.5">{formatDate(event.date)}</div>
+                                            ) : (
+                                                <div className="text-xs text-zinc-500 mt-0.5">Calendario Interactivo</div>
+                                            )}
+                                            {event.location && (
+                                                <div className="text-xs text-zinc-600 mt-0.5">📍 {event.location}</div>
+                                            )}
+                                            <div className="mt-1.5 flex items-center gap-1.5">
+                                                <code className="text-xs text-[#D4A853] bg-[#D4A853]/5 px-2 py-0.5 rounded truncate max-w-xs">
+                                                    {eventUrl}
+                                                </code>
+                                            </div>
                                         </div>
-                                        {event.type === 'MACRO' ? (
-                                            <div className="text-xs text-zinc-500 mt-0.5">{formatDate(event.date)}</div>
-                                        ) : (
-                                            <div className="text-xs text-zinc-500 mt-0.5">Calendario Interactivo</div>
-                                        )}
-                                        {event.location && (
-                                            <div className="text-xs text-zinc-600 mt-0.5">📍 {event.location}</div>
-                                        )}
-                                        <div className="mt-1.5 flex items-center gap-1.5">
-                                            <code className="text-xs text-[#D4A853] bg-[#D4A853]/5 px-2 py-0.5 rounded truncate max-w-xs">
-                                                {eventUrl}
-                                            </code>
+                                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => copyEventLink(event.id)}
+                                                    title="Copiar enlace"
+                                                    className="p-2 text-zinc-400 hover:text-[#D4A853] border border-white/10 rounded-lg transition-colors"
+                                                >
+                                                    <ClipboardDocumentIcon className="w-4 h-4" />
+                                                </button>
+                                                <a
+                                                    href={eventUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    title="Abrir página del evento"
+                                                    className="p-2 text-zinc-400 hover:text-blue-400 border border-white/10 rounded-lg transition-colors"
+                                                >
+                                                    <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                                                </a>
+                                            </div>
+                                            <div className="text-xs font-bold text-zinc-400 bg-white/5 px-2 py-1 rounded-md border border-white/10">
+                                                {regs.length} Asistencia{regs.length !== 1 ? 's' : ''}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        <button
-                                            onClick={() => copyEventLink(event.id)}
-                                            title="Copiar enlace"
-                                            className="p-2 text-zinc-400 hover:text-[#D4A853] border border-white/10 rounded-lg transition-colors"
-                                        >
-                                            <ClipboardDocumentIcon className="w-4 h-4" />
-                                        </button>
-                                        <a
-                                            href={eventUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            title="Abrir página del evento"
-                                            className="p-2 text-zinc-400 hover:text-blue-400 border border-white/10 rounded-lg transition-colors"
-                                        >
-                                            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                                        </a>
-                                    </div>
+                                    {/* Lista de Registros */}
+                                    {regs.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-white/10">
+                                            <h5 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">Asistentes Confirmados</h5>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                {regs.map((r: any) => (
+                                                    <div key={r.id} className="bg-zinc-900/50 rounded-lg p-3 text-xs border border-white/5">
+                                                        <div className="font-bold text-white mb-1">{r.nombre}</div>
+                                                        <div className="text-zinc-400">{r.email}</div>
+                                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+                                                            <span className="text-zinc-500">{r.telefono || 'Sin tel.'}</span>
+                                                            <span className="bg-[#D4A853]/20 text-[#D4A853] px-2 py-0.5 rounded uppercase text-[0.6rem] font-bold">
+                                                                {r.perfil || 'Invitado'}
+                                                            </span>
+                                                        </div>
+                                                        {r.selectedDateTime && (
+                                                            <div className="text-[0.65rem] text-blue-400 mt-1">
+                                                                📅 {new Date(r.selectedDateTime).toLocaleString('es-MX')}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

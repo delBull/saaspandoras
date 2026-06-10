@@ -64,7 +64,12 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
     }, [account?.address, project.id]);
 
     // Safe Config Access
-    const config = project.w2eConfig || {};
+    let config: any = {};
+    try {
+        config = typeof project.w2eConfig === 'string' ? JSON.parse(project.w2eConfig) : (project.w2eConfig || {});
+    } catch (e) {
+        console.error("Error parsing w2eConfig", e);
+    }
     const treasuryAddress = config.treasuryAddress || project.treasury_address;
     const governorAddress = config.governorAddress || project.governorContractAddress;
 

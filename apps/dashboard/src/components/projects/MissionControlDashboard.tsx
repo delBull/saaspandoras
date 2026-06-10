@@ -75,7 +75,12 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
         );
     }
 
-    const config = (project as any).w2eConfig || {};
+    let config: any = {};
+    try {
+        config = typeof (project as any).w2eConfig === 'string' ? JSON.parse((project as any).w2eConfig) : ((project as any).w2eConfig || {});
+    } catch (e) {
+        console.error("Error parsing w2eConfig", e);
+    }
     const treasuryAddress = config.treasuryAddress || (project as any).treasury_address;
     const governorAddress = config.governorAddress || (project as any).governorContractAddress;
 

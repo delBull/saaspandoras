@@ -6,18 +6,30 @@ import { Playfair_Display, Inter } from "next/font/google";
 import { EventRegistrationForm } from "./EventRegistrationForm";
 import { CinematicIntro } from "./CinematicIntro";
 import { Metadata } from "next";
+import { resolveIpfsUrl } from "@/lib/utils";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["200", "300", "400", "600"] });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string, eventId: string }> }): Promise<Metadata> {
-    const slug = (await params).slug;
-    const [project] = await db.select({ title: projects.title }).from(projects).where(eq(projects.slug, slug));
+    const { slug, eventId: eventIdStr } = await params;
+    const [project] = await db.select({ id: projects.id, title: projects.title }).from(projects).where(eq(projects.slug, slug));
     
     if (!project) return { title: 'Private Briefing' };
     
+    let eventTitle = 'Private Briefing';
+    try {
+        const events = await db.select({ title: projectEvents.title }).from(projectEvents).where(
+            and(
+                eq(projectEvents.projectId, project.id),
+                eq(projectEvents.id, Number(eventIdStr))
+            )
+        );
+        if (events.length > 0) eventTitle = events[0]!.title;
+    } catch(e) {}
+    
     return {
-        title: `${project.title} — Private Briefing`,
+        title: `${project.title} — ${eventTitle}`,
         description: `Presentación privada sobre la infraestructura digital de ${project.title}.`
     };
 }
@@ -69,13 +81,13 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
     const maxCapacity = (eventData.config as any)?.maxCapacity || 20;
     const availableSpots = Math.max(0, maxCapacity - registrationsCount);
     
-    const formattedDate = new Intl.DateTimeFormat('es-MX', {
+    const formattedDate = eventData.date ? new Intl.DateTimeFormat('es-MX', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    }).format(eventData.date || new Date());
+    }).format(eventData.date) : "Por definir";
     
-    const formattedTime = new Intl.DateTimeFormat('es-MX', {
+    const formattedTime = eventData.date ? new Intl.DateTimeFormat('es-MX', {
         hour: 'numeric', minute: 'numeric', hour12: true
-    }).format(eventData.date || new Date());
+    }).format(eventData.date) : "Por definir";
 
     return (
         <main className={`min-h-screen w-full overflow-x-hidden bg-[#000000] text-white ${inter.className}`}>
@@ -92,7 +104,7 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                     {/* HERO */}
                     <section className="min-h-screen flex flex-col justify-center items-center text-center p-[60px_20px] lg:p-[80px_60px] bg-[radial-gradient(circle_at_20%_30%,#1a1a1a_0%,#000000_100%)] border-b border-[#D4A853]/10">
                         {project.logoUrl && (
-                            <img src={project.logoUrl} alt={project.title} className="max-w-[140px] mx-auto mb-[40px] block" />
+                            <img src={resolveIpfsUrl(project.logoUrl) || undefined} alt={project.title} className="max-w-[140px] mx-auto mb-[40px] block" />
                         )}
                         <h1 className={`text-[clamp(3rem,8vw,5rem)] font-bold tracking-tight leading-[0.9] mb-[30px] uppercase ${playfair.className}`}>
                             {project.title}
@@ -128,7 +140,7 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                     {/* DETAILS */}
                     <section className="min-h-screen flex flex-col justify-center p-[60px_20px] lg:p-[80px_60px] relative border-b border-[#D4A853]/10">
                         <div className="w-[60px] h-[2px] bg-[#D4A853] mb-[30px]" />
-                        <h2 className={`text-[2rem] mb-[40px] ${playfair.className}`}>Private Briefing</h2>
+                        <h2 className={`text-[2rem] mb-[40px] ${playfair.className}`}>{eventData.title}</h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-[40px] lg:mt-[40px] max-w-[400px] md:max-w-none mx-auto md:mx-0 text-left">
                             <div className="border-l border-[#D4A853] pl-[20px]">

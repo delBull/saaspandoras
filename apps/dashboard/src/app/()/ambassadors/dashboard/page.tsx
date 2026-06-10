@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
 import { toast } from 'sonner';
+import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
 
 interface CommissionData {
   referralCode: string;
@@ -58,10 +59,14 @@ export default function AmbassadorDashboard() {
     }
   }, []);
 
+  const [showModal, setShowModal] = useState(false);
+
   useEffect(() => {
     if (account?.address) fetchCommissions();
     else setLoading(false);
   }, [account?.address, fetchCommissions]);
+
+  // ... (handleClaim stays the same) ...
 
   const handleClaim = async () => {
     if (!account?.address || !data || data.pending.count === 0) return;
@@ -91,7 +96,7 @@ export default function AmbassadorDashboard() {
 
   if (!account?.address) {
     return (
-      <div className="min-h-screen bg-black text-white p-8">
+      <div className="text-white">
         <div className="max-w-4xl mx-auto text-center py-20">
           <h1 className="text-3xl font-bold mb-4">Ambassador Dashboard</h1>
           <p className="text-zinc-400">Connect your wallet to view your commissions</p>
@@ -101,8 +106,7 @@ export default function AmbassadorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="text-white w-full h-full max-w-6xl mx-auto space-y-8 relative">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Ambassador Dashboard</h1>
           <span className="text-sm text-zinc-500 font-mono">
@@ -113,9 +117,37 @@ export default function AmbassadorDashboard() {
         {loading ? (
           <div className="text-center py-12 text-zinc-500">Loading...</div>
         ) : !data ? (
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8 text-center">
-            <p className="text-zinc-400">No ambassador profile found for this wallet.</p>
-            <p className="text-zinc-600 text-sm mt-2">Apply at the <a href="/ambassadors" className="text-emerald-400 underline">Ambassadors page</a></p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
+              <span className="text-4xl">🤝</span>
+            </div>
+            <h2 className="text-4xl font-bold mb-4 text-center">Únete al Movimiento</h2>
+            <p className="text-zinc-400 text-lg text-center max-w-xl mb-8">
+              Conviértete en Gestor Patrimonial, invita a inversionistas y gana hasta 4% en comisiones directas y un yield residual de por vida.
+            </p>
+            <button 
+              onClick={() => setShowModal(true)}
+              className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-2xl transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:scale-105"
+            >
+              Comenzar Registro
+            </button>
+
+            {/* Modal Overlay */}
+            {showModal && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl">
+                  <button 
+                    onClick={() => setShowModal(false)}
+                    className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                  <h3 className="text-2xl font-bold mb-2">Registro de Gestor</h3>
+                  <p className="text-zinc-400 mb-6">Completa tus datos para recibir tu código único.</p>
+                  <AmbassadorForm origin="dashboard" />
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -204,7 +236,6 @@ export default function AmbassadorDashboard() {
             </div>
           </>
         )}
-      </div>
     </div>
   );
 }

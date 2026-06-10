@@ -32,6 +32,48 @@ export async function registerForEvent(prevState: any, formData: FormData) {
             selectedDateTime: selectedDateTimeStr ? new Date(selectedDateTimeStr) : null
         });
 
+        // DISCORD WEBHOOK NOTIFICATION
+        try {
+            const [project] = await db.select({ 
+                title: projects.title,
+                discordWebhookUrl: projects.discordWebhookUrl
+            }).from(projects).where(eq(projects.id, projectId));
+
+            const [event] = await db.select({ title: projectEvents.title }).from(projectEvents).where(eq(projectEvents.id, eventId));
+
+            if (project?.discordWebhookUrl) {
+                const embed = {
+                    title: `🎫 Nueva Confirmación de Asistencia`,
+                    color: 0xD4A853, // Gold color
+                    fields: [
+                        { name: "Proyecto", value: project.title, inline: true },
+                        { name: "Evento", value: event?.title || "Evento Privado", inline: true },
+                        { name: "Nombre", value: nombre, inline: false },
+                        { name: "Email", value: email, inline: true },
+                        { name: "Teléfono", value: telefono || "No especificado", inline: true },
+                        { name: "Perfil", value: perfil || "No especificado", inline: true }
+                    ],
+                    timestamp: new Date().toISOString()
+                };
+
+                if (selectedDateTimeStr) {
+                    embed.fields.push({
+                        name: "Fecha/Hora Seleccionada",
+                        value: new Date(selectedDateTimeStr).toLocaleString('es-MX'),
+                        inline: false
+                    });
+                }
+
+                await fetch(project.discordWebhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ embeds: [embed] })
+                });
+            }
+        } catch (webhookError) {
+            console.error("Error sending Discord webhook:", webhookError);
+        }
+
         return { success: true };
     } catch (e: any) {
         console.error(e);

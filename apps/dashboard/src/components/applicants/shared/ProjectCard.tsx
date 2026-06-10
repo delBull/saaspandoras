@@ -1,4 +1,5 @@
 import { sanitizeUrl, getTargetAmount } from "@/lib/project-utils";
+import { resolveIpfsUrl } from "@/lib/utils";
 import Link from "next/link";
 import { EyeIcon, ImageIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
@@ -13,7 +14,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: ProjectCardProps) {
-  const sanitizedCoverUrl = sanitizeUrl(project.coverPhotoUrl);
+  const sanitizedCoverUrl = resolveIpfsUrl(sanitizeUrl(project.coverPhotoUrl) || '');
   
   // Robust Chain ID handling
   const rawChainId = Number((project as any).chainId);

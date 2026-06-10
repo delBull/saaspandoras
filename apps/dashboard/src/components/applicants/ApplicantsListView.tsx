@@ -2,6 +2,7 @@
 
 import React from "react";
 import { TrendingUp, Calendar, DollarSign } from "lucide-react";
+import { sanitizeUrl } from "@/lib/project-utils";
 import Image from "next/image";
 import type { Project } from "../../hooks/applicants/useApplicantsData";
 
@@ -37,13 +38,11 @@ export function ApplicantsListView({ projects, variant = 'approved' }: Applicant
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-4">
                 {/* Logo */}
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-lime-500/20 to-emerald-500/20 flex items-center justify-center flex-shrink-0 border border-lime-400/20">
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-lime-500/20 to-emerald-500/20 flex items-center justify-center flex-shrink-0 border border-lime-400/20 overflow-hidden">
                   {project.coverPhotoUrl ? (
-                    <Image
-                      src={project.coverPhotoUrl}
+                    <img
+                      src={sanitizeUrl(project.coverPhotoUrl) || '/images/default-project.jpg'}
                       alt={project.title}
-                      width={64}
-                      height={64}
                       className="w-full h-full object-cover rounded-xl"
                     />
                   ) : (
