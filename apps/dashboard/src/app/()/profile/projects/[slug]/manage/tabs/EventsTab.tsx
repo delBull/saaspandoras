@@ -359,6 +359,11 @@ export function EventsTab({ project }: { project: any }) {
                                             {event.location && (
                                                 <div className="text-xs text-zinc-600 mt-0.5">📍 {event.location}</div>
                                             )}
+                                            {event.type === 'MACRO' && (
+                                                <div className="text-xs font-semibold text-[#D4A853] mt-1">
+                                                    Asistencias Confirmadas: {regs.length} {((event.config as any) || {}).maxCapacity ? `/ ${((event.config as any) || {}).maxCapacity}` : ''}
+                                                </div>
+                                            )}
                                             <div className="mt-1.5 flex items-center gap-1.5">
                                                 <code className="text-xs text-[#D4A853] bg-[#D4A853]/5 px-2 py-0.5 rounded truncate max-w-xs">
                                                     {eventUrl}
