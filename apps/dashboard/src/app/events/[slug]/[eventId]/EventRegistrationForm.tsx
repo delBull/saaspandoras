@@ -23,7 +23,18 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
     // Extraemos la logica de getAvailableSlots
     const getAvailableSlots = (dateStr: string) => {
-        if (!dateStr || !config?.availability) return [];
+        const fallbackAvailability = {
+            monday: { enabled: true, start: "09:00", end: "17:00" },
+            tuesday: { enabled: true, start: "09:00", end: "17:00" },
+            wednesday: { enabled: true, start: "09:00", end: "17:00" },
+            thursday: { enabled: true, start: "09:00", end: "17:00" },
+            friday: { enabled: true, start: "09:00", end: "17:00" },
+            saturday: { enabled: false },
+            sunday: { enabled: false },
+        };
+        const availability = config?.availability || fallbackAvailability;
+
+        if (!dateStr || !availability) return [];
         // Parse date carefully to avoid timezone shift
         const [year, month, day] = dateStr.split('-');
         const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
@@ -31,7 +42,7 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
         const daysMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
         const dayKey = daysMap[dateObj.getDay()];
         if (!dayKey) return [];
-        const dayConfig = config.availability[dayKey];
+        const dayConfig = availability[dayKey];
         
         if (!dayConfig || !dayConfig.enabled) return [];
 
