@@ -57,6 +57,7 @@ export function MaskedShortlinkPage({ url, slug }: MaskedShortlinkPageProps) {
           src={url}
           className={`w-full h-full border-none shadow-none ${loaded ? '' : 'hidden'}`}
           title={slug}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           onLoad={() => setLoaded(true)}
