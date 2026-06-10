@@ -3,9 +3,9 @@
 import { useActionState, useEffect, useState } from 'react';
 import { registerForEvent } from './actions';
 import { Playfair_Display } from "next/font/google";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, startOfDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, startOfDay, addMonths, subMonths, addHours, addDays, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
@@ -19,6 +19,10 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
     const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
 
     const today = startOfDay(new Date());
+    const minAdvanceHours = config?.minAdvanceHours ?? 24;
+    const maxDaysInFuture = config?.maxDaysInFuture ?? 14;
+    const maxAllowedDate = addDays(today, maxDaysInFuture);
+
     const daysInMonth = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
 
     // Extraemos la logica de getAvailableSlots
@@ -48,16 +52,26 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
         const slots = [];
         const duration = config.durationMinutes || 30;
-        let [startH, startM] = dayConfig.start.split(':').map(Number);
-        let [endH, endM] = dayConfig.end.split(':').map(Number);
-        
-        let current = startH * 60 + startM;
-        const endTotal = endH * 60 + endM;
+        const [startHour, startMin] = (dayConfig.start || "09:00").split(':').map(Number);
+        const [endHour, endMin] = (dayConfig.end || "17:00").split(':').map(Number);
 
-        while (current + duration <= endTotal) {
+        let current = startHour * 60 + startMin;
+        const end = endHour * 60 + endMin;
+
+        const now = new Date();
+        const minAllowedTime = addHours(now, minAdvanceHours);
+
+        while (current + duration <= end) {
             const h = Math.floor(current / 60).toString().padStart(2, '0');
             const m = (current % 60).toString().padStart(2, '0');
-            slots.push(`${h}:${m}`);
+            
+            const slotTimeStr = `${dateStr}T${h}:${m}:00`;
+            const slotDate = new Date(slotTimeStr);
+
+            // Solo agrega el slot si es posterior al tiempo mínimo permitido
+            if (!isBefore(slotDate, minAllowedTime)) {
+                slots.push(`${h}:${m}`);
+            }
             current += duration;
         }
         return slots;
@@ -108,6 +122,15 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                 
                 {isCalendar && (
                     <div className="mb-[15px]">
+                            {/* Legend Message */}
+                            <div className="mb-4 bg-[#D4A853]/10 border border-[#D4A853]/20 rounded-lg p-3 flex items-start gap-3">
+                                <Clock className="w-5 h-5 text-[#D4A853] flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-[#D4A853] text-xs font-bold uppercase tracking-wider mb-1">Campaña de tiempo limitado</p>
+                                    <p className="text-[#888888] text-[0.7rem] leading-relaxed">Este briefing tiene una duración limitada de {maxDaysInFuture} días. Las sesiones se pueden agendar con {minAdvanceHours} horas de anticipación.</p>
+                                </div>
+                            </div>
+
                             <div className="flex items-center justify-between mb-4">
                                 <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] font-bold">Selecciona una Fecha *</label>
                                 <div className="flex items-center gap-2">
@@ -125,7 +148,7 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                                     {Array.from({ length: daysInMonth[0]?.getDay() || 0 }).map((_, i) => <div key={`blank-${i}`} />)}
                                     {daysInMonth.map(day => {
                                         const dateStr = format(day, 'yyyy-MM-dd');
-                                        const isPast = isBefore(day, today);
+                                        const isPast = isBefore(day, today) || isAfter(day, maxAllowedDate);
                                         const isSelected = selectedDate === dateStr;
                                         const hasSlots = !isPast && getAvailableSlots(dateStr).length > 0;
                                         

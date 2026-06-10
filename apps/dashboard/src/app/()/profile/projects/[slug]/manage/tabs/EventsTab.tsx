@@ -40,6 +40,8 @@ export function EventsTab({ project }: { project: any }) {
         location: '',
         maxCapacity: 20,
         durationMinutes: 45,
+        minAdvanceHours: 24,
+        maxDaysInFuture: 14,
         availability: defaultAvailability as AvailabilityConfig
     });
 
@@ -92,6 +94,8 @@ export function EventsTab({ project }: { project: any }) {
                 config: { 
                     maxCapacity: newEvent.maxCapacity,
                     durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined,
+                    minAdvanceHours: newEvent.type === 'CALENDAR' ? newEvent.minAdvanceHours : undefined,
+                    maxDaysInFuture: newEvent.type === 'CALENDAR' ? newEvent.maxDaysInFuture : undefined,
                     availability: newEvent.type === 'CALENDAR' ? newEvent.availability : undefined
                 }
             };
@@ -117,7 +121,7 @@ export function EventsTab({ project }: { project: any }) {
                 setEvents(prev => [savedEvent, ...prev]);
             }
             
-            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, availability: defaultAvailability as AvailabilityConfig });
+            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, minAdvanceHours: 24, maxDaysInFuture: 14, availability: defaultAvailability as AvailabilityConfig });
             setShowNewForm(false);
             setEditingEvent(null);
             toast.success('Evento guardado ✓');
@@ -148,6 +152,8 @@ export function EventsTab({ project }: { project: any }) {
             location: event.location || '',
             maxCapacity: config.maxCapacity || 20,
             durationMinutes: config.durationMinutes || 45,
+            minAdvanceHours: config.minAdvanceHours ?? 24,
+            maxDaysInFuture: config.maxDaysInFuture ?? 14,
             availability: config.availability || defaultAvailability
         });
         
@@ -331,6 +337,30 @@ export function EventsTab({ project }: { project: any }) {
                                             value={newEvent.durationMinutes}
                                             onChange={e => setNewEvent({ ...newEvent, durationMinutes: Number(e.target.value) })}
                                             className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Anticipación Mínima (horas)</label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            value={newEvent.minAdvanceHours}
+                                            onChange={e => setNewEvent({ ...newEvent, minAdvanceHours: Number(e.target.value) })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                            placeholder="Ej. 24"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs text-zinc-500 mb-1">Límite de la campaña (Días al futuro)</label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            step={1}
+                                            value={newEvent.maxDaysInFuture}
+                                            onChange={e => setNewEvent({ ...newEvent, maxDaysInFuture: Number(e.target.value) })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                            placeholder="Ej. 14 (equivale a 2 semanas)"
                                         />
                                     </div>
                                     <div className="md:col-span-2 pt-2 border-t border-white/10">
