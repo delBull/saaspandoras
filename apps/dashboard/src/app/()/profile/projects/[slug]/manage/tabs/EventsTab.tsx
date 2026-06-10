@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarIcon, UserGroupIcon, PlusIcon, LinkIcon, ClipboardDocumentIcon, TrashIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
+import { AvailabilityScheduler, defaultAvailability } from '@/components/shared/AvailabilityScheduler';
+import type { AvailabilityConfig } from '@/components/shared/AvailabilityScheduler';
 
 interface ProjectEvent {
     id: number;
@@ -37,6 +39,7 @@ export function EventsTab({ project }: { project: any }) {
         location: '',
         maxCapacity: 20,
         durationMinutes: 45,
+        availability: defaultAvailability as AvailabilityConfig
     });
 
     // Load existing events
@@ -94,7 +97,8 @@ export function EventsTab({ project }: { project: any }) {
                     location: newEvent.location,
                     config: { 
                         maxCapacity: newEvent.maxCapacity,
-                        durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined
+                        durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined,
+                        availability: newEvent.type === 'CALENDAR' ? newEvent.availability : undefined
                     },
                 })
             });
@@ -102,7 +106,7 @@ export function EventsTab({ project }: { project: any }) {
             if (!res.ok) throw new Error();
             const created = await res.json();
             setEvents(prev => [created, ...prev]);
-            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45 });
+            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, availability: defaultAvailability as AvailabilityConfig });
             setShowNewForm(false);
             toast.success('Evento creado ✓');
         } catch {
@@ -283,6 +287,13 @@ export function EventsTab({ project }: { project: any }) {
                                             value={newEvent.durationMinutes}
                                             onChange={e => setNewEvent({ ...newEvent, durationMinutes: Number(e.target.value) })}
                                             className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 pt-2 border-t border-white/10">
+                                        <label className="block text-xs text-zinc-500 mb-2">Disponibilidad (Días y Horarios)</label>
+                                        <AvailabilityScheduler 
+                                            config={newEvent.availability} 
+                                            onChange={newConfig => setNewEvent({ ...newEvent, availability: newConfig })} 
                                         />
                                     </div>
                                 </>

@@ -9,6 +9,7 @@ import { getAdminAvailability, saveAvailability } from "@/actions/availability";
 import type { AvailabilityConfig } from "@/actions/availability";
 import { Loader2, Plus, Calendar as CalendarIcon, Settings, Copy, ExternalLink, Video, Phone, User as UserIcon, Clock, Check, Save } from "lucide-react";
 import { toast } from "sonner";
+import { AvailabilityScheduler } from "@/components/shared/AvailabilityScheduler";
 
 // UI Components
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -235,64 +236,7 @@ export function CalendarManager({ userId }: { userId: string }) {
                             <CardDescription>Configura tus reglas básicas.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* ... existing days map ... */}
-                            <div className="space-y-3">
-                                {[
-                                    { key: 'monday', label: 'Lunes' },
-                                    { key: 'tuesday', label: 'Martes' },
-                                    { key: 'wednesday', label: 'Miércoles' },
-                                    { key: 'thursday', label: 'Jueves' },
-                                    { key: 'friday', label: 'Viernes' },
-                                    { key: 'saturday', label: 'Sábado' },
-                                    { key: 'sunday', label: 'Domingo' }
-                                ].map((day) => {
-                                    const dayConfig = (config as any)[day.key];
-                                    return (
-                                        <div key={day.key} className="flex items-center justify-between p-2 rounded hover:bg-zinc-800/50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={dayConfig.enabled}
-                                                    onChange={(e) => setConfig({
-                                                        ...config,
-                                                        [day.key]: { ...dayConfig, enabled: e.target.checked }
-                                                    })}
-                                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-lime-500 focus:ring-lime-500/20"
-                                                />
-                                                <Label className={`w-20 ${dayConfig.enabled ? 'text-white' : 'text-zinc-500'}`}>
-                                                    {day.label}
-                                                </Label>
-                                            </div>
-
-                                            {dayConfig.enabled ? (
-                                                <div className="flex items-center gap-2">
-                                                    <Input
-                                                        type="time"
-                                                        value={dayConfig.start}
-                                                        onChange={(e) => setConfig({
-                                                            ...config,
-                                                            [day.key]: { ...dayConfig, start: e.target.value }
-                                                        })}
-                                                        className="h-8 w-32 px-2 bg-zinc-950 border-zinc-800 text-xs"
-                                                    />
-                                                    <span className="text-zinc-500">-</span>
-                                                    <Input
-                                                        type="time"
-                                                        value={dayConfig.end}
-                                                        onChange={(e) => setConfig({
-                                                            ...config,
-                                                            [day.key]: { ...dayConfig, end: e.target.value }
-                                                        })}
-                                                        className="h-8 w-32 px-2 bg-zinc-950 border-zinc-800 text-xs"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-zinc-600 block w-[200px] text-right italic">No disponible</span>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                            <AvailabilityScheduler config={config} onChange={setConfig} />
 
                             <div className="pt-4 border-t border-zinc-800 flex justify-end">
                                 <Button

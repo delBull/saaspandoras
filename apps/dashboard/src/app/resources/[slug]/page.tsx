@@ -73,14 +73,14 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
     const portalUrl = `https://snarai.aztecaz.xyz/portal`;
 
     return (
-        <main className={`min-h-screen bg-[#050505] text-white flex flex-col overflow-x-hidden ${inter.className}`}>
+        <main className={`h-screen bg-[#050505] text-white flex flex-col overflow-hidden ${inter.className}`}>
             
             {/* Animated Gradient Background */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(212,168,83,0.08)_0%,transparent_40%),radial-gradient(circle_at_80%_80%,rgba(212,168,83,0.05)_0%,transparent_50%),radial-gradient(circle_at_50%_50%,rgba(212,168,83,0.03)_0%,transparent_60%)] animate-[pulse_8s_ease-in-out_infinite]" />
             </div>
 
-            <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-2 max-w-[1600px] mx-auto w-full min-h-screen">
+            <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-2 max-w-[1600px] mx-auto w-full h-full overflow-hidden">
                 
                 {/* LEFT ZONE: BRAND & PORTAL */}
                 <div className="flex flex-col justify-center p-10 lg:p-[80px_60px] border-b lg:border-b-0 lg:border-r border-[#D4A853]/10 text-center lg:text-left items-center lg:items-start">
@@ -119,7 +119,7 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
                 </div>
 
                 {/* RIGHT ZONE: RESOURCES */}
-                <div className="grid grid-rows-[auto_1fr_auto] gap-[30px] lg:gap-[40px] p-10 lg:p-[80px_60px] overflow-y-auto">
+                <div className="grid grid-rows-[auto_1fr_auto] gap-[30px] lg:gap-[40px] p-10 lg:p-[80px_60px] overflow-hidden">
                     
                     {/* DOCUMENTACIÓN */}
                     <div className="animate-[fadeInUp_0.6s_ease_backwards] [animation-delay:0.2s]">

@@ -9,6 +9,7 @@ const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "
 export function EventRegistrationForm({ eventId, projectId, eventDate, eventLocation, isCalendar, config }: { eventId: number, projectId: number, eventDate: string, eventLocation: string, isCalendar?: boolean, config?: any }) {
     const [state, formAction, isPending] = useActionState(registerForEvent, null);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     useEffect(() => {
         if (state?.success) {
@@ -45,14 +46,76 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                 <input type="hidden" name="projectId" value={projectId} />
                 
                 {isCalendar && (
-                    <div>
+                    <div className="mb-[20px]">
+                        <div className="mb-[15px] p-[15px] bg-[#1a1a1a] border border-[#333333] rounded">
+                            <h4 className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[10px] font-bold">Horarios Disponibles</h4>
+                            {config?.availability ? (
+                                <ul className="text-xs text-zinc-400 space-y-1">
+                                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => {
+                                        const dayConfig = config.availability[dayKey];
+                                        if (!dayConfig || !dayConfig.enabled) return null;
+                                        
+                                        const labels: Record<string, string> = {
+                                            monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles',
+                                            thursday: 'Jueves', friday: 'Viernes', saturday: 'Sábado', sunday: 'Domingo'
+                                        };
+                                        return (
+                                            <li key={dayKey} className="flex justify-between border-b border-[#333333]/50 pb-1">
+                                                <span className="font-semibold text-white">{labels[dayKey]}</span>
+                                                <span>{dayConfig.start} - {dayConfig.end}</span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            ) : (
+                                <p className="text-xs text-zinc-500">Contactar para coordinar horario.</p>
+                            )}
+                        </div>
+
                         <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[10px] font-bold">Selecciona Fecha y Hora *</label>
                         <input 
                             type="datetime-local" 
                             name="selectedDateTime" 
                             required 
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (!val || !config?.availability) {
+                                    setValidationError(null);
+                                    return;
+                                }
+                                const dateObj = new Date(val);
+                                const dayIndex = dateObj.getDay(); // 0 = sunday, 1 = monday
+                                const daysMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+                                const dayKey = daysMap[dayIndex];
+                                
+                                if (!dayKey) {
+                                    setValidationError("Fecha inválida.");
+                                    return;
+                                }
+
+                                const dayConfig = config.availability[dayKey];
+
+                                if (!dayConfig || !dayConfig.enabled) {
+                                    setValidationError("Ese día de la semana no está disponible para reuniones.");
+                                    return;
+                                }
+
+                                const selectedHours = dateObj.getHours();
+                                const selectedMins = dateObj.getMinutes();
+                                const timeStr = `${selectedHours.toString().padStart(2, '0')}:${selectedMins.toString().padStart(2, '0')}`;
+                                
+                                if (timeStr < dayConfig.start || timeStr > dayConfig.end) {
+                                    setValidationError(`El horario de atención es de ${dayConfig.start} a ${dayConfig.end}.`);
+                                    return;
+                                }
+
+                                setValidationError(null);
+                            }}
                             className="w-full p-[15px] bg-[#1a1a1a] border border-[#444444] rounded text-white focus:outline-none focus:border-[#D4A853] transition-all"
                         />
+                        {validationError && (
+                            <p className="text-red-400 text-xs mt-2 font-semibold">{validationError}</p>
+                        )}
                         <p className="text-xs text-zinc-500 mt-2">Duración aproximada: {config?.durationMinutes || 45} minutos.</p>
                     </div>
                 )}
@@ -109,8 +172,8 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
                 <button 
                     type="submit" 
-                    disabled={isPending}
-                    className="w-full p-[20px] bg-[#D4A853] text-[#050505] font-bold uppercase tracking-[2px] mt-[20px] transition-all hover:bg-white hover:scale-[1.02] disabled:opacity-50"
+                    disabled={isPending || !!validationError}
+                    className="w-full py-[15px] px-[30px] bg-[#D4A853] text-[#111111] font-bold tracking-[2px] uppercase rounded cursor-pointer transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(212,168,83,0.4)] disabled:opacity-50 disabled:cursor-not-allowed mt-[20px]"
                 >
                     {isPending ? 'Enviando...' : (isCalendar ? 'Agendar Reunión' : 'Confirmar Asistencia')}
                 </button>
