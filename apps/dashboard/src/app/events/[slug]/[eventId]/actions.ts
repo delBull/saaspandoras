@@ -168,7 +168,7 @@ export async function registerForEvent(prevState: any, formData: FormData) {
 
             let locationHtml = `<span style="color: #000; font-weight: normal;">${event?.location || 'Presencial'}</span>`;
             if (meetingPreference === 'VIRTUAL' || config.meetingType === 'VIRTUAL') {
-                locationHtml = `<a href="${jitsiLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">Reunión Virtual (Google Meet / Jitsi)</a>`;
+                locationHtml = `<a href="${jitsiLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">Enlace de Reunión Virtual</a>`;
             } else if (config.mapsLink) {
                 locationHtml = `<a href="${config.mapsLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">${event?.location} (Ver en Google Maps)</a>`;
             }

@@ -211,7 +211,7 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                                     >
                                         <option value="" disabled className="text-gray-500">Elige modalidad...</option>
                                         <option value="PHYSICAL" className="text-black">Física ({eventLocation || 'Presencial'})</option>
-                                        <option value="VIRTUAL" className="text-black">Virtual (Se enviará enlace Google Meet)</option>
+                                        <option value="VIRTUAL" className="text-black">Virtual (Se enviará enlace de acceso por correo)</option>
                                     </select>
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#888888] text-xs">
                                         ▼
