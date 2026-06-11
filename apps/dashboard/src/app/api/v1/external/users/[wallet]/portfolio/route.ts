@@ -50,6 +50,10 @@ export async function GET(
             wallet,
             portfolio,
             totalVotingPower: portfolio.reduce((acc, curr) => acc + parseInt(curr.votingPower || "0"), 0)
+        }, {
+            headers: {
+                "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120"
+            }
         });
 
     } catch (e: any) {
