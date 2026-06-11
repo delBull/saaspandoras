@@ -45,6 +45,29 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
         ]
     };
 
+    // Override S'Narai PDF links to use the new interactive markdown viewer
+    if (project.slug === 'snarai' && config.documents) {
+        const baseUrl = (project.website || 'https://snarai.aztecaz.xyz').replace(/\/$/, '');
+        config.documents = config.documents.map((doc: any) => {
+            if (doc.title.toLowerCase().includes('dossier') || doc.title.toLowerCase().includes('deck') || doc.url?.toLowerCase().includes('deck')) {
+                return { ...doc, url: `${baseUrl}/es/docs/deck`, desc: 'Presentación interactiva completa' };
+            }
+            if (doc.title.toLowerCase().includes('one pager') || doc.title.toLowerCase().includes('resumen') || doc.url?.toLowerCase().includes('one_pager')) {
+                return { ...doc, url: `${baseUrl}/es/docs/one-pager`, desc: 'Resumen ejecutivo de 1 página' };
+            }
+            return doc;
+        });
+        
+        // Ensure One Pager is present
+        if (!config.documents.find((d: any) => d.url.includes('one-pager'))) {
+            config.documents.unshift({
+                title: 'One Pager',
+                url: `${baseUrl}/es/docs/one-pager`,
+                desc: 'Resumen ejecutivo de 1 página'
+            });
+        }
+    }
+
     // Find if there is an active event for the project
     const activeEvents = await db.select()
         .from(projectEvents)
@@ -140,9 +163,9 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
                                         href={doc.url} 
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="px-[20px] py-[10px] border border-[#444444] text-white text-[0.75rem] uppercase tracking-[1px] transition-all duration-300 hover:border-[#D4A853] hover:text-[#D4A853]"
+                                        className="px-[20px] py-[10px] border border-[#444444] text-white text-[0.75rem] uppercase tracking-[1px] transition-all duration-300 hover:border-[#D4A853] hover:text-[#D4A853] whitespace-nowrap"
                                     >
-                                        Descargar
+                                        {doc.url.endsWith('.pdf') ? 'Descargar' : 'Ver Documento'}
                                     </a>
                                 </div>
                             ))}

@@ -60,25 +60,42 @@ export async function POST(request: Request) {
         }
 
         // Domain Check
-        // Domain Check
         const isLocalDev = process.env.NODE_ENV !== "production";
 
-        if (!isLocalDev && domain !== config.domain) {
-            console.error(`❌ [Login] Domain mismatch: expected ${config.domain}, got ${domain}`);
+        const hostHeader = request.headers.get("host")?.split(":")[0];
+        const allowedDomains = [
+            config.domain,
+            "dash.pandoras.finance",
+            "staging.dash.pandoras.finance",
+            "app.pandoras.org",
+            hostHeader
+        ].filter(Boolean);
+
+        if (!isLocalDev && !allowedDomains.includes(domain) && !domain.endsWith(".vercel.app")) {
+            console.error(`❌ [Login] Domain mismatch: expected one of ${allowedDomains.join(", ")}, got ${domain}`);
             return NextResponse.json({ error: "Invalid domain" }, { status: 401 });
-        } else if (isLocalDev && domain !== config.domain && !domain.includes("localhost")) {
+        } else if (isLocalDev && !allowedDomains.includes(domain) && !domain.includes("localhost")) {
             // In dev allow configured domain or localhost
-            console.error(`❌ [Login] Domain mismatch (Dev): expected ${config.domain} or localhost, got ${domain}`);
+            console.error(`❌ [Login] Domain mismatch (Dev): expected localhost or one of ${allowedDomains.join(", ")}, got ${domain}`);
             return NextResponse.json({ error: "Invalid domain" }, { status: 401 });
         }
 
         // URI Check
-        if (!isLocalDev && uri !== config.origin) {
-            console.error(`❌ [Login] URI mismatch: expected ${config.origin}, got ${uri}`);
+        const originHeader = request.headers.get("origin");
+        const allowedUris = [
+            config.origin,
+            "https://dash.pandoras.finance",
+            "https://staging.dash.pandoras.finance",
+            "https://app.pandoras.org",
+            originHeader
+        ].filter(Boolean);
+
+        if (!isLocalDev && !allowedUris.includes(uri) && !uri.includes(".vercel.app")) {
+            console.error(`❌ [Login] URI mismatch: expected one of ${allowedUris.join(", ")}, got ${uri}`);
             return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
-        } else if (isLocalDev && uri !== config.origin && !uri.includes("localhost")) {
+        } else if (isLocalDev && !allowedUris.includes(uri) && !uri.includes("localhost")) {
             // In dev allow configured origin or localhost
-            console.error(`❌ [Login] URI mismatch (Dev): expected ${config.origin} or localhost, got ${uri}`);
+            console.error(`❌ [Login] URI mismatch (Dev): expected localhost or one of ${allowedUris.join(", ")}, got ${uri}`);
             return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
         }
 
