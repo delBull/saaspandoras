@@ -131,63 +131,53 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between mb-4">
-                                <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] font-bold">Selecciona una Fecha *</label>
-                                <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1 hover:text-[#D4A853] text-zinc-400 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-                                    <span className="text-xs font-bold capitalize text-white w-[100px] text-center">{format(currentMonth, 'MMMM yyyy', { locale: es })}</span>
-                                    <button type="button" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1 hover:text-[#D4A853] text-zinc-400 transition-colors"><ChevronRight className="w-4 h-4" /></button>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-[#1a1a1a] p-3 rounded-lg border border-[#444444]">
-                                <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                                    {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map(d => <div key={d} className="text-[10px] text-[#888888] font-bold">{d}</div>)}
-                                </div>
-                                <div className="grid grid-cols-7 gap-1">
-                                    {Array.from({ length: daysInMonth[0]?.getDay() || 0 }).map((_, i) => <div key={`blank-${i}`} />)}
-                                    {daysInMonth.map(day => {
-                                        const dateStr = format(day, 'yyyy-MM-dd');
-                                        const isPast = isBefore(day, today) || isAfter(day, maxAllowedDate);
-                                        const isSelected = selectedDate === dateStr;
-                                        const hasSlots = !isPast && getAvailableSlots(dateStr).length > 0;
-                                        
-                                        return (
-                                            <button
-                                                key={dateStr}
-                                                type="button"
-                                                disabled={isPast || !hasSlots}
-                                                onClick={() => {
-                                                    setSelectedDate(dateStr);
-                                                    setSelectedTime('');
-                                                }}
-                                                className={`aspect-square flex items-center justify-center text-xs rounded-full transition-all 
-                                                    ${isSelected ? 'bg-[#D4A853] text-[#111111] font-bold shadow-[0_0_10px_rgba(212,168,83,0.4)]' 
-                                                    : isPast || !hasSlots ? 'text-[#333333] cursor-not-allowed' 
-                                                    : 'text-white hover:bg-[#333333] hover:text-[#D4A853]'}`}
-                                            >
-                                                {format(day, 'd')}
-                                            </button>
-                                        );
-                                    })}
+                            <div className="mb-[15px]">
+                                <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] font-bold mb-2">Selecciona una Fecha *</label>
+                                <div className="relative">
+                                    <select
+                                        value={selectedDate}
+                                        onChange={(e) => {
+                                            setSelectedDate(e.target.value);
+                                            setSelectedTime('');
+                                        }}
+                                        className="w-full p-[12px_15px] text-sm bg-[#1a1a1a] border border-[#444444] text-white rounded focus:outline-none focus:border-[#D4A853] transition-all appearance-none"
+                                    >
+                                        <option value="" disabled className="text-gray-500">Elige un día disponible...</option>
+                                        {eachDayOfInterval({ start: today, end: maxAllowedDate })
+                                            .filter(day => getAvailableSlots(format(day, 'yyyy-MM-dd')).length > 0)
+                                            .map(day => {
+                                                const dateStr = format(day, 'yyyy-MM-dd');
+                                                const label = format(day, "EEEE d 'de' MMMM", { locale: es });
+                                                const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                                                return <option key={dateStr} value={dateStr} className="text-black">{capitalizedLabel}</option>;
+                                            })}
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#888888] text-xs">
+                                        ▼
+                                    </div>
                                 </div>
                             </div>
 
                         {selectedDate && (
                             <div className="mb-[15px] animate-[fadeIn_0.3s_ease]">
-                                <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px] font-bold">Horarios Disponibles</label>
+                                <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px] font-bold">Horario Disponible *</label>
                                 {availableSlots.length > 0 ? (
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {availableSlots.map(time => (
-                                            <button
-                                                key={time}
-                                                type="button"
-                                                onClick={() => setSelectedTime(time)}
-                                                className={`py-2 px-1 text-sm border rounded transition-all ${selectedTime === time ? 'bg-[#D4A853] text-black border-[#D4A853] font-bold' : 'bg-[#1a1a1a] border-[#444444] text-white hover:border-[#D4A853] hover:text-[#D4A853]'}`}
-                                            >
-                                                {time}
-                                            </button>
-                                        ))}
+                                    <div className="relative">
+                                        <select
+                                            value={selectedTime}
+                                            onChange={(e) => setSelectedTime(e.target.value)}
+                                            className="w-full p-[12px_15px] text-sm bg-[#1a1a1a] border border-[#444444] text-white rounded focus:outline-none focus:border-[#D4A853] transition-all appearance-none"
+                                        >
+                                            <option value="" disabled className="text-gray-500">Selecciona la hora...</option>
+                                            {availableSlots.map(time => (
+                                                <option key={time} value={time} className="text-black">
+                                                    {time} hrs
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#888888] text-xs">
+                                            ▼
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="p-[15px] bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs text-center">
