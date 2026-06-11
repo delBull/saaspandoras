@@ -38,7 +38,7 @@ interface MissionControlProps {
 export function MissionControlDashboard({ projects, initialProject }: MissionControlProps) {
     const router = useRouter();
     const account = useActiveAccount();
-    
+
     const [selectedProjectId, setSelectedProjectId] = useState<number | string>(
         initialProject?.id || (projects.length > 0 ? projects[0]?.id ?? '' : '')
     );
@@ -85,21 +85,21 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
     const governorAddress = config.governorAddress || (project as any).governorContractAddress;
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white selection:bg-purple-500/30 font-sans pb-24 relative overflow-hidden">
+        <div className="min-h-screen  text-white selection:bg-purple-500/30 font-sans pb-24 relative overflow-hidden">
             {/* Background Ambient Glows */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 relative z-10">
-                
+            <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 relative z-10">
+
                 {/* Header & Switcher */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                     <div className="relative">
                         <p className="text-xs font-black tracking-widest text-zinc-500 uppercase mb-2">Mission Control</p>
-                        
+
                         {projects.length > 1 ? (
                             <div className="relative">
-                                <button 
+                                <button
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                     className="flex items-center gap-3 group"
                                 >
@@ -108,10 +108,10 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                                     </h1>
                                     <ChevronDownIcon className="w-6 h-6 text-zinc-500 group-hover:text-white transition-colors" />
                                 </button>
-                                
+
                                 <AnimatePresence>
                                     {isDropdownOpen && (
-                                        <motion.div 
+                                        <motion.div
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
@@ -136,16 +136,15 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                                 {project.title}
                             </h1>
                         )}
-                        
+
                         <div className="flex items-center gap-3 mt-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                                project.status === 'live' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${project.status === 'live' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                                 project.status === 'approved' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                            }`}>
+                                    'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                                }`}>
                                 {project.status}
                             </span>
-                            
+
                             <Link href={`/projects/${project.slug || project.id}`} target="_blank" className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors">
                                 <EyeIcon className="w-4 h-4" /> Ver Página Pública
                             </Link>
@@ -170,16 +169,16 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === tab.id
-                                    ? 'bg-zinc-800 text-white shadow-lg shadow-black/50 border border-zinc-700'
-                                    : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
+                                ? 'bg-zinc-800 text-white shadow-lg shadow-black/50 border border-zinc-700'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
                                 }`}
                         >
                             {tab.icon}
                             {tab.label}
                             {tab.id === 'purchases' && pendingCount > 0 && (
                                 <span className="flex h-2 w-2 relative">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
                                 </span>
                             )}
                         </button>
@@ -225,13 +224,13 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-                
+
                 {/* Main KPI Card */}
                 <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-3xl p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 blur-[80px] rounded-full pointer-events-none" />
-                    
+
                     <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest mb-6">Capitalización en Vivo</h3>
-                    
+
                     <div className="flex items-end gap-4 mb-8">
                         <p className="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
                             ${raised.toLocaleString()}
@@ -243,7 +242,7 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
 
                     {/* Progress Bar */}
                     <div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden mb-4 border border-zinc-800">
-                        <motion.div 
+                        <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${progress}%` }}
                             transition={{ duration: 1, ease: "easeOut" }}
@@ -277,7 +276,7 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                             <span className="text-sm text-zinc-400">Smart Contract</span>
-                            <span className="text-sm font-mono text-zinc-300">{(project as any).contractAddress ? `${(project as any).contractAddress.slice(0,6)}...${(project as any).contractAddress.slice(-4)}` : 'Pendiente'}</span>
+                            <span className="text-sm font-mono text-zinc-300">{(project as any).contractAddress ? `${(project as any).contractAddress.slice(0, 6)}...${(project as any).contractAddress.slice(-4)}` : 'Pendiente'}</span>
                         </div>
                     </div>
                 </div>
@@ -336,7 +335,7 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
 
             if (res.ok) {
                 const result = await res.json();
-                
+
                 // Blockchain Sync Logic (kept identical to previous robust implementation)
                 if (action === 'approve' && result.targetWallet && (project as any).contractAddress) {
                     toast.loading("Sincronizando con Blockchain...", { id: "bc-sync" });
@@ -350,7 +349,7 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                         });
                         const tx = await sendTransaction({ account, transaction });
                         const receipt = await waitForReceipt({ client, chain, transactionHash: tx.transactionHash });
-                        
+
                         await fetch(`/api/v1/projects/${project.id}/admin/purchases/sync-hash`, {
                             method: "POST", headers: { "Content-Type": "application/json", "x-wallet-address": account.address },
                             body: JSON.stringify({ purchaseId: id, txHash: receipt.transactionHash })
@@ -471,7 +470,7 @@ function TreasuryTab({ project, address }: { project: any, address?: string }) {
             headers: { "x-wallet-address": account?.address || "" }
         }).then(r => r.ok ? r.json() : null).then(data => {
             if (data?.balance !== undefined) setTreasuryBalance(Number(data.balance).toFixed(2));
-        }).catch(() => {});
+        }).catch(() => { });
     }, [project.id, address, account?.address]);
 
     return (
@@ -479,18 +478,18 @@ function TreasuryTab({ project, address }: { project: any, address?: string }) {
             <div className="space-y-6">
                 <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-3xl p-8 relative overflow-hidden">
                     <div className="absolute top-[-50%] right-[-10%] w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
-                    
+
                     <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest mb-2">Caja Fuerte (Tesorería)</h3>
-                    
+
                     <div className="flex items-center gap-2 text-sm text-zinc-400 mb-8 font-mono bg-black/40 w-fit px-3 py-1.5 rounded-lg border border-white/5">
-                        {address ? `${address.slice(0,8)}...${address.slice(-6)}` : 'Sin Contrato'}
+                        {address ? `${address.slice(0, 8)}...${address.slice(-6)}` : 'Sin Contrato'}
                         {address && (
                             <button className="hover:text-white" onClick={() => navigator.clipboard.writeText(address)}>
                                 <ClipboardDocumentIcon className="w-4 h-4" />
                             </button>
                         )}
                     </div>
-                    
+
                     <p className="text-5xl font-black text-white mb-2">
                         {treasuryBalance !== null ? `$${treasuryBalance}` : '$0.00'}
                     </p>
@@ -513,13 +512,13 @@ function TreasuryTab({ project, address }: { project: any, address?: string }) {
                 <p className="text-sm text-zinc-400 mb-8">
                     Envía rendimientos directamente a las cuentas virtuales de tus holders. El sistema dispersará el saldo proporcionalmente al poder de voto (Ownership) de cada DAO Member.
                 </p>
-                
+
                 <div className="space-y-6">
                     <div>
                         <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Total a Distribuir (USDC)</label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">$</span>
-                            <input 
+                            <input
                                 type="number"
                                 value={distAmount}
                                 onChange={(e) => setDistAmount(e.target.value)}
@@ -530,7 +529,7 @@ function TreasuryTab({ project, address }: { project: any, address?: string }) {
                     </div>
                     <div>
                         <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Concepto</label>
-                        <input 
+                        <input
                             type="text"
                             value={distDesc}
                             onChange={(e) => setDistDesc(e.target.value)}
@@ -538,7 +537,7 @@ function TreasuryTab({ project, address }: { project: any, address?: string }) {
                             className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:border-yellow-500/50 outline-none transition-all"
                         />
                     </div>
-                    <button 
+                    <button
                         disabled={isDistributing}
                         className="w-full py-4 mt-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-[0_0_30px_rgba(234,179,8,0.2)]"
                     >
@@ -583,18 +582,18 @@ function TokenomicsTab({ project, config }: { project: any, config: any }) {
                     Integra un TMA de Telegram
                 </h3>
                 <p className="text-sm text-zinc-400 mb-6">
-                  Vigila tus métricas, gamifica tu comunidad y permite que tus usuarios vean su balance desde un Mini-App en Telegram conectada a este protocolo.
+                    Vigila tus métricas, gamifica tu comunidad y permite que tus usuarios vean su balance desde un Mini-App en Telegram conectada a este protocolo.
                 </p>
                 <div className="space-y-4">
-                    <input 
-                      type="password"
-                      value={botToken}
-                      onChange={(e) => setBotToken(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 focus:border-sky-500/50 focus:outline-none rounded-xl px-4 py-3 text-white text-sm transition-colors" 
-                      placeholder="Token (Ej: 8639272150:AAEVRsfH...)"
+                    <input
+                        type="password"
+                        value={botToken}
+                        onChange={(e) => setBotToken(e.target.value)}
+                        className="w-full bg-black/50 border border-white/10 focus:border-sky-500/50 focus:outline-none rounded-xl px-4 py-3 text-white text-sm transition-colors"
+                        placeholder="Token (Ej: 8639272150:AAEVRsfH...)"
                     />
                     <button className="w-full bg-sky-500 hover:bg-sky-400 text-black font-black uppercase tracking-widest px-6 py-3 rounded-xl text-xs transition-colors shadow-[0_0_20px_rgba(14,165,233,0.3)]">
-                      Vincular Bot
+                        Vincular Bot
                     </button>
                 </div>
             </div>
@@ -719,21 +718,20 @@ function AmbassadorsTab({ project }: { project: any }) {
                         <div key={a.id} className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl relative overflow-hidden flex flex-col justify-between h-full">
                             {/* Glow */}
                             <div className={`absolute -top-10 -right-10 w-32 h-32 blur-[40px] rounded-full pointer-events-none ${a.status === 'active' ? 'bg-emerald-500/10' : 'bg-yellow-500/10'}`} />
-                            
+
                             <div>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
                                         <UserIcon className="w-6 h-6 text-zinc-300" />
                                     </div>
-                                    <span className={`px-2 py-1 text-[10px] uppercase font-black rounded border ${
-                                        a.status === 'active' 
-                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                            : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                    }`}>
+                                    <span className={`px-2 py-1 text-[10px] uppercase font-black rounded border ${a.status === 'active'
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                        : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                        }`}>
                                         {a.status === 'active' ? 'Oficial' : 'Pendiente'}
                                     </span>
                                 </div>
-                                
+
                                 <h4 className="text-lg font-black tracking-tight text-white mb-1">{a.fullName}</h4>
                                 <p className="text-xs text-zinc-400 mb-4">{a.email}</p>
 
@@ -751,7 +749,7 @@ function AmbassadorsTab({ project }: { project: any }) {
                                         <span className="font-mono text-emerald-400 text-lg">{a.referralCode}</span>
                                     </div>
                                 ) : (
-                                    <button 
+                                    <button
                                         disabled={processingId === a.id}
                                         onClick={() => handleApprove(a.id)}
                                         className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(234,179,8,0.2)] disabled:opacity-50"

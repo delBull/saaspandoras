@@ -122,15 +122,15 @@ export function DashboardClientWrapper({
               hideSidebar={hideSidebar}
             >
               {/* Mobile Header - Visible only on mobile */}
-              <MobileHeader 
-                onMenuClick={() => setIsMobileSidebarOpen(true)} 
-                profileImage={profile?.image ?? undefined} 
+              <MobileHeader
+                onMenuClick={() => setIsMobileSidebarOpen(true)}
+                profileImage={profile?.image ?? undefined}
               />
 
               {/* Mobile Sidebar (Drawer) */}
-              <MobileSidebar 
-                isOpen={isMobileSidebarOpen} 
-                onClose={() => setIsMobileSidebarOpen(false)} 
+              <MobileSidebar
+                isOpen={isMobileSidebarOpen}
+                onClose={() => setIsMobileSidebarOpen(false)}
                 isAdmin={isAdmin || isSuperAdmin}
               />
 
@@ -151,7 +151,7 @@ export function DashboardClientWrapper({
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className={`${pathname?.startsWith("/profile/projects/") ? "" : "pt-6 sm:pt-8 md:pt-10"} pb-4 md:pb-0 h-full w-full`}
+                  className={`${pathname?.startsWith("/profile/projects/") ? "" : "pt-0 sm:pt-0 md:pt-0"} pb-4 md:pb-0 h-full w-full`}
                 >
                   {!isLoadingUserData && (
                     <Suspense
@@ -212,7 +212,7 @@ function RewardModalManager() {
         const data = json.data;
         if (data && data.totalXp > 0) {
           console.log(`🔥 [Growth OS] Found pre-login rewards: ${data.totalXp} XP`);
-          
+
           const marketingReward: Reward = {
             type: 'achievement',
             title: '🔥 ¡Bono de Bienvenida!',
@@ -223,7 +223,7 @@ function RewardModalManager() {
           };
 
           localStorage.setItem(modalShownKey, 'true');
-          
+
           setTimeout(() => {
             setCurrentReward(marketingReward);
             setShowRewardModal(true);

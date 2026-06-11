@@ -78,7 +78,12 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
     };
 
     // Fix jsonb parsing and dates
-    const parsedConfig = typeof eventData.config === 'string' ? JSON.parse(eventData.config) : eventData.config || {};
+    let parsedConfig: any = {};
+    try {
+        parsedConfig = typeof eventData.config === 'string' ? JSON.parse(eventData.config) : (eventData.config || {});
+    } catch {
+        parsedConfig = {};
+    }
     const eventDateObj = typeof eventData.date === 'string' ? new Date(eventData.date) : eventData.date;
 
     const isCalendar = eventData.type === 'CALENDAR';
@@ -162,13 +167,16 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                             <div className="border-l border-[#D4A853] pl-[20px]">
                                 <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Ubicación</div>
                                 <div className={`text-[1.4rem] ${playfair.className}`}>
-                                    {parsedConfig.mapsLink ? (
-                                        <a href={parsedConfig.mapsLink} target="_blank" rel="noreferrer" className="hover:text-[#D4A853] underline decoration-white/30 hover:decoration-[#D4A853] transition-colors">
-                                            {eventData.location}
-                                        </a>
-                                    ) : (
-                                        eventData.location
-                                    )}
+                                    {(() => {
+                                        const safeMapsUrl = parsedConfig.mapsLink ? sanitizeUrl(parsedConfig.mapsLink) : null;
+                                        return safeMapsUrl ? (
+                                            <a href={safeMapsUrl} target="_blank" rel="noreferrer" className="hover:text-[#D4A853] underline decoration-white/30 hover:decoration-[#D4A853] transition-colors">
+                                                {eventData.location}
+                                            </a>
+                                        ) : (
+                                            eventData.location
+                                        );
+                                    })()}
                                 </div>
                             </div>
                             <div className="border-l border-[#D4A853] pl-[20px]">

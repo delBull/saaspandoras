@@ -70,14 +70,13 @@ export function EventsTab({ project }: { project: any }) {
             const res = await fetch('/api/admin/shortlinks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    slug: cleanSlug,
-                    destinationUrl,
-                    title: `Shortlink para ${title}`,
-                    description: '',
-                    type: 'redirect',
-                    landingConfig: null
-                })
+                    body: JSON.stringify({
+                        slug: cleanSlug,
+                        destinationUrl,
+                        title: `Shortlink para ${title}`,
+                        description: '',
+                        landingConfig: { isMasked: true }
+                    })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error al crear');

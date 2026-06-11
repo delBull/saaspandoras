@@ -3,9 +3,52 @@
 import { db } from "@/db";
 import { eventRegistrations, projectEvents, projects } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { headers } from 'next/headers';
+import crypto from 'crypto';
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW = 60_000;
+
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidUrl(url: string): boolean {
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
 
 export async function registerForEvent(prevState: any, formData: FormData) {
     try {
+        const headersList = await headers();
+        const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || headersList.get('x-real-ip') || 'unknown';
+        const now = Date.now();
+
+        const rateKey = `event_reg:${ip}`;
+        const rateEntry = rateLimitMap.get(rateKey);
+        if (rateEntry && now < rateEntry.resetAt) {
+            if (rateEntry.count >= RATE_LIMIT_MAX) {
+                return { error: 'Demasiadas solicitudes. Intenta de nuevo en un minuto.' };
+            }
+            rateEntry.count++;
+        } else {
+            rateLimitMap.set(rateKey, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+        }
+
         const nombre = formData.get('nombre') as string;
         const email = formData.get('email') as string;
         const telefono = formData.get('telefono') as string;
@@ -17,6 +60,10 @@ export async function registerForEvent(prevState: any, formData: FormData) {
 
         if (!nombre || !email || !eventIdStr || !projectIdStr) {
             return { error: 'Faltan campos obligatorios' };
+        }
+
+        if (!isValidEmail(email)) {
+            return { error: 'El formato del correo electrónico no es válido.' };
         }
 
         const eventId = Number(eventIdStr);
@@ -62,7 +109,8 @@ export async function registerForEvent(prevState: any, formData: FormData) {
         let finalLocation = event.location || 'Presencial';
         let jitsiLink = '';
         if (meetingPreference === 'VIRTUAL' || config.meetingType === 'VIRTUAL') {
-            jitsiLink = `https://meet.jit.si/pandoras-${project.slug}-${Date.now().toString(36)}`;
+            const rand = crypto.randomBytes(6).toString('base64url');
+            jitsiLink = `https://meet.jit.si/pandoras-${project.slug}-${rand}`;
             finalLocation = jitsiLink;
         } else if (config.mapsLink) {
             finalLocation = `${event.location} - ${config.mapsLink}`;
@@ -143,18 +191,22 @@ export async function registerForEvent(prevState: any, formData: FormData) {
                 const endDate = new Date(startDate.getTime() + duration * 60000);
                 
                 const formatDate = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+                const safeSummary = `${event?.title || 'Private Briefing'} - ${project?.title || ''}`.replace(/[\\;,\n]/g, ' ');
+                const safeDescription = `Sesión privada. Link: ${jitsiLink || ''}`.replace(/[\\;,\n]/g, ' ');
+                const safeLocationLine = (jitsiLink || event?.location || '').replace(/[\\;,\n]/g, ' ');
+
                 const icsContent = [
                     "BEGIN:VCALENDAR",
                     "VERSION:2.0",
                     "PRODID:-//Pandoras//Events//EN",
                     "BEGIN:VEVENT",
-                    `UID:${Date.now()}-${Math.random().toString(36).substring(2)}`,
+                    `UID:${Date.now()}-${crypto.randomUUID()}`,
                     `DTSTAMP:${formatDate(new Date())}`,
                     `DTSTART:${formatDate(startDate)}`,
                     `DTEND:${formatDate(endDate)}`,
-                    `SUMMARY:${event?.title || 'Private Briefing'} - ${project?.title || ''}`,
-                    `DESCRIPTION:Sesión privada.\\nLink: ${jitsiLink || config.mapsLink || ''}`,
-                    `LOCATION:${jitsiLink || event?.location || ''}`,
+                    `SUMMARY:${safeSummary}`,
+                    `DESCRIPTION:${safeDescription}`,
+                    `LOCATION:${safeLocationLine}`,
                     "END:VEVENT",
                     "END:VCALENDAR"
                 ].join("\\r\\n");
@@ -166,12 +218,20 @@ export async function registerForEvent(prevState: any, formData: FormData) {
                 });
             }
 
-            let locationHtml = `<span style="color: #000; font-weight: normal;">${event?.location || 'Presencial'}</span>`;
+            const safeLocation = escapeHtml(event?.location || 'Presencial');
+            const safeMapsLink = config.mapsLink && isValidUrl(config.mapsLink) ? config.mapsLink : null;
+            const safeJitsiLink = escapeHtml(jitsiLink);
+
+            let locationHtml = `<span style="color: #000; font-weight: normal;">${safeLocation}</span>`;
             if (meetingPreference === 'VIRTUAL' || config.meetingType === 'VIRTUAL') {
-                locationHtml = `<a href="${jitsiLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">Enlace de Reunión Virtual</a>`;
-            } else if (config.mapsLink) {
-                locationHtml = `<a href="${config.mapsLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">${event?.location} (Ver en Google Maps)</a>`;
+                locationHtml = `<a href="${safeJitsiLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">Enlace de Reunión Virtual</a>`;
+            } else if (safeMapsLink) {
+                locationHtml = `<a href="${escapeHtml(safeMapsLink)}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">${safeLocation} (Ver en Google Maps)</a>`;
             }
+
+            const safeName = escapeHtml(nombre);
+            const safeEventTitle = escapeHtml(event?.title || 'Private Briefing');
+            const safeProjectTitle = escapeHtml(project?.title || "S'Narai");
 
             await sendEmail({
                 to: email,
@@ -180,12 +240,12 @@ export async function registerForEvent(prevState: any, formData: FormData) {
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #000000; padding: 40px; border-radius: 8px; border: 1px solid #e5e7eb;">
                         <h1 style="color: #000000; text-transform: uppercase; font-size: 24px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 20px;">Asistencia Confirmada</h1>
-                        <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hola ${nombre},</p>
-                        <p style="color: #374151; font-size: 16px; line-height: 1.6;">Gracias por agendar tu espacio para la presentación privada de <strong>${project?.title || "S'Narai"}</strong>. Tu registro ha sido exitoso.</p>
+                        <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hola ${safeName},</p>
+                        <p style="color: #374151; font-size: 16px; line-height: 1.6;">Gracias por agendar tu espacio para la presentación privada de <strong>${safeProjectTitle}</strong>. Tu registro ha sido exitoso.</p>
                         
                         <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px; margin: 30px 0;">
                             <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold;">Evento</p>
-                            <p style="margin: 0 0 20px 0; color: #000; font-weight: 600;">${event?.title || 'Private Briefing'}</p>
+                            <p style="margin: 0 0 20px 0; color: #000; font-weight: 600;">${safeEventTitle}</p>
                             
                             <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold;">Fecha y Hora</p>
                             <p style="margin: 0 0 20px 0; color: #000; font-weight: 600;">${eventDateFormatted}</p>
