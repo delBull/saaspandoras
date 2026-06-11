@@ -44,6 +44,24 @@ export function EventsTab({ project }: { project: any }) {
             .catch(console.error);
     }, [project.slug]);
 
+    const handleDeleteShortlink = async (id: number) => {
+        if (!confirm('¿Seguro que deseas eliminar este shortlink?')) return;
+        try {
+            const res = await fetch('/api/admin/shortlinks', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+            
+            setProjectShortlinks(prev => prev.filter(sl => sl.id !== id));
+            toast.success('Shortlink eliminado');
+        } catch (e: any) {
+            toast.error(e.message);
+        }
+    };
+
     const handleCreateShortlink = async (id: number | string, destinationUrl: string, title: string) => {
         if (!shortlinkSlug) return toast.error('Ingresa un slug válido');
         setIsCreatingShortlink(true);
@@ -539,15 +557,24 @@ export function EventsTab({ project }: { project: any }) {
                                                         {projectShortlinks.filter(sl => sl.destinationUrl.endsWith(`events/${project.slug}/${event.id}`)).map((sl: any) => (
                                                             <div key={sl.slug} className="flex justify-between items-center text-xs bg-black/40 p-2 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-colors">
                                                                 <span className="text-lime-400 font-mono tracking-wide">pbox.dev/{sl.slug}</span>
-                                                                <button 
-                                                                    onClick={() => {
-                                                                        navigator.clipboard.writeText(`https://pbox.dev/${sl.slug}`);
-                                                                        toast.success('Enlace copiado al portapapeles');
-                                                                    }} 
-                                                                    className="text-zinc-400 hover:text-white bg-zinc-800/50 hover:bg-zinc-800 px-2 py-1 rounded transition-colors flex items-center gap-1"
-                                                                >
-                                                                    <ClipboardDocumentIcon className="w-3 h-3" /> Copiar
-                                                                </button>
+                                                                <div className="flex items-center gap-2">
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            navigator.clipboard.writeText(`https://pbox.dev/${sl.slug}`);
+                                                                            toast.success('Enlace copiado al portapapeles');
+                                                                        }} 
+                                                                        className="text-zinc-400 hover:text-white bg-zinc-800/50 hover:bg-zinc-800 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                                    >
+                                                                        <ClipboardDocumentIcon className="w-3 h-3" /> Copiar
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => handleDeleteShortlink(sl.id)}
+                                                                        className="text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-900/40 px-2 py-1 rounded transition-colors"
+                                                                        title="Eliminar enlace"
+                                                                    >
+                                                                        Eliminar
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
