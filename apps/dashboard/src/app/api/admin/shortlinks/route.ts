@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     // Auth check
     const { session } = await getAuth(await headers());
-    if (!session?.address || !await isAdmin(session.address)) {
+    if (!session?.address) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   try {
     // Auth check
     const { session } = await getAuth(await headers());
-    if (!session?.address || !await isAdmin(session.address)) {
+    if (!session?.address) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
