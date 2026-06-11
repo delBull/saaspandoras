@@ -8,21 +8,25 @@ import { XMarkIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/2
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
 export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, projectName: string }) {
-    const [showIntro, setShowIntro] = useState(false);
+    const [showIntro, setShowIntro] = useState(true); // Inicialmente en true para tapar la landing en SSR
     const [isMuted, setIsMuted] = useState(true); // Empezar muteado para asegurar que iOS arranque el video
+    const [isLoadingVideo, setIsLoadingVideo] = useState(true);
+    const [hasHydrated, setHasHydrated] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
-        // Solo mostrar la intro una vez por sesión para no interrumpir siempre
+        setHasHydrated(true);
+        // Solo mostrar la intro una vez por sesión
         const hasSeenIntro = sessionStorage.getItem(`seen_intro_${projectName}`);
-        if (!hasSeenIntro) {
-            setShowIntro(true);
+        if (hasSeenIntro) {
+            setShowIntro(false);
+        } else {
             sessionStorage.setItem(`seen_intro_${projectName}`, 'true');
         }
     }, [projectName]);
 
     useEffect(() => {
-        if (showIntro && videoRef.current) {
+        if (hasHydrated && showIntro && videoRef.current) {
             // Una vez que el video arranca muteado, intentamos encender el audio.
             // Esto es requerido para saltar las restricciones de iOS/Safari.
             videoRef.current.muted = false;
@@ -64,6 +68,20 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                     transition={{ duration: 1.5, ease: "easeInOut" }}
                     className="fixed inset-0 z-[100] bg-black flex items-center justify-center overflow-hidden"
                 >
+                    {/* LOADING INDICATOR */}
+                    <AnimatePresence>
+                        {isLoadingVideo && (
+                            <motion.div 
+                                initial={{ opacity: 0 }} 
+                                animate={{ opacity: 1 }} 
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"
+                            >
+                                <div className="w-8 h-8 border-2 border-[#D4A853]/20 border-t-[#D4A853] rounded-full animate-spin" />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* VIDEO PLAYER */}
                     <video
                         ref={videoRef}
@@ -71,6 +89,10 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                         muted={isMuted}
                         playsInline
                         autoPlay
+                        preload="auto"
+                        onCanPlay={() => setIsLoadingVideo(false)}
+                        onPlaying={() => setIsLoadingVideo(false)}
+                        onWaiting={() => setIsLoadingVideo(true)}
                         onEnded={handleSkip}
                         className="absolute inset-0 w-full h-full object-cover opacity-80"
                     />
