@@ -216,7 +216,7 @@ export function EventsTab({ project }: { project: any }) {
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6 max-w-4xl"
+            className="space-y-6 w-full"
         >
             {/* ── CALENDARIO SOBERANO ── */}
             <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6">
@@ -509,7 +509,7 @@ export function EventsTab({ project }: { project: any }) {
                                                             className="bg-transparent border-b border-lime-400/30 text-sm text-lime-100 placeholder-zinc-600 focus:outline-none focus:border-lime-400 px-1 w-24 sm:w-32"
                                                         />
                                                         <button 
-                                                            onClick={() => handleCreateShortlink(event.id, eventUrl, event.title)}
+                                                            onClick={() => handleCreateShortlink(event.id, eventUrl, `[${project.title || project.slug}] ${event.title}`)}
                                                             disabled={isCreatingShortlink}
                                                             className="ml-auto text-xs bg-lime-400 text-black px-3 py-1 rounded font-bold hover:bg-lime-500 disabled:opacity-50"
                                                         >

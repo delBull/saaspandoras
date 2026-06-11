@@ -20,7 +20,8 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
   if (['admin', 'api', 'dashboard', '_next', 'w', 's'].includes(slug)) {
     return { title: 'Pandoras System' };
@@ -84,9 +85,12 @@ const ensureAbsoluteUrl = (url?: string) => {
 };
 
 // Server Action for tracking and redirecting
-async function handleShortlink(slug: string, searchParams: URLSearchParams, headersData: any) {
+async function handleShortlink(rawSlug: string, searchParams: URLSearchParams, headersData: any) {
   try {
-    console.log(`🔗 Processing shortlink: ${slug}`);
+    // Clean slug to match database format (lowercase, no spaces)
+    const slug = decodeURIComponent(rawSlug).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+    
+    console.log(`🔗 Processing shortlink: ${slug} (raw: ${rawSlug})`);
 
     // Get shortlink from database
     const shortlink = await db

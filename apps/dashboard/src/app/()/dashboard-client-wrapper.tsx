@@ -151,7 +151,7 @@ export function DashboardClientWrapper({
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="pb-4 md:pb-0 h-full"
+                  className={`${pathname?.startsWith("/profile/projects/") ? "" : "pt-6 sm:pt-8 md:pt-10"} pb-4 md:pb-0 h-full w-full`}
                 >
                   {!isLoadingUserData && (
                     <Suspense

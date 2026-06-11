@@ -25,7 +25,7 @@ export default async function ManageProjectPage({ params }: { params: Promise<{ 
     // For now, relying on layout/UI context.
 
     return (
-        <div className="min-h-screen bg-black text-white p-6">
+        <div className="min-h-screen bg-black text-white w-full">
             <ProjectFounderDashboard project={project} />
         </div>
     );
