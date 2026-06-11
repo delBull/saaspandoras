@@ -16,6 +16,8 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
     const [selectedDate, setSelectedDate] = useState<string>('');
     const [selectedTime, setSelectedTime] = useState<string>('');
+    const meetingType = config?.meetingType || 'PHYSICAL';
+    const [meetingPreference, setMeetingPreference] = useState(meetingType === 'CHOICE' ? '' : meetingType);
     const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
 
     const today = startOfDay(new Date());
@@ -123,7 +125,10 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                 <input type="hidden" name="eventId" value={eventId} />
                 <input type="hidden" name="projectId" value={projectId} />
                 {isCalendar && (
-                    <input type="hidden" name="selectedDateTime" value={selectedDate && selectedTime ? `${selectedDate}T${selectedTime}` : ''} />
+                    <>
+                        <input type="hidden" name="selectedDateTime" value={selectedDate && selectedTime ? `${selectedDate}T${selectedTime}` : ''} />
+                        <input type="hidden" name="meetingPreference" value={meetingPreference} />
+                    </>
                 )}
                 
                 {isCalendar && (
@@ -192,7 +197,28 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
                                 )}
                             </div>
                         )}
-                        <p className="text-xs text-zinc-500 mt-2">Duración aproximada: {config?.durationMinutes || 45} minutos.</p>
+                        <p className="text-xs text-zinc-500 mt-2 mb-4">Duración aproximada: {config?.durationMinutes || 45} minutos.</p>
+                        
+                        {meetingType === 'CHOICE' && (
+                            <div className="mb-[15px] mt-[15px] animate-[fadeIn_0.3s_ease]">
+                                <label className="block text-[0.65rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px] font-bold">Modalidad de la Reunión *</label>
+                                <div className="relative">
+                                    <select
+                                        value={meetingPreference}
+                                        onChange={(e) => setMeetingPreference(e.target.value)}
+                                        className="w-full p-[12px_15px] text-sm bg-[#1a1a1a] border border-[#444444] text-white rounded focus:outline-none focus:border-[#D4A853] transition-all appearance-none"
+                                        required
+                                    >
+                                        <option value="" disabled className="text-gray-500">Elige modalidad...</option>
+                                        <option value="PHYSICAL" className="text-black">Física ({eventLocation || 'Presencial'})</option>
+                                        <option value="VIRTUAL" className="text-black">Virtual (Se enviará enlace Google Meet)</option>
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#888888] text-xs">
+                                        ▼
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
                 
@@ -248,7 +274,7 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
                 <button 
                     type="submit" 
-                    disabled={isPending || !!validationError || (isCalendar && (!selectedDate || !selectedTime))}
+                    disabled={isPending || !!validationError || (isCalendar && (!selectedDate || !selectedTime || !meetingPreference))}
                     className="w-full py-[12px] px-[30px] bg-[#D4A853] text-[#111111] font-bold text-sm tracking-[2px] uppercase rounded cursor-pointer transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(212,168,83,0.4)] disabled:opacity-50 disabled:cursor-not-allowed mt-[15px]"
                 >
                     {isPending ? 'Enviando...' : (isCalendar ? 'Agendar Reunión' : 'Confirmar Asistencia')}

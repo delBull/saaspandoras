@@ -161,7 +161,15 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
                             </div>
                             <div className="border-l border-[#D4A853] pl-[20px]">
                                 <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Ubicación</div>
-                                <div className={`text-[1.4rem] ${playfair.className}`}>{eventData.location}</div>
+                                <div className={`text-[1.4rem] ${playfair.className}`}>
+                                    {parsedConfig.mapsLink ? (
+                                        <a href={parsedConfig.mapsLink} target="_blank" rel="noreferrer" className="hover:text-[#D4A853] underline decoration-white/30 hover:decoration-[#D4A853] transition-colors">
+                                            {eventData.location}
+                                        </a>
+                                    ) : (
+                                        eventData.location
+                                    )}
+                                </div>
                             </div>
                             <div className="border-l border-[#D4A853] pl-[20px]">
                                 <div className="text-[0.7rem] uppercase tracking-[2px] text-[#D4A853] mb-[8px]">Dress Code</div>

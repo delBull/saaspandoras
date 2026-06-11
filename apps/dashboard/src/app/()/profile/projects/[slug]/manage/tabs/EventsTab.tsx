@@ -111,6 +111,8 @@ export function EventsTab({ project }: { project: any }) {
         bufferMinutes: 15,
         minAdvanceHours: 24,
         maxDaysInFuture: 14,
+        mapsLink: '',
+        meetingType: 'PHYSICAL' as 'PHYSICAL' | 'VIRTUAL' | 'CHOICE',
         availability: defaultAvailability as AvailabilityConfig
     });
 
@@ -162,6 +164,8 @@ export function EventsTab({ project }: { project: any }) {
                 location: newEvent.location,
                 config: { 
                     maxCapacity: newEvent.maxCapacity,
+                    mapsLink: newEvent.mapsLink || undefined,
+                    meetingType: newEvent.type === 'CALENDAR' ? newEvent.meetingType : undefined,
                     durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined,
                     bufferMinutes: newEvent.type === 'CALENDAR' ? newEvent.bufferMinutes : undefined,
                     minAdvanceHours: newEvent.type === 'CALENDAR' ? newEvent.minAdvanceHours : undefined,
@@ -191,7 +195,7 @@ export function EventsTab({ project }: { project: any }) {
                 setEvents(prev => [savedEvent, ...prev]);
             }
             
-            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, bufferMinutes: 15, minAdvanceHours: 24, maxDaysInFuture: 14, availability: defaultAvailability as AvailabilityConfig });
+            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, bufferMinutes: 15, minAdvanceHours: 24, maxDaysInFuture: 14, mapsLink: '', meetingType: 'PHYSICAL', availability: defaultAvailability as AvailabilityConfig });
             setShowNewForm(false);
             setEditingEvent(null);
             toast.success('Evento guardado ✓');
@@ -225,6 +229,8 @@ export function EventsTab({ project }: { project: any }) {
             bufferMinutes: config.bufferMinutes || 0,
             minAdvanceHours: config.minAdvanceHours ?? 24,
             maxDaysInFuture: config.maxDaysInFuture ?? 14,
+            mapsLink: config.mapsLink || '',
+            meetingType: config.meetingType || 'PHYSICAL',
             availability: config.availability || defaultAvailability
         });
         
@@ -366,13 +372,23 @@ export function EventsTab({ project }: { project: any }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Ubicación / Link Virtual</label>
+                                <label className="block text-xs text-zinc-500 mb-1">Ubicación Física</label>
                                 <input
                                     type="text"
                                     value={newEvent.location}
                                     onChange={e => setNewEvent({ ...newEvent, location: e.target.value })}
                                     className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
-                                    placeholder={newEvent.type === 'MACRO' ? "626 Café · Bucerías, Nayarit" : "https://meet.google.com/... o presencial"}
+                                    placeholder="Ej. 626 Café · Bucerías, Nayarit"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-xs text-zinc-500 mb-1">Enlace de Google Maps (Opcional)</label>
+                                <input
+                                    type="url"
+                                    value={newEvent.mapsLink}
+                                    onChange={e => setNewEvent({ ...newEvent, mapsLink: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                    placeholder="https://maps.app.goo.gl/..."
                                 />
                             </div>
                             {newEvent.type === 'MACRO' && (
@@ -399,6 +415,18 @@ export function EventsTab({ project }: { project: any }) {
                             )}
                             {newEvent.type === 'CALENDAR' && (
                                 <>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Opciones de Reunión</label>
+                                        <select
+                                            value={newEvent.meetingType}
+                                            onChange={e => setNewEvent({ ...newEvent, meetingType: e.target.value as any })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none appearance-none"
+                                        >
+                                            <option value="PHYSICAL">Solo Presencial</option>
+                                            <option value="VIRTUAL">Solo Virtual (Jitsi automático)</option>
+                                            <option value="CHOICE">A elección del usuario</option>
+                                        </select>
+                                    </div>
                                     <div>
                                         <label className="block text-xs text-zinc-500 mb-1">Duración (minutos)</label>
                                         <input

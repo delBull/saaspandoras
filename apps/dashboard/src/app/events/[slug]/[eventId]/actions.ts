@@ -13,6 +13,7 @@ export async function registerForEvent(prevState: any, formData: FormData) {
         const eventIdStr = formData.get('eventId') as string;
         const projectIdStr = formData.get('projectId') as string;
         const selectedDateTimeStr = formData.get('selectedDateTime') as string;
+        const meetingPreference = formData.get('meetingPreference') as string;
 
         if (!nombre || !email || !eventIdStr || !projectIdStr) {
             return { error: 'Faltan campos obligatorios' };
@@ -57,28 +58,41 @@ export async function registerForEvent(prevState: any, formData: FormData) {
             }
         }
 
+        // Generate meeting link if VIRTUAL
+        let finalLocation = event.location || 'Presencial';
+        let jitsiLink = '';
+        if (meetingPreference === 'VIRTUAL' || config.meetingType === 'VIRTUAL') {
+            jitsiLink = `https://meet.jit.si/pandoras-${project.slug}-${Date.now().toString(36)}`;
+            finalLocation = jitsiLink;
+        } else if (config.mapsLink) {
+            finalLocation = `${event.location} - ${config.mapsLink}`;
+        }
+
+        // Append -06:00 (Mexico City) to ensure the parsed date is correct regardless of server timezone
+        const dateTimeWithTz = selectedDateTimeStr ? `${selectedDateTimeStr}-06:00` : null;
+
         await db.insert(eventRegistrations).values({
             eventId,
             projectId,
             nombre,
             email,
             telefono: telefono || '',
-            perfil: perfil || null,
+            perfil: (perfil || '') + (meetingPreference ? ` (${meetingPreference})` : ''),
             status: 'CONFIRMED',
-            selectedDateTime: selectedDateTimeStr ? new Date(selectedDateTimeStr) : null
+            selectedDateTime: dateTimeWithTz ? new Date(dateTimeWithTz) : null
         });
 
         // DISCORD WEBHOOK NOTIFICATION
         try {
             if (project?.discordWebhookUrl) {
-                const eventDateFormatted = selectedDateTimeStr 
-                    ? new Date(selectedDateTimeStr).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
-                    : event?.date ? new Date(event.date).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) : 'Fecha por confirmar';
+                const eventDateFormatted = dateTimeWithTz 
+                    ? new Date(dateTimeWithTz).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Mexico_City' })
+                    : event?.date ? new Date(event.date).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Mexico_City' }) : 'Fecha por confirmar';
 
                 // Create a Google Calendar link
                 let gcalLink = '';
-                if (selectedDateTimeStr || event?.date) {
-                    const d = selectedDateTimeStr ? new Date(selectedDateTimeStr) : new Date(event.date as Date);
+                if (dateTimeWithTz || event?.date) {
+                    const d = dateTimeWithTz ? new Date(dateTimeWithTz) : new Date(event.date as Date);
                     const endD = new Date(d.getTime() + 60 * 60 * 1000); // add 1 hour
                     const fmt = (dt: Date) => dt.toISOString().replace(/-|:|\.\d\d\d/g, '');
                     const title = encodeURIComponent(event?.title || "Private Briefing");
@@ -97,8 +111,9 @@ export async function registerForEvent(prevState: any, formData: FormData) {
                         { name: "Nombre", value: nombre, inline: false },
                         { name: "Email", value: email, inline: true },
                         { name: "Teléfono", value: telefono || "No especificado", inline: true },
-                        { name: "Perfil", value: perfil || "No especificado", inline: true },
-                        { name: "Fecha/Hora", value: eventDateFormatted, inline: false }
+                        { name: "Perfil / Modo", value: (perfil || "No especificado") + (meetingPreference ? ` (${meetingPreference})` : ''), inline: true },
+                        { name: "Fecha/Hora", value: eventDateFormatted, inline: false },
+                        { name: "Ubicación", value: finalLocation, inline: false }
                     ],
                     timestamp: new Date().toISOString()
                 };
@@ -116,30 +131,74 @@ export async function registerForEvent(prevState: any, formData: FormData) {
         // EMAIL CONFIRMATION TO USER
         try {
             const { sendEmail } = await import('@/lib/email/client');
-            const eventDateFormatted = selectedDateTimeStr 
-                ? new Date(selectedDateTimeStr).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Mexico_City' })
+            const eventDateFormatted = dateTimeWithTz 
+                ? new Date(dateTimeWithTz).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Mexico_City' })
                 : event?.date ? new Date(event.date).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Mexico_City' }) : 'Fecha por confirmar';
                 
+            const attachments: any[] = [];
+            
+            const startDate = dateTimeWithTz ? new Date(dateTimeWithTz) : (event?.date ? new Date(event.date) : null);
+            if (startDate) {
+                const duration = config.durationMinutes || 45;
+                const endDate = new Date(startDate.getTime() + duration * 60000);
+                
+                const formatDate = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+                const icsContent = [
+                    "BEGIN:VCALENDAR",
+                    "VERSION:2.0",
+                    "PRODID:-//Pandoras//Events//EN",
+                    "BEGIN:VEVENT",
+                    `UID:${Date.now()}-${Math.random().toString(36).substring(2)}`,
+                    `DTSTAMP:${formatDate(new Date())}`,
+                    `DTSTART:${formatDate(startDate)}`,
+                    `DTEND:${formatDate(endDate)}`,
+                    `SUMMARY:${event?.title || 'Private Briefing'} - ${project?.title || ''}`,
+                    `DESCRIPTION:Sesión privada.\\nLink: ${jitsiLink || config.mapsLink || ''}`,
+                    `LOCATION:${jitsiLink || event?.location || ''}`,
+                    "END:VEVENT",
+                    "END:VCALENDAR"
+                ].join("\\r\\n");
+
+                attachments.push({
+                    filename: 'invite.ics',
+                    content: Buffer.from(icsContent).toString('base64'),
+                    content_type: 'text/calendar'
+                });
+            }
+
+            let locationHtml = `<span style="color: #000; font-weight: normal;">${event?.location || 'Presencial'}</span>`;
+            if (meetingPreference === 'VIRTUAL' || config.meetingType === 'VIRTUAL') {
+                locationHtml = `<a href="${jitsiLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">Reunión Virtual (Google Meet / Jitsi)</a>`;
+            } else if (config.mapsLink) {
+                locationHtml = `<a href="${config.mapsLink}" style="color: #2563EB; font-weight: normal; text-decoration: underline;">${event?.location} (Ver en Google Maps)</a>`;
+            }
+
             await sendEmail({
                 to: email,
                 from: `${project?.title} <${project?.slug || 'hello'}@pandoras.finance>`,
                 subject: `Confirmación de Asistencia - ${project?.title || "S'Narai"}`,
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #000; color: #fff; padding: 40px; border-radius: 8px;">
-                        <h1 style="color: #D4A853; text-transform: uppercase; font-size: 24px;">Asistencia Confirmada</h1>
-                        <p style="color: #ccc; font-size: 16px; line-height: 1.6;">Hola ${nombre},</p>
-                        <p style="color: #ccc; font-size: 16px; line-height: 1.6;">Gracias por agendar tu espacio para la presentación privada de <strong>${project?.title || "S'Narai"}</strong>. Tu registro ha sido exitoso.</p>
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #000000; padding: 40px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                        <h1 style="color: #000000; text-transform: uppercase; font-size: 24px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 20px;">Asistencia Confirmada</h1>
+                        <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hola ${nombre},</p>
+                        <p style="color: #374151; font-size: 16px; line-height: 1.6;">Gracias por agendar tu espacio para la presentación privada de <strong>${project?.title || "S'Narai"}</strong>. Tu registro ha sido exitoso.</p>
                         
-                        <div style="border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 20px 0; margin: 30px 0;">
-                            <p style="margin: 0 0 10px 0; color: #D4A853; font-weight: bold;">Evento: <span style="color: #fff; font-weight: normal;">${event?.title || 'Private Briefing'}</span></p>
-                            <p style="margin: 0 0 10px 0; color: #D4A853; font-weight: bold;">Fecha y Hora: <span style="color: #fff; font-weight: normal;">${eventDateFormatted}</span></p>
-                            <p style="margin: 0; color: #D4A853; font-weight: bold;">Lugar / Acceso: <span style="color: #fff; font-weight: normal;">${event?.location || 'Presencial'}</span></p>
+                        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px; margin: 30px 0;">
+                            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold;">Evento</p>
+                            <p style="margin: 0 0 20px 0; color: #000; font-weight: 600;">${event?.title || 'Private Briefing'}</p>
+                            
+                            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold;">Fecha y Hora</p>
+                            <p style="margin: 0 0 20px 0; color: #000; font-weight: 600;">${eventDateFormatted}</p>
+                            
+                            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold;">Lugar / Acceso</p>
+                            <p style="margin: 0; color: #000; font-weight: 600;">${locationHtml}</p>
                         </div>
                         
-                        <p style="color: #ccc; font-size: 14px;">Te esperamos puntualmente. Si necesitas hacer algún cambio, contáctanos respondiendo a este correo.</p>
-                        <p style="color: #666; font-size: 12px; margin-top: 40px;">Este es un mensaje automático generado por el sistema.</p>
+                        <p style="color: #4b5563; font-size: 14px;">Te hemos adjuntado una invitación para que puedas agregar este evento a tu calendario. Te esperamos puntualmente.</p>
+                        <p style="color: #9ca3af; font-size: 12px; margin-top: 40px; border-top: 1px solid #f3f4f6; padding-top: 20px;">Este es un mensaje automático generado por el sistema.</p>
                     </div>
-                `
+                `,
+                attachments: attachments.length > 0 ? attachments : undefined
             });
         } catch (emailError) {
             console.error("Error sending confirmation email:", emailError);
