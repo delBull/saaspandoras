@@ -9,7 +9,7 @@ const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "
 
 export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, projectName: string }) {
     const [showIntro, setShowIntro] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isMuted, setIsMuted] = useState(true); // Empezar muteado para asegurar que iOS arranque el video
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -23,16 +23,21 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
 
     useEffect(() => {
         if (showIntro && videoRef.current) {
-            // Intentar reproducir con audio
+            // Una vez que el video arranca muteado, intentamos encender el audio.
+            // Esto es requerido para saltar las restricciones de iOS/Safari.
+            videoRef.current.muted = false;
             const playPromise = videoRef.current.play();
+            
             if (playPromise !== undefined) {
-                playPromise.catch((error) => {
-                    // Si el navegador bloquea el autoplay con audio,
-                    // lo silenciamos y volvemos a intentar para que al menos el video arranque
+                playPromise.then(() => {
+                    // Éxito: el navegador permitió reproducir con sonido
+                    setIsMuted(false);
+                }).catch(() => {
+                    // El navegador bloqueó el audio: volvemos a mutear para que siga corriendo el video
                     if (videoRef.current) {
                         videoRef.current.muted = true;
                         setIsMuted(true);
-                        videoRef.current.play().catch(e => console.error("Autoplay failed completely:", e));
+                        videoRef.current.play().catch(e => console.error("Mobile Autoplay failed completely:", e));
                     }
                 });
             }
@@ -65,6 +70,7 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                         src={videoSrc}
                         muted={isMuted}
                         playsInline
+                        autoPlay
                         onEnded={handleSkip}
                         className="absolute inset-0 w-full h-full object-cover opacity-80"
                     />

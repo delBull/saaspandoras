@@ -615,7 +615,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         availableUnits,
         progressPercentage,
         phaseName: activePhase?.name || "Fase Principal",
-        aiBotUrl: project.w2eConfig?.aiBotUrl || null
+        aiBotUrl: project.w2eConfig?.aiBotUrl || null,
+        markdownDocs: (project.extraConfig as any)?.resourceHub?.markdownDocs || null
       },
       metrics: {
         urgency: progression?.urgencyLevel || "low"
