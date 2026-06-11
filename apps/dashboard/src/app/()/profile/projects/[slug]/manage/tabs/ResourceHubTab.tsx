@@ -33,7 +33,7 @@ export function ResourceHubTab({ project }: { project: any }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error al crear');
             
-            toast.success(`Shortlink creado: pnox.dev/${shortlinkSlug}`);
+            toast.success(`Shortlink creado: pbox.dev/${shortlinkSlug}`);
             setCreatingShortlink(false);
             setShortlinkSlug('');
         } catch (e: any) {
@@ -167,7 +167,7 @@ export function ResourceHubTab({ project }: { project: any }) {
                 
                 {creatingShortlink && (
                     <div className="flex items-center gap-2 mt-2 p-3 bg-black/40 border border-lime-400/20 rounded-xl animate-[fadeIn_0.2s_ease-out]">
-                        <span className="text-sm text-zinc-500 font-mono">pnox.dev/</span>
+                        <span className="text-sm text-zinc-500 font-mono">pbox.dev/</span>
                         <input 
                             value={shortlinkSlug}
                             onChange={e => setShortlinkSlug(e.target.value)}

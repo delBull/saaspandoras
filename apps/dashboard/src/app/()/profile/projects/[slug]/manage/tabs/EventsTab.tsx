@@ -29,16 +29,31 @@ export function EventsTab({ project }: { project: any }) {
     const [shortlinkSlug, setShortlinkSlug] = useState('');
     const [creatingShortlinkFor, setCreatingShortlinkFor] = useState<number | string | null>(null);
     const [isCreatingShortlink, setIsCreatingShortlink] = useState(false);
+    const [projectShortlinks, setProjectShortlinks] = useState<any[]>([]);
+
+    useEffect(() => {
+        // Fetch existing shortlinks
+        fetch('/api/admin/shortlinks')
+            .then(res => res.json())
+            .then(data => {
+                if (data.data) {
+                    const filtered = data.data.filter((sl: any) => sl.destinationUrl.includes(`events/${project.slug}/`));
+                    setProjectShortlinks(filtered);
+                }
+            })
+            .catch(console.error);
+    }, [project.slug]);
 
     const handleCreateShortlink = async (id: number | string, destinationUrl: string, title: string) => {
         if (!shortlinkSlug) return toast.error('Ingresa un slug válido');
         setIsCreatingShortlink(true);
         try {
+            const cleanSlug = shortlinkSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
             const res = await fetch('/api/admin/shortlinks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    slug: shortlinkSlug.toLowerCase().trim(),
+                    slug: cleanSlug,
                     destinationUrl,
                     title: `Shortlink para ${title}`,
                     description: '',
@@ -49,7 +64,8 @@ export function EventsTab({ project }: { project: any }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error al crear');
             
-            toast.success(`Shortlink creado: pnox.dev/${shortlinkSlug}`);
+            toast.success(`Shortlink creado: pbox.dev/${cleanSlug}`);
+            setProjectShortlinks(prev => [{ slug: cleanSlug, destinationUrl, title: `Shortlink para ${title}` }, ...prev]);
             setCreatingShortlinkFor(null);
             setShortlinkSlug('');
         } catch (e: any) {
@@ -501,11 +517,11 @@ export function EventsTab({ project }: { project: any }) {
                                                 </div>
                                                 {creatingShortlinkFor === event.id && (
                                                     <div className="flex items-center gap-2 mt-1 p-2 bg-black/40 border border-lime-400/20 rounded-lg animate-[fadeIn_0.2s_ease-out]">
-                                                        <span className="text-xs text-zinc-500 font-mono">pnox.dev/</span>
+                                                        <span className="text-xs text-zinc-500 font-mono">pbox.dev/</span>
                                                         <input 
                                                             value={shortlinkSlug}
                                                             onChange={e => setShortlinkSlug(e.target.value)}
-                                                            placeholder="mi-evento" 
+                                                            placeholder="mi-enlace" 
                                                             className="bg-transparent border-b border-lime-400/30 text-sm text-lime-100 placeholder-zinc-600 focus:outline-none focus:border-lime-400 px-1 w-24 sm:w-32"
                                                         />
                                                         <button 
@@ -515,6 +531,25 @@ export function EventsTab({ project }: { project: any }) {
                                                         >
                                                             {isCreatingShortlink ? '...' : 'Crear'}
                                                         </button>
+                                                    </div>
+                                                )}
+                                                {projectShortlinks.filter(sl => sl.destinationUrl.endsWith(`events/${project.slug}/${event.id}`)).length > 0 && (
+                                                    <div className="mt-3 space-y-1">
+                                                        <p className="text-[10px] uppercase text-zinc-500 font-bold mb-2">Enlaces Creados:</p>
+                                                        {projectShortlinks.filter(sl => sl.destinationUrl.endsWith(`events/${project.slug}/${event.id}`)).map((sl: any) => (
+                                                            <div key={sl.slug} className="flex justify-between items-center text-xs bg-black/40 p-2 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                                                                <span className="text-lime-400 font-mono tracking-wide">pbox.dev/{sl.slug}</span>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        navigator.clipboard.writeText(`https://pbox.dev/${sl.slug}`);
+                                                                        toast.success('Enlace copiado al portapapeles');
+                                                                    }} 
+                                                                    className="text-zinc-400 hover:text-white bg-zinc-800/50 hover:bg-zinc-800 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <ClipboardDocumentIcon className="w-3 h-3" /> Copiar
+                                                                </button>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
