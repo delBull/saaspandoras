@@ -52,6 +52,9 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
 
         const slots = [];
         const duration = config.durationMinutes || 30;
+        const buffer = config.bufferMinutes || 0;
+        const interval = duration + buffer;
+
         const [startHour, startMin] = (dayConfig.start || "09:00").split(':').map(Number);
         const [endHour, endMin] = (dayConfig.end || "17:00").split(':').map(Number);
 
@@ -61,6 +64,7 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
         const now = new Date();
         const minAllowedTime = addHours(now, minAdvanceHours);
 
+        // Validamos que el slot de duración (sin contar el buffer posterior) quepa en la hora de fin
         while (current + duration <= end) {
             const h = Math.floor(current / 60).toString().padStart(2, '0');
             const m = (current % 60).toString().padStart(2, '0');
@@ -72,7 +76,9 @@ export function EventRegistrationForm({ eventId, projectId, eventDate, eventLoca
             if (!isBefore(slotDate, minAllowedTime)) {
                 slots.push(`${h}:${m}`);
             }
-            current += duration;
+            
+            // El siguiente bloque inicia sumando la duración + el espacio entre citas
+            current += interval;
         }
         return slots;
     };

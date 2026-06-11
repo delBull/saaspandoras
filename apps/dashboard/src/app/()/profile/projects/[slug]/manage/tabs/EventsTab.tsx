@@ -40,6 +40,7 @@ export function EventsTab({ project }: { project: any }) {
         location: '',
         maxCapacity: 20,
         durationMinutes: 45,
+        bufferMinutes: 15,
         minAdvanceHours: 24,
         maxDaysInFuture: 14,
         availability: defaultAvailability as AvailabilityConfig
@@ -94,6 +95,7 @@ export function EventsTab({ project }: { project: any }) {
                 config: { 
                     maxCapacity: newEvent.maxCapacity,
                     durationMinutes: newEvent.type === 'CALENDAR' ? newEvent.durationMinutes : undefined,
+                    bufferMinutes: newEvent.type === 'CALENDAR' ? newEvent.bufferMinutes : undefined,
                     minAdvanceHours: newEvent.type === 'CALENDAR' ? newEvent.minAdvanceHours : undefined,
                     maxDaysInFuture: newEvent.type === 'CALENDAR' ? newEvent.maxDaysInFuture : undefined,
                     availability: newEvent.type === 'CALENDAR' ? newEvent.availability : undefined
@@ -121,7 +123,7 @@ export function EventsTab({ project }: { project: any }) {
                 setEvents(prev => [savedEvent, ...prev]);
             }
             
-            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, minAdvanceHours: 24, maxDaysInFuture: 14, availability: defaultAvailability as AvailabilityConfig });
+            setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, bufferMinutes: 15, minAdvanceHours: 24, maxDaysInFuture: 14, availability: defaultAvailability as AvailabilityConfig });
             setShowNewForm(false);
             setEditingEvent(null);
             toast.success('Evento guardado ✓');
@@ -152,6 +154,7 @@ export function EventsTab({ project }: { project: any }) {
             location: event.location || '',
             maxCapacity: config.maxCapacity || 20,
             durationMinutes: config.durationMinutes || 45,
+            bufferMinutes: config.bufferMinutes || 0,
             minAdvanceHours: config.minAdvanceHours ?? 24,
             maxDaysInFuture: config.maxDaysInFuture ?? 14,
             availability: config.availability || defaultAvailability
@@ -333,9 +336,20 @@ export function EventsTab({ project }: { project: any }) {
                                         <input
                                             type="number"
                                             min={15}
-                                            step={15}
+                                            step={5}
                                             value={newEvent.durationMinutes}
                                             onChange={e => setNewEvent({ ...newEvent, durationMinutes: Number(e.target.value) })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Espacio entre citas (minutos)</label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step={5}
+                                            value={newEvent.bufferMinutes}
+                                            onChange={e => setNewEvent({ ...newEvent, bufferMinutes: Number(e.target.value) })}
                                             className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
                                         />
                                     </div>
