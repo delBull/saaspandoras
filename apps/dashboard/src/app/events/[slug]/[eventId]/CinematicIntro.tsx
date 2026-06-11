@@ -21,6 +21,24 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
         }
     }, [projectName]);
 
+    useEffect(() => {
+        if (showIntro && videoRef.current) {
+            // Intentar reproducir con audio
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch((error) => {
+                    // Si el navegador bloquea el autoplay con audio,
+                    // lo silenciamos y volvemos a intentar para que al menos el video arranque
+                    if (videoRef.current) {
+                        videoRef.current.muted = true;
+                        setIsMuted(true);
+                        videoRef.current.play().catch(e => console.error("Autoplay failed completely:", e));
+                    }
+                });
+            }
+        }
+    }, [showIntro]);
+
     const handleSkip = () => {
         setShowIntro(false);
     };
@@ -45,7 +63,6 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                     <video
                         ref={videoRef}
                         src={videoSrc}
-                        autoPlay
                         muted={isMuted}
                         playsInline
                         onEnded={handleSkip}
