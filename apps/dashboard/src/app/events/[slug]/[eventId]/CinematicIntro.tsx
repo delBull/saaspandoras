@@ -9,7 +9,7 @@ const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "
 
 export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, projectName: string }) {
     const [showIntro, setShowIntro] = useState(true); // Inicialmente en true para tapar la landing en SSR
-    const [isMuted, setIsMuted] = useState(true); // Empezar muteado para asegurar que iOS arranque el video
+    const [isMuted, setIsMuted] = useState(false); // Intentar empezar con sonido activado
     const [isLoadingVideo, setIsLoadingVideo] = useState(true);
     const [hasHydrated, setHasHydrated] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -27,21 +27,18 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
 
     useEffect(() => {
         if (hasHydrated && showIntro && videoRef.current) {
-            // Una vez que el video arranca muteado, intentamos encender el audio.
-            // Esto es requerido para saltar las restricciones de iOS/Safari.
+            // Intentamos arrancar el video CON sonido por defecto
             videoRef.current.muted = false;
             const playPromise = videoRef.current.play();
             
             if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    // Éxito: el navegador permitió reproducir con sonido
-                    setIsMuted(false);
-                }).catch(() => {
-                    // El navegador bloqueó el audio: volvemos a mutear para que siga corriendo el video
+                playPromise.catch(() => {
+                    // Si el navegador bloquea el autoplay por sus políticas estrictas de audio,
+                    // hacemos fallback inmediato a muteado para que el video al menos se reproduzca.
                     if (videoRef.current) {
                         videoRef.current.muted = true;
                         setIsMuted(true);
-                        videoRef.current.play().catch(e => console.error("Mobile Autoplay failed completely:", e));
+                        videoRef.current.play().catch(e => console.error("Autoplay failed completely:", e));
                     }
                 });
             }
