@@ -8,6 +8,41 @@ import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ChatB
 export function ResourceHubTab({ project }: { project: any }) {
     const [isLoading, setIsLoading] = useState(false);
     const [showMdGuide, setShowMdGuide] = useState(false);
+    
+    // Shortlink states
+    const [shortlinkSlug, setShortlinkSlug] = useState('');
+    const [creatingShortlink, setCreatingShortlink] = useState(false);
+    const [isCreatingShortlink, setIsCreatingShortlink] = useState(false);
+
+    const handleCreateShortlink = async (destinationUrl: string) => {
+        if (!shortlinkSlug) return toast.error('Ingresa un slug válido');
+        setIsCreatingShortlink(true);
+        try {
+            const res = await fetch('/api/admin/shortlinks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug: shortlinkSlug.toLowerCase().trim(),
+                    destinationUrl,
+                    title: `Hub de Recursos: ${project.title}`,
+                    description: '',
+                    type: 'redirect',
+                    landingConfig: null
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al crear');
+            
+            toast.success(`Shortlink creado: pnox.dev/${shortlinkSlug}`);
+            setCreatingShortlink(false);
+            setShortlinkSlug('');
+        } catch (e: any) {
+            toast.error(e.message);
+        } finally {
+            setIsCreatingShortlink(false);
+        }
+    };
+
     const [config, setConfig] = useState((project.extraConfig as any)?.resourceHub || {
         documents: [
             { title: 'Dossier Ejecutivo', url: '', desc: 'Resumen estratégico del proyecto' },
@@ -112,15 +147,42 @@ export function ResourceHubTab({ project }: { project: any }) {
             </div>
 
             {/* URL del Hub */}
-            <div className="bg-zinc-900/50 border border-[#D4A853]/20 rounded-2xl p-4 flex items-center gap-3">
-                <span className="text-xs text-zinc-500 uppercase tracking-wider">URL Pública:</span>
-                <code className="text-xs text-[#D4A853] flex-1 truncate">{publicUrl}</code>
-                <button
-                    onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success('URL copiada'); }}
-                    className="text-xs text-zinc-400 hover:text-white border border-white/10 px-2 py-1 rounded-lg transition-colors"
-                >
-                    Copiar
-                </button>
+            <div className="bg-zinc-900/50 border border-[#D4A853]/20 rounded-2xl p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                    <span className="text-xs text-zinc-500 uppercase tracking-wider">URL Pública:</span>
+                    <code className="text-xs text-[#D4A853] flex-1 truncate">{publicUrl}</code>
+                    <button
+                        onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success('URL copiada'); }}
+                        className="text-xs text-zinc-400 hover:text-white border border-white/10 px-2 py-1 rounded-lg transition-colors"
+                    >
+                        Copiar
+                    </button>
+                    <button
+                        onClick={() => setCreatingShortlink(!creatingShortlink)}
+                        className="text-xs text-lime-400 bg-lime-400/10 hover:bg-lime-400/20 px-3 py-1 rounded-lg transition-colors flex items-center gap-1 font-bold"
+                    >
+                        🪄 Transformar en Shortlink
+                    </button>
+                </div>
+                
+                {creatingShortlink && (
+                    <div className="flex items-center gap-2 mt-2 p-3 bg-black/40 border border-lime-400/20 rounded-xl animate-[fadeIn_0.2s_ease-out]">
+                        <span className="text-sm text-zinc-500 font-mono">pnox.dev/</span>
+                        <input 
+                            value={shortlinkSlug}
+                            onChange={e => setShortlinkSlug(e.target.value)}
+                            placeholder="hub-proyecto" 
+                            className="bg-transparent border-b border-lime-400/30 text-sm text-lime-100 placeholder-zinc-600 focus:outline-none focus:border-lime-400 px-1 w-48"
+                        />
+                        <button 
+                            onClick={() => handleCreateShortlink(publicUrl)}
+                            disabled={isCreatingShortlink}
+                            className="ml-auto text-sm bg-lime-400 text-black px-4 py-1.5 rounded-lg font-bold hover:bg-lime-500 disabled:opacity-50"
+                        >
+                            {isCreatingShortlink ? 'Creando...' : 'Crear'}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Documentos */}

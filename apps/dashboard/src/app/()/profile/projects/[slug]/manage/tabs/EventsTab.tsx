@@ -25,6 +25,40 @@ export function EventsTab({ project }: { project: any }) {
     const [showNewForm, setShowNewForm] = useState(false);
     const [editingEvent, setEditingEvent] = useState<number | null>(null);
 
+    // Shortlink states
+    const [shortlinkSlug, setShortlinkSlug] = useState('');
+    const [creatingShortlinkFor, setCreatingShortlinkFor] = useState<number | string | null>(null);
+    const [isCreatingShortlink, setIsCreatingShortlink] = useState(false);
+
+    const handleCreateShortlink = async (id: number | string, destinationUrl: string, title: string) => {
+        if (!shortlinkSlug) return toast.error('Ingresa un slug válido');
+        setIsCreatingShortlink(true);
+        try {
+            const res = await fetch('/api/admin/shortlinks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug: shortlinkSlug.toLowerCase().trim(),
+                    destinationUrl,
+                    title: `Shortlink para ${title}`,
+                    description: '',
+                    type: 'redirect',
+                    landingConfig: null
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al crear');
+            
+            toast.success(`Shortlink creado: pnox.dev/${shortlinkSlug}`);
+            setCreatingShortlinkFor(null);
+            setShortlinkSlug('');
+        } catch (e: any) {
+            toast.error(e.message);
+        } finally {
+            setIsCreatingShortlink(false);
+        }
+    };
+
     const [calendarConfig, setCalendarConfig] = useState(
         (project.extraConfig as any)?.sovereignCalendar || {
             isActive: true,
@@ -453,10 +487,36 @@ export function EventsTab({ project }: { project: any }) {
                                                     Asistencias Confirmadas: {regs.length} {((event.config as any) || {}).maxCapacity ? `/ ${((event.config as any) || {}).maxCapacity}` : ''}
                                                 </div>
                                             )}
-                                            <div className="mt-1.5 flex items-center gap-1.5">
-                                                <code className="text-xs text-[#D4A853] bg-[#D4A853]/5 px-2 py-0.5 rounded truncate max-w-xs">
-                                                    {eventUrl}
-                                                </code>
+                                            <div className="mt-1.5 flex flex-col gap-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <code className="text-xs text-[#D4A853] bg-[#D4A853]/5 px-2 py-0.5 rounded truncate max-w-xs">
+                                                        {eventUrl}
+                                                    </code>
+                                                    <button 
+                                                        onClick={() => setCreatingShortlinkFor(creatingShortlinkFor === event.id ? null : event.id)} 
+                                                        className="text-[0.65rem] text-lime-400 bg-lime-400/10 hover:bg-lime-400/20 px-2 py-0.5 rounded-full transition-colors flex items-center gap-1"
+                                                    >
+                                                        🪄 Shortlink
+                                                    </button>
+                                                </div>
+                                                {creatingShortlinkFor === event.id && (
+                                                    <div className="flex items-center gap-2 mt-1 p-2 bg-black/40 border border-lime-400/20 rounded-lg animate-[fadeIn_0.2s_ease-out]">
+                                                        <span className="text-xs text-zinc-500 font-mono">pnox.dev/</span>
+                                                        <input 
+                                                            value={shortlinkSlug}
+                                                            onChange={e => setShortlinkSlug(e.target.value)}
+                                                            placeholder="mi-evento" 
+                                                            className="bg-transparent border-b border-lime-400/30 text-sm text-lime-100 placeholder-zinc-600 focus:outline-none focus:border-lime-400 px-1 w-24 sm:w-32"
+                                                        />
+                                                        <button 
+                                                            onClick={() => handleCreateShortlink(event.id, eventUrl, event.title)}
+                                                            disabled={isCreatingShortlink}
+                                                            className="ml-auto text-xs bg-lime-400 text-black px-3 py-1 rounded font-bold hover:bg-lime-500 disabled:opacity-50"
+                                                        >
+                                                            {isCreatingShortlink ? '...' : 'Crear'}
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-2 flex-shrink-0">
