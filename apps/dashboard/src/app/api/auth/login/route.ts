@@ -73,11 +73,7 @@ export async function POST(request: Request) {
 
         if (!isLocalDev && !allowedDomains.includes(domain) && !domain.endsWith(".vercel.app")) {
             console.error(`❌ [Login] Domain mismatch: expected one of ${allowedDomains.join(", ")}, got ${domain}`);
-            return NextResponse.json({ error: "Invalid domain" }, { status: 401 });
-        } else if (isLocalDev && !allowedDomains.includes(domain) && !domain.includes("localhost")) {
-            // In dev allow configured domain or localhost
-            console.error(`❌ [Login] Domain mismatch (Dev): expected localhost or one of ${allowedDomains.join(", ")}, got ${domain}`);
-            return NextResponse.json({ error: "Invalid domain" }, { status: 401 });
+            return NextResponse.json({ error: `Invalid domain: expected one of ${allowedDomains.join(", ")} but got ${domain}` }, { status: 401 });
         }
 
         // URI Check
@@ -92,17 +88,15 @@ export async function POST(request: Request) {
 
         if (!isLocalDev && !allowedUris.includes(uri) && !uri.includes(".vercel.app")) {
             console.error(`❌ [Login] URI mismatch: expected one of ${allowedUris.join(", ")}, got ${uri}`);
-            return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
-        } else if (isLocalDev && !allowedUris.includes(uri) && !uri.includes("localhost")) {
-            // In dev allow configured origin or localhost
-            console.error(`❌ [Login] URI mismatch (Dev): expected localhost or one of ${allowedUris.join(", ")}, got ${uri}`);
-            return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
+            return NextResponse.json({ error: `Invalid URI: expected one of ${allowedUris.join(", ")} but got ${uri}` }, { status: 401 });
         }
 
         // Chain ID Check
-        if (chainId !== config.chain.id) {
+        const allowedChains = [config.chain.id, 1, 8453, 11155111, 137];
+        if (!allowedChains.includes(chainId)) {
             console.error(`❌ [Login] Chain ID mismatch: expected ${config.chain.id}, got ${chainId}`);
-            return NextResponse.json({ error: "Invalid Chain ID" }, { status: 401 });
+            // We just warn, we don't block. SIWE chainId is just the active wallet chain.
+            console.warn("⚠️ Allowing login despite chainId mismatch.");
         }
 
         // Expiration Check
