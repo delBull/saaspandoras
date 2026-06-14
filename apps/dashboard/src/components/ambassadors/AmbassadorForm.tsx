@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useActiveAccount } from 'thirdweb/react';
 
-export function AmbassadorForm({ origin = 'pandoras' }: { origin?: string }) {
+export function AmbassadorForm({ origin = 'pandoras', projectId, onSuccess }: { origin?: string, projectId?: number | string, onSuccess?: () => void }) {
   const account = useActiveAccount();
   const [formData, setFormData] = useState({
     fullName: '',
@@ -29,7 +29,7 @@ export function AmbassadorForm({ origin = 'pandoras' }: { origin?: string }) {
       const res = await fetch('/api/ambassadors/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, origin })
+        body: JSON.stringify({ ...formData, origin, projectId })
       });
       
       const data = await res.json();
@@ -38,8 +38,12 @@ export function AmbassadorForm({ origin = 'pandoras' }: { origin?: string }) {
         throw new Error(data.error || 'Ocurrió un error en el registro');
       }
       
-      setReferralCode(data.ambassador.referralCode);
+      setReferralCode(data.ambassador?.referralCode || data.referralCode || 'PENDING');
       setIsSuccess(true);
+      
+      if (onSuccess) {
+          onSuccess();
+      }
       
       // If used inside dashboard, reload after a delay
       if (origin === 'dashboard') {

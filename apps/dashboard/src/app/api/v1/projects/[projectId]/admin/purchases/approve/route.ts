@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { purchases, projects, users, daoMembers } from '@/db/schema';
+import { purchases, projects, users, daoMembers, ambassadors, ambassadorClients, ambassadorCommissions } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { getAuth } from '@/lib/auth';
@@ -83,6 +83,16 @@ async function handler(
             const agreementContent = `Agreement for Project ${project.title} - Purchase ${purchaseId} - User ${purchase.userId} - Units ${purchase.amount}`;
             const agreementHash = crypto.createHash('sha256').update(agreementContent).digest('hex');
 
+            // Ambassador Logic
+            let ambassador = null;
+            const meta = purchase.metadata as any;
+            const referralCode = meta?.referralCode || meta?.ref;
+            if (referralCode) {
+                ambassador = await db.query.ambassadors.findFirst({
+                    where: eq(ambassadors.referralCode, String(referralCode))
+                });
+            }
+
             // 🔒 FIX #1: WRAP BOTH UPDATES IN A SINGLE TRANSACTION to prevent race conditions
             // This ensures either BOTH the purchase update AND daoMembers sync succeed,
             // or NEITHER does - atomic operation.
@@ -112,6 +122,32 @@ async function handler(
                             lastActiveAt: new Date()
                         }
                     });
+
+                    // Step 3: Compute commissions if ambassador exists
+                    if (ambassador) {
+                        const tokenPriceUsd = project.tokenPriceUsd ? parseFloat(project.tokenPriceUsd as string) : 50;
+                        const totalAmountUsdc = units * tokenPriceUsd;
+                        const commissionAmount = totalAmountUsdc * 0.04;
+
+                        // Link client to ambassador
+                        await tx.insert(ambassadorClients).values({
+                            ambassadorId: ambassador.id,
+                            clientWallet: targetWallet.toLowerCase()
+                        }).onConflictDoNothing({ target: ambassadorClients.clientWallet });
+
+                        // Log commission
+                        await tx.insert(ambassadorCommissions).values({
+                            ambassadorId: ambassador.id,
+                            clientWallet: targetWallet.toLowerCase(),
+                            amountUsdc: commissionAmount.toString(),
+                            type: 'DIRECT_SALE_4',
+                            status: 'pending',
+                            sourceTxHash: purchaseId, // using purchaseId since no txHash for fiat approval
+                            sourceReference: `fiat_purchase_${projectIdNum}_${units}`
+                        }).onConflictDoNothing({ target: ambassadorCommissions.sourceTxHash });
+
+                        console.log(`✅ Project ${projectId}: Commission $${commissionAmount} logged for ${ambassador.referralCode}`);
+                    }
                 }
             });
 

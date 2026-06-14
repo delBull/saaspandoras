@@ -25,6 +25,7 @@ import { getContract, prepareContractCall, sendTransaction, waitForReceipt } fro
 import { defineChain } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import DaoWizard from '@/components/admin/DaoWizard';
+import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
 import { LegalTab } from '@/components/projects/LegalTab';
 import { EventsTab } from '@/app/()/profile/projects/[slug]/manage/tabs/EventsTab';
 import { ResourceHubTab } from '@/app/()/profile/projects/[slug]/manage/tabs/ResourceHubTab';
@@ -656,6 +657,7 @@ function AmbassadorsTab({ project }: { project: any }) {
     const [ambassadors, setAmbassadors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [showForm, setShowForm] = useState(false);
 
     const fetchAmbassadors = async () => {
         try {
@@ -700,12 +702,39 @@ function AmbassadorsTab({ project }: { project: any }) {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h3 className="text-xl font-bold text-white">Red de Ventas Oficial (Gestores)</h3>
-                <span className="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-bold border border-white/20">
-                    {pendingCount} Solicitudes Pendientes
-                </span>
+                <div className="flex items-center gap-4">
+                    <span className="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-bold border border-white/20">
+                        {pendingCount} Solicitudes Pendientes
+                    </span>
+                    <button 
+                        onClick={() => setShowForm(!showForm)}
+                        className="bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase tracking-widest text-xs px-4 py-2 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                    >
+                        {showForm ? 'Ocultar Formulario' : 'Añadir Nuevo'}
+                    </button>
+                </div>
             </div>
+
+            {showForm && (
+                <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 mb-8 backdrop-blur-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                        <UserIcon className="w-48 h-48 text-emerald-500 mix-blend-screen" />
+                    </div>
+                    <div className="relative z-10">
+                        <h4 className="text-lg font-bold text-white mb-6">Registrar Gestor Patrimonial</h4>
+                        <AmbassadorForm 
+                            origin="admin_dashboard" 
+                            projectId={project.id} 
+                            onSuccess={() => {
+                                fetchAmbassadors();
+                                setTimeout(() => setShowForm(false), 3000);
+                            }} 
+                        />
+                    </div>
+                </div>
+            )}
 
             {ambassadors.length === 0 ? (
                 <div className="p-16 bg-white/[0.02] border border-white/5 rounded-3xl text-center text-zinc-500 backdrop-blur-md">
@@ -733,7 +762,15 @@ function AmbassadorsTab({ project }: { project: any }) {
                                 </div>
 
                                 <h4 className="text-lg font-black tracking-tight text-white mb-1">{a.fullName}</h4>
-                                <p className="text-xs text-zinc-400 mb-4">{a.email}</p>
+                                <div className="flex flex-col gap-1 mb-4">
+                                    <p className="text-xs text-zinc-400">📧 {a.email}</p>
+                                    {a.phone && <p className="text-xs text-zinc-400">📱 {a.phone}</p>}
+                                    {a.socialUrl && (
+                                        <a href={a.socialUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 truncate">
+                                            🔗 {a.socialUrl}
+                                        </a>
+                                    )}
+                                </div>
 
                                 {a.walletAddress && (
                                     <p className="text-xs font-mono text-zinc-500 mb-4 bg-black/40 p-2 rounded-lg break-all">
