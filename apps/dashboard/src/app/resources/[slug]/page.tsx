@@ -46,10 +46,13 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
     };
 
     // Dynamic Base URL extraction for ALL projects
-    // Priority: 1) allowedDomains (Widget Hub) -> 2) website -> 3) fallback
-    let dynamicDomain = project.website || 'https://snarai.aztecaz.xyz';
-    if (Array.isArray(project.allowedDomains) && project.allowedDomains.length > 0) {
+    // Priority: 1) website -> 2) allowedDomains (Widget Hub) -> 3) fallback
+    let dynamicDomain = project.website;
+    if (!dynamicDomain && Array.isArray(project.allowedDomains) && project.allowedDomains.length > 0) {
         dynamicDomain = project.allowedDomains[0] as string;
+    }
+    if (!dynamicDomain) {
+        dynamicDomain = 'https://snarai.aztecaz.xyz';
     }
     
     // Ensure the domain has an http scheme so it's treated as an absolute URL by the browser
