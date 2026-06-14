@@ -6,6 +6,7 @@ import { CalendarIcon, UserGroupIcon, PlusIcon, LinkIcon, ClipboardDocumentIcon,
 import { toast } from 'sonner';
 import { AvailabilityScheduler, defaultAvailability } from '@/components/shared/AvailabilityScheduler';
 import type { AvailabilityConfig } from '@/components/shared/AvailabilityScheduler';
+import { ProjectQRManager } from '@/components/admin/ProjectQRManager';
 
 interface ProjectEvent {
     id: number;
@@ -670,6 +671,9 @@ export function EventsTab({ project }: { project: any }) {
                     </div>
                 )}
             </div>
+
+            {/* ── QRS DINÁMICOS DE NEGOCIO ── */}
+            <ProjectQRManager project={project} />
         </motion.div>
     );
 }

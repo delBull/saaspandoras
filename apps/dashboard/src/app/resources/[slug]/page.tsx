@@ -45,9 +45,17 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
         ]
     };
 
-    // Override S'Narai PDF links to use the new interactive markdown viewer
-    if (project.slug === 'snarai' && config.documents) {
-        const baseUrl = (project.website || 'https://snarai.aztecaz.xyz').replace(/\/$/, '');
+    // Dynamic Base URL extraction for ALL projects
+    // Priority: 1) allowedDomains (Widget Hub) -> 2) website -> 3) fallback
+    let dynamicDomain = project.website || 'https://snarai.aztecaz.xyz';
+    if (Array.isArray(project.allowedDomains) && project.allowedDomains.length > 0) {
+        dynamicDomain = project.allowedDomains[0] as string;
+    }
+    const baseUrl = dynamicDomain.replace(/\/$/, '');
+
+    // Override PDF links to use the interactive markdown viewer
+    // (This uses the dynamic baseUrl for the specific project)
+    if (config.documents) {
         config.documents = config.documents.map((doc: any) => {
             if (doc.title.toLowerCase().includes('dossier') || doc.title.toLowerCase().includes('deck') || doc.url?.toLowerCase().includes('deck')) {
                 return { ...doc, url: `${baseUrl}/es/docs/deck`, desc: 'Presentación interactiva completa' };
@@ -92,8 +100,8 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
         calendarConfig = (project.extraConfig as any).sovereignCalendar;
     }
 
-    // Portal link (Fallback to main website since portal is a modal)
-    const portalUrl = project.website || `https://snarai.aztecaz.xyz/`;
+    // Portal link (Fallback to dynamic domain since portal is a modal on the main site)
+    const portalUrl = baseUrl;
 
     return (
         <main className={`h-screen bg-[#050505] text-white flex flex-col overflow-hidden ${inter.className}`}>
