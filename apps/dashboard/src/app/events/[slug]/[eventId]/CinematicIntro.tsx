@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Playfair_Display } from "next/font/google";
 import { XMarkIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/outline';
+import { PlayIcon } from '@heroicons/react/24/solid';
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
@@ -13,6 +14,8 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
     const [isLoadingVideo, setIsLoadingVideo] = useState(true);
     const [hasHydrated, setHasHydrated] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+
+    const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
 
     useEffect(() => {
         setHasHydrated(true);
@@ -25,25 +28,23 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
         }
     }, [projectName]);
 
-    useEffect(() => {
-        if (hasHydrated && showIntro && videoRef.current) {
-            // Intentamos arrancar el video CON sonido por defecto
+    const handlePlay = () => {
+        if (videoRef.current) {
             videoRef.current.muted = false;
-            const playPromise = videoRef.current.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.catch(() => {
-                    // Si el navegador bloquea el autoplay por sus políticas estrictas de audio,
-                    // hacemos fallback inmediato a muteado para que el video al menos se reproduzca.
-                    if (videoRef.current) {
-                        videoRef.current.muted = true;
-                        setIsMuted(true);
-                        videoRef.current.play().catch(e => console.error("Autoplay failed completely:", e));
-                    }
-                });
-            }
+            setIsMuted(false);
+            videoRef.current.play().then(() => {
+                setHasStartedPlaying(true);
+            }).catch(e => {
+                console.error("Play failed after click:", e);
+                // Si falla incluso tras el clic (muy raro), fallback a mute
+                if (videoRef.current) {
+                    videoRef.current.muted = true;
+                    setIsMuted(true);
+                    videoRef.current.play().then(() => setHasStartedPlaying(true));
+                }
+            });
         }
-    }, [showIntro]);
+    };
 
     const handleSkip = () => {
         setShowIntro(false);
@@ -85,7 +86,6 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                         src={videoSrc}
                         muted={isMuted}
                         playsInline
-                        autoPlay
                         preload="auto"
                         onCanPlay={() => setIsLoadingVideo(false)}
                         onPlaying={() => setIsLoadingVideo(false)}
@@ -93,6 +93,29 @@ export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, pr
                         onEnded={handleSkip}
                         className="absolute inset-0 w-full h-full object-cover opacity-80"
                     />
+
+                    {/* OVERLAY DE PLAY (SI NO HA EMPEZADO) */}
+                    <AnimatePresence>
+                        {!hasStartedPlaying && hasHydrated && !isLoadingVideo && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 1.1 }}
+                                className="absolute inset-0 flex flex-col items-center justify-center z-30"
+                            >
+                                <button 
+                                    onClick={handlePlay}
+                                    className="group relative flex items-center justify-center w-24 h-24 rounded-full bg-[#D4A853]/20 backdrop-blur-sm border border-[#D4A853]/50 hover:bg-[#D4A853]/40 transition-all duration-300"
+                                >
+                                    <div className="absolute inset-0 rounded-full border border-[#D4A853] animate-ping opacity-20 group-hover:opacity-40" />
+                                    <PlayIcon className="w-10 h-10 text-[#D4A853] ml-2" />
+                                </button>
+                                <p className={`mt-6 text-[#D4A853] uppercase tracking-[4px] text-sm font-semibold animate-pulse ${playfair.className}`}>
+                                    Dale Play
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* OVERLAY GRADIENT */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/60 pointer-events-none" />
