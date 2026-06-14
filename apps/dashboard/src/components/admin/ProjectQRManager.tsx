@@ -9,6 +9,21 @@ interface ProjectQRManagerProps {
     project: any;
 }
 
+function QRPreview({ url }: { url: string }) {
+    const [imgSrc, setImgSrc] = useState<string | null>(null);
+    
+    useEffect(() => {
+        import("qrcode").then(QRCodeLib => {
+            QRCodeLib.default.toDataURL(url, { width: 300, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+                .then(setImgSrc)
+                .catch(console.error);
+        });
+    }, [url]);
+
+    if (!imgSrc) return <div className="w-[80px] h-[80px] bg-white/5 animate-pulse rounded-xl" />;
+    return <img src={imgSrc} alt="QR Preview" className="w-[80px] h-[80px] rounded-xl bg-white border border-white/10" />;
+}
+
 export function ProjectQRManager({ project }: ProjectQRManagerProps) {
     const [qrs, setQrs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +42,17 @@ export function ProjectQRManager({ project }: ProjectQRManagerProps) {
     const [editUrl, setEditUrl] = useState('');
     const [isSavingEdit, setIsSavingEdit] = useState(false);
 
+    // Dynamic Domain
+    const [baseDomain, setBaseDomain] = useState('pbox.dev');
+    const [fullHost, setFullHost] = useState('https://pbox.dev');
+
     useEffect(() => {
+        const origin = window.location.origin;
+        const host = window.location.host;
+        const isProd = !origin.includes('staging') && !origin.includes('localhost');
+        setBaseDomain(isProd ? 'pbox.dev' : host);
+        setFullHost(isProd ? 'https://pbox.dev' : origin);
+        
         fetchQRs();
     }, [project.id]);
 
@@ -138,7 +163,7 @@ export function ProjectQRManager({ project }: ProjectQRManagerProps) {
     const downloadQR = async (slug: string, title: string) => {
         try {
             const QRCodeLib = (await import("qrcode")).default;
-            const url = `https://pbox.dev/${slug}`;
+            const url = `${fullHost}/${slug}`;
             const dataUrl = await QRCodeLib.toDataURL(url, { width: 1000, margin: 2 });
             const link = document.createElement("a");
             link.href = dataUrl;
@@ -195,7 +220,7 @@ export function ProjectQRManager({ project }: ProjectQRManagerProps) {
                         <div>
                             <label className="block text-xs text-zinc-500 mb-1">Enlace Corto (Slug) *</label>
                             <div className="flex items-center">
-                                <span className="bg-zinc-800 text-zinc-400 text-sm px-3 py-3 rounded-l-xl border border-r-0 border-white/10">pbox.dev/</span>
+                                <span className="bg-zinc-800 text-zinc-400 text-sm px-3 py-3 rounded-l-xl border border-r-0 border-white/10">{baseDomain}/</span>
                                 <input
                                     type="text"
                                     value={formData.slug}
@@ -246,25 +271,29 @@ export function ProjectQRManager({ project }: ProjectQRManagerProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {qrs.map(qr => (
                         <div key={qr.id} className="bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col justify-between">
-                            <div>
-                                <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-bold text-white text-sm">{qr.title}</h4>
-                                    <button
-                                        onClick={() => handleDeleteQR(qr.id)}
-                                        className="text-red-400 hover:text-red-300 p-1"
-                                        title="Eliminar QR"
-                                    >
-                                        <TrashIcon className="w-4 h-4" />
-                                    </button>
+                            <div className="flex gap-4">
+                                <div className="shrink-0 pt-1">
+                                    <QRPreview url={`${fullHost}/${qr.slug}`} />
                                 </div>
-                                <div className="flex items-center gap-2 text-xs mb-3">
-                                    <span className="text-lime-400 font-mono tracking-wide bg-lime-400/10 px-2 py-1 rounded">
-                                        pbox.dev/{qr.slug}
-                                    </span>
-                                </div>
-                                
-                                <div className="mt-4">
-                                    <p className="text-[10px] uppercase text-zinc-500 font-bold mb-1">Enlace de Destino Actual:</p>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <h4 className="font-bold text-white text-sm truncate">{qr.title}</h4>
+                                        <button
+                                            onClick={() => handleDeleteQR(qr.id)}
+                                            className="text-red-400 hover:text-red-300 p-1 shrink-0 ml-2"
+                                            title="Eliminar QR"
+                                        >
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs mb-3">
+                                        <span className="text-lime-400 font-mono tracking-wide bg-lime-400/10 px-2 py-1 rounded truncate">
+                                            {baseDomain}/{qr.slug}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="mt-2">
+                                        <p className="text-[10px] uppercase text-zinc-500 font-bold mb-1">Enlace de Destino Actual:</p>
                                     {editingId === qr.id ? (
                                         <div className="flex gap-2">
                                             <input 
@@ -309,6 +338,7 @@ export function ProjectQRManager({ project }: ProjectQRManagerProps) {
                                     )}
                                 </div>
                             </div>
+                            </div>
                             
                             <div className="flex gap-2 mt-5 pt-4 border-t border-white/5">
                                 <button
@@ -319,7 +349,7 @@ export function ProjectQRManager({ project }: ProjectQRManagerProps) {
                                     Descargar QR
                                 </button>
                                 <a
-                                    href={`https://pbox.dev/${qr.slug}`}
+                                    href={`${fullHost}/${qr.slug}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="flex items-center justify-center gap-2 text-xs bg-zinc-800 text-zinc-300 border border-white/5 py-2 px-3 rounded-lg hover:bg-zinc-700 transition-colors"

@@ -51,6 +51,12 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
     if (Array.isArray(project.allowedDomains) && project.allowedDomains.length > 0) {
         dynamicDomain = project.allowedDomains[0] as string;
     }
+    
+    // Ensure the domain has an http scheme so it's treated as an absolute URL by the browser
+    if (!dynamicDomain.startsWith('http://') && !dynamicDomain.startsWith('https://')) {
+        dynamicDomain = `https://${dynamicDomain}`;
+    }
+    
     const baseUrl = dynamicDomain.replace(/\/$/, '');
 
     // Override PDF links to use the interactive markdown viewer
