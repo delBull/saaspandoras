@@ -8,6 +8,7 @@ const nextConfig = {
   },
   // Disable source maps in production to save memory
   productionBrowserSourceMaps: false,
+  poweredByHeader: false,
   experimental: {
     // Reduce memory usage during build
     memoryBasedWorkersCount: true,

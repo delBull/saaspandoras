@@ -137,7 +137,6 @@ export function middleware(request: NextRequest) {
       "frame-src 'self' https://telegram.org https://vercel.live",
       "base-uri 'self'",
       "form-action 'self'",
-      "report-uri /api/csp-report",
     ].join('; ')
   );
 
