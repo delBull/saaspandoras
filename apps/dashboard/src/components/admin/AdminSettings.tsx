@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,8 @@ import {
   Target,
   TrendingUp,
   CheckCircle,
-  XCircle
+  XCircle,
+  Wallet
 } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import Link from "next/link";
@@ -1064,8 +1065,205 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
         </div>
       )}
 
+      <OperationWallets isSuperAdmin={effectiveIsSuperAdmin} walletAddress={walletAddress} />
+
       <MultiTenantSection isSuperAdmin={effectiveIsSuperAdmin} />
     </div >
+  );
+}
+
+// ============================================
+// OPERATION WALLETS — deploy wallets monitor
+// ============================================
+interface WalletInfo {
+  address: string;
+  label: string;
+  description: string;
+}
+
+const OPERATION_WALLETS: WalletInfo[] = [
+  { address: "0xc52BB6f53C91ff7134e7508B102E5A22BA415954", label: "Admin Wallet", description: "Admin general del protocolo y fee collector" },
+  { address: "0x5aeaE3D13F480a4231dD09D873f5A094424A2ed6", label: "Deployer Wallet", description: "Firma y despliegue de contratos SCaaS desde el dashboard" },
+  { address: "0xaBA8a0d027FbaFa7316fBc08C5f4F2a78Be4f0E9", label: "Oracle 2", description: "Oráculo de allowances y operaciones diarias del protocolo" },
+  { address: "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9", label: "Super Admin / Fee", description: "Super admin multisig, swap fees y резерв" },
+];
+
+const BASE_RPC = "https://mainnet.base.org";
+const OPTIMAL_BALANCE_ETH = 0.005;
+const LOW_BALANCE_ETH = 0.001;
+const DEPLOY_COST_ETH = 0.0012;
+
+function OperationWallets({ isSuperAdmin, walletAddress }: { isSuperAdmin: boolean; walletAddress?: string | null }) {
+  const [balances, setBalances] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const alreadyNotified = useRef(false);
+
+  const getBalanceNum = useCallback((addr: string): number => parseFloat(balances[addr] || "0"), [balances]);
+
+  const fetchBalances = useCallback(async () => {
+    setLoading(true);
+    const results: Record<string, string> = {};
+    try {
+      const batch = OPERATION_WALLETS.map(w => ({
+        jsonrpc: "2.0", method: "eth_getBalance",
+        params: [w.address.toLowerCase(), "latest"], id: Math.random()
+      }));
+      const res = await fetch(BASE_RPC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(batch),
+      });
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [data];
+      list.forEach((item: any, i: number) => {
+        const wallet = OPERATION_WALLETS[i];
+        if (item?.result && wallet) {
+          const wei = BigInt(item.result);
+          results[wallet.address] = (Number(wei) / 1e18).toFixed(6);
+        }
+      });
+    } catch { /* ignore */ }
+    setBalances(results);
+    setLoading(false);
+  }, []);
+
+  // Auto-alert to Discord when any wallet is critical
+  useEffect(() => {
+    if (!walletAddress || loading || alreadyNotified.current || Object.keys(balances).length === 0) return;
+    const anyCritical = OPERATION_WALLETS.some(w => {
+      const bal = parseFloat(balances[w.address] || "0");
+      return bal < LOW_BALANCE_ETH;
+    });
+    if (!anyCritical) return;
+
+    alreadyNotified.current = true;
+    const lines = OPERATION_WALLETS.map(w => {
+      const bal = parseFloat(balances[w.address] || "0");
+      const status = bal >= OPTIMAL_BALANCE_ETH ? "Óptimo" : bal >= LOW_BALANCE_ETH ? "Bajo" : "Crítico";
+      return `• **${w.label}** (\`${w.address.slice(0, 6)}...${w.address.slice(-4)}\`): ${bal} ETH — ${status}`;
+    });
+    const content = `🚨 **Wallet Monitor Alert — Fondos críticos**\n\n${lines.join("\n")}\n\n_Optimal: ≥${OPTIMAL_BALANCE_ETH} ETH | Crítico: <${LOW_BALANCE_ETH} ETH_`;
+
+    fetch("/api/admin/discord/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-wallet-address": walletAddress,
+      },
+      body: JSON.stringify({ channel: "alerts", content }),
+    }).then(res => {
+      if (res.ok) toast.success("⚠️ Fondos críticos — notificación enviada a Discord");
+    }).catch(() => {});
+  }, [balances, loading, walletAddress]);
+
+  useEffect(() => {
+    if (isSuperAdmin) fetchBalances();
+  }, [isSuperAdmin, fetchBalances]);
+
+  if (!isSuperAdmin) return null;
+
+  const getBarColor = (bal: number): string => {
+    if (bal >= OPTIMAL_BALANCE_ETH) return "bg-green-500";
+    if (bal >= LOW_BALANCE_ETH) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
+  const getBarPercent = (bal: number): number => {
+    return Math.min(100, (bal / OPTIMAL_BALANCE_ETH) * 100);
+  };
+
+  const getStatusLabel = (bal: number): string => {
+    if (bal >= OPTIMAL_BALANCE_ETH) return "Óptimo";
+    if (bal >= LOW_BALANCE_ETH) return "Bajo";
+    return "Crítico";
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-amber-900/10 border border-zinc-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="absolute top-0 right-0 p-4 opacity-10">
+        <Wallet className="w-24 h-24 text-amber-400" />
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <Wallet className="w-6 h-6 text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white tracking-tight">Operation Wallets</h3>
+            <p className="text-xs text-zinc-400 font-medium">
+              Monitoreo de saldos para deploys en Base Mainnet
+            </p>
+          </div>
+          <div className="ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchBalances}
+              disabled={loading}
+              className="border-zinc-600 text-zinc-300"
+            >
+              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          {OPERATION_WALLETS.map(w => {
+            const bal = getBalanceNum(w.address);
+            const pct = getBarPercent(bal);
+            const color = getBarColor(bal);
+            const status = getStatusLabel(bal);
+            const deploysPossible = Math.floor(bal / DEPLOY_COST_ETH);
+
+            return (
+              <div key={w.address} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-white">{w.label}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        status === "Óptimo" ? "bg-green-900/50 text-green-400" :
+                        status === "Bajo" ? "bg-yellow-900/50 text-yellow-400" :
+                        "bg-red-900/50 text-red-400"
+                      }`}>{status}</span>
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-0.5">{w.description}</p>
+                    <code className="text-[10px] text-zinc-600 font-mono">{w.address.slice(0, 10)}...{w.address.slice(-6)}</code>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-white font-mono">
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${bal} ETH`}
+                    </div>
+                    <div className="text-[10px] text-zinc-500">
+                      {deploysPossible >= 3 ? `~${deploysPossible} deploys posibles` :
+                       deploysPossible > 0 ? `Solo ${deploysPossible} deploy(s)` :
+                       "Sin fondos para deploy"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full bg-zinc-700/50 rounded-full h-2 mt-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${color}`}
+                    style={{ width: `${Math.max(2, pct)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+                  <span>Crítico (&lt;{LOW_BALANCE_ETH} ETH)</span>
+                  <span>Óptimo (&gt;={OPTIMAL_BALANCE_ETH} ETH)</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 text-[10px] text-zinc-600 border-t border-zinc-700/30 pt-3">
+          <p>Estimado por deploy: ~{DEPLOY_COST_ETH} ETH en Base Mainnet (gas ~6 gwei). Los saldos se actualizan al cargar la página o con Refresh.</p>
+        </div>
+      </div>
+    </div>
   );
 }
 

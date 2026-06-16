@@ -20,13 +20,17 @@ async function main() {
     const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
     if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
-    // Forced Alchemy endpoint for Sepolia
-    const alchemyRpc = process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/demo";
+    const network = process.env.NETWORK || 'sepolia';
+    const chainId = network === 'base' ? 8453 : 11155111;
+    const rpcUrl = network === 'base' 
+        ? (process.env.BASE_RPC_URL || "https://mainnet.base.org")
+        : (process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/demo");
+    
     const eth = ethers as any;
     const StaticJsonRpcProvider = eth.providers.StaticJsonRpcProvider || eth.JsonRpcProvider;
 
-    console.log(`Testing RPC: ${alchemyRpc}`);
-    const provider = new StaticJsonRpcProvider(alchemyRpc, 11155111);
+    console.log(`Testing RPC: ${rpcUrl}`);
+    const provider = new StaticJsonRpcProvider(rpcUrl, chainId);
 
     const wallet = new eth.Wallet(privateKey, provider);
     console.log(`📡 Connected to network with wallet: ${wallet.address}`);

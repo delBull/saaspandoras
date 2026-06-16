@@ -51,7 +51,7 @@ const FORGE_ARTIFACT_PATH = path.join(__dirname, "../out/PandoraRootTreasury.sol
 const HARDHAT_ARTIFACT_PATH = path.join(__dirname, "../artifacts/contracts/treasury/PandoraRootTreasury.sol/PandoraRootTreasury.json");
 
 async function main() {
-    console.log("🚀 Deploying PandoraRootTreasury to Sepolia...");
+    console.log(`🚀 Deploying PandoraRootTreasury to ${NETWORK === 'base' ? 'Base Mainnet' : 'Sepolia'}...`);
 
     const provider = new ethers.JsonRpcProvider(RPC_URL);
     const wallet = new ethers.Wallet(PRIVATE_KEY!, provider);

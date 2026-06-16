@@ -7,7 +7,11 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia, base } from "viem/chains";
 
-const FACTORY_ADDRESS = "0x5d9447a3e026c82f7b6266e4760a8b9f0ad9aa9a";
+function resolveFactoryAddress(): string {
+  return process.env.PANDORAS_FACTORY_ADDRESS || "0x5d9447a3e026c82f7b6266e4760a8b9f0ad9aa9a";
+}
+
+const FACTORY_ADDRESS = resolveFactoryAddress();
 
 const FACTORY_ABI = parseAbi([
   "function deployController(address _owner, address _delegate, address _token, uint256 _dailyLimit) returns (address)",
@@ -86,5 +90,5 @@ export async function deployProjectController(
 }
 
 export async function getFactoryAddress(): Promise<string> {
-  return FACTORY_ADDRESS;
+  return process.env.PANDORAS_FACTORY_ADDRESS || "0x5d9447a3e026c82f7b6266e4760a8b9f0ad9aa9a";
 }
