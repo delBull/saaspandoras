@@ -44,7 +44,8 @@ Actualmente el proyecto S'Narai vive en la DB de staging. Para que el frontend e
 - [ ] **DMARC**: Verificar que exista un registro TXT para `_dmarc` con valor `v=DMARC1; p=none;`.
 
 ### 0.4 Error Tracking & RPC
-- [ ] Crear proyecto Sentry para `pandoras-prod` (opcional pero recomendado).
+- [ ] **Fase inicial**: Usar solo Vercel Logs (ya incluido en Pro). Zero config, suficiente para HTTP errors + serverless functions.
+- [ ] **Escalar cuando sea necesario**: Highlight.io (open source, free tier con session replay) o Sentry Developer (5k errors/mes free). Decidir cuando Vercel Logs se quede corto.
 - [ ] Contratar/Configurar Alchemy Growth, Infura Base o QuickNode para evitar rate limits en mainnet.
 
 ---

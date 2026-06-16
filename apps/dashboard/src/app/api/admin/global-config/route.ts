@@ -31,7 +31,7 @@ export async function GET() {
         return NextResponse.json({
             betaOpen: w2eConfig.betaOpen ?? false,
             ritualEnabled: w2eConfig.ritualEnabled ?? true,
-            apiBaseUrlProduction: w2eConfig.apiBaseUrlProduction ?? 'https://saaspandoras-production.up.railway.app:8080',
+            apiBaseUrlProduction: w2eConfig.apiBaseUrlProduction ?? process.env.NEXT_PUBLIC_API_CORE_URL ?? 'https://api.pandoras.finance:8080',
             apiBaseUrlStaging: w2eConfig.apiBaseUrlStaging ?? 'https://staging.pandoras.io'
         });
     } catch (error: any) {

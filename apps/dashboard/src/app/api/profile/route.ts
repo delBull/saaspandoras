@@ -64,10 +64,10 @@ export async function GET(request: Request) {
     // have their dashboard records updated correctly.
     if (user && !user.telegramId) {
         try {
-            const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandorasminiapp-staging.up.railway.app/api';
+            const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL;
             const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY || process.env.PANDORA_CORE_S2S_KEY;
             
-            if (PANDORA_CORE_KEY) {
+            if (edgeUrl && PANDORA_CORE_KEY) {
                 const res = await fetch(`${edgeUrl}/internal/user/resolve-by-wallet`, {
                     method: 'POST',
                     headers: {

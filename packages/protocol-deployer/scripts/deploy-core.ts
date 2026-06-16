@@ -29,7 +29,7 @@ if (NETWORK === 'base') {
 
 const RPC_URL = CLIENT_ID
     ? `https://${chainId}.rpc.thirdweb.com/${CLIENT_ID}`
-    : (process.env.RPC_URL || defaultRpc);
+    : (NETWORK === 'base' ? process.env.BASE_RPC_URL : process.env.SEPOLIA_RPC_URL) || defaultRpc;
 
 console.log(`Using RPC: ${RPC_URL}`);
 

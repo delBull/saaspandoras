@@ -21,7 +21,7 @@ async function main() {
     if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
     // Forced Alchemy endpoint for Sepolia
-    const alchemyRpc = "https://eth-sepolia.g.alchemy.com/v2/demo";
+    const alchemyRpc = process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/demo";
     const eth = ethers as any;
     const StaticJsonRpcProvider = eth.providers.StaticJsonRpcProvider || eth.JsonRpcProvider;
 

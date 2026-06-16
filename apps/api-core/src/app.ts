@@ -4,8 +4,38 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import morgan from "morgan";
 import crypto from "crypto";
+import { Redis } from "ioredis";
+import { RateLimiterRedis, RateLimiterMemory } from "rate-limiter-flexible";
 
 const app = express();
+
+// ⚡ Redis Connection (rate limiting)
+const redisUrl = process.env.REDIS_URL;
+let redis: InstanceType<typeof Redis> | null = null;
+if (redisUrl) {
+  redis = new Redis(redisUrl, {
+    maxRetriesPerRequest: 3,
+    retryStrategy: (times: number) => Math.min(times * 100, 3000),
+    lazyConnect: true,
+  });
+  redis.on("error", (err: Error) => console.warn("⚠️ Redis connection error:", err.message));
+  redis.on("connect", () => console.log("✅ Redis connected for rate limiting"));
+}
+
+const rateLimiter = redis
+  ? new RateLimiterRedis({
+      storeClient: redis,
+      keyPrefix: "rl:api-core:",
+      points: 300,
+      duration: 60,
+      blockDuration: 60,
+    })
+  : new RateLimiterMemory({
+      keyPrefix: "rl:api-core:",
+      points: 300,
+      duration: 60,
+      blockDuration: 60,
+    });
 
 // ☁️ Trust Proxy (Railway / Vercel Load Balancers)
 app.set("trust proxy", 1);
@@ -93,9 +123,26 @@ try {
 
 // ... (CORS is now at the top)
 
-// 🏥 Healthcheck (Railway)
+// 🏥 Healthcheck (Railway) — no rate limited
 app.get("/health", (req: Request, res: Response) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// 🚦 Rate Limiting Middleware (Redis-backed when REDIS_URL is set)
+const rateLimitedPaths = ['/auth', '/webhooks', '/external', '/api/v1/external'];
+app.use((req, res, next) => {
+    const shouldLimit = rateLimitedPaths.some(p => req.path.startsWith(p));
+    if (!shouldLimit) return next();
+
+    const key = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+    rateLimiter.consume(key)
+        .then(() => next())
+        .catch((rej: any) => {
+            res.status(429).json({
+                error: 'Too many requests',
+                retryAfter: Math.ceil((rej.msBeforeNext || 60000) / 1000),
+            });
+        });
 });
 
 import authRoutes from "./routes/auth.js";

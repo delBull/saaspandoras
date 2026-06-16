@@ -104,7 +104,7 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   }>({
     betaOpen: false,
     ritualEnabled: true,
-    apiBaseUrlProduction: "https://saaspandoras-production.up.railway.app",
+    apiBaseUrlProduction: process.env.NEXT_PUBLIC_API_CORE_URL || "https://api.pandoras.finance",
     apiBaseUrlStaging: "https://staging.pandoras.io",
   });
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);

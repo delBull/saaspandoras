@@ -64,7 +64,7 @@ export function ApiKeysTab() {
 
   // Global Config state (Base URLs)
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig>({
-    apiBaseUrlProduction: 'https://saaspandoras-production.up.railway.app',
+    apiBaseUrlProduction: process.env.NEXT_PUBLIC_API_CORE_URL || 'https://api.pandoras.finance',
     apiBaseUrlStaging: 'https://staging.pandoras.io'
   });
 
@@ -74,7 +74,7 @@ export function ApiKeysTab() {
       if (res.ok) {
         const data = await res.json();
         setGlobalConfig({
-          apiBaseUrlProduction: data.apiBaseUrlProduction || 'https://saaspandoras-production.up.railway.app',
+          apiBaseUrlProduction: data.apiBaseUrlProduction || process.env.NEXT_PUBLIC_API_CORE_URL || 'https://api.pandoras.finance',
           apiBaseUrlStaging: data.apiBaseUrlStaging || 'https://staging.pandoras.io'
         });
       }
