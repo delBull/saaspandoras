@@ -20,6 +20,7 @@ import { ShortlinksAnalyticsTab } from "@/components/admin/ShortlinksAnalyticsTa
 import { DeploymentConfigModal } from "@/components/admin/DeploymentConfigModal";
 import DeploymentProgressModal from "@/components/admin/DeploymentProgressModal";
 import { ProjectDetailModal } from "@/components/admin/ProjectDetailModal";
+import { WalletFundMonitor } from "@/components/admin/WalletFundMonitor";
 import type { DeploymentConfig } from "@/types/deployment";
 import { waitForSession } from "@/lib/session";
 
@@ -78,9 +79,9 @@ export default function AdminDashboardPage() {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status' | 'title'>('date'); // Sorting options
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Sort direction
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table'); // View toggle
-  // Pagination variables (for future use)
-  const [_itemsPerPage] = useState(15); // Pagination limit
-  const [_setCurrentPage] = useState<number>();
+  // Protocols pagination
+  const PROTOCOLS_PER_PAGE = 10;
+  const [protocolsPage, setProtocolsPage] = useState(1);
 
   // State for wallet address
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -421,6 +422,13 @@ export default function AdminDashboardPage() {
     return sorted;
   }, [enhancedProjects, statusFilter, searchQuery, sortBy, sortOrder]);
 
+  // Paginated slice of protocols
+  const paginatedProjects = useMemo(() => {
+    const start = (protocolsPage - 1) * PROTOCOLS_PER_PAGE;
+    return filteredProjects.slice(start, start + PROTOCOLS_PER_PAGE);
+  }, [filteredProjects, protocolsPage]);
+  const totalProtocolPages = Math.max(1, Math.ceil(filteredProjects.length / PROTOCOLS_PER_PAGE));
+
   // Get status counts for filter badges
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {
@@ -500,6 +508,9 @@ export default function AdminDashboardPage() {
           <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} showApiKeys={true} currentUserId={currentUserId}>
             {/* Tab de proyectos */}
             <div key="projects-tab" className="space-y-6">
+              {/* 🔋 Wallet Fund Monitor */}
+              <WalletFundMonitor />
+
               {loading ? (
                 <div className="space-y-4">
                   <div className="h-20 bg-zinc-800/50 animate-pulse rounded-lg" />
@@ -680,7 +691,7 @@ export default function AdminDashboardPage() {
                   {/* Vista usando componentes modularizados */}
                   {viewMode === 'cards' ? (
                     <ProjectCardsView
-                      projects={filteredProjects}
+                      projects={paginatedProjects}
                       expandedProject={expandedProject}
                       setExpandedProject={setExpandedProject}
                       setStatusDropdown={setStatusDropdown}
@@ -688,7 +699,7 @@ export default function AdminDashboardPage() {
                     />
                   ) : (
                     <ProjectTableView
-                      projects={filteredProjects}
+                      projects={paginatedProjects}
                       onOpenDetail={handleOpenDetail}
                       actionsDropdown={actionsDropdown}
                       setActionsDropdown={setActionsDropdown}
@@ -701,6 +712,55 @@ export default function AdminDashboardPage() {
                        onCloneProject={cloneProject}
                        actionsLoading={actionsLoading}
                     />
+                  )}
+
+                  {/* Protocols Pagination */}
+                  {totalProtocolPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
+                      <p className="text-xs text-zinc-500">
+                        Mostrando {((protocolsPage - 1) * PROTOCOLS_PER_PAGE) + 1}–{Math.min(protocolsPage * PROTOCOLS_PER_PAGE, filteredProjects.length)} de {filteredProjects.length} protocolos
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setProtocolsPage(p => Math.max(1, p - 1))}
+                          disabled={protocolsPage === 1}
+                          className="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          ← Anterior
+                        </button>
+                        {Array.from({ length: totalProtocolPages }, (_, i) => i + 1)
+                          .filter(p => p === 1 || p === totalProtocolPages || Math.abs(p - protocolsPage) <= 1)
+                          .reduce<(number | '...')[]>((acc, p, i, arr) => {
+                            if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((p, i) =>
+                            p === '...' ? (
+                              <span key={`ellipsis-${i}`} className="px-2 text-zinc-600 text-xs">…</span>
+                            ) : (
+                              <button
+                                key={p}
+                                onClick={() => setProtocolsPage(p as number)}
+                                className={`w-8 h-8 text-xs rounded-lg font-medium transition-colors ${
+                                  protocolsPage === p
+                                    ? 'bg-lime-500 text-black'
+                                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            )
+                          )}
+                        <button
+                          onClick={() => setProtocolsPage(p => Math.min(totalProtocolPages, p + 1))}
+                          disabled={protocolsPage === totalProtocolPages}
+                          className="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Siguiente →
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </>
               )}

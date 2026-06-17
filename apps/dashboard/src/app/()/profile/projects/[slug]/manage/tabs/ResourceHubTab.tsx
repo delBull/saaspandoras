@@ -3,11 +3,20 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ChatBubbleOvalLeftEllipsisIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 export function ResourceHubTab({ project }: { project: any }) {
     const [isLoading, setIsLoading] = useState(false);
     const [showMdGuide, setShowMdGuide] = useState(false);
+
+    // AI Assistant state — read from project.w2eConfig
+    const w2e = typeof project.w2eConfig === 'string'
+        ? (() => { try { return JSON.parse(project.w2eConfig); } catch { return {}; } })()
+        : (project.w2eConfig || {});
+    const [aiKnowledgeBase, setAiKnowledgeBase] = useState<string>(w2e.aiKnowledgeBase || '');
+    const [botToken, setBotToken] = useState<string>(w2e.botConfig?.telegramToken || '');
+    const [savingAI, setSavingAI] = useState(false);
+    const [registeringBot, setRegisteringBot] = useState(false);
     
     // Shortlink states
     const [shortlinkSlug, setShortlinkSlug] = useState('');
@@ -78,6 +87,47 @@ export function ResourceHubTab({ project }: { project: any }) {
             toast.error('Error al guardar la configuración');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleSaveAI = async () => {
+        setSavingAI(true);
+        try {
+            const newW2eConfig = { ...w2e, aiKnowledgeBase, botConfig: { ...w2e.botConfig, telegramToken: botToken } };
+            const res = await fetch(`/api/v1/projects/${project.id}/admin/config`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ w2eConfig: newW2eConfig })
+            });
+            if (!res.ok) throw new Error('Failed to save AI config');
+            toast.success('Configuración IA guardada ✓');
+        } catch {
+            toast.error('Error al guardar la configuración IA');
+        } finally {
+            setSavingAI(false);
+        }
+    };
+
+    const handleRegisterBot = async () => {
+        if (!botToken) return toast.error('Ingresa un Bot Token válido');
+        setRegisteringBot(true);
+        try {
+            const res = await fetch(`/api/v1/projects/${project.slug}/bot/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ botToken })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success('¡Bot vinculado exitosamente a Telegram!');
+                await handleSaveAI();
+            } else {
+                toast.error(`Error: ${data.error}`);
+            }
+        } catch {
+            toast.error('Error de conexión al registrar el bot');
+        } finally {
+            setRegisteringBot(false);
         }
     };
 
@@ -313,6 +363,90 @@ export function ResourceHubTab({ project }: { project: any }) {
                 >
                     {isLoading ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
+            </div>
+
+            {/* ===== AI ASSISTANT SECTION ===== */}
+            <div className="bg-zinc-900/50 border border-purple-500/20 rounded-2xl p-6 space-y-5">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-purple-500/15">
+                            <SparklesIcon className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <div>
+                            <h4 className="text-base font-bold text-white">Asistente IA del Proyecto</h4>
+                            <p className="text-sm text-zinc-400 mt-0.5">
+                                Configura el cerebro y la conexión Telegram del Conserje IA.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleSaveAI}
+                        disabled={savingAI}
+                        className="px-4 py-2 bg-purple-500/15 text-purple-400 border border-purple-500/30 text-sm font-bold rounded-xl hover:bg-purple-500/25 transition-colors disabled:opacity-50"
+                    >
+                        {savingAI ? 'Guardando...' : '✓ Guardar IA'}
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Left: Knowledge Base */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Base de Conocimiento / Prompt Guía</label>
+                        <textarea
+                            className="w-full h-64 bg-black border border-white/10 rounded-xl p-4 text-sm text-zinc-300 placeholder:text-zinc-700 focus:border-purple-500/50 focus:outline-none transition-colors resize-y font-mono"
+                            placeholder={`Eres el asistente oficial de ${project.title}. El proyecto se trata de... Las fases de inversión son... El token vale $X USD.\n\nReglas importantes:\n- No prometas rendimientos garantizados.\n- El pago es en USDC.\n- Dirige al usuario al portal de inversión.`}
+                            value={aiKnowledgeBase}
+                            onChange={(e) => setAiKnowledgeBase(e.target.value)}
+                        />
+                        <p className="text-[10px] text-zinc-600">Este texto se inyecta como system prompt en cada conversación del bot. Mantén las reglas claras y concisas.</p>
+                    </div>
+
+                    {/* Right: Telegram Bot Token */}
+                    <div className="space-y-4">
+                        <div className="bg-black/40 border border-white/5 rounded-xl p-4 space-y-3">
+                            <h5 className="text-xs font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                                ✈️ Conexión Telegram
+                            </h5>
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Bot Token</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="password"
+                                        placeholder="123456789:AAHxxxxxxxxxxxxxxxxxxxx"
+                                        className="flex-1 bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-700 focus:border-purple-500/50 outline-none transition-colors"
+                                        value={botToken}
+                                        onChange={(e) => setBotToken(e.target.value)}
+                                    />
+                                    <button
+                                        onClick={handleRegisterBot}
+                                        disabled={registeringBot || !botToken}
+                                        className="px-3 py-2 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-xs font-bold rounded-lg hover:bg-indigo-500/25 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                        {registeringBot ? 'Vinculando...' : 'Vincular'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-4 space-y-2">
+                            <h6 className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest">¿Cómo obtener tu Token?</h6>
+                            <ol className="text-[11px] text-zinc-400 list-decimal list-inside space-y-1 leading-relaxed">
+                                <li>Abre Telegram y busca <strong className="text-white">@BotFather</strong></li>
+                                <li>Envíale el comando <strong className="text-indigo-300">/newbot</strong></li>
+                                <li>Sigue las instrucciones y dale un nombre al bot</li>
+                                <li>Copia el <strong className="text-white">HTTP API Token</strong> que recibirás</li>
+                                <li>Pégalo aquí y haz clic en <strong className="text-indigo-300">Vincular</strong></li>
+                            </ol>
+                        </div>
+
+                        {botToken && (
+                            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-2">
+                                <span className="text-emerald-400 text-lg">✓</span>
+                                <p className="text-[11px] text-emerald-400">Bot configurado. Haz clic en <strong>Vincular</strong> para registrar el webhook.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Markdown Docs */}

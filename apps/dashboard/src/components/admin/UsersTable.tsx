@@ -6,12 +6,15 @@ import type { UserData, UserRole } from '@/types/admin';
 import { UserKeyStatus } from './UserKeyStatus';
 import { resolveIpfsUrl } from '@/lib/utils';
 
+const USERS_PER_PAGE = 10;
+
 interface UsersTableProps {
   users: UserData[];
 }
 
 export function UsersTable({ users }: UsersTableProps) {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
+  const [usersPage, setUsersPage] = useState(1);
 
   // Ensure users is always an array - memoized to prevent unnecessary re-renders
   const usersArray = useMemo(() => Array.isArray(users) ? users : [], [users]);
@@ -21,6 +24,13 @@ export function UsersTable({ users }: UsersTableProps) {
     if (roleFilter === 'all') return usersArray;
     return usersArray.filter(user => user.role === roleFilter);
   }, [usersArray, roleFilter]);
+
+  // Paginated slice
+  const paginatedUsers = useMemo(() => {
+    const start = (usersPage - 1) * USERS_PER_PAGE;
+    return filteredUsers.slice(start, start + USERS_PER_PAGE);
+  }, [filteredUsers, usersPage]);
+  const totalUsersPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
 
   // Role counts for filter badges
   const roleCounts = useMemo(() => {
@@ -176,7 +186,7 @@ export function UsersTable({ users }: UsersTableProps) {
                 </td>
               </tr>
             )}
-            {filteredUsers.map((user) => {
+            {paginatedUsers.map((user) => {
               const roleDisplay = getRoleDisplay(user.role);
               return (
                 <tr key={user.id} className="hover:bg-zinc-800">
@@ -228,6 +238,55 @@ export function UsersTable({ users }: UsersTableProps) {
           </tbody>
         </table>
       </div>
+
+      {/* Users Pagination */}
+      {totalUsersPages > 1 && (
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-700">
+          <p className="text-xs text-zinc-500">
+            Mostrando {((usersPage - 1) * USERS_PER_PAGE) + 1}–{Math.min(usersPage * USERS_PER_PAGE, filteredUsers.length)} de {filteredUsers.length} usuarios
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setUsersPage(p => Math.max(1, p - 1))}
+              disabled={usersPage === 1}
+              className="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              ← Anterior
+            </button>
+            {Array.from({ length: totalUsersPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalUsersPages || Math.abs(p - usersPage) <= 1)
+              .reduce<(number | '...')[]>((acc, p, i, arr) => {
+                if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === '...' ? (
+                  <span key={`ellipsis-${i}`} className="px-2 text-zinc-600 text-xs">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setUsersPage(p as number)}
+                    className={`w-8 h-8 text-xs rounded-lg font-medium transition-colors ${
+                      usersPage === p
+                        ? 'bg-cyan-500 text-black'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setUsersPage(p => Math.min(totalUsersPages, p + 1))}
+              disabled={usersPage === totalUsersPages}
+              className="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Siguiente →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

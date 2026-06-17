@@ -176,9 +176,6 @@ export function ProjectDetailModal({
             <TabsTrigger value="due-diligence" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white gap-2">
               <FileText className="w-4 h-4" /> Due Diligence
             </TabsTrigger>
-            <TabsTrigger value="ai" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white gap-2">
-              <Bot className="w-4 h-4 text-purple-400" /> Asistente IA
-            </TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW TAB */}
@@ -482,75 +479,6 @@ export function ProjectDetailModal({
                </div>
             </div>
            </TabsContent>
-
-          {/* AI ASSISTANT TAB */}
-          <TabsContent value="ai" className="space-y-6 animate-in fade-in-50">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h4 className="text-lg font-bold text-white flex items-center gap-2"><Bot className="w-5 h-5 text-purple-400" /> Cerebro IA (Knowledge Base)</h4>
-                <p className="text-xs text-zinc-500">Inyecta el contexto del proyecto (Whitepaper, FAQs, tono) para que el Conserje IA sepa de qué hablar.</p>
-              </div>
-              <Button 
-                onClick={handleSavePhases} 
-                disabled={actionsLoading}
-                className="bg-purple-500 hover:bg-purple-600 text-white font-bold"
-              >
-                {actionsLoading ? "Guardando..." : "Guardar Cerebro"}
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Base de Conocimiento / Prompt Guía</label>
-                  <textarea 
-                    className="w-full h-80 bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:border-purple-500/50 transition-colors"
-                    placeholder="Ejemplo: 'Eres el asistente oficial de [Proyecto]. Nuestro proyecto se trata de... Las fases de inversión son... El token vale $50 USD. Reglas importantes: No prometas rendimientos, el pago es en USDC en la red Polygon. Dirige al usuario al portal de inversión...'"
-                    value={aiKnowledgeBase}
-                    onChange={(e) => setAiKnowledgeBase(e.target.value)}
-                  />
-                  <p className="text-[10px] text-zinc-500">Este texto se envía directamente a OpenAI junto con cada mensaje del usuario. Mantén las reglas claras.</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 space-y-4">
-                  <h5 className="text-sm font-bold text-white uppercase tracking-widest">Conexión con Telegram</h5>
-                  
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Telegram Bot Token</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="password"
-                        placeholder="Ej: 123456789:AAHxxxxxxxxxxxxxxxxxxxx"
-                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500/50 outline-none transition-colors"
-                        value={botToken}
-                        onChange={(e) => setBotToken(e.target.value)}
-                      />
-                      <Button 
-                        onClick={handleRegisterBot}
-                        disabled={registeringBot || !botToken}
-                        className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold"
-                      >
-                        {registeringBot ? "Vinculando..." : "Vincular"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg space-y-2">
-                    <h6 className="text-xs font-bold text-indigo-400 uppercase tracking-widest">¿Cómo obtener tu Token?</h6>
-                    <ol className="text-[11px] text-zinc-400 list-decimal list-inside space-y-1">
-                      <li>Abre Telegram y busca <strong className="text-white">@BotFather</strong></li>
-                      <li>Envíale el comando <strong className="text-indigo-300">/newbot</strong></li>
-                      <li>Sigue las instrucciones para darle un nombre a tu bot</li>
-                      <li>Copia el <strong>HTTP API Token</strong> que te dará al final</li>
-                      <li>Pégalo aquí y haz clic en Vincular. ¡Eso es todo!</li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
 
         <div className="flex justify-end gap-3 pt-6 border-t border-zinc-800 mt-6">
