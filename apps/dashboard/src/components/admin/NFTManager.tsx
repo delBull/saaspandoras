@@ -412,7 +412,7 @@ export function NFTManager() {
                         className="bg-lime-500 hover:bg-lime-400 text-black font-bold"
                     >
                         <Wallet className="w-4 h-4 mr-2" />
-                        Crear Nuevo NFT / QR
+                        Nuevo NFT / QR
                     </Button>
                 </div>
             </div>
