@@ -3,5 +3,4 @@
   "framework": "nextjs",
   "buildCommand": "turbo run build --filter=@saasfly/dashboard...",
   "installCommand": "bun install --frozen-lockfile",
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/dashboard/ packages/"
 }

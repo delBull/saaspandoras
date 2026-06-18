@@ -25,10 +25,10 @@ const MONITORED_WALLETS = [
   },
 ];
 
-// Thresholds en ETH
-const THRESHOLD_OPTIMAL = 0.05;   // >= 0.05 = verde
-const THRESHOLD_WARNING = 0.01;   // >= 0.01 = amarillo + alerta Discord
-// < 0.01 = rojo + alerta crítica Discord
+// Thresholds en ETH (Ajustados para red Base por ser más económica)
+const THRESHOLD_OPTIMAL = 0.005;  // >= 0.005 = verde
+const THRESHOLD_WARNING = 0.002;  // >= 0.002 = amarillo + alerta Discord
+// < 0.002 = rojo + alerta crítica Discord
 
 async function getEthBalance(address: string): Promise<number> {
   const body = {

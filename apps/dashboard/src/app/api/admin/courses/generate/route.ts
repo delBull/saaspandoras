@@ -4,10 +4,6 @@ import OpenAI from 'openai';
 export const maxDuration = 60;
 export const runtime = 'nodejs';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-});
-
 // ─── JSON Schemas como strings (sin zodResponseFormat, compatible con Zod 3.23.8) ───
 
 const OUTLINE_SCHEMA = `{
@@ -55,6 +51,11 @@ export async function POST(req: Request) {
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: 'OPENAI_API_KEY no está configurada en las variables de entorno.' }, { status: 500 });
     }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
 
     const body = await req.json();
     const { phase, topic, difficulty, tone, currentState } = body;
