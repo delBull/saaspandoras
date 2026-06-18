@@ -1,0 +1,70 @@
+name: Cron Jobs
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'
+    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
+    - cron: '*/30 * * * *'
+    - cron: '0 */6 * * *'
+
+jobs:
+  dispatch-webhooks:
+    if: github.event.schedule == '*/1 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call dispatch-webhooks
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://pandoras.finance/api/cron/dispatch-webhooks"
+
+  process-approvals:
+    if: github.event.schedule == '*/5 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call process-approvals
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://pandoras.finance/api/cron/process-approvals"
+
+  process-webhooks:
+    if: github.event.schedule == '*/5 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call process-webhooks
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://pandoras.finance/api/cron/process-webhooks"
+
+  marketing:
+    if: github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call marketing
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://pandoras.finance/api/cron/marketing"
+
+  gas-check:
+    if: github.event.schedule == '*/30 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call gas-check
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://pandoras.finance/api/cron/gas-check"
+
+  reconcile-withdrawals:
+    if: github.event.schedule == '0 */6 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reconcile-withdrawals
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://pandoras.finance/api/cron/reconcile-withdrawals"

@@ -3,13 +3,5 @@
   "framework": "nextjs",
   "buildCommand": "turbo run build --filter=@saasfly/dashboard...",
   "installCommand": "bun install --frozen-lockfile",
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/dashboard/ packages/",
-  "crons": [
-    { "path": "/api/cron/dispatch-webhooks", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/process-approvals", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/process-webhooks", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/marketing", "schedule": "*/15 * * * *" },
-    { "path": "/api/cron/gas-check", "schedule": "*/30 * * * *" },
-    { "path": "/api/cron/reconcile-withdrawals", "schedule": "0 */6 * * *" }
-  ]
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/dashboard/ packages/"
 }
