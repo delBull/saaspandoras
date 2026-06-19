@@ -30,7 +30,6 @@ import {
   NumberInput,
   UrlInput,
   CheckboxInput,
-  RecurringRewardsInput,
   FileInput
 } from './conversational-form/inputComponents';
 // 📋 PREGUNTAS DEL FORMULARIO
@@ -242,7 +241,6 @@ export default function ConversationalForm() {
               projectTitle: safeData.title,
               projectId: (responseData as { id?: string | number })?.id?.toString() ?? 'unknown',
               businessCategory: safeData.businessCategory,
-              targetAmount: safeData.targetAmount,
               isPublicApplication: true,
               submissionType: 'utility_form_draft'
             }

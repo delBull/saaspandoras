@@ -33,10 +33,6 @@ export const formQuestions: FormQuestion[] = [
     label: 'Para ayudar a la Comunidad a descubrirla, ¿en qué categoría clasificarías tu Creación?',
     component: 'select-input',
     options: [
-      { value: 'residential_real_estate', label: 'Bienes Raíces (Utilidad Inmobiliaria)' },
-      { value: 'commercial_real_estate', label: 'Bienes Raíces (Acceso y Gobernanza)' },
-      { value: 'tech_startup', label: 'Tech Startup (Membresía y Acceso)' },
-      { value: 'renewable_energy', label: 'Energías Renovables (Recompensas y Gobernanza)' },
       { value: 'art_collectibles', label: 'Arte y Coleccionables (Acceso a Drops)' },
       { value: 'intellectual_property', label: 'Propiedad Intelectual (Derechos de Uso)' },
       { value: 'defi', label: 'DeFi (Protocolos de Staking/Yield)' },
@@ -117,10 +113,10 @@ export const formQuestions: FormQuestion[] = [
   },
   {
     id: 'whatsappPhone',
-    label: '¿Tienes un número de WhatsApp para soporte y atención al cliente de este proyecto?',
+    label: '¿Cuál es tu número de WhatsApp como creador (para contacto directo de leads y soporte)?',
     placeholder: 'Ej: 521234567890',
     component: 'text-input',
-    info: 'Este número se usará para que los leads puedan contactarte directamente vía WhatsApp desde los correos de seguimiento y el widget.',
+    info: 'Tu número personal de WhatsApp como creador del proyecto. Los leads y la plataforma podrán contactarte directamente aquí.',
   },
   {
     id: 'linkedinUrl',
@@ -160,63 +156,6 @@ export const formQuestions: FormQuestion[] = [
     component: 'checkbox-input',
     info: 'Marcar Sí, si planeas integrar con otras plataformas, o deja sin marcar si no sabes o no lo harás en este momento.',
   },
-  {
-    id: 'targetAmount',
-    label: 'Para que esta Creación cobre vida, ¿cuántos Recursos (en USD) necesita recaudar de la comunidad en esta ronda?',
-    placeholder: 'Ej: 100000',
-    component: 'select-input',
-    options: [
-      { value: 'not_sure', label: 'Aún no estoy seguro(a)' },
-      { value: '50000', label: '$50,000' },
-      { value: '100000', label: '$100,000' },
-      { value: '250000', label: '$250,000' },
-      { value: '500000', label: '$500,000' },
-      { value: '1000000', label: '$1,000,000' },
-      { value: 'custom', label: 'Otro monto (especificar)' },
-    ],
-    required: true,
-    info: 'Monto en USD que necesitas recaudar. Sé realista: un monto bien justificado genera confianza.',
-  },
-  {
-    id: 'tokenType',
-    label: '¿Cómo planeas representar la participación en tu Creación? (Tipo de Artefacto digital)',
-    component: 'select-input',
-    options: [
-      { value: 'not_sure', label: 'Aún no estoy seguro(a)' },
-      { value: 'erc20', label: 'Fungible (ERC-20) - Para recompensas o gobernanza' },
-      { value: 'erc721', label: 'No Fungible (ERC-721/NFT) - Para acceso o identidad' },
-      { value: 'erc1155', label: 'Semi-Fungible (ERC-1155) - Para combinar ambos tipos' },
-    ],
-    info: 'Elige el estándar que mejor se adapte al uso y la escasez de tu Artefacto de Acceso.',
-  },
-  {
-    id: 'totalTokens',
-    label: 'Definamos los Artefactos. ¿Cuántos Artefactos existirán en total (Supply Total)?',
-    placeholder: 'Ej: 10000000',
-    component: 'number-input',
-    info: 'El suministro total de Artefactos. Este número define la escasez del acceso. Si aún no lo sabes, elige un número alto y ajustaremos más adelante.',
-  },
-  {
-    id: 'tokensOffered',
-    label: '¿Cuántos Artefactos ofrecerás a la comunidad en esta ronda?',
-    placeholder: 'Ej: 1000000',
-    component: 'number-input',
-    info: 'Cantidad que se pondrá a disposición de la comunidad en esta fase. Si aún no lo sabes, elige un número la misma cnatidad del paso anterior.',
-    relatedField: 'totalTokens',
-  },
-  {
-    id: 'tokenPriceUsd',
-    label: '¿Cuál será el precio (en USD) de cada Artefacto durante la recaudación?',
-    placeholder: 'Ej: 0.10',
-    component: 'number-input',
-    info: 'El precio inicial de venta del Artefacto de Acceso. Sí aún no lo sabes, elige un valor bajo para maximizar la adopción inicial.',
-  },
-  {
-    id: 'recurringRewards',
-    label: 'Estructura de Recompensa Recurrente',
-    component: 'recurring-rewards-input',
-  },
-
   // SECCIÓN 4: Datos del Creador (5 preguntas)
   {
     id: 'applicantName',
@@ -262,37 +201,14 @@ export const formQuestions: FormQuestion[] = [
     label: '¿Cuál es el estatus legal de tu Creación y en qué jurisdicción opera?',
     component: 'select-input',
     options: [
-      // México - Personas Físicas
-      { value: 'persona_fisica_mexico', label: '🇲🇽 Persona Física (México)' },
-
-      // México - Entidades Jurídicas
-      { value: 'sociedad_civil_mexico', label: '🇲🇽 Sociedad Civil (México)' },
-      { value: 'sapi_mexico', label: '🇲🇽 Sociedad Anónima Promotora de Inversión (México)' },
-      { value: 'sapib_mexico', label: '🇲🇽 Sociedad Anónima Promotora de Inversión Bursátil (México)' },
-      { value: 'srl_mexico', label: '🇲🇽 Sociedad de Responsabilidad Limitada (México)' },
-      { value: 'sa_mexico', label: '🇲🇽 Sociedad Anónima (México)' },
-      { value: 'sc_mexico', label: '🇲🇽 Sociedad Cooperativa (México)' },
-      { value: 'asociacion_civil_mexico', label: '🇲🇽 Asociación Civil (México)' },
-      { value: 'fundacion_mexico', label: '🇲🇽 Fundación (México)' },
-      { value: 'cooperativa_mexico', label: '🇲🇽 Cooperativa (México)' },
-      { value: 'otra_entidad_mexico', label: '🇲🇽 Otra Entidad (México)' },
-
-      // USA - Delaware (popular para Web3)
-      { value: 'llc_delaware_usa', label: '🇺🇸 LLC (Delaware, USA)' },
-      { value: 'corporation_delaware_usa', label: '🇺🇸 Corporation (Delaware, USA)' },
-
-      // USA - California
-      { value: 'llc_california_usa', label: '🇺🇸 LLC (California, USA)' },
-      { value: 'corporation_california_usa', label: '🇺🇸 Corporation (California, USA)' },
-
-      // USA - Personas Físicas y otras
-      { value: 'persona_fisica_usa', label: '🇺🇸 Persona Física (USA)' },
-      { value: 'dao_usa', label: '🇺🇸 DAO - Organización Autónoma Descentralizada (USA)' },
-      { value: 'otra_entidad_usa', label: '🇺🇸 Otra Entidad (USA)' },
-
-      // Opciones generales
-      { value: 'sin_entidad_juridica', label: '🚫 Aún no tengo entidad jurídica' },
-      { value: 'otra_jurisdiccion', label: '🌍 Otra jurisdicción (especificar en comentarios)' },
+      { value: 'individual', label: 'Persona Física (Individual / Sole Proprietor)' },
+      { value: 'llc', label: 'LLC / S.R.L. (Responsabilidad Limitada)' },
+      { value: 'corporation', label: 'Corporación / S.A. (Sociedad Anónima)' },
+      { value: 'nonprofit', label: 'Sin Fines de Lucro (Fundación / Asociación Civil)' },
+      { value: 'cooperative', label: 'Cooperativa' },
+      { value: 'dao', label: 'DAO (Organización Autónoma Descentralizada)' },
+      { value: 'not_formed', label: 'Aún no está constituida legalmente' },
+      { value: 'other', label: 'Otro' },
     ],
     required: true,
     info: 'Selecciona el estatus legal que mejor describe tu entidad. Si aún no tienes constituida una entidad jurídica, selecciona "Aún no tengo entidad jurídica".',

@@ -10,7 +10,6 @@ import {
   NumberInput,
   UrlInput,
   CheckboxInput,
-  RecurringRewardsInput,
   FileInput
 } from './inputComponents';
 import type { FormQuestion } from './types';
@@ -54,7 +53,7 @@ export default function FormContent({
 
   // Verificar si se debe mostrar el campo de detalles legales
   const legalStatus = watch('legalStatus');
-  const showLegalStatusDetails = legalStatus === 'otra_jurisdiccion' || legalStatus === 'otra_entidad_mexico' || legalStatus === 'otra_entidad_usa';
+  const showLegalStatusDetails = legalStatus === 'other';
 
   // Función para renderizar componente de input
   const renderInputComponent = useCallback((question: FormQuestion) => {
@@ -84,20 +83,10 @@ export default function FormContent({
         return <TextareaInput {...baseProps} info={question.info} onHelpClick={onHelpClick} />;
       }
       case 'select-input': {
-        let onHelpClick;
-        if (question.id === 'tokenType') {
-          onHelpClick = modals.openTokenTypeModal;
-        }
-        return <SelectInput {...baseProps} options={question.options} info={question.info} onHelpClick={onHelpClick} />;
+        return <SelectInput {...baseProps} options={question.options} info={question.info} />;
       }
       case 'number-input': {
-        let onHelpClick;
-        if (question.id === 'totalTokens') {
-          onHelpClick = modals.openSupplyModal;
-        } else if (question.id === 'tokensOffered') {
-          onHelpClick = modals.openCommunityOfferingModal;
-        }
-        return <NumberInput {...baseProps} relatedField={question.relatedField} info={question.info} onHelpClick={onHelpClick} />;
+        return <NumberInput {...baseProps} relatedField={question.relatedField} info={question.info} />;
       }
       case 'url-input': {
         let onHelpClick;
@@ -110,8 +99,6 @@ export default function FormContent({
         return <FileInput {...baseProps} accept="image/png,image/jpeg,image/svg+xml" info={question.info} />;
       case 'checkbox-input':
         return <CheckboxInput name={question.id} info={question.info} label={question.label} />;
-      case 'recurring-rewards-input':
-        return <RecurringRewardsInput onHelpClick={modals.openRecurringRewardsModal} />;
       default:
         return <TextInput {...baseProps} />;
     }
@@ -161,11 +148,7 @@ export default function FormContent({
           ) : currentQuestion ? (
             <div className="space-y-6">
               {currentQuestion.component !== 'checkbox-input' && (
-                <label className={`block font-bold text-white leading-tight ${
-                  currentQuestion.id === 'recurringRewards'
-                    ? 'text-lg md:text-xl'
-                    : 'text-2xl md:text-3xl'
-                }`}>
+                <label className="block font-bold text-white text-2xl md:text-3xl leading-tight">
                   {getPersonalizedLabel(currentQuestion.label, projectTitle)}
                 </label>
               )}
@@ -185,9 +168,9 @@ export default function FormContent({
                   </div>
                   <TextInput
                     name="legalStatusDetails"
-                    placeholder="Ej: Sociedad Anónima en Panamá, Cooperativa en Argentina, etc."
+                    placeholder="Ej: Sociedad Anónima en Panamá, Fundación en Suiza, etc."
                     maxLength={256}
-                    info="Si seleccionaste 'Otra jurisdicción' o 'Otra Entidad', especifica aquí los detalles exactos de tu estatus legal y jurisdicción."
+                    info="Si seleccionaste 'Otro', especifica aquí los detalles exactos de tu estatus legal y jurisdicción."
                   />
                 </motion.div>
               )}

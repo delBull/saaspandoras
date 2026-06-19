@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { projectSchema, type ProjectFormData } from '../conversational-form/types';
 import type { Project } from '@/types/admin';
-import { Loader2, Globe, FileText, Twitter, MessageSquare, Send, Linkedin, Image as ImageIcon, Video, Settings2, Coins, Shield } from 'lucide-react';
+import { Loader2, Globe, FileText, Twitter, MessageSquare, Send, Linkedin, Image as ImageIcon, Video, Settings2, Shield } from 'lucide-react';
 
 interface EditProjectModalProps {
   isOpen: boolean;
@@ -61,16 +61,11 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
       protoclMecanism: project?.protoclMecanism || '',
       artefactUtility: project?.artefactUtility || '',
       worktoearnMecanism: project?.worktoearnMecanism || '',
-      targetAmount: typeof project?.targetAmount === 'string' ? parseFloat(project.targetAmount) : (project?.targetAmount || 0),
-      tokenType: (project as any)?.tokenType || 'erc20',
-      totalTokens: project?.totalTokens || 0,
-      tokensOffered: typeof project?.tokensOffered === 'string' ? parseFloat(project.tokensOffered) : (project?.tokensOffered || 0),
-      tokenPriceUsd: typeof project?.tokenPriceUsd === 'string' ? parseFloat(project.tokenPriceUsd) : (project?.tokenPriceUsd || 0),
       applicantName: project?.applicantName || '',
       applicantEmail: project?.applicantEmail || '',
       applicantPhone: project?.applicantPhone || '',
       applicantPosition: project?.applicantPosition || '',
-      legalStatus: (project?.legalStatus as any) || 'sin_entidad_juridica',
+      legalStatus: (project?.legalStatus as any) || 'not_formed',
       monetizationModel: project?.monetizationModel || '',
       bankBeneficiary: project?.legalConfig?.bankInstructions?.beneficiary || '',
       bankName: project?.legalConfig?.bankInstructions?.bank || '',
@@ -101,17 +96,11 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
         protoclMecanism: project.protoclMecanism || '',
         artefactUtility: project.artefactUtility || '',
         worktoearnMecanism: project.worktoearnMecanism || '',
-        // Enforce numeric types for form inputs that expect them
-        targetAmount: typeof project.targetAmount === 'string' ? parseFloat(project.targetAmount) : (project.targetAmount || 0),
-        tokenType: (project as any)?.tokenType || 'erc20',
-        totalTokens: project.totalTokens || 0,
-        tokensOffered: typeof project.tokensOffered === 'string' ? parseFloat(project.tokensOffered) : (project.tokensOffered || 0),
-        tokenPriceUsd: typeof project.tokenPriceUsd === 'string' ? parseFloat(project.tokenPriceUsd) : (project.tokenPriceUsd || 0),
         applicantName: project.applicantName || '',
         applicantEmail: project.applicantEmail || '',
         applicantPhone: project.applicantPhone || '',
         applicantPosition: project.applicantPosition || '',
-        legalStatus: (project.legalStatus as any) || 'sin_entidad_juridica',
+        legalStatus: (project.legalStatus as any) || 'not_formed',
         monetizationModel: project.monetizationModel || '',
         bankBeneficiary: project.legalConfig?.bankInstructions?.beneficiary || '',
         bankName: project.legalConfig?.bankInstructions?.bank || '',
@@ -490,32 +479,6 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
                   className="bg-zinc-900 border-zinc-800 min-h-[80px]" 
                   placeholder="Si aplica, ¿cómo se recompensa la contribución?"
                 />
-              </div>
-
-              <div className="pt-4 border-t border-zinc-800">
-                <h4 className="text-sm font-bold text-lime-400 mb-4 flex items-center gap-2">
-                  <Coins className="w-4 h-4" /> Parámetros Económicos Básicos
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Monto Meta (USD)</Label>
-                    <Input 
-                      type="number" 
-                      step="any"
-                      {...register('targetAmount', { valueAsNumber: true })} 
-                      className="bg-zinc-900 border-zinc-800" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Precio del Token (USD)</Label>
-                    <Input 
-                      type="number" 
-                      step="any"
-                      {...register('tokenPriceUsd', { valueAsNumber: true })} 
-                      className="bg-zinc-900 border-zinc-800" 
-                    />
-                  </div>
-                </div>
               </div>
             </TabsContent>
 

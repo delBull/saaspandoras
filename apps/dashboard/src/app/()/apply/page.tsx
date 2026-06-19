@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useProjectModal } from "@/contexts/ProjectModalContext";
@@ -16,14 +16,13 @@ import {
   Sparkles,
   Crown,
   Heart,
-  // --- Iconos de Utilidad Añadidos ---
-  Puzzle,       // Para 'Work-to-Earn'
-  MousePointerClick, // Para 'No-Code'
-  Gift,         // Para 'Lealtad'
-  Palette,      // Para 'Arte' (se mantiene)
-  Ticket,       // Para 'Acceso'
-  Code,         // Para 'Herramientas'
-  Layers         // Para 'Módulos'
+  Puzzle,
+  MousePointerClick,
+  Gift,
+  Palette,
+  Ticket,
+  Code,
+  Layers
 } from "lucide-react";
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 import { PreFilterModal } from "@/components/apply/PreFilterModal";
@@ -34,7 +33,6 @@ import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
-import { useEffect } from "react";
 
 export default function ApplyInfoPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
