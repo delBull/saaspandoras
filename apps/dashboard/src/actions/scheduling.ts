@@ -3,7 +3,7 @@
 import crypto from "crypto";
 
 import { db } from "@/db";
-import { schedulingSlots, schedulingBookings, users, marketingLeads, clients } from "@/db/schema";
+import { schedulingSlots, schedulingBookings, users, marketingLeads, clients, projects } from "@/db/schema";
 import { eq, and, gte, desc, lt, or, sql } from "drizzle-orm";
 import { Resend } from 'resend';
 import { getAuth, isAdmin } from "@/lib/auth";
@@ -83,6 +83,15 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
         const now = new Date();
         const normalizedEmail = leadData.email.toLowerCase().trim();
         const projectId = 1; // TODO: Resolve from context in multi-tenant v2
+
+        // Pre-fetch project discord webhook (non-blocking for notif)
+        let projectWebhookUrl: string | null = null;
+        try {
+            const [proj] = await db.select({ discordWebhookUrl: projects.discordWebhookUrl })
+                .from(projects)
+                .where(eq(projects.id, projectId));
+            if (proj?.discordWebhookUrl) projectWebhookUrl = proj.discordWebhookUrl;
+        } catch { /* non-blocking */ }
 
         // 1. ATOMIC TRANSACTION: Lock slot FIRST
         return await db.transaction(async (tx) => {
@@ -187,18 +196,24 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
             console.error("[Scheduler] Pipeline sync failed (non-blocking):", syncErr);
           }
 
-          // 4. Trigger Notifications (Async - outside of transaction actually is better but we use it here for flow)
-          // We'll return success and the caller can handle notifications if needed, 
-          // but for consistency we keep them here.
+          // 4. Trigger Notifications (Async)
           const { sendSchedulerNotification } = await import("@/lib/discord/scheduler-notifier");
           const { sendBookingPendingEmail } = await import("@/lib/email/scheduler-mailer");
 
           await Promise.allSettled([
-              sendSchedulerNotification(bookingId, updatedSlot.startTime, {
-                  name: leadData.name,
-                  email: normalizedEmail,
-                  notes: leadData.notes
-              }),
+              sendSchedulerNotification(
+                  bookingId,
+                  updatedSlot.startTime,
+                  {
+                      name: leadData.name,
+                      email: normalizedEmail,
+                      notes: leadData.notes,
+                      phone: leadData.phone,
+                      projectTitle: undefined, // could be fetched
+                  },
+                  true,
+                  projectWebhookUrl
+              ),
               sendBookingPendingEmail(normalizedEmail, {
                   name: leadData.name,
                   date: updatedSlot.startTime.toLocaleDateString(),
@@ -278,6 +293,62 @@ export async function createSlots(userId: string, slots: { start: Date, end: Dat
     } catch (error) {
         console.error("[Scheduler] Create slots failed:", error);
         return { success: false, error: "Failed to create slots" };
+    }
+}
+
+/**
+ * Seed: Generate default slots for the next 2 weeks
+ */
+export async function seedDefaultSlots(userId: string) {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        if (!userId) return { success: false, error: "User ID required" };
+
+        const now = new Date();
+        const slots: { start: Date; end: Date }[] = [];
+        const startHour = 9;  // 9:00 AM
+        const endHour = 17;   // 5:00 PM
+        const slotDuration = 60; // 60 minutes per slot
+
+        // Generate next 14 days
+        for (let day = 3; day < 17; day++) {
+            const date = new Date(now);
+            date.setDate(date.getDate() + day);
+            
+            // Skip weekends (0 = Sunday, 6 = Saturday)
+            if (date.getDay() === 0 || date.getDay() === 6) continue;
+
+            for (let hour = startHour; hour < endHour; hour += slotDuration / 60) {
+                const start = new Date(date);
+                start.setHours(hour, 0, 0, 0);
+
+                const end = new Date(date);
+                end.setHours(hour + slotDuration / 60, 0, 0, 0);
+
+                slots.push({ start, end });
+            }
+        }
+
+        if (slots.length === 0) return { success: false, error: "No slots generated" };
+
+        await db.insert(schedulingSlots).values(
+            slots.map(s => ({
+                userId,
+                startTime: s.start,
+                endTime: s.end,
+                isBooked: false,
+                type: '30_min'
+            }))
+        );
+
+        return { success: true, count: slots.length };
+    } catch (error) {
+        console.error("[Scheduler] Seed slots failed:", error);
+        return { success: false, error: "Failed to seed slots" };
     }
 }
 
