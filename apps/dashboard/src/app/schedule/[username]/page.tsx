@@ -13,12 +13,12 @@ export default async function SchedulePage({
     searchParams,
 }: {
     params: Promise<{ username: string }>;
-    searchParams: Promise<{ type?: string }>;
+    searchParams: Promise<{ type?: string; widget?: string }>;
 }) {
 
     // Resolve Identity
     const { username } = await params;
-    const { type } = await searchParams;
+    const { type, widget } = await searchParams;
     const { success, userId, name } = await resolveUserByAlias(username);
 
     // Validate Type
@@ -27,6 +27,18 @@ export default async function SchedulePage({
 
     if (!success || !userId) {
         return notFound();
+    }
+
+    const isWidget = widget === 'true';
+
+    if (isWidget) {
+        return (
+            <div className="bg-black text-white min-h-screen flex items-center justify-center p-4">
+                <div className="w-full max-w-lg">
+                    <SchedulerForm userId={userId} meetingType={meetingType} />
+                </div>
+            </div>
+        );
     }
 
     return (

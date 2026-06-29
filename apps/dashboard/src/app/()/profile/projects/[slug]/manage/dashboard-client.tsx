@@ -8,7 +8,8 @@ import {
     DocumentTextIcon,
     Cog6ToothIcon,
     ArrowLeftIcon,
-    ClipboardDocumentIcon
+    ClipboardDocumentIcon,
+    EnvelopeIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -19,6 +20,8 @@ import { LegalTab } from './tabs/LegalTab';
 import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { EventsTab } from './tabs/EventsTab';
+import { CommandCenterTab } from './tabs/CommandCenterTab';
+import { NewsletterTab } from './tabs/NewsletterTab';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -38,7 +41,7 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events'>('overview');
+    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter'>('command_center');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -110,6 +113,9 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    <Link href={`/profile/projects/${project.slug}/premium`} className="px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-400 rounded-lg hover:bg-amber-600/30 transition-all text-sm font-bold">
+                        PDF PREMIUM
+                    </Link>
                     <Link href={`/projects/${project.slug}`} target="_blank" className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-800 transition-all text-sm font-bold">
                         VER PÁGINA PÚBLICA
                     </Link>
@@ -119,6 +125,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
             {/* Navigation Tabs */}
             <div className="flex items-center gap-1 p-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl w-fit">
                 {[
+                    { id: 'command_center', label: 'Command Center', icon: <ClipboardDocumentIcon className="w-4 h-4 text-emerald-400" /> },
                     { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
                     { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
@@ -128,6 +135,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'resource_hub', label: 'Hub de Recursos', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'events', label: 'Eventos & Citas', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
+                    { id: 'events', label: 'Eventos & Citas', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
+                    { id: 'newsletter', label: 'Newsletter', icon: <EnvelopeIcon className="w-4 h-4" /> },
                     { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                 ].map((tab) => (
                     <button
@@ -157,6 +166,9 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
+                        {activeTab === 'command_center' && (
+                            <CommandCenterTab project={project} />
+                        )}
                         {activeTab === 'overview' && (
                             <OverviewTab
                                 project={project}
@@ -172,6 +184,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         {activeTab === 'legal' && <LegalTab project={project} />}
                         {activeTab === 'resource_hub' && <ResourceHubTab project={project} />}
                         {activeTab === 'events' && <EventsTab project={project} />}
+                        {activeTab === 'events' && <EventsTab project={project} />}
+                        {activeTab === 'newsletter' && <NewsletterTab project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
                         {activeTab === 'purchases' && (
                             <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />

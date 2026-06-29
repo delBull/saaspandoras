@@ -290,6 +290,75 @@
         }
     }
 
+    function openSchedule(opts) {
+        const modalId = 'pd-schedule-modal';
+        if (document.getElementById(modalId)) return;
+
+        const targetSlug = (opts && opts.projectSlug) || projectId;
+        const meetingType = (opts && opts.meetingType) || 'strategy';
+        const absoluteBase = BASE_URL.startsWith('http') ? BASE_URL : 'https://dash.pandoras.finance';
+
+        // Resolve scheduling user URL
+        var scheduleUrl = absoluteBase + '/schedule/founders?type=' + meetingType + '&widget=true&origin=' + encodeURIComponent(window.location.origin);
+        
+        // If projectSlug provided, try to resolve specific user
+        if (opts && opts.projectSlug) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', absoluteBase + '/api/v1/projects/' + opts.projectSlug + '/scheduling-user', false);
+            xhr.setRequestHeader('x-api-key', apiKey || '');
+            try {
+                xhr.send();
+                if (xhr.status === 200) {
+                    var userData = JSON.parse(xhr.responseText);
+                    if (userData.userId) {
+                        scheduleUrl = absoluteBase + '/schedule/' + userData.userId + '?type=' + meetingType + '&widget=true&origin=' + encodeURIComponent(window.location.origin);
+                    }
+                }
+            } catch(e) {
+                console.warn('[Pandoras] Failed to resolve scheduling user, using default');
+            }
+        }
+
+        track('SCHEDULE_OPEN', { slug: targetSlug, meetingType });
+
+        let container = document.createElement('div');
+        container.id = modalId;
+        Object.assign(container.style, {
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.95)', zIndex: '2147483647',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            opacity: '0', transition: 'opacity 0.4s ease'
+        });
+
+        const content = document.createElement('div');
+        Object.assign(content.style, {
+            width: '100%', maxWidth: '520px', height: '90%', maxHeight: '700px',
+            position: 'relative', borderRadius: '32px', overflow: 'hidden',
+            boxShadow: '0 25px 100px -12px rgba(0,0,0,1)', backgroundColor: '#000',
+            border: '1px solid rgba(255,255,255,0.05)'
+        });
+
+        const iframe = document.createElement('iframe');
+        iframe.src = scheduleUrl;
+        Object.assign(iframe.style, { width: '100%', height: '100%', border: 'none', background: '#000' });
+
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        Object.assign(closeBtn.style, {
+            position: 'absolute', top: '16px', right: '16px', width: '36px', height: '36px',
+            borderRadius: '50%', background: 'rgba(255,255,255,0.08)', color: '#fff', border: 'none',
+            cursor: 'pointer', fontSize: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: '2147483648'
+        });
+        closeBtn.onclick = () => container.remove();
+
+        content.appendChild(closeBtn);
+        content.appendChild(iframe);
+        container.appendChild(content);
+        document.body.appendChild(container);
+        setTimeout(() => { container.style.opacity = '1'; }, 10);
+    }
+
     function openPortal(slug) {
         const modalId = 'pd-portal-modal';
         if (document.getElementById(modalId)) return;
@@ -345,6 +414,7 @@
         open: openModal,
         openCheckout,
         openPortal,
+        openSchedule,
         track,
         getProjectState,
         emit: track, // Alias for protocol standardization
@@ -517,8 +587,18 @@
         };
 
         document.addEventListener('click', (e) => {
-            const target = e.target.closest('a, button, [data-pd-checkout-slug], [data-slug], [data-pd-portal]');
+            const target = e.target.closest('a, button, [data-pd-checkout-slug], [data-slug], [data-pd-portal], [data-pd-schedule]');
             if (!target) return;
+
+            let scheduleOpts = target.getAttribute('data-pd-schedule');
+            if (scheduleOpts !== null) {
+                e.preventDefault();
+                e.stopPropagation();
+                let opts = {};
+                try { opts = scheduleOpts ? JSON.parse(scheduleOpts) : {}; } catch (e) { opts = { meetingType: scheduleOpts }; }
+                openSchedule(opts);
+                return;
+            }
 
             let portalSlug = findAttr(target, ['data-pd-portal']);
             if (portalSlug) {

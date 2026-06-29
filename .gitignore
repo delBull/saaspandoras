@@ -70,3 +70,9 @@ query.ts
 inspect_*.ts
 sync-*.js
 .docs/
+
+# S'Narai Launch Plans
+S_NARAI_LAUNCH_PLAN.md
+S_NARAI_AI_SUPPORT.md
+S_NARAI_FOUNDER_ACTIONS.md
+S_NARAI_METRICS.md
