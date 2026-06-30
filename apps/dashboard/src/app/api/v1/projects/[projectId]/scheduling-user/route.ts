@@ -5,13 +5,13 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const { slug } = await params;
+  const { projectId } = await params;
 
   const [project] = await db.select({ applicantWalletAddress: projects.applicantWalletAddress })
     .from(projects)
-    .where(eq(projects.slug, slug));
+    .where(eq(projects.slug, projectId));
 
   if (!project || !project.applicantWalletAddress) {
     return NextResponse.json({ error: 'no project or wallet' }, { status: 404 });
@@ -22,7 +22,6 @@ export async function GET(
     .where(eq(users.walletAddress, project.applicantWalletAddress.toLowerCase()));
 
   if (!user) {
-    // Fallback: use founders alias resolver
     return NextResponse.json({ userId: 'founders', name: 'Equipo' });
   }
 

@@ -272,24 +272,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refreshSession = async (wallet?: string, signal?: AbortSignal) => {
         try {
             const url = wallet ? `/api/access-state?wallet=${wallet}` : "/api/access-state";
-            const res = await fetch(url, { 
-                signal,
-                credentials: "include", 
-                cache: "no-store" 
-            });
             
-            // PRINCIPAL FIX: Differentiate between 401 (not logged in) and 500 (system error)
-            if (res.status === 401) return { authenticated: false };
-            if (!res.ok) throw new Error(`Session infrastructure error (${res.status})`);
-            
-            return res.json();
+            // 🛡️ TIMEOUT GUARD: 10s limit to prevent infinite hanging
+            const timeoutController = new AbortController();
+            const timeoutId = setTimeout(() => timeoutController.abort(), 10000);
+            if (signal) {
+                signal.addEventListener('abort', () => { clearTimeout(timeoutId); timeoutController.abort(); }, { once: true });
+            }
+
+            try {
+                const res = await fetch(url, { 
+                    signal: timeoutController.signal,
+                    credentials: "include", 
+                    cache: "no-store" 
+                });
+                
+                if (res.status === 401) return { authenticated: false };
+                if (!res.ok) throw new Error(`Session infrastructure error (${res.status})`);
+                
+                return res.json();
+            } finally {
+                clearTimeout(timeoutId);
+            }
         } catch (e: any) {
             if (e.name === "AbortError") {
-                console.log("[AuthMachine] 🛡️ Scoped refresh call aborted.");
+                console.log("[AuthMachine] 🛡️ Session check timeout or aborted.");
                 return null;
             }
             console.error("[AuthMachine] Session fetch error:", e);
-            throw e; // Bubble infrastructure errors to the flow handler
+            throw e;
         }
     };
 

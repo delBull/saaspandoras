@@ -385,12 +385,10 @@ export default function DashboardPage() {
   if (accessState === AccessState.LOADING || isWidgetBypass) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center space-y-4">
-        {isWidgetBypass && (
-          <>
-            <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500">Iniciando Enlace Criptográfico...</p>
-          </>
-        )}
+        <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
+        <p className="text-[10px] uppercase tracking-widest text-zinc-500">
+          {isWidgetBypass ? 'Iniciando Enlace Criptográfico...' : 'Verificando acceso...'}
+        </p>
       </div>
     );
   }
