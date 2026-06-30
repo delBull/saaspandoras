@@ -341,6 +341,13 @@ export default function DashboardPage() {
       AccessState.WALLET_NO_ACCESS
     ];
     
+    // 🛡️ CRITICAL FIX: DO NOT redirect on hard error, even if bypass=ritual is present.
+    // Redirecting while in an error state aborts all concurrent in-flight fetch requests 
+    // (/api/profile, /api/prices, etc.), causing ERR_NETWORK_CHANGED (canceled) errors.
+    if (accessState === AccessState.ERROR) {
+      return;
+    }
+
     const isWidgetBypass = window.location.search.includes('bypass=ritual');
     
     if (UNAUTHORIZED_STATES.includes(accessState) || isWidgetBypass) {
