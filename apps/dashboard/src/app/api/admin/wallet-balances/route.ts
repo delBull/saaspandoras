@@ -6,8 +6,8 @@ const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_ALERTS || process.env.DISCOR
 // Wallets operacionales monitoreadas (direcciones públicas — sin secretos)
 const MONITORED_WALLETS = [
   {
-    label: 'Deployer',
-    address: '0xC140730099c2D201D61dc931DE4536723E9F6b56',
+    label: 'Deployer / Admin',
+    address: '0x5aeaE3D13F480a4231dD09D873f5A094424A2ed6',
     description: 'Despliega contratos de nuevos proyectos',
     icon: '🚀',
   },
@@ -17,12 +17,7 @@ const MONITORED_WALLETS = [
     description: 'Oracle principal del protocolo',
     icon: '🔮',
   },
-  {
-    label: 'Admin / Relayer',
-    address: '0x5aeaE3D13F480a4231dD09D873f5A094424A2ed6',
-    description: 'Relay de transacciones sin gas',
-    icon: '⚡',
-  },
+// Se eliminó la duplicidad de Admin / Relayer ya que es la misma wallet del Deployer
 ];
 
 // Thresholds en ETH (Ajustados para red Base por ser más económica)

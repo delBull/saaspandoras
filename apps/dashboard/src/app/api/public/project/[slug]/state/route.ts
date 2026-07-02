@@ -189,7 +189,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                     .from(purchasesSchema)
                     .where(and(
                         eq(purchasesSchema.projectId, project.id),
-                        inArray(purchasesSchema.status, ['completed', 'on_hold', 'processing'])
+                        eq(purchasesSchema.status, 'completed')
                     ));
                 const purchaseBasedHolders = Number(completedPurchases[0]?.count || 0);
                 if (purchaseBasedHolders > 0) {
