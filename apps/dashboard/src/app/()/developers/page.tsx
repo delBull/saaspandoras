@@ -15,7 +15,8 @@ import {
   Coins,
   Puzzle,
   ChevronDown,
-  Loader2
+  Loader2,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +32,7 @@ interface Project {
 
 export default function DevelopersPage() {
   const [copied, setCopied] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'widget' | 'commerce' | 'portal' | 'api' | 'webhooks'>('widget');
+  const [activeTab, setActiveTab] = useState<'widget' | 'commerce' | 'portal' | 'api' | 'webhooks' | 'knowledge'>('widget');
   
   // Dynamic State
   const [projects, setProjects] = useState<Project[]>([]);
@@ -155,7 +156,17 @@ app.post("/webhook/pandoras", (req, res) => {
   }
 
   res.send({ received: true });
-});`
+});`,
+    knowledge: `// Detecta y enruta al Knowledge Center del proyecto
+const response = await fetch("https://${getDashboardDomain()}/api/public/project/${projectSlug}/state", {
+  headers: { "x-api-key": "${publicKey}" }
+});
+const state = await response.json();
+
+if (state.knowledgeCenter?.isActive) {
+  // Redirige al usuario al portal de acceso (Briefings CMS)
+  window.location.href = state.knowledgeCenter.url;
+}`
   };
 
   const roadmapItems = [
@@ -362,6 +373,19 @@ app.post("/webhook/pandoras", (req, res) => {
                     <span>Advanced Lead API</span>
                   </button>
                   <button 
+                    onClick={() => setActiveTab('knowledge')}
+                    className={cn(
+                      "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
+                      activeTab === 'knowledge' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                    )}
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    <div className="flex flex-col items-start">
+                      <span>Knowledge Center</span>
+                      <span className="text-[9px] text-purple-400 font-black uppercase tracking-widest leading-none mt-1">Briefing CMS</span>
+                    </div>
+                  </button>
+                  <button 
                     onClick={() => setActiveTab('webhooks')}
                     className={cn(
                       "w-full flex items-center space-x-3 text-sm px-4 py-3 rounded-xl transition-all",
@@ -489,6 +513,19 @@ app.post("/webhook/pandoras", (req, res) => {
                         <br/>
                         <span className="pl-6 text-orange-300">res</span>.<span className="text-blue-400">send</span>({'{ received: true }'});<br/>
                         {'});'}
+                      </div>
+                    </pre>
+                  ) : activeTab === 'knowledge' ? (
+                    <pre className="space-y-4">
+                      <div>
+                        <div className="text-zinc-600 mb-2">// Lee el State del proyecto para acceder al Knowledge Center</div>
+                        <span className="text-purple-400">const</span> response = <span className="text-purple-400">await</span> <span className="text-blue-400">fetch</span>(<span className="text-emerald-300">"https://${getDashboardDomain()}/api/public/project/{projectSlug}/state"</span>);<br/>
+                        <span className="text-purple-400">const</span> state = <span className="text-purple-400">await</span> response.<span className="text-blue-400">json</span>();<br/>
+                        <br/>
+                        <span className="text-purple-400">if</span> (state.knowledgeCenter?.isActive) {'{'}<br/>
+                        <span className="pl-6 text-zinc-500">// Redirige al lector de Briefings de Pandoras</span><br/>
+                        <span className="pl-6 text-indigo-400">window</span>.<span className="text-indigo-300">location</span>.<span className="text-indigo-300">href</span> = state.knowledgeCenter.url;<br/>
+                        {'}'}
                       </div>
                     </pre>
                   ) : (

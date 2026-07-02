@@ -22,6 +22,7 @@ import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { EventsTab } from './tabs/EventsTab';
 import { CommandCenterTab } from './tabs/CommandCenterTab';
 import { NewsletterTab } from './tabs/NewsletterTab';
+import { KnowledgeCenterTab } from './tabs/KnowledgeCenterTab';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -41,7 +42,7 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter'>('command_center');
+    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter' | 'knowledge_center'>('command_center');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -134,7 +135,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     { id: 'dao', label: 'DAO Treasury', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'resource_hub', label: 'Hub de Recursos', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                    { id: 'events', label: 'Eventos & Citas', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
+                    { id: 'knowledge_center', label: 'Knowledge Center', icon: <DocumentTextIcon className="w-4 h-4 text-purple-400" /> },
                     { id: 'events', label: 'Eventos & Citas', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
                     { id: 'newsletter', label: 'Newsletter', icon: <EnvelopeIcon className="w-4 h-4" /> },
                     { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
@@ -183,7 +184,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         {activeTab === 'missions' && <MissionsTab project={project} />}
                         {activeTab === 'legal' && <LegalTab project={project} />}
                         {activeTab === 'resource_hub' && <ResourceHubTab project={project} />}
-                        {activeTab === 'events' && <EventsTab project={project} />}
+                        {activeTab === 'knowledge_center' && <KnowledgeCenterTab project={project} />}
                         {activeTab === 'events' && <EventsTab project={project} />}
                         {activeTab === 'newsletter' && <NewsletterTab project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}

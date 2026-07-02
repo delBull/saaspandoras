@@ -2370,3 +2370,25 @@ export const eventRegistrationsRelations = relations(eventRegistrations, ({ one 
 
 export type ProjectEvent = typeof projectEvents.$inferSelect;
 export type EventRegistration = typeof eventRegistrations.$inferSelect;
+
+// --- PANDORA KNOWLEDGE LAYER (BRIEFING ENGINE) ---
+export const projectBriefings = pgTable("project_briefings", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull(), // e.g., 'participate', 'realtors'
+  title: varchar("title", { length: 255 }).notNull(),
+  subtitle: text("subtitle"),
+  
+  // JSON array of blocks: { type: 'hero', data: {...} }
+  blocks: jsonb("blocks").default([]).notNull(), 
+  
+  status: varchar("status", { length: 50 }).default('published').notNull(),
+  locale: varchar("locale", { length: 10 }).default('es').notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (table) => ({
+  projectSlugIdx: uniqueIndex("briefing_project_slug_idx").on(table.projectId, table.slug),
+}));
+
+export type ProjectBriefing = typeof projectBriefings.$inferSelect;

@@ -12,7 +12,8 @@ import {
   marketingLeads as leadsSchema,
   marketingIdentities,
   ambassadors,
-  ambassadorCommissions
+  ambassadorCommissions,
+  projectBriefings
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc, inArray } from "drizzle-orm";
@@ -305,7 +306,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const nextPhase = phases[activePhaseIndex + 1] || null;
 
     // 4.9 Parallel DB Queries for secondary data
-    const [activities, activeProposals, user, ambassador] = await Promise.all([
+    const [activities, activeProposals, user, ambassador, activeBriefings] = await Promise.all([
         db.query.daoActivities.findMany({
             where: eq(daoActivitiesSchema.projectId, project.id),
             orderBy: desc(daoActivitiesSchema.createdAt),
@@ -323,7 +324,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             : Promise.resolve(null),
         (wallet && wallet.startsWith("0x"))
             ? db.query.ambassadors.findFirst({ where: eq(ambassadors.walletAddress, wallet.toLowerCase()) }).catch(() => null)
-            : Promise.resolve(null)
+            : Promise.resolve(null),
+        db.query.projectBriefings.findMany({
+            where: and(
+                eq(projectBriefings.projectId, project.id),
+                eq(projectBriefings.status, 'published')
+            ),
+            limit: 1
+        }).catch(() => [])
     ]);
 
     let ambassadorCommissionsList: any[] = [];
@@ -580,6 +588,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       } : null,
       userPortfolio,
       legal: project.legalConfig || {},
+      knowledgeCenter: {
+        isActive: activeBriefings && activeBriefings.length > 0,
+        url: `https://${apiKey?.startsWith('pk_live_') ? 'dash' : 'staging.dash'}.pandoras.finance/p/${slug}/access`
+      },
       phases: phases.map((p: any) => ({
         id: p.id,
         name: p.name,
