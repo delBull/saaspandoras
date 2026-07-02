@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { projects } from "~/db/schema";
-import { inArray, desc, ne, and, eq, or } from "drizzle-orm";
+import { inArray, desc, ne, and, eq, or, ilike } from "drizzle-orm";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -87,7 +87,7 @@ export async function GET() {
             ne(projects.businessCategory, 'infrastructure'),
             or(
               userIsAdmin ? eq(projects.isDeleted, false) : undefined,
-              userWallet ? eq(projects.applicantWalletAddress, userWallet) : undefined,
+              userWallet ? ilike(projects.applicantWalletAddress, userWallet) : undefined,
               inArray(projects.status, ['approved', 'live', 'completed'])
             )
           )

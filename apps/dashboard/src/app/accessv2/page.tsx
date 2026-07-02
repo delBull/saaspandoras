@@ -224,9 +224,9 @@ function AccessV2Inner() {
 
       // Route to project or home
       if (projectSlug) {
-        router.push(`/projects/${projectSlug}`);
+        window.location.href = `/projects/${projectSlug}`;
       } else {
-        router.push('/');
+        window.location.href = '/';
       }
     } else {
       window.location.reload();

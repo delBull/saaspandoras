@@ -33,6 +33,8 @@ export const formQuestions: FormQuestion[] = [
     label: 'Para ayudar a la Comunidad a descubrirla, ¿en qué categoría clasificarías tu Creación?',
     component: 'select-input',
     options: [
+      { value: 'residential_real_estate', label: 'Bienes Raíces Residenciales (Fraccionalización)' },
+      { value: 'commercial_real_estate', label: 'Bienes Raíces Comerciales (Rendimiento)' },
       { value: 'art_collectibles', label: 'Arte y Coleccionables (Acceso a Drops)' },
       { value: 'intellectual_property', label: 'Propiedad Intelectual (Derechos de Uso)' },
       { value: 'defi', label: 'DeFi (Protocolos de Staking/Yield)' },

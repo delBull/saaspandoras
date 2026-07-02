@@ -372,6 +372,9 @@ export default function DashboardPage() {
       const timer = setTimeout(() => {
         console.log(`🛡️ [DashboardRoot] Redirecting to /accessv2 (Status: ${status}, State: ${accessState})...`);
         const currentSearchParams = window.location.search;
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('pd_last_access_redirect', Date.now().toString());
+        }
         router.push(`/accessv2${currentSearchParams}`);
       }, 1500); // Increased grace period
 
