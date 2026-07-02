@@ -4,7 +4,11 @@ import baseConfig from "@saasfly/tailwind-config";
 
 export default {
   darkMode: ["class"],
-  content: [...baseConfig.content, "../../packages/ui/src/**/*.{ts,tsx}"],
+  content: [
+    "./src/**/*.{ts,tsx,mdx}",
+    ...baseConfig.content, 
+    "../../packages/ui/src/**/*.{ts,tsx}"
+  ],
   presets: [baseConfig],
   plugins: [require("tailwindcss-animate")],
   theme: {
