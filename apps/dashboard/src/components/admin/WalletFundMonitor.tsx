@@ -153,7 +153,7 @@ export function WalletFundMonitor() {
             </div>
           ) : (
             <>
-              <div className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {data?.wallets.map((wallet) => (
                   <div
                     key={wallet.address}

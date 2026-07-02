@@ -27,12 +27,12 @@ export function FileInput({ name, accept = "image/*", placeholder, info: _info }
     setIsUploading(true);
     setUploadStatus('idle');
 
-    // Validar tamaño
-    if (file.size > 5 * 1024 * 1024) {
+    // Validar tamaño (ahora permitimos hasta 10MB porque lo comprimiremos)
+    if (file.size > 10 * 1024 * 1024) {
       console.error('❌ File too large:', file.size);
       setUploadStatus('error');
       setIsUploading(false);
-      alert("El archivo debe ser menor a 5MB");
+      alert("El archivo debe ser menor a 10MB");
       return;
     }
 
@@ -45,30 +45,65 @@ export function FileInput({ name, accept = "image/*", placeholder, info: _info }
       return;
     }
 
-    console.log('✅ File validation passed, reading file...');
+    console.log('✅ File validation passed, reading and compressing file...');
 
-    const reader = new FileReader();
-    reader.onloadstart = () => {
-      console.log('📖 FileReader started');
+    const compressImage = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new window.Image();
+          img.src = event.target?.result as string;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 1200;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              // Comprimir como JPEG al 70% de calidad para reducir dramáticamente el tamaño
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              resolve(dataUrl);
+            } else {
+              reject(new Error("Canvas no soportado"));
+            }
+          };
+          img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+      });
     };
 
-    reader.onloadend = () => {
-      console.log('✅ FileReader completed, setting value...');
-      const result = reader.result as string;
-      setValue(name, result);
-      setUploadStatus('success');
-      setIsUploading(false);
-      console.log('✅ File uploaded successfully');
-    };
-
-    reader.onerror = () => {
-      console.error('❌ FileReader error');
-      setUploadStatus('error');
-      setIsUploading(false);
-      alert("Error al leer el archivo");
-    };
-
-    reader.readAsDataURL(file);
+    compressImage(file)
+      .then((compressedBase64) => {
+        console.log('✅ File compressed and uploaded successfully');
+        setValue(name, compressedBase64);
+        setUploadStatus('success');
+        setIsUploading(false);
+      })
+      .catch((error) => {
+        console.error('❌ Error compressing file:', error);
+        setUploadStatus('error');
+        setIsUploading(false);
+        alert("Error al procesar y comprimir la imagen");
+      });
   };
 
   return (
@@ -115,7 +150,7 @@ export function FileInput({ name, accept = "image/*", placeholder, info: _info }
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <p className="text-sm">{placeholder ?? "Click para seleccionar archivo"}</p>
-              <p className="text-xs mt-1">PNG/JPG hasta 5MB</p>
+              <p className="text-xs mt-1">PNG/JPG hasta 10MB (se comprimirá automáticamente)</p>
             </>
           )}
         </div>
