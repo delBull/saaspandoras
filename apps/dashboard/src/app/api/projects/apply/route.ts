@@ -83,6 +83,14 @@ export async function POST(request: Request) {
         teamMembers: parsedData.data.teamMembers ?? [], // Como Array
         advisors: parsedData.data.advisors ?? [], // Como Array
         tokenDistribution: parsedData.data.tokenDistribution ?? {}, // Como Objeto
+        protocolVersion: 2, // V2 by default
+        artifacts: [{
+          type: "Access",
+          name: `${parsedData.data.title} Access Pass`,
+          symbol: "ACCESS",
+          isPrimary: true,
+          maxSupply: parsedData.data.totalTokens ? Number(parsedData.data.totalTokens) : 1000
+        }],
         contractAddress: parsedData.data.contractAddress ?? null,
         treasuryAddress: parsedData.data.treasuryAddress ?? null,
 

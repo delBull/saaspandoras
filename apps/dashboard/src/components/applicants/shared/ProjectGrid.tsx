@@ -11,13 +11,15 @@ interface ProjectGridProps {
   variant?: 'approved' | 'pending';
   viewMode?: ViewMode;
   gridColumns?: GridColumns;
+  isSidebar?: boolean;
 }
 
 export function ProjectGrid({
   projects,
   variant = 'approved',
   viewMode = 'grid',
-  gridColumns = 3
+  gridColumns = 3,
+  isSidebar = false
 }: ProjectGridProps) {
   if (projects.length === 0) {
     return (
@@ -41,7 +43,7 @@ export function ProjectGrid({
   const getGridClasses = () => {
     const baseClasses = 'gap-3 md:gap-4 lg:gap-6';
 
-    if (variant === 'pending') {
+    if (variant === 'pending' || isSidebar) {
       return `grid grid-cols-1 ${baseClasses}`;
     }
 
