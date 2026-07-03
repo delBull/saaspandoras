@@ -15,9 +15,12 @@ export async function GET(
 
     try {
         const headersObj = await headers();
-        const { session } = await getAuth(headersObj);
+        const fallbackAddress = headersObj.get('x-wallet-address') || headersObj.get('x-thirdweb-address') || undefined;
+        const { session } = await getAuth(headersObj, fallbackAddress);
 
-        if (!session?.address) {
+        const address = session?.address || session?.unverifiedAddress;
+
+        if (!address) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

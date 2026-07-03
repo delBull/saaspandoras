@@ -266,7 +266,10 @@ export async function POST(
         }
 
         // 5. Signal Deployment Service (Fire and forget-ish, or just rely on worker)
-        const DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000";
+        let DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000";
+        if (!DEPLOY_SERVICE_URL.startsWith("http")) {
+            DEPLOY_SERVICE_URL = `https://${DEPLOY_SERVICE_URL}`;
+        }
         const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 
         if (!DEPLOY_SECRET) {
