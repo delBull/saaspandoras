@@ -154,17 +154,17 @@ export default function ProfileProjectsPage() {
           {/* Animated Background */}
           <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(168,85,247,0.2)_360deg)] animate-[spin_4s_linear_infinite]" />
           <div className="absolute inset-[1px] bg-[#050505] rounded-3xl z-0" />
-          
+
           <div className="relative z-10 flex flex-col items-center">
             <div className="w-16 h-16 bg-purple-500/10 border border-purple-500/20 rounded-full flex items-center justify-center mb-6">
               <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
             </div>
-            
+
             <h2 className="text-2xl font-black text-white mb-2">Proyecto en Revisión</h2>
             <p className="text-zinc-400 mb-6">
               Tu proyecto <span className="text-purple-400 font-bold">{pendingProject?.title}</span> está siendo procesado por nuestro equipo de validación (Compliance).
             </p>
-            
+
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 w-full text-left">
               <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">Próximos Pasos</h3>
               <ul className="text-sm text-zinc-400 space-y-2">
@@ -179,7 +179,7 @@ export default function ProfileProjectsPage() {
                 </li>
               </ul>
             </div>
-            
+
             <p className="mt-8 text-xs text-zinc-500 max-w-sm">
               Te notificaremos una vez que el estado de tu aplicación sea actualizado. Este proceso suele tomar entre 24 y 48 horas hábiles.
             </p>

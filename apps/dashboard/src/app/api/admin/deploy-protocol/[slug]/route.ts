@@ -30,13 +30,16 @@ export async function POST(
     try {
         // 1. Auth & Admin Check
         const headersObj = await headers();
-        const { session } = await getAuth(headersObj);
+        const fallbackAddress = headersObj.get('x-wallet-address') || headersObj.get('x-thirdweb-address') || undefined;
+        const { session } = await getAuth(headersObj, fallbackAddress);
 
-        if (!session?.address) {
+        const address = session?.address || session?.unverifiedAddress;
+
+        if (!address) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const userIsSuperAdmin = session.address.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+        const userIsSuperAdmin = address.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
         if (!userIsSuperAdmin) {
             return NextResponse.json({ error: "Forbidden: Super Admin access required" }, { status: 403 });
