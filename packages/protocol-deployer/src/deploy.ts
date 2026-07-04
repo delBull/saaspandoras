@@ -115,7 +115,8 @@ export async function deployW2EProtocol(
   }
 
   // 3. Obtain Factory Address
-  let factoryAddress = process.env.PANDORAS_FACTORY_ADDRESS;
+  // Fallback to the already deployed factory on Base to save gas!
+  let factoryAddress = process.env.PANDORAS_FACTORY_ADDRESS || (network === 'base' ? "0xf189f577ba554604876cb81800df61df7f14e637" : undefined);
   let factoryExists = false;
 
   if (isValidAddress(factoryAddress)) {
@@ -182,8 +183,8 @@ export async function deployW2EProtocol(
   };
 
   const actorsStruct = {
-    treasuryPandoraSigners: (config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, Wallet.createRandom().address],
-    treasuryDaoSigners: [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address]
+    treasuryPandoraSigners: (config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, oracleAddress],
+    treasuryDaoSigners: [wallet.address, oracleAddress, rootTreasury]
   };
 
   const getBytecode = (artifact: any) => {
