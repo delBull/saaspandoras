@@ -45,8 +45,8 @@ export async function deployW2EProtocol(
   }
 
   // --- Universal Ethers Shim & Setup ---
-  const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
-  if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
+  const privateKey = process.env.DEPLOYER_PRIVATE_KEY || process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
+  if (!privateKey) throw new Error("Private Key not found in environment (DEPLOYER_PRIVATE_KEY or PANDORA_ORACLE_PRIVATE_KEY)");
 
   const eth = ethers as any;
   const isV6 = !!eth.JsonRpcProvider;
