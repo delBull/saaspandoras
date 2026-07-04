@@ -116,8 +116,17 @@ export async function deployW2EProtocol(
 
   // 3. Obtain Factory Address
   let factoryAddress = process.env.PANDORAS_FACTORY_ADDRESS;
-  if (!isValidAddress(factoryAddress)) {
-    console.log("🏭 No valid Factory Address found. Deploying PandorasProtocolFactory on-the-fly...");
+  let factoryExists = false;
+
+  if (isValidAddress(factoryAddress)) {
+    const code = await provider.getCode(factoryAddress!);
+    if (code !== "0x") {
+        factoryExists = true;
+    }
+  }
+
+  if (!factoryExists) {
+    console.log("🏭 No valid Factory Address found on-chain. Deploying PandorasProtocolFactory on-the-fly...");
     const FactoryDeployer = new ContractFactory(PandorasProtocolFactoryArtifact.abi, PandorasProtocolFactoryArtifact.bytecode, wallet);
     const factoryContract = await FactoryDeployer.deploy();
     await factoryContract.deployed(); // or waitForDeployment based on ethers v5
