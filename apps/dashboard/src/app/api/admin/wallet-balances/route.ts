@@ -20,10 +20,10 @@ const MONITORED_WALLETS = [
 // Se eliminó la duplicidad de Admin / Relayer ya que es la misma wallet del Deployer
 ];
 
-// Thresholds en ETH (Ajustados para red Base por ser más económica)
-const THRESHOLD_OPTIMAL = 0.005;  // >= 0.005 = verde
-const THRESHOLD_WARNING = 0.002;  // >= 0.002 = amarillo + alerta Discord
-// < 0.002 = rojo + alerta crítica Discord
+// Thresholds en ETH (Ajustados para red Base)
+const THRESHOLD_OPTIMAL = 0.010;  // >= 0.010 = verde
+const THRESHOLD_WARNING = 0.005;  // >= 0.005 = amarillo + alerta Discord
+// < 0.005 = rojo + alerta crítica Discord
 
 async function getEthBalance(address: string): Promise<number> {
   const body = {
