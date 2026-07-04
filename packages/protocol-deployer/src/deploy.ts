@@ -221,8 +221,8 @@ export async function deployW2EProtocol(
       salt,
       configStruct,
       actorsStruct,
-      bytecodesStruct,
-      { gasLimit: 12000000 }
+      bytecodesStruct
+      // { gasLimit: 12000000 } // Removed hardcoded gasLimit to allow auto-estimation and avoid large upfront ETH requirement
     );
 
     console.log(`⏳ Waiting for block confirmation: ${tx.hash}`);
