@@ -64,6 +64,7 @@ export function DeploymentConfigModal({
     projectTitle,
     projectTotalTokens,
     applicantWalletAddress,
+    projectSlug,
     isLoading = false
 }: DeploymentConfigModalProps) {
     const [network, setNetwork] = useState<NetworkType>('sepolia');
@@ -90,9 +91,31 @@ export function DeploymentConfigModal({
     const [activeTab, setActiveTab] = useState<'artifacts' | 'phases' | 'progression' | 'economics' | 'preview'>('artifacts');
     const [validationError, setValidationError] = useState<string | null>(null);
 
-    // Reset state when modal opens for a new project to prevent stale data
+    // Load or reset state when modal opens
     useEffect(() => {
         if (isOpen) {
+            const cacheKey = `pandoras_deploy_config_${projectSlug || projectTitle}`;
+            const cached = localStorage.getItem(cacheKey);
+            
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    if (parsed.network) setNetwork(parsed.network);
+                    if (parsed.pageLayoutType) setPageLayoutType(parsed.pageLayoutType);
+                    if (parsed.artifacts) setArtifacts(parsed.artifacts);
+                    if (parsed.phases) setPhases(parsed.phases);
+                    if (parsed.tokenomics) setTokenomics(parsed.tokenomics);
+                    if (parsed.economicSchedule) setEconomicSchedule(parsed.economicSchedule);
+                    if (parsed.packages) setPackages(parsed.packages);
+                    setActiveTab('artifacts');
+                    setValidationError(null);
+                    return; // Skip default reset
+                } catch (e) {
+                    console.error("Failed to parse cached deployment config", e);
+                }
+            }
+
+            // Default reset if no cache
             setNetwork('sepolia');
             setPageLayoutType('Access');
             setArtifacts([DEFAULT_ARTIFACT(projectTitle, projectTitle.substring(0, 4).toUpperCase(), projectTotalTokens || 1000)]);
@@ -110,7 +133,24 @@ export function DeploymentConfigModal({
             setActiveTab('artifacts');
             setValidationError(null);
         }
-    }, [isOpen, projectTitle, projectTotalTokens, applicantWalletAddress]);
+    }, [isOpen, projectTitle, projectTotalTokens, applicantWalletAddress, projectSlug]);
+
+    // Save to localStorage when state changes
+    useEffect(() => {
+        if (isOpen) {
+            const cacheKey = `pandoras_deploy_config_${projectSlug || projectTitle}`;
+            const stateToSave = {
+                network,
+                pageLayoutType,
+                artifacts,
+                phases,
+                tokenomics,
+                economicSchedule,
+                packages
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(stateToSave));
+        }
+    }, [isOpen, projectSlug, projectTitle, network, pageLayoutType, artifacts, phases, tokenomics, economicSchedule, packages]);
 
     if (!isOpen) return null;
 
@@ -1099,6 +1139,55 @@ export function DeploymentConfigModal({
                                     </div>
                                 </div>
                             </div>
+                            {/* Phases Summary */}
+                            {phases.length > 0 && (
+                                <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700">
+                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Fases de Venta</h4>
+                                    <div className="space-y-2">
+                                        {phases.map((phase, i) => (
+                                            <div key={phase.id} className="flex justify-between items-center text-sm p-2 bg-zinc-900/50 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-indigo-400 font-mono text-xs">F{i+1}</span>
+                                                    <span className="text-white">{phase.name}</span>
+                                                </div>
+                                                <div className="text-gray-400 text-xs">
+                                                    {phase.tokenAllocation?.toLocaleString()} tokens @ {phase.tokenPrice} USD
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Packages / Perks Summary */}
+                            {packages.length > 0 && (
+                                <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700">
+                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Niveles & Beneficios (Perks)</h4>
+                                    <div className="space-y-3">
+                                        {packages.map((pkg) => (
+                                            <div key={pkg.id} className="text-sm p-3 bg-zinc-900/50 rounded-lg border border-zinc-800/50">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-white font-semibold">{pkg.name}</span>
+                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                                                        Req: {pkg.artifactCountThreshold} certs
+                                                    </span>
+                                                </div>
+                                                {pkg.perks.length > 0 ? (
+                                                    <ul className="text-xs text-gray-400 space-y-1 pl-1">
+                                                        {pkg.perks.map(perk => (
+                                                            <li key={perk.id} className="flex items-center gap-1.5">
+                                                                <span className="text-emerald-500/70">✓</span> {perk.name} ({perk.value}{perk.type === 'discount' ? '%' : ''})
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                ) : (
+                                                    <p className="text-xs text-gray-600 italic pl-1">Sin beneficios adicionales configurados.</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Complexity estimate */}
                             <div className={`p-3 rounded-xl border flex items-center gap-3 text-sm ${artifacts.length === 1 ? 'border-emerald-500/30 bg-emerald-500/5' :
