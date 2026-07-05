@@ -127,15 +127,11 @@ export async function deployW2EProtocol(
   }
 
   if (!factoryExists) {
-    console.log("🏭 No valid Factory Address found on-chain. Deploying PandorasProtocolFactory on-the-fly...");
-    const FactoryDeployer = new ContractFactory(PandorasProtocolFactoryArtifact.abi, PandorasProtocolFactoryArtifact.bytecode, wallet);
-    const factoryContract = await FactoryDeployer.deploy();
-    await factoryContract.deployed(); // or waitForDeployment based on ethers v5
-    factoryAddress = factoryContract.address;
-    console.log(`🏭 Factory deployed at: ${factoryAddress}`);
-  } else {
-    console.log(`🏭 Using existing Factory at: ${factoryAddress}`);
+    throw new Error(`CriticalInfrastructureError: No valid Factory Address found on-chain at ${factoryAddress}. Manual infrastructure deployment is required.`);
   }
+  
+  console.log(`🏭 Using existing Factory at: ${factoryAddress}`);
+
 
   const factory = new eth.Contract(factoryAddress, PandorasProtocolFactoryArtifact.abi, wallet);
 
@@ -143,8 +139,9 @@ export async function deployW2EProtocol(
   const primaryArtifact = artifactsToDeploy[0];
   if (!primaryArtifact) throw new Error("No artifacts found to deploy. Ensure artifacts list is not empty.");
 
-  // Append a timestamp to the slug to ensure a unique salt for every deployment attempt, avoiding CREATE2 collisions.
-  const uniqueId = projectSlug ? `${projectSlug}-${Date.now()}` : `w2e-project-${Date.now()}`;
+  // TODO (Phase 2): Replace projectSlug with immutable project.id during Protocol Kernel migration.
+  // The slug is presentation, not identity. For now, this is deterministic enough to stop ETH bleeding.
+  const uniqueId = projectSlug ? projectSlug : "w2e-project-default";
   const salt = eth.utils.id(uniqueId);
 
   const configStruct = {
@@ -180,10 +177,13 @@ export async function deployW2EProtocol(
     initialOwner: wallet.address
   };
 
-  const uniquePandoraSigners = Array.from(new Set((config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, oracleAddress]))
-    .sort((a, b) => (a as string).toLowerCase().localeCompare((b as string).toLowerCase()));
-  const uniqueDaoSigners = Array.from(new Set([wallet.address, oracleAddress, rootTreasury]))
-    .sort((a, b) => (a as string).toLowerCase().localeCompare((b as string).toLowerCase()));
+  const uniquePandoraSigners = Array.from(new Set(
+    ((config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, oracleAddress]).map(a => (a as string).toLowerCase())
+  )).sort((a, b) => a.localeCompare(b));
+  
+  const uniqueDaoSigners = Array.from(new Set(
+    [wallet.address, oracleAddress, rootTreasury].map(a => (a as string).toLowerCase())
+  )).sort((a, b) => a.localeCompare(b));
   
   // Inject dynamically calculated confirmations back into configStruct
   (configStruct as any).treasuryPandoraConfirmations = Math.min(2, uniquePandoraSigners.length);
@@ -221,6 +221,17 @@ export async function deployW2EProtocol(
   const addrRegistry = await predictAddr(regInit);
 
   console.log(`⚛️ Expected Registry: ${addrRegistry}`);
+
+  // DEPLOYMENT LOCK CHECK: Verify if already deployed
+  // TEMPORARY: During Phase 1, blockchain is used as deployment lock.
+  // Phase 2 replaces this with DeploymentCoordinator + DB lock.
+  const registryCode = await provider.getCode(addrRegistry);
+  if (registryCode !== "0x") {
+    console.log(`✅ Protocol already deployed at Registry: ${addrRegistry}`);
+    // PHASE 1: Fail-fast to stop ETH bleeding on retries. 
+    // In Phase 2, this will be handled by the DeploymentCoordinator reading from the DB.
+    throw new Error(`ALREADY_DEPLOYED_REGISTRY:${addrRegistry}`);
+  }
 
   // 5. Execute Atomic Deployment
   console.log(`📦 Sending atomic deployment transaction...`);
