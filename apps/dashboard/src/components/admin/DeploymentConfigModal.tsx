@@ -90,6 +90,7 @@ export function DeploymentConfigModal({
     const [packages, setPackages] = useState<PackageConfig[]>([]);
     const [activeTab, setActiveTab] = useState<'artifacts' | 'phases' | 'progression' | 'economics' | 'preview'>('artifacts');
     const [validationError, setValidationError] = useState<string | null>(null);
+    const [showConfirmation, setShowConfirmation] = useState(false);
 
     // Load or reset state when modal opens
     useEffect(() => {
@@ -271,11 +272,10 @@ export function DeploymentConfigModal({
         }));
     };
 
-    // ── Submit ────────────────────────────────────────────────────────
+    // ── Confirmation Handlers ──────────────────────────────────────────
     const handleSubmit = () => {
         setValidationError(null);
 
-        // Validation: Verify wallets if allocations exist
         if ((tokenomics.teamAllocationBps || 0) > 0 && (!tokenomics.teamWallet || !/^0x[a-fA-F0-9]{40}$/.test(tokenomics.teamWallet))) {
             setValidationError('Wallet del Equipo inválida o vacía (requerida por Team Allocation).');
             setActiveTab('economics');
@@ -288,6 +288,11 @@ export function DeploymentConfigModal({
             return;
         }
 
+        setShowConfirmation(true);
+    };
+
+    const handleConfirmDeploy = () => {
+        setShowConfirmation(false);
         onConfirm({
             network,
             pageLayoutType,
@@ -300,6 +305,10 @@ export function DeploymentConfigModal({
             packages,
             w2eConfig: economicSchedule,
         });
+    };
+
+    const handleCancelConfirmation = () => {
+        setShowConfirmation(false);
     };
 
     // ── Computed ───────────────────────────────────────────────────────
@@ -1262,6 +1271,89 @@ export function DeploymentConfigModal({
                         </button>
                     </div>
                 </div>
+
+                {/* Confirmation Step Overlay */}
+                {showConfirmation && !isLoading && (
+                    <div className="absolute inset-0 z-[6000] bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-8">
+                        <div className="max-w-lg w-full bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl shadow-black/50 p-6 space-y-5">
+                            <div className="text-center">
+                                <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                    <span className="text-2xl">⚠️</span>
+                                </div>
+                                <h3 className="text-lg font-bold text-white">Confirmar Despliegue</h3>
+                                <p className="text-sm text-zinc-400 mt-1">Revisa los detalles antes de enviar la transacción.</p>
+                            </div>
+
+                            <div className="space-y-2.5 bg-zinc-800/50 rounded-xl p-4">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-zinc-400">Red</span>
+                                    <span className={`font-bold ${network === 'base' ? 'text-blue-400' : 'text-amber-400'}`}>
+                                        {network === 'base' ? '🔵 Base Mainnet' : '🧪 Sepolia Testnet'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-zinc-400">Page Type</span>
+                                    <span className="text-white font-medium">{pageLayoutType}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-zinc-400">Artefactos</span>
+                                    <span className="text-white font-medium">{artifacts.length}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-zinc-400">Contratos totales</span>
+                                    <span className="text-white font-medium">{artifacts.length + 5}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-zinc-400">Supply total</span>
+                                    <span className="text-white font-medium">{tokenomics.totalSupply?.toLocaleString() || '1,000,000'}</span>
+                                </div>
+                                {network === 'base' && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-zinc-400">Gas estimado</span>
+                                        <span className="text-blue-400 font-mono text-xs">~12,000,000</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {network === 'base' && (
+                                <div className="p-3 rounded-xl bg-red-900/20 border border-red-500/30">
+                                    <p className="text-xs font-bold text-red-400 mb-1">🚨 DESPLIEGUE EN PRODUCCIÓN</p>
+                                    <p className="text-xs text-red-300/80">
+                                        Los contratos serán <strong>inmutables</strong> y costarán ETH real en Base Mainnet.
+                                        Esta acción no se puede deshacer.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                                <p className="text-xs text-indigo-300 font-medium">Lo que se desplegará:</p>
+                                <ul className="mt-1.5 text-xs text-zinc-400 space-y-1">
+                                    <li>📦 ProtocolRegistry — corazón del ecosistema</li>
+                                    <li>🧵 W2ELoomV2 — orquestación de artefactos</li>
+                                    <li>💰 PBOXProtocolTreasury — multi-sig treasury</li>
+                                    <li>⚖️ W2EGovernor — gobernanza on-chain</li>
+                                    <li>🪙 W2EUtility — token de utilidad</li>
+                                    <li>🔑 W2ELicense — artefacto(s) NFT de acceso</li>
+                                </ul>
+                            </div>
+
+                            <div className="flex gap-3 pt-1">
+                                <button
+                                    onClick={handleCancelConfirmation}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-sm font-medium transition-colors"
+                                >
+                                    ← Editar configuración
+                                </button>
+                                <button
+                                    onClick={handleConfirmDeploy}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02]"
+                                >
+                                    ✅ Sí, desplegar ahora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Deployment Status Feedback Overlay */}
                 {isLoading && (
