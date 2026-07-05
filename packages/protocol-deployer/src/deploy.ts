@@ -115,8 +115,8 @@ export async function deployW2EProtocol(
   }
 
   // 3. Obtain Factory Address
-  // Fallback to the already deployed factory on Base to save gas!
-  let factoryAddress = process.env.PANDORAS_FACTORY_ADDRESS || (network === 'base' ? "0xf189f577ba554604876cb81800df61df7f14e637" : undefined);
+  // FORCED HARDCODE: Prevent any accidental factory deployments
+  let factoryAddress = "0x1d0048De43Ec28d8B76D5705C33113Ab3de6bc65";
   let factoryExists = false;
 
   if (isValidAddress(factoryAddress)) {
@@ -180,8 +180,10 @@ export async function deployW2EProtocol(
     initialOwner: wallet.address
   };
 
-  const uniquePandoraSigners = Array.from(new Set((config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, oracleAddress]));
-  const uniqueDaoSigners = Array.from(new Set([wallet.address, oracleAddress, rootTreasury]));
+  const uniquePandoraSigners = Array.from(new Set((config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, oracleAddress]))
+    .sort((a, b) => (a as string).toLowerCase().localeCompare((b as string).toLowerCase()));
+  const uniqueDaoSigners = Array.from(new Set([wallet.address, oracleAddress, rootTreasury]))
+    .sort((a, b) => (a as string).toLowerCase().localeCompare((b as string).toLowerCase()));
   
   // Inject dynamically calculated confirmations back into configStruct
   (configStruct as any).treasuryPandoraConfirmations = Math.min(2, uniquePandoraSigners.length);
