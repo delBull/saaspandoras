@@ -233,7 +233,17 @@ export async function deployW2EProtocol(
     throw new Error(`ALREADY_DEPLOYED_REGISTRY:${addrRegistry}`);
   }
 
-  // 5. Execute Atomic Deployment
+  // 5. Validate Treasury Configuration BEFORE sending transaction
+  validateTreasuryConfiguration(
+    { address: wallet.address },
+    oracleAddress,
+    rootTreasury,
+    config,
+    isAddress
+  );
+  console.log(`✅ Treasury configuration validated — all constraints met`);
+
+  // 6. Execute Atomic Deployment
   console.log(`📦 Sending atomic deployment transaction...`);
   try {
     const tx = await factory.deployProtocol(
@@ -346,6 +356,68 @@ export async function deployW2EProtocol(
   } catch (e) {
     console.error("❌ ATOMIC DEPLOYMENT FAILED:", (e as any).message || e);
     throw e;
+  }
+}
+
+/**
+ * Validates Treasury constructor constraints BEFORE on-chain execution.
+ * 
+ * The Treasury constructor (from bytecode analysis) requires:
+ *  - pandoraSigners.length >= 2
+ *  - daoSigners.length >= 3
+ *  - pandoraOracle != address(0)
+ *  - requiredPandoraConfirmations >= 1 && <= pandoraSigners.length
+ *  - requiredDaoConfirmations >= 2 && <= daoSigners.length
+ *  - initialOwner != address(0)
+ *
+ * This prevents wasting gas on a revert that is 100% predictable.
+ */
+function validateTreasuryConfiguration(
+  wallet: { address: string },
+  oracleAddress: string,
+  rootTreasury: string,
+  config: W2EConfig,
+  isAddress: (addr: string) => boolean,
+): void {
+  const ZERO = "0x0000000000000000000000000000000000000000";
+
+  const pandoraSigners = (config.treasurySigners && config.treasurySigners.length >= 2)
+    ? config.treasurySigners
+    : [wallet.address, oracleAddress];
+
+  const daoSigners = [wallet.address, oracleAddress, rootTreasury];
+
+  const uniquePandora = [...new Set(pandoraSigners.map(a => a.toLowerCase()))];
+  const uniqueDao = [...new Set(daoSigners.map(a => a.toLowerCase()))];
+
+  if (uniquePandora.length < 2) {
+    throw new Error(
+      `ConfigurationError: Treasury needs >= 2 distinct Pandora signers ` +
+      `(got ${uniquePandora.length}: ${uniquePandora.join(', ')}). ` +
+      `Set PANDORA_ORACLE_ADDRESS to a different address or provide distinct treasurySigners.`
+    );
+  }
+
+  if (uniqueDao.length < 3) {
+    throw new Error(
+      `ConfigurationError: Treasury needs >= 3 distinct DAO signers ` +
+      `(got ${uniqueDao.length}: ${uniqueDao.join(', ')}). ` +
+      `Ensure wallet, oracle, and rootTreasury are all distinct addresses.`
+    );
+  }
+
+  if (!isAddress(oracleAddress) || oracleAddress === ZERO) {
+    throw new Error(`ConfigurationError: PANDORA_ORACLE_ADDRESS is invalid or zero address.`);
+  }
+
+  const pandoraConfirmations = Math.min(2, uniquePandora.length);
+  if (pandoraConfirmations < 1) {
+    throw new Error(`ConfigurationError: treasuryPandoraConfirmations < 1.`);
+  }
+
+  const daoConfirmations = Math.min(2, uniqueDao.length);
+  if (daoConfirmations < 2) {
+    throw new Error(`ConfigurationError: treasuryDaoConfirmations < 2.`);
   }
 }
 

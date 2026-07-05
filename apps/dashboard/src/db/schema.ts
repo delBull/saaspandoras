@@ -34,6 +34,60 @@ export const deploymentJobStatusEnum = pgEnum("deployment_job_status", [
   "failed"
 ]);
 
+// --- PROTOCOL KERNEL ENUMS ---
+
+export const protocolLifecycleEnum = pgEnum("protocol_lifecycle", [
+  "QUEUED",
+  "VALIDATING",
+  "FAILED_VALIDATE",
+  "VALIDATED",
+  "PREPARING",
+  "DEPLOYING_INFRASTRUCTURE",
+  "FAILED_INFRASTRUCTURE",
+  "INFRASTRUCTURE_DEPLOYED",
+  "MINTING_TOKENS",
+  "FAILED_MINT",
+  "MINT_COMPLETED",
+  "TRANSFERRING_OWNERSHIP",
+  "FAILED_OWNERSHIP",
+  "FINALIZED",
+  "UNRECOVERABLE"
+]);
+
+export const blockchainEnvironmentEnum = pgEnum("blockchain_environment", [
+  "BASE_MAINNET",
+  "BASE_SEPOLIA",
+  "ETHEREUM",
+  "POLYGON",
+  "LOCAL"
+]);
+
+export const protocolCapabilityEnum = pgEnum("protocol_capability", [
+  "IDENTITY",
+  "MEMBERSHIP",
+  "MARKETPLACE",
+  "MORTGAGE",
+  "LENDING",
+  "DAO",
+  "BRIDGE",
+  "RENTAL",
+  "GOVERNANCE",
+  "VOTING",
+  "TREASURY",
+  "REFERRAL",
+  "ANALYTICS",
+  "AI"
+]);
+
+export const auditActorEnum = pgEnum("audit_actor", [
+  "Founder",
+  "Worker",
+  "Cron",
+  "API",
+  "Railway",
+  "Admin"
+]);
+
 export const marketPhaseEnum = pgEnum("market_phase", ["funding", "ready", "defense"]);
 
 
@@ -1776,6 +1830,105 @@ export const deploymentJobs = pgTable("deployment_jobs", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+// --- PROTOCOL KERNEL TABLES ---
+
+// Root aggregate: one row per protocol deployment runtime
+export const protocolRuntimes = pgTable("protocol_runtimes", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  lifecycle: protocolLifecycleEnum("lifecycle").default("QUEUED").notNull(),
+  protocolVersion: integer("protocol_version").notNull().default(1),
+  runtimeVersion: varchar("runtime_version", { length: 50 }),
+  engineVersion: varchar("engine_version", { length: 50 }),
+  environment: blockchainEnvironmentEnum("environment").notNull(),
+  salt: varchar("salt", { length: 128 }),
+  factoryAddress: varchar("factory_address", { length: 256 }),
+  creatorWallet: varchar("creator_wallet", { length: 128 }),
+  retryCount: integer("retry_count").default(0).notNull(),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+// Deployed artifacts (contracts, NFT collections, IPFS, ZK proofs, subgraphs, etc.)
+export const protocolArtifacts = pgTable("protocol_artifacts", {
+  id: serial("id").primaryKey(),
+  runtimeId: integer("runtime_id").notNull().references(() => protocolRuntimes.id),
+  role: varchar("role", { length: 100 }).notNull(),
+  address: varchar("address", { length: 256 }),
+  transactionHash: varchar("transaction_hash", { length: 256 }),
+  deployedAt: timestamp("deployed_at", { withTimezone: true }),
+  artifactType: varchar("artifact_type", { length: 100 }),
+  metadata: jsonb("metadata").default({}),
+});
+
+// SQL-queryable protocol capabilities (for Marketplace queries)
+export const protocolCapabilities = pgTable("protocol_capabilities", {
+  id: serial("id").primaryKey(),
+  runtimeId: integer("runtime_id").notNull().references(() => protocolRuntimes.id),
+  capability: protocolCapabilityEnum("capability").notNull(),
+  enabledAt: timestamp("enabled_at", { withTimezone: true }).defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}),
+});
+
+// Event-sourced timeline: every state transition produces one row
+export const protocolTimelineEvents = pgTable("protocol_timeline_events", {
+  id: serial("id").primaryKey(),
+  runtimeId: integer("runtime_id").notNull().references(() => protocolRuntimes.id),
+  fromState: protocolLifecycleEnum("from_state"),
+  toState: protocolLifecycleEnum("to_state").notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  durationMs: integer("duration_ms"),
+  gasUsed: varchar("gas_used", { length: 100 }),
+  effectiveGasPrice: varchar("effective_gas_price", { length: 100 }),
+  blockNumber: integer("block_number"),
+  confirmations: integer("confirmations"),
+  txHash: varchar("tx_hash", { length: 256 }),
+  rpcLatencyMs: integer("rpc_latency_ms"),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Immutable compliance trail: never deleted, never updated
+export const protocolAuditLogs = pgTable("protocol_audit_logs", {
+  id: serial("id").primaryKey(),
+  runtimeId: integer("runtime_id").notNull().references(() => protocolRuntimes.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  actor: auditActorEnum("actor").notNull(),
+  actorId: varchar("actor_id", { length: 256 }),
+  metadata: jsonb("metadata").default({}),
+  ipAddress: varchar("ip_address", { length: 50 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Concurrency guard: one active deployment at a time (runtime_id is unique)
+export const protocolRuntimeLocks = pgTable("protocol_runtime_locks", {
+  id: serial("id").primaryKey(),
+  runtimeId: integer("runtime_id").notNull().references(() => protocolRuntimes.id).unique(),
+  workerId: varchar("worker_id", { length: 256 }).notNull(),
+  acquiredAt: timestamp("acquired_at", { withTimezone: true }).defaultNow().notNull(),
+  heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }).defaultNow().notNull(),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
+});
+
+// Fast resume checkpoints: read latest instead of replaying full timeline
+export const protocolCheckpoints = pgTable("protocol_checkpoints", {
+  id: serial("id").primaryKey(),
+  runtimeId: integer("runtime_id").notNull().references(() => protocolRuntimes.id),
+  checkpoint: varchar("checkpoint", { length: 100 }).notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}),
+});
+
+// Semantic versioning registry
+export const protocolVersions = pgTable("protocol_versions", {
+  id: serial("id").primaryKey(),
+  semanticVersion: varchar("semantic_version", { length: 50 }).notNull().unique(),
+  migration: text("migration"),
+  compatibility: jsonb("compatibility").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // --- NEWSLETTER SUBSCRIPTIONS (Unified in Neon/Railway) ---
