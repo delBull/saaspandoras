@@ -172,8 +172,6 @@ export async function deployW2EProtocol(
     licenseTransferable: primaryArtifact.transferable ?? true,
     licenseBurnable: primaryArtifact.burnable ?? false,
 
-    treasuryPandoraConfirmations: Math.min(2, (config.treasurySigners?.length || 2)),
-    treasuryDaoConfirmations: 2,
     treasuryEmergencyThreshold: parseEther("5.0"),
     treasuryEmergencyInactivityDays: 30,
     treasuryDirectOperationLimit: parseEther("0.1"),
@@ -182,9 +180,16 @@ export async function deployW2EProtocol(
     initialOwner: wallet.address
   };
 
+  const uniquePandoraSigners = Array.from(new Set((config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, oracleAddress]));
+  const uniqueDaoSigners = Array.from(new Set([wallet.address, oracleAddress, rootTreasury]));
+  
+  // Inject dynamically calculated confirmations back into configStruct
+  (configStruct as any).treasuryPandoraConfirmations = Math.min(2, uniquePandoraSigners.length);
+  (configStruct as any).treasuryDaoConfirmations = Math.min(2, uniqueDaoSigners.length);
+
   const actorsStruct = {
-    treasuryPandoraSigners: (config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, oracleAddress],
-    treasuryDaoSigners: [wallet.address, oracleAddress, rootTreasury]
+    treasuryPandoraSigners: uniquePandoraSigners,
+    treasuryDaoSigners: uniqueDaoSigners
   };
 
   const getBytecode = (artifact: any) => {
