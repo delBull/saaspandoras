@@ -34,6 +34,7 @@ export interface UtilityPhase {
     startDate?: string;
     endDate?: string;
     isSoftCap?: boolean;
+    lockUntilPrevious?: boolean; // Bloquea hasta terminar fase anterior
 }
 
 export interface TokenomicsConfig {
@@ -152,6 +153,7 @@ export const DEFAULT_PHASES: UtilityPhase[] = [
         isActive: true,
         tokenAllocation: 200000,
         tokenPrice: 0.08,
+        lockUntilPrevious: false,
     },
     {
         id: 'public',
@@ -162,6 +164,7 @@ export const DEFAULT_PHASES: UtilityPhase[] = [
         isActive: true,
         tokenAllocation: 300000,
         tokenPrice: 0.10,
+        lockUntilPrevious: false,
     }
 ];
 

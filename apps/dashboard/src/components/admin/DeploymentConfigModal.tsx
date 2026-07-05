@@ -199,7 +199,8 @@ export function DeploymentConfigModal({
     const addPhase = () => {
         setPhases(prev => [...prev, {
             id: `phase-${Date.now()}`, name: 'Nueva Fase', description: '',
-            type: 'time', limit: 30, isActive: true, tokenAllocation: 0, tokenPrice: tokenomics.price
+            type: 'time', limit: 30, isActive: true, tokenAllocation: 0, tokenPrice: tokenomics.price,
+            lockUntilPrevious: false,
         }]);
     };
 
@@ -870,19 +871,37 @@ export function DeploymentConfigModal({
                                             <input id={`phase-tokenPrice-${phase.id}`} type="number" step="0.000001" value={phase.tokenPrice ?? tokenomics.price} onChange={e => handlePhaseChange(phase.id, 'tokenPrice', Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
                                         </div>
                                     </div>
-                                    {/* Dates + Soft Cap */}
-                                    <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-zinc-700/50">
-                                        <div>
-                                            <label htmlFor={`phase-start-${phase.id}`} className="block text-xs text-gray-400 mb-1">Fecha Inicio</label>
-                                            <input id={`phase-start-${phase.id}`} type="date" value={phase.startDate || ''} onChange={e => handlePhaseChange(phase.id, 'startDate', e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                    {/* Lock toggle + Dates + Soft Cap */}
+                                    <div className="mt-3 pt-3 border-t border-zinc-700/50 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox" id={`lock-${phase.id}`} checked={phase.lockUntilPrevious || false} onChange={e => handlePhaseChange(phase.id, 'lockUntilPrevious', e.target.checked)} className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-amber-500" />
+                                            <label htmlFor={`lock-${phase.id}`} className="text-xs text-gray-300 cursor-pointer select-none flex items-center">
+                                                🔒 Hasta terminar fase anterior — se desbloquea automáticamente al completarse la fase previa
+                                                <InfoTooltip title="Bloquear hasta fase anterior">
+                                                    <p>Al activar esta opción, la fase <strong className="text-amber-300">no tendrá fecha fija</strong>.</p>
+                                                    <p>Se desbloqueará automáticamente cuando la fase anterior se complete (por tiempo o recaudación).</p>
+                                                    <p className="text-emerald-400 mt-1">Ideal para fases estratégicas o públicas que deben esperar el cierre de la fase Fundador.</p>
+                                                </InfoTooltip>
+                                            </label>
                                         </div>
-                                        <div>
-                                            <label htmlFor={`phase-end-${phase.id}`} className="block text-xs text-gray-400 mb-1">{phase.type === 'time' ? 'Fecha Fin (calculada)' : 'Fecha Fin (opcional)'}</label>
-                                            <input id={`phase-end-${phase.id}`} type="date" value={phase.endDate || ''} onChange={e => handlePhaseChange(phase.id, 'endDate', e.target.value)} disabled={phase.type === 'time'} className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none ${phase.type === 'time' ? 'opacity-40 cursor-not-allowed' : ''}`} />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label htmlFor={`phase-start-${phase.id}`} className={`block text-xs mb-1 ${phase.lockUntilPrevious ? 'text-zinc-600' : 'text-gray-400'}`}>Fecha Inicio</label>
+                                                <input id={`phase-start-${phase.id}`} type="date" value={phase.startDate || ''} onChange={e => handlePhaseChange(phase.id, 'startDate', e.target.value)} disabled={phase.lockUntilPrevious} className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none ${phase.lockUntilPrevious ? 'opacity-30 cursor-not-allowed' : ''}`} />
+                                            </div>
+                                            <div>
+                                                <label htmlFor={`phase-end-${phase.id}`} className={`block text-xs mb-1 ${phase.type === 'time' || phase.lockUntilPrevious ? 'text-zinc-600' : 'text-gray-400'}`}>{phase.type === 'time' ? 'Fecha Fin (calculada)' : 'Fecha Fin (opcional)'}</label>
+                                                <input id={`phase-end-${phase.id}`} type="date" value={phase.endDate || ''} onChange={e => handlePhaseChange(phase.id, 'endDate', e.target.value)} disabled={phase.type === 'time' || phase.lockUntilPrevious} className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none ${phase.type === 'time' || phase.lockUntilPrevious ? 'opacity-30 cursor-not-allowed' : ''}`} />
+                                            </div>
                                         </div>
-                                        <div className="col-span-2 flex items-center gap-2">
-                                            <input type="checkbox" id={`sc-${phase.id}`} checked={phase.isSoftCap || false} onChange={e => handlePhaseChange(phase.id, 'isSoftCap', e.target.checked)} className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-indigo-500" />
-                                            <label htmlFor={`sc-${phase.id}`} className="text-xs text-gray-300 cursor-pointer select-none flex items-center">
+                                        {phase.lockUntilPrevious && (
+                                            <div className="col-span-2 text-[11px] text-amber-400/70 flex items-center gap-1.5 bg-amber-500/5 px-3 py-2 rounded-lg border border-amber-500/20">
+                                                <span>🔒</span> Fase bloqueada hasta que la fase anterior se complete. No requiere fecha.
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox" id={`sc-${phase.id}`} checked={phase.isSoftCap || false} disabled={phase.lockUntilPrevious} onChange={e => handlePhaseChange(phase.id, 'isSoftCap', e.target.checked)} className={`w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-indigo-500 ${phase.lockUntilPrevious ? 'opacity-30 cursor-not-allowed' : ''}`} />
+                                            <label htmlFor={`sc-${phase.id}`} className={`text-xs cursor-pointer select-none flex items-center ${phase.lockUntilPrevious ? 'text-zinc-600' : 'text-gray-300'}`}>
                                                 Habilitar «All or Nothing» — si no se alcanza la meta, se devuelven los fondos.
                                                 <InfoTooltip title="¿Qué es el Soft Cap (All or Nothing)?">
                                                     <p>Si activas esto, la fase funciona como un <strong className="text-indigo-300">crowdfunding con garantía</strong>:</p>

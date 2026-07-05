@@ -1091,7 +1091,7 @@ const OPERATION_WALLETS: WalletInfo[] = [
 const BASE_RPC = "https://mainnet.base.org";
 const OPTIMAL_BALANCE_ETH = 0.005;
 const LOW_BALANCE_ETH = 0.001;
-const DEPLOY_COST_ETH = 0.0012;
+const DEPLOY_COST_ETH = 0.017;
 
 function OperationWallets({ isSuperAdmin, walletAddress }: { isSuperAdmin: boolean; walletAddress?: string | null }) {
   const [balances, setBalances] = useState<Record<string, string>>({});

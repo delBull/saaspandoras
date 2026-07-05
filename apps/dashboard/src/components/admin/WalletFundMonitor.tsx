@@ -214,6 +214,7 @@ export function WalletFundMonitor() {
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> ≥ {data?.wallets[0]?.thresholds.optimal} ETH</span>
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> ≥ {data?.wallets[0]?.thresholds.warning} ETH</span>
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> {"<"} {data?.wallets[0]?.thresholds.warning} ETH</span>
+                  <span className="text-[10px] text-zinc-600 ml-2">Costo/deploy: ~0.017 ETH</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
