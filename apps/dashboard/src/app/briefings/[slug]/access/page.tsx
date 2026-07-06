@@ -1,8 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { db } from '@/db';
-import { projects, projectBriefings } from '@/db/schema';
+import { db } from '~/db';
+import { projects, projectBriefings } from '~/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export default async function AccessHubPage({ params }: { params: { slug: string } }) {
@@ -42,7 +42,7 @@ export default async function AccessHubPage({ params }: { params: { slug: string
     'thesis': 4,
   };
   
-  briefings.sort((a, b) => (orderMap[a.slug] || 99) - (orderMap[b.slug] || 99));
+  briefings.sort((a: any, b: any) => (orderMap[a.slug] || 99) - (orderMap[b.slug] || 99));
 
   return (
     <div className="flex flex-col justify-center min-h-[75vh] px-6 md:px-12 lg:px-24">
@@ -59,10 +59,10 @@ export default async function AccessHubPage({ params }: { params: { slug: string
         </p>
 
         <div className="flex flex-col space-y-6">
-          {briefings.map((briefing, index) => (
+          {briefings.map((briefing: any, index: number) => (
             <React.Fragment key={briefing.slug}>
               <Link
-                href={`/p/${slug}/access/${briefing.slug}`}
+                href={`/briefings/${slug}/access/${briefing.slug}`}
                 className="group flex items-center justify-between text-2xl md:text-4xl font-light text-black hover:italic transition-all duration-300"
               >
                 <span>

@@ -1,9 +1,9 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { db } from '@/db';
-import { projects, projectBriefings } from '@/db/schema';
+import { db } from '~/db';
+import { projects, projectBriefings } from '~/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { BriefingRenderer } from '@/components/briefings/BriefingRenderer';
+import { BriefingRenderer } from '~/components/briefings/BriefingRenderer';
 
 export default async function BriefingPage({ params }: { params: { slug: string; briefingSlug: string } }) {
   const { slug, briefingSlug } = await params;

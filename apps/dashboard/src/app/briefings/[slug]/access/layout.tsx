@@ -24,7 +24,7 @@ export default function AccessLayout({
       */}
       <div className="fixed top-0 w-full z-50 flex items-center justify-between px-6 py-4 bg-[#F9F9F9]/80 backdrop-blur-md border-b border-black/5 print:hidden">
         <Link 
-          href={`/p/${params.slug}/access`} 
+          href={`/briefings/${params.slug}/access`} 
           className="text-xs font-bold uppercase tracking-[0.2em] hover:opacity-50 transition-opacity"
         >
           ← Access Hub

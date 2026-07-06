@@ -590,7 +590,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       legal: project.legalConfig || {},
       knowledgeCenter: {
         isActive: activeBriefings && activeBriefings.length > 0,
-        url: `https://${apiKey?.startsWith('pk_live_') ? 'dash' : 'staging.dash'}.pandoras.finance/p/${slug}/access`
+        url: `https://${apiKey?.startsWith('pk_live_') ? 'dash' : 'staging.dash'}.pandoras.finance/briefings/${slug}/access`
       },
       phases: phases.map((p: any) => ({
         id: p.id,

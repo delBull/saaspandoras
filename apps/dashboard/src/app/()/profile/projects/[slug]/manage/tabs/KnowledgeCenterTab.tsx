@@ -192,7 +192,7 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                     placeholder="ej: developers"
                     className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-white text-sm font-mono"
                   />
-                  <p className="text-[10px] text-zinc-500 mt-1">/p/{project.slug}/access/{editingBriefing.slug || '[slug]'}</p>
+                  <p className="text-[10px] text-zinc-500 mt-1">/briefings/{project.slug}/access/{editingBriefing.slug || '[slug]'}</p>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-zinc-500 mb-1">Estado</label>
@@ -357,7 +357,7 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h4 className="text-lg font-bold text-white">{briefing.title}</h4>
-                  <p className="text-xs text-zinc-500 font-mono mt-1">/p/{project.slug}/access/{briefing.slug}</p>
+                  <p className="text-xs text-zinc-500 font-mono mt-1">/briefings/{project.slug}/access/{briefing.slug}</p>
                 </div>
                 <span className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold ${briefing.status === 'published' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-zinc-800 text-zinc-500'}`}>
                   {briefing.status === 'published' ? 'Publicado' : 'Borrador'}
@@ -372,7 +372,7 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                   Editar Bloques ({briefing.blocks?.length || 0})
                 </button>
                 <a 
-                  href={`/p/${project.slug}/access/${briefing.slug}`}
+                  href={`/briefings/${project.slug}/access/${briefing.slug}`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm text-zinc-400 hover:text-white"
