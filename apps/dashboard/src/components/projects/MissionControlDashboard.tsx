@@ -221,6 +221,16 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
     const raised = Number(project.raisedAmount || project.raised_amount || 0);
     const target = Number(project.targetAmount || project.target_amount || 1);
     const progress = Math.min((raised / target) * 100, 100);
+    const [daoMemberCount, setDaoMemberCount] = useState<number | null>(null);
+
+    useEffect(() => {
+        fetch(`/api/dao/metrics?projectId=${project.id}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data?.members !== undefined) setDaoMemberCount(Number(data.members));
+            })
+            .catch(() => setDaoMemberCount(0));
+    }, [project.id]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -256,7 +266,7 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
                 <div className="grid grid-cols-2 gap-6">
                     <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-3xl p-6">
                         <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-2">Comunidad DAO</p>
-                        <p className="text-3xl font-black text-white">{project.status === 'live' ? '12' : '0'}</p>
+                        <p className="text-3xl font-black text-white">{daoMemberCount !== null ? daoMemberCount : '0'}</p>
                         <p className="text-sm text-zinc-500 mt-1">Miembros Activos</p>
                     </div>
                     <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-3xl p-6">
@@ -273,11 +283,17 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
                     <div className="space-y-4">
                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                             <span className="text-sm text-zinc-400">Red Base</span>
-                            <span className="text-sm font-bold text-white bg-white/10 px-2 py-1 rounded">Base (Testnet)</span>
+                            <span className="text-sm font-bold text-white bg-white/10 px-2 py-1 rounded">
+                                {(project as any).chainId === 8453 ? 'Base (Mainnet)' : 'Base (Testnet)'}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                             <span className="text-sm text-zinc-400">Smart Contract</span>
-                            <span className="text-sm font-mono text-zinc-300">{(project as any).contractAddress ? `${(project as any).contractAddress.slice(0, 6)}...${(project as any).contractAddress.slice(-4)}` : 'Pendiente'}</span>
+                            <span className="text-sm font-mono text-zinc-300">
+                                {((project as any).contractAddress || (project as any)?.w2eConfig?.artifacts?.[0]?.address) 
+                                    ? `${((project as any).contractAddress || (project as any)?.w2eConfig?.artifacts?.[0]?.address).slice(0, 6)}...${((project as any).contractAddress || (project as any)?.w2eConfig?.artifacts?.[0]?.address).slice(-4)}` 
+                                    : 'Pendiente'}
+                            </span>
                         </div>
                     </div>
                 </div>
