@@ -62,27 +62,9 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
     
     const baseUrl = dynamicDomain.replace(/\/$/, '');
 
-    // Override PDF links to use the interactive markdown viewer
-    // (This uses the dynamic baseUrl for the specific project)
+    // Allow dynamic PDF links to be used as provided in the DB without forcing the markdown viewer
     if (config.documents) {
-        config.documents = config.documents.map((doc: any) => {
-            if (doc.title.toLowerCase().includes('dossier') || doc.title.toLowerCase().includes('deck') || doc.url?.toLowerCase().includes('deck')) {
-                return { ...doc, url: `${baseUrl}/es/docs/deck`, desc: 'Presentación interactiva completa' };
-            }
-            if (doc.title.toLowerCase().includes('one pager') || doc.title.toLowerCase().includes('resumen') || doc.url?.toLowerCase().includes('one_pager')) {
-                return { ...doc, url: `${baseUrl}/es/docs/one-pager`, desc: 'Resumen ejecutivo de 1 página' };
-            }
-            return doc;
-        });
-        
-        // Ensure One Pager is present
-        if (!config.documents.find((d: any) => d.url.includes('one-pager'))) {
-            config.documents.unshift({
-                title: 'One Pager',
-                url: `${baseUrl}/es/docs/one-pager`,
-                desc: 'Resumen ejecutivo de 1 página'
-            });
-        }
+        // We leave config.documents untouched so it respects the user's uploaded PDFs
     }
 
     // Find if there is an active event for the project

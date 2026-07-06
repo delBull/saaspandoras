@@ -48,7 +48,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const handshakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const [step, setStep] = useState<'checkout' | 'processing' | 'success' | 'fast_lane'>('checkout');
-    const [amount, setAmount] = useState("1");
+    const [amount, setAmount] = useState(searchParams.get('quantity') || "1");
     const [contractPrice, setContractPrice] = useState<bigint | undefined>(undefined);
     const [isPriceLoading, setIsPriceLoading] = useState(true);
     const [totalSupply, setTotalSupply] = useState<number>(0);
