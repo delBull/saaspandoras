@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
 import { toast } from 'sonner';
 import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
-import { FolderIcon } from '@heroicons/react/24/outline';
-import { snaraiMaterials } from '@/lib/marketing/snarai-materials';
+import { PartnerHub } from '@/components/marketing/PartnerHub';
 
 interface CommissionData {
   referralCode: string;
@@ -236,41 +235,9 @@ export default function AmbassadorDashboard() {
                 </div>
               )}
             </div>
-            {/* Recursos y Materiales */}
-            <div className="bg-zinc-900/50 border border-emerald-500/20 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-bold">Recursos y Materiales</h2>
-                  <p className="text-sm text-zinc-400">Material de marketing y estudio para compartir con tus prospectos.</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                {snaraiMaterials.map((mat) => (
-                  <div key={mat.id} className="bg-zinc-800/30 border border-emerald-500/20 rounded-xl p-5 hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all group flex flex-col">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
-                        <FolderIcon className="w-5 h-5 text-emerald-400" />
-                      </div>
-                      <span className="text-[9px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Documento Oficial
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors mb-2">{mat.title}</h3>
-                    <p className="text-xs text-zinc-400 mb-4 flex-1">
-                      <strong className="text-emerald-400 block mb-1">Objetivo: {mat.objective}</strong>
-                      {mat.description}
-                    </p>
-                    <a 
-                      href={`/materials/snarai/${mat.id}`} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="text-sm w-full text-center font-bold text-black bg-emerald-500 hover:bg-emerald-400 py-2 rounded transition-colors mt-auto"
-                    >
-                      Abrir Documento
-                    </a>
-                  </div>
-                ))}
-              </div>
+            {/* Recursos y Materiales -> Partner Hub */}
+            <div className="mt-8">
+              <PartnerHub projectSlug="snarai" />
             </div>
           </>
         )}
