@@ -36,7 +36,13 @@ const SCRIPT_CATEGORIES = [
 
 export function PartnerHub({ projectSlug }: { projectSlug: string }) {
   const [activeTab, setActiveTab] = useState<'docs' | 'playbook' | 'calculator' | 'scripts'>('docs');
-  
+
+  // Map project slugs to their public landing URLs
+  const projectUrlMap: Record<string, string> = {
+    'snarai': 'https://snarai.aztecaz.xyz',
+  };
+  const projectUrl = projectUrlMap[projectSlug] ?? `https://pandoras.finance/p/${projectSlug}`;
+
   // Calculator State
   const [investmentInput, setInvestmentInput] = useState<string>("50000");
   const commissionRate = 0.03; // 3%
@@ -66,8 +72,8 @@ export function PartnerHub({ projectSlug }: { projectSlug: string }) {
           <div className="flex flex-col sm:flex-row gap-3">
             <button 
               onClick={() => {
-                navigator.clipboard.writeText("https://snarai.com");
-                alert("Enlace del proyecto copiado. ¡Compártelo con tus clientes!");
+                navigator.clipboard.writeText(projectUrl);
+                alert(`Enlace copiado: ${projectUrl} ¡Compártelo con tus clientes!`);
               }}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-colors border border-zinc-700"
             >
