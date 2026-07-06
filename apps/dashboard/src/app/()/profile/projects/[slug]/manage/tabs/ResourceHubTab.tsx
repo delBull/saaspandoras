@@ -168,6 +168,18 @@ export function ResourceHubTab({ project }: { project: any }) {
         { key: 'deck_en', label: 'Deck Overview (EN)' },
     ];
 
+    let dynamicDomain = project.website;
+    if (!dynamicDomain && Array.isArray(project.allowedDomains) && project.allowedDomains.length > 0) {
+        dynamicDomain = project.allowedDomains[0];
+    }
+    if (!dynamicDomain) {
+        dynamicDomain = `https://${project.slug}.aztecaz.xyz`;
+    }
+    if (!dynamicDomain.startsWith('http://') && !dynamicDomain.startsWith('https://')) {
+        dynamicDomain = `https://${dynamicDomain}`;
+    }
+    dynamicDomain = dynamicDomain.replace(/\/$/, '');
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -273,17 +285,24 @@ export function ResourceHubTab({ project }: { project: any }) {
                                 className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
                                 placeholder="Descripción corta"
                             />
-                            <input
-                                type="url"
-                                value={doc.url}
-                                onChange={(e) => {
-                                    const d = [...config.documents];
-                                    d[index] = { ...d[index], url: e.target.value };
-                                    setConfig({ ...config, documents: d });
-                                }}
-                                className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-[#D4A853] focus:outline-none"
-                                placeholder="https:// o ipfs://"
-                            />
+                            <div className="relative w-full">
+                                <input
+                                    type="url"
+                                    value={doc.url}
+                                    onChange={(e) => {
+                                        const d = [...config.documents];
+                                        d[index] = { ...d[index], url: e.target.value };
+                                        setConfig({ ...config, documents: d });
+                                    }}
+                                    className="w-full bg-black border border-white/10 rounded-xl p-3 pr-24 text-sm focus:border-[#D4A853] focus:outline-none"
+                                    placeholder="https:// o ipfs://"
+                                />
+                                {doc.url?.includes('/docs/') && (
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-[#D4A853]/10 border border-[#D4A853]/30 px-2 py-1 rounded text-[9px] text-[#D4A853] uppercase font-bold tracking-wider pointer-events-none">
+                                        <span>⚡️ Dinámico</span>
+                                    </div>
+                                )}
+                            </div>
                             <button onClick={() => removeDocument(index)} className="p-2 text-zinc-600 hover:text-red-400 transition-colors">
                                 <TrashIcon className="w-4 h-4" />
                             </button>
@@ -464,10 +483,37 @@ export function ResourceHubTab({ project }: { project: any }) {
                     </button>
                 </div>
 
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6">
+                    <h5 className="text-sm font-bold text-blue-400 mb-2">💡 ¿Cómo conectar estos documentos a tu Hub?</h5>
+                    <ol className="list-decimal list-inside text-sm text-blue-200/80 space-y-1">
+                        <li>Redacta el contenido en las cajas de Markdown de abajo.</li>
+                        <li>Haz clic en el botón <span className="text-blue-400 font-bold">Copiar URL</span> junto al documento que editaste.</li>
+                        <li>Sube a la sección <strong className="text-white">Documentación Oficial</strong> (arriba) y pega la URL en lugar de subir un archivo PDF.</li>
+                    </ol>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {MD_FIELDS.map((field) => (
+                    {MD_FIELDS.map((field) => {
+                        const isEn = field.key.endsWith('_en');
+                        const locale = isEn ? 'en' : 'es';
+                        let routePath = field.key.replace('_es', '').replace('_en', '');
+                        if (routePath === 'one_pager') routePath = 'one-pager';
+                        const docUrl = `${dynamicDomain}/${locale}/docs/${routePath}`;
+
+                        return (
                         <div key={field.key} className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-300 uppercase tracking-widest">{field.label}</label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-zinc-300 uppercase tracking-widest">{field.label}</label>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(docUrl);
+                                        toast.success('URL Dinámica copiada');
+                                    }}
+                                    className="text-[10px] bg-blue-500/15 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 px-3 py-1 rounded transition-colors font-bold uppercase tracking-wider"
+                                >
+                                    Copiar URL
+                                </button>
+                            </div>
                             <textarea
                                 value={config.markdownDocs?.[field.key] || ''}
                                 onChange={(e) => updateMdDoc(field.key, e.target.value)}
@@ -476,7 +522,7 @@ export function ResourceHubTab({ project }: { project: any }) {
                                 placeholder={`Escribe aquí el contenido en Markdown para ${field.label}...`}
                             />
                         </div>
-                    ))}
+                    )})}
                 </div>
             </div>
 

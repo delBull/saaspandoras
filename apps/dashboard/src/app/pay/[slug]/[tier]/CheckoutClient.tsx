@@ -754,6 +754,19 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                     <div className="space-y-6">
                                         {step === 'checkout' && (
                                             <>
+                                                {/* High-Ticket Banner */}
+                                                {(safeAmount >= 500) && (
+                                                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3 mb-2">
+                                                        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <h4 className="text-[10px] font-black uppercase text-amber-500 tracking-widest mb-1">Volumen Institucional Detectado</h4>
+                                                            <p className="text-[10px] text-amber-500/80 leading-relaxed font-medium">
+                                                                Para montos altos, es posible que las tarjetas de crédito tengan límites. Recomendamos usar el pago directo con <strong>Crypto (USDC)</strong> sin límites, o seleccionar la opción de <strong>Transferencia Bancaria (Fast Lane)</strong>.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {/* Amount Selector */}
                                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-black/40 rounded-3xl p-5 border border-white/5 gap-4">
                                                     <div className="flex flex-col">
