@@ -234,6 +234,42 @@ export default function AmbassadorDashboard() {
                 </div>
               )}
             </div>
+            {/* Recursos y Materiales */}
+            <div className="bg-zinc-900/50 border border-emerald-500/20 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-bold">Recursos y Materiales</h2>
+                  <p className="text-sm text-zinc-400">Material de marketing y estudio para compartir con tus prospectos.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <div className="bg-zinc-800/30 border border-emerald-500/20 rounded-xl p-5 hover:border-emerald-500/50 transition-all group">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors">S'Narai Pitch Deck</h3>
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Oficial
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-500 mb-4">Presentación completa con estructura de capital, proyecciones financieras y ventajas de entrada temprana.</p>
+                  <a href="/materials/snarai/pitch-deck" target="_blank" rel="noreferrer" className="text-sm font-bold text-emerald-400 hover:text-emerald-300">
+                    Abrir Deck ↗
+                  </a>
+                </div>
+
+                <div className="bg-zinc-800/30 border border-zinc-700 rounded-xl p-5 hover:border-zinc-500 transition-all group">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-white group-hover:text-white transition-colors">Briefing: Fase Pioneros</h3>
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                      Estudio
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-500 mb-4">Documento detallado sobre el funcionamiento del contrato inteligente y la protección de capital.</p>
+                  <a href="/briefings/snarai/access/pioneros" target="_blank" rel="noreferrer" className="text-sm font-bold text-zinc-400 hover:text-white">
+                    Leer Briefing ↗
+                  </a>
+                </div>
+              </div>
+            </div>
           </>
         )}
     </div>

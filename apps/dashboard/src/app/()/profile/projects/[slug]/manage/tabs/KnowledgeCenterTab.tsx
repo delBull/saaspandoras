@@ -521,6 +521,47 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
           ))}
         </div>
       )}
+
+      {/* MARKETING DECKS SECTION (MOCK FOR NOW) */}
+      <div className="mt-12 pt-12 border-t border-zinc-800 space-y-6">
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold text-white mb-2">Materiales Comerciales (Mini-Landings)</h3>
+            <p className="text-zinc-400 text-sm max-w-2xl">
+              Pitch Decks y presentaciones interactivas diseñadas para marketing. Puedes enviarlas como enlaces web o exportarlas a PDF con calidad premium.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-zinc-900 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)] rounded-xl p-5 hover:border-emerald-500/50 transition-colors">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h4 className="text-lg font-bold text-white">S'Narai Pitch Deck</h4>
+                <p className="text-xs text-zinc-500 font-mono mt-1">/materials/{project.slug}/pitch-deck</p>
+              </div>
+              <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Plantilla Oficial
+              </span>
+            </div>
+            
+            <p className="text-sm text-zinc-400 mb-6">
+              Esta plantilla incluye secciones como Estructura de Capital, Rendimientos y Resumen Ejecutivo.
+            </p>
+
+            <div className="flex gap-4 items-center">
+              <a
+                href={`/materials/${project.slug}/pitch-deck`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-black bg-emerald-500 hover:bg-emerald-400 font-bold px-4 py-2 rounded transition-colors"
+              >
+                Abrir Pitch Deck ↗
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

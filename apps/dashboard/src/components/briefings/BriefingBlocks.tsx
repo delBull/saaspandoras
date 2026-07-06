@@ -137,12 +137,12 @@ export function BlockPrinciples({ data }: { data: any }) {
 }
 
 export function BlockNextSteps({ data, projectSlug }: { data: any, projectSlug: string }) {
-  const steps = data.steps || [
-    { title: "Agenda una conversación", action: "mailto:hello@pandoras.finance" },
-    { title: "Explora el Portal", action: "https://dash.pandoras.finance" },
-    { title: "Lee el Whitepaper", action: "#" },
-    { title: "Únete a Telegram", action: "#" },
-    { title: "Consulta la documentación legal", action: "#" }
+  // Always use dynamic steps based on the project slug to ensure correct routing
+  const steps = [
+    { title: "Agenda una conversación", action: `https://dash.pandoras.finance/events/${projectSlug}/1` },
+    { title: "Explora el Portal", action: `https://${projectSlug}.aztecaz.xyz/portal` },
+    { title: "Lee el Whitepaper", action: `https://${projectSlug}.aztecaz.xyz/white-paper` },
+    { title: "Resuelve tus dudas con nuestra IA", action: `https://t.me/${projectSlug}assit_bot` }
   ];
 
   return (
@@ -168,6 +168,12 @@ export function BlockNextSteps({ data, projectSlug }: { data: any, projectSlug: 
             )}
           </React.Fragment>
         ))}
+      </div>
+
+      <div className="mt-16 pt-8 border-t border-white/10 print:border-black/10 max-w-2xl">
+        <p className="text-xs text-white/40 print:text-black/40 tracking-widest uppercase leading-relaxed">
+          Nota: La documentación legal de la participación y adquisición está disponible directamente dentro del portal una vez verificada tu identidad.
+        </p>
       </div>
     </section>
   );
