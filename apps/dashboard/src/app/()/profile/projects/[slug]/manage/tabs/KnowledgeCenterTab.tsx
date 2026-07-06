@@ -9,8 +9,10 @@ import {
   DocumentTextIcon,
   ArrowLeftIcon,
   Bars3BottomLeftIcon,
-  ClipboardDocumentIcon
+  ClipboardDocumentIcon,
+  FolderIcon
 } from '@heroicons/react/24/outline';
+import { snaraiMaterials } from '@/lib/marketing/snarai-materials';
 
 interface Briefing {
   id?: number;
@@ -25,6 +27,7 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
   const account = useActiveAccount();
   const [briefings, setBriefings] = useState<Briefing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [innerTab, setInnerTab] = useState<'briefings' | 'materiales'>('briefings');
 
   const [editingBriefing, setEditingBriefing] = useState<Briefing | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -393,24 +396,50 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
   // -----------------------------------------------------
   return (
     <div className="space-y-6">
-      <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 flex justify-between items-start">
-        <div>
-          <h3 className="text-xl font-bold text-white mb-2">Pandora's Knowledge Layer (CMS)</h3>
-          <p className="text-zinc-400 text-sm max-w-2xl">
-            Gestiona los documentos técnicos, pitches y narrativas de tu proyecto.
-            El Briefing Engine utilizará esta información para renderizar automáticamente las páginas públicas bajo una estética institucional premium.
-          </p>
+      <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-white mb-2">Materiales y Briefings</h3>
+            <p className="text-zinc-400 text-sm max-w-2xl">
+              Gestiona los documentos técnicos, pitches y narrativas de tu proyecto.
+              El Briefing Engine utilizará esta información para renderizar automáticamente las páginas públicas bajo una estética institucional premium.
+            </p>
+          </div>
+          {innerTab === 'briefings' && (
+            <button
+              onClick={() => setEditingBriefing({ slug: '', title: '', subtitle: '', blocks: [], status: 'published' })}
+              className="bg-white hover:bg-gray-200 text-black font-bold px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Crear Briefing
+            </button>
+          )}
         </div>
-        <button
-          onClick={() => setEditingBriefing({ slug: '', title: '', subtitle: '', blocks: [], status: 'published' })}
-          className="bg-white hover:bg-gray-200 text-black font-bold px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
-        >
-          <PlusIcon className="w-4 h-4" />
-          Crear Briefing
-        </button>
+
+        {/* Inner Tabs Navigation */}
+        <div className="flex items-center gap-2 border-b border-zinc-800 pb-4 mb-4">
+          <button
+            onClick={() => setInnerTab('briefings')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+              innerTab === 'briefings' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Briefings Documentales
+          </button>
+          <button
+            onClick={() => setInnerTab('materiales')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+              innerTab === 'materiales' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Materiales Comerciales
+          </button>
+        </div>
       </div>
 
-      {loading ? (
+      {innerTab === 'briefings' && (
+        <>
+          {loading ? (
         <div className="py-20 text-center text-zinc-500 animate-pulse">Cargando Briefings...</div>
       ) : briefings.length === 0 ? (
         <div className="bg-zinc-900/50 border border-dashed border-zinc-800 rounded-2xl p-12 text-center text-zinc-500">
@@ -521,9 +550,12 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
           ))}
         </div>
       )}
+      </>
+      )}
 
-      {/* MARKETING DECKS SECTION (MOCK FOR NOW) */}
-      <div className="mt-12 pt-12 border-t border-zinc-800 space-y-6">
+      {innerTab === 'materiales' && (
+      <div className="space-y-6">
+        {/* MARKETING DECKS SECTION (MOCK FOR NOW) */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 flex justify-between items-start">
           <div>
             <h3 className="text-xl font-bold text-white mb-2">Materiales Comerciales (Mini-Landings)</h3>
@@ -533,35 +565,49 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-zinc-900 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)] rounded-xl p-5 hover:border-emerald-500/50 transition-colors">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h4 className="text-lg font-bold text-white">S'Narai Pitch Deck</h4>
-                <p className="text-xs text-zinc-500 font-mono mt-1">/materials/{project.slug}/pitch-deck</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {snaraiMaterials.map((mat) => (
+            <div key={mat.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all flex flex-col group">
+              <div className="flex justify-between items-start mb-4">
+                <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                  <FolderIcon className="w-6 h-6 text-emerald-400" />
+                </div>
+                <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-zinc-800 text-zinc-400">
+                  Documento Oficial
+                </span>
               </div>
-              <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Plantilla Oficial
-              </span>
-            </div>
-            
-            <p className="text-sm text-zinc-400 mb-6">
-              Esta plantilla incluye secciones como Estructura de Capital, Rendimientos y Resumen Ejecutivo.
-            </p>
+              
+              <h4 className="text-lg font-bold text-white mb-2">{mat.title}</h4>
+              <p className="text-xs text-zinc-400 mb-4 flex-1">
+                <strong className="text-emerald-400 block mb-1">Objetivo: {mat.objective}</strong>
+                {mat.description}
+              </p>
 
-            <div className="flex gap-4 items-center">
-              <a
-                href={`/materials/${project.slug}/pitch-deck`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-black bg-emerald-500 hover:bg-emerald-400 font-bold px-4 py-2 rounded transition-colors"
-              >
-                Abrir Pitch Deck ↗
-              </a>
+              {/* Preview details inside the folder */}
+              <div className="space-y-3 mb-6 bg-black/50 p-4 rounded-lg border border-zinc-800/50">
+                {mat.contentPreview.map((preview, i) => (
+                  <div key={i} className="text-xs">
+                    <p className="text-white font-bold mb-1 line-clamp-1">{preview.section}</p>
+                    <p className="text-zinc-500 line-clamp-2">{preview.text}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-4 items-center mt-auto">
+                <a
+                  href={`/materials/${project.slug}/${mat.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm w-full text-center text-black bg-emerald-500 hover:bg-emerald-400 font-bold px-4 py-2 rounded transition-colors"
+                >
+                  Abrir Documento
+                </a>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

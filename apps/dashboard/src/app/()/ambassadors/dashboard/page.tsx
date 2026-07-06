@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
 import { toast } from 'sonner';
 import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
+import { FolderIcon } from '@heroicons/react/24/outline';
+import { snaraiMaterials } from '@/lib/marketing/snarai-materials';
 
 interface CommissionData {
   referralCode: string;
@@ -243,31 +245,31 @@ export default function AmbassadorDashboard() {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div className="bg-zinc-800/30 border border-emerald-500/20 rounded-xl p-5 hover:border-emerald-500/50 transition-all group">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors">S'Narai Pitch Deck</h3>
-                    <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      Oficial
-                    </span>
+                {snaraiMaterials.map((mat) => (
+                  <div key={mat.id} className="bg-zinc-800/30 border border-emerald-500/20 rounded-xl p-5 hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all group flex flex-col">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                        <FolderIcon className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <span className="text-[9px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Documento Oficial
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors mb-2">{mat.title}</h3>
+                    <p className="text-xs text-zinc-400 mb-4 flex-1">
+                      <strong className="text-emerald-400 block mb-1">Objetivo: {mat.objective}</strong>
+                      {mat.description}
+                    </p>
+                    <a 
+                      href={`/materials/snarai/${mat.id}`} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-sm w-full text-center font-bold text-black bg-emerald-500 hover:bg-emerald-400 py-2 rounded transition-colors mt-auto"
+                    >
+                      Abrir Documento
+                    </a>
                   </div>
-                  <p className="text-xs text-zinc-500 mb-4">Presentación completa con estructura de capital, proyecciones financieras y ventajas de entrada temprana.</p>
-                  <a href="/materials/snarai/pitch-deck" target="_blank" rel="noreferrer" className="text-sm font-bold text-emerald-400 hover:text-emerald-300">
-                    Abrir Deck ↗
-                  </a>
-                </div>
-
-                <div className="bg-zinc-800/30 border border-zinc-700 rounded-xl p-5 hover:border-zinc-500 transition-all group">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-white group-hover:text-white transition-colors">Briefing: Fase Pioneros</h3>
-                    <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                      Estudio
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-500 mb-4">Documento detallado sobre el funcionamiento del contrato inteligente y la protección de capital.</p>
-                  <a href="/briefings/snarai/access/pioneros" target="_blank" rel="noreferrer" className="text-sm font-bold text-zinc-400 hover:text-white">
-                    Leer Briefing ↗
-                  </a>
-                </div>
+                ))}
               </div>
             </div>
           </>

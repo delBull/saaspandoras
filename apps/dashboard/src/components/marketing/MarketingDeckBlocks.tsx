@@ -18,7 +18,7 @@ export function DeckHero({ data }: { data: any }) {
             
             <div className="relative z-20 max-w-5xl">
                 {data.tagline && (
-                    <span className="inline-block text-xs md:text-sm font-bold uppercase tracking-[0.4em] text-emerald-400 mb-6 border border-emerald-500/30 px-4 py-2 rounded backdrop-blur-sm bg-black/20">
+                    <span className="inline-block text-xs md:text-sm font-bold uppercase tracking-[0.4em] text-amber-400 mb-6 border border-amber-500/30 px-4 py-2 rounded backdrop-blur-sm bg-black/20">
                         {data.tagline}
                     </span>
                 )}
@@ -63,18 +63,18 @@ export function DeckPhases({ data }: { data: any }) {
                     <div className="bg-black border border-zinc-800 p-8 rounded-2xl print:bg-white print:border-zinc-300 print:text-black">
                         <div className="flex justify-between items-end mb-4">
                             <div>
-                                <p className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-1 print:text-emerald-600">Fase Actual</p>
+                                <p className="text-xs uppercase tracking-widest text-amber-400 font-bold mb-1 print:text-amber-600">Fase Actual</p>
                                 <p className="text-2xl font-bold">{data.currentPhaseName || 'Preventa (Fase 1)'}</p>
                             </div>
                             <div className="text-right">
                                 <p className="text-xs uppercase tracking-widest text-zinc-500 mb-1 print:text-zinc-500">Precio</p>
-                                <p className="text-3xl font-mono text-emerald-400 print:text-emerald-600">${data.currentPrice || '460'}</p>
+                                <p className="text-3xl font-mono text-amber-400 print:text-amber-600">${data.currentPrice || '460'}</p>
                             </div>
                         </div>
                         
                         <div className="w-full bg-zinc-900 rounded-full h-3 mb-3 print:bg-zinc-200">
                             <div 
-                                className="bg-emerald-500 h-3 rounded-full" 
+                                className="bg-amber-500 h-3 rounded-full" 
                                 style={{ width: `${data.progressPercent || 10}%` }}
                             />
                         </div>
@@ -87,10 +87,10 @@ export function DeckPhases({ data }: { data: any }) {
                 
                 <div className="space-y-4">
                     {(data.phases || []).map((phase: any, i: number) => (
-                        <div key={i} className={`p-6 rounded-xl border ${phase.active ? 'bg-emerald-900/20 border-emerald-500/30 print:bg-emerald-50 print:border-emerald-200' : 'bg-black border-zinc-800 print:bg-zinc-50 print:border-zinc-200'}`}>
+                        <div key={i} className={`p-6 rounded-xl border ${phase.active ? 'bg-emerald-900/20 border-amber-500/30 print:bg-amber-50 print:border-amber-200' : 'bg-black border-zinc-800 print:bg-zinc-50 print:border-zinc-200'}`}>
                             <div className="flex justify-between items-center mb-2">
-                                <p className={`font-bold ${phase.active ? 'text-emerald-400 print:text-emerald-700' : 'text-white print:text-black'}`}>{phase.name}</p>
-                                <p className={`font-mono font-bold ${phase.active ? 'text-emerald-400 print:text-emerald-700' : 'text-zinc-400 print:text-zinc-600'}`}>${phase.price}</p>
+                                <p className={`font-bold ${phase.active ? 'text-amber-400 print:text-amber-700' : 'text-white print:text-black'}`}>{phase.name}</p>
+                                <p className={`font-mono font-bold ${phase.active ? 'text-amber-400 print:text-amber-700' : 'text-zinc-400 print:text-zinc-600'}`}>${phase.price}</p>
                             </div>
                             <p className="text-sm text-zinc-500">{phase.description}</p>
                         </div>
@@ -112,7 +112,7 @@ export function DeckFinancials({ data }: { data: any }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
                     <div className="p-8 bg-zinc-50 rounded-2xl border border-zinc-100">
                         <p className="text-xs uppercase tracking-widest text-zinc-500 mb-2 font-bold">Rendimiento Anual</p>
-                        <p className="text-5xl font-black text-emerald-600">{data.annualYield || '12-15%'}</p>
+                        <p className="text-5xl font-black text-amber-600">{data.annualYield || '12-15%'}</p>
                         <p className="text-sm text-zinc-500 mt-4 leading-relaxed">Derivado de las rentas y operaciones del desarrollo.</p>
                     </div>
                     <div className="p-8 bg-zinc-50 rounded-2xl border border-zinc-100">
@@ -164,43 +164,43 @@ export function DeckInfo({ data }: { data: any }) {
 export function DeckInvestmentExample({ data }: { data: any }) {
     return (
         <section className="relative w-full min-h-[100vh] p-12 lg:p-24 bg-emerald-950 text-white print:h-[100vh] print:p-16 print:break-after-page flex flex-col justify-center">
-            <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-emerald-400 mb-12">{data.sectionLabel || "Caso de Estudio: Inversión Temprana"}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-amber-400 mb-12">{data.sectionLabel || "Caso de Estudio: Inversión Temprana"}</h2>
             
             <div className="max-w-5xl">
                 <h3 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">{data.title || "El Poder de Entrar Primero"}</h3>
-                <p className="text-lg text-emerald-200/80 font-light leading-relaxed mb-16 max-w-3xl">
+                <p className="text-lg text-amber-200/80 font-light leading-relaxed mb-16 max-w-3xl">
                     {data.description || "Adquirir títulos en la Fase 1 no solo garantiza el mejor precio, sino que maximiza la plusvalía capturada durante todo el ciclo de desarrollo."}
                 </p>
 
-                <div className="bg-black/40 border border-emerald-500/20 rounded-3xl p-8 lg:p-12 backdrop-blur-xl">
+                <div className="bg-black/40 border border-amber-500/20 rounded-3xl p-8 lg:p-12 backdrop-blur-xl">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-6">
                         <div>
-                            <p className="text-sm uppercase tracking-widest text-emerald-400 font-bold mb-2">Inversión Inicial (Fase 1)</p>
-                            <p className="text-5xl lg:text-6xl font-black">${data.initialInvestment || "25,000"} <span className="text-2xl text-emerald-500/50">USD</span></p>
+                            <p className="text-sm uppercase tracking-widest text-amber-400 font-bold mb-2">Inversión Inicial (Fase 1)</p>
+                            <p className="text-5xl lg:text-6xl font-black">${data.initialInvestment || "25,000"} <span className="text-2xl text-amber-500/50">USD</span></p>
                         </div>
-                        <div className="px-6 py-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
-                            <p className="text-sm text-emerald-300">Equivalente a <span className="font-bold text-white">{data.titlesCount || "54"} títulos</span></p>
+                        <div className="px-6 py-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                            <p className="text-sm text-amber-300">Equivalente a <span className="font-bold text-white">{data.titlesCount || "54"} títulos</span></p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
                         {/* Connecting line */}
-                        <div className="hidden md:block absolute top-1/2 left-10 right-10 h-px bg-gradient-to-r from-emerald-500/20 via-emerald-500/50 to-emerald-500/20 -translate-y-1/2" />
+                        <div className="hidden md:block absolute top-1/2 left-10 right-10 h-px bg-gradient-to-r from-amber-500/20 via-amber-500/50 to-amber-500/20 -translate-y-1/2" />
                         
                         {(data.timeline || []).map((step: any, i: number) => (
-                            <div key={i} className="relative bg-emerald-900/40 border border-emerald-500/20 p-6 rounded-2xl z-10 backdrop-blur-md">
-                                <span className="absolute -top-3 -left-3 w-8 h-8 bg-emerald-500 text-black font-bold flex items-center justify-center rounded-full text-sm">
+                            <div key={i} className="relative bg-emerald-900/40 border border-amber-500/20 p-6 rounded-2xl z-10 backdrop-blur-md">
+                                <span className="absolute -top-3 -left-3 w-8 h-8 bg-amber-500 text-black font-bold flex items-center justify-center rounded-full text-sm">
                                     {i + 1}
                                 </span>
-                                <p className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-4">{step.phase}</p>
+                                <p className="text-xs uppercase tracking-widest text-amber-400 font-bold mb-4">{step.phase}</p>
                                 <p className="text-3xl font-bold mb-2">${step.value}</p>
-                                <p className="text-sm text-emerald-200/60 leading-relaxed">{step.description}</p>
+                                <p className="text-sm text-amber-200/60 leading-relaxed">{step.description}</p>
                             </div>
                         ))}
                     </div>
 
-                    <div className="mt-12 p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-                        <p className="text-emerald-100 leading-relaxed text-sm">
+                    <div className="mt-12 p-6 bg-amber-500/10 rounded-2xl border border-amber-500/20">
+                        <p className="text-amber-100 leading-relaxed text-sm">
                             <strong className="text-white">Conclusión:</strong> {data.conclusion || "Al entrar en Fase 1, aseguras una ganancia de capital inmediata sobre el valor de mercado proyectado para la Fase 3, además de maximizar tu % de yield anual al tener un costo de adquisición menor."}
                         </p>
                     </div>

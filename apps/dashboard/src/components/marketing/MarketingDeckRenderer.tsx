@@ -10,7 +10,7 @@ interface MarketingDeckRendererProps {
 
 export function MarketingDeckRenderer({ blocks, projectSlug }: MarketingDeckRendererProps) {
   return (
-    <div className="w-full flex flex-col bg-white font-sans selection:bg-emerald-500 selection:text-white">
+    <div className="w-full flex flex-col bg-white font-sans selection:bg-amber-500 selection:text-white">
       {blocks.map((block, index) => {
         switch (block.type) {
           case 'hero':

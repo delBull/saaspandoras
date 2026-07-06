@@ -17,7 +17,7 @@ export function MaterialViewer({ deck, projectSlug }: { deck: any, projectSlug: 
                         <ArrowLeftIcon className="w-5 h-5" />
                     </button>
                     <span className="text-white font-bold">{deck.title}</span>
-                    <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] uppercase tracking-widest rounded border border-emerald-500/30">
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[10px] uppercase tracking-widest rounded border border-amber-500/30">
                         Pitch Deck Oficial
                     </span>
                 </div>
@@ -32,7 +32,7 @@ export function MaterialViewer({ deck, projectSlug }: { deck: any, projectSlug: 
                         href={`https://${projectSlug}.aztecaz.xyz/portal`}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black rounded text-sm font-bold transition-colors"
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded text-sm font-bold transition-colors"
                     >
                         Invertir Ahora
                     </a>
