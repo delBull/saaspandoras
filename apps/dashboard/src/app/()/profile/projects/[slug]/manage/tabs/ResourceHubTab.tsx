@@ -168,17 +168,7 @@ export function ResourceHubTab({ project }: { project: any }) {
         { key: 'deck_en', label: 'Deck Overview (EN)' },
     ];
 
-    let dynamicDomain = project.website;
-    if (!dynamicDomain && Array.isArray(project.allowedDomains) && project.allowedDomains.length > 0) {
-        dynamicDomain = project.allowedDomains[0];
-    }
-    if (!dynamicDomain) {
-        dynamicDomain = `https://${project.slug}.aztecaz.xyz`;
-    }
-    if (!dynamicDomain.startsWith('http://') && !dynamicDomain.startsWith('https://')) {
-        dynamicDomain = `https://${dynamicDomain}`;
-    }
-    dynamicDomain = dynamicDomain.replace(/\/$/, '');
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://dash.pandoras.finance';
 
     return (
         <motion.div
@@ -498,7 +488,7 @@ export function ResourceHubTab({ project }: { project: any }) {
                         const locale = isEn ? 'en' : 'es';
                         let routePath = field.key.replace('_es', '').replace('_en', '');
                         if (routePath === 'one_pager') routePath = 'one-pager';
-                        const docUrl = `${dynamicDomain}/${locale}/docs/${routePath}`;
+                        const docUrl = `${baseUrl}/resources/${project.slug}/docs/${routePath}?lang=${locale}`;
 
                         return (
                         <div key={field.key} className="space-y-2">
