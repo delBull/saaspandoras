@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
 import { toast } from 'sonner';
-import { 
-  PlusIcon, 
-  TrashIcon, 
-  DocumentTextIcon, 
+import {
+  PlusIcon,
+  TrashIcon,
+  DocumentTextIcon,
   ArrowLeftIcon,
-  Bars3BottomLeftIcon
+  Bars3BottomLeftIcon,
+  ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
 
 interface Briefing {
@@ -24,9 +25,76 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
   const account = useActiveAccount();
   const [briefings, setBriefings] = useState<Briefing[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [editingBriefing, setEditingBriefing] = useState<Briefing | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Shortlink states
+  const [shortlinkSlug, setShortlinkSlug] = useState('');
+  const [creatingShortlinkFor, setCreatingShortlinkFor] = useState<number | null>(null);
+  const [isCreatingShortlink, setIsCreatingShortlink] = useState(false);
+  const [projectShortlinks, setProjectShortlinks] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Fetch existing shortlinks
+    fetch('/api/admin/shortlinks')
+        .then(res => res.json())
+        .then(data => {
+            if (data.data) {
+                const filtered = data.data.filter((sl: any) => sl.destinationUrl.includes(`briefings/${project.slug}/access/`));
+                setProjectShortlinks(filtered);
+            }
+        })
+        .catch(console.error);
+  }, [project.slug]);
+
+  const handleDeleteShortlink = async (id: number) => {
+    if (!confirm('¿Seguro que deseas eliminar este shortlink?')) return;
+    try {
+        const res = await fetch('/api/admin/shortlinks', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+        
+        setProjectShortlinks(prev => prev.filter(sl => sl.id !== id));
+        toast.success('Shortlink eliminado');
+    } catch (e: any) {
+        toast.error(e.message);
+    }
+  };
+
+  const handleCreateShortlink = async (id: number, destinationUrl: string, title: string) => {
+    if (!shortlinkSlug) return toast.error('Ingresa un slug válido');
+    setIsCreatingShortlink(true);
+    try {
+        const cleanSlug = shortlinkSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+        const res = await fetch('/api/admin/shortlinks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug: cleanSlug,
+                    destinationUrl,
+                    title: `Shortlink para ${title}`,
+                    description: '',
+                    landingConfig: { isMasked: true }
+                })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al crear');
+        
+        toast.success(`Shortlink creado: pbox.dev/${cleanSlug}`);
+        setProjectShortlinks(prev => [{ slug: cleanSlug, destinationUrl, title: `Shortlink para ${title}`, id: data.data?.id || Math.random() }, ...prev]);
+        setCreatingShortlinkFor(null);
+        setShortlinkSlug('');
+    } catch (e: any) {
+        toast.error(e.message);
+    } finally {
+        setIsCreatingShortlink(false);
+    }
+  };
 
   const fetchBriefings = async () => {
     if (!account?.address) return;
@@ -56,7 +124,7 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
       toast.error('El slug y el título son obligatorios');
       return;
     }
-    
+
     setIsSaving(true);
     try {
       const res = await fetch(`/api/v1/projects/${project.id}/admin/briefings`, {
@@ -67,7 +135,7 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
         },
         body: JSON.stringify(editingBriefing)
       });
-      
+
       if (res.ok) {
         toast.success('Briefing guardado con éxito');
         setEditingBriefing(null);
@@ -85,13 +153,13 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este Briefing?')) return;
-    
+
     try {
       const res = await fetch(`/api/v1/projects/${project.id}/admin/briefings?id=${id}`, {
         method: 'DELETE',
         headers: { 'x-wallet-address': account?.address || '' }
       });
-      
+
       if (res.ok) {
         toast.success('Eliminado correctamente');
         fetchBriefings();
@@ -105,7 +173,7 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
 
   const addBlock = (type: string) => {
     if (!editingBriefing) return;
-    
+
     let defaultData = {};
     if (type === 'hero') {
       defaultData = { title: '', subtitle: '', hook: '' };
@@ -151,13 +219,13 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-          <button 
+          <button
             onClick={() => setEditingBriefing(null)}
             className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm"
           >
             <ArrowLeftIcon className="w-4 h-4" /> Volver al listado
           </button>
-          <button 
+          <button
             onClick={handleSave}
             disabled={isSaving}
             className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-black font-bold px-6 py-2 rounded-lg text-sm transition-colors"
@@ -171,24 +239,24 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
           <div className="col-span-1 space-y-4">
             <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
               <h3 className="text-lg font-bold text-white mb-4">Metadatos del Briefing</h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-500 mb-1">Título Interno</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={editingBriefing.title}
-                    onChange={e => setEditingBriefing({...editingBriefing, title: e.target.value})}
+                    onChange={e => setEditingBriefing({ ...editingBriefing, title: e.target.value })}
                     placeholder="Ej: Developer Briefing"
                     className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-white text-sm"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-zinc-500 mb-1">Slug (URL)</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={editingBriefing.slug}
-                    onChange={e => setEditingBriefing({...editingBriefing, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')})}
+                    onChange={e => setEditingBriefing({ ...editingBriefing, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
                     placeholder="ej: developers"
                     className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-white text-sm font-mono"
                   />
@@ -196,9 +264,9 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-zinc-500 mb-1">Estado</label>
-                  <select 
+                  <select
                     value={editingBriefing.status}
-                    onChange={e => setEditingBriefing({...editingBriefing, status: e.target.value})}
+                    onChange={e => setEditingBriefing({ ...editingBriefing, status: e.target.value })}
                     className="w-full bg-black border border-zinc-800 rounded-lg p-2 text-white text-sm"
                   >
                     <option value="published">Publicado</option>
@@ -243,23 +311,23 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                       <TrashIcon className="w-4 h-4" />
                     </button>
                   </div>
-                  
+
                   <div className="p-6 space-y-4">
                     {/* Render Form per block type */}
                     {block.type === 'hero' && (
                       <>
-                        <input type="text" placeholder="Título Gigante" value={block.data.title || ''} onChange={e => updateBlockData(index, {...block.data, title: e.target.value})} className="w-full bg-black border border-zinc-800 rounded p-2 text-white text-lg font-bold" />
-                        <input type="text" placeholder="Subtítulo descriptivo" value={block.data.subtitle || ''} onChange={e => updateBlockData(index, {...block.data, subtitle: e.target.value})} className="w-full bg-black border border-zinc-800 rounded p-2 text-zinc-300 text-sm" />
-                        <input type="text" placeholder='Frase Gancho (ej: "El futuro es el acceso")' value={block.data.hook || ''} onChange={e => updateBlockData(index, {...block.data, hook: e.target.value})} className="w-full bg-black border border-zinc-800 rounded p-2 text-zinc-400 text-sm italic" />
+                        <input type="text" placeholder="Título Gigante" value={block.data.title || ''} onChange={e => updateBlockData(index, { ...block.data, title: e.target.value })} className="w-full bg-black border border-zinc-800 rounded p-2 text-white text-lg font-bold" />
+                        <input type="text" placeholder="Subtítulo descriptivo" value={block.data.subtitle || ''} onChange={e => updateBlockData(index, { ...block.data, subtitle: e.target.value })} className="w-full bg-black border border-zinc-800 rounded p-2 text-zinc-300 text-sm" />
+                        <input type="text" placeholder='Frase Gancho (ej: "El futuro es el acceso")' value={block.data.hook || ''} onChange={e => updateBlockData(index, { ...block.data, hook: e.target.value })} className="w-full bg-black border border-zinc-800 rounded p-2 text-zinc-400 text-sm italic" />
                       </>
                     )}
-                    
+
                     {block.type === 'sixty_seconds' && (
                       <div className="grid grid-cols-2 gap-4">
                         {['q1', 'q2', 'q3', 'q4'].map(q => (
                           <div key={q} className="bg-black/50 p-3 rounded border border-zinc-800">
-                            <input type="text" placeholder="Título" value={block.data[q]?.title || ''} onChange={e => updateBlockData(index, {...block.data, [q]: {...block.data[q], title: e.target.value}})} className="w-full bg-transparent border-b border-zinc-800 text-white text-xs font-bold mb-2 pb-1 outline-none" />
-                            <textarea placeholder="Contenido..." value={block.data[q]?.content || ''} onChange={e => updateBlockData(index, {...block.data, [q]: {...block.data[q], content: e.target.value}})} className="w-full bg-transparent text-zinc-400 text-xs h-20 outline-none resize-none" />
+                            <input type="text" placeholder="Título" value={block.data[q]?.title || ''} onChange={e => updateBlockData(index, { ...block.data, [q]: { ...block.data[q], title: e.target.value } })} className="w-full bg-transparent border-b border-zinc-800 text-white text-xs font-bold mb-2 pb-1 outline-none" />
+                            <textarea placeholder="Contenido..." value={block.data[q]?.content || ''} onChange={e => updateBlockData(index, { ...block.data, [q]: { ...block.data[q], content: e.target.value } })} className="w-full bg-transparent text-zinc-400 text-xs h-20 outline-none resize-none" />
                           </div>
                         ))}
                       </div>
@@ -271,10 +339,10 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                           <input key={i} type="text" value={step} onChange={e => {
                             const newSteps = [...block.data.steps];
                             newSteps[i] = e.target.value;
-                            updateBlockData(index, {...block.data, steps: newSteps});
+                            updateBlockData(index, { ...block.data, steps: newSteps });
                           }} className="w-full bg-black border border-zinc-800 rounded p-2 text-white text-sm" />
                         ))}
-                        <button onClick={() => updateBlockData(index, {...block.data, steps: [...(block.data.steps || []), 'Nuevo paso']})} className="text-xs text-emerald-500 hover:underline">+ Agregar Paso</button>
+                        <button onClick={() => updateBlockData(index, { ...block.data, steps: [...(block.data.steps || []), 'Nuevo paso'] })} className="text-xs text-emerald-500 hover:underline">+ Agregar Paso</button>
                       </div>
                     )}
 
@@ -284,10 +352,10 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                           <input key={i} type="text" value={p} onChange={e => {
                             const newP = [...block.data.principles];
                             newP[i] = e.target.value;
-                            updateBlockData(index, {...block.data, principles: newP});
+                            updateBlockData(index, { ...block.data, principles: newP });
                           }} className="w-full bg-black border border-zinc-800 rounded p-2 text-white text-sm" />
                         ))}
-                        <button onClick={() => updateBlockData(index, {...block.data, principles: [...(block.data.principles || []), 'Nuevo principio']})} className="text-xs text-emerald-500 hover:underline">+ Agregar Principio</button>
+                        <button onClick={() => updateBlockData(index, { ...block.data, principles: [...(block.data.principles || []), 'Nuevo principio'] })} className="text-xs text-emerald-500 hover:underline">+ Agregar Principio</button>
                       </div>
                     )}
 
@@ -297,17 +365,17 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                           <div key={i} className="flex gap-2">
                             <input type="text" placeholder="Título (ej: Explorar Portal)" value={s.title} onChange={e => {
                               const newS = [...block.data.steps];
-                              newS[i] = {...newS[i], title: e.target.value};
-                              updateBlockData(index, {...block.data, steps: newS});
+                              newS[i] = { ...newS[i], title: e.target.value };
+                              updateBlockData(index, { ...block.data, steps: newS });
                             }} className="flex-1 bg-black border border-zinc-800 rounded p-2 text-white text-sm" />
                             <input type="text" placeholder="URL (ej: https://...)" value={s.action} onChange={e => {
                               const newS = [...block.data.steps];
-                              newS[i] = {...newS[i], action: e.target.value};
-                              updateBlockData(index, {...block.data, steps: newS});
+                              newS[i] = { ...newS[i], action: e.target.value };
+                              updateBlockData(index, { ...block.data, steps: newS });
                             }} className="flex-1 bg-black border border-zinc-800 rounded p-2 text-zinc-400 text-sm font-mono" />
                           </div>
                         ))}
-                        <button onClick={() => updateBlockData(index, {...block.data, steps: [...(block.data.steps || []), {title: 'Nueva acción', action: '#'}]})} className="text-xs text-emerald-500 hover:underline">+ Agregar Acción</button>
+                        <button onClick={() => updateBlockData(index, { ...block.data, steps: [...(block.data.steps || []), { title: 'Nueva acción', action: '#' }] })} className="text-xs text-emerald-500 hover:underline">+ Agregar Acción</button>
                       </div>
                     )}
                   </div>
@@ -327,13 +395,13 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
     <div className="space-y-6">
       <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 flex justify-between items-start">
         <div>
-          <h3 className="text-xl font-bold text-white mb-2">Pandora Knowledge Layer (CMS)</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Pandora's Knowledge Layer (CMS)</h3>
           <p className="text-zinc-400 text-sm max-w-2xl">
-            Gestiona los documentos técnicos, pitches y narrativas de tu proyecto. 
+            Gestiona los documentos técnicos, pitches y narrativas de tu proyecto.
             El Briefing Engine utilizará esta información para renderizar automáticamente las páginas públicas bajo una estética institucional premium.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setEditingBriefing({ slug: '', title: '', subtitle: '', blocks: [], status: 'published' })}
           className="bg-white hover:bg-gray-200 text-black font-bold px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
         >
@@ -363,15 +431,15 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                   {briefing.status === 'published' ? 'Publicado' : 'Borrador'}
                 </span>
               </div>
-              
+
               <div className="flex gap-4 items-center mt-6">
-                <button 
+                <button
                   onClick={() => setEditingBriefing(briefing)}
                   className="text-sm text-emerald-400 hover:text-emerald-300 font-medium"
                 >
                   Editar Bloques ({briefing.blocks?.length || 0})
                 </button>
-                <a 
+                <a
                   href={`/briefings/${project.slug}/access/${briefing.slug}`}
                   target="_blank"
                   rel="noreferrer"
@@ -380,12 +448,74 @@ export function KnowledgeCenterTab({ project }: { project: any }) {
                   Ver Pública ↗
                 </a>
                 <div className="flex-1" />
-                <button 
+                <button
                   onClick={() => briefing.id && handleDelete(briefing.id)}
                   className="text-zinc-600 hover:text-red-400 transition-colors"
                 >
                   <TrashIcon className="w-4 h-4" />
                 </button>
+              </div>
+
+              {/* Shortlinks section */}
+              <div className="mt-4 pt-4 border-t border-zinc-800">
+                <div className="flex items-center gap-1.5 mb-2">
+                    <button 
+                        onClick={() => setCreatingShortlinkFor(creatingShortlinkFor === briefing.id ? null : (briefing.id as number))} 
+                        className="text-[0.65rem] text-lime-400 bg-lime-400/10 hover:bg-lime-400/20 px-2 py-0.5 rounded-full transition-colors flex items-center gap-1"
+                    >
+                        🪄 Shortlink
+                    </button>
+                </div>
+                {creatingShortlinkFor === briefing.id && (
+                    <div className="flex items-center gap-2 mt-1 mb-3 p-2 bg-black/40 border border-lime-400/20 rounded-lg animate-[fadeIn_0.2s_ease-out]">
+                        <span className="text-xs text-zinc-500 font-mono">pbox.dev/</span>
+                        <input 
+                            value={shortlinkSlug}
+                            onChange={e => setShortlinkSlug(e.target.value)}
+                            placeholder="mi-enlace" 
+                            className="bg-transparent border-b border-lime-400/30 text-sm text-lime-100 placeholder-zinc-600 focus:outline-none focus:border-lime-400 px-1 w-24 sm:w-32"
+                        />
+                        <button 
+                            onClick={() => {
+                                const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dash.pandoras.finance';
+                                const eventUrl = `${origin}/briefings/${project.slug}/access/${briefing.slug}`;
+                                handleCreateShortlink(briefing.id as number, eventUrl, `[${project.title || project.slug}] ${briefing.title}`);
+                            }}
+                            disabled={isCreatingShortlink}
+                            className="ml-auto text-xs bg-lime-400 text-black px-3 py-1 rounded font-bold hover:bg-lime-500 disabled:opacity-50"
+                        >
+                            {isCreatingShortlink ? '...' : 'Crear'}
+                        </button>
+                    </div>
+                )}
+                {projectShortlinks.filter(sl => sl.destinationUrl.endsWith(`briefings/${project.slug}/access/${briefing.slug}`)).length > 0 && (
+                    <div className="mt-3 space-y-1">
+                        <p className="text-[10px] uppercase text-zinc-500 font-bold mb-2">Enlaces Creados:</p>
+                        {projectShortlinks.filter(sl => sl.destinationUrl.endsWith(`briefings/${project.slug}/access/${briefing.slug}`)).map((sl: any) => (
+                            <div key={sl.slug} className="flex justify-between items-center text-xs bg-black/40 p-2 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                                <span className="text-lime-400 font-mono tracking-wide">pbox.dev/{sl.slug}</span>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`https://pbox.dev/${sl.slug}`);
+                                            toast.success('Enlace copiado al portapapeles');
+                                        }} 
+                                        className="text-zinc-400 hover:text-white bg-zinc-800/50 hover:bg-zinc-800 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                    >
+                                        <ClipboardDocumentIcon className="w-3 h-3" /> Copiar
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDeleteShortlink(sl.id)}
+                                        className="text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-900/40 px-2 py-1 rounded transition-colors"
+                                        title="Eliminar enlace"
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
               </div>
             </div>
           ))}

@@ -32,27 +32,40 @@ export function BlockHero({ data }: { data: any }) {
 }
 
 export function BlockJourney({ data }: { data: any }) {
+  const title = data.title || "El Recorrido";
   const steps = data.steps || ["Descubrir", "Entender", "Participar", "Beneficiarse"];
 
   return (
     <section className="px-6 md:px-12 lg:px-24 py-24 border-b border-black/10 print:py-12 print:border-none print:break-inside-avoid">
-      <h3 className="text-sm font-bold uppercase tracking-[0.2em] mb-16 text-black/40">El Recorrido</h3>
+      <h3 className="text-sm font-bold uppercase tracking-[0.2em] mb-16 text-black/40">{title}</h3>
       
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 md:gap-0">
-        {steps.map((step: string, index: number) => (
-          <React.Fragment key={step}>
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] font-mono text-black/30">0{index + 1}</span>
-              <span className="text-xl md:text-2xl font-medium tracking-tight text-black">{step}</span>
+      <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-8 md:gap-0">
+        {steps.map((step: any, index: number) => {
+          const isString = typeof step === 'string';
+          const stepNumber = isString ? `0${index + 1}` : (step.step || `0${index + 1}`);
+          const stepTitle = isString ? step : step.title;
+          const stepText = isString ? null : step.text;
+
+          return (
+          <React.Fragment key={index}>
+            <div className="flex flex-col items-start gap-2 max-w-[200px]">
+              <div className="flex items-center gap-4 mb-2">
+                <span className="text-[10px] font-mono text-black/30">{stepNumber}</span>
+                <span className="text-xl md:text-2xl font-medium tracking-tight text-black">{stepTitle}</span>
+              </div>
+              {stepText && (
+                <p className="text-sm text-black/60 font-light">{stepText}</p>
+              )}
             </div>
             {index < steps.length - 1 && (
-              <div className="hidden md:block flex-1 h-[1px] bg-black/10 mx-8" />
+              <div className="hidden md:block flex-1 h-[1px] bg-black/10 mx-8 mt-4" />
             )}
             {index < steps.length - 1 && (
               <div className="block md:hidden h-8 w-[1px] bg-black/10 ml-5" />
             )}
           </React.Fragment>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -87,7 +100,8 @@ export function BlockSixtySeconds({ data }: { data: any }) {
 }
 
 export function BlockPrinciples({ data }: { data: any }) {
-  const principles = data.principles || [
+  const title = data.title || "Principios";
+  const principles = data.principles || data.list || [
     "Transparencia antes que complejidad.",
     "Infraestructura antes que especulación.",
     "Participación antes que exclusividad.",
@@ -97,15 +111,26 @@ export function BlockPrinciples({ data }: { data: any }) {
 
   return (
     <section className="px-6 md:px-12 lg:px-24 py-24 border-b border-black/10 print:py-12 print:border-none print:break-inside-avoid">
-      <h3 className="text-sm font-bold uppercase tracking-[0.2em] mb-16 text-black/40">Principios</h3>
+      <h3 className="text-sm font-bold uppercase tracking-[0.2em] mb-16 text-black/40">{title}</h3>
       
-      <div className="flex flex-col space-y-8 max-w-3xl">
-        {principles.map((principle: string, index: number) => (
-          <div key={index} className="flex items-start gap-6">
-            <div className="w-1.5 h-1.5 rounded-full bg-black mt-2.5 shrink-0" />
-            <p className="text-xl md:text-2xl text-black font-light tracking-tight">{principle}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl">
+        {principles.map((principle: any, index: number) => {
+          const isString = typeof principle === 'string';
+          const pTitle = isString ? principle : principle.title;
+          const pText = isString ? null : principle.text;
+
+          return (
+            <div key={index} className="flex items-start gap-6">
+              <div className="w-1.5 h-1.5 rounded-full bg-black mt-2.5 shrink-0" />
+              <div>
+                <p className={`text-xl md:text-2xl text-black ${isString ? 'font-light' : 'font-medium'} tracking-tight`}>{pTitle}</p>
+                {pText && (
+                  <p className="mt-2 text-black/60 font-light text-sm max-w-sm">{pText}</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

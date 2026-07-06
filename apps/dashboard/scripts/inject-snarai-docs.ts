@@ -25,7 +25,8 @@ Participants access a utility-based ecosystem through participation certificates
 - **ASSET TARGET:** $100,000,000 MXN
 - **LOCATION:** Golden Zone, Bucerías
 - **FOUNDER ACCESS:** Currently Active
-- **MIN. POSITION:** $500 USD
+- **FEATURED PORTFOLIO:** $25,000 USD (Ambassador Tier)
+- **KEY BENEFITS:** +5% Yield & Premium stay benefits
 
 ## 02 / MARKET THESIS
 **WHY RIVIERA NAYARIT**
@@ -64,7 +65,8 @@ Los participantes acceden a un ecosistema basado en utilidad a través de certif
 - **OBJETIVO DEL ACTIVO:** $100,000,000 MXN
 - **UBICACIÓN:** Zona Dorada, Bucerías
 - **ACCESO FOUNDER:** Actualmente Activo
-- **POSICIÓN MÍNIMA:** $500 USD
+- **PORTAFOLIO RECOMENDADO:** $25,000 USD (Nivel Embajador)
+- **BENEFICIOS DESTACADOS:** +5% Yield y beneficio de estancias premium
 
 ## 02 / TESIS DE MERCADO
 **POR QUÉ RIVIERA NAYARIT**
@@ -188,7 +190,7 @@ const onePagerEn = `
 - **Asset Type:** Luxury Condo-Hotel
 - **Location:** Golden Zone, Bucerías, Riviera Nayarit
 - **Development Target:** $100,000,000 MXN
-- **Min. Entry:** $500 USD (Explorer Tier)
+- **Featured Portfolio:** $25,000 USD (Ambassador Tier - Includes premium stay benefits)
 - **Infrastructure:** Pandoras Growth OS
 
 ## THE THESIS
@@ -218,7 +220,7 @@ const onePagerEs = `
 - **Tipo de Activo:** Condo-Hotel de Lujo
 - **Ubicación:** Zona Dorada, Bucerías, Riviera Nayarit
 - **Objetivo de Desarrollo:** $100,000,000 MXN
-- **Entrada Mín.:** $500 USD (Nivel Explorer)
+- **Portafolio Recomendado:** $25,000 USD (Nivel Embajador - Incluye beneficio de estancias premium)
 - **Infraestructura:** Pandoras Growth OS
 
 ## LA TESIS
