@@ -29,6 +29,7 @@ import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
 import { LegalTab } from '@/components/projects/LegalTab';
 import { EventsTab } from '@/app/()/profile/projects/[slug]/manage/tabs/EventsTab';
 import { ResourceHubTab } from '@/app/()/profile/projects/[slug]/manage/tabs/ResourceHubTab';
+import { KnowledgeCenterTab } from '@/app/()/profile/projects/[slug]/manage/tabs/KnowledgeCenterTab';
 import type { Project } from '@/types/admin';
 
 interface MissionControlProps {
@@ -44,7 +45,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
         initialProject?.id || (projects.length > 0 ? projects[0]?.id ?? '' : '')
     );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'purchases' | 'treasury' | 'tokenomics' | 'governance' | 'legal' | 'ambassadors' | 'events' | 'hub'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'purchases' | 'treasury' | 'tokenomics' | 'governance' | 'legal' | 'ambassadors' | 'events' | 'hub' | 'knowledge_center'>('overview');
     const [pendingCount, setPendingCount] = useState(0);
 
     const project = projects.find(p => p.id === selectedProjectId) || projects[0];
@@ -161,6 +162,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                         { id: 'ambassadors', label: 'Gestores Patrimoniales', icon: <UserIcon className="w-4 h-4" /> },
                         { id: 'events', label: 'Eventos & Calendario', icon: <ClockIcon className="w-4 h-4" /> },
                         { id: 'hub', label: 'Centro de Archivos', icon: <FolderIcon className="w-4 h-4" /> },
+                        { id: 'knowledge_center', label: 'Knowledge Center', icon: <DocumentTextIcon className="w-4 h-4 text-purple-400" /> },
                         { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                         { id: 'tokenomics', label: 'Tokenomics & Bots', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                         { id: 'governance', label: 'DAO & Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
@@ -205,6 +207,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                             {activeTab === 'ambassadors' && <AmbassadorsTab project={project} />}
                             {activeTab === 'events' && <EventsTab project={project} />}
                             {activeTab === 'hub' && <ResourceHubTab project={project} />}
+                            {activeTab === 'knowledge_center' && <KnowledgeCenterTab project={project} />}
                         </motion.div>
                     </AnimatePresence>
                 </div>
