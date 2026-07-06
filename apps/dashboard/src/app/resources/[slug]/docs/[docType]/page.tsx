@@ -5,6 +5,7 @@ import { ArrowLeftIcon } from 'lucide-react';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import PrintButton from './PrintButton';
 
 // Force dynamic to always fetch the latest DB config
 export const dynamic = 'force-dynamic';
@@ -61,14 +62,7 @@ export default async function UniversalDocumentPage({
             <Link href={`?lang=es`} className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors ${lang === 'es' ? 'bg-[#D4A853] text-black' : 'text-white hover:text-[#D4A853]'}`}>ES</Link>
             <Link href={`?lang=en`} className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors ${lang === 'en' ? 'bg-[#D4A853] text-black' : 'text-white hover:text-[#D4A853]'}`}>EN</Link>
           </div>
-          <button 
-            onClick={() => {
-              if (typeof window !== 'undefined') window.print();
-            }}
-            className="text-xs border border-[#D4A853] text-[#D4A853] px-4 py-2 rounded-full hover:bg-[#D4A853] hover:text-black transition-colors"
-          >
-            Guardar PDF
-          </button>
+          <PrintButton />
         </div>
       </nav>
 
