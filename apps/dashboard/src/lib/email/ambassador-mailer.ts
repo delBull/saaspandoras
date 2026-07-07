@@ -89,7 +89,7 @@ export async function sendAmbassadorOTPEmail(email: string, fullName: string, pi
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                     <div style="text-align: center; padding: 20px;">
-                        <img src="https://dash.pandoras.finance/images/safety-shield.png" alt="Pandoras Shield" width="50" height="50" />
+                        <img src="https://dash.pandoras.finance/images/logopure.png" alt="Pandoras" width="60" style="display: block; margin: 0 auto;" />
                     </div>
                     <h1 style="color: #111; text-align: center;">Verifica tu identidad</h1>
                     <p>Hola ${fullName},</p>

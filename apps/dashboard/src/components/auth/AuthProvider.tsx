@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useReducer, useCallback } from "react";
 import { getContract, prepareContractCall } from "thirdweb";
-import { useActiveAccount, useActiveWalletChain, useIsAutoConnecting, useSendTransaction } from "thirdweb/react";
+import { useActiveAccount, useActiveWalletChain, useIsAutoConnecting, useSendTransaction, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { useToast } from "@saasfly/ui/use-toast";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
@@ -130,6 +130,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [state, dispatch] = useReducer(authReducer, initialState);
 
     const account = useActiveAccount();
+    const activeWallet = useActiveWallet();
+    const { disconnect } = useDisconnect();
     const isAutoConnecting = useIsAutoConnecting();
     const chain = useActiveWalletChain();
     const { toast } = useToast();
@@ -398,6 +400,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (err.name === "AbortError") return;
                 console.error(`[AuthMachine] ❌ Flow #${id} failed (object):`, err);
                 console.error(`[AuthMachine] ❌ Flow #${id} failed (stringified):`, JSON.stringify(err, Object.getOwnPropertyNames(err)));
+                
+                // If the user rejected the signature, or the popup was blocked (e.g. auto-login on page load)
+                const msg = err?.message?.toLowerCase() || "";
+                if (msg.includes("rejected") || msg.includes("user denied") || msg.includes("popup") || msg.includes("failed to fetch")) {
+                    console.log("[AuthMachine] Signature failed or popup blocked. Disconnecting stale wallet and reverting to guest.");
+                    if (activeWallet) disconnect(activeWallet);
+                    if (typeof window !== "undefined") localStorage.removeItem("wallet-session");
+                    safeDispatch({ type: "SET_STATUS", status: "unauthenticated" }, id);
+                    return;
+                }
+
                 safeDispatch({ type: "SET_ERROR", error: err.message || "Error desconocido" }, id);
                 safeDispatch({ type: "SET_STATUS", status: "error" }, id);
             }

@@ -123,6 +123,13 @@ export async function sendAmbassadorAlert(data: any, projectWebhookUrl?: string 
     if (data.projectId) {
         embed.fields.push({ name: "Project ID", value: data.projectId.toString(), inline: true });
     }
+    
+    // Anexar enlace directo para aceptar al gestor
+    embed.fields.push({ 
+        name: "Acción", 
+        value: `[Ver Panel de Protocolos](https://dash.pandoras.finance/profile/projects)`,
+        inline: false
+    });
 
     try {
         await fetch(webhookUrl, {

@@ -43,16 +43,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (identity) {
-      await db.update(marketingIdentities)
-        .set({ walletAddress: cleanWallet })
-        .where(eq(marketingIdentities.id, identity.id));
-      
-      // 3. Update all Leads for this Identity
-      await db.update(marketingLeads)
-        .set({ walletAddress: cleanWallet })
-        .where(eq(marketingLeads.identityId, identity.id));
-      
-      console.log(`✅ [link-identity] Identity & Leads updated for ${cleanEmail}`);
+      try {
+        await db.update(marketingIdentities)
+          .set({ walletAddress: cleanWallet })
+          .where(eq(marketingIdentities.id, identity.id));
+        
+        // 3. Update all Leads for this Identity
+        await db.update(marketingLeads)
+          .set({ walletAddress: cleanWallet })
+          .where(eq(marketingLeads.identityId, identity.id));
+        
+        console.log(`✅ [link-identity] Identity & Leads updated for ${cleanEmail}`);
+      } catch (dbErr: any) {
+        if (dbErr.code === '23505') {
+          console.warn(`⚠️ [link-identity] Wallet ${cleanWallet} already linked to another identity. Skipping update for ${cleanEmail}.`);
+        } else {
+          throw dbErr;
+        }
+      }
     } else {
         // If identity doesn't exist by email, we don't create it here (handled by capture)
         console.warn(`⚠️ [link-identity] No identity found for ${cleanEmail}. Skipping Growth OS link.`);
