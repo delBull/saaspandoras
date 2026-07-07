@@ -16,6 +16,7 @@ import { Suspense } from 'react';
  * ============================================================================
  */
 
+
 import { NFTGate } from '@/components/nft-gate';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActiveAccount, useConnectModal } from 'thirdweb/react';
@@ -24,7 +25,7 @@ import { wallets } from '@/lib/wallets';
 import { config } from '@/config';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import PortalActivated from '@/components/nft-gating/PortalActivated';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, CheckCircle, Lock, Shield } from 'lucide-react';
 import { AccessState } from '@/lib/access/state-machine';
@@ -152,7 +153,6 @@ function AccessV2Inner() {
   const searchParams = useSearchParams();
 
   const [mounted, setMounted] = useState(false);
-  const [showPortal, setShowPortal] = useState(false);
 
   // Context from landing page
   const projectSlug = searchParams?.get('project') || null;
@@ -195,11 +195,7 @@ function AccessV2Inner() {
       const addressKey = user.address.toLowerCase();
       const bypassRitual = localStorage.getItem(`pbox_ritual_seen_${addressKey}`);
       
-      if (bypassRitual || isReturning) {
-        handleEnterSystem();
-      } else {
-        setShowPortal(true);
-      }
+      handleEnterSystem();
     }
   }, [state, mounted, user?.address, isReturning]);
 
@@ -337,15 +333,7 @@ function AccessV2Inner() {
         origin={origin}
         initialState={bypass === 'ritual' ? 'RITUAL' : undefined}
       >
-        {showPortal ? (
-          <PortalActivated
-            tier={user?.tier}
-            hasAccess={!!hasAccess}
-            onEnter={handleEnterSystem}
-            onShowHowItWorks={() => {}}
-          />
-        ) : (
-          <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center pt-14">
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center pt-14">
             {/* ── LOADING STATE ─────────────────────────────────────────────── */}
             {isLoading && <LoadingSpinner />}
 
@@ -483,7 +471,7 @@ function AccessV2Inner() {
             )}
 
             {/* ── CONNECTED — HAS ACCESS ────────────────────────────────────── */}
-            {authUser?.id && !showPortal && (
+            {authUser?.id && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -550,7 +538,6 @@ function AccessV2Inner() {
               </motion.div>
             )}
           </div>
-        )}
       </NFTGate>
     </div>
   );
