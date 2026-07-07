@@ -186,13 +186,6 @@ function AccessV2Inner() {
     }
   }, [projectSlug]);
 
-  // Sync useAccessState() when AuthProvider confirms auth (handles MetaMask/admin case)
-  useEffect(() => {
-    if (authStatus === 'has_access' || authStatus === 'authenticated') {
-      refresh();
-    }
-  }, [authStatus, refresh]);
-
   useEffect(() => {
     if (
       (state === AccessState.HAS_ACCESS || state === AccessState.ADMIN) &&
@@ -211,9 +204,10 @@ function AccessV2Inner() {
   }, [state, mounted, user?.address, isReturning]);
 
   const handleEnterSystem = () => {
-    if (hasAccess || isAdmin) {
-      if (typeof window !== 'undefined' && user?.address) {
-        const addressKey = user.address.toLowerCase();
+    if (hasAccess || isAdmin || authStatus === 'has_access' || authStatus === 'authenticated') {
+      const walletAddress = user?.address || account?.address;
+      if (typeof window !== 'undefined' && walletAddress) {
+        const addressKey = walletAddress.toLowerCase();
         localStorage.setItem(`pbox_ritual_seen_${addressKey}`, 'true');
         fetch('/api/v1/user/initiate', { method: 'POST' }).catch(console.error);
       }
@@ -280,14 +274,14 @@ function AccessV2Inner() {
   };
 
   useEffect(() => {
-    if (authUser?.id && (hasAccess || isAdmin) && mounted && authUser?.address) {
+    if (authUser?.id && (hasAccess || isAdmin || authStatus === 'has_access' || authStatus === 'authenticated') && mounted && authUser?.address) {
         const addressKey = authUser.address.toLowerCase();
         const hasSeenPortal = localStorage.getItem(`pbox_ritual_seen_${addressKey}`);
         if (hasSeenPortal || isReturning) {
             handleEnterSystem();
         }
     }
-  }, [authUser?.id, authUser?.address, hasAccess, isAdmin, mounted, isReturning]);
+  }, [authUser?.id, authUser?.address, hasAccess, isAdmin, authStatus, mounted, isReturning]);
 
   const isApprovedFromEmail =
     typeof window !== 'undefined' &&
