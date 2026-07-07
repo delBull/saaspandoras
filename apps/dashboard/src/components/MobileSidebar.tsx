@@ -138,7 +138,7 @@ export function MobileSidebar({ isOpen, onClose, isAdmin }: MobileSidebarProps) 
                   
                   <button
                     onClick={() => {
-                      if (wallet) disconnect(wallet);
+                      if (wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); }
                       onClose();
                     }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-zinc-900 text-red-400 hover:text-red-300 rounded-2xl font-bold text-sm border border-red-500/20 active:scale-95 transition-all"

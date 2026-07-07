@@ -890,7 +890,7 @@ export function Sidebar({
                     <Tooltip.Root>
                       <Tooltip.Trigger asChild>
                         <button
-                          onClick={() => wallet && disconnect(wallet)}
+                          onClick={() => { if(wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); } }}
                           disabled={!wallet}
                           className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 justify-center"
                         >
@@ -908,7 +908,7 @@ export function Sidebar({
                     </Tooltip.Root>
                   ) : (
                     <button
-                      onClick={() => wallet && disconnect(wallet)}
+                      onClick={() => { if(wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); } }}
                       disabled={!wallet}
                       className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 px-4"
                     >
@@ -1240,7 +1240,7 @@ export function Sidebar({
                     <div className="border-t border-gray-800 pt-2">
                       <button
                         onClick={() => {
-                          if (wallet) disconnect(wallet);
+                          if (wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); }
                           setMobileOpen(false);
                         }}
                         disabled={!wallet}

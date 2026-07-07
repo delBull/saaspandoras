@@ -43,12 +43,16 @@ export function ConnectWalletButton({
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     if (!wallet) return;
     setIsDisconnecting(true);
     try {
       disconnect(wallet);
       localStorage.setItem("wallet-logged-out", "true");
+      
+      // Clear server-side session cookies
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+      
       onDisconnect?.();
     } catch (e) {
       console.error("Disconnect error:", e);
