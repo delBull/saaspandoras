@@ -453,7 +453,16 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     };
 
     const wallets = useMemo(() => [
-        inAppWallet({ auth: { options: ["email", "google", "apple", "facebook", "passkey"] } }),
+        inAppWallet({ 
+            auth: { 
+                options: ["email", "google", "apple", "facebook", "passkey"],
+                mode: "redirect",
+            },
+            executionMode: { 
+                mode: "EIP7702", 
+                sponsorGas: true, 
+            },
+        }),
         createWallet("io.metamask")
     ], []);
 
