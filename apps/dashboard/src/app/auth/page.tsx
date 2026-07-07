@@ -124,7 +124,10 @@ function AuthContent() {
     }, [account?.address, authStatus, runAuthFlow]);
 
     const wallets = useMemo(() => [
-        inAppWallet({ auth: { options: ["email", "google", "apple", "facebook", "passkey"] } }),
+        inAppWallet({ 
+            auth: { options: ["email", "google", "apple", "facebook", "passkey"] },
+            executionMode: { mode: "EIP7702", sponsorGas: true }
+        }),
         createWallet("io.metamask")
     ], []);
 

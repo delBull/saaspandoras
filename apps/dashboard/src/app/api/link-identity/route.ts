@@ -29,13 +29,17 @@ export async function POST(request: NextRequest) {
     console.log(`🔗 [link-identity] Bridging ${cleanEmail} <-> ${cleanWallet}`);
 
     // 1. Update Legacy Access Requests
-    await db.update(accessRequests)
-      .set({ walletAddress: cleanWallet })
-      .where(and(
-        eq(accessRequests.email, cleanEmail),
-        // Only update if currently null to avoid overwriting or redundant ops
-        // (Actually, if it's the same, no harm. If it's different, we prioritize the new one)
-      ));
+    try {
+      await db.update(accessRequests)
+        .set({ walletAddress: cleanWallet })
+        .where(eq(accessRequests.email, cleanEmail));
+    } catch (err: any) {
+      if (err.code === '23505') {
+        console.warn(`⚠️ [link-identity] Wallet ${cleanWallet} already linked to another access_request. Skipping legacy update.`);
+      } else {
+        console.error(`❌ [link-identity] Error updating accessRequests:`, err);
+      }
+    }
 
     // 2. Update Growth OS Identity
     const identity = await db.query.marketingIdentities.findFirst({

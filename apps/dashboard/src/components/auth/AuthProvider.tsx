@@ -407,6 +407,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const msg = err?.message?.toLowerCase() || "";
                 if (msg.includes("rejected") || msg.includes("user denied") || msg.includes("popup")) {
                     console.log("[AuthMachine] Signature failed or popup blocked. Reverting to unauthenticated (Signature Required).");
+                    
+                    // Si el error viene del service worker de MetaMask (zombie state)
+                    const stack = err?.stack?.toLowerCase() || "";
+                    if (stack.includes("nkbihfbeogaeaoehlefnkodbefgpgknn")) {
+                        toast({
+                            title: "Error de Extensión (MetaMask)",
+                            description: "MetaMask se ha colgado. Por favor ve a chrome://extensions, desactiva y vuelve a activar MetaMask, o reinicia tu navegador.",
+                            variant: "destructive"
+                        });
+                    }
+                    
                     safeDispatch({ type: "SET_STATUS", status: "unauthenticated" }, id);
                     return;
                 }
