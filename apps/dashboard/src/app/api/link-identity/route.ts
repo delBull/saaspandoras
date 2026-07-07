@@ -42,9 +42,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Update Growth OS Identity
-    const identity = await db.query.marketingIdentities.findFirst({
-      where: eq(marketingIdentities.email, cleanEmail)
-    });
+    let identity: typeof marketingIdentities.$inferSelect | undefined;
+    try {
+      identity = await db.query.marketingIdentities.findFirst({
+        where: eq(marketingIdentities.email, cleanEmail)
+      });
+    } catch (lookupErr) {
+      console.error(`❌ [link-identity] Error looking up identity for ${cleanEmail}:`, lookupErr);
+    }
 
     if (identity) {
       try {
@@ -62,7 +67,7 @@ export async function POST(request: NextRequest) {
         if (dbErr.code === '23505') {
           console.warn(`⚠️ [link-identity] Wallet ${cleanWallet} already linked to another identity. Skipping update for ${cleanEmail}.`);
         } else {
-          throw dbErr;
+          console.error(`❌ [link-identity] Error updating identity/leads for ${cleanEmail}:`, dbErr);
         }
       }
     } else {

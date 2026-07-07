@@ -237,8 +237,8 @@ function AccessV2Inner() {
   // Logic for the primary button in the "Not Authenticated" view
   const getPrimaryButtonLabel = () => {
     if (isLoading) return 'VERIFICANDO...';
+    if (authStatus === 'has_access' || authStatus === 'authenticated') return 'ENTRAR AL SISTEMA';
     if (account && authStatus === 'unauthenticated') return 'ACEPTAR Y CONTINUAR';
-    if (account && authStatus === 'authenticated') return 'ENTRAR AL SISTEMA';
     if (account) return 'PROCESANDO...';
     return 'SOLICITAR ACCESO';
   };
@@ -253,7 +253,7 @@ function AccessV2Inner() {
       return;
     }
 
-    if (account && authStatus === 'authenticated') {
+    if (account && (authStatus === 'authenticated' || authStatus === 'has_access')) {
         handleEnterSystem();
         return;
     }
@@ -363,7 +363,7 @@ function AccessV2Inner() {
             )}
 
             {/* ── NOT CONNECTED ─────────────────────────────────────────────── */}
-            {!authUser?.id && !isLoading && !isMinting && (
+            {!authUser?.id && authStatus !== 'has_access' && !isLoading && !isMinting && (
               <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -143,6 +143,7 @@ export async function GET(req: Request): Promise<NextResponse> {
                 betaOpen: isBetaOpen,
                 ritualEnabled: isRitualEnabled,
                 user: {
+                    id: dbUser?.id || address,
                     address,
                     hasAccess: hasNFTPermission || !!userIsAdmin,
                     isAdmin: !!userIsAdmin,

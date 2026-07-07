@@ -7,6 +7,7 @@ export interface AccessStateData {
     isAdmin: boolean;
     hasAccess: boolean;
     user?: {
+        id: string;
         address: string;
         hasAccess: boolean;
         isAdmin: boolean;
