@@ -145,6 +145,7 @@ function AccessV2Inner() {
     ritualEnabled,
     user,
     isLoading: isOracleLoading,
+    refresh,
   } = useAccessState();
   const account = useActiveAccount();
   const router = useRouter();
@@ -184,6 +185,13 @@ function AccessV2Inner() {
       }).catch(console.error);
     }
   }, [projectSlug]);
+
+  // Sync useAccessState() when AuthProvider confirms auth (handles MetaMask/admin case)
+  useEffect(() => {
+    if (authStatus === 'has_access' || authStatus === 'authenticated') {
+      refresh();
+    }
+  }, [authStatus, refresh]);
 
   useEffect(() => {
     if (
