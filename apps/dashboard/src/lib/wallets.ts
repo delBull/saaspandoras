@@ -25,6 +25,7 @@ export const wallets = [
     inAppWallet({
         auth: {
             options: ["google", "email", "apple", "facebook", "passkey"],
+            mode: "redirect",
         },
         executionMode: { 
             mode: "EIP7702", 

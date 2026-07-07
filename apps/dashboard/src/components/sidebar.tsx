@@ -749,7 +749,14 @@ export function Sidebar({
                           link.admin &&
                           "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
                         )}
-                        onClick={(e) => link.disabled && e.preventDefault()}
+                        onClick={(e) => {
+                          if (link.disabled) {
+                            e.preventDefault();
+                          } else if (link.admin) {
+                            e.preventDefault();
+                            window.location.href = link.href;
+                          }
+                        }}
                       >
                         {link.icon}
                       </Link>
@@ -775,7 +782,14 @@ export function Sidebar({
                           link.admin &&
                           "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
                         )}
-                        onClick={(e) => link.disabled && e.preventDefault()}
+                        onClick={(e) => {
+                          if (link.disabled) {
+                            e.preventDefault();
+                          } else if (link.admin) {
+                            e.preventDefault();
+                            window.location.href = link.href;
+                          }
+                        }}
                       >
                         <div className="group-hover:scale-110 transition-transform duration-200">
                           {link.icon}
@@ -1192,8 +1206,14 @@ export function Sidebar({
                         "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
                       )}
                       onClick={(e) => {
-                        if (link.disabled) e.preventDefault();
-                        else setMobileOpen(false);
+                        if (link.disabled) {
+                          e.preventDefault();
+                        } else if (link.admin) {
+                          e.preventDefault();
+                          window.location.href = link.href;
+                        } else {
+                          setMobileOpen(false);
+                        }
                       }}
                     >
                       {link.icon}
