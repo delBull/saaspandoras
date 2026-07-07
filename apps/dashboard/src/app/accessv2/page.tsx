@@ -200,7 +200,7 @@ function AccessV2Inner() {
   }, [state, mounted, user?.address, isReturning]);
 
   const handleEnterSystem = () => {
-    if (hasAccess || isAdmin || authStatus === 'has_access' || authStatus === 'authenticated') {
+    if (hasAccess || isAdmin || authStatus === 'has_access') {
       const walletAddress = user?.address || account?.address;
       if (typeof window !== 'undefined' && walletAddress) {
         const addressKey = walletAddress.toLowerCase();
@@ -235,8 +235,8 @@ function AccessV2Inner() {
   // Logic for the primary button in the "Not Authenticated" view
   const getPrimaryButtonLabel = () => {
     if (isLoading) return 'VERIFICANDO...';
-    if (authStatus === 'has_access' || authStatus === 'authenticated') return 'ENTRAR AL SISTEMA';
     if (account && authStatus === 'unauthenticated') return 'ACEPTAR Y CONTINUAR';
+    if (account && (authStatus === 'has_access' || hasAccess || isAdmin)) return 'ENTRAR AL SISTEMA';
     if (account) return 'PROCESANDO...';
     return 'SOLICITAR ACCESO';
   };
@@ -251,7 +251,7 @@ function AccessV2Inner() {
       return;
     }
 
-    if (account && (authStatus === 'authenticated' || authStatus === 'has_access')) {
+    if (account && (authStatus === 'has_access' || hasAccess || isAdmin)) {
         handleEnterSystem();
         return;
     }
@@ -270,7 +270,7 @@ function AccessV2Inner() {
   };
 
   useEffect(() => {
-    if (authUser?.id && (hasAccess || isAdmin || authStatus === 'has_access' || authStatus === 'authenticated') && mounted && authUser?.address) {
+    if (authUser?.id && (hasAccess || isAdmin || authStatus === 'has_access') && mounted && authUser?.address) {
         const addressKey = authUser.address.toLowerCase();
         const hasSeenPortal = localStorage.getItem(`pbox_ritual_seen_${addressKey}`);
         if (hasSeenPortal || isReturning) {

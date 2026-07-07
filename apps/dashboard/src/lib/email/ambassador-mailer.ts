@@ -48,11 +48,11 @@ export async function sendAmbassadorWelcomeEmail({
                         
                         <ul style="padding-left: 20px; color: #334155; font-size: 15px; line-height: 1.6; margin-bottom: 30px;">
                             <li style="margin-bottom: 10px;"><strong>Bono Directo (4%):</strong> Ganarás el 4% líquido en USDC de todo el capital que levantes con tu código. El pago es automatizado.</li>
-                            <li><strong>Yield Residual (1%):</strong> De por vida, ganarás el 1% de todos los rendimientos hoteleros y de rentas que obtengan tus clientes referidos, convirtiéndote en su socio a perpetuidad.</li>
+                            <li><strong>Yield Residual (1%):</strong> De por vida, ganarás el 1% de todos los rendimientos generados por el activo que obtengan tus clientes referidos, convirtiéndote en su socio a perpetuidad.</li>
                         </ul>
                         
                         <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 30px;">
-                            Comparte este código con tus clientes y prospectos. Puedes anexarlo al final del enlace de S'Narai así: <code>snarai.com/?ref=${referralCode}</code>
+                            Comparte este código con tus clientes y prospectos. Puedes anexarlo al final del enlace de S'Narai así: <code>snarai.aztecaz.xyz/?ref=${referralCode}</code>
                         </p>
                         
                         <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; text-align: center;">

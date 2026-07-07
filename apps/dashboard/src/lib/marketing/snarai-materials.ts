@@ -170,7 +170,7 @@ export const snaraiMaterials: MarketingMaterial[] = [
         contentPreview: [
             {
                 section: "Gestión Centralizada",
-                text: "Diseñado para consultar documentos, avances, rendimientos hoteleros distribuidos y noticias, sin salir del dashboard."
+                text: "Diseñado para consultar documentos, avances, rendimientos distribuidos y noticias, sin salir del dashboard."
             },
             {
                 section: "Historial Permanente",

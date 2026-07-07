@@ -101,11 +101,10 @@ export function TourEngine({ children }: { children: ReactNode }) {
         // Only start on home page paths
         const isHomePage = window.location.pathname === '/' || 
                            window.location.pathname === '/admin/dashboard' || 
-                           window.location.pathname === '/' || 
                            window.location.pathname === '/dashboard';
 
         if (!hasCompleted && isHomePage) {
-            setTimeout(() => startTour(), 1500);
+            // DISABLED: setTimeout(() => startTour(), 1500);
         }
     }, []);
 
