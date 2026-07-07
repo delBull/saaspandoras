@@ -330,7 +330,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 eq(projectBriefings.projectId, project.id),
                 eq(projectBriefings.status, 'published')
             ),
-            limit: 1
+            orderBy: desc(projectBriefings.createdAt)
         }).catch(() => [])
     ]);
 
@@ -590,7 +590,15 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       legal: project.legalConfig || {},
       knowledgeCenter: {
         isActive: activeBriefings && activeBriefings.length > 0,
-        url: `https://${apiKey?.startsWith('pk_live_') ? 'dash' : 'staging.dash'}.pandoras.finance/briefings/${slug}/access`
+        url: `https://${apiKey?.startsWith('pk_live_') ? 'dash' : 'staging.dash'}.pandoras.finance/briefings/${slug}/access`,
+        briefings: activeBriefings.map(b => ({
+          id: b.id,
+          slug: b.slug,
+          title: b.title,
+          subtitle: b.subtitle,
+          blocks: b.blocks,
+          updatedAt: b.updatedAt
+        }))
       },
       phases: phases.map((p: any) => ({
         id: p.id,

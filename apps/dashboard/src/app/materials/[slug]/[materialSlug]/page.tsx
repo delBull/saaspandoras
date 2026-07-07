@@ -94,8 +94,20 @@ export default function MaterialPage({ params }: { params: { slug: string, mater
                     stats: []
                 }
             }] : []),
-            // Remaining blocks from the base deck (phases, investment example, financials)
-            ...mockSNaraiDeck.blocks.slice(1)
+            
+            // Add unique sections from the material definition
+            ...(material?.contentPreview?.map(preview => ({
+                type: 'info',
+                data: {
+                    sectionLabel: 'Contenido Específico',
+                    title: preview.section,
+                    content: preview.text,
+                    stats: []
+                }
+            })) || []),
+
+            // Add financial blocks only for the main investment documents
+            ...(['investment-deck', 'project-overview'].includes(params.materialSlug) ? mockSNaraiDeck.blocks.slice(2) : [])
         ] : []
     };
 
