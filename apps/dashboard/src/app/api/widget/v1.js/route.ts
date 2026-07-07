@@ -13,14 +13,11 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
-    // Use import.meta.url to reliably find the script path (works in both dev and prod)
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const widgetPath = path.join(__dirname, '..', '..', '..', 'public', 'scripts', 'growth-widget.v1.js');
-    const absolutePath = path.resolve(widgetPath);
+    // Use process.cwd() to reliably find the public directory in Next.js
+    const publicDir = path.join(process.cwd(), 'public');
+    const absolutePath = path.join(publicDir, 'scripts', 'growth-widget.v1.js');
     
     // SECURITY: Ensure path is within public/ directory (prevent path traversal)
-    const publicDir = path.resolve('public');
     if (!absolutePath.startsWith(publicDir + path.sep) && absolutePath !== publicDir) {
       return new NextResponse('Forbidden', { status: 403 });
     }
