@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider, AutoConnect } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { wallets } from "@/lib/wallets";
+import { config } from "@/config";
 import { GamificationProvider } from "@pandoras/gamification";
 import { GamificationDebugger } from "@/components/debug/GamificationDebugger";
 import { WalletDebugger } from "@/components/debug/WalletDebugger";
@@ -48,6 +49,7 @@ export function Providers({
           <AutoConnect
             client={client}
             wallets={wallets}
+            chain={config.chain}
             timeout={15000}
           />
         )}
