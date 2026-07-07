@@ -2136,7 +2136,7 @@ export default function GrowthOSSubTab() {
             </div>
 
             {/* Bottom Section: Injection Snippet */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
               {/* Widget Injection */}
               <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
@@ -2214,6 +2214,50 @@ export default function GrowthOSSubTab() {
                     {'    metadata: { tags: ['}<span className="text-emerald-400">"FULL_UNIT"</span>{'] } '}<span className="text-zinc-600">{'// Market Attack Trigger'}</span><br/>
                     {'  })'}<br/>
                     {'});'}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Custom Wallet Login SDK */}
+              <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 border border-emerald-500/20">
+                      <UserCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                        Custom Auth Login
+                        <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">Auth</Badge>
+                      </h4>
+                      <p className="text-sm text-zinc-500">Usa el motor SDK de Pandoras para inicio de sesión en landing pages y recolecta wallets.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950 rounded-3xl p-8 font-mono text-[11px] text-zinc-400 border border-zinc-800 relative group overflow-hidden max-h-[250px] overflow-y-auto no-scrollbar">
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <UIButton className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-6" onClick={() => {
+                      const project = projects.find(p => String(p.id) === String(selectedProjectId));
+                      const projectSlug = project?.slug || (selectedProjectId === 'all' ? 'project' : selectedProjectId);
+                      const snippet = `const sdk = window.PandorasGrowth || window.Pandoras;\nif (sdk?.login) sdk.login();\n\n// Escucha el wallet en localStorage\nconst interval = setInterval(() => {\n  const wallet = localStorage.getItem("${projectSlug}_wallet");\n  if (wallet?.startsWith("0x")) {\n    console.log("Logged in:", wallet);\n    clearInterval(interval);\n  }\n}, 1000);`;
+                      navigator.clipboard.writeText(snippet);
+                      toast.success("Snippet copiado");
+                    }}>COPY</UIButton>
+                  </div>
+                  <pre>
+                    <span className="text-zinc-500">{'// Trigger Login Widget'}</span><br/>
+                    <span className="text-blue-400">const</span> sdk = <span className="text-purple-400">window</span>.PandorasGrowth || <span className="text-purple-400">window</span>.Pandoras;<br/>
+                    <span className="text-purple-400">if</span> (sdk?.login) sdk.<span className="text-indigo-400">login</span>();<br/>
+                    <br/>
+                    <span className="text-zinc-500">{'// Listen for auth success'}</span><br/>
+                    <span className="text-blue-400">const</span> interval = <span className="text-indigo-400">setInterval</span>(() {'=>'} {'{'}<br/>
+                    {'  '}<span className="text-blue-400">const</span> wallet = <span className="text-purple-400">localStorage</span>.<span className="text-indigo-400">getItem</span>(<span className="text-emerald-400">"{projects.find(p => String(p.id) === String(selectedProjectId))?.slug || (selectedProjectId === 'all' ? 'project' : selectedProjectId)}_wallet"</span>);<br/>
+                    {'  '}<span className="text-purple-400">if</span> (wallet?.<span className="text-indigo-400">startsWith</span>(<span className="text-emerald-400">"0x"</span>)) {'{'}<br/>
+                    {'    '}console.<span className="text-indigo-400">log</span>(<span className="text-emerald-400">"User Connected:"</span>, wallet);<br/>
+                    {'    '}<span className="text-indigo-400">clearInterval</span>(interval);<br/>
+                    {'  }'}<br/>
+                    {'}, '}1000);
                   </pre>
                 </div>
               </div>
