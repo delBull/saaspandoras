@@ -359,7 +359,12 @@ export default function DashboardPage() {
       const lastAccessRedirect = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pd_last_access_redirect') : null;
       if (lastAccessRedirect && (Date.now() - Number(lastAccessRedirect) < 5000)) {
         console.log("🛡️ [DashboardRoot] Stability guard active, skipping redirect...");
-        return;
+        // After 5 seconds, clear the guard and allow redirect again
+        const retryTimer = setTimeout(() => {
+          sessionStorage.removeItem('pd_last_access_redirect');
+          if (typeof window !== 'undefined') window.location.reload();
+        }, 5000);
+        return () => clearTimeout(retryTimer);
       }
 
       // 🛡️ SECURITY: High-tolerance transitional check
