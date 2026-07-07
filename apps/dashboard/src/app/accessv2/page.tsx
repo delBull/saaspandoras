@@ -229,7 +229,8 @@ function AccessV2Inner() {
         window.location.href = '/';
       }
     } else {
-      window.location.reload();
+      console.warn("[AccessV2] handleEnterSystem called but user does not have access yet. Waiting for state update.");
+      // DO NOT RELOAD! This causes an infinite loop when useAccessState is still CHECKING.
     }
   };
 
