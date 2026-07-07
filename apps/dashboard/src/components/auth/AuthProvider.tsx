@@ -401,12 +401,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error(`[AuthMachine] ❌ Flow #${id} failed (object):`, err);
                 console.error(`[AuthMachine] ❌ Flow #${id} failed (stringified):`, JSON.stringify(err, Object.getOwnPropertyNames(err)));
                 
-                // If the user rejected the signature, or the popup was blocked (e.g. auto-login on page load)
+                // Si el usuario rechaza la firma o el popup es bloqueado por auto-login
+                // Pasamos a unauthenticated para que pueda intentar manualmente, pero NO desconectamos
+                // la wallet agresivamente porque eso rompe el flujo de In-App Wallets (Social Login).
                 const msg = err?.message?.toLowerCase() || "";
-                if (msg.includes("rejected") || msg.includes("user denied") || msg.includes("popup") || msg.includes("failed to fetch")) {
-                    console.log("[AuthMachine] Signature failed or popup blocked. Disconnecting stale wallet and reverting to guest.");
-                    if (activeWallet) disconnect(activeWallet);
-                    if (typeof window !== "undefined") localStorage.removeItem("wallet-session");
+                if (msg.includes("rejected") || msg.includes("user denied") || msg.includes("popup")) {
+                    console.log("[AuthMachine] Signature failed or popup blocked. Reverting to unauthenticated (Signature Required).");
                     safeDispatch({ type: "SET_STATUS", status: "unauthenticated" }, id);
                     return;
                 }
