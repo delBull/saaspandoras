@@ -128,7 +128,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                 {[
                     { id: 'command_center', label: 'Command Center', icon: <ClipboardDocumentIcon className="w-4 h-4 text-emerald-400" /> },
                     { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
-                    { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+                    { id: 'purchases', label: 'Reconciliación (Fast Lane)', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
                     { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'missions', label: 'Gamificación', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
@@ -782,7 +782,7 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white">Cola de Autorización de Inversiones</h3>
+                <h3 className="text-xl font-bold text-white">Reconciliación de Pagos (Fast Lane)</h3>
                 <span className="px-3 py-1 bg-zinc-800 text-zinc-400 rounded-full text-xs font-mono">
                     {purchases.length} Pendientes
                 </span>
@@ -848,7 +848,7 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                                         onClick={() => handleAction(p.id, 'approve')}
                                         className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-black rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {processingId === p.id ? '...' : <><CheckCircleIcon className="w-4 h-4" /> APROBAR</>}
+                                        {processingId === p.id ? '...' : <><CheckCircleIcon className="w-4 h-4" /> CONFIRMAR PAGO</>}
                                     </button>
                                 </div>
                             </div>

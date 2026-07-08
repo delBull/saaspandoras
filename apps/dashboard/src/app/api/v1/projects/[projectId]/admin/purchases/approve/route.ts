@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { purchases, projects, users, daoMembers, ambassadors, ambassadorClients, ambassadorCommissions } from '@/db/schema';
+import { purchases, projects, users, daoMembers, ambassadors, ambassadorClients, ambassadorCommissions, marketingLeads, marketingLeadEvents } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { getAuth } from '@/lib/auth';
@@ -164,6 +164,33 @@ async function handler(
                 targetWallet
               }
             );
+            
+            // Try generating a marketing event if there's a lead attached to this user
+            if (targetWallet || purchase.userId) {
+                const shadowUser = await db.query.users.findFirst({
+                    where: eq(users.id, targetWallet || purchase.userId)
+                });
+                
+                if (shadowUser?.email) {
+                    const lead = await db.query.marketingLeads.findFirst({
+                        where: and(eq(marketingLeads.projectId, projectIdNum), eq(marketingLeads.email, shadowUser.email))
+                    });
+                    
+                    if (lead) {
+                        try {
+                            await db.insert(marketingLeadEvents).values({
+                                leadId: lead.id,
+                                type: 'PURCHASE_APPROVED',
+                                semanticHash: `purchase_approved_${purchase.id}`,
+                                payload: { purchaseId: purchase.id, units, amount: purchase.amount }
+                            }).onConflictDoNothing();
+                            console.log(`✅ Event PURCHASE_APPROVED logged for lead ${lead.id}`);
+                        } catch (e) {
+                            console.warn('Failed to log PURCHASE_APPROVED event:', e);
+                        }
+                    }
+                }
+            }
 
         } else if (action === 'reject') {
             await db.update(purchases)
