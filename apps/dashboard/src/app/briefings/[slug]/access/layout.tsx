@@ -1,20 +1,15 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
+import { PrintButton } from './PrintButton';
 
-export default function AccessLayout({
+export default async function AccessLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const handlePrint = () => {
-    if (typeof window !== 'undefined') {
-      window.print();
-    }
-  };
+  const { slug } = await params;
 
   return (
     <div className="min-h-screen bg-[#F9F9F9] text-black font-sans selection:bg-black selection:text-white">
@@ -24,17 +19,12 @@ export default function AccessLayout({
       */}
       <div className="fixed top-0 w-full z-50 flex items-center justify-between px-6 py-4 bg-[#F9F9F9]/80 backdrop-blur-md border-b border-black/5 print:hidden">
         <Link 
-          href={`/briefings/${params.slug}/access`} 
+          href={`/briefings/${slug}/access`} 
           className="text-xs font-bold uppercase tracking-[0.2em] hover:opacity-50 transition-opacity"
         >
           ← Access Hub
         </Link>
-        <button 
-          onClick={handlePrint}
-          className="text-xs font-bold uppercase tracking-[0.2em] border border-black px-4 py-2 hover:bg-black hover:text-white transition-all active:scale-95"
-        >
-          Descargar PDF
-        </button>
+        <PrintButton />
       </div>
 
       {/* 

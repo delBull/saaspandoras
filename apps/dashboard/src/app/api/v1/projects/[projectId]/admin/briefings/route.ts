@@ -31,9 +31,10 @@ async function validateAdmin(req: NextRequest, projectId: number) {
 }
 
 // GET all briefings for a project
-export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   try {
-    const projectId = Number(params.projectId);
+    const { projectId: projectIdStr } = await params;
+    const projectId = Number(projectIdStr);
     if (isNaN(projectId)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
     const auth = await validateAdmin(req, projectId);
@@ -53,9 +54,10 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
 }
 
 // POST create or update a briefing
-export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   try {
-    const projectId = Number(params.projectId);
+    const { projectId: projectIdStr } = await params;
+    const projectId = Number(projectIdStr);
     if (isNaN(projectId)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
     const auth = await validateAdmin(req, projectId);
@@ -115,9 +117,10 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
 }
 
 // DELETE a briefing
-export async function DELETE(req: NextRequest, { params }: { params: { projectId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   try {
-    const projectId = Number(params.projectId);
+    const { projectId: projectIdStr } = await params;
+    const projectId = Number(projectIdStr);
     if (isNaN(projectId)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
     const auth = await validateAdmin(req, projectId);

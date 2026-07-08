@@ -20,7 +20,6 @@ import {
   AccountStatus,
   WalletSecurity,
   KycModal,
-  TelegramLinkCard
 } from '@/components/profile';
 
 // Extended UserAchievement type with achievement details (for type assertion)
@@ -149,9 +148,8 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Panel Derecho - Gamificación & Enlace */}
+        {/* Panel Derecho - Gamificación */}
         <div className="space-y-6">
-          <TelegramLinkCard />
 
           <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
             <CardHeader>
