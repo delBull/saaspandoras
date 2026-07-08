@@ -238,7 +238,7 @@ export default function WalletProPage() {
                       wallets={[
                         inAppWallet({
                           auth: {
-                            options: ["email", "google", "apple", "facebook", "passkey"],
+                            options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
                           },
                           executionMode: {
                             mode: "EIP7702",
@@ -345,7 +345,7 @@ export default function WalletProPage() {
                           wallets={[
                             inAppWallet({
                               auth: {
-                                options: ["email", "google", "apple", "facebook", "passkey"],
+                                options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
                               },
                               executionMode: {
                                 mode: "EIP7702",
@@ -483,7 +483,7 @@ export default function WalletProPage() {
                   wallets={[
                     inAppWallet({
                       auth: {
-                        options: ["email", "google", "apple", "facebook", "passkey"],
+                        options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
                       },
                       executionMode: {
                         mode: "EIP7702",

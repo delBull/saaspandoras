@@ -455,7 +455,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     const wallets = useMemo(() => [
         inAppWallet({ 
             auth: { 
-                options: ["email", "google", "apple", "facebook", "passkey"],
+                options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
                 mode: "redirect",
             },
             executionMode: { 

@@ -24,7 +24,7 @@ export const accountAbstractionConfig = {
 export const wallets = [
     inAppWallet({
         auth: {
-            options: ["google", "email", "apple", "facebook", "passkey"],
+            options: ["telegram", "google", "email", "apple", "facebook", "passkey"],
             mode: "redirect",
         },
         executionMode: { 

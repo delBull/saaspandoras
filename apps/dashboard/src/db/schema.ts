@@ -165,6 +165,9 @@ export const users = pgTable("users", {
   kycData: jsonb("kycData"),
 
   // Telegram Standalone Identity support (Snake Case for newer fields)
+  telegramUsername: varchar("telegram_username", { length: 255 }),
+  telegramLanguage: varchar("telegram_language", { length: 10 }),
+  telegramJoinedAt: timestamp("telegram_joined_at"),
   username: varchar("username", { length: 255 }),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
@@ -186,6 +189,15 @@ export const users = pgTable("users", {
   accessGrantedAt: timestamp("access_granted_at"),
   walletVerified: boolean("wallet_verified").default(false).notNull(),
   ritualCompletedAt: timestamp("ritual_completed_at"),
+});
+
+export const userIdentities = pgTable("user_identities", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  provider: varchar("provider", { length: 50 }).notNull(), // 'telegram', 'google', 'apple'
+  providerId: varchar("provider_id", { length: 255 }).notNull(),
+  walletAddress: varchar("wallet_address", { length: 42 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const sessions = pgTable("sessions", {

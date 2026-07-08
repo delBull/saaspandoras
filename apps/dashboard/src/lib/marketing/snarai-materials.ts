@@ -194,5 +194,22 @@ export const snaraiMaterials: MarketingMaterial[] = [
                 text: "Cómo presentar S'Narai frente a inmuebles tradicionales. Qué prometer, qué NO prometer, y cómo agendar citas efectivas de cierre."
             }
         ]
+    },
+    {
+        id: "escenarios-financieros",
+        title: "Escenarios Financieros S'Narai",
+        objective: "Modelar el retorno del inversionista bajo diferentes estrategias patrimoniales.",
+        description: "Un análisis financiero detallado con 6 escenarios hipotéticos: desde el modelo más conservador hasta la estrategia de mercado secundario Web3. Supuestos, proyecciones de plusvalía, flujos de renta y comparativa final.",
+        url: "#escenarios-financieros",
+        contentPreview: [
+            {
+                section: "Modelo de activo tokenizado con liquidez secundaria",
+                text: "S'Narai no es un proyecto de venta inmobiliaria tradicional. Es un activo patrimonial tokenizado diseñado para generar plusvalía (12-15% anual) y flujo de caja (yield 10-12%) mientras el inversionista mantiene liquidez a través del mercado secundario."
+            },
+            {
+                section: "6 Escenarios: desde $12.7M hasta $216M en valor patrimonial a 5 años",
+                text: "El modelo financiero cubre desde la entrada Fase Fundador ($400K USD) con ROI proyectado de +113% a 5 años, hasta la estrategia patrimonial conservadora donde 17 departamentos generan $8.9M MXN anuales en flujo neto."
+            }
+        ]
     }
 ];

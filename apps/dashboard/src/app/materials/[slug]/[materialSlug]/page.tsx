@@ -61,15 +61,149 @@ const MATERIAL_CONTENT: Record<string, { hero?: string; heroSubtitle?: string; i
         heroSubtitle: "La guía comercial completa para nuestros Embajadores.",
         intro: "Incluye el Elevator Pitch (30s), el Pitch de 3 minutos y el Pitch profundo (10 min). Cómo presentar S'Narai frente a inmuebles tradicionales, qué prometer, qué NO prometer, y scripts listos para WhatsApp y LinkedIn.",
     },
+    'escenarios-financieros': {
+        hero: "Tu patrimonio. Seis formas de verlo crecer.",
+        heroSubtitle: "Análisis financiero detallado bajo supuestos hipotéticos. No es una promesa de rendimiento.",
+        intro: `S'Narai no es un proyecto de venta inmobiliaria tradicional. Es un activo patrimonial tokenizado con liquidez secundaria: participas en las utilidades y capital de un edificio premium, con la posibilidad de ceder tu posición en cualquier momento a través del mercado interno.
+
+Este documento modela seis escenarios financieros hipotéticos con los mismos supuestos base para que puedas entender el potencial de tu inversión bajo diferentes estrategias patrimoniales.`,
+    },
 };
 
-export default function MaterialPage({ params }: { params: { slug: string, materialSlug: string } }) {
-    // Find the matching material definition
-    const material = snaraiMaterials.find(m => m.id === params.materialSlug);
-    const contentOverride = MATERIAL_CONTENT[params.materialSlug];
 
-    const title = material?.title ?? params.materialSlug.replace(/-/g, ' ').toUpperCase();
+export default async function MaterialPage({ params }: { params: Promise<{ slug: string, materialSlug: string }> }) {
+    const { slug, materialSlug } = await params;
+    // Find the matching material definition
+    const material = snaraiMaterials.find(m => m.id === materialSlug);
+    const contentOverride = MATERIAL_CONTENT[materialSlug];
+
+    const title = material?.title ?? materialSlug.replace(/-/g, ' ').toUpperCase();
     const firstBlock = mockSNaraiDeck.blocks?.[0];
+
+    // Rich financial scenario blocks for the dedicated document
+    const financialScenarioBlocks = materialSlug === 'escenarios-financieros' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Supuestos Base',
+                title: 'Supuestos Generales del Modelo Financiero',
+                content: `Estos números son modelos financieros hipotéticos, no una promesa de rendimiento. Sirven para entender los incentivos y diseñar la estrategia de inversión.`,
+                stats: [
+                    { label: 'Capital requerido', value: '$100M MXN' },
+                    { label: 'Departamentos objetivo', value: '20 unidades' },
+                    { label: 'Precio preventa inicial', value: 'USD $400,000' },
+                    { label: 'Tipo de cambio modelo', value: '$18 MXN/USD' },
+                    { label: 'Valor preventa / depto.', value: '$7.2M MXN' },
+                    { label: 'Plusvalía anual esperada', value: '12% – 15%' },
+                    { label: 'Rentabilidad renta bruta', value: '10% – 12% anual' },
+                    { label: 'Ocupación promedio estabilizada', value: '65% – 75%' },
+                    { label: 'Ingreso neto renta / depto.', value: '$528,000 MXN / año' },
+                ]
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Escenario 1 — Patrimonial Fundador',
+                title: 'Conservación Máxima: Construimos, recuperamos capital, conservamos el activo',
+                content: `Estrategia: Se comercializa el 20% del proyecto (4 departamentos). El inversionista Fase Fundador que entra a $400,000 USD ($7.2M MXN) ve su activo crecer a ~$12.7M MXN en 5 años (plusvalía 12% compuesta). Las rentas acumuladas suman $2.64M MXN adicionales. Resultado total al año 5: ~$15.34M MXN sobre una inversión inicial de $7.2M MXN.`,
+                stats: [
+                    { label: 'Inversión inicial Fase Fundador', value: 'USD $400,000' },
+                    { label: 'Valor departamento año 5', value: '~$12.7M MXN' },
+                    { label: 'Rentas netas acumuladas (5 años)', value: '$2.64M MXN' },
+                    { label: 'Valor total estimado año 5', value: '~$15.34M MXN' },
+                    { label: 'ROI estimado (5 años)', value: '+113%' },
+                ]
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Escenario 2 — Patrimonial Balanceado',
+                title: 'El punto óptimo: Vendemos lo suficiente para devolver capital',
+                content: `Estrategia 70/30: Se venden 6 departamentos (30%), recuperando $43.2M MXN para financiar construcción y devolver a participantes tempranos. El inversionista fundador que cede su posición en año 2 obtiene ~25% de ganancia. El comprador secundario que entra a $500,000 USD en año 2 adquiere una participación madura con menos riesgo y plusvalía futura proyectada a $15M MXN en año 5. Ambos participantes ganan en diferentes momentos del ciclo.`,
+                stats: [
+                    { label: 'Precio entrada secundaria (año 2)', value: 'USD $500,000' },
+                    { label: 'Ganancia fundador en salida', value: '+25%' },
+                    { label: 'Valor para comprador secundario (año 5)', value: '~$15M MXN' },
+                    { label: 'Ganancia comprador secundario', value: '+$5M MXN' },
+                ]
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Escenario 3 — Patrimonial Estratégico',
+                title: 'Timing inteligente: Vendemos en los momentos de mayor precio',
+                content: `Este modelo no vende todo en preventa. Hace timing por fases para capturar el máximo precio posible en cada etapa del ciclo del proyecto.`,
+                stats: [
+                    { label: 'Fase Fundador (2 deptos.)', value: 'USD $400K → $14.4M MXN' },
+                    { label: 'Fase Estratégica (4 deptos. +15%)', value: 'USD $460K → $33.1M MXN' },
+                    { label: 'Fase Pública (4 deptos. +30%)', value: 'USD $520K → $37.4M MXN' },
+                    { label: 'Venta Tardía (2 deptos. +60%)', value: 'USD $640K → $23M MXN' },
+                    { label: 'Total ingresos por ventas', value: '$107.9M MXN' },
+                    { label: '8 departamentos retenidos (valor año 5)', value: '$101.6M MXN' },
+                ]
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Escenario 4 — Mercado Secundario Activo',
+                title: 'No vendemos departamentos: vendemos liquidez',
+                content: `El modelo más Web3. Las posiciones se ceden entre participantes sin que el activo físico cambie de estructura jurídica. El fundador que vende su posición en año 2 captura la plusvalía acumulada. El nuevo participante entra a un proyecto más maduro, con menos riesgo constructivo y con plusvalía futura todavía disponible.`,
+                stats: [
+                    { label: 'Precio de entrada (Fundador)', value: '$7.2M MXN' },
+                    { label: 'Precio de cesión (año 2)', value: '$10M MXN' },
+                    { label: 'Ganancia del Fundador', value: '+$2.8M MXN' },
+                    { label: 'Valor para nuevo participante (año 5)', value: '~$15M MXN' },
+                    { label: 'Ganancia del nuevo participante', value: '+$5M MXN' },
+                ]
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Escenario 5 — Expansión Patrimonial',
+                title: 'S\'Narai como primer activo generador de un ecosistema',
+                content: `La estrategia de largo plazo: el flujo de rentas generado por las participaciones retenidas financia nuevos proyectos y reservas. El activo se convierte en capital de trabajo para el ecosistema inversionista, no solo en un bien que se consume al venderse.`,
+                stats: [
+                    { label: 'Valor patrimonial año 5', value: '$203M MXN' },
+                    { label: 'Flujo de renta neta anual', value: '$8.4M MXN' },
+                ]
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Escenario 6 — Patrimonial Conservador',
+                title: 'El escenario más probable: casi nadie vende',
+                content: `Basado en el comportamiento histórico de inversionistas patrimoniales: cuando el activo produce flujo, no hay presión de venta. Con solo 3 departamentos comercializados en etapa inicial ($21.6M MXN) y 17 unidades retenidas, el ecosistema genera el mayor patrimonio absoluto a 5 años. Los inversionistas originales no necesitan que todo se venda porque el activo produce por sí solo.`,
+                stats: [
+                    { label: 'Departamentos vendidos', value: '3 unidades' },
+                    { label: 'Departamentos retenidos', value: '17 unidades' },
+                    { label: 'Valor patrimonial año 5', value: '$215.9M MXN' },
+                    { label: 'Flujo de renta neta anual', value: '$8.9M MXN' },
+                ]
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Comparativa Final — Los 6 Escenarios',
+                title: 'Una decisión de estrategia patrimonial, no solo de retorno inmediato',
+                content: `La premisa central es que S'Narai es un activo productivo. La decisión no es cuánto vender, sino cuándo. El modelo recomendado combina liquidez temprana para los participantes que la necesitan con retención de largo plazo para quienes buscan flujo sostenido. El resultado: el inversionista siente que su dinero tiene salida, mientras el activo acumula valor de forma continua.
+
+Frase de posicionamiento: "Participa en la creación de un activo inmobiliario productivo. Puedes obtener liquidez antes, mientras el ecosistema genera valor a largo plazo."`,
+                stats: [
+                    { label: 'Modelo Conservador (15% venta)', value: 'Patrimonio $216M · Flujo $8.9M/año' },
+                    { label: 'Modelo Balanceado (30% venta)', value: 'Patrimonio $178M · Flujo $7.4M/año' },
+                    { label: 'Modelo Estratégico (60% venta)', value: 'Patrimonio $102M · Flujo $4.2M/año' },
+                    { label: 'Venta Total (100%)', value: 'Patrimonio $0 · Flujo $0/año' },
+                ]
+            }
+        },
+    ] : [];
 
     const deck = {
         ...mockSNaraiDeck,
@@ -95,25 +229,29 @@ export default function MaterialPage({ params }: { params: { slug: string, mater
                 }
             }] : []),
             
-            // Add unique sections from the material definition
-            ...(material?.contentPreview?.map(preview => ({
-                type: 'info',
-                data: {
-                    sectionLabel: 'Contenido Específico',
-                    title: preview.section,
-                    content: preview.text,
-                    stats: []
-                }
-            })) || []),
+            // For financial scenarios: inject rich blocks; otherwise show standard contentPreview
+            ...(financialScenarioBlocks.length > 0
+                ? financialScenarioBlocks
+                : (material?.contentPreview?.map(preview => ({
+                    type: 'info',
+                    data: {
+                        sectionLabel: 'Contenido Específico',
+                        title: preview.section,
+                        content: preview.text,
+                        stats: []
+                    }
+                })) || [])
+            ),
 
             // Add financial blocks only for the main investment documents
-            ...(['investment-deck', 'project-overview'].includes(params.materialSlug) ? mockSNaraiDeck.blocks.slice(2) : [])
+            ...(['investment-deck', 'project-overview'].includes(materialSlug) ? mockSNaraiDeck.blocks.slice(2) : [])
         ] : []
     };
 
+
     return (
         <main className="w-full min-h-screen bg-black">
-            <MaterialViewer deck={deck} projectSlug={params.slug} />
+            <MaterialViewer deck={deck} projectSlug={slug} />
         </main>
     );
 }
