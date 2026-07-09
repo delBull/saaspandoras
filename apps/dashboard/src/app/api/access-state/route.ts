@@ -128,6 +128,11 @@ export async function GET(req: Request): Promise<NextResponse> {
                 resolvedState = AccessState.HAS_ACCESS;
             }
 
+            // WHITELABEL WIDGET BYPASS: If project is not pandoras, allow access!
+            if (projectSlug !== "pandoras") {
+                resolvedState = AccessState.HAS_ACCESS;
+            }
+
             const ux = await resolveUXConfig(address, resolvedState, !!userIsAdmin, projectSlug);
             
             if (resolvedState === AccessState.WALLET_NO_ACCESS) {
