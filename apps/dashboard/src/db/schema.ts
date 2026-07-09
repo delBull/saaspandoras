@@ -1562,6 +1562,27 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   })
 }));
 
+// 4.5. BUYBACK REQUESTS (EARLY EXIT)
+export const buybackRequests = pgTable("buyback_requests", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  wallet: varchar("wallet", { length: 255 }).notNull(),
+  amountRequested: varchar("amount_requested", { length: 255 }),
+  reason: text("reason"),
+  status: varchar("status", { length: 50 }).default('PENDING').notNull(), // PENDING, UNDER_REVIEW, APPROVED, REJECTED, COMPLETED
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at")
+});
+
+export const buybackRequestsRelations = relations(buybackRequests, ({ one }) => ({
+  project: one(projects, {
+    fields: [buybackRequests.projectId],
+    references: [projects.id]
+  })
+}));
+
 // 5. PURCHASES (FOR TG MINIAPP & EMBEDDED PAYMENTS)
 export const purchases = pgTable("purchases", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

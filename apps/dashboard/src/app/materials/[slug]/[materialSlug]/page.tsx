@@ -68,6 +68,11 @@ const MATERIAL_CONTENT: Record<string, { hero?: string; heroSubtitle?: string; i
 
 Este documento modela seis escenarios financieros hipotéticos con los mismos supuestos base para que puedas entender el potencial de tu inversión bajo diferentes estrategias patrimoniales.`,
     },
+    'investor-journey-guide': {
+        hero: "Cierra ventas con claridad institucional.",
+        heroSubtitle: "El documento maestro para la fuerza de ventas.",
+        intro: "Este documento está diseñado para alinear el discurso comercial. No estás vendiendo 'crypto', ni 'tiempos compartidos'. Estás vendiendo una participación económica estructurada en un fideicomiso inmobiliario, con la mayor transparencia y seguridad del mercado.",
+    },
 };
 
 
@@ -205,6 +210,62 @@ Frase de posicionamiento: "Participa en la creación de un activo inmobiliario p
         },
     ] : [];
 
+    const investorJourneyBlocks = materialSlug === 'investor-journey-guide' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '1. La Promesa de Valor',
+                title: '¿Qué estamos vendiendo exactamente?',
+                content: `El problema actual: Los inversionistas quieren exposición al mercado de Real Estate de lujo en la Riviera Maya, pero no quieren lidiar con notarios, mantenimiento, o falta de liquidez, y no tienen $500,000 USD para comprar un departamento completo.
+
+La Solución S'Narai:
+"Tu participación representa una parte económica estructurada del proyecto S'Narai, permitiéndote acceder a los beneficios y utilidades del desarrollo desde tickets accesibles, con seguridad institucional."
+
+No estás vendiendo "crypto". No estás vendiendo "tiempos compartidos". Estás vendiendo una participación económica en un fideicomiso inmobiliario, digitalizada (tokenizada) para hacerla líquida y transparente.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '2. El Ciclo de Vida',
+                title: 'Lo que el cliente debe esperar',
+                content: `Es crucial establecer las expectativas correctas desde el día 1:
+
+1. Fase de Fondeo (Adquisición): El cliente adquiere sus Certificados de Participación. Su dinero entra a un Fideicomiso.
+2. Fase de Generación de Valor (Desarrollo): El activo se construye/gestiona. El valor del certificado tiende a apreciarse conforme el riesgo disminuye.
+3. Distribución de Rendimientos (Operación): El cliente recibe distribuciones de renta trimestrales directamente en su billetera digital vinculada al Portal.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '3. Mecanismos de Liquidez',
+                title: 'Manejo de Expectativas de Salida',
+                content: `Advertencia Crítica: Nunca prometer "retiros inmediatos". Es Real Estate.
+                
+Respuesta oficial: "S'Narai es una inversión patrimonial a largo plazo. Tienes dos mecanismos de salida:
+1. Mercado Secundario (AGORA): Vender tus certificados a otros inversionistas globales al precio de mercado.
+2. Treasury Buybacks: En casos excepcionales, solicitar salida anticipada a la tesorería (sujeto a liquidez disponible, con penalidad)."`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '4. FAQ y Objeciones',
+                title: 'Manejo de Objeciones Frecuentes',
+                content: `• "Qué pasa si S'Narai desaparece?" -> "Tu inversión está blindada legalmente por un Fideicomiso Maestro y contratos NOM-151. El edificio físico es la garantía."
+• "¿Tengo que saber de criptomonedas?" -> "No. Pagas con tarjeta o SPEI. El Portal se encarga de crear tu bóveda digital automáticamente."
+• "¿Por qué veo 'Poder de Voto'?" -> "S'Narai opera como un consorcio (DAO). Como poseedor, tienes voto directo sobre decisiones clave del inmueble."`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const customBlocks = financialScenarioBlocks.length > 0 ? financialScenarioBlocks : investorJourneyBlocks;
+
     const deck = {
         ...mockSNaraiDeck,
         title,
@@ -229,9 +290,9 @@ Frase de posicionamiento: "Participa en la creación de un activo inmobiliario p
                 }
             }] : []),
             
-            // For financial scenarios: inject rich blocks; otherwise show standard contentPreview
-            ...(financialScenarioBlocks.length > 0
-                ? financialScenarioBlocks
+            // For custom blocks (financial scenarios or investor guide): inject rich blocks; otherwise show standard contentPreview
+            ...(customBlocks.length > 0
+                ? customBlocks
                 : (material?.contentPreview?.map(preview => ({
                     type: 'info',
                     data: {

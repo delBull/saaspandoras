@@ -54,6 +54,7 @@ export function ProjectDetailModal({
   const [aiKnowledgeBase, setAiKnowledgeBase] = useState("");
   const [botToken, setBotToken] = useState("");
   const [registeringBot, setRegisteringBot] = useState(false);
+  const [agoraEnabled, setAgoraEnabled] = useState(false);
 
   // Load phases and AI config from project w2eConfig
   useEffect(() => {
@@ -64,10 +65,12 @@ export function ProjectDetailModal({
       setLocalPhases(config.phases || []);
       setAiKnowledgeBase(config.aiKnowledgeBase || "");
       setBotToken(config.botConfig?.telegramToken || "");
+      setAgoraEnabled(!!config.agoraEnabled);
     } else {
       setLocalPhases([]);
       setAiKnowledgeBase("");
       setBotToken("");
+      setAgoraEnabled(false);
     }
   }, [project]);
 
@@ -121,7 +124,8 @@ export function ProjectDetailModal({
       const newConfig = {
         ...config,
         phases: localPhases,
-        aiKnowledgeBase: aiKnowledgeBase
+        aiKnowledgeBase: aiKnowledgeBase,
+        agoraEnabled: agoraEnabled
       };
 
       await onUpdate(project.id, {
@@ -400,16 +404,33 @@ export function ProjectDetailModal({
           <TabsContent value="phases" className="space-y-6 animate-in fade-in-50">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <h4 className="text-lg font-bold text-white">Gestión de Etapas</h4>
-                <p className="text-xs text-zinc-500">Activa o pausa fases del protocolo globalmente. Los cambios afectan a Web y Telegram.</p>
+                <h4 className="text-lg font-bold text-white">Gestión de Etapas y Mercado</h4>
+                <p className="text-xs text-zinc-500">Activa o pausa fases del protocolo y controla la liquidez secundaria.</p>
               </div>
               <Button 
                 onClick={handleSavePhases} 
-                disabled={actionsLoading || localPhases.length === 0}
+                disabled={actionsLoading}
                 className="bg-lime-500 hover:bg-lime-600 text-black font-bold"
               >
                 {actionsLoading ? "Guardando..." : "Guardar Cambios"}
               </Button>
+            </div>
+
+            {/* Mercado AGORA Config */}
+            <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <h5 className="font-bold text-white flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-cyan-400" /> Disponibilidad Mercado Secundario (AGORA)
+                  </h5>
+                  <p className="text-xs text-zinc-400">Activa el mercado secundario para este proyecto de manera global.</p>
+                </div>
+                <Switch 
+                  checked={agoraEnabled} 
+                  onCheckedChange={setAgoraEnabled}
+                  className="data-[state=checked]:bg-cyan-500"
+                />
+              </div>
             </div>
 
             {localPhases.length === 0 ? (

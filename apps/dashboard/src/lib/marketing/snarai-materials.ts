@@ -211,5 +211,22 @@ export const snaraiMaterials: MarketingMaterial[] = [
                 text: "El modelo financiero cubre desde la entrada Fase Fundador ($400K USD) con ROI proyectado de +113% a 5 años, hasta la estrategia patrimonial conservadora donde 17 departamentos generan $8.9M MXN anuales en flujo neto."
             }
         ]
+    },
+    {
+        id: "investor-journey-guide",
+        title: "S'Narai Investor Journey Guide",
+        objective: "Habilitación comercial para Realtors y Gestores.",
+        description: "Documento maestro que alinea el discurso de ventas. Respuestas oficiales a objeciones y la Promesa de Valor.",
+        url: "#investor-journey-guide",
+        contentPreview: [
+            {
+                section: "La Promesa de Valor",
+                text: "No es 'crypto', no es 'tiempo compartido'. Es una participación económica en un fideicomiso inmobiliario, tokenizada para liquidez y transparencia."
+            },
+            {
+                section: "Mecanismos de Liquidez",
+                text: "Manejo de expectativas sobre retiros: El mercado secundario (AGORA) y las recompras de tesorería."
+            }
+        ]
     }
 ];

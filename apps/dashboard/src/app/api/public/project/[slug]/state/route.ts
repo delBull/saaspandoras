@@ -613,6 +613,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         isSoldOut: p.status === 'sold_out'
       })),
       metadata: {
+        agoraEnabled: project.w2eConfig?.agoraEnabled || false,
         estimatedApy: project.estimatedApy || "12.5%",
         targetAmount: (() => {
           // Use w2eConfig explicit target first, then calculate from phases
