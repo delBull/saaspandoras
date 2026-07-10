@@ -227,55 +227,47 @@ Frase de posicionamiento: "Participa en la creación de un activo inmobiliario p
         {
             type: 'info',
             data: {
-                sectionLabel: '1. La Promesa de Valor',
-                title: '¿Qué estamos vendiendo exactamente?',
-                content: `El problema actual: Los inversionistas quieren exposición al mercado de Real Estate de lujo en la Riviera Maya, pero no quieren lidiar con notarios, mantenimiento, o falta de liquidez, y no tienen $500,000 USD para comprar un departamento completo.
+                sectionLabel: '1. Posicionamiento Correcto',
+                title: '¿Qué estamos vendiendo?',
+                content: `**NO VENDES CRIPTO.**
+Aunque la tecnología blockchain permite el registro y la trazabilidad, el cliente invierte en **Real Estate**. Es una participación sobre un activo tangible (ladrillos en Bucerías).
 
-La Solución S'Narai:
-"Tu participación representa una parte económica estructurada del proyecto S'Narai, permitiéndote acceder a los beneficios y utilidades del desarrollo desde tickets accesibles, con seguridad institucional."
-
-No estás vendiendo "crypto". No estás vendiendo "tiempos compartidos". Estás vendiendo una participación económica en un fideicomiso inmobiliario, digitalizada (tokenizada) para hacerla líquida y transparente.`,
+**NO VENDES TIEMPOS COMPARTIDOS.**
+El cliente no está comprando "semanas" de uso. Está participando financieramente en los ingresos generados por la operación de un activo y beneficiándose de la apreciación de la propiedad.`,
                 stats: []
             }
         },
         {
             type: 'info',
             data: {
-                sectionLabel: '2. El Ciclo de Vida',
-                title: 'Lo que el cliente debe esperar',
-                content: `Es crucial establecer las expectativas correctas desde el día 1:
+                sectionLabel: '2. Manejo de Expectativas',
+                title: 'Transparencia Radical',
+                content: `**Sobre el riesgo:** "Toda inversión conlleva riesgos, pero los mitigamos con administración fiduciaria, operadores hoteleros experimentados y control de hitos."
 
-1. Fase de Fondeo (Adquisición): El cliente adquiere sus Certificados de Participación. Su dinero entra a un Fideicomiso.
-2. Fase de Generación de Valor (Desarrollo): El activo se construye/gestiona. El valor del certificado tiende a apreciarse conforme el riesgo disminuye.
-3. Distribución de Rendimientos (Operación): El cliente recibe distribuciones de renta trimestrales directamente en su billetera digital vinculada al Portal.`,
+**Sobre la tecnología:** "No necesitas saber de blockchain. Nosotros usamos la tecnología para darte seguridad, pero tú ves un panel financiero claro y en dólares."
+
+**Sobre la legalidad:** "Participas a través de un Fideicomiso y contratos claros. Todo está documentado con evidencia digital e integridad documental."`,
                 stats: []
             }
         },
         {
             type: 'info',
             data: {
-                sectionLabel: '3. Mecanismos de Liquidez',
-                title: 'Manejo de Expectativas de Salida',
-                content: `Advertencia Crítica: Nunca prometer "retiros inmediatos". Es Real Estate.
-                
-Respuesta oficial: "S'Narai es una inversión patrimonial a largo plazo. Tienes dos mecanismos de salida:
-1. Mercado Secundario (AGORA): Vender tus certificados a otros inversionistas globales al precio de mercado.
-2. Treasury Buybacks: En casos excepcionales, solicitar salida anticipada a la tesorería (sujeto a liquidez disponible, con penalidad)."`,
-                stats: []
-            }
-        },
-        {
-            type: 'info',
-            data: {
-                sectionLabel: '4. FAQ y Objeciones',
-                title: 'Manejo de Objeciones Frecuentes',
-                content: `• "Qué pasa si S'Narai desaparece?" -> "Tu inversión está blindada legalmente por un Fideicomiso Maestro y contratos NOM-151. El edificio físico es la garantía."
-• "¿Tengo que saber de criptomonedas?" -> "No. Pagas con tarjeta o SPEI. El Portal se encarga de crear tu bóveda digital automáticamente."
-• "¿Por qué veo 'Poder de Voto'?" -> "S'Narai opera como un consorcio (DAO). Como poseedor, tienes voto directo sobre decisiones clave del inmueble."`,
+                sectionLabel: '3. El Cierre',
+                title: 'Resolución de fricción',
+                content: `Si el cliente dice:
+
+❌ *"Suena muy bueno para ser verdad."*
+✅ "Es un modelo financiero estructurado (Fideicomiso) usado por fondos grandes, pero ahora accesible para ti. Toda la corrida financiera está documentada y puedes revisar nuestro Due Diligence."
+
+❌ *"¿Cómo sé que el dinero sí se usa en la obra?"*
+✅ "El capital se administra por entidades profesionales y su liberación está condicionada al avance de obra. Puedes ver los reportes mensuales en tu portal."`,
                 stats: []
             }
         }
     ] : [];
+
+
 
     const realtorSalesKitBlocks = materialSlug === 'realtor-sales-kit' ? [
         {
@@ -455,31 +447,58 @@ Respuesta oficial: "S'Narai es una inversión patrimonial a largo plazo. Tienes 
         {
             type: 'info',
             data: {
-                sectionLabel: '1. Certeza del Inmueble',
-                title: 'Legal y Tierras',
-                content: `Documentación referente a la ubicación en la Zona Dorada de Bucerías, viabilidad de desarrollo, y estatus legal de la tierra (libertad de gravamen).`,
+                sectionLabel: '1. Certeza de la Tierra',
+                title: 'Legal y Adquisición',
+                content: `Toda inversión comienza con la seguridad del inmueble subyacente. S'Narai proporciona a sus participantes:
+
+• **Escrituras Públicas:** Título de propiedad de la tierra.
+• **Libertad de Gravamen:** Certificado reciente del Registro Público garantizando que la tierra no tiene deudas ni embargos.
+• **Uso de Suelo:** Licencias y factibilidades emitidas por las autoridades municipales de Bahía de Banderas.`,
                 stats: []
             }
         },
         {
             type: 'info',
             data: {
-                sectionLabel: '2. Gobierno y Administración del Proyecto',
-                title: 'Estructura Institucional',
-                content: `¿Quién controla el dinero y el activo?\n• **Supervisión:** Entidades fiduciarias y comités técnicos estructuran y vigilan la correcta aplicación del capital.\n• **Administración:** El equipo desarrollador (Aztecas) ejecuta la obra, mientras que la operación comercial se delega a expertos hoteleros.\n• **Reportes:** Actualizaciones periódicas de avance físico y financiero disponibles en el Portal.\n• **Decisiones:** Las decisiones críticas pasan por mecanismos de gobernanza participativa.`,
+                sectionLabel: '2. Estructura Fiduciaria',
+                title: 'Control Patrimonial',
+                content: `El proyecto no está a nombre de personas físicas, sino encapsulado en un vehículo institucional:
+
+• **Fideicomiso Maestro:** Contrato que dicta las reglas inamovibles sobre cómo se debe desarrollar y operar el proyecto.
+• **Comité Técnico:** Órgano colegiado encargado de supervisar decisiones financieras y constructivas.
+• **Reglas de Gobernanza:** Mecanismos documentados para prevenir desviaciones de fondos o conflictos de interés.`,
                 stats: []
             }
         },
         {
             type: 'info',
             data: {
-                sectionLabel: '3. Transparencia Financiera',
-                title: 'Manejo de Recursos',
-                content: `• **Uso de recursos:** Desglose claro de a dónde va el capital (terreno, soft costs, hard costs, comercialización).\n• **Distribución del capital levantado:** Estructura de cascada de pagos con prioridad en la construcción.\n• **Presupuesto de construcción:** Proyecciones paramétricas y catálogo de obra.\n• **Etapas de liberación de capital:** El dinero se libera conforme al avance de obra verificable, no de forma anticipada y discrecional.\n• **Reportes de avance:** Compromiso de actualización a los participantes a través del Portal S'Narai.`,
+                sectionLabel: '3. Arquitectura y Viabilidad Técnica',
+                title: 'Construcción y Desarrollo (Aztecas)',
+                content: `No vendemos renders, construimos realidades respaldadas técnica y operativamente:
+
+• **Licencia de Construcción:** Permiso oficial para desarrollar la volumetría y densidad prometida.
+• **Proyecto Ejecutivo:** Planos estructurales, ingenierías, mecánica de suelos y estudios topográficos.
+• **Presupuesto Base:** Catálogo de conceptos (Hard Costs & Soft Costs) verificado.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '4. El Operador Hotelero',
+                title: 'Experiencia y Track Record',
+                content: `Para garantizar el Yield Proyectado, la operación no se improvisa:
+
+• **Contrato de Operación Comercial:** Acuerdos con administradores de propiedades de lujo que aseguran mantenimiento premium.
+• **Estrategia de Pricing:** Estudios de ocupación promedio (ADR) y competitividad en Bucerías.
+• **Mantenimiento (CAPEX):** Fondos de reserva integrados en el modelo financiero para que el activo no se deprecie.`,
                 stats: []
             }
         }
     ] : [];
+
+
 
     const projectRoadmapBlocks = materialSlug === 'project-roadmap' ? [
         {
@@ -560,6 +579,67 @@ Respuesta oficial: "S'Narai es una inversión patrimonial a largo plazo. Tienes 
     ] : [];
 
 
+
+    const gestoresGuideBlocks = materialSlug === 'gestores-guide' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '1. Tu Rol como Embajador',
+                title: 'No vendes m², vendes acceso',
+                content: `Como Gestor Patrimonial, tu objetivo principal es conectar capital con oportunidades estructuradas.\n\nEn lugar de intentar explicar cada detalle técnico de un Smart Contract o de la estructura legal, enfócate en el resultado: S'Narai ofrece una forma de participar en el mercado inmobiliario de Riviera Nayarit sin dolores de cabeza, con montos accesibles y alta transparencia.\n\nTu labor es **abrir la puerta**, generar confianza y utilizar los materiales de este portal para responder objeciones específicas.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '2. Prospección',
+                title: '¿A quién buscar?',
+                content: `Busca inversionistas que:\n\n• **Tengan liquidez en el banco** perdiendo valor contra la inflación.\n• **Hayan invertido en inmuebles tradicionales** y estén cansados de los mantenimientos, inquilinos y falta de liquidez.\n• **Inversionistas internacionales (EE. UU. / Canadá)** que buscan exposición en México pero temen a la burocracia.\n• **Inversionistas tecnológicos** que quieren diversificar sus ganancias hacia activos del mundo real (Real World Assets).`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '3. El Proceso de Venta Ideal',
+                title: 'De prospecto a Inversionista',
+                content: `1. **Primer Contacto:** Envía un mensaje corto o haz una llamada rápida (Pitch 30s). No intentes cerrar la venta, solo genera curiosidad.\n2. **Reunión 1 a 1:** Utiliza el *Investment Deck* para presentar los números. Escucha más de lo que hablas. ¿Qué le preocupa al cliente?\n3. **Follow-up:** Envía la *Guía del Inversionista* o el documento de *Due Diligence* según su perfil (conservador vs. analítico).\n4. **Cierre:** Acompáñalo en su registro dentro del portal y su fondeo.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const developerKitBlocks = materialSlug === 'developer-kit' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '1. El Problema',
+                title: 'El Desarrollo Inmobiliario Tradicional',
+                content: `Actualmente, los desarrolladores inmobiliarios enfrentan tres grandes fricciones:\n\n1. **Fondeo Lento:** Depender de créditos puente costosos o de preventas "Friends & Family" donde los tickets son muy altos.\n2. **Administración Opaca:** Los inversionistas institucionales o retail exigen cada vez más transparencia sobre el uso de recursos.\n3. **Falta de Liquidez:** Un departamento no se puede fraccionar fácilmente si alguien necesita liquidez urgente.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '2. La Solución Pandoras',
+                title: 'Infraestructura Inmobiliaria de Próxima Generación',
+                content: `S'Narai es el primer caso de éxito utilizando la infraestructura tecnológica de Pandoras. ¿Qué ofrece este modelo para desarrolladores?\n\n• **Fraccionalización y Acceso:** Estructurar el capital de un proyecto en títulos digitales accesibles, bajando el ticket de entrada y acelerando el fondeo.\n• **Portal del Inversionista White-label:** Cada proyecto tiene un dashboard donde los participantes ven avances, estado financiero y documentación en tiempo real.\n• **Trazabilidad de Recursos:** Los hitos de construcción detonan las liberaciones de capital, generando máxima confianza.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '3. Beneficios B2B',
+                title: 'Por qué integrar este modelo',
+                content: `• **Diferenciador de mercado:** Ofrece a tus compradores liquidez secundaria mediante un mercado interno (bulletin board).\n• **Marketing Viral:** Modelos de gobernanza y programas de recompensas que convierten a tus clientes en embajadores.\n• **Seguridad Institucional:** Arquitectura respaldada por fideicomisos, KYC/AML y tecnología inmutable.`,
+                stats: []
+            }
+        }
+    ] : [];
+
     const customBlocks = financialScenarioBlocks.length > 0 ? financialScenarioBlocks 
         : investorJourneyBlocks.length > 0 ? investorJourneyBlocks
         : realtorSalesKitBlocks.length > 0 ? realtorSalesKitBlocks
@@ -569,6 +649,8 @@ Respuesta oficial: "S'Narai es una inversión patrimonial a largo plazo. Tienes 
         : dueDiligenceBlocks.length > 0 ? dueDiligenceBlocks
         : projectRoadmapBlocks.length > 0 ? projectRoadmapBlocks
         : portalGuideBlocks.length > 0 ? portalGuideBlocks
+        : gestoresGuideBlocks.length > 0 ? gestoresGuideBlocks
+        : developerKitBlocks.length > 0 ? developerKitBlocks
         : [];
 
     const deck = {
