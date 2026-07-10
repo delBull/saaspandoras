@@ -5,61 +5,72 @@ import { snaraiMaterials } from '@/lib/marketing/snarai-materials';
 
 // Unique content overrides per materialSlug
 // Each key matches the `id` in snaraiMaterials
-const MATERIAL_CONTENT: Record<string, { hero?: string; heroSubtitle?: string; intro?: string }> = {
+const MATERIAL_CONTENT: Record<string, { hero?: string; heroSubtitle?: string; intro?: string; cssBackground?: string }> = {
     'project-overview': {
         hero: "La evolución de la Riviera.",
         heroSubtitle: "Todo lo que necesitas saber sobre S'Narai en 5 minutos.",
         intro: "El documento inicial que todo inversionista, asesor o desarrollador debe leer para entender la tesis de valor de S'Narai Bucerías. Arquitectura premium, Fideicomiso Maestro, 80,400 títulos y yields operativos del 10-12% anual.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-amber-900/40 via-zinc-950 to-black",
     },
     'investment-deck': {
         hero: "Vive la siguiente generación de inversión.",
         heroSubtitle: "El deck comercial completo. Diseñado para convencer.",
         intro: "La presentación comercial de S'Narai detalla métricas, fases de inversión (Fundador $50, Estratégico $75, Público $100) y el modelo de flujo de caja que convierte un desarrollo inmobiliario en una máquina de rendimientos.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-700/30 via-black to-zinc-950 bg-[linear-gradient(to_right,#f59e0b10_1px,transparent_1px),linear-gradient(to_bottom,#f59e0b10_1px,transparent_1px)] bg-[size:32px_32px]",
     },
     'realtor-sales-kit': {
         hero: "Vende con confianza. Cierra con datos.",
         heroSubtitle: "Tu kit completo para presentar S'Narai a cualquier cliente.",
         intro: "Creado específicamente para Gestores Patrimoniales. Incluye argumentos comerciales, comparativas con inversiones tradicionales, proceso de venta paso a paso y respuestas a las objeciones más comunes del mercado.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-900/40 via-black to-black bg-[linear-gradient(to_right,#10b98110_1px,transparent_1px),linear-gradient(to_bottom,#10b98110_1px,transparent_1px)] bg-[size:48px_48px]",
     },
     'guia-inversionista': {
         hero: "Tu inversión. Completamente clara.",
         heroSubtitle: "De principio a fin, acompañamos cada decisión.",
         intro: "Entiende cómo tu capital adquiere posiciones en S'Narai desde la Fase Fundador ($50 USD). Esta guía resuelve dudas sobre el Fideicomiso, el mercado de cesión de derechos, los rendimientos y el acceso a tu Portal de inversionista.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-amber-600/20 via-black to-zinc-950",
     },
     'developer-kit': {
         hero: "Un nuevo estándar para construir.",
         heroSubtitle: "El modelo S'Narai aplicado al desarrollo inmobiliario moderno.",
         intro: "Documento exclusivo para entidades constructoras e inversionistas institucionales. Explica cómo S'Narai integra smart contracts, seguimiento documental NOM-151 y la comercialización de los 80,400 títulos en un solo ecosistema.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/30 via-black to-black bg-[linear-gradient(to_right,#3b82f610_1px,transparent_1px),linear-gradient(to_bottom,#3b82f610_1px,transparent_1px)] bg-[size:24px_24px]",
     },
     'due-diligence': {
         hero: "Transparencia total. Desde el día uno.",
         heroSubtitle: "El paquete completo para que analices antes de invertir.",
         intro: "El Due Diligence de S'Narai incluye escrituras del terreno en Zona Dorada de Bucerías, contratos de fideicomiso, licencias de construcción, manifiestos ambientales y perfiles verificables de los desarrolladores (Aztecas).",
+        cssBackground: "bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-zinc-700/30 via-black to-black bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:80px_80px]",
     },
     'project-roadmap': {
         hero: "Del terreno a la entrega. Cada hito verificable.",
         heroSubtitle: "Un cronograma claro para cada fase del proyecto.",
         intro: "Sigue la ejecución de S'Narai desde la adquisición del terreno hasta la operación hotelera del Rooftop Pool & Wellness Center. Cada fase (preventa, obra negra, obra blanca, entrega) con objetivos y avances en tiempo real.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-amber-600/20 via-black to-black bg-[repeating-linear-gradient(45deg,#f59e0b05_0px,#f59e0b05_2px,transparent_2px,transparent_12px)]",
     },
     'faq': {
         hero: "Tus preguntas. Nuestras respuestas.",
         heroSubtitle: "Todo lo que necesitas saber antes de invertir.",
         intro: "¿Soy dueño de escrituras? ¿Puedo vender mi posición antes? ¿Qué pasa si la obra se retrasa? ¿Cómo recibo mis rendimientos? Este documento responde las 30+ preguntas más frecuentes con claridad y sin letra chica.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-indigo-900/20 via-black to-black",
     },
     'investment-process': {
         hero: "Tu proceso de inversión en 8 pasos.",
         heroSubtitle: "Simple, seguro y completamente transparente.",
         intro: "Desde conocer el proyecto hasta recibir acceso a tu Portal de inversionista. Cada paso está documentado: selección de títulos, firma con NOM-151, aporte de capital y activación de tu cuenta en el ecosistema S'Narai.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-800/40 via-black to-black bg-[radial-gradient(circle,#ffffff10_1px,transparent_1px)] bg-[size:20px_20px]",
     },
     'portal-guide': {
         hero: "Bienvenido a tu Portal S'Narai.",
         heroSubtitle: "Todo el proyecto, siempre disponible en un solo lugar.",
         intro: "El Portal S'Narai es tu centro de control como inversionista. Consulta documentos, avances de obra, distribución de rendimientos hoteleros, historial de gobernanza DAO y el estado en tiempo real de tu participación.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-black to-black",
     },
     'gestores-guide': {
         hero: "Vende más. Explica menos.",
         heroSubtitle: "La guía comercial completa para nuestros Embajadores.",
         intro: "Incluye el Elevator Pitch (30s), el Pitch de 3 minutos y el Pitch profundo (10 min). Cómo presentar S'Narai frente a inmuebles tradicionales, qué prometer, qué NO prometer, y scripts listos para WhatsApp y LinkedIn.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-emerald-800/30 via-black to-black",
     },
     'escenarios-financieros': {
         hero: "Tu patrimonio. Seis formas de verlo crecer.",
@@ -67,11 +78,13 @@ const MATERIAL_CONTENT: Record<string, { hero?: string; heroSubtitle?: string; i
         intro: `S'Narai no es un proyecto de venta inmobiliaria tradicional. Es un activo patrimonial tokenizado con liquidez secundaria: participas en las utilidades y capital de un edificio premium, con la posibilidad de ceder tu posición en cualquier momento a través del mercado interno.
 
 Este documento modela seis escenarios financieros hipotéticos con los mismos supuestos base para que puedas entender el potencial de tu inversión bajo diferentes estrategias patrimoniales.`,
+        cssBackground: "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-700/20 via-black to-black bg-[linear-gradient(to_right,#10b9810a_1px,transparent_1px),linear-gradient(to_bottom,#10b9810a_1px,transparent_1px)] bg-[size:16px_16px]",
     },
     'investor-journey-guide': {
         hero: "Cierra ventas con claridad institucional.",
         heroSubtitle: "El documento maestro para la fuerza de ventas.",
         intro: "Este documento está diseñado para alinear el discurso comercial. No estás vendiendo 'crypto', ni 'tiempos compartidos'. Estás vendiendo una participación económica estructurada en un fideicomiso inmobiliario, con la mayor transparencia y seguridad del mercado.",
+        cssBackground: "bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-amber-800/20 via-black to-black",
     },
 };
 
@@ -264,7 +277,299 @@ Respuesta oficial: "S'Narai es una inversión patrimonial a largo plazo. Tienes 
         }
     ] : [];
 
-    const customBlocks = financialScenarioBlocks.length > 0 ? financialScenarioBlocks : investorJourneyBlocks;
+    const realtorSalesKitBlocks = materialSlug === 'realtor-sales-kit' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '1. La Visión S\'Narai',
+                title: 'El Componente Emocional',
+                content: `Riviera Nayarit se encuentra en una etapa histórica de crecimiento. Durante años, destinos como Tulum, Playa del Carmen y Puerto Vallarta han demostrado cómo una zona puede transformar el valor de los activos inmobiliarios cuando aumenta la demanda turística y residencial.\n\nS'Narai nace con la visión de participar en esta evolución de Bucerías, creando un desarrollo diseñado para combinar patrimonio inmobiliario, hospitalidad y una nueva forma de acceso a oportunidades.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '2. La Nueva Forma de Invertir en Riviera Nayarit',
+                title: 'El Ángulo Comercial',
+                content: `Durante años, invertir en Riviera Nayarit significaba comprar una propiedad completa, asumir grandes tickets de entrada y encargarse personalmente de la administración.\n\nS'Narai cambia ese paradigma: permite participar en un desarrollo inmobiliario premium desde una fracción del proyecto, combinando apreciación patrimonial y participación en ingresos operativos.\n\nEl participante puede beneficiarse de dos motores principales:\n1. **Crecimiento patrimonial:** La propiedad puede incrementar su valor conforme avanza el desarrollo, la zona aumenta su demanda y el proyecto madura.\n2. **Ingresos operativos:** Una vez en operación, el proyecto puede generar ingresos derivados de la actividad de renta y hospitalidad.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '3. El Cliente Perfecto',
+                title: 'Focalización Comercial',
+                content: `No buscamos venderle a todos. Buscamos perfiles específicos:\n• Personas con capital disponible que buscan diversificación.\n• Extranjeros interesados en Riviera Nayarit pero que no quieren administrar una propiedad.\n• Dueños de negocios que quieren convertir liquidez en activos.\n• Personas que quieren entrar al mercado antes de que la zona alcance mayor madurez.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '4. El Pitch Rápido',
+                title: 'Respuestas de alto impacto',
+                content: `**Pitch de 10 segundos (Elevator):**\n"S'Narai es un desarrollo premium en Riviera Nayarit donde puedes participar financieramente sin comprar todo el departamento, combinando plusvalía y rentas hoteleras."\n\n**Pitch de 30 segundos:**\n"S'Narai es un desarrollo inmobiliario en Bucerías donde puedes participar desde una inversión accesible en un proyecto premium. Tu participación está respaldada por un activo real y puede beneficiarse tanto del crecimiento del valor del inmueble como de los ingresos generados por la operación."\n\n**Pitch de WhatsApp (Copiar y pegar):**\n"¡Hola! Viendo el crecimiento de Riviera Nayarit, quería compartirte un proyecto premium en Bucerías llamado S'Narai. Tienen un modelo de participación que no te obliga a comprar la propiedad completa, pero te da exposición a la plusvalía de la zona y a los ingresos por rentas hoteleras. ¿Tienes 5 minutos para que te cuente cómo funciona?"`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '5. Qué Decir y Qué NO Decir',
+                title: 'Guía de Comunicación Institucional',
+                content: `**NO DECIR:**\n❌ "Es dinero garantizado."\n❌ "Siempre vas a ganar X%."\n❌ "Es como tener un departamento sin comprarlo."\n\n**SÍ DECIR:**\n✅ "Participas en un activo inmobiliario."\n✅ "Buscamos generar valor mediante apreciación y operación."\n✅ "Existen diferentes mecanismos de participación y liquidez."`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const faqBlocks = materialSlug === 'faq' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Legal',
+                title: '¿Estoy comprando un departamento completo?',
+                content: `No. S'Narai permite participar económicamente dentro de un desarrollo inmobiliario sin necesidad de adquirir una unidad completa, mediante certificados digitales de participación asociados al proyecto.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Oportunidad',
+                title: '¿Por qué invertir ahora y no esperar a que esté terminado?',
+                content: `Entrar en etapas tempranas permite participar antes de que un proyecto alcance su madurez comercial, cuando normalmente existe mayor potencial de apreciación.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Riesgo',
+                title: '¿Mi inversión está garantizada? ¿Puedo perder mi inversión?',
+                content: `Como cualquier inversión inmobiliaria, existen riesgos asociados. S'Narai busca mitigarlos mediante una estructura transparente, documentación del proyecto, seguimiento continuo y participación sobre un activo real.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Valor',
+                title: '¿Qué pasa si el proyecto aumenta mucho de valor?',
+                content: `El crecimiento del valor del activo puede reflejarse en la valoración de las participaciones de acuerdo con la evolución del proyecto y las condiciones del mercado.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Liquidez',
+                title: '¿Qué pasa si necesito recuperar mi inversión?',
+                content: `Existen mecanismos diseñados para facilitar opciones de liquidez, incluyendo mercado secundario cuando esté disponible y solicitudes de salida anticipada sujetas a las condiciones del protocolo.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Operación',
+                title: '¿Quién administra las rentas?',
+                content: `Un operador hotelero profesional. El inversionista no tiene que preocuparse por buscar inquilinos, pagar servicios o reparar daños. El operador se encarga de maximizar la ocupación y mantener el estándar premium del edificio.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Tecnología',
+                title: '¿Necesito saber de tecnología para invertir?',
+                content: `No. La tecnología existe para simplificar la experiencia; el inversionista participa en un proyecto inmobiliario tradicional con herramientas digitales adicionales.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Residencia',
+                title: '¿Necesito vivir en México?',
+                content: `No. El modelo está diseñado para permitir participación desde diferentes ubicaciones mediante herramientas digitales.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Comunidad',
+                title: '¿Puedo recomendar S\'Narai a alguien más?',
+                content: `Sí. Contamos con un Partner Program que permite a nuestros inversionistas convertirse en embajadores del proyecto, obteniendo beneficios por expandir la comunidad de participantes.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const guiaInversionistaBlocks = materialSlug === 'guia-inversionista' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '1. ¿Qué hace diferente a S\'Narai?',
+                title: 'Certeza y Transparencia',
+                content: `• No compras una promesa futura.\n• Participas en un activo inmobiliario identificado.\n• Tienes seguimiento del avance del proyecto.\n• Puedes visualizar tu participación y evolución desde un portal digital.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '2. La Estructura de tu Participación',
+                title: 'Derechos Económicos',
+                content: `Los participantes adquieren derechos económicos asociados al proyecto bajo la estructura legal definida por S'Narai y Pandoras. No te encargas de la operación diaria, recibes los beneficios netos derivados de la administración profesional del inmueble.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '3. Tu ciclo como participante',
+                title: 'Fases de Acompañamiento',
+                content: `**Fase 1: Adquisición**\nAdquieres participación y formalizas tu posición en el ecosistema.\n\n**Fase 2: Desarrollo**\nObservas la construcción y evolución patrimonial del activo físico en tiempo real.\n\n**Fase 3: Estabilización**\nEl proyecto entra en operación hotelera y comercial.\n\n**Fase 4: Consolidación**\nRecibes beneficios derivados de la operación y puedes monitorear la evolución patrimonial de tus derechos.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const investmentProcessBlocks = materialSlug === 'investment-process' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Proceso',
+                title: 'Los 9 Pasos hacia tu Participación',
+                content: `1. **Descubrimiento:** Revisión de la tesis de valor de S'Narai Bucerías y proyecciones.\n2. **Sesión Estratégica:** Llamada con un Embajador para alinear tu objetivo patrimonial.\n3. **Selección de Participación:** Definir cantidad de Títulos a adquirir.\n4. **KYC / Verificación Institucional:** Carga de ID y comprobante para cumplir normativas de prevención.\n5. **Formalización Digital:** Formalización digital de documentos y evidencia de integridad mediante herramientas tecnológicas y mecanismos legales aplicables.\n6. **Fondeo / Aporte:** Transferencia segura mediante SPEI, tarjeta o activos digitales.\n7. **Emisión de Certificados:** Acreditación inmediata de tus Títulos en tu bóveda digital.\n8. **Activación de Bóveda:** Acceso a tu Portal S'Narai personal.\n9. **Acompañamiento Post-Inversión:** Después de adquirir una participación, el inversionista continúa conectado al proyecto mediante actualizaciones, avances, reportes y comunicación permanente.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const dueDiligenceBlocks = materialSlug === 'due-diligence' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '1. Certeza del Inmueble',
+                title: 'Legal y Tierras',
+                content: `Documentación referente a la ubicación en la Zona Dorada de Bucerías, viabilidad de desarrollo, y estatus legal de la tierra (libertad de gravamen).`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '2. Gobierno y Administración del Proyecto',
+                title: 'Estructura Institucional',
+                content: `¿Quién controla el dinero y el activo?\n• **Supervisión:** Entidades fiduciarias y comités técnicos estructuran y vigilan la correcta aplicación del capital.\n• **Administración:** El equipo desarrollador (Aztecas) ejecuta la obra, mientras que la operación comercial se delega a expertos hoteleros.\n• **Reportes:** Actualizaciones periódicas de avance físico y financiero disponibles en el Portal.\n• **Decisiones:** Las decisiones críticas pasan por mecanismos de gobernanza participativa.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '3. Transparencia Financiera',
+                title: 'Manejo de Recursos',
+                content: `• **Uso de recursos:** Desglose claro de a dónde va el capital (terreno, soft costs, hard costs, comercialización).\n• **Distribución del capital levantado:** Estructura de cascada de pagos con prioridad en la construcción.\n• **Presupuesto de construcción:** Proyecciones paramétricas y catálogo de obra.\n• **Etapas de liberación de capital:** El dinero se libera conforme al avance de obra verificable, no de forma anticipada y discrecional.\n• **Reportes de avance:** Compromiso de actualización a los participantes a través del Portal S'Narai.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const projectRoadmapBlocks = materialSlug === 'project-roadmap' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Hitos',
+                title: 'Momentos de creación de valor',
+                content: `• **Entrada temprana:** Oportunidad inicial con mayor potencial de crecimiento patrimonial.\n• **Avance de obra:** Reducción de incertidumbre constructiva, incrementando el valor percibido del activo.\n• **Operación:** Generación de flujo operativo por rentas.\n• **Madurez del activo:** Consolidación patrimonial y maximización de la demanda en el mercado secundario.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Etapa 1',
+                title: 'Estructuración y Fondeo Temprano',
+                content: `Lanzamiento de Fase Fundador, consolidación de la estructura fiduciaria/legal y trámites pre-operativos.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Etapa 2',
+                title: 'Obra Civil y Desarrollo',
+                content: `Arranque de construcción física, cimentación, levantamiento estructural e instalaciones principales.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Etapa 3',
+                title: 'Acabados y Equipamiento',
+                content: `Obra blanca, interiorismo premium, equipamiento de amenidades (Rooftop & Wellness) y preparación para entrega.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Etapa 4',
+                title: 'Operación y Flujo de Caja',
+                content: `Apertura hotelera. Estabilización de la ocupación. Inicio de distribución de ingresos conforme la operación alcance estabilidad.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const portalGuideBlocks = materialSlug === 'portal-guide' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '1. Centro de Transparencia',
+                title: 'Información Institucional',
+                content: `Tu bóveda personal e institucional. Aquí podrás consultar siempre:\n• Documentos legales.\n• Reportes del proyecto.\n• Avances de obra.\n• Comunicados oficiales.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '2. Dashboard Financiero',
+                title: 'Tu Posición',
+                content: `Visualización clara de tu participación: cantidad de títulos adquiridos, valor estimado de tu portafolio y el historial de rendimientos operativos distribuidos.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: '3. Gobernanza',
+                title: 'Tu Voz Importa',
+                content: `Sistema de votación transparente para participar en decisiones sobre la operación del proyecto o encuestas de servicio.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+
+    const customBlocks = financialScenarioBlocks.length > 0 ? financialScenarioBlocks 
+        : investorJourneyBlocks.length > 0 ? investorJourneyBlocks
+        : realtorSalesKitBlocks.length > 0 ? realtorSalesKitBlocks
+        : faqBlocks.length > 0 ? faqBlocks
+        : guiaInversionistaBlocks.length > 0 ? guiaInversionistaBlocks
+        : investmentProcessBlocks.length > 0 ? investmentProcessBlocks
+        : dueDiligenceBlocks.length > 0 ? dueDiligenceBlocks
+        : projectRoadmapBlocks.length > 0 ? projectRoadmapBlocks
+        : portalGuideBlocks.length > 0 ? portalGuideBlocks
+        : [];
 
     const deck = {
         ...mockSNaraiDeck,
@@ -277,6 +582,9 @@ Respuesta oficial: "S'Narai es una inversión patrimonial a largo plazo. Tienes 
                     // Override the hero text with content specific to this document
                     title: contentOverride?.hero ?? title,
                     subtitle: contentOverride?.heroSubtitle ?? firstBlock.data?.subtitle,
+                    documentName: title,
+                    cssBackground: contentOverride?.cssBackground,
+                    backgroundImage: undefined,
                 }
             },
             // Insert a unique intro info block right after the hero

@@ -1,4 +1,10 @@
 export interface MarketingMaterial {
+    metadata?: {
+        audience: string;
+        purpose: string;
+        estimatedReadTime: string;
+        salesMoment: string;
+    };
     id: string;
     title: string;
     objective: string;
@@ -11,6 +17,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "project-overview",
         title: "S'Narai Project Overview",
+        metadata: {
+            audience: "Inversionistas",
+            purpose: "Introducción rápida al proyecto",
+            estimatedReadTime: "5 min",
+            salesMoment: "Descubrimiento inicial"
+        },
         objective: "Entender el proyecto en menos de 5 minutos.",
         description: "El documento inicial que todo inversionista, asesor o desarrollador debe leer para entender la tesis de valor de S'Narai Bucerías.",
         url: "#overview",
@@ -28,6 +40,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "investment-deck",
         title: "Investment Deck",
+        metadata: {
+            audience: "Inversionistas",
+            purpose: "Presentación de métricas y proyecciones",
+            estimatedReadTime: "10 min",
+            salesMoment: "Reunión de presentación"
+        },
         objective: "Vender. Este es el documento comercial principal.",
         description: "La presentación comercial completa para potenciales inversores, detallando métricas, fases y beneficios financieros.",
         url: "#investment-deck",
@@ -45,6 +63,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "realtor-sales-kit",
         title: "Realtor Sales Kit",
+        metadata: {
+            audience: "Gestores S'Narai",
+            purpose: "Arma de cierre y pitches rápidos",
+            estimatedReadTime: "8 min",
+            salesMoment: "Preparación antes de reunión con cliente"
+        },
         objective: "Capacitar y apoyar a gestores inmobiliarios.",
         description: "Todo lo que necesitas para vender con confianza. Argumentos comerciales, proceso de venta y FAQs.",
         url: "#realtor-kit",
@@ -62,6 +86,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "guia-inversionista",
         title: "Guía del Inversionista S'Narai",
+        metadata: {
+            audience: "Inversionistas",
+            purpose: "Acompañamiento y generación de certeza",
+            estimatedReadTime: "7 min",
+            salesMoment: "Post-reunión / Seguimiento"
+        },
         objective: "Resolver dudas y generar confianza para el cliente potencial.",
         description: "Sabemos que invertir en un desarrollo inmobiliario es una decisión importante. Esta guía acompaña al comprador de principio a fin.",
         url: "#investor-guide",
@@ -78,7 +108,13 @@ export const snaraiMaterials: MarketingMaterial[] = [
     },
     {
         id: "developer-kit",
-        title: "Developer Kit",
+        title: "Pandoras Real Estate Infrastructure",
+        metadata: {
+            audience: "Desarrolladores institucionales",
+            purpose: "Venta de infraestructura tecnológica",
+            estimatedReadTime: "10 min",
+            salesMoment: "Pitch B2B"
+        },
         objective: "Presentar el proyecto a desarrolladores y constructoras.",
         description: "Un modelo moderno para desarrollar proyectos inmobiliarios. Exclusivo para entidades constructoras, no para programadores.",
         url: "#developer-kit",
@@ -96,6 +132,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "due-diligence",
         title: "Due Diligence Package",
+        metadata: {
+            audience: "Inversionistas analíticos",
+            purpose: "Transparencia legal, técnica y financiera",
+            estimatedReadTime: "15 min",
+            salesMoment: "Cierre / Resolución de dudas profundas"
+        },
         objective: "Validación documental para inversionistas.",
         description: "Generador de máxima confianza: el paquete técnico, legal y administrativo completo para analizar la viabilidad antes de invertir.",
         url: "#due-diligence",
@@ -113,6 +155,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "project-roadmap",
         title: "Project Roadmap",
+        metadata: {
+            audience: "Inversionistas",
+            purpose: "Mostrar la línea de tiempo y creación de valor",
+            estimatedReadTime: "3 min",
+            salesMoment: "Generación de confianza operativa"
+        },
         objective: "Mostrar el avance y cronograma.",
         description: "Del terreno a la entrega. Un documento altamente visual sobre los tiempos y fases de ejecución de S'Narai.",
         url: "#roadmap",
@@ -130,6 +178,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "faq",
         title: "FAQ & Objeciones",
+        metadata: {
+            audience: "Gestores e Inversionistas",
+            purpose: "Desactivar fricciones y miedos",
+            estimatedReadTime: "5 min",
+            salesMoment: "Manejo de objeciones"
+        },
         objective: "Resolver preguntas frecuentes y apoyar el cierre de ventas.",
         description: "Todo lo que debes saber sobre S'Narai. Respuestas claras para tomar decisiones con confianza.",
         url: "#faq",
@@ -147,6 +201,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "investment-process",
         title: "Investment Process",
+        metadata: {
+            audience: "Inversionistas",
+            purpose: "Claridad operativa para el fondeo",
+            estimatedReadTime: "3 min",
+            salesMoment: "Previo a la firma de participación"
+        },
         objective: "Explicar el proceso de inversión paso a paso.",
         description: "¿Cómo invertir en S'Narai? Tu proceso de 8 pasos detallado.",
         url: "#investment-process",
@@ -164,6 +224,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "portal-guide",
         title: "Portal Guide",
+        metadata: {
+            audience: "Inversionistas activos",
+            purpose: "Onboarding tecnológico del usuario",
+            estimatedReadTime: "4 min",
+            salesMoment: "Post-inversión"
+        },
         objective: "Enseñar el uso del portal del proyecto.",
         description: "Bienvenido al Portal S'Narai. Todo el proyecto en un solo lugar.",
         url: "#portal-guide",
@@ -181,6 +247,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "gestores-guide",
         title: "Guía Comercial para Gestores",
+        metadata: {
+            audience: "Gestores S'Narai",
+            purpose: "Alineación comercial",
+            estimatedReadTime: "10 min",
+            salesMoment: "Capacitación interna"
+        },
         objective: "Scripts, argumentos y proceso comercial.",
         description: "Vende con seguridad. Comunica con claridad. Carpeta de ventas completa para nuestros Embajadores.",
         url: "#gestores-guide",
@@ -198,6 +270,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "escenarios-financieros",
         title: "Escenarios Financieros S'Narai",
+        metadata: {
+            audience: "Gestores e Inversionistas",
+            purpose: "Modelado de retornos",
+            estimatedReadTime: "7 min",
+            salesMoment: "Respuesta a ¿Cuánto gano?"
+        },
         objective: "Modelar el retorno del inversionista bajo diferentes estrategias patrimoniales.",
         description: "Un análisis financiero detallado con 6 escenarios hipotéticos: desde el modelo más conservador hasta la estrategia de mercado secundario Web3. Supuestos, proyecciones de plusvalía, flujos de renta y comparativa final.",
         url: "#escenarios-financieros",
@@ -215,6 +293,12 @@ export const snaraiMaterials: MarketingMaterial[] = [
     {
         id: "investor-journey-guide",
         title: "S'Narai Investor Journey Guide",
+        metadata: {
+            audience: "Gestores S'Narai",
+            purpose: "Manejo de expectativas",
+            estimatedReadTime: "5 min",
+            salesMoment: "Preparación comercial"
+        },
         objective: "Habilitación comercial para Realtors y Gestores.",
         description: "Documento maestro que alinea el discurso de ventas. Respuestas oficiales a objeciones y la Promesa de Valor.",
         url: "#investor-journey-guide",

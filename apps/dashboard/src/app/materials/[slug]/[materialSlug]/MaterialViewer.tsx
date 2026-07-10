@@ -18,7 +18,7 @@ export function MaterialViewer({ deck, projectSlug }: { deck: any, projectSlug: 
                     </button>
                     <span className="text-white font-bold">{deck.title}</span>
                     <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[10px] uppercase tracking-widest rounded border border-amber-500/30">
-                        Pitch Deck Oficial
+                        Documento Oficial
                     </span>
                 </div>
                 <div className="flex items-center gap-3">

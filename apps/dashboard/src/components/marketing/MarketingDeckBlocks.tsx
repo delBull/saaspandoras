@@ -7,14 +7,23 @@ import { motion } from 'framer-motion';
 export function DeckHero({ data }: { data: any }) {
     return (
         <section className="relative w-full min-h-[100vh] flex flex-col justify-end p-12 lg:p-24 bg-black text-white print:h-[100vh] print:p-16 print:break-after-page overflow-hidden">
-            {/* Background Image */}
-            {data.backgroundImage && (
+            {/* Background Image or CSS Background */}
+            {data.backgroundImage ? (
                 <div 
                     className="absolute inset-0 z-0 bg-cover bg-center opacity-60 print:opacity-100"
                     style={{ backgroundImage: `url(${data.backgroundImage})` }}
                 />
+            ) : data.cssBackground ? (
+                <div className={`absolute inset-0 z-0 opacity-80 print:opacity-100 ${data.cssBackground}`} />
+            ) : data.svgBackground ? (
+                <div 
+                    className="absolute inset-0 z-0 bg-cover bg-center opacity-40 print:opacity-100"
+                    style={{ backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(data.svgBackground)}")` }}
+                />
+            ) : (
+                <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-zinc-800/40 via-black to-black opacity-80 print:opacity-100" />
             )}
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/50 to-transparent" />
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/80 to-transparent" />
             
             <div className="relative z-20 max-w-5xl">
                 {data.tagline && (
@@ -40,7 +49,7 @@ export function DeckHero({ data }: { data: any }) {
                 </div>
                 <div className="text-right">
                     <p className="text-xs uppercase tracking-widest text-zinc-500 mb-1">Confidencial</p>
-                    <p className="text-sm font-mono text-white">Pitch Deck</p>
+                    <p className="text-sm font-mono text-white">{data.documentName || 'Pitch Deck'}</p>
                 </div>
             </div>
         </section>
