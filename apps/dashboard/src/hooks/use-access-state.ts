@@ -49,7 +49,8 @@ export function useAccessState() {
     const refresh = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/access-state');
+            const storedProject = typeof window !== 'undefined' ? localStorage.getItem('auth_pending_project') || 'pandoras' : 'pandoras';
+            const res = await fetch(`/api/access-state?project=${storedProject}`);
             if (res.ok) {
                 const json = await res.json();
                 setData(json);

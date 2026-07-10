@@ -273,7 +273,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
      */
     const refreshSession = async (wallet?: string, signal?: AbortSignal) => {
         try {
-            const url = wallet ? `/api/access-state?wallet=${wallet}` : "/api/access-state";
+            const storedProject = typeof window !== 'undefined' ? localStorage.getItem('auth_pending_project') || 'pandoras' : 'pandoras';
+            const url = wallet ? `/api/access-state?wallet=${wallet}&project=${storedProject}` : `/api/access-state?project=${storedProject}`;
             
             // 🛡️ TIMEOUT GUARD: 10s limit to prevent infinite hanging
             const timeoutController = new AbortController();
