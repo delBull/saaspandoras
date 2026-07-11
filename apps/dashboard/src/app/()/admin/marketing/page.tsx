@@ -1,8 +1,9 @@
 
 import { db } from "@/db";
-import { marketingCampaigns } from "@/db/schema";
+import { marketingCampaigns, marketingLeads } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { MarketingHeaderActions, MarketingCampaignList } from "@/app/()/admin/marketing/DashboardClient";
+import { MarketingAnalytics } from "@/components/admin/marketing/MarketingAnalytics";
 import { AdminAuthGuard } from "@/components/admin/AdminAuthGuard";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -18,6 +19,7 @@ export default async function MarketingAdminPage() {
     }
 
     const campaigns = await db.select().from(marketingCampaigns).orderBy(desc(marketingCampaigns.createdAt));
+    const leads = await db.select().from(marketingLeads);
 
     return (
         <AdminAuthGuard>
@@ -44,6 +46,9 @@ export default async function MarketingAdminPage() {
                         <MarketingHeaderActions />
                     </div>
                 </div>
+
+                {/* Analytics Dashboard */}
+                <MarketingAnalytics leads={leads} />
 
                 {/* Main Content - Full Width Grid */}
                 <MarketingCampaignList initialCampaigns={campaigns} />

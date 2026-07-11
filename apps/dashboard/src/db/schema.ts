@@ -2412,9 +2412,18 @@ export const ambassadorOriginEnum = pgEnum("ambassador_origin", [
 ]);
 
 export const ambassadorStatusEnum = pgEnum("ambassador_status", [
-  "active",
-  "pending",
-  "suspended"
+  "APPLIED",
+  "FOUNDER",
+  "TRAINING",
+  "ACCREDITED",
+  "SUSPENDED"
+]);
+
+export const ambassadorRoleEnum = pgEnum("ambassador_role", [
+  "GROWTH_PARTNER",
+  "SENIOR_PARTNER",
+  "INSTITUTIONAL_PARTNER",
+  "INTERNAL"
 ]);
 
 export const commissionTypeEnum = pgEnum("commission_type", [
@@ -2424,6 +2433,10 @@ export const commissionTypeEnum = pgEnum("commission_type", [
 
 export const commissionStatusEnum = pgEnum("commission_status", [
   "pending",
+  "qualified",
+  "reserved",
+  "invested",
+  "approved",
   "paid",
   "cancelled"
 ]);
@@ -2446,7 +2459,11 @@ export const ambassadors = pgTable("ambassadors", {
   
   // Track where they came from
   origin: ambassadorOriginEnum("origin").default("pandoras").notNull(),
-  status: ambassadorStatusEnum("status").default("active").notNull(),
+  status: ambassadorStatusEnum("status").default("FOUNDER").notNull(),
+  role: ambassadorRoleEnum("role").default("GROWTH_PARTNER").notNull(),
+  
+  // Activation
+  activationStep: integer("activation_step").default(0).notNull(),
   
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -2483,14 +2500,57 @@ export const ambassadorCommissions = pgTable("ambassador_commissions", {
   statusIdx: index("ambassador_commissions_status_idx").on(t.status),
 }));
 
+export const partnerReputationEvents = pgTable("partner_reputation_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ambassadorId: uuid("ambassador_id").references(() => ambassadors.id).notNull(),
+  event: varchar("event", { length: 255 }).notNull(),
+  points: integer("points").notNull(),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  ambassadorIdx: index("partner_reputation_events_amb_idx").on(t.ambassadorId),
+}));
+
+export const partnerCertifications = pgTable("partner_certifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ambassadorId: uuid("ambassador_id").references(() => ambassadors.id).notNull(),
+  courseName: varchar("course_name", { length: 255 }).notNull(),
+  academyVersion: varchar("academy_version", { length: 50 }).notNull(), // e.g., "v1.0"
+  score: integer("score"),
+  status: varchar("status", { length: 50 }).default("TRAINING").notNull(), // TRAINING, EXAM_PENDING, ACCREDITED
+  
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  ambassadorIdx: index("partner_certifications_amb_idx").on(t.ambassadorId),
+}));
+
 export const ambassadorsRelations = relations(ambassadors, ({ many }) => ({
   clients: many(ambassadorClients),
   commissions: many(ambassadorCommissions),
+  reputationEvents: many(partnerReputationEvents),
+  certifications: many(partnerCertifications),
+}));
+
+export const partnerReputationEventsRelations = relations(partnerReputationEvents, ({ one }) => ({
+  ambassador: one(ambassadors, {
+    fields: [partnerReputationEvents.ambassadorId],
+    references: [ambassadors.id],
+  }),
+}));
+
+export const partnerCertificationsRelations = relations(partnerCertifications, ({ one }) => ({
+  ambassador: one(ambassadors, {
+    fields: [partnerCertifications.ambassadorId],
+    references: [ambassadors.id],
+  }),
 }));
 
 export type Ambassador = typeof ambassadors.$inferSelect;
 export type AmbassadorClient = typeof ambassadorClients.$inferSelect;
 export type AmbassadorCommission = typeof ambassadorCommissions.$inferSelect;
+export type PartnerReputationEvent = typeof partnerReputationEvents.$inferSelect;
+export type PartnerCertification = typeof partnerCertifications.$inferSelect;
 
 // =========================================================
 // PANDORAS WHITELABEL MODULES (EVENTS & RESOURCE HUB)
@@ -2578,3 +2638,74 @@ export const projectBriefings = pgTable("project_briefings", {
 }));
 
 export type ProjectBriefing = typeof projectBriefings.$inferSelect;
+
+// --- TRANSPARENCY CENTER (PROJECT DOCUMENTS) ENUMS ---
+
+export const documentTypeEnum = pgEnum("document_type", [
+  "marketing",
+  "disclosure",
+  "legal",
+  "technical",
+  "financial",
+  "operational",
+  "educational",
+  "certification"
+]);
+
+export const documentCategoryEnum = pgEnum("document_category", [
+  "project_overview",
+  "legal_asset_protection",
+  "financial_model",
+  "development_progress",
+  "technology_security",
+  "investor_education"
+]);
+
+export const documentFileTypeEnum = pgEnum("document_file_type", [
+  "pdf",
+  "external_link"
+]);
+
+export const documentStatusEnum = pgEnum("document_status", [
+  "AVAILABLE",
+  "REGULATORY_PROCESS",
+  "IN_PROGRESS",
+  "UNDER_REVIEW"
+]);
+
+export const documentVerificationStatusEnum = pgEnum("document_verification_status", [
+  "NOT_VERIFIED",
+  "INTERNAL_REVIEW",
+  "VERIFIED",
+  "EXTERNAL_VERIFIED"
+]);
+
+export const documentVisibilityEnum = pgEnum("document_visibility", [
+  "PUBLIC",
+  "PARTNER",
+  "REGISTERED_USER",
+  "INVESTOR",
+  "ADMIN"
+]);
+
+export const projectDocuments = pgTable("project_documents", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  documentType: documentTypeEnum("document_type").notNull(),
+  category: documentCategoryEnum("category").notNull(),
+  fileType: documentFileTypeEnum("file_type").default("external_link").notNull(),
+  fileUrl: text("file_url").notNull(),
+  storageProvider: varchar("storage_provider", { length: 50 }).default("external").notNull(),
+  version: varchar("version", { length: 50 }).default("1.0").notNull(),
+  status: documentStatusEnum("status").default("IN_PROGRESS").notNull(),
+  verificationStatus: documentVerificationStatusEnum("verification_status").default("NOT_VERIFIED").notNull(),
+  visibility: documentVisibilityEnum("visibility").default("ADMIN").notNull(),
+  uploadedBy: varchar("uploaded_by", { length: 255 }), // Admin user ID
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (table) => ({
+  projectIndex: index("project_documents_project_idx").on(table.projectId),
+  visibilityIndex: index("project_documents_visibility_idx").on(table.visibility)
+}));

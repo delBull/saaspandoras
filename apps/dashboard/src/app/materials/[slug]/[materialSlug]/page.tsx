@@ -9,7 +9,7 @@ const MATERIAL_CONTENT: Record<string, { hero?: string; heroSubtitle?: string; i
     'project-overview': {
         hero: "La evolución de la Riviera.",
         heroSubtitle: "Todo lo que necesitas saber sobre S'Narai en 5 minutos.",
-        intro: "El documento inicial que todo inversionista, asesor o desarrollador debe leer para entender la tesis de valor de S'Narai Bucerías. Arquitectura premium, Fideicomiso Maestro, 80,400 títulos y yields operativos del 10-12% anual.",
+        intro: "El documento inicial que todo inversionista, asesor o desarrollador debe leer para entender la tesis de valor de S'Narai Bucerías. Arquitectura premium, estructuración institucional, 80,400 títulos y escenarios financieros basados en supuestos operativos del proyecto.",
         cssBackground: "bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-amber-900/40 via-zinc-950 to-black",
     },
     'investment-deck': {
@@ -33,13 +33,13 @@ const MATERIAL_CONTENT: Record<string, { hero?: string; heroSubtitle?: string; i
     'developer-kit': {
         hero: "Un nuevo estándar para construir.",
         heroSubtitle: "El modelo S'Narai aplicado al desarrollo inmobiliario moderno.",
-        intro: "Documento exclusivo para entidades constructoras e inversionistas institucionales. Explica cómo S'Narai integra smart contracts, seguimiento documental NOM-151 y la comercialización de los 80,400 títulos en un solo ecosistema.",
+        intro: "Documento exclusivo para entidades constructoras e inversionistas institucionales. Explica cómo S'Narai integra tecnología de trazabilidad, proceso de formalización digital con mecanismos de evidencia documental, y la comercialización de los 80,400 títulos en un solo ecosistema.",
         cssBackground: "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/30 via-black to-black bg-[linear-gradient(to_right,#3b82f610_1px,transparent_1px),linear-gradient(to_bottom,#3b82f610_1px,transparent_1px)] bg-[size:24px_24px]",
     },
     'due-diligence': {
         hero: "Transparencia total. Desde el día uno.",
         heroSubtitle: "El paquete completo para que analices antes de invertir.",
-        intro: "El Due Diligence de S'Narai incluye escrituras del terreno en Zona Dorada de Bucerías, contratos de fideicomiso, licencias de construcción, manifiestos ambientales y perfiles verificables de los desarrolladores (Aztecas).",
+        intro: "El Due Diligence de S'Narai incluye documentos de estructuración patrimonial (Fideicomiso en proceso de formalización), certeza de la tierra en Bucerías y la documentación regulatoria que asegura el desarrollo del proyecto.",
         cssBackground: "bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-zinc-700/30 via-black to-black bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:80px_80px]",
     },
     'project-roadmap': {
@@ -464,7 +464,7 @@ El cliente no está comprando "semanas" de uso. Está participando financieramen
                 title: 'Control Patrimonial',
                 content: `El proyecto no está a nombre de personas físicas, sino encapsulado en un vehículo institucional:
 
-• **Fideicomiso Maestro:** Contrato que dicta las reglas inamovibles sobre cómo se debe desarrollar y operar el proyecto.
+• **Estructura Fiduciaria:** Estructura legal en proceso de formalización para protección patrimonial y dictamen de reglas de operación.
 • **Comité Técnico:** Órgano colegiado encargado de supervisar decisiones financieras y constructivas.
 • **Reglas de Gobernanza:** Mecanismos documentados para prevenir desviaciones de fondos o conflictos de interés.`,
                 stats: []
@@ -477,7 +477,7 @@ El cliente no está comprando "semanas" de uso. Está participando financieramen
                 title: 'Construcción y Desarrollo (Aztecas)',
                 content: `No vendemos renders, construimos realidades respaldadas técnica y operativamente:
 
-• **Licencia de Construcción:** Permiso oficial para desarrollar la volumetría y densidad prometida.
+• **Trámites Regulatorios:** Trámites municipales en fase inicial y procesos de factibilidad en curso para asegurar la viabilidad de construcción.
 • **Proyecto Ejecutivo:** Planos estructurales, ingenierías, mecánica de suelos y estudios topográficos.
 • **Presupuesto Base:** Catálogo de conceptos (Hard Costs & Soft Costs) verificado.`,
                 stats: []

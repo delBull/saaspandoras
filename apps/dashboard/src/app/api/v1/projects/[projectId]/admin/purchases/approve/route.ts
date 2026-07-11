@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { purchases, projects, users, daoMembers, ambassadors, ambassadorClients, ambassadorCommissions, marketingLeads, marketingLeadEvents } from '@/db/schema';
+import { purchases, projects, users, daoMembers, ambassadors, ambassadorClients, ambassadorCommissions, marketingLeads, marketingLeadEvents, partnerReputationEvents } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { getAuth } from '@/lib/auth';
@@ -147,6 +147,14 @@ async function handler(
                         }).onConflictDoNothing({ target: ambassadorCommissions.sourceTxHash });
 
                         console.log(`✅ Project ${projectId}: Commission $${commissionAmount} logged for ${ambassador.referralCode}`);
+
+                        // Log Reputation Event
+                        await tx.insert(partnerReputationEvents).values({
+                            ambassadorId: ambassador.id,
+                            event: `INVESTMENT_CLOSED_${projectIdNum}`,
+                            points: 50
+                        });
+                        console.log(`🏆 Project ${projectId}: 50 Reputation Points granted to ${ambassador.referralCode}`);
                     }
                 }
             });

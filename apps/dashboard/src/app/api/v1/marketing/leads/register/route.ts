@@ -7,7 +7,9 @@ import {
   integrationClients,
   marketingLeadStatusEnum,
   marketingLeadIntentEnum,
-  projects
+  projects,
+  partnerReputationEvents,
+  ambassadors
 } from '@/db/schema';
 import { eq, and, or, sql, ilike } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
@@ -322,6 +324,7 @@ export async function POST(req: NextRequest) {
       fingerprint: fingerprint || (existingLead as any)?.fingerprint || null,
       identityHash: identityHash,
       origin: origin || (existingLead as any)?.origin || null,
+      referrer: processedMetadata.ref || processedMetadata.referrer || body.ref || (existingLead as any)?.referrer || null,
       intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
       consent: true,
       metadata: finalMetadata,
@@ -361,6 +364,26 @@ export async function POST(req: NextRequest) {
           identityId: identityId
         }
       );
+
+      // Reputation Engine: Grant points for new referred leads
+      if (!alreadyRegistered && result.referrer) {
+        try {
+          const ambassador = await db.query.ambassadors.findFirst({
+            where: eq(ambassadors.referralCode, result.referrer as string)
+          });
+          
+          if (ambassador) {
+            await db.insert(partnerReputationEvents).values({
+              ambassadorId: ambassador.id,
+              event: 'LEAD_CAPTURED',
+              points: 10
+            });
+            console.error(`[Reputation OS] 🏆 Granted 10 points to Partner ${ambassador.id} for new lead`);
+          }
+        } catch (e) {
+          console.error('[Reputation OS] Error granting points:', e);
+        }
+      }
     }
 
     // 5. CRM Synchronization (Isolated for B2B)

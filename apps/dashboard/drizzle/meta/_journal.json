@@ -64,6 +64,13 @@
       "when": 1783282034498,
       "tag": "0008_square_jack_murdock",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783660183214,
+      "tag": "0009_breezy_gorilla_man",
+      "breakpoints": true
     }
   ]
 }

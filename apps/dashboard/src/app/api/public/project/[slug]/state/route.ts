@@ -13,7 +13,8 @@ import {
   marketingIdentities,
   ambassadors,
   ambassadorCommissions,
-  projectBriefings
+  projectBriefings,
+  partnerReputationEvents
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc, inArray } from "drizzle-orm";
@@ -335,9 +336,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     ]);
 
     let ambassadorCommissionsList: any[] = [];
+    let ambassadorReputationEvents: any[] = [];
     if (ambassador) {
         ambassadorCommissionsList = await db.query.ambassadorCommissions.findMany({
             where: eq(ambassadorCommissions.ambassadorId, ambassador.id)
+        }).catch(() => []);
+        ambassadorReputationEvents = await db.query.partnerReputationEvents.findMany({
+            where: eq(partnerReputationEvents.ambassadorId, ambassador.id)
         }).catch(() => []);
     }
 
@@ -582,9 +587,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       isAmbassador: !!ambassador,
       referralCode: ambassador ? ambassador.referralCode : null,
       ambassadorStats: ambassador ? {
+        role: ambassador.role,
+        status: ambassador.status,
+        activationStep: ambassador.activationStep,
+        trustScore: ambassadorReputationEvents.reduce((acc, ev) => acc + Number(ev.points || 0), 0),
         totalReferrals: ambassadorCommissionsList.filter(c => c.type === 'DIRECT_4').length,
-        directCommissions: ambassadorCommissionsList.filter(c => c.type === 'DIRECT_4').reduce((acc, c) => acc + Number(c.amount || 0), 0),
-        residualYield: ambassadorCommissionsList.filter(c => c.type === 'RESIDUAL_YIELD_1').reduce((acc, c) => acc + Number(c.amount || 0), 0)
+        directCommissions: ambassadorCommissionsList.filter(c => c.type === 'DIRECT_4').reduce((acc, c) => acc + Number(c.amountUsdc || c.amount || 0), 0),
+        residualYield: ambassadorCommissionsList.filter(c => c.type === 'RESIDUAL_YIELD_1').reduce((acc, c) => acc + Number(c.amountUsdc || c.amount || 0), 0)
       } : null,
       userPortfolio,
       legal: project.legalConfig || {},
