@@ -97,7 +97,7 @@ async function handler(req: Request) {
         referralCode,
         origin: origin as any,
         projectId: projectId ? Number(projectId) : null,
-        status: 'pending',
+        status: 'APPLIED',
         emailVerified: false,
         verificationToken: otp
     }).returning();

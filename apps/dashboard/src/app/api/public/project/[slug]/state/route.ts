@@ -17,7 +17,7 @@ import {
   partnerReputationEvents
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
-import { eq, sql, and, desc, inArray } from "drizzle-orm";
+import { eq, sql, and, desc, inArray, ilike } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
@@ -321,10 +321,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             limit: 5
         }).catch(() => []),
         (wallet && wallet.startsWith("0x")) 
-            ? db.query.users.findFirst({ where: eq(usersSchema.walletAddress, wallet.toLowerCase()) }).catch(() => null)
+            ? db.query.users.findFirst({ where: ilike(usersSchema.walletAddress, wallet) }).catch(() => null)
             : Promise.resolve(null),
         (wallet && wallet.startsWith("0x"))
-            ? db.query.ambassadors.findFirst({ where: eq(ambassadors.walletAddress, wallet.toLowerCase()) }).catch(() => null)
+            ? db.query.ambassadors.findFirst({ where: ilike(ambassadors.walletAddress, wallet) }).catch(() => null)
             : Promise.resolve(null),
         db.query.projectBriefings.findMany({
             where: and(
