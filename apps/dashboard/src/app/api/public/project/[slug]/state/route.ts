@@ -337,7 +337,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         db.query.projectDocuments.findMany({
             where: and(
                 eq(projectDocuments.projectId, project.id),
-                inArray(projectDocuments.visibility, ['PUBLIC', 'PARTNER_ONLY', 'INVESTOR_ONLY']),
+                inArray(projectDocuments.visibility, ['PUBLIC', 'PARTNER', 'INVESTOR']),
                 eq(projectDocuments.status, 'AVAILABLE')
             ),
             orderBy: desc(projectDocuments.createdAt)
@@ -359,10 +359,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const formattedDocuments = (activeDocuments || []).map(d => ({
         id: d.id.toString(),
         title: d.title,
-        category: d.category === 'investment_thesis' ? 'PROJECT_INTELLIGENCE' : 
-                  d.category === 'marketing_materials' ? 'PARTNER_ENABLEMENT' : 
-                  d.category === 'legal_structuring' ? 'TRANSPARENCY_CENTER' : 
-                  d.category === 'financial_projections' ? 'INVESTOR_EDUCATION' : 'INSTITUTIONAL_DOCUMENTS',
+        category: d.category === 'project_overview' ? 'PROJECT_INTELLIGENCE' : 
+                  d.category === 'investor_education' ? 'INVESTOR_EDUCATION' : 
+                  d.category === 'legal_asset_protection' ? 'TRANSPARENCY_CENTER' : 
+                  'INSTITUTIONAL_DOCUMENTS',
         intent: d.documentType,
         objective: d.description || 'Documento Oficial',
         url: d.fileUrl,
