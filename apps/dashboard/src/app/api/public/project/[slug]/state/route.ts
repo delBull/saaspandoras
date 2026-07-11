@@ -14,7 +14,8 @@ import {
   ambassadors,
   ambassadorCommissions,
   projectBriefings,
-  partnerReputationEvents
+  partnerReputationEvents,
+  projectDocuments
 } from "@/db/schema";
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc, inArray, ilike } from "drizzle-orm";
@@ -307,7 +308,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const nextPhase = phases[activePhaseIndex + 1] || null;
 
     // 4.9 Parallel DB Queries for secondary data
-    const [activities, activeProposals, user, ambassador, activeBriefings] = await Promise.all([
+    const [activities, activeProposals, user, ambassador, activeBriefings, activeDocuments] = await Promise.all([
         db.query.daoActivities.findMany({
             where: eq(daoActivitiesSchema.projectId, project.id),
             orderBy: desc(daoActivitiesSchema.createdAt),
@@ -332,6 +333,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 eq(projectBriefings.status, 'published')
             ),
             orderBy: desc(projectBriefings.createdAt)
+        }).catch(() => []),
+        db.query.projectDocuments.findMany({
+            where: and(
+                eq(projectDocuments.projectId, project.id),
+                inArray(projectDocuments.visibility, ['PUBLIC', 'PARTNER_ONLY', 'INVESTOR_ONLY']),
+                eq(projectDocuments.status, 'AVAILABLE')
+            ),
+            orderBy: desc(projectDocuments.createdAt)
         }).catch(() => [])
     ]);
 
@@ -345,6 +354,22 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             where: eq(partnerReputationEvents.ambassadorId, ambassador.id)
         }).catch(() => []);
     }
+
+    // Map documents to expected UI format
+    const formattedDocuments = (activeDocuments || []).map(d => ({
+        id: d.id.toString(),
+        title: d.title,
+        category: d.category === 'investment_thesis' ? 'PROJECT_INTELLIGENCE' : 
+                  d.category === 'marketing_materials' ? 'PARTNER_ENABLEMENT' : 
+                  d.category === 'legal_structuring' ? 'TRANSPARENCY_CENTER' : 
+                  d.category === 'financial_projections' ? 'INVESTOR_EDUCATION' : 'INSTITUTIONAL_DOCUMENTS',
+        intent: d.documentType,
+        objective: d.description || 'Documento Oficial',
+        url: d.fileUrl,
+        contentPreview: [
+            { section: 'Nivel de Verificación', text: d.verificationStatus === 'NOT_VERIFIED' ? 'Pendiente' : d.verificationStatus }
+        ]
+    }));
 
     // 4.9 Fetch Legal Metadata (Integrity Proofs) - MULTI-CERTIFICATE SUPPORT
     let certificates: any[] = [];
@@ -609,6 +634,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           updatedAt: b.updatedAt
         }))
       },
+      documents: formattedDocuments,
       phases: phases.map((p: any) => ({
         id: p.id,
         name: p.name,
