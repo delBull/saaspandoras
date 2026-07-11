@@ -18,7 +18,7 @@ export default function TransparencyCenterClient({ project }: { project: any }) 
         title: "",
         description: "",
         documentType: "legal",
-        category: "other",
+        category: "project_overview",
         status: "AVAILABLE",
         verificationStatus: "NOT_VERIFIED",
         visibility: "PUBLIC",
@@ -61,7 +61,7 @@ export default function TransparencyCenterClient({ project }: { project: any }) 
                     title: "",
                     description: "",
                     documentType: "legal",
-                    category: "other",
+                    category: "project_overview",
                     status: "AVAILABLE",
                     verificationStatus: "NOT_VERIFIED",
                     visibility: "PUBLIC",
@@ -158,14 +158,12 @@ export default function TransparencyCenterClient({ project }: { project: any }) 
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="investment_thesis">Investment Thesis</SelectItem>
-                                            <SelectItem value="legal_structuring">Legal Structuring</SelectItem>
-                                            <SelectItem value="financial_projections">Financial Projections</SelectItem>
-                                            <SelectItem value="technical_architecture">Tech Architecture</SelectItem>
-                                            <SelectItem value="market_analysis">Market Analysis</SelectItem>
-                                            <SelectItem value="permits_licenses">Permits & Licenses</SelectItem>
-                                            <SelectItem value="marketing_materials">Marketing</SelectItem>
-                                            <SelectItem value="other">Otro</SelectItem>
+                                            <SelectItem value="project_overview">Project Overview</SelectItem>
+                                            <SelectItem value="legal_asset_protection">Legal & Asset Protection</SelectItem>
+                                            <SelectItem value="financial_model">Financial Model</SelectItem>
+                                            <SelectItem value="development_progress">Development Progress</SelectItem>
+                                            <SelectItem value="technology_security">Tech & Security</SelectItem>
+                                            <SelectItem value="investor_education">Investor Education</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
