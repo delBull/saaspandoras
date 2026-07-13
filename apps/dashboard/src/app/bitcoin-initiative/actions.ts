@@ -62,7 +62,7 @@ export async function submitPartnershipContact(formData: FormData) {
               <p>Hola ${name},</p>
               <p>Hemos recibido tu solicitud de contacto para explorar oportunidades de colaboración estratégica con tu comunidad.</p>
               <p>En Pandoras estamos construyendo el primer puente institucional entre el capital Bitcoin y los activos del mundo real (Real World Assets). Pronto un miembro de nuestro equipo se pondrá en contacto contigo para agendar una sesión introductoria.</p>
-              <p>Mientras tanto, te invitamos a explorar a profundidad nuestro <strong>Partnership Brief</strong> que detalla nuestra visión, los activos génesis como S'Narai Bucerías y el roadmap de integración de Bitcoin.</p>
+              <p>Mientras tanto, te invitamos a explorar a profundidad nuestro <a href="https://dash.pandoras.finance/bitcoin-initiative/brief" style="color: #F7931A; font-weight: bold; text-decoration: none;">Partnership Brief</a> que detalla nuestra visión, los activos génesis como S'Narai Bucerías y el roadmap de integración de Bitcoin.</p>
               <p>Atentamente,<br/><strong>El Equipo de Pandoras</strong></p>
             </div>
           `

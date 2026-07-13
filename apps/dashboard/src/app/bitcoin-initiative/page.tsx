@@ -10,8 +10,10 @@ export default function BitcoinInitiativePage() {
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [formMessage, setFormMessage] = useState('');
 
-  const handleAction = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setFormStatus('loading');
+    const formData = new FormData(e.currentTarget);
     const result = await submitPartnershipContact(formData);
     setFormStatus(result.success ? 'success' : 'error');
     setFormMessage(result.message);
@@ -299,7 +301,7 @@ export default function BitcoinInitiativePage() {
                   <p>{formMessage}</p>
                 </div>
               ) : (
-                <form action={handleAction} className="text-left max-w-lg mx-auto space-y-6">
+                <form onSubmit={handleSubmit} className="text-left max-w-lg mx-auto space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-widest text-white/50">Tu Nombre</label>
                     <input type="text" name="name" required className="w-full bg-black/40 border border-white/10 focus:border-[#F7931A] rounded-xl px-5 py-4 text-white outline-none transition-colors" placeholder="Satoshi Nakamoto" />
