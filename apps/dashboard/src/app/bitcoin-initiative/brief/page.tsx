@@ -15,10 +15,10 @@ export default function BitcoinPartnershipBrief() {
       {/* Web Controls (Hidden on print) */}
       <div className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 flex justify-between items-center z-50 print:hidden">
         <Link href="/bitcoin-initiative" className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-black transition-colors">
-          <ArrowLeft size={16} /> Back to Initiative
+          <ArrowLeft size={16} /> Volver a la Iniciativa
         </Link>
         <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-gray-800 transition-colors shadow-lg">
-          <Printer size={16} /> Print / Save PDF
+          <Printer size={16} /> Imprimir / Guardar PDF
         </button>
       </div>
 
@@ -37,22 +37,22 @@ export default function BitcoinPartnershipBrief() {
                 Pandoras Bitcoin Partnership Brief
               </h1>
               <p className="text-2xl text-gray-500 font-light max-w-2xl leading-relaxed border-l-4 border-[#F7931A] pl-6">
-                Bringing Bitcoin Capital Into Real World Assets. A Strategic Partnership Proposal.
+                Llevando Capital Bitcoin a Activos Reales. Propuesta Estratégica.
               </p>
               
               <div className="mt-32">
-                <p className="text-sm font-bold uppercase tracking-widest text-gray-400">Date</p>
-                <p className="text-lg font-serif">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="text-sm font-bold uppercase tracking-widest text-gray-400">Fecha</p>
+                <p className="text-lg font-serif">{new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
             </div>
           </div>
 
           {/* Page 1: The Opportunity & Vision */}
           <div className="min-h-[1056px] w-full p-16 md:p-24 flex flex-col page-break-after-always" style={{ pageBreakAfter: 'always' }}>
-             <h2 className="text-3xl font-serif font-bold mb-8 pb-4 border-b border-gray-200 text-[#F7931A]">1. The Opportunity & Vision</h2>
+             <h2 className="text-3xl font-serif font-bold mb-8 pb-4 border-b border-gray-200 text-[#F7931A]">1. La Oportunidad y Visión</h2>
              
              <div className="space-y-8 text-lg leading-relaxed text-gray-700">
-                <h3 className="text-2xl font-bold text-black">Bitcoin Has Solved Digital Scarcity. Now Comes Asset Access.</h3>
+                <h3 className="text-2xl font-bold text-black">Bitcoin Resolvió la Escasez Digital. Ahora Viene el Acceso.</h3>
                 <p>Durante los últimos años Bitcoin demostró que una comunidad global puede coordinar capital alrededor de un activo digital descentralizado. Sin embargo, millones de Bitcoin holders todavía enfrentan un problema fundamental:</p>
                 
                 <blockquote className="border-l-4 border-gray-300 pl-6 py-2 italic font-serif text-xl text-gray-500">
@@ -66,10 +66,10 @@ export default function BitcoinPartnershipBrief() {
 
           {/* Page 2: Alignment & Assets */}
           <div className="min-h-[1056px] w-full p-16 md:p-24 flex flex-col page-break-after-always" style={{ pageBreakAfter: 'always' }}>
-             <h2 className="text-3xl font-serif font-bold mb-8 pb-4 border-b border-gray-200 text-[#F7931A]">2. Bitcoin Alignment & Genesis Assets</h2>
+             <h2 className="text-3xl font-serif font-bold mb-8 pb-4 border-b border-gray-200 text-[#F7931A]">2. Alineación Bitcoin y Activos Génesis</h2>
              
              <div className="space-y-8 text-lg leading-relaxed text-gray-700">
-                <h3 className="text-2xl font-bold text-black">The Ideal Alignment</h3>
+                <h3 className="text-2xl font-bold text-black">La Alineación Ideal</h3>
                 <p>Las comunidades Bitcoin comparten valores fundamentales con la visión Pandoras. Bitcoin representa capital paciente, mientras que el Real Estate representa valor histórico. Pandoras es el puente entre ambos mundos.</p>
                 
                 <div className="bg-gray-50 p-8 border border-gray-200 rounded-xl my-8">
@@ -82,7 +82,7 @@ export default function BitcoinPartnershipBrief() {
                   </ul>
                 </div>
 
-                <h3 className="text-2xl font-bold text-black mt-12">Genesis Real Estate Assets</h3>
+                <h3 className="text-2xl font-bold text-black mt-12">Activos Inmobiliarios Génesis</h3>
                 
                 <div className="space-y-6">
                   <div>
@@ -99,10 +99,10 @@ export default function BitcoinPartnershipBrief() {
 
           {/* Page 3: Partnership & Roadmap */}
           <div className="min-h-[1056px] w-full p-16 md:p-24 flex flex-col page-break-after-always" style={{ pageBreakAfter: 'always' }}>
-             <h2 className="text-3xl font-serif font-bold mb-8 pb-4 border-b border-gray-200 text-[#F7931A]">3. Strategic Partnership & Roadmap</h2>
+             <h2 className="text-3xl font-serif font-bold mb-8 pb-4 border-b border-gray-200 text-[#F7931A]">3. Partnership Estratégico y Roadmap</h2>
              
              <div className="space-y-8 text-lg leading-relaxed text-gray-700">
-                <h3 className="text-2xl font-bold text-black">Become a Founding Distribution Partner</h3>
+                <h3 className="text-2xl font-bold text-black">Conviértete en Founding Distribution Partner</h3>
                 <p>Estamos buscando comunidades estratégicas que quieran participar en la construcción del primer canal Bitcoin-native para activos inmobiliarios.</p>
                 <ul className="list-disc pl-6 space-y-4">
                   <li><strong>Crear el primer canal Bitcoin → Real Estate:</strong> Vía exclusiva para acceder a activos estructurados.</li>
@@ -110,27 +110,27 @@ export default function BitcoinPartnershipBrief() {
                   <li><strong>Construir una relación permanente:</strong> Como socio estratégico, no como afiliado.</li>
                 </ul>
 
-                <h3 className="text-2xl font-bold text-black mt-12">Integration Roadmap</h3>
+                <h3 className="text-2xl font-bold text-black mt-12">Roadmap de Integración</h3>
                 
                 <div className="border-l-2 border-[#F7931A] pl-6 space-y-6 mt-6">
                   <div>
-                    <h4 className="font-bold text-[#F7931A]">Phase 1 — Distribution Channel</h4>
+                    <h4 className="font-bold text-[#F7931A]">Fase 1 — Canal de Distribución Bitcoin</h4>
                     <p className="text-sm">Conectar capital Bitcoin con oportunidades inmobiliarias.</p>
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#F7931A]">Phase 2 — Settlement Infrastructure</h4>
+                    <h4 className="font-bold text-[#F7931A]">Fase 2 — Infraestructura de Liquidación</h4>
                     <p className="text-sm">Explorar mecanismos para facilitar pagos utilizando infraestructura compatible con Bitcoin.</p>
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#F7931A]">Phase 3 — Real World Asset Network</h4>
+                    <h4 className="font-bold text-[#F7931A]">Fase 3 — Red de Activos Reales</h4>
                     <p className="text-sm">Crear una red permanente para acceder a múltiples activos reales.</p>
                   </div>
                 </div>
                 
                 <div className="mt-16 pt-8 border-t border-gray-200 text-center">
-                   <h3 className="text-2xl font-serif font-bold text-black mb-4">Let's Build The First Bitcoin Real Estate Network</h3>
+                   <h3 className="text-2xl font-serif font-bold text-black mb-4">Construyamos la Primera Red Inmobiliaria Bitcoin</h3>
                    <p className="mb-6">Estamos explorando socios estratégicos para distribución, comunidad, educación y acceso temprano.</p>
-                   <p className="font-bold text-xl text-[#F7931A]">Pandoras Initiative Team</p>
+                   <p className="font-bold text-xl text-[#F7931A]">Equipo de Iniciativa Pandoras</p>
                 </div>
              </div>
           </div>
