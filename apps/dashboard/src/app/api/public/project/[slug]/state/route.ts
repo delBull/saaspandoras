@@ -356,20 +356,38 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     // Map documents to expected UI format
-    const formattedDocuments = (activeDocuments || []).map(d => ({
-        id: d.id.toString(),
-        title: d.title,
-        category: d.category === 'project_overview' ? 'PROJECT_INTELLIGENCE' : 
-                  d.category === 'investor_education' ? 'INVESTOR_EDUCATION' : 
-                  d.category === 'legal_asset_protection' ? 'TRANSPARENCY_CENTER' : 
-                  'INSTITUTIONAL_DOCUMENTS',
-        intent: d.documentType,
-        objective: d.description || 'Documento Oficial',
-        url: d.fileUrl,
-        contentPreview: [
-            { section: 'Nivel de Verificación', text: d.verificationStatus === 'NOT_VERIFIED' ? 'Pendiente' : d.verificationStatus }
-        ]
-    }));
+    // Fetch static materials for the project (Currently only S'Narai is supported statically)
+    let staticMaterials: any[] = [];
+    if (project.slug === 'snarai') {
+        const { snaraiMaterials } = await import('@/lib/marketing/snarai-materials');
+        staticMaterials = snaraiMaterials.map(m => ({
+            id: m.id,
+            title: m.title,
+            category: 'PROJECT_INTELLIGENCE',
+            intent: 'PANDORAS OS',
+            objective: m.objective,
+            url: `https://${apiKey?.startsWith('pk_live_') ? 'dash' : 'staging.dash'}.pandoras.finance/materials/${project.slug}/${m.id}`,
+            contentPreview: m.contentPreview
+        }));
+    }
+
+    const formattedDocuments = [
+        ...staticMaterials,
+        ...(activeDocuments || []).map(d => ({
+            id: d.id.toString(),
+            title: d.title,
+            category: d.category === 'project_overview' ? 'PROJECT_INTELLIGENCE' : 
+                      d.category === 'investor_education' ? 'INVESTOR_EDUCATION' : 
+                      d.category === 'legal_asset_protection' ? 'TRANSPARENCY_CENTER' : 
+                      'INSTITUTIONAL_DOCUMENTS',
+            intent: d.documentType,
+            objective: d.description || 'Documento Oficial',
+            url: d.fileUrl,
+            contentPreview: [
+                { section: 'Nivel de Verificación', text: d.verificationStatus === 'NOT_VERIFIED' ? 'Pendiente' : d.verificationStatus }
+            ]
+        }))
+    ];
 
     // 4.9 Fetch Legal Metadata (Integrity Proofs) - MULTI-CERTIFICATE SUPPORT
     let certificates: any[] = [];
