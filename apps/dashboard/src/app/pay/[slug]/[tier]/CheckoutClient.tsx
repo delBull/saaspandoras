@@ -408,6 +408,10 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     };
 
     const submitFastLane = async (confirm = false) => {
+        if (!allLegalChecked) {
+            toast.error("Debes aceptar los términos legales (Validación Legal).");
+            return;
+        }
         if (!fastLaneEmail || !fastLaneEmail.includes('@')) {
             toast.error("Ingresa un correo electrónico válido.");
             return;
@@ -963,8 +967,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                         <div className="pt-2">
                                                             <button
                                                                 onClick={() => submitFastLane(false)}
-                                                                disabled={isSubmittingFastLane}
-                                                                className="w-full h-14 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-white/10 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                                                disabled={isSubmittingFastLane || !allLegalChecked}
+                                                                className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg transition-all flex items-center justify-center gap-2 group ${isSubmittingFastLane || !allLegalChecked ? 'opacity-50 cursor-not-allowed bg-zinc-800 text-zinc-500' : 'bg-white text-black shadow-white/10 hover:scale-[1.02]'}`}
                                                             >
                                                                 {isSubmittingFastLane ? <Loader2 className="w-5 h-5 animate-spin" /> : "Generar Instrucciones"}
                                                             </button>
@@ -992,8 +996,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                         <div className="space-y-3 pt-4">
                                                             <button
                                                                 onClick={() => submitFastLane(true)}
-                                                                disabled={isSubmittingFastLane}
-                                                                className="w-full h-14 bg-[#D4AF37] text-black font-black rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-[#D4AF37]/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 group"
+                                                                disabled={isSubmittingFastLane || !allLegalChecked}
+                                                                className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg transition-all flex items-center justify-center gap-2 group ${isSubmittingFastLane || !allLegalChecked ? 'opacity-50 cursor-not-allowed bg-zinc-800 text-zinc-500' : 'bg-[#D4AF37] text-black shadow-[#D4AF37]/20 hover:scale-[1.02]'}`}
                                                             >
                                                                 {isSubmittingFastLane ? <Loader2 className="w-5 h-5 animate-spin text-black" /> : "SÍ, ESTOY LISTO PARA INVERTIR"}
                                                             </button>
