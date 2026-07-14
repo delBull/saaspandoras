@@ -1548,6 +1548,38 @@ X-RateLimit-Reset: 1673548800
 ### Get Protocol Details
 
 \`\`\`http
+GET /v1/projects/:slug/analytics
+\`\`\`
+Returns detailed tokenomics and live sales statistics for a protocol.
+
+### External Emails Proxy (Scalable SMTP)
+
+\`\`\`http
+POST /v1/external/emails/send
+\`\`\`
+Send emails using Pandoras's centralized Resend infrastructure instead of configuring API keys in your whitelabel project.
+
+**Request Body:**
+\`\`\`json
+{
+  "to": "user@example.com",
+  "subject": "Data Room Access",
+  "html": "<h1>Your Content</h1>",
+  "fromName": "S'Narai Institutional"
+}
+\`\`\`
+
+### Data Room Admin Bypass (Magic Cookie)
+
+For whitelabel frontend applications (like S'Narai), the owner can bypass restricted Data Room gateways by using a URL secret token:
+
+\`\`\`
+https://your-project.com/en/institutional?p_unlock=YOUR_SECRET_TOKEN
+\`\`\`
+
+This URL parameter automatically sets a \`snarai_admin\` cookie in Next.js Middleware, persisting admin access for 30 days without needing a full authentication flow. Ensure you configure \`PANDORAS_DATAROOM_SECRET\` in your frontend \`.env\`.
+
+\`\`\`http
 GET /api/protocols/{slug}
 \`\`\`
 

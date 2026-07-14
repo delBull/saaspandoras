@@ -476,7 +476,7 @@ export function ResourceHubTab({ project }: { project: any }) {
                         
                         <div className="space-y-3 relative z-10">
                             <a 
-                                href={project.website ? `${project.website}/en/institutional` : `${baseUrl}/resources/${project.slug}/institutional`} 
+                                href={`/api/v1/projects/${project.slug}/admin/dataroom-redirect?website=${encodeURIComponent(project.website || '')}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="w-full flex items-center justify-between bg-black/40 hover:bg-black/60 border border-emerald-500/20 p-3 rounded-xl transition-colors text-sm text-emerald-100 cursor-pointer"
