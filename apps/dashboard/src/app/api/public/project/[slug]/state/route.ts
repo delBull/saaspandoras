@@ -383,6 +383,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             intent: d.documentType,
             objective: d.description || 'Documento Oficial',
             url: d.fileUrl,
+            rawCategory: d.category, // Added for exact Data Room grouping
+            rawStatus: d.status, // Added for Data Room badge logic
+            rawVerification: d.verificationStatus,
             contentPreview: [
                 { section: 'Nivel de Verificación', text: d.verificationStatus === 'NOT_VERIFIED' ? 'Pendiente' : d.verificationStatus }
             ]

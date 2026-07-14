@@ -8,6 +8,7 @@ import { PlusIcon, TrashIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ChatB
 export function ResourceHubTab({ project }: { project: any }) {
     const [isLoading, setIsLoading] = useState(false);
     const [showMdGuide, setShowMdGuide] = useState(false);
+    const [activeMdField, setActiveMdField] = useState<string | null>(null);
 
     // AI Assistant state — read from project.w2eConfig
     const w2e = typeof project.w2eConfig === 'string'
@@ -458,31 +459,66 @@ export function ResourceHubTab({ project }: { project: any }) {
                 </div>
             </div>
 
-            {/* Markdown Docs */}
-            <div className="bg-zinc-900/50 border border-[#D4A853]/20 rounded-2xl p-6 space-y-6 mt-8">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h4 className="text-base font-bold uppercase tracking-widest text-[#D4A853]">Documentos Nativos Dinámicos</h4>
-                        <p className="text-sm text-zinc-400 mt-1">Escribe o pega el contenido en formato Markdown. Estos documentos se generarán automáticamente en el portal del usuario con la identidad gráfica del proyecto, optimizados para lectura e impresión PDF.</p>
+            {/* Ecosistema Documental y Data Room */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+                
+                {/* Left Column: Data Room (New) */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-400 mb-2 flex items-center gap-2">
+                            <DocumentTextIcon className="w-4 h-4" />
+                            Due Diligence Data Room
+                        </h4>
+                        <p className="text-xs text-zinc-400 mb-6">
+                            Centro de transparencia institucional con documentación categorizada (Identity, Asset, Legal, Financial, etc).
+                        </p>
+                        
+                        <div className="space-y-3">
+                            <a 
+                                href={`${baseUrl}/resources/${project.slug}/institutional`} 
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full flex items-center justify-between bg-black/40 hover:bg-black/60 border border-emerald-500/20 p-3 rounded-xl transition-colors text-sm text-emerald-100"
+                            >
+                                <span className="font-bold">Ver Data Room Público</span>
+                                <ArrowTopRightOnSquareIcon className="w-4 h-4 text-emerald-500" />
+                            </a>
+                            <p className="text-[10px] text-zinc-500 text-center">
+                                Los documentos del Data Room se inyectan a nivel base de datos en `project_documents`.
+                            </p>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setShowMdGuide(true)}
-                        className="text-xs text-[#D4A853] border border-[#D4A853]/50 px-3 py-1.5 rounded-lg hover:bg-[#D4A853]/10 transition-colors"
-                    >
-                        Guía de Markdown
-                    </button>
                 </div>
 
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6">
-                    <h5 className="text-sm font-bold text-blue-400 mb-2">💡 ¿Cómo conectar estos documentos a tu Hub?</h5>
-                    <ol className="list-decimal list-inside text-sm text-blue-200/80 space-y-1">
-                        <li>Redacta el contenido en las cajas de Markdown de abajo.</li>
-                        <li>Haz clic en el botón <span className="text-blue-400 font-bold">Copiar URL</span> junto al documento que editaste.</li>
-                        <li>Sube a la sección <strong className="text-white">Documentación Oficial</strong> (arriba) y pega la URL en lugar de subir un archivo PDF.</li>
-                    </ol>
-                </div>
+                {/* Right Column: Documentos Nativos Dinámicos */}
+                <div className="lg:col-span-2 bg-zinc-900/50 border border-[#D4A853]/20 rounded-2xl p-6 space-y-6">
+                    <div className="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 className="text-base font-bold uppercase tracking-widest text-[#D4A853]">Documentos Nativos Dinámicos</h4>
+                            <p className="text-xs text-zinc-400 mt-1 max-w-lg">
+                                Escribe o pega el contenido en formato Markdown. Se renderizarán automáticamente en el portal del usuario con diseño optimizado para web y PDF.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowMdGuide(true)}
+                            className="text-xs text-[#D4A853] border border-[#D4A853]/50 px-3 py-1.5 rounded-lg hover:bg-[#D4A853]/10 transition-colors whitespace-nowrap"
+                        >
+                            Guía de Markdown
+                        </button>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex gap-3">
+                        <span className="text-blue-400 text-lg">💡</span>
+                        <div className="text-xs text-blue-200/80 space-y-1">
+                            <p className="font-bold text-blue-400 mb-1">¿Cómo conectarlos a tu Hub?</p>
+                            <p>1. Redacta el contenido Markdown abajo.</p>
+                            <p>2. Haz clic en <span className="text-blue-400 font-bold">Copiar URL</span> junto al documento.</p>
+                            <p>3. Pega esa URL en "Documentación Oficial" (arriba) en lugar de subir un PDF.</p>
+                        </div>
+                    </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {MD_FIELDS.map((field) => {
                         const isEn = field.key.endsWith('_en');
                         const locale = isEn ? 'en' : 'es';
@@ -491,29 +527,32 @@ export function ResourceHubTab({ project }: { project: any }) {
                         const docUrl = `${baseUrl}/resources/${project.slug}/docs/${routePath}?lang=${locale}`;
 
                         return (
-                        <div key={field.key} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-zinc-300 uppercase tracking-widest">{field.label}</label>
+                        <div key={field.key} className="flex items-center justify-between bg-black/40 border border-white/5 p-4 rounded-xl hover:border-[#D4A853]/30 transition-colors">
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold text-white">{field.label}</span>
+                                <span className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">MD Format</span>
+                            </div>
+                            <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => {
                                         navigator.clipboard.writeText(docUrl);
                                         toast.success('URL Dinámica copiada');
                                     }}
-                                    className="text-[10px] bg-blue-500/15 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 px-3 py-1 rounded transition-colors font-bold uppercase tracking-wider"
+                                    className="text-[10px] bg-blue-500/15 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg transition-colors font-bold uppercase tracking-wider"
                                 >
                                     Copiar URL
                                 </button>
+                                <button
+                                    onClick={() => setActiveMdField(field.key)}
+                                    className="text-[10px] bg-[#D4A853]/10 hover:bg-[#D4A853]/20 text-[#D4A853] border border-[#D4A853]/30 px-4 py-1.5 rounded-lg transition-colors font-bold uppercase tracking-wider"
+                                >
+                                    Editar
+                                </button>
                             </div>
-                            <textarea
-                                value={config.markdownDocs?.[field.key] || ''}
-                                onChange={(e) => updateMdDoc(field.key, e.target.value)}
-                                rows={8}
-                                className="w-full bg-black border border-white/10 rounded-xl p-4 text-sm font-mono focus:border-[#D4A853] focus:outline-none resize-y"
-                                placeholder={`Escribe aquí el contenido en Markdown para ${field.label}...`}
-                            />
                         </div>
                     )})}
                 </div>
+            </div>
             </div>
 
             {/* Modals */}
@@ -548,6 +587,49 @@ export function ResourceHubTab({ project }: { project: any }) {
                                 className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors"
                             >
                                 Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Markdown Editor Modal */}
+            {activeMdField && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 md:p-8">
+                    <div className="bg-zinc-900 border border-[#D4A853]/30 rounded-2xl p-6 w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="text-xl font-bold text-white">Editar Documento</h3>
+                                <p className="text-sm text-[#D4A853] uppercase tracking-widest mt-1">
+                                    {MD_FIELDS.find(f => f.key === activeMdField)?.label}
+                                </p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowMdGuide(true)}
+                                    className="text-xs text-zinc-400 hover:text-white transition-colors"
+                                >
+                                    Ver Guía Markdown
+                                </button>
+                            </div>
+                        </div>
+
+                        <textarea
+                            value={config.markdownDocs?.[activeMdField] || ''}
+                            onChange={(e) => updateMdDoc(activeMdField, e.target.value)}
+                            className="flex-1 w-full bg-black border border-white/10 rounded-xl p-6 text-sm font-mono focus:border-[#D4A853] focus:outline-none resize-none overflow-y-auto leading-relaxed text-zinc-300"
+                            placeholder={`Escribe aquí el contenido en Markdown...`}
+                        />
+
+                        <div className="mt-6 flex justify-between items-center">
+                            <p className="text-xs text-zinc-500">
+                                Los cambios no se guardan permanentemente hasta que presiones "Guardar Cambios" en el Hub.
+                            </p>
+                            <button
+                                onClick={() => setActiveMdField(null)}
+                                className="px-8 py-2.5 bg-[#D4A853] text-black text-sm font-bold rounded-xl hover:bg-yellow-400 transition-colors"
+                            >
+                                Listo
                             </button>
                         </div>
                     </div>
