@@ -307,6 +307,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const activePhase = activePhaseIndex !== -1 ? phases[activePhaseIndex] : phases[0];
     const nextPhase = phases[activePhaseIndex + 1] || null;
 
+    const requestUrl = new URL(req.url);
+    const unlockToken = requestUrl.searchParams.get('p_unlock');
+    const isAdminRequest = unlockToken && process.env.PANDORAS_DATAROOM_SECRET && unlockToken === process.env.PANDORAS_DATAROOM_SECRET;
+
     // 4.9 Parallel DB Queries for secondary data
     const [activities, activeProposals, user, ambassador, activeBriefings, activeDocuments] = await Promise.all([
         db.query.daoActivities.findMany({
@@ -338,7 +342,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             where: and(
                 eq(projectDocuments.projectId, project.id),
                 inArray(projectDocuments.visibility, ['PUBLIC', 'PARTNER', 'INVESTOR']),
-                eq(projectDocuments.status, 'AVAILABLE')
+                isAdminRequest ? undefined : eq(projectDocuments.status, 'AVAILABLE')
             ),
             orderBy: desc(projectDocuments.createdAt)
         }).catch(() => [])
