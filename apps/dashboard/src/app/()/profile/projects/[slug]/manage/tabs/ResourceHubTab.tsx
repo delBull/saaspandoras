@@ -465,21 +465,21 @@ export function ResourceHubTab({ project }: { project: any }) {
                 {/* Left Column: Data Room (New) */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-400 mb-2 flex items-center gap-2">
+                        <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                        <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-400 mb-2 flex items-center gap-2 relative z-10">
                             <DocumentTextIcon className="w-4 h-4" />
                             Due Diligence Data Room
                         </h4>
-                        <p className="text-xs text-zinc-400 mb-6">
+                        <p className="text-xs text-zinc-400 mb-6 relative z-10">
                             Centro de transparencia institucional con documentación categorizada (Identity, Asset, Legal, Financial, etc).
                         </p>
                         
-                        <div className="space-y-3">
+                        <div className="space-y-3 relative z-10">
                             <a 
-                                href={`${baseUrl}/resources/${project.slug}/institutional`} 
+                                href={project.website ? `${project.website}/en/institutional` : `${baseUrl}/resources/${project.slug}/institutional`} 
                                 target="_blank"
                                 rel="noreferrer"
-                                className="w-full flex items-center justify-between bg-black/40 hover:bg-black/60 border border-emerald-500/20 p-3 rounded-xl transition-colors text-sm text-emerald-100"
+                                className="w-full flex items-center justify-between bg-black/40 hover:bg-black/60 border border-emerald-500/20 p-3 rounded-xl transition-colors text-sm text-emerald-100 cursor-pointer"
                             >
                                 <span className="font-bold">Ver Data Room Público</span>
                                 <ArrowTopRightOnSquareIcon className="w-4 h-4 text-emerald-500" />
