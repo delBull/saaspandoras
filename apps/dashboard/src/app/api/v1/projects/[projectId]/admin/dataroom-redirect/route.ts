@@ -9,10 +9,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
     req: Request,
-    { params }: { params: Promise<{ slug: string }> }
+    { params }: { params: Promise<{ projectId: string }> }
 ) {
     try {
-        const { slug } = await params;
+        const { projectId } = await params;
+        const projectIdNum = parseInt(projectId);
         const url = new URL(req.url);
         let website = url.searchParams.get('website');
 
@@ -25,7 +26,7 @@ export async function GET(
 
         // Verify Project Ownership
         const project = await db.query.projects.findFirst({
-            where: eq(projects.slug, slug)
+            where: eq(projects.id, projectIdNum)
         });
 
         if (!project) {
@@ -42,7 +43,7 @@ export async function GET(
         
         if (!website) {
             // Fallback to Pandoras internal resource hub if no website provided
-            website = `https://dash.pandoras.finance/resources/${slug}`;
+            website = `https://dash.pandoras.finance/resources/${project.slug}`;
         }
         
         // Remove trailing slash if any
@@ -50,7 +51,7 @@ export async function GET(
 
         // Form the target URL
         const isSNaRai = website.includes('snarai');
-        const targetPath = isSNaRai ? '/en/institutional' : `/resources/${slug}/institutional`;
+        const targetPath = isSNaRai ? '/en/institutional' : `/resources/${project.slug}/institutional`;
         
         const redirectUrl = `${website}${targetPath}${secret ? `?p_unlock=${secret}` : ''}`;
 
