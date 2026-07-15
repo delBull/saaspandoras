@@ -2456,6 +2456,7 @@ export const ambassadors = pgTable("ambassadors", {
   // Verification
   emailVerified: boolean("email_verified").default(false).notNull(),
   verificationToken: varchar("verification_token", { length: 6 }),
+  verificationExpiresAt: timestamp("verification_expires_at", { withTimezone: true }),
   
   // Track where they came from
   origin: ambassadorOriginEnum("origin").default("pandoras").notNull(),

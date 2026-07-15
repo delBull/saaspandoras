@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { ambassadors } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { sendAmbassadorWelcomeEmail, sendAmbassadorOTPEmail } from '@/lib/email/ambassador-mailer';
+import { sendAmbassadorOTPEmail } from '@/lib/email/ambassador-mailer';
 import { projects } from '@/db/schema';
 import { withSecurity, isValidWalletAddress, isValidEmail, registerRateLimiter } from '@/lib/security-utils';
+import crypto from 'crypto';
 
 async function handler(req: Request) {
     const body = await req.json();
@@ -22,9 +23,10 @@ async function handler(req: Request) {
         return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 });
     }
 
+    const emailLower = email.toLowerCase().trim();
+
     // 🛡️ Input sanitization
     const sanitizedName = fullName.trim().replace(/[<>]/g, '').substring(0, 255);
-    const emailLower = email.toLowerCase().trim();
     const sanitizedPhone = phone?.trim().replace(/[<>]/g, '').substring(0, 50) || null;
     const sanitizedSocial = socialUrl?.trim().replace(/[<>]/g, '').substring(0, 255) || null;
 
@@ -36,8 +38,8 @@ async function handler(req: Request) {
         return NextResponse.json({ error: 'Nombre inválido' }, { status: 400 });
     }
 
-    if (walletAddress && !isValidWalletAddress(walletAddress)) {
-        return NextResponse.json({ error: 'Formato de wallet inválido' }, { status: 400 });
+    if (!walletAddress || !isValidWalletAddress(walletAddress)) {
+        return NextResponse.json({ error: 'Cuenta digital requerida. Conecta tu cuenta antes de registrarte.' }, { status: 400 });
     }
 
     // 1. Check if email already exists
@@ -63,7 +65,7 @@ async function handler(req: Request) {
     // 3. Generate unique referral code with project prefix (e.g., SNARAI-MARIO-1234)
     const namePart = sanitizedName.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '').substring(0, 8);
     const prefix = projectSlug ? `${projectSlug.toUpperCase().replace(/[^A-Z0-9]/g, '')}-` : '';
-    const randomNumbers = Math.floor(1000 + Math.random() * 9000);
+    const randomNumbers = crypto.randomInt(10000, 99999);
     let referralCode = `${prefix}${namePart}-${randomNumbers}`;
 
     // Ensure uniqueness
@@ -76,7 +78,7 @@ async function handler(req: Request) {
         if (!checkCode) {
             isUnique = true;
         } else {
-            referralCode = `${prefix}${namePart}-${Math.floor(1000 + Math.random() * 9000)}`;
+            referralCode = `${prefix}${namePart}-${crypto.randomInt(10000, 99999)}`;
             attempts++;
         }
     }
@@ -84,8 +86,9 @@ async function handler(req: Request) {
         return NextResponse.json({ error: 'Error generando código único, intente de nuevo' }, { status: 500 });
     }
 
-    // 4. Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // 4. Generate OTP (6 digits, cryptographically secure) with 15-minute expiry
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const verificationExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     // 5. Insert into database
     const [newAmbassador] = await db.insert(ambassadors).values({
@@ -93,13 +96,14 @@ async function handler(req: Request) {
         email: emailLower,
         phone: sanitizedPhone,
         socialUrl: sanitizedSocial,
-        walletAddress: walletAddress?.toLowerCase() || null,
+        walletAddress: walletAddress.toLowerCase(),
         referralCode,
         origin: origin as any,
         projectId: projectId ? Number(projectId) : null,
         status: 'APPLIED',
         emailVerified: false,
-        verificationToken: otp
+        verificationToken: otp,
+        verificationExpiresAt
     }).returning();
 
     if (!newAmbassador) {
@@ -112,6 +116,7 @@ async function handler(req: Request) {
         success: true,
         message: 'OTP enviado. Por favor verifica tu correo.',
         ambassadorId: newAmbassador.id,
+        referralCode: newAmbassador.referralCode,
         email: newAmbassador.email
     });
 }
