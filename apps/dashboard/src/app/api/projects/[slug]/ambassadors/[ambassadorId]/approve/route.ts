@@ -38,7 +38,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
             return NextResponse.json({ error: 'Ambassador not found for this project' }, { status: 404 });
         }
 
-        if (ambassador.status === 'active') {
+        if (['FOUNDER', 'TRAINING', 'ACCREDITED'].includes(ambassador.status)) {
             return NextResponse.json({ error: 'Ambassador is already active' }, { status: 400 });
         }
 
@@ -57,7 +57,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
         // Approve only after email succeeds
         await db.update(ambassadors)
-            .set({ status: 'active', updatedAt: new Date() })
+            .set({ status: 'FOUNDER', role: 'GROWTH_PARTNER', activationStep: 0, updatedAt: new Date() })
             .where(eq(ambassadors.id, ambassadorId));
 
         return NextResponse.json({ success: true, emailId: emailResult.id });

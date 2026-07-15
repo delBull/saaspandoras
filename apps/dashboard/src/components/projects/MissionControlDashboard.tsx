@@ -761,22 +761,22 @@ function AmbassadorsTab({ project }: { project: any }) {
                     <p className="text-lg">No hay gestores patrimoniales registrados en este proyecto.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 md:pb-0">
                     {ambassadors.map((a) => (
                         <div key={a.id} className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl relative overflow-hidden flex flex-col justify-between h-full">
                             {/* Glow */}
-                            <div className={`absolute -top-10 -right-10 w-32 h-32 blur-[40px] rounded-full pointer-events-none ${a.status === 'active' ? 'bg-emerald-500/10' : 'bg-yellow-500/10'}`} />
+                            <div className={`absolute -top-10 -right-10 w-32 h-32 blur-[40px] rounded-full pointer-events-none ${['FOUNDER', 'TRAINING', 'ACCREDITED'].includes(a.status) ? 'bg-emerald-500/10' : 'bg-yellow-500/10'}`} />
 
                             <div>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
                                         <UserIcon className="w-6 h-6 text-zinc-300" />
                                     </div>
-                                    <span className={`px-2 py-1 text-[10px] uppercase font-black rounded border ${a.status === 'active'
+                                    <span className={`px-2 py-1 text-[10px] uppercase font-black rounded border ${['FOUNDER', 'TRAINING', 'ACCREDITED'].includes(a.status)
                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                         : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
                                         }`}>
-                                        {a.status === 'active' ? 'Oficial' : 'Pendiente'}
+                                        {['FOUNDER', 'TRAINING', 'ACCREDITED'].includes(a.status) ? 'Oficial' : 'Pendiente'}
                                     </span>
                                 </div>
 
@@ -799,7 +799,7 @@ function AmbassadorsTab({ project }: { project: any }) {
                             </div>
 
                             <div className="mt-6 pt-4 border-t border-white/5">
-                                {a.status === 'active' ? (
+                                {['FOUNDER', 'TRAINING', 'ACCREDITED'].includes(a.status) ? (
                                     <div className="flex flex-col items-center p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                                         <div className="flex items-center gap-2 mb-2">
                                             <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
