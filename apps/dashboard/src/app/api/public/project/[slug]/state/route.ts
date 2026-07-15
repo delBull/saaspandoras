@@ -371,7 +371,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             intent: 'PANDORAS OS',
             objective: m.objective,
             url: `https://${apiKey?.startsWith('pk_live_') ? 'dash' : 'staging.dash'}.pandoras.finance/materials/${project.slug}/${m.id}`,
-            contentPreview: m.contentPreview
+            contentPreview: m.contentPreview,
+            rawCategory: (m as any).category || 'project_overview', // Ensure rawCategory exists so Data Room can sort it
+            rawStatus: 'AVAILABLE' // Ensure it passes Data Room filters
         }));
     }
 
