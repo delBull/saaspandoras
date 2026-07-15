@@ -341,7 +341,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         db.query.projectDocuments.findMany({
             where: and(
                 eq(projectDocuments.projectId, project.id),
-                inArray(projectDocuments.visibility, ['PUBLIC', 'PARTNER', 'INVESTOR']),
+                inArray(projectDocuments.visibility, ['PUBLIC', 'PARTNER', 'INVESTOR', 'REGISTERED_USER']),
                 isAdminRequest ? undefined : eq(projectDocuments.status, 'AVAILABLE')
             ),
             orderBy: desc(projectDocuments.createdAt)
