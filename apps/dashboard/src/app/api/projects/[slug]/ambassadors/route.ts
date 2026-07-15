@@ -26,8 +26,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         });
 
         return NextResponse.json(projectAmbassadors);
-    } catch (error) {
+    } catch (error: any) {
         console.error('[Get Ambassadors API Error]:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal Server Error', message: error?.message || String(error), stack: error?.stack }, { status: 500 });
     }
 }

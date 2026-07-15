@@ -71,6 +71,13 @@
       "when": 1783660183214,
       "tag": "0009_breezy_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784145907042,
+      "tag": "0010_loud_virginia_dare",
+      "breakpoints": true
     }
   ]
 }
