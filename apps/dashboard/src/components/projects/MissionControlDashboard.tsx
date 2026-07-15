@@ -800,9 +800,15 @@ function AmbassadorsTab({ project }: { project: any }) {
 
                             <div className="mt-6 pt-4 border-t border-white/5">
                                 {a.status === 'active' ? (
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase font-black text-zinc-500 mb-1">Código de Referido</span>
-                                        <span className="font-mono text-emerald-400 text-lg">{a.referralCode}</span>
+                                    <div className="flex flex-col items-center p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
+                                            <span className="text-sm font-black text-emerald-500 uppercase tracking-widest">Aprobado</span>
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[10px] uppercase font-black text-emerald-500/70 mb-1">Código de Referido</span>
+                                            <span className="font-mono text-emerald-400 text-lg font-bold">{a.referralCode}</span>
+                                        </div>
                                     </div>
                                 ) : (
                                     <button
