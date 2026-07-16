@@ -378,6 +378,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     const formattedDocuments = [
+        ...staticMaterials,
         ...(activeDocuments || []).map(d => ({
             id: d.id.toString(),
             title: d.title,
