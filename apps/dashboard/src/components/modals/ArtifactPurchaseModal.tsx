@@ -452,7 +452,7 @@ export default function ArtifactPurchaseModal({
                                         <div className="flex flex-col items-end text-right">
                                             <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">Tras Compra</span>
                                             <span className={`text-sm font-black italic uppercase leading-none ${progression.isUnlockMoment ? 'text-emerald-400' : 'text-purple-400'}`}>
-                                                {progression.isUnlockMoment ? progression.nextTier?.name : progression.currentTier?.name || 'Protocol Member'}
+                                                {progression.isUnlockMoment ? progression.tierAfterPurchase?.name : progression.currentTier?.name || 'Protocol Member'}
                                             </span>
                                         </div>
                                     </div>
@@ -494,7 +494,7 @@ export default function ArtifactPurchaseModal({
                                                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Beneficios Desbloqueados:</span>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                {(progression.nextTier?.perks || []).slice(0, 2).map((perk, i) => (
+                                                {(progression.tierAfterPurchase?.perks || []).slice(0, 2).map((perk, i) => (
                                                     <div key={i} className="px-2 py-1 bg-emerald-500/10 rounded-lg text-[9px] font-bold text-emerald-200 border border-emerald-500/20">
                                                         {perk}
                                                     </div>

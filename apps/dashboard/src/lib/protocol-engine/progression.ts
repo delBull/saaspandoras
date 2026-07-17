@@ -16,6 +16,7 @@ export interface ProgressionState {
     userArtifactCount: number;
     currentTier: Tier | null;
     nextTier: Tier | null;
+    tierAfterPurchase: Tier | null;
     progressPercentage: number;
     unlockDelta: number;
     urgencyLevel: "low" | "medium" | "high";
@@ -85,6 +86,7 @@ export class ProgressionEngine {
             userArtifactCount: currentCount,
             currentTier,
             nextTier,
+            tierAfterPurchase,
             progressPercentage,
             unlockDelta,
             urgencyLevel,
