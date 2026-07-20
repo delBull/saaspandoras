@@ -1,7 +1,6 @@
-import { db } from "@/db";
-import { projects, projectEvents } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import { ProjectRepository } from "@/lib/domain/project-repository";
+import { EventRepository } from "@/lib/domain/event-repository";
 import { Playfair_Display, Inter } from "next/font/google";
 import Link from "next/link";
 import { Metadata } from "next";
@@ -12,7 +11,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "600"] });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const slug = (await params).slug;
-    const [project] = await db.select({ title: projects.title }).from(projects).where(eq(projects.slug, slug));
+    const project = await ProjectRepository.findBySlug(slug);
     
     if (!project) return { title: 'Resource Hub' };
     
@@ -26,7 +25,7 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
     const slug = (await params).slug;
     
     // ... inside the component
-    const [project] = await db.select().from(projects).where(eq(projects.slug, slug));
+    const project = await ProjectRepository.findBySlug(slug);
     
     if (!project) {
         notFound();
@@ -68,16 +67,8 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
     }
 
     // Find if there is an active event for the project
-    const activeEvents = await db.select()
-        .from(projectEvents)
-        .where(
-            and(
-                eq(projectEvents.projectId, project.id),
-                eq(projectEvents.isActive, true)
-            )
-        )
-        .orderBy(desc(projectEvents.createdAt))
-        .limit(1);
+    const allEvents = await EventRepository.getEventsByProject(project.id);
+    const activeEvents = allEvents.filter(e => e.isActive);
 
     const activeEvent = activeEvents.length > 0 ? activeEvents[0] : null;
 

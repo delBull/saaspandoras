@@ -12,6 +12,7 @@ import { eq, desc, sql, and } from "drizzle-orm";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { shortlinks, campaignTrackers } from "@/db/schema";
 
 /**
  * Persists a content draft with its "Content DNA".
@@ -100,6 +101,57 @@ export async function launchCampaign(data: {
   } catch (error) {
     console.error("Error launching campaign:", error);
     return { success: false, error: "Failed to launch campaign" };
+  }
+}
+
+/**
+ * Creates a tracker link (shortlink) for a campaign.
+ */
+export async function createCampaignTracker(data: {
+  campaignId: number;
+  slug: string;
+  destinationUrl: string;
+  title?: string;
+  description?: string;
+  source?: string;
+  medium?: string;
+  assetId?: number;
+}) {
+  try {
+    const { session } = await getAuth(await headers());
+    if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
+
+    // 1. Create shortlink
+    const [shortlink] = await db.insert(shortlinks).values({
+      slug: data.slug,
+      destinationUrl: data.destinationUrl,
+      title: data.title || "Campaign Tracker",
+      description: data.description || `Tracker for campaign ${data.campaignId}`,
+      type: "redirect",
+      isActive: true,
+      assetId: data.assetId,
+      createdBy: session.address
+    }).returning();
+
+    if (!shortlink) {
+      throw new Error("Failed to create shortlink");
+    }
+
+    // 2. Bind to Campaign Trackers
+    await db.insert(campaignTrackers).values({
+      campaignId: data.campaignId,
+      shortlinkId: shortlink.id
+    });
+
+    revalidatePath('/admin/marketing');
+    return { success: true, shortlink };
+  } catch (error: any) {
+    console.error("Error creating campaign tracker:", error);
+    // Return explicit error if slug exists
+    if (error.code === '23505' || error.message.includes('unique')) {
+      return { success: false, error: "El slug ya está en uso. Intenta con otro." };
+    }
+    return { success: false, error: "Error al crear el tracker" };
   }
 }
 
@@ -239,4 +291,69 @@ export async function getWinningPatterns(projectId: number) {
     console.error("Error fetching winning patterns:", error);
     return { success: false, patterns: [] };
   }
+}
+
+// ==========================================
+// GOC Mission Control Actions
+// ==========================================
+
+export async function createTrueCampaign(data: { name: string; projectId: number; campaignType?: string; scope?: string; budget?: string }) {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            throw new Error("Unauthorized");
+        }
+
+        const { name, projectId, campaignType = 'user_acquisition', scope = 'b2c', budget } = data;
+
+        const [newCampaign] = await db.insert(campaigns).values({
+            name,
+            projectId,
+            campaignType: campaignType as any,
+            scope: scope as any,
+            budget: budget ? budget : null,
+            source: 'manual', // since it's created from GOC
+            status: 'active',
+        }).returning();
+
+        if (!newCampaign) {
+            throw new Error("Failed to create campaign");
+        }
+
+        // Initialize Stats Cache
+        await db.insert(campaignStats).values({
+            campaignId: newCampaign.id,
+            impressions: 0,
+            clicks: 0,
+            leads: 0,
+            purchases: 0,
+            revenue: "0",
+            score: "0"
+        });
+
+        revalidatePath('/admin/marketing');
+        return { success: true, campaign: newCampaign };
+    } catch (error) {
+        console.error("Error creating true campaign:", error);
+        return { success: false, error: "Failed to create campaign" };
+    }
+}
+
+export async function toggleTrueCampaignStatus(id: number, status: 'active' | 'paused' | 'archived') {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            throw new Error("Unauthorized");
+        }
+
+        await db.update(campaigns)
+            .set({ status })
+            .where(eq(campaigns.id, id));
+            
+        revalidatePath('/admin/marketing');
+        return { success: true };
+    } catch (error) {
+        console.error("Error toggling true campaign:", error);
+        return { success: false, error: "Failed to update campaign status" };
+    }
 }

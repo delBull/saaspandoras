@@ -688,6 +688,7 @@ export const shortlinks = pgTable("shortlinks", {
   // Smart QR / Landing Page Features
   type: shortlinkTypeEnum("type").default("redirect").notNull(),
   landingConfig: jsonb("landing_config"), // { logo, slogan, links: [], social: {}, footer: {} }
+  assetId: integer("asset_id").references(() => platformAssets.id), // Link to a platform asset (Sprint 5)
 
   isActive: boolean("is_active").default(true).notNull(),
   createdBy: varchar("created_by", { length: 255 }).references(() => users.walletAddress),
@@ -2569,22 +2570,22 @@ export const eventRegistrationStatusEnum = pgEnum("event_registration_status", [
   "ATTENDED"
 ]);
 
-export const projectEvents = pgTable("project_events", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").references(() => projects.id).notNull(),
-  type: projectEventTypeEnum("type").default("MACRO").notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  date: timestamp("date", { withTimezone: true }),
-  location: varchar("location", { length: 255 }),
-  config: jsonb("config").default({}), // Whatsapp, max capacity, ranges, etc
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+// export const projectEvents = pgTable("project_events", {
+//   id: serial("id").primaryKey(),
+//   projectId: integer("project_id").references(() => projects.id).notNull(),
+//   type: projectEventTypeEnum("type").default("MACRO").notNull(),
+//   title: varchar("title", { length: 255 }).notNull(),
+//   date: timestamp("date", { withTimezone: true }),
+//   location: varchar("location", { length: 255 }),
+//   config: jsonb("config").default({}), 
+//   isActive: boolean("is_active").default(true),
+//   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+//   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+// });
 
 export const eventRegistrations = pgTable("event_registrations", {
   id: serial("id").primaryKey(),
-  eventId: integer("event_id").references(() => projectEvents.id).notNull(),
+  eventId: integer("event_id").references(() => platformAssets.id).notNull(),
   projectId: integer("project_id").references(() => projects.id).notNull(), // Cross-reference for easy marketing queries
   nombre: varchar("nombre", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
@@ -2596,18 +2597,18 @@ export const eventRegistrations = pgTable("event_registrations", {
   registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const projectEventsRelations = relations(projectEvents, ({ one, many }) => ({
-  project: one(projects, {
-    fields: [projectEvents.projectId],
-    references: [projects.id],
-  }),
-  registrations: many(eventRegistrations),
-}));
+// export const projectEventsRelations = relations(projectEvents, ({ one, many }) => ({
+//   project: one(projects, {
+//     fields: [projectEvents.projectId],
+//     references: [projects.id],
+//   }),
+//   registrations: many(eventRegistrations),
+// }));
 
 export const eventRegistrationsRelations = relations(eventRegistrations, ({ one }) => ({
-  event: one(projectEvents, {
+  event: one(platformAssets, {
     fields: [eventRegistrations.eventId],
-    references: [projectEvents.id],
+    references: [platformAssets.id],
   }),
   project: one(projects, {
     fields: [eventRegistrations.projectId],
@@ -2615,7 +2616,7 @@ export const eventRegistrationsRelations = relations(eventRegistrations, ({ one 
   }),
 }));
 
-export type ProjectEvent = typeof projectEvents.$inferSelect;
+// export type ProjectEvent = typeof projectEvents.$inferSelect;
 export type EventRegistration = typeof eventRegistrations.$inferSelect;
 
 // --- PANDORA KNOWLEDGE LAYER (BRIEFING ENGINE) ---
@@ -2709,4 +2710,107 @@ export const projectDocuments = pgTable("project_documents", {
 }, (table) => ({
   projectIndex: index("project_documents_project_idx").on(table.projectId),
   visibilityIndex: index("project_documents_visibility_idx").on(table.visibility)
+}));
+
+// --- PLATFORM ASSET REGISTRY ---
+export const platformAssetTypeEnum = pgEnum("platform_asset_type", [
+  "project_event",
+  "document",
+  "media",
+  "calculator",
+  "landing",
+  "podcast",
+  "keynote",
+  "meeting",
+  "link",
+  "other"
+]);
+
+export const platformAssets = pgTable("platform_assets", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  type: platformAssetTypeEnum("type").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  
+  // Exclusive Arcs for strict referential integrity
+  eventId: integer("event_id"), // Mantenemos la columna pero ya no es FK hacia projectEvents. Será FK a platformAssets internamente? No, platformAssets.id ES el evento.
+  // Wait, if platformAssets.id IS the event, then we don't need eventId in platformAssets. Let's comment it out.
+  // eventId: integer("event_id").references(() => projectEvents.id),
+  // future: documentId, mediaId, etc.
+  
+  // Metadatos Core
+  version: varchar("version", { length: 50 }),
+  description: text("description"), // Markdown
+  tags: jsonb("tags"), // e.g. ["Founder", "Investor"]
+  
+  // Data Externa
+  url: text("url"), // Link to Drive, YouTube, Zoom, etc.
+  thumbnailUrl: text("thumbnail_url"),
+  
+  // Analítica Integrada
+  views: integer("views").default(0).notNull(),
+  clicks: integer("clicks").default(0).notNull(),
+  conversions: integer("conversions").default(0).notNull(),
+  linkedCampaignCount: integer("linked_campaign_count").default(0).notNull(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+
+  // Metadatos Extendidos Strictos
+  metadata: jsonb("metadata").default({}),
+
+  status: varchar("status", { length: 50 }).default("active").notNull(),
+  visibility: varchar("visibility", { length: 50 }).default("public").notNull(),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.walletAddress),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const platformAssetsRelations = relations(platformAssets, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [platformAssets.projectId],
+    references: [projects.id],
+  }),
+//   event: one(projectEvents, {
+//     fields: [platformAssets.eventId],
+//     references: [projectEvents.id],
+//   }),
+  campaigns: many(campaignAssets),
+}));
+
+// --- CAMPAIGN ASSETS (BRIDGE) ---
+export const campaignAssets = pgTable("campaign_assets", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").references(() => campaigns.id).notNull(),
+  assetId: integer("asset_id").references(() => platformAssets.id).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const campaignAssetsRelations = relations(campaignAssets, ({ one }) => ({
+  campaign: one(campaigns, {
+    fields: [campaignAssets.campaignId],
+    references: [campaigns.id],
+  }),
+  asset: one(platformAssets, {
+    fields: [campaignAssets.assetId],
+    references: [platformAssets.id],
+  }),
+}));
+
+// --- CAMPAIGN TRACKERS (BRIDGE) ---
+export const campaignTrackers = pgTable("campaign_trackers", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").references(() => campaigns.id).notNull(),
+  shortlinkId: integer("shortlink_id").references(() => shortlinks.id).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const campaignTrackersRelations = relations(campaignTrackers, ({ one }) => ({
+  campaign: one(campaigns, {
+    fields: [campaignTrackers.campaignId],
+    references: [campaigns.id],
+  }),
+  shortlink: one(shortlinks, {
+    fields: [campaignTrackers.shortlinkId],
+    references: [shortlinks.id],
+  }),
 }));

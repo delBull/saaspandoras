@@ -6,6 +6,7 @@ import { CalendarIcon, UserGroupIcon, PlusIcon, LinkIcon, ClipboardDocumentIcon,
 import { toast } from 'sonner';
 import { AvailabilityScheduler, defaultAvailability } from '@/components/shared/AvailabilityScheduler';
 import type { AvailabilityConfig } from '@/components/shared/AvailabilityScheduler';
+import { getProjectEvents, createProjectEvent, updateProjectEvent, deleteProjectEvent } from '@/actions/events';
 import { ProjectQRManager } from '@/components/admin/ProjectQRManager';
 
 interface ProjectEvent {
@@ -118,13 +119,14 @@ export function EventsTab({ project }: { project: any }) {
 
     // Load existing events
     useEffect(() => {
-        fetch(`/api/v1/projects/${project.id}/events`)
-            .then(r => r.json())
-            .then(data => {
-                if (Array.isArray(data)) setEvents(data);
-            })
-            .catch(() => {})
-            .finally(() => setIsLoadingEvents(false));
+        const fetchEvents = async () => {
+            const res = await getProjectEvents(project.id);
+            if (res.success && res.events) {
+                setEvents(res.events as any[]);
+            }
+            setIsLoadingEvents(false);
+        };
+        fetchEvents();
     }, [project.id]);
 
     const handleSaveCalendar = async () => {
@@ -155,7 +157,8 @@ export function EventsTab({ project }: { project: any }) {
         }
         try {
             setIsCreatingEvent(true);
-            const dateTime = newEvent.date && newEvent.time ? `${newEvent.date}T${newEvent.time}:00` : null;
+            const dateTimeStr = newEvent.date && newEvent.time ? `${newEvent.date}T${newEvent.time}:00` : null;
+            const dateTime = dateTimeStr ? new Date(dateTimeStr) : null;
             
             const payload = {
                 title: newEvent.title,
@@ -174,25 +177,18 @@ export function EventsTab({ project }: { project: any }) {
                 }
             };
 
-            const url = editingEvent 
-                ? `/api/v1/projects/${project.id}/events/${editingEvent}`
-                : `/api/v1/projects/${project.id}/events`;
-
-            const method = editingEvent ? 'PUT' : 'POST';
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) throw new Error();
-            const savedEvent = await res.json();
+            let savedEvent: any;
             
             if (editingEvent) {
-                setEvents(prev => prev.map(e => e.id === savedEvent.id ? { ...savedEvent, registrations: (e as any).registrations } : e));
+                const res = await updateProjectEvent(editingEvent, payload);
+                if (!res.success) throw new Error();
+                savedEvent = res.event;
+                setEvents(prev => prev.map(e => e.id === savedEvent.id ? { ...savedEvent, registrations: (e as any).registrations } as any : e));
             } else {
-                setEvents(prev => [savedEvent, ...prev]);
+                const res = await createProjectEvent({ projectId: project.id, ...payload });
+                if (!res.success) throw new Error();
+                savedEvent = res.event;
+                setEvents(prev => [savedEvent, ...prev] as any[]);
             }
             
             setNewEvent({ title: '', type: 'MACRO', date: '', time: '', location: '', maxCapacity: 20, durationMinutes: 45, bufferMinutes: 15, minAdvanceHours: 24, maxDaysInFuture: 14, mapsLink: '', meetingType: 'PHYSICAL', availability: defaultAvailability as AvailabilityConfig });

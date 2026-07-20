@@ -1,13 +1,11 @@
-
-import { db } from "@/db";
-import { marketingCampaigns, marketingLeads } from "@/db/schema";
-import { desc } from "drizzle-orm";
-import { MarketingHeaderActions, MarketingCampaignList } from "@/app/()/admin/marketing/DashboardClient";
+import { MarketingDashboardTabs } from "@/app/()/admin/marketing/DashboardClient";
 import { MarketingAnalytics } from "@/components/admin/marketing/MarketingAnalytics";
 import { AdminAuthGuard } from "@/components/admin/AdminAuthGuard";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
+import { CampaignRepository } from "@/lib/domain/campaign-repository";
+import { LeadRepository } from "@/lib/domain/lead-repository";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +16,13 @@ export default async function MarketingAdminPage() {
         return <UnauthorizedAccess authError="Server-Side Verification Failed" />;
     }
 
-    const campaigns = await db.select().from(marketingCampaigns).orderBy(desc(marketingCampaigns.createdAt));
-    const leads = await db.select().from(marketingLeads);
+    // Fetch True Campaigns (The Aggregate Root)
+    const allCampaigns = await CampaignRepository.findAllCampaigns();
+    
+    // Fetch Automation Sequences (previously named marketingCampaigns)
+    const automationSequences = await CampaignRepository.findAllAutomations();
+    
+    const leads = await LeadRepository.findAllLeads();
 
     return (
         <AdminAuthGuard>
@@ -36,22 +39,23 @@ export default async function MarketingAdminPage() {
 
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Marketing Suite</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">Growth Operations Center</h1>
                         <p className="text-muted-foreground mt-2">
-                            Gestiona campañas de correo y WhatsApp.
+                            Mission Control: Gestiona campañas comerciales, automatizaciones y embudos.
                         </p>
-                    </div>
-                    {/* Header Actions - Aligned Right */}
-                    <div className="flex gap-2">
-                        <MarketingHeaderActions />
                     </div>
                 </div>
 
                 {/* Analytics Dashboard */}
                 <MarketingAnalytics leads={leads} />
 
-                {/* Main Content - Full Width Grid */}
-                <MarketingCampaignList initialCampaigns={campaigns} />
+                {/* Main Content - Tabs */}
+                <div className="mt-8">
+                    <MarketingDashboardTabs 
+                        initialCampaigns={allCampaigns} 
+                        initialAutomations={automationSequences} 
+                    />
+                </div>
             </div>
         </AdminAuthGuard>
     );

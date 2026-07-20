@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { projectEvents, projects, eventRegistrations } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { ProjectRepository } from "@/lib/domain/project-repository";
+import { EventRepository } from "@/lib/domain/event-repository";
+import { EventRegistrationRepository } from "@/lib/domain/event-registration-repository";
 import { notFound } from "next/navigation";
 import { Playfair_Display, Inter } from "next/font/google";
 import { EventRegistrationForm } from "./EventRegistrationForm";
@@ -14,19 +14,14 @@ const inter = Inter({ subsets: ["latin"], weight: ["200", "300", "400", "600"] }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string, eventId: string }> }): Promise<Metadata> {
     const { slug, eventId: eventIdStr } = await params;
-    const [project] = await db.select({ id: projects.id, title: projects.title }).from(projects).where(eq(projects.slug, slug));
+    const project = await ProjectRepository.findBySlug(slug);
     
     if (!project) return { title: 'Private Briefing' };
     
     let eventTitle = 'Private Briefing';
     try {
-        const events = await db.select({ title: projectEvents.title }).from(projectEvents).where(
-            and(
-                eq(projectEvents.projectId, project.id),
-                eq(projectEvents.id, Number(eventIdStr))
-            )
-        );
-        if (events.length > 0) eventTitle = events[0]!.title;
+        const event = await EventRepository.findByProjectIdAndId(project.id, Number(eventIdStr));
+        if (event) eventTitle = event.title;
     } catch(e) {}
     
     return {
@@ -38,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function EventLandingPage({ params }: { params: Promise<{ slug: string, eventId: string }> }) {
     const { slug, eventId: eventIdStr } = await params;
     
-    const [project] = await db.select().from(projects).where(eq(projects.slug, slug));
+    const project = await ProjectRepository.findBySlug(slug);
     if (!project) {
         notFound();
     }
@@ -47,21 +42,10 @@ export default async function EventLandingPage({ params }: { params: Promise<{ s
     let event = null;
     let registrationsCount = 0;
     try {
-        const events = await db.select().from(projectEvents).where(
-            and(
-                eq(projectEvents.projectId, project.id),
-                eq(projectEvents.id, Number(eventIdStr))
-            )
-        );
-        if (events.length > 0) {
-            event = events[0]!;
-            const regs = await db.select().from(eventRegistrations).where(
-                and(
-                    eq(eventRegistrations.eventId, event.id),
-                    eq(eventRegistrations.status, 'CONFIRMED')
-                )
-            );
-            registrationsCount = regs.length;
+        const ev = await EventRepository.findByProjectIdAndId(project.id, Number(eventIdStr));
+        if (ev) {
+            event = ev;
+            registrationsCount = await EventRegistrationRepository.countConfirmedForMacroEvent(event.id);
         }
     } catch (e) {
         // Table probably doesn't exist yet, we use fallback data

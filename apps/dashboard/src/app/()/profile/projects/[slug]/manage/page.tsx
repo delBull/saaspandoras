@@ -1,7 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { ProjectRepository } from "@/lib/domain/project-repository";
 // import { ProjectFounderDashboard } from "@/components/founders/ProjectFounderDashboard"; // Will create this next
 import ProjectFounderDashboard from "./dashboard-client"; // Local co-location for now
 
@@ -9,9 +7,7 @@ export default async function ManageProjectPage({ params }: { params: Promise<{ 
     const { slug } = await params;
 
     // Fetch Project by Slug
-    const project = await db.query.projects.findFirst({
-        where: eq(projects.slug, slug),
-    });
+    const project = await ProjectRepository.findBySlug(slug);
 
     if (!project) {
         notFound();

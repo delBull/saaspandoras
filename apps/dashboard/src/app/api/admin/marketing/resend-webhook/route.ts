@@ -1,8 +1,7 @@
 import crypto from 'crypto';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { emailMetrics } from '@/db/schema';
+import { EmailMetricsRepository } from '@/lib/domain/email-metrics-repository';
 
 // Resend Webhook Security
 const WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET;
@@ -200,24 +199,7 @@ async function handleEmailDelivered(event: ResendWebhookEvent) {
 
     console.log(`✅ Email delivered: ${email_id} to ${recipient}`);
 
-    await db.insert(emailMetrics)
-      .values({
-        emailId: email_id,
-        type: audienceTag,
-        status: 'delivered',
-        recipient: recipient,
-        emailSubject: emailSubject,
-        deliveredAt: new Date(),
-        metadata: event
-      })
-      .onConflictDoUpdate({
-        target: emailMetrics.emailId,
-        set: {
-          status: 'delivered',
-          deliveredAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+    await EmailMetricsRepository.upsertDelivery(email_id, audienceTag, recipient, emailSubject, event);
 
   } catch (error) {
     console.error('Error handling email delivered:', error);
@@ -235,25 +217,7 @@ async function handleEmailOpened(event: ResendWebhookEvent) {
 
     console.log(`👁️ Email opened: ${email_id} by ${recipient} from ${ip}`);
 
-    await db.insert(emailMetrics)
-      .values({
-        emailId: email_id,
-        type: audienceTag,
-        status: 'opened',
-        recipient: recipient,
-        openedAt: new Date(),
-        userAgent: user_agent,
-        ipAddress: ip,
-        metadata: event
-      })
-      .onConflictDoUpdate({
-        target: emailMetrics.emailId,
-        set: {
-          status: 'opened', // Update status to reflect interaction
-          openedAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+    await EmailMetricsRepository.upsertOpen(email_id, audienceTag, recipient, user_agent, ip, event);
 
   } catch (error) {
     console.error('Error handling email opened:', error);
@@ -271,23 +235,7 @@ async function handleEmailClicked(event: ResendWebhookEvent) {
 
     console.log(`👆 Email clicked: ${email_id} - ${clickedUrl} by ${recipient}`);
 
-    await db.insert(emailMetrics)
-      .values({
-        emailId: email_id,
-        status: 'clicked',
-        recipient: recipient,
-        clickedUrl: clickedUrl,
-        clickedAt: new Date(),
-        metadata: event
-      })
-      .onConflictDoUpdate({
-        target: emailMetrics.emailId,
-        set: {
-          clickedUrl: clickedUrl,
-          clickedAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+    await EmailMetricsRepository.upsertClick(email_id, recipient, clickedUrl, event);
 
   } catch (error) {
     console.error('Error handling email clicked:', error);
@@ -304,22 +252,7 @@ async function handleEmailBounced(event: ResendWebhookEvent) {
 
     console.log(`❌ Email bounced: ${email_id} to ${recipient}`);
 
-    await db.insert(emailMetrics)
-      .values({
-        emailId: email_id,
-        status: 'bounced',
-        recipient: recipient,
-        bouncedAt: new Date(),
-        metadata: event
-      })
-      .onConflictDoUpdate({
-        target: emailMetrics.emailId,
-        set: {
-          status: 'bounced',
-          bouncedAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+    await EmailMetricsRepository.upsertBounce(email_id, recipient, event);
 
   } catch (error) {
     console.error('Error handling email bounced:', error);
@@ -336,22 +269,7 @@ async function handleEmailComplained(event: ResendWebhookEvent) {
 
     console.log(`🚨 Email complaint: ${email_id} marked as spam by ${recipient}`);
 
-    await db.insert(emailMetrics)
-      .values({
-        emailId: email_id,
-        status: 'complained',
-        recipient: recipient,
-        complaintAt: new Date(),
-        metadata: event
-      })
-      .onConflictDoUpdate({
-        target: emailMetrics.emailId,
-        set: {
-          status: 'complained',
-          complaintAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+    await EmailMetricsRepository.upsertComplaint(email_id, recipient, event);
 
   } catch (error) {
     console.error('Error handling email complaint:', error);
@@ -368,22 +286,7 @@ async function handleEmailSpam(event: ResendWebhookEvent) {
 
     console.log(`🚫 Email marked as spam: ${email_id} by ${recipient}`);
 
-    await db.insert(emailMetrics)
-      .values({
-        emailId: email_id,
-        status: 'spam',
-        recipient: recipient,
-        complaintAt: new Date(),
-        metadata: event
-      })
-      .onConflictDoUpdate({
-        target: emailMetrics.emailId,
-        set: {
-          status: 'spam',
-          complaintAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
+    await EmailMetricsRepository.upsertSpam(email_id, recipient, event);
 
   } catch (error) {
     console.error('Error handling email spam:', error);

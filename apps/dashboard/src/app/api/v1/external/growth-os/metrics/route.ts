@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
-import { db } from "@/db";
-import { marketingLeads, marketingLeadEvents, marketingIdentities, projects } from "@/db/schema";
-import { eq, sql, and, gte, desc, count, inArray } from "drizzle-orm";
+import { GrowthMetricsRepository } from "@/lib/domain/growth-metrics-repository";
 
 export const dynamic = "force-dynamic";
 
@@ -24,66 +22,12 @@ export async function GET(req: NextRequest) {
     const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const last7d  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const totalLeads   = (await db.select({ count: sql<number>`count(*)::int` }).from(marketingLeads).where(eq(marketingLeads.isDeleted, false)))[0] ?? { count: 0 };
-    const newLeads24h  = (await db.select({ count: sql<number>`count(*)::int` }).from(marketingLeads).where(and(eq(marketingLeads.isDeleted, false), gte(marketingLeads.createdAt, last24h))))[0] ?? { count: 0 };
-    const newLeads7d   = (await db.select({ count: sql<number>`count(*)::int` }).from(marketingLeads).where(and(eq(marketingLeads.isDeleted, false), gte(marketingLeads.createdAt, last7d))))[0] ?? { count: 0 };
-    const hotLeads     = (await db.select({ count: sql<number>`count(*)::int` }).from(marketingLeads).where(and(eq(marketingLeads.isDeleted, false), eq(marketingLeads.quality, "high"))))[0] ?? { count: 0 };
-    const convertedLeads = (await db.select({ count: sql<number>`count(*)::int` }).from(marketingLeads).where(and(eq(marketingLeads.isDeleted, false), eq(marketingLeads.status, "converted"))))[0] ?? { count: 0 };
-
-    // -- QUALITY BREAKDOWN --
-    const qualityBreakdown = await db
-      .select({
-        quality: marketingLeads.quality,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(marketingLeads)
-      .where(eq(marketingLeads.isDeleted, false))
-      .groupBy(marketingLeads.quality);
-
-    // -- SOURCE BREAKDOWN (Top sources from leads this month) --
-    const sourcesRaw = await db
-      .select({
-        source: marketingLeads.origin,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(marketingLeads)
-      .where(and(
-        eq(marketingLeads.isDeleted, false),
-        gte(marketingLeads.createdAt, last30d)
-      ))
-      .groupBy(marketingLeads.origin)
-      .orderBy(desc(sql<number>`count(*)`))
-      .limit(10);
-
-    // -- STATUS BREAKDOWN --
-    const statusBreakdown = await db
-      .select({
-        status: marketingLeads.status,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(marketingLeads)
-      .where(eq(marketingLeads.isDeleted, false))
-      .groupBy(marketingLeads.status);
-
-    // -- INTENT BREAKDOWN --
-    const intentBreakdown = await db
-      .select({
-        intent: marketingLeads.intent,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(marketingLeads)
-      .where(eq(marketingLeads.isDeleted, false))
-      .groupBy(marketingLeads.intent);
-
-    // -- NEWSLETTER SUBSCRIBERS --
-    const { newsletterSubscribers } = await import("@/db/schema");
-    const newsletterTotal     = (await db.select({ count: sql<number>`count(*)::int` }).from(newsletterSubscribers))[0] ?? { count: 0 };
-    const newsletterConfirmed = (await db.select({ count: sql<number>`count(*)::int` }).from(newsletterSubscribers).where(eq(newsletterSubscribers.isConfirmed, true)))[0] ?? { count: 0 };
-    const newsletterNew24h    = (await db.select({ count: sql<number>`count(*)::int` }).from(newsletterSubscribers).where(gte(newsletterSubscribers.createdAt, last24h)))[0] ?? { count: 0 };
+    const leadsMetrics = await GrowthMetricsRepository.getLeadsMetrics(last24h, last7d, last30d);
+    const newsletterMetrics = await GrowthMetricsRepository.getNewsletterMetrics(last24h);
 
     // -- CONVERSION RATE --
-    const total = totalLeads.count || 0;
-    const converted = convertedLeads.count || 0;
+    const total = leadsMetrics.total;
+    const converted = leadsMetrics.converted;
     const conversionRate = total > 0 ? ((converted / total) * 100).toFixed(2) : "0.00";
 
     return NextResponse.json({
@@ -98,31 +42,31 @@ export async function GET(req: NextRequest) {
       growth_os: {
         leads: {
           total: total,
-          new_24h: newLeads24h.count,
-          new_7d: newLeads7d.count,
-          hot: hotLeads.count,
+          new_24h: leadsMetrics.new_24h,
+          new_7d: leadsMetrics.new_7d,
+          hot: leadsMetrics.hot,
           converted: converted,
           conversion_rate: `${conversionRate}%`,
         },
         quality_breakdown: Object.fromEntries(
-          qualityBreakdown.map(q => [q.quality, q.count])
+          leadsMetrics.qualityBreakdown.map(q => [q.quality, q.count])
         ),
         status_breakdown: Object.fromEntries(
-          statusBreakdown.map(s => [s.status, s.count])
+          leadsMetrics.statusBreakdown.map(s => [s.status, s.count])
         ),
         intent_breakdown: Object.fromEntries(
-          intentBreakdown.map(i => [i.intent, i.count])
+          leadsMetrics.intentBreakdown.map(i => [i.intent, i.count])
         ),
-        top_sources_30d: sourcesRaw
+        top_sources_30d: leadsMetrics.sourcesRaw
           .filter(s => s.source)
           .map(s => ({ source: s.source, count: s.count })),
       },
       newsletter: {
-        total_subscribers: newsletterTotal.count,
-        confirmed: newsletterConfirmed.count,
-        new_24h: newsletterNew24h.count,
-        confirmation_rate: newsletterTotal.count > 0
-          ? `${((newsletterConfirmed.count / newsletterTotal.count) * 100).toFixed(1)}%`
+        total_subscribers: newsletterMetrics.total_subscribers,
+        confirmed: newsletterMetrics.confirmed,
+        new_24h: newsletterMetrics.new_24h,
+        confirmation_rate: newsletterMetrics.total_subscribers > 0
+          ? `${((newsletterMetrics.confirmed / newsletterMetrics.total_subscribers) * 100).toFixed(1)}%`
           : "0%",
       },
     });

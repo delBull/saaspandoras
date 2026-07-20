@@ -20,6 +20,7 @@ import {
 import { resolveProjectSlug } from "@/lib/project-utils";
 import { eq, sql, and, desc, inArray, ilike } from "drizzle-orm";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
+import { ProjectDomainService } from "@/lib/domain/project-domain-service";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
 import { client as twClient } from "@/lib/thirdweb-client";
@@ -83,19 +84,11 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // 2. Fetch Project
-    const rawProject = await db.query.projects.findFirst({
-      where: eq(projectsSchema.slug, slug),
-    });
+    // 2. Fetch Project using Domain Service
+    const domain = await ProjectDomainService.buildProjectDomain(slug);
+    const rawProject = domain.project;
 
-    if (!rawProject) {
-      return NextResponse.json({ error: "Project not found" }, { 
-        status: 404,
-        headers: getCorsHeaders(req.headers.get("origin"))
-      });
-    }
-
-    const project = harmonizeProject(rawProject);
+    const project = harmonizeProject(rawProject as any);
     const w2e = project.w2eConfig;
 
     // 3. Fetch Real-time Contract Data (Parallelized)
@@ -662,6 +655,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         }))
       },
       documents: formattedDocuments,
+      events: domain.events,
+      resources: domain.resources,
+
       phases: phases.map((p: any) => ({
         id: p.id,
         name: p.name,

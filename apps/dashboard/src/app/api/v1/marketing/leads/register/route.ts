@@ -203,6 +203,27 @@ export async function POST(req: NextRequest) {
 
     console.error(`[Growth OS] 🎯 Project Resolved: ID=${targetProjectId}, Method=${resolutionMethod}, Requested=${projectId}`);
 
+    // --- ATTRIBUTION ENGINE RESOLUTION ---
+    const { AttributionResolver } = await import('@/lib/domain/attribution-resolver');
+    const attributionContext = {
+      trackerId: metadata.trackerId || body.trackerId || null,
+      campaignId: metadata.campaignId || body.campaignId || null,
+      assetId: metadata.assetId || body.assetId || null,
+      source: metadata.utm_source || body.utm_source || metadata.source || body.source || null,
+      medium: metadata.utm_medium || body.utm_medium || metadata.medium || body.medium || null,
+      campaign: metadata.utm_campaign || body.utm_campaign || metadata.campaign || body.campaign || null,
+      content: metadata.utm_content || body.utm_content || metadata.content || body.content || null,
+      term: metadata.utm_term || body.utm_term || metadata.term || body.term || null,
+      referrer: metadata.ref || metadata.referrer || body.ref || body.referrer || null,
+      landingPage: metadata.landingPage || body.landingPage || null,
+      firstTouch: metadata.firstTouch || body.firstTouch || null,
+      lastTouch: metadata.lastTouch || body.lastTouch || null,
+      sessionId: metadata.sessionId || body.sessionId || null,
+    };
+    
+    const resolvedAttribution = await AttributionResolver.resolve(targetProjectId, attributionContext);
+    console.info(`[Attribution] Resolved Campaign: ${resolvedAttribution.campaignId}, Asset: ${resolvedAttribution.assetId}, Source: ${resolvedAttribution.source}`);
+
     // --- DUAL ENGINE AUTO-ROUTING ---
     // Detect Scope & Owner Context based on Origin or Explicit Body
     const B2B_PATHWAYS = ['/founders', '/protocol', '/protocol-story', '/start', '/utility', '/help', '/growth-os'];
@@ -254,6 +275,13 @@ export async function POST(req: NextRequest) {
     // --- TAG PREFIXING SYSTEM ---
     const prefix = scope === 'b2b' ? 'B2B_' : 'B2C_';
     let processedMetadata = metadata || {};
+    
+    // Inject Resolved Attribution into metadata
+    processedMetadata.attribution = {
+      context: attributionContext,
+      resolved: resolvedAttribution
+    };
+
     if (processedMetadata.tags && Array.isArray(processedMetadata.tags)) {
       processedMetadata.tags = processedMetadata.tags.map((t: string) => 
         t.startsWith('B2B_') || t.startsWith('B2C_') ? t : `${prefix}${t.toUpperCase()}`
@@ -353,23 +381,52 @@ export async function POST(req: NextRequest) {
 
     // 4.5. Log Attribution Touch (Foundational SaaS)
     if (result) {
-      const campaignId = body.campaignId || processedMetadata.campaignId || null;
+      if (resolvedAttribution.assetId && attributionContext.trackerId) {
+        try {
+          const { shortlinks } = await import('@/db/schema');
+          const tracker = await db.query.shortlinks.findFirst({
+            where: eq(shortlinks.slug, attributionContext.trackerId)
+          });
+          
+          if (tracker) {
+             // Create an explicit event linking the lead to this asset
+             const { marketingLeadEvents } = await import('@/db/schema');
+             await db.insert(marketingLeadEvents).values({
+               leadId: result.id,
+               type: 'ASSET_ATTRIBUTION',
+               payload: {
+                 trackerId: attributionContext.trackerId,
+                 assetId: resolvedAttribution.assetId,
+                 shortlinkId: tracker.id
+               }
+             });
+          }
+        } catch(e) {
+          console.error('[Growth OS] Error explicitly logging tracker asset:', e);
+        }
+      }
+
       await AttributionManager.logTouch(
         result.id.toString(),
-        campaignId,
+        resolvedAttribution.campaignId,
         'lead_captured',
         { 
           origin: result.origin, 
           method: resolutionMethod,
-          identityId: identityId
+          identityId: identityId,
+          trackerId: attributionContext.trackerId || null,
+          assetId: resolvedAttribution.assetId,
+          source: resolvedAttribution.source,
+          utm_campaign: attributionContext.campaign
         }
       );
 
       // Reputation Engine: Grant points for new referred leads
-      if (!alreadyRegistered && result.referrer) {
+      const finalReferrer = resolvedAttribution.creatorId || result.referrer;
+      if (!alreadyRegistered && finalReferrer) {
         try {
           const ambassador = await db.query.ambassadors.findFirst({
-            where: eq(ambassadors.referralCode, result.referrer as string)
+            where: eq(ambassadors.referralCode, finalReferrer as string)
           });
           
           if (ambassador) {

@@ -9,13 +9,25 @@ import { RefreshCw, Plus, Edit, CreditCard, Trash2, Play, Pause } from "lucide-r
 import { toast } from "sonner";
 import { MarketingHelpModal } from "@/components/admin/marketing/MarketingHelpModal";
 import { toggleCampaignStatus, deleteCampaign } from "@/actions/marketing";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-interface Campaign {
+interface Automation {
     id: number;
     name: string;
     isActive: boolean | null;
     triggerType: string | null;
     createdAt: Date | null;
+}
+
+interface TrueCampaign {
+    id: number;
+    projectId: number;
+    name: string;
+    status: string;
+    campaignType: string;
+    budget: string | null;
+    createdAt: Date;
 }
 
 export function MarketingHeaderActions() {
@@ -63,7 +75,7 @@ export function MarketingHeaderActions() {
     );
 }
 
-export function MarketingCampaignList({ initialCampaigns }: { initialCampaigns: Campaign[] }) {
+export function MarketingCampaignList({ initialCampaigns }: { initialCampaigns: Automation[] }) {
     const router = useRouter();
     const [campaigns, setCampaigns] = useState(initialCampaigns);
 
@@ -162,5 +174,210 @@ export function MarketingCampaignList({ initialCampaigns }: { initialCampaigns: 
                 </div>
             )}
         </div>
+    );
+}
+
+export function TrueCampaignList({ campaigns }: { campaigns: TrueCampaign[] }) {
+    const router = useRouter();
+
+    const handleToggle = async (e: React.MouseEvent, id: number, currentStatus: string) => {
+        e.stopPropagation();
+        try {
+            const { toggleTrueCampaignStatus } = await import('@/actions/campaigns');
+            const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+            const res = await toggleTrueCampaignStatus(id, newStatus);
+            if (res.success) {
+                toast.success(`Campaña ${newStatus === 'active' ? 'activada' : 'pausada'}`);
+                router.refresh();
+            } else {
+                toast.error("Error al actualizar estado");
+            }
+        } catch (error) {
+            toast.error("Error de conexión");
+        }
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        if (!confirm("¿Estás seguro de archivar esta campaña? Esta acción no elimina los datos estadísticos, pero la oculta de las activas.")) return;
+        
+        try {
+            const { toggleTrueCampaignStatus } = await import('@/actions/campaigns');
+            const res = await toggleTrueCampaignStatus(id, 'archived');
+            if (res.success) {
+                toast.success("Campaña archivada");
+                router.refresh();
+            } else {
+                toast.error("Error al archivar campaña");
+            }
+        } catch (error) {
+            toast.error("Error de conexión");
+        }
+    };
+
+    // Filter out archived campaigns
+    const visibleCampaigns = campaigns.filter(c => c.status !== 'archived');
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {visibleCampaigns.map((camp) => (
+                <Card key={camp.id} className="hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => router.push(`/admin/marketing/${camp.id}/campaign`)}>
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                        <CardTitle className="text-lg font-medium truncate pr-4">
+                            {camp.name}
+                        </CardTitle>
+                        <Badge variant={camp.status === 'active' ? "default" : "secondary"}>
+                            {camp.status}
+                        </Badge>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-sm text-muted-foreground mb-4 capitalize">
+                            Type: {camp.campaignType.replace('_', ' ')}
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-muted-foreground border-t pt-4">
+                            <span className="font-mono text-zinc-600">ID: {camp.id} | Proj: {camp.projectId}</span>
+
+                            <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-blue-400" onClick={(e) => { e.stopPropagation(); router.push(`/admin/marketing/${camp.id}/campaign`); }}>
+                                    <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-yellow-400" onClick={(e) => handleToggle(e, camp.id, camp.status)}>
+                                    {camp.status === 'active' ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-red-400" onClick={(e) => handleDelete(e, camp.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+
+            {visibleCampaigns.length === 0 && (
+                <div className="col-span-full text-center py-12 border rounded-lg border-dashed text-zinc-600 bg-zinc-900/50">
+                    <p>No hay campañas comerciales activas.</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export function TrueCampaignHeaderActions() {
+    const [open, setOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+        const formData = new FormData(e.currentTarget);
+        const name = formData.get("name") as string;
+        const projectId = parseInt(formData.get("projectId") as string, 10);
+        const campaignType = formData.get("campaignType") as string;
+        const scope = formData.get("scope") as string;
+        const budget = formData.get("budget") as string;
+
+        try {
+            // Import the action dynamically or assume it's imported at the top
+            const { createTrueCampaign } = await import('@/actions/campaigns');
+            const res = await createTrueCampaign({ name, projectId, campaignType, scope, budget });
+            if (res.success) {
+                toast.success("Campaña comercial creada");
+                setOpen(false);
+                router.refresh();
+            } else {
+                toast.error(res.error || "Error al crear la campaña");
+            }
+        } catch (err) {
+            toast.error("Error de conexión");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex gap-3 items-center mb-6 justify-end">
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nueva Campaña
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Nueva Campaña Comercial</DialogTitle>
+                        <DialogDescription>
+                            Define el nombre, el proyecto y el objetivo de la campaña en el Mission Control.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Nombre de la Campaña</label>
+                            <input name="name" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="Ej: Black Friday 2026" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">ID del Proyecto</label>
+                            <input name="projectId" type="number" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="Ej: 2" />
+                            <p className="text-xs text-muted-foreground">En el futuro, esto será un selector de proyectos (Multi-Project Native).</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Tipo</label>
+                                <select name="campaignType" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                                    <option value="user_acquisition">User Acquisition</option>
+                                    <option value="retention">Retention</option>
+                                    <option value="awareness">Awareness</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Scope</label>
+                                <select name="scope" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                                    <option value="b2c">B2C</option>
+                                    <option value="b2b">B2B</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Presupuesto (USDC)</label>
+                            <input name="budget" type="number" step="0.01" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="Opcional. Ej: 5000" />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                            <Button type="submit" disabled={loading}>{loading ? 'Creando...' : 'Crear Campaña'}</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
+
+export function MarketingDashboardTabs({ 
+    initialCampaigns, 
+    initialAutomations 
+}: { 
+    initialCampaigns: TrueCampaign[], 
+    initialAutomations: Automation[] 
+}) {
+    return (
+        <Tabs defaultValue="campaigns" className="w-full">
+            <TabsList className="mb-6">
+                <TabsTrigger value="campaigns">Campañas (Mission Control)</TabsTrigger>
+                <TabsTrigger value="automations">Automatizaciones (Drip Engine)</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="campaigns">
+                <TrueCampaignHeaderActions />
+                <TrueCampaignList campaigns={initialCampaigns} />
+            </TabsContent>
+            
+            <TabsContent value="automations">
+                <div className="flex justify-end mb-6">
+                    <MarketingHeaderActions />
+                </div>
+                <MarketingCampaignList initialCampaigns={initialAutomations} />
+            </TabsContent>
+        </Tabs>
     );
 }

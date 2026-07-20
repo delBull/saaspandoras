@@ -1,8 +1,6 @@
 'use server';
 
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { ProjectRepository } from "@/lib/domain/project-repository";
 import { revalidatePath } from "next/cache";
 
 export interface ProgressLogEntry {
@@ -16,9 +14,7 @@ export interface ProgressLogEntry {
 
 export async function getProgressLogs(projectId: number): Promise<ProgressLogEntry[]> {
   try {
-    const [project] = await db.select({ extraConfig: projects.extraConfig })
-      .from(projects)
-      .where(eq(projects.id, projectId));
+    const project = await ProjectRepository.findById(projectId);
 
     if (!project) return [];
     const config = (project.extraConfig as Record<string, any>) || {};
@@ -34,9 +30,7 @@ export async function addProgressLog(
   entry: { weekNumber: number; title: string; content: string; highlights: string[] }
 ) {
   try {
-    const [project] = await db.select({ extraConfig: projects.extraConfig })
-      .from(projects)
-      .where(eq(projects.id, projectId));
+    const project = await ProjectRepository.findById(projectId);
 
     if (!project) return { success: false, error: 'Proyecto no encontrado' };
 
@@ -52,9 +46,7 @@ export async function addProgressLog(
     logs.unshift(newEntry);
     config.progressLogs = logs;
 
-    await db.update(projects)
-      .set({ extraConfig: config })
-      .where(eq(projects.id, projectId));
+    await ProjectRepository.updateConfig(projectId, config);
 
     revalidatePath(`/profile/projects/${projectId}/manage/progress-log`);
     return { success: true, entry: newEntry };
@@ -66,9 +58,7 @@ export async function addProgressLog(
 
 export async function deleteProgressLog(projectId: number, entryId: string) {
   try {
-    const [project] = await db.select({ extraConfig: projects.extraConfig })
-      .from(projects)
-      .where(eq(projects.id, projectId));
+    const project = await ProjectRepository.findById(projectId);
 
     if (!project) return { success: false, error: 'Proyecto no encontrado' };
 
@@ -76,9 +66,7 @@ export async function deleteProgressLog(projectId: number, entryId: string) {
     const logs = (config.progressLogs as ProgressLogEntry[]) || [];
     config.progressLogs = logs.filter(l => l.id !== entryId);
 
-    await db.update(projects)
-      .set({ extraConfig: config })
-      .where(eq(projects.id, projectId));
+    await ProjectRepository.updateConfig(projectId, config);
 
     revalidatePath(`/profile/projects/${projectId}/manage/progress-log`);
     return { success: true };

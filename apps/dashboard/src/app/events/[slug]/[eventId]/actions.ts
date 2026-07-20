@@ -1,9 +1,7 @@
 'use server';
 
-import { db } from "@/db";
-import { eventRegistrations, projectEvents, projects } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
 import { headers } from 'next/headers';
+import { LeadDomainService } from "@/lib/domain/lead-domain-service";
 import crypto from 'crypto';
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -69,66 +67,24 @@ export async function registerForEvent(prevState: any, formData: FormData) {
         const eventId = Number(eventIdStr);
         const projectId = Number(projectIdStr);
 
-        // Fetch project and event data early for capacity and notifications
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
-        const [event] = await db.select().from(projectEvents).where(eq(projectEvents.id, eventId));
-
-        if (!event || !project) return { error: 'Evento o proyecto no encontrado' };
-
-        // Capacity check
-        const config = typeof event.config === 'string' ? JSON.parse(event.config) : event.config || {};
-        
-        if (event.type === 'CALENDAR' && selectedDateTimeStr) {
-            // Check slots for this specific date/time
-            const regs = await db.select().from(eventRegistrations).where(
-                and(
-                    eq(eventRegistrations.eventId, eventId),
-                    eq(eventRegistrations.selectedDateTime, new Date(selectedDateTimeStr)),
-                    eq(eventRegistrations.status, 'CONFIRMED')
-                )
-            );
-            const slotCapacity = config.maxCapacityPerSlot || 1;
-            if (regs.length >= slotCapacity) {
-                return { error: 'Este horario ya no está disponible. Por favor selecciona otro.' };
-            }
-        } else if (event.type === 'MACRO') {
-            // Check macro event capacity
-            const regs = await db.select().from(eventRegistrations).where(
-                and(
-                    eq(eventRegistrations.eventId, eventId),
-                    eq(eventRegistrations.status, 'CONFIRMED')
-                )
-            );
-            const maxCapacity = config.maxCapacity || 20;
-            if (regs.length >= maxCapacity) {
-                return { error: 'El cupo para este evento se ha agotado.' };
-            }
-        }
-
-        // Generate meeting link if VIRTUAL
-        let finalLocation = event.location || 'Presencial';
-        let jitsiLink = '';
-        if (meetingPreference === 'VIRTUAL' || config.meetingType === 'VIRTUAL') {
-            const rand = crypto.randomBytes(6).toString('base64url');
-            jitsiLink = `https://meet.jit.si/pandoras-${project.slug}-${rand}`;
-            finalLocation = jitsiLink;
-        } else if (config.mapsLink) {
-            finalLocation = `${event.location} - ${config.mapsLink}`;
-        }
-
-        // Append -06:00 (Mexico City) to ensure the parsed date is correct regardless of server timezone
-        const dateTimeWithTz = selectedDateTimeStr ? `${selectedDateTimeStr}-06:00` : null;
-
-        await db.insert(eventRegistrations).values({
+        const result = await LeadDomainService.registerForEvent({
             eventId,
             projectId,
             nombre,
             email,
             telefono: telefono || '',
-            perfil: (perfil || '') + (meetingPreference ? ` (${meetingPreference})` : ''),
-            status: 'CONFIRMED',
-            selectedDateTime: dateTimeWithTz ? new Date(dateTimeWithTz) : null
+            perfil: perfil || '',
+            selectedDateTimeStr: selectedDateTimeStr || null,
+            meetingPreference: meetingPreference || ''
         });
+
+        if (!result.success || !result.project || !result.event) {
+            return { error: result.error || 'Ocurrió un error al registrar el evento.' };
+        }
+
+        const { project, event, config, finalLocation, jitsiLink, finalSelectedDate } = result;
+
+        const dateTimeWithTz = selectedDateTimeStr ? `${selectedDateTimeStr}-06:00` : null;
 
         // DISCORD WEBHOOK NOTIFICATION
         try {

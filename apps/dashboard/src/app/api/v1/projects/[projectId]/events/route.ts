@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { db } from '@/db';
-import { projectEvents, projects, eventRegistrations } from '@/db/schema';
+import { projects, eventRegistrations } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
+import { EventRepository } from '@/lib/domain/event-repository';
 
 type RouteParams = { params: Promise<{ projectId: string }> };
 
@@ -12,10 +13,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     const { projectId: str } = await params;
     const projectId = Number(str);
 
-    const events = await db.select()
-        .from(projectEvents)
-        .where(eq(projectEvents.projectId, projectId))
-        .orderBy(desc(projectEvents.createdAt));
+    const events = await EventRepository.getEventsByProject(projectId);
         
     const regs = await db.select()
         .from(eventRegistrations)
@@ -66,15 +64,15 @@ export async function POST(request: Request, { params }: RouteParams) {
     const parsedDate = date ? new Date(date) : null;
     const isValidDate = parsedDate && !isNaN(parsedDate.getTime());
 
-    const [newEvent] = await db.insert(projectEvents).values({
+    const newEvent = await EventRepository.createEvent({
         projectId,
         title,
         type: type === 'CALENDAR' ? 'CALENDAR' : 'MACRO',
         date: isValidDate ? parsedDate : null,
-        location: location || null,
+        location: location || undefined,
         config: config || { maxCapacity: 20 },
         isActive: true,
-    }).returning();
+    });
 
     return NextResponse.json(newEvent, { status: 201 });
 }

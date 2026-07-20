@@ -1,8 +1,6 @@
 'use server';
 
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { ProjectRepository } from "@/lib/domain/project-repository";
 import { revalidatePath } from "next/cache";
 import { resend, FROM_EMAIL } from "@/lib/resend";
 
@@ -141,9 +139,7 @@ function setConfig(project: any, data: NewsletterData): any {
 
 export async function getNewsletterData(projectId: number): Promise<NewsletterData> {
     try {
-        const [project] = await db.select({ extraConfig: projects.extraConfig })
-            .from(projects)
-            .where(eq(projects.id, projectId));
+        const project = await ProjectRepository.findById(projectId);
         if (!project) return { subscribers: [], campaigns: [], settings: { ...DEFAULT_SETTINGS } };
         return getConfig(project);
     } catch (error) {
@@ -166,9 +162,7 @@ export async function addSubscriber(
     data: { email: string; name?: string; walletAddress?: string; source?: 'public' | 'manual' | 'widget' }
 ) {
     try {
-        const [project] = await db.select({ extraConfig: projects.extraConfig, title: projects.title })
-            .from(projects)
-            .where(eq(projects.id, projectId));
+        const project = await ProjectRepository.findById(projectId);
         if (!project) return { success: false, error: 'Proyecto no encontrado' };
 
         const newsletter = getConfig(project);
@@ -224,9 +218,7 @@ export async function addSubscriber(
             newsletter.campaigns.push(campaign);
         }
 
-        await db.update(projects)
-            .set({ extraConfig: setConfig(project, newsletter) })
-            .where(eq(projects.id, projectId));
+        await ProjectRepository.updateConfig(projectId, setConfig(project, newsletter));
 
         revalidatePath(`/profile/projects/${projectId}/manage`);
         return { success: true, subscriber };
@@ -238,17 +230,13 @@ export async function addSubscriber(
 
 export async function removeSubscriber(projectId: number, subscriberId: string) {
     try {
-        const [project] = await db.select({ extraConfig: projects.extraConfig })
-            .from(projects)
-            .where(eq(projects.id, projectId));
+        const project = await ProjectRepository.findById(projectId);
         if (!project) return { success: false, error: 'Proyecto no encontrado' };
 
         const newsletter = getConfig(project);
         newsletter.subscribers = newsletter.subscribers.filter(s => s.id !== subscriberId);
 
-        await db.update(projects)
-            .set({ extraConfig: setConfig(project, newsletter) })
-            .where(eq(projects.id, projectId));
+        await ProjectRepository.updateConfig(projectId, setConfig(project, newsletter));
 
         revalidatePath(`/profile/projects/${projectId}/manage`);
         return { success: true };
@@ -263,9 +251,7 @@ export async function sendCampaign(
     data: { type: NewsletterCampaign['type']; subject: string; preview: string; body: string }
 ) {
     try {
-        const [project] = await db.select({ extraConfig: projects.extraConfig, title: projects.title })
-            .from(projects)
-            .where(eq(projects.id, projectId));
+        const project = await ProjectRepository.findById(projectId);
         if (!project) return { success: false, error: 'Proyecto no encontrado' };
 
         const newsletter = getConfig(project);
@@ -312,9 +298,7 @@ export async function sendCampaign(
 
         newsletter.campaigns.unshift(campaign);
 
-        await db.update(projects)
-            .set({ extraConfig: setConfig(project, newsletter) })
-            .where(eq(projects.id, projectId));
+        await ProjectRepository.updateConfig(projectId, setConfig(project, newsletter));
 
         revalidatePath(`/profile/projects/${projectId}/manage`);
         return { success: true, campaign, sentCount, failCount };
@@ -326,17 +310,13 @@ export async function sendCampaign(
 
 export async function updateNewsletterSettings(projectId: number, settings: Partial<NewsletterSettings>) {
     try {
-        const [project] = await db.select({ extraConfig: projects.extraConfig })
-            .from(projects)
-            .where(eq(projects.id, projectId));
+        const project = await ProjectRepository.findById(projectId);
         if (!project) return { success: false, error: 'Proyecto no encontrado' };
 
         const newsletter = getConfig(project);
         newsletter.settings = { ...newsletter.settings, ...settings };
 
-        await db.update(projects)
-            .set({ extraConfig: setConfig(project, newsletter) })
-            .where(eq(projects.id, projectId));
+        await ProjectRepository.updateConfig(projectId, setConfig(project, newsletter));
 
         revalidatePath(`/profile/projects/${projectId}/manage`);
         return { success: true, settings: newsletter.settings };
@@ -348,17 +328,13 @@ export async function updateNewsletterSettings(projectId: number, settings: Part
 
 export async function deleteCampaign(projectId: number, campaignId: string) {
     try {
-        const [project] = await db.select({ extraConfig: projects.extraConfig })
-            .from(projects)
-            .where(eq(projects.id, projectId));
+        const project = await ProjectRepository.findById(projectId);
         if (!project) return { success: false, error: 'Proyecto no encontrado' };
 
         const newsletter = getConfig(project);
         newsletter.campaigns = newsletter.campaigns.filter(c => c.id !== campaignId);
 
-        await db.update(projects)
-            .set({ extraConfig: setConfig(project, newsletter) })
-            .where(eq(projects.id, projectId));
+        await ProjectRepository.updateConfig(projectId, setConfig(project, newsletter));
 
         revalidatePath(`/profile/projects/${projectId}/manage`);
         return { success: true };

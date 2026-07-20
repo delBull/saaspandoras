@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { db } from '@/db';
-import { projectEvents, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
+import { EventRepository } from '@/lib/domain/event-repository';
 
 type RouteParams = { params: Promise<{ projectId: string, eventId: string }> };
 
@@ -39,10 +40,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (location !== undefined) updateData.location = location || null;
     if (config) updateData.config = config;
 
-    const [updatedEvent] = await db.update(projectEvents)
-        .set(updateData)
-        .where(and(eq(projectEvents.id, eventId), eq(projectEvents.projectId, projectId)))
-        .returning();
+    const updatedEvent = await EventRepository.updateEvent(eventId, updateData);
 
     return NextResponse.json(updatedEvent, { status: 200 });
 }
@@ -58,8 +56,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
         return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
-    await db.delete(projectEvents)
-        .where(and(eq(projectEvents.id, eventId), eq(projectEvents.projectId, projectId)));
+    await EventRepository.deleteEvent(eventId);
 
     return NextResponse.json({ success: true }, { status: 200 });
 }
