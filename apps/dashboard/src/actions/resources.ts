@@ -65,7 +65,7 @@ export async function linkResourceToCampaign(data: {
 export async function getProjectResources(projectId: number) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.address) throw new Error("Unauthorized");
+    if (!session?.address && !session?.unverifiedAddress) throw new Error("Unauthorized");
 
     const resources = await AssetRepository.getAssetsByProject(projectId);
 

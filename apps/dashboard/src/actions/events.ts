@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 export async function getProjectEvents(projectId: number) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.address) throw new Error("Unauthorized");
+    if (!session?.address && !session?.unverifiedAddress) throw new Error("Unauthorized");
 
     const events = await EventRepository.getEventsByProject(projectId);
 

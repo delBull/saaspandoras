@@ -2567,21 +2567,22 @@ export const projectEventTypeEnum = pgEnum("project_event_type", [
 export const eventRegistrationStatusEnum = pgEnum("event_registration_status", [
   "CONFIRMED",
   "CANCELLED",
-  "ATTENDED"
+  "ATTENDED",
+  "PENDING"
 ]);
 
-// export const projectEvents = pgTable("project_events", {
-//   id: serial("id").primaryKey(),
-//   projectId: integer("project_id").references(() => projects.id).notNull(),
-//   type: projectEventTypeEnum("type").default("MACRO").notNull(),
-//   title: varchar("title", { length: 255 }).notNull(),
-//   date: timestamp("date", { withTimezone: true }),
-//   location: varchar("location", { length: 255 }),
-//   config: jsonb("config").default({}), 
-//   isActive: boolean("is_active").default(true),
-//   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-//   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-// });
+export const projectEvents = pgTable("project_events", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  type: projectEventTypeEnum("type").default("MACRO").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  date: timestamp("date", { withTimezone: true }),
+  location: varchar("location", { length: 255 }),
+  config: jsonb("config").default({}), 
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 export const eventRegistrations = pgTable("event_registrations", {
   id: serial("id").primaryKey(),
@@ -2592,18 +2593,21 @@ export const eventRegistrations = pgTable("event_registrations", {
   telefono: varchar("telefono", { length: 50 }).notNull(),
   perfil: varchar("perfil", { length: 100 }),
   montoInteres: varchar("monto_interes", { length: 100 }),
+  telegram: varchar("telegram", { length: 255 }),
   status: eventRegistrationStatusEnum("status").default("CONFIRMED").notNull(),
+  walletAddress: varchar("wallet_address", { length: 255 }),
+  attestUid: varchar("attest_uid", { length: 255 }),
   selectedDateTime: timestamp("selected_date_time", { withTimezone: true }),
   registeredAt: timestamp("registered_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// export const projectEventsRelations = relations(projectEvents, ({ one, many }) => ({
-//   project: one(projects, {
-//     fields: [projectEvents.projectId],
-//     references: [projects.id],
-//   }),
-//   registrations: many(eventRegistrations),
-// }));
+export const projectEventsRelations = relations(projectEvents, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [projectEvents.projectId],
+    references: [projects.id],
+  }),
+  registrations: many(eventRegistrations),
+}));
 
 export const eventRegistrationsRelations = relations(eventRegistrations, ({ one }) => ({
   event: one(platformAssets, {
@@ -2616,7 +2620,7 @@ export const eventRegistrationsRelations = relations(eventRegistrations, ({ one 
   }),
 }));
 
-// export type ProjectEvent = typeof projectEvents.$inferSelect;
+export type ProjectEvent = typeof projectEvents.$inferSelect;
 export type EventRegistration = typeof eventRegistrations.$inferSelect;
 
 // --- PANDORA KNOWLEDGE LAYER (BRIEFING ENGINE) ---

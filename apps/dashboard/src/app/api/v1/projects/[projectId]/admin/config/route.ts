@@ -81,8 +81,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if ('sovereignCalendar' in body) updatedConfig.sovereignCalendar = body.sovereignCalendar;
     if ('eventEngine' in body) updatedConfig.eventEngine = body.eventEngine;
 
+    const updateData: any = { extraConfig: updatedConfig };
+
+    if ('w2eConfig' in body) {
+        updateData.w2eConfig = body.w2eConfig;
+    }
+
     await db.update(projects)
-        .set({ extraConfig: updatedConfig })
+        .set(updateData)
         .where(eq(projects.id, projectId));
 
     return NextResponse.json({ success: true, extraConfig: updatedConfig });
