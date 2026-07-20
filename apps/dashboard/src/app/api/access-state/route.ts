@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { config } from "@/config";
 import { isAdmin } from "@/lib/auth";
 import { AccessState } from "@/lib/access/state-machine";
-import { accessCache, isRateLimited, dbBreaker } from "@/lib/access/resilience";
+import { accessCache, isRateLimited, dbBreaker, withTimeout } from "@/lib/access/resilience";
 import { resolveUXConfig } from "@/lib/access/experiment-engine";
 import { unstable_cache } from "next/cache";
 
@@ -95,9 +95,9 @@ export async function GET(req: Request): Promise<NextResponse> {
         try {
             // 🏎️ Parallel resolution for speed & lower CPU duration
             const [isUserAdminData, dbUser, globalMetadata] = await Promise.all([
-                isAdmin(address),
-                db.query.users.findFirst({ where: eq(users.walletAddress, address) }),
-                getCachedGlobalConfig()
+                withTimeout(isAdmin(address), 1500, false),
+                withTimeout(db.query.users.findFirst({ where: eq(users.walletAddress, address) }), 1500, null),
+                withTimeout(getCachedGlobalConfig(), 1500, {})
             ]);
 
             const isStaging = process.env.NEXT_PUBLIC_APP_ENV === "staging";
