@@ -15,6 +15,25 @@ export interface MarketingMaterial {
 
 export const snaraiMaterials: MarketingMaterial[] = [
     {
+        id: "executive-investment-brief",
+        title: "Executive Investment Brief",
+        metadata: {
+            audience: "Inversionistas Institucionales / HNWIs",
+            purpose: "Filtro inicial y resumen ejecutivo",
+            estimatedReadTime: "3 min",
+            salesMoment: "Descubrimiento inicial"
+        },
+        objective: "An Executive Overview for Prospective Investors",
+        description: "Este documento no intenta vender. Intenta responder una sola pregunta: '¿Vale la pena que dedique una hora de mi tiempo a estudiar esto?'",
+        url: "/en/institutional/executive-investment-brief",
+        contentPreview: [
+            {
+                section: "Executive Summary",
+                text: "Resumen muy ejecutivo de qué es S'Narai, qué hace Pandoras y qué oportunidad existe."
+            }
+        ]
+    },
+    {
         id: "project-overview",
         title: "S'Narai Project Overview",
         metadata: {
