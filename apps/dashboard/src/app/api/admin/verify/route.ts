@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { withTimeout } from "@/lib/access/resilience";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
     let userIsAdmin = false;
     if (session?.address) {
-      userIsAdmin = await isAdmin(session.address);
+      userIsAdmin = await withTimeout(isAdmin(session.address), 1500, false);
     }
 
     return NextResponse.json({ isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
