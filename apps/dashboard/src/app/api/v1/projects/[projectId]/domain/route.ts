@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { ProjectDomainService } from "@/lib/domain/project-domain-service";
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   try {
     const rawAuth = req.headers.get('authorization');
     const apiKey = req.headers.get('x-api-key') || (rawAuth?.startsWith('Bearer ') ? rawAuth.substring(7) : null);
@@ -16,10 +16,10 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       return NextResponse.json({ error: "Invalid API Key" }, { status: 403 });
     }
 
-    const { slug } = await params;
+    const { projectId } = await params;
     
     // Defer all data fetching to the Domain Service
-    const domainAggregate = await ProjectDomainService.buildProjectDomain(slug);
+    const domainAggregate = await ProjectDomainService.buildProjectDomain(projectId);
 
     return NextResponse.json({
       success: true,
