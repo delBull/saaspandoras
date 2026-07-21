@@ -111,7 +111,12 @@ export function middleware(request: NextRequest) {
   }
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
+  
+  // Allow iframing for checkout and schedule widgets
+  if (!pathname.startsWith('/pay') && !pathname.startsWith('/schedule')) {
+    response.headers.set('X-Frame-Options', 'DENY');
+  }
+
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), display-capture=(), fullscreen=(self), geolocation=(), microphone=(), payment=(), usb=()');

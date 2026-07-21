@@ -540,6 +540,32 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     <p className="text-[10px] text-zinc-600 font-medium text-center leading-relaxed">
                         Conecta tu billetera o usa tu correo para validar tu acceso al protocolo de forma segura.
                     </p>
+
+                    <AnimatePresence>
+                        {showGuide && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="w-full space-y-4 overflow-hidden mt-4"
+                            >
+                                <div className="bg-zinc-950/80 backdrop-blur-xl rounded-2xl p-5 border border-zinc-800/50">
+                                    <h5 className="text-[10px] font-black uppercase text-white tracking-widest mb-2 flex items-center gap-2">
+                                        <ShieldCheck className="w-3 h-3 text-emerald-400" /> Identidad Digital
+                                    </h5>
+                                    <p className="text-[9px] text-zinc-400 leading-relaxed mb-3 font-medium">
+                                        Al usar tu correo o redes sociales, creamos una <strong>Smart Wallet</strong> inmutable vinculada permanentemente.
+                                    </p>
+                                    <div className="space-y-3">
+                                        <div className="space-y-0.5">
+                                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Persistencia</p>
+                                            <p className="text-[9px] text-zinc-500 leading-relaxed font-medium">Si cierras sesión, solo vuelve a conectar el mismo correo para recuperar tu acceso.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </motion.div>
 
                 <div className="fixed bottom-8 text-center opacity-30">
