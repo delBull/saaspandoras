@@ -9,6 +9,7 @@ import { useSearchParams } from 'next/navigation';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 import { defineChain } from 'thirdweb/chains';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { getProjectForAuth } from './actions';
 
 function AuthContent() {
     const account = useActiveAccount();
@@ -51,10 +52,9 @@ function AuthContent() {
     useEffect(() => {
         async function fetchProject() {
             try {
-                const res = await fetch(`/api/public/project/${projectSlug}/state?apiKey=pk_test_b277293448bd09198b6fd29ff0b87c4e1c9184219ff50111`);
-                const data = await res.json();
-                if (data && !data.error) {
-                    setProject(data);
+                const projectData = await getProjectForAuth(projectSlug);
+                if (projectData) {
+                    setProject(projectData);
                 }
             } catch (e) {
                 console.error("Failed to fetch project for auth", e);
