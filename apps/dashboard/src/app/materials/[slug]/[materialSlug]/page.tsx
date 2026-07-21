@@ -748,9 +748,9 @@ El cliente no está comprando "semanas" de uso. Está participando financieramen
         {
             type: 'info',
             data: {
-                sectionLabel: 'Equipo',
-                title: 'S\\'Narai: Especialistas Multidisciplinarios',
-                content: `S'Narai reúne especialistas provenientes de distintas disciplinas para desarrollar un modelo inmobiliario respaldado por procesos institucionales y tecnología.`,
+                sectionLabel: t('Equipo', 'Team'),
+                title: t("S'Narai: Especialistas Multidisciplinarios", "S'Narai: Multidisciplinary Specialists"),
+                content: t(`S'Narai reúne especialistas provenientes de distintas disciplinas para desarrollar un modelo inmobiliario respaldado por procesos institucionales y tecnología.`, `S'Narai brings together specialists from various disciplines to develop a real estate model backed by institutional processes and technology.`),
                 stats: []
             }
         },
@@ -904,9 +904,9 @@ El cliente no está comprando "semanas" de uso. Está participando financieramen
         {
             type: 'info',
             data: {
-                sectionLabel: 'Posicionamiento',
-                title: 'La propuesta S\\'Narai',
-                content: `S'Narai busca participar en esta tendencia mediante un producto boutique orientado a calidad, eficiencia operativa y ubicación estratégica.`,
+                sectionLabel: t('Posicionamiento', 'Positioning'),
+                title: t("La propuesta S'Narai", "The S'Narai Proposal"),
+                content: t(`S'Narai busca participar en esta tendencia mediante un producto boutique orientado a calidad, eficiencia operativa y ubicación estratégica.`, `S'Narai seeks to participate in this trend through a boutique product focused on quality, operational efficiency, and strategic location.`),
                 stats: []
             }
         }

@@ -594,5 +594,25 @@ export const snaraiMaterialsEN: MarketingMaterial[] = [
         ]
     },
     {
+        "id": "founding-round-guide",
+        "title": "Founding Round Guide",
+        "metadata": {
+            "audience": "Investors and Managers",
+            "purpose": "Explanation of the Founding Round",
+            "estimatedReadTime": "10 min",
+            "salesMoment": "Education and Deep Dive"
+        },
+        "objective": "Understand what the Founding Round is and why to invest early.",
+        "description": "Detailed explanation of what the founding round is, why there are three rounds, how the price progression works, why Pandoras does not reopen rounds, and what happens after it concludes.",
+        "url": "/en/institutional/founding-round-guide",
+        "contentPreview": [
+            {
+                "section": "Risk and Value",
+                "text": "Early investors participate in conditions that will not be available when the project enters public presale."
+            }
+        ]
+    }
+];
+
 // Default export for backward compatibility if needed, although state/route.ts should handle locale logic
 export const snaraiMaterials = snaraiMaterialsES;
