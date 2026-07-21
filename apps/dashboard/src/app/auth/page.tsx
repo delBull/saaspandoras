@@ -78,7 +78,6 @@ function AuthContent() {
                 // DESKTOP: Send wallet info to parent window IMMEDIATELY to avoid getting stuck in SIWE
                 console.log("🛡️ [Auth] Desktop popup: Sending immediate wallet sync:", account.address);
                 window.opener.postMessage({ type: 'growth_os:auth_success', wallet: account.address }, targetOrigin);
-                window.opener.postMessage('growth_os:auth_success', targetOrigin);
                 
                 // Close window after a short delay so the user session is registered
                 closeTimeout = setTimeout(() => {
@@ -172,7 +171,7 @@ function AuthContent() {
                 </div>
 
                 <div className="w-full relative scale-[1.05] flex justify-center">
-                    {authStatus === 'authenticated' ? (
+                    {['authenticated', 'has_access', 'no_access', 'ready_to_mint', 'minting'].includes(authStatus) ? (
                         <div className="flex flex-col items-center gap-4 py-4">
                             <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
                                 <ShieldCheck className="text-emerald-500 w-6 h-6" />
@@ -203,7 +202,7 @@ function AuthContent() {
                 </div>
                 
                 <p className="text-[10px] text-zinc-600 font-medium text-center leading-relaxed">
-                    {authStatus === 'authenticated' 
+                    {['authenticated', 'has_access', 'no_access', 'ready_to_mint', 'minting'].includes(authStatus) 
                         ? "Sincronizando sesión con el protocolo. Esta ventana se cerrará automáticamente."
                         : "Conecta tu billetera o usa tu correo para validar tu acceso al protocolo de forma segura."}
                 </p>
