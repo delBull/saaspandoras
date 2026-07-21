@@ -2629,10 +2629,13 @@ export const projectBriefings = pgTable("project_briefings", {
   projectId: integer("project_id").references(() => projects.id).notNull(),
   slug: varchar("slug", { length: 255 }).notNull(), // e.g., 'participate', 'realtors'
   title: varchar("title", { length: 255 }).notNull(),
+  titleEn: varchar("title_en", { length: 255 }),
   subtitle: text("subtitle"),
+  subtitleEn: text("subtitle_en"),
   
   // JSON array of blocks: { type: 'hero', data: {...} }
   blocks: jsonb("blocks").default([]).notNull(), 
+  blocksEn: jsonb("blocks_en").default([]),
   
   status: varchar("status", { length: 50 }).default('published').notNull(),
   locale: varchar("locale", { length: 10 }).default('es').notNull(),

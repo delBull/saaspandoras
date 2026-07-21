@@ -13,323 +13,626 @@ export interface MarketingMaterial {
     url: string;
 }
 
-export const snaraiMaterials: MarketingMaterial[] = [
+export const snaraiMaterialsES: MarketingMaterial[] = [
     {
-        id: "executive-investment-brief",
-        title: "Executive Investment Brief",
-        metadata: {
-            audience: "Inversionistas Institucionales / HNWIs",
-            purpose: "Filtro inicial y resumen ejecutivo",
-            estimatedReadTime: "3 min",
-            salesMoment: "Descubrimiento inicial"
+        "id": "executive-investment-brief",
+        "title": "Executive Investment Brief",
+        "metadata": {
+            "audience": "Inversionistas Institucionales / HNWIs",
+            "purpose": "Filtro inicial y resumen ejecutivo",
+            "estimatedReadTime": "3 min",
+            "salesMoment": "Descubrimiento inicial"
         },
-        objective: "An Executive Overview for Prospective Investors",
-        description: "Este documento no intenta vender. Intenta responder una sola pregunta: '¿Vale la pena que dedique una hora de mi tiempo a estudiar esto?'",
-        url: "/en/institutional/executive-investment-brief",
-        contentPreview: [
+        "objective": "An Executive Overview for Prospective Investors",
+        "description": "Este documento no intenta vender. Intenta responder una sola pregunta: '¿Vale la pena que dedique una hora de mi tiempo a estudiar esto?'",
+        "url": "/en/institutional/executive-investment-brief",
+        "contentPreview": [
             {
-                section: "Executive Summary",
-                text: "Resumen muy ejecutivo de qué es S'Narai, qué hace Pandoras y qué oportunidad existe."
+                "section": "Executive Summary",
+                "text": "Resumen muy ejecutivo de qué es S'Narai, qué hace Pandoras y qué oportunidad existe."
             }
         ]
     },
     {
-        id: "project-overview",
-        title: "S'Narai Project Overview",
-        metadata: {
-            audience: "Inversionistas",
-            purpose: "Introducción rápida al proyecto",
-            estimatedReadTime: "5 min",
-            salesMoment: "Descubrimiento inicial"
+        "id": "project-overview",
+        "title": "S'Narai Project Overview",
+        "metadata": {
+            "audience": "Inversionistas",
+            "purpose": "Introducción rápida al proyecto",
+            "estimatedReadTime": "5 min",
+            "salesMoment": "Descubrimiento inicial"
         },
-        objective: "Entender el proyecto en menos de 5 minutos.",
-        description: "El documento inicial que todo inversionista, asesor o desarrollador debe leer para entender la tesis de valor de S'Narai Bucerías.",
-        url: "#overview",
-        contentPreview: [
+        "objective": "Entender el proyecto en menos de 5 minutos.",
+        "description": "El documento inicial que todo inversionista, asesor o desarrollador debe leer para entender la tesis de valor de S'Narai Bucerías.",
+        "url": "#overview",
+        "contentPreview": [
             {
-                section: "Más que una inversión inmobiliaria. Una nueva forma de construir patrimonio.",
-                text: "S'Narai es un desarrollo inmobiliario premium en la Zona Dorada de Bucerías, diseñado para combinar arquitectura, plusvalía (35-40% est.) y tecnología blockchain en un modelo transparente de inversión."
+                "section": "Más que una inversión inmobiliaria. Una nueva forma de construir patrimonio.",
+                "text": "S'Narai es un desarrollo inmobiliario premium en la Zona Dorada de Bucerías, diseñado para combinar arquitectura, plusvalía (35-40% est.) y tecnología blockchain en un modelo transparente de inversión."
             },
             {
-                section: "Ecosistema Digital",
-                text: "Cada etapa del proyecto (desde la emisión de los 80,400 títulos hasta la entrega) está respaldada por documentación verificable (NOM-151), seguimiento en tiempo real y un Fideicomiso Maestro."
+                "section": "Ecosistema Digital",
+                "text": "Cada etapa del proyecto (desde la emisión de los 80,400 títulos hasta la entrega) está respaldada por documentación verificable (NOM-151), seguimiento en tiempo real y un Fideicomiso Maestro."
             }
         ]
     },
     {
-        id: "investment-deck",
-        title: "Investment Deck",
-        metadata: {
-            audience: "Inversionistas",
-            purpose: "Presentación de métricas y proyecciones",
-            estimatedReadTime: "10 min",
-            salesMoment: "Reunión de presentación"
+        "id": "investment-deck",
+        "title": "Investment Deck",
+        "metadata": {
+            "audience": "Inversionistas",
+            "purpose": "Presentación detallada de la oportunidad",
+            "estimatedReadTime": "10 min",
+            "salesMoment": "Reunión de ventas o seguimiento profundo"
         },
-        objective: "Vender. Este es el documento comercial principal.",
-        description: "La presentación comercial completa para potenciales inversores, detallando métricas, fases y beneficios financieros.",
-        url: "#investment-deck",
-        contentPreview: [
+        "objective": "Analizar los números y la estructura de capital.",
+        "description": "El pitch deck oficial que detalla la oportunidad comercial en Riviera Nayarit, el modelo financiero, el plan maestro arquitectónico y las fases de desarrollo (Semilla, Construcción, Operación).",
+        "url": "https://drive.google.com/file/d/1X42yC0R7665NfV9j_Zk5672/view?usp=sharing",
+        "contentPreview": [
             {
-                section: "Vive la siguiente generación de inversión inmobiliaria.",
-                text: "S'Narai reúne desarrollo inmobiliario de lujo, administración hotelera profesional y tecnología para ofrecer yields operativos anuales de 10-12%."
+                "section": "Desglose Financiero (TIR y Yields)",
+                "text": "Proyecciones de ocupación, tarifas promedio (ADR), y distribución de ingresos (70% inversionistas / 30% operación) en diferentes escenarios."
             },
             {
-                section: "Construimos confianza",
-                text: "Invertir en bienes raíces nunca había sido tan transparente. Nuestro objetivo no es solamente construir un desarrollo excepcional en Riviera Nayarit; es construir confianza."
+                "section": "Roadmap de Ejecución",
+                "text": "Cronograma desde la constitución del Fideicomiso y Preventa F&F (Q2 2026) hasta el Soft Opening (Q1 2028)."
             }
         ]
     },
     {
-        id: "realtor-sales-kit",
-        title: "Realtor Sales Kit",
-        metadata: {
-            audience: "Gestores S'Narai",
-            purpose: "Arma de cierre y pitches rápidos",
-            estimatedReadTime: "8 min",
-            salesMoment: "Preparación antes de reunión con cliente"
+        "id": "smart-contract-audit",
+        "title": "Arquitectura On-Chain & Contratos Inteligentes",
+        "metadata": {
+            "audience": "Técnicos / Inversionistas Institucionales",
+            "purpose": "Generar confianza técnica",
+            "estimatedReadTime": "15 min",
+            "salesMoment": "Due Diligence (Transparencia)"
         },
-        objective: "Capacitar y apoyar a gestores inmobiliarios.",
-        description: "Todo lo que necesitas para vender con confianza. Argumentos comerciales, proceso de venta y FAQs.",
-        url: "#realtor-kit",
-        contentPreview: [
+        "objective": "Demostrar la seguridad e inmutabilidad de la red.",
+        "description": "Resumen técnico de los Smart Contracts desplegados en la red blockchain. Detalla el token standard (ERC-1155/ERC-20), las funciones de minteo y quema de certificados, y el mecanismo automatizado de distribución de ganancias.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Introducción al Gestor",
-                text: "Este documento fue creado para ayudarte a presentar S'Narai de manera clara y profesional. Dedica tu tiempo a generar relaciones; nosotros nos encargamos de las métricas y la tecnología."
+                "section": "El 'Dividend Distributor' Contract",
+                "text": "Cómo las utilidades hoteleras se inyectan como USDC y se distribuyen instantáneamente a las wallets de los tenedores de Certificados, sin intervención humana."
             },
             {
-                section: "¿Qué hace diferente a S'Narai?",
-                text: "Arquitectura premium, ubicación estratégica en Bucerías, proceso transparente, Portal digital para inversionistas y seguimiento de obra en tiempo real."
+                "section": "Gobernanza Descentralizada",
+                "text": "El sistema de votación on-chain que permite a los token holders tomar decisiones críticas sobre remodelaciones, operadores hoteleros o la posible venta en bloque del edificio."
             }
         ]
     },
     {
-        id: "guia-inversionista",
-        title: "Guía del Inversionista S'Narai",
-        metadata: {
-            audience: "Inversionistas",
-            purpose: "Acompañamiento y generación de certeza",
-            estimatedReadTime: "7 min",
-            salesMoment: "Post-reunión / Seguimiento"
+        "id": "legal-structure",
+        "title": "Estructura Legal y Fideicomiso (NOM-151)",
+        "metadata": {
+            "audience": "Abogados / Inversionistas",
+            "purpose": "Validar la certeza jurídica",
+            "estimatedReadTime": "12 min",
+            "salesMoment": "Due Diligence (Cierre)"
         },
-        objective: "Resolver dudas y generar confianza para el cliente potencial.",
-        description: "Sabemos que invertir en un desarrollo inmobiliario es una decisión importante. Esta guía acompaña al comprador de principio a fin.",
-        url: "#investor-guide",
-        contentPreview: [
+        "objective": "Comprender cómo lo digital se ata a la propiedad real en México.",
+        "description": "Documento clave que explica el puente entre la Blockchain y las Leyes Mexicanas. Describe el rol del Fideicomiso Maestro Inmobiliario, y cómo los Smart Contracts actúan como instrucciones irrevocables validadas mediante la NOM-151.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Tranquilidad Total",
-                text: "Reunimos toda la información relevante en un solo lugar. Entiende cómo tu capital adquiere posiciones en las fases (Fase 1: $50 USD, Fase 2: $75 USD, Fase 3: $100 USD)."
+                "section": "El Fideicomiso",
+                "text": "S'Narai SA de CV aporta el inmueble al Fideicomiso. Los certificados digitales representan derechos de fideicomisario, garantizando que el activo no puede ser embargado ni vendido sin el consenso de la DAO."
             },
             {
-                section: "Compromiso de vida",
-                text: "Nuestro compromiso comienza mucho antes de la inversión y continúa durante toda la vida del proyecto en Riviera Nayarit."
+                "section": "Firma Electrónica Avanzada",
+                "text": "El proceso de KYC/AML automatizado y la firma de contratos de adhesión con validez jurídica oficial ante la SE."
             }
         ]
     },
     {
-        id: "developer-kit",
-        title: "Pandoras Real Estate Infrastructure",
-        metadata: {
-            audience: "Desarrolladores institucionales",
-            purpose: "Venta de infraestructura tecnológica",
-            estimatedReadTime: "10 min",
-            salesMoment: "Pitch B2B"
+        "id": "market-research",
+        "title": "Estudio de Mercado: Riviera Nayarit",
+        "metadata": {
+            "audience": "Inversionistas",
+            "purpose": "Justificar la tesis geográfica",
+            "estimatedReadTime": "8 min",
+            "salesMoment": "Descubrimiento / Calificación"
         },
-        objective: "Presentar el proyecto a desarrolladores y constructoras.",
-        description: "Un modelo moderno para desarrollar proyectos inmobiliarios. Exclusivo para entidades constructoras, no para programadores.",
-        url: "#developer-kit",
-        contentPreview: [
+        "objective": "Validar por qué Bucerías es el mercado óptimo.",
+        "description": "Análisis de datos duros sobre el boom inmobiliario en Bahía de Banderas. Incluye métricas de ocupación hotelera post-pandemia, crecimiento de tarifas (ADR) y la escasez de inventario de ultra lujo.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Nuevo Estándar de Desarrollo",
-                text: "S'Narai representa una nueva forma de estructurar desarrollos (como nuestro modelo en Bucerías) mediante procesos digitales, smart contracts y documentación centralizada."
+                "section": "El Efecto 'Golden Zone'",
+                "text": "Por qué Bucerías absorbió la demanda de Punta Mita y Nuevo Vallarta, logrando apreciaciones anuales del 12-15% en el segmento high-end."
             },
             {
-                section: "Ecosistema Integrado",
-                text: "Integra comercialización de los 80,400 títulos, seguimiento documental del fideicomiso y administración de obra en un solo motor."
+                "section": "Proyecciones Macro",
+                "text": "Impacto del nuevo aeropuerto internacional, carreteras y la entrada masiva de nómadas digitales y jubilados norteamericanos."
             }
         ]
     },
     {
-        id: "due-diligence",
-        title: "Due Diligence Package",
-        metadata: {
-            audience: "Inversionistas analíticos",
-            purpose: "Transparencia legal, técnica y financiera",
-            estimatedReadTime: "15 min",
-            salesMoment: "Cierre / Resolución de dudas profundas"
+        "id": "partner-program",
+        "title": "Growth Partner Program",
+        "metadata": {
+            "audience": "Brokers / Asesores Patrimoniales",
+            "purpose": "Reclutar fuerza de ventas",
+            "estimatedReadTime": "5 min",
+            "salesMoment": "Onboarding de Gestores"
         },
-        objective: "Validación documental para inversionistas.",
-        description: "Generador de máxima confianza: el paquete técnico, legal y administrativo completo para analizar la viabilidad antes de invertir.",
-        url: "#due-diligence",
-        contentPreview: [
+        "objective": "Entender el modelo de comisiones on-chain.",
+        "description": "El manual para comercializar S'Narai. Explica cómo los Gestores Patrimoniales pueden ganar comisiones líquidas (hasta 10%) en USDC de forma automatizada e inmediata, gracias a la infraestructura de Pandoras Growth OS.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Transparencia desde el primer día",
-                text: "Toda inversión importante merece información clara. Revisa escrituras del terreno en Bucerías, contratos de fideicomiso y sellos NOM-151."
+                "section": "Comisiones Programables",
+                "text": "Olvida perseguir a los desarrolladores para cobrar. Si tu cliente invierte a través de tu enlace, el Smart Contract desvía tu comisión instantáneamente a tu wallet."
             },
             {
-                section: "Reducción de Incertidumbre",
-                text: "Organizamos licencias de construcción, manifiestos ambientales y perfiles de los desarrolladores (Aztecas) en un único expediente verificable."
+                "section": "Dashboard del Gestor",
+                "text": "Cómo trackear tus leads, monitorear ventas en tiempo real y descargar material de marketing marca blanca."
             }
         ]
     },
     {
-        id: "project-roadmap",
-        title: "Project Roadmap",
-        metadata: {
-            audience: "Inversionistas",
-            purpose: "Mostrar la línea de tiempo y creación de valor",
-            estimatedReadTime: "3 min",
-            salesMoment: "Generación de confianza operativa"
+        "id": "financial-model",
+        "title": "Modelo Financiero y Proforma",
+        "metadata": {
+            "audience": "Inversionistas Analíticos",
+            "purpose": "Validar números",
+            "estimatedReadTime": "15 min",
+            "salesMoment": "Cierre profundo"
         },
-        objective: "Mostrar el avance y cronograma.",
-        description: "Del terreno a la entrega. Un documento altamente visual sobre los tiempos y fases de ejecución de S'Narai.",
-        url: "#roadmap",
-        contentPreview: [
+        "objective": "Desglose de costos y flujos de caja.",
+        "description": "Hoja de cálculo detallada y resumen en PDF con el costo de construcción por m2, gastos operativos (OPEX) proyectados, Capex, y proyecciones de flujo de caja a 5 y 10 años.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Hitos Verificables",
-                text: "Desde la adquisición del terreno en la Zona Dorada hasta la entrega llave en mano y operación hotelera del Rooftop y Wellness center."
+                "section": "Escenarios de Estrés",
+                "text": "Qué pasa con los rendimientos si la ocupación cae al 40% (pesimista) vs si se mantiene en el 75% (esperado)."
             },
             {
-                section: "Seguimiento en Portal",
-                text: "Cada fase (preventa, obra negra, obra blanca) cuenta con objetivos y avances verificables consultables en tiempo real."
+                "section": "Estructura de Capital",
+                "text": "Uso de los fondos (Land acquisition, Soft costs, Hard costs) y la cascada de pagos."
             }
         ]
     },
     {
-        id: "faq",
-        title: "FAQ & Objeciones",
-        metadata: {
-            audience: "Gestores e Inversionistas",
-            purpose: "Desactivar fricciones y miedos",
-            estimatedReadTime: "5 min",
-            salesMoment: "Manejo de objeciones"
+        "id": "architecture-dossier",
+        "title": "Dossier Arquitectónico & Renders",
+        "metadata": {
+            "audience": "Compradores / Inversionistas",
+            "purpose": "Vender el sueño (Emocional)",
+            "estimatedReadTime": "4 min",
+            "salesMoment": "Primer contacto / Visión"
         },
-        objective: "Resolver preguntas frecuentes y apoyar el cierre de ventas.",
-        description: "Todo lo que debes saber sobre S'Narai. Respuestas claras para tomar decisiones con confianza.",
-        url: "#faq",
-        contentPreview: [
+        "objective": "Inspirar a través del diseño.",
+        "description": "Catálogo visual de alta resolución del proyecto. Incluye fachadas, interiores de las unidades, áreas comunes (Rooftop pool, Wellness center, Coworking) y floorplans.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Resolución de fricción",
-                text: "Respuestas a preguntas clave: ¿Soy dueño de escrituras? No, eres partícipe estructurado de las utilidades y capital del edificio respaldado por Fideicomiso."
-            },
-            {
-                section: "Liquidez y Salida",
-                text: "¿Puedo salir antes? Sí, el ecosistema cuenta con un mercado interno para cesión de derechos."
+                "section": "Diseño Bioclimático",
+                "text": "Materiales de la región integrados para reducir el consumo energético en un 25%."
             }
         ]
     },
     {
-        id: "investment-process",
-        title: "Investment Process",
-        metadata: {
-            audience: "Inversionistas",
-            purpose: "Claridad operativa para el fondeo",
-            estimatedReadTime: "3 min",
-            salesMoment: "Previo a la firma de participación"
+        "id": "faq",
+        "title": "Preguntas Frecuentes (FAQ)",
+        "metadata": {
+            "audience": "Público General",
+            "purpose": "Resolver objeciones rápidas",
+            "estimatedReadTime": "6 min",
+            "salesMoment": "Cualquier momento"
         },
-        objective: "Explicar el proceso de inversión paso a paso.",
-        description: "¿Cómo invertir en S'Narai? Tu proceso de 8 pasos detallado.",
-        url: "#investment-process",
-        contentPreview: [
+        "objective": "Destruir objeciones comunes.",
+        "description": "Respuestas directas a las dudas más comunes sobre la tokenización, riesgos de construcción, impuestos, uso vacacional y el proceso de venta secundaria (salida).",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Pasos 1 a 4",
-                text: "1. Conoce el proyecto. 2. Agenda reunión. 3. Resuelve dudas. 4. Selecciona el número de Títulos (desde $50 USD en Fase 1)."
+                "section": "¿Qué pasa si el desarrollador quiebra?",
+                "text": "Explicación de las protecciones fiduciarias y por qué el inmueble permanece protegido."
             },
             {
-                section: "Pasos 5 a 8",
-                text: "5. Firma documentación con NOM-151. 6. Aporta capital. 7. Entra al Portal S'Narai. 8. Sigue tu inversión en tiempo real."
+                "section": "¿Tengo que pagar impuestos por las utilidades?",
+                "text": "Manejo fiscal de los rendimientos (dividendos vs apreciación de capital)."
             }
         ]
     },
     {
-        id: "portal-guide",
-        title: "Portal Guide",
-        metadata: {
-            audience: "Inversionistas activos",
-            purpose: "Onboarding tecnológico del usuario",
-            estimatedReadTime: "4 min",
-            salesMoment: "Post-inversión"
+        "id": "developer-track-record",
+        "title": "Track Record del Desarrollador",
+        "metadata": {
+            "audience": "Inversionistas Institucionales",
+            "purpose": "Generar confianza en la ejecución",
+            "estimatedReadTime": "5 min",
+            "salesMoment": "Due Diligence"
         },
-        objective: "Enseñar el uso del portal del proyecto.",
-        description: "Bienvenido al Portal S'Narai. Todo el proyecto en un solo lugar.",
-        url: "#portal-guide",
-        contentPreview: [
+        "objective": "Demostrar capacidad de ejecución.",
+        "description": "Historia del equipo detrás de S'Narai. Proyectos anteriores completados, métricas de éxito y experiencia combinada en hospitalidad, construcción y tecnología web3.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Gestión Centralizada",
-                text: "Diseñado para consultar documentos, avances, rendimientos distribuidos y noticias, sin salir del dashboard."
-            },
-            {
-                section: "Historial Permanente",
-                text: "Tu capital y los movimientos de gobernanza (DAO) estarán siempre disponibles y actualizados para tu monitoreo financiero."
+                "section": "Equipo Fundador",
+                "text": "Perfiles de los arquitectos, operadores hoteleros y el equipo de ingeniería blockchain (Pandoras)."
             }
         ]
     },
     {
-        id: "gestores-guide",
-        title: "Guía Comercial para Gestores",
-        metadata: {
-            audience: "Gestores S'Narai",
-            purpose: "Alineación comercial",
-            estimatedReadTime: "10 min",
-            salesMoment: "Capacitación interna"
+        "id": "tokenomics",
+        "title": "Tokenomics y Mecanismos de Oferta",
+        "metadata": {
+            "audience": "Inversionistas Crypto-Nativos",
+            "purpose": "Explicar la dinámica del token",
+            "estimatedReadTime": "7 min",
+            "salesMoment": "Análisis Técnico"
         },
-        objective: "Scripts, argumentos y proceso comercial.",
-        description: "Vende con seguridad. Comunica con claridad. Carpeta de ventas completa para nuestros Embajadores.",
-        url: "#gestores-guide",
-        contentPreview: [
+        "objective": "Entender el supply y los incentivos.",
+        "description": "Desglose de los 80,400 Títulos Participativos Inmobiliarios. Explica las fases de preventa (Seed, Private, Public), descuentos por fase, mecanismos de vesting (si aplican) y utilidades del token (gobernanza, noches gratis).",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Pitches listos",
-                text: "Incluye: Elevator Pitch (30s), Pitch (3 min) y Pitch profundo (10 min) para captar inversionistas hacia Bucerías."
-            },
-            {
-                section: "Buenas prácticas",
-                text: "Cómo presentar S'Narai frente a inmuebles tradicionales. Qué prometer, qué NO prometer, y cómo agendar citas efectivas de cierre."
+                "section": "Dinámica de Precios (Tranches)",
+                "text": "Cómo el precio del token aumenta algorítmicamente en cada fase de levantamiento."
             }
         ]
     },
     {
-        id: "escenarios-financieros",
-        title: "Escenarios Financieros S'Narai",
-        metadata: {
-            audience: "Gestores e Inversionistas",
-            purpose: "Modelado de retornos",
-            estimatedReadTime: "7 min",
-            salesMoment: "Respuesta a ¿Cuánto gano?"
+        "id": "how-to-buy",
+        "title": "Guía Paso a Paso: Cómo Invertir",
+        "metadata": {
+            "audience": "Inversionistas No-Técnicos",
+            "purpose": "Facilitar el onboarding",
+            "estimatedReadTime": "3 min",
+            "salesMoment": "Cierre / Onboarding"
         },
-        objective: "Modelar el retorno del inversionista bajo diferentes estrategias patrimoniales.",
-        description: "Un análisis financiero detallado con 6 escenarios hipotéticos: desde el modelo más conservador hasta la estrategia de mercado secundario Web3. Supuestos, proyecciones de plusvalía, flujos de renta y comparativa final.",
-        url: "#escenarios-financieros",
-        contentPreview: [
+        "objective": "Eliminar fricción tecnológica al pagar.",
+        "description": "Manual visual muy sencillo sobre cómo crear una cuenta en el Portal S'Narai, pasar la verificación de identidad (KYC), firmar el contrato y realizar el pago (vía SPEI, tarjeta o Crypto).",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "Modelo de activo tokenizado con liquidez secundaria",
-                text: "S'Narai no es un proyecto de venta inmobiliaria tradicional. Es un activo patrimonial tokenizado diseñado para generar plusvalía (12-15% anual) y flujo de caja (yield 10-12%) mientras el inversionista mantiene liquidez a través del mercado secundario."
-            },
-            {
-                section: "6 Escenarios: desde $12.7M hasta $216M en valor patrimonial a 5 años",
-                text: "El modelo financiero cubre desde la entrada Fase Fundador ($400K USD) con ROI proyectado de +113% a 5 años, hasta la estrategia patrimonial conservadora donde 17 departamentos generan $8.9M MXN anuales en flujo neto."
+                "section": "Rampa Fiat (Dinero Tradicional)",
+                "text": "Instrucciones para transferir desde cualquier banco en México (SPEI) sin necesidad de entender blockchain."
             }
         ]
     },
     {
-        id: "investor-journey-guide",
-        title: "S'Narai Investor Journey Guide",
-        metadata: {
-            audience: "Gestores S'Narai",
-            purpose: "Manejo de expectativas",
-            estimatedReadTime: "5 min",
-            salesMoment: "Preparación comercial"
+        "id": "hotel-operator",
+        "title": "Operación Hotelera y Property Management",
+        "metadata": {
+            "audience": "Inversionistas enfocados en flujo",
+            "purpose": "Garantizar la calidad de operación",
+            "estimatedReadTime": "6 min",
+            "salesMoment": "Due Diligence Operativo"
         },
-        objective: "Habilitación comercial para Realtors y Gestores.",
-        description: "Documento maestro que alinea el discurso de ventas. Respuestas oficiales a objeciones y la Promesa de Valor.",
-        url: "#investor-journey-guide",
-        contentPreview: [
+        "objective": "Explicar quién y cómo operará el edificio.",
+        "description": "Estrategia de comercialización de rentas vacacionales. Canales de distribución (Airbnb Luxe, Booking, Agencias directas), estándares de servicio (concierge, limpieza) y mantenimiento del activo.",
+        "url": "#",
+        "contentPreview": [
             {
-                section: "La Promesa de Valor",
-                text: "No es 'crypto', no es 'tiempo compartido'. Es una participación económica en un fideicomiso inmobiliario, tokenizada para liquidez y transparencia."
-            },
+                "section": "Comisiones y Mantenimiento",
+                "text": "Desglose del porcentaje que retiene el operador hotelero y el fondo de reserva para el mantenimiento del edificio."
+            }
+        ]
+    }
+,
+    {
+        "id": "founding-round-guide",
+        "title": "Founding Round Guide",
+        "metadata": {
+            "audience": "Inversionistas y Gestores",
+            "purpose": "Explicación de la Ronda Fundadora",
+            "estimatedReadTime": "10 min",
+            "salesMoment": "Educación y Profundización"
+        },
+        "objective": "Entender qué es la Ronda Fundadora y por qué invertir temprano.",
+        "description": "Explicación detallada sobre qué es la ronda fundadora, por qué existen tres rondas, cómo funciona la progresión de precios, por qué Pandoras no reabre rondas y qué ocurre después de concluir.",
+        "url": "/es/institutional/founding-round-guide",
+        "contentPreview": [
             {
-                section: "Mecanismos de Liquidez",
-                text: "Manejo de expectativas sobre retiros: El mercado secundario (AGORA) y las recompras de tesorería."
+                "section": "Riesgo y Valor",
+                "text": "Los inversionistas tempranos participan en condiciones que no estarán disponibles cuando el proyecto entre a preventa pública."
             }
         ]
     }
 ];
+export const snaraiMaterialsEN: MarketingMaterial[] = [
+    {
+        "id": "executive-investment-brief",
+        "title": "Executive Investment Brief",
+        "metadata": {
+            "audience": "Institutional Investors / HNWIs",
+            "purpose": "Initial filter and executive summary",
+            "estimatedReadTime": "3 min",
+            "salesMoment": "Initial Discovery"
+        },
+        "objective": "An Executive Overview for Prospective Investors",
+        "description": "This document is not trying to sell. It aims to answer a single question: 'Is this worth an hour of my time to study?'",
+        "url": "/en/institutional/executive-investment-brief",
+        "contentPreview": [
+            {
+                "section": "Executive Summary",
+                "text": "A highly executive summary of what S'Narai is, what Pandoras does, and what the opportunity entails."
+            }
+        ]
+    },
+    {
+        "id": "project-overview",
+        "title": "S'Narai Project Overview",
+        "metadata": {
+            "audience": "Investors",
+            "purpose": "Quick introduction to the project",
+            "estimatedReadTime": "5 min",
+            "salesMoment": "Initial Discovery"
+        },
+        "objective": "Understand the project in under 5 minutes.",
+        "description": "The initial document every investor, advisor, or developer must read to understand the value thesis of S'Narai Bucerías.",
+        "url": "#overview",
+        "contentPreview": [
+            {
+                "section": "More than real estate investment. A new way to build wealth.",
+                "text": "S'Narai is a premium real estate development in the Golden Zone of Bucerías, designed to combine architecture, capital appreciation (35-40% est.), and blockchain technology in a transparent investment model."
+            },
+            {
+                "section": "Digital Ecosystem",
+                "text": "Every stage of the project (from the issuance of 80,400 titles to delivery) is backed by verifiable documentation, real-time tracking, and a Master Trust."
+            }
+        ]
+    },
+    {
+        "id": "investment-deck",
+        "title": "Investment Deck",
+        "metadata": {
+            "audience": "Investors",
+            "purpose": "Detailed presentation of the opportunity",
+            "estimatedReadTime": "10 min",
+            "salesMoment": "Sales meeting or deep dive"
+        },
+        "objective": "Analyze the numbers and capital structure.",
+        "description": "The official pitch deck detailing the commercial opportunity in Riviera Nayarit, the financial model, the architectural master plan, and the development phases (Seed, Construction, Operation).",
+        "url": "https://drive.google.com/file/d/1X42yC0R7665NfV9j_Zk5672/view?usp=sharing",
+        "contentPreview": [
+            {
+                "section": "Financial Breakdown (IRR and Yields)",
+                "text": "Occupancy projections, average daily rates (ADR), and revenue distribution (70% investors / 30% operations) across different scenarios."
+            },
+            {
+                "section": "Execution Roadmap",
+                "text": "Timeline from Trust constitution and F&F Presale (Q2 2026) to Soft Opening (Q1 2028)."
+            }
+        ]
+    },
+    {
+        "id": "smart-contract-audit",
+        "title": "On-Chain Architecture & Smart Contracts",
+        "metadata": {
+            "audience": "Tech / Institutional Investors",
+            "purpose": "Build technical trust",
+            "estimatedReadTime": "15 min",
+            "salesMoment": "Due Diligence (Transparency)"
+        },
+        "objective": "Demonstrate the security and immutability of the network.",
+        "description": "Technical summary of the Smart Contracts deployed on the blockchain network. Details the token standard (ERC-1155/ERC-20), minting and burning functions, and the automated profit distribution mechanism.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "The 'Dividend Distributor' Contract",
+                "text": "How hotel profits are injected as USDC and distributed instantly to Certificate holders' wallets, without human intervention."
+            },
+            {
+                "section": "Decentralized Governance",
+                "text": "The on-chain voting system that allows token holders to make critical decisions about renovations, hotel operators, or the potential block sale of the building."
+            }
+        ]
+    },
+    {
+        "id": "legal-structure",
+        "title": "Legal Structure and Trust (NOM-151)",
+        "metadata": {
+            "audience": "Lawyers / Investors",
+            "purpose": "Validate legal certainty",
+            "estimatedReadTime": "12 min",
+            "salesMoment": "Due Diligence (Closing)"
+        },
+        "objective": "Understand how the digital ties to real property in Mexico.",
+        "description": "Key document explaining the bridge between Blockchain and Mexican Laws. Describes the role of the Master Real Estate Trust, and how Smart Contracts act as irrevocable instructions validated via NOM-151.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "The Trust",
+                "text": "S'Narai SA de CV contributes the property to the Trust. Digital certificates represent trust beneficiary rights, ensuring the asset cannot be seized or sold without DAO consensus."
+            },
+            {
+                "section": "Advanced Electronic Signature",
+                "text": "The automated KYC/AML process and the signing of adhesion contracts with official legal validity."
+            }
+        ]
+    },
+    {
+        "id": "market-research",
+        "title": "Market Research: Riviera Nayarit",
+        "metadata": {
+            "audience": "Investors",
+            "purpose": "Justify the geographical thesis",
+            "estimatedReadTime": "8 min",
+            "salesMoment": "Discovery / Qualification"
+        },
+        "objective": "Validate why Bucerías is the optimal market.",
+        "description": "Hard data analysis of the real estate boom in Bahía de Banderas. Includes post-pandemic hotel occupancy metrics, ADR growth, and the scarcity of ultra-luxury inventory.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "The 'Golden Zone' Effect",
+                "text": "Why Bucerías absorbed the demand from Punta Mita and Nuevo Vallarta, achieving annual appreciations of 12-15% in the high-end segment."
+            },
+            {
+                "section": "Macro Projections",
+                "text": "Impact of the new international airport, highways, and the massive influx of digital nomads and North American retirees."
+            }
+        ]
+    },
+    {
+        "id": "partner-program",
+        "title": "Growth Partner Program",
+        "metadata": {
+            "audience": "Brokers / Wealth Advisors",
+            "purpose": "Recruit sales force",
+            "estimatedReadTime": "5 min",
+            "salesMoment": "Partner Onboarding"
+        },
+        "objective": "Understand the on-chain commission model.",
+        "description": "The manual for marketing S'Narai. Explains how Growth Partners can earn liquid commissions (up to 10%) in USDC automatically and instantly, thanks to Pandoras Growth OS infrastructure.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "Programmable Commissions",
+                "text": "Forget chasing developers to get paid. If your client invests through your link, the Smart Contract routes your commission instantly to your wallet."
+            },
+            {
+                "section": "Partner Dashboard",
+                "text": "How to track your leads, monitor real-time sales, and download white-label marketing material."
+            }
+        ]
+    },
+    {
+        "id": "financial-model",
+        "title": "Financial Model and Proforma",
+        "metadata": {
+            "audience": "Analytical Investors",
+            "purpose": "Validate numbers",
+            "estimatedReadTime": "15 min",
+            "salesMoment": "Deep Closing"
+        },
+        "objective": "Cost breakdown and cash flows.",
+        "description": "Detailed spreadsheet and PDF summary with construction cost per sqm, projected operational expenses (OPEX), Capex, and 5 to 10-year cash flow projections.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "Stress Scenarios",
+                "text": "What happens to returns if occupancy drops to 40% (pessimistic) vs if it stays at 75% (expected)."
+            },
+            {
+                "section": "Capital Structure",
+                "text": "Use of funds (Land acquisition, Soft costs, Hard costs) and the payment waterfall."
+            }
+        ]
+    },
+    {
+        "id": "architecture-dossier",
+        "title": "Architectural Dossier & Renders",
+        "metadata": {
+            "audience": "Buyers / Investors",
+            "purpose": "Sell the dream (Emotional)",
+            "estimatedReadTime": "4 min",
+            "salesMoment": "First contact / Vision"
+        },
+        "objective": "Inspire through design.",
+        "description": "High-resolution visual catalog of the project. Includes facades, unit interiors, common areas (Rooftop pool, Wellness center, Coworking), and floorplans.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "Bioclimatic Design",
+                "text": "Regional materials integrated to reduce energy consumption by 25%."
+            }
+        ]
+    },
+    {
+        "id": "faq",
+        "title": "Frequently Asked Questions (FAQ)",
+        "metadata": {
+            "audience": "General Public",
+            "purpose": "Resolve quick objections",
+            "estimatedReadTime": "6 min",
+            "salesMoment": "Anytime"
+        },
+        "objective": "Destroy common objections.",
+        "description": "Direct answers to the most common doubts regarding tokenization, construction risks, taxes, vacation use, and the secondary market process (exit).",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "What happens if the developer goes bankrupt?",
+                "text": "Explanation of fiduciary protections and why the property remains protected."
+            },
+            {
+                "section": "Do I have to pay taxes on profits?",
+                "text": "Tax handling of yields (dividends vs capital appreciation)."
+            }
+        ]
+    },
+    {
+        "id": "developer-track-record",
+        "title": "Developer Track Record",
+        "metadata": {
+            "audience": "Institutional Investors",
+            "purpose": "Build execution trust",
+            "estimatedReadTime": "5 min",
+            "salesMoment": "Due Diligence"
+        },
+        "objective": "Demonstrate execution capabilities.",
+        "description": "History of the team behind S'Narai. Past completed projects, success metrics, and combined experience in hospitality, construction, and web3 technology.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "Founding Team",
+                "text": "Profiles of architects, hotel operators, and the blockchain engineering team (Pandoras)."
+            }
+        ]
+    },
+    {
+        "id": "tokenomics",
+        "title": "Tokenomics and Supply Mechanics",
+        "metadata": {
+            "audience": "Crypto-Native Investors",
+            "purpose": "Explain token dynamics",
+            "estimatedReadTime": "7 min",
+            "salesMoment": "Technical Analysis"
+        },
+        "objective": "Understand supply and incentives.",
+        "description": "Breakdown of the 80,400 Real Estate Participation Titles. Explains the presale phases (Seed, Private, Public), phase discounts, vesting mechanisms (if applicable), and token utilities (governance, free nights).",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "Pricing Dynamics (Tranches)",
+                "text": "How the token price algorithmically increases in every funding phase."
+            }
+        ]
+    },
+    {
+        "id": "how-to-buy",
+        "title": "Step-by-Step Guide: How to Invest",
+        "metadata": {
+            "audience": "Non-Technical Investors",
+            "purpose": "Facilitate onboarding",
+            "estimatedReadTime": "3 min",
+            "salesMoment": "Closing / Onboarding"
+        },
+        "objective": "Eliminate tech friction when paying.",
+        "description": "Very simple visual manual on how to create an account on the S'Narai Portal, pass identity verification (KYC), sign the contract, and make the payment (via SPEI, card, or Crypto).",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "Fiat On-Ramp (Traditional Money)",
+                "text": "Instructions to transfer from any bank in Mexico (SPEI) without needing to understand blockchain."
+            }
+        ]
+    },
+    {
+        "id": "hotel-operator",
+        "title": "Hotel Operations and Property Management",
+        "metadata": {
+            "audience": "Yield-focused investors",
+            "purpose": "Guarantee operational quality",
+            "estimatedReadTime": "6 min",
+            "salesMoment": "Operational Due Diligence"
+        },
+        "objective": "Explain who and how the building will be operated.",
+        "description": "Vacation rental commercialization strategy. Distribution channels (Airbnb Luxe, Booking, direct agencies), service standards (concierge, cleaning), and asset maintenance.",
+        "url": "#",
+        "contentPreview": [
+            {
+                "section": "Commissions and Maintenance",
+                "text": "Breakdown of the percentage retained by the hotel operator and the reserve fund for building maintenance."
+            }
+        ]
+    }
+];
+
+// Default export for backward compatibility if needed, although state/route.ts should handle locale logic
+export const snaraiMaterials = snaraiMaterialsES;

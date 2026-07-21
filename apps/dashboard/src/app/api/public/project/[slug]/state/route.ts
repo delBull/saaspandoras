@@ -303,6 +303,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const requestUrl = new URL(req.url);
     const unlockToken = requestUrl.searchParams.get('p_unlock');
     const isAdminRequest = unlockToken && process.env.PANDORAS_DATAROOM_SECRET && unlockToken === process.env.PANDORAS_DATAROOM_SECRET;
+    const locale = requestUrl.searchParams.get('locale') || 'es';
 
     // 4.9 Parallel DB Queries for secondary data
     const [activities, activeProposals, user, ambassador, activeBriefings, activeDocuments] = await Promise.all([
@@ -356,8 +357,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // Fetch static materials for the project (Currently only S'Narai is supported statically)
     let staticMaterials: any[] = [];
     if (project.slug === 'snarai') {
-        const { snaraiMaterials } = await import('@/lib/marketing/snarai-materials');
-        staticMaterials = snaraiMaterials.map(m => ({
+        const { snaraiMaterialsES, snaraiMaterialsEN } = await import('@/lib/marketing/snarai-materials');
+        const materialsToUse = locale === 'en' ? snaraiMaterialsEN : snaraiMaterialsES;
+        staticMaterials = materialsToUse.map(m => ({
             id: m.id,
             title: m.title,
             category: 'PROJECT_INTELLIGENCE',
@@ -648,9 +650,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         briefings: activeBriefings.map(b => ({
           id: b.id,
           slug: b.slug,
-          title: b.title,
-          subtitle: b.subtitle,
-          blocks: b.blocks,
+          title: locale === 'en' && (b as any).titleEn ? (b as any).titleEn : b.title,
+          subtitle: locale === 'en' && (b as any).subtitleEn ? (b as any).subtitleEn : b.subtitle,
+          blocks: locale === 'en' && (b as any).blocksEn ? (b as any).blocksEn : b.blocks,
           updatedAt: b.updatedAt
         }))
       },
