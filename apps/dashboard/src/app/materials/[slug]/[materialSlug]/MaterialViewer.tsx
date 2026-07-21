@@ -3,8 +3,22 @@
 import React from 'react';
 import { MarketingDeckRenderer } from '@/components/marketing/MarketingDeckRenderer';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 export function MaterialViewer({ deck, projectSlug }: { deck: any, projectSlug: string }) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    
+    const currentLang = searchParams.get('lang') || 'es';
+
+    const toggleLanguage = () => {
+        const newLang = currentLang === 'es' ? 'en' : 'es';
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('lang', newLang);
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
     return (
         <div className="w-full">
             <div className="fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6 print:hidden">
@@ -22,6 +36,12 @@ export function MaterialViewer({ deck, projectSlug }: { deck: any, projectSlug: 
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button 
+                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm font-bold transition-colors uppercase"
+                        onClick={toggleLanguage}
+                    >
+                        {currentLang === 'es' ? 'EN' : 'ES'}
+                    </button>
                     <button 
                         className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm font-bold transition-colors"
                         onClick={() => window.print()}

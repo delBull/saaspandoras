@@ -1,7 +1,7 @@
 import React from 'react';
 import { MaterialViewer } from './MaterialViewer';
 import { mockSNaraiDeck } from '@/lib/marketing/mock-snarai-deck';
-import { snaraiMaterials } from '@/lib/marketing/snarai-materials';
+import { snaraiMaterialsES, snaraiMaterialsEN } from '@/lib/marketing/snarai-materials';
 
 // Unique content overrides per materialSlug
 // Each key matches the `id` in snaraiMaterials
@@ -89,10 +89,15 @@ Este documento modela seis escenarios financieros hipotéticos con los mismos su
 };
 
 
-export default async function MaterialPage({ params }: { params: Promise<{ slug: string, materialSlug: string }> }) {
+export default async function MaterialPage({ params, searchParams }: { params: Promise<{ slug: string, materialSlug: string }>, searchParams?: Promise<{ lang?: string }> }) {
     const { slug, materialSlug } = await params;
+    const t = (es, en) => lang === 'en' ? en : es;
+    const resolvedSearchParams = searchParams ? await searchParams : {};
+    const lang = resolvedSearchParams.lang || 'es';
+    
     // Find the matching material definition
-    const material = snaraiMaterials.find(m => m.id === materialSlug);
+    const activeMaterials = lang === 'en' ? snaraiMaterialsEN : snaraiMaterialsES;
+    const material = activeMaterials.find(m => m.id === materialSlug);
     const contentOverride = MATERIAL_CONTENT[materialSlug];
 
     const title = material?.title ?? materialSlug.replace(/-/g, ' ').toUpperCase();
@@ -640,7 +645,313 @@ El cliente no está comprando "semanas" de uso. Está participando financieramen
         }
     ] : [];
 
+    const foundingRoundGuideBlocks = materialSlug === 'founding-round-guide' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Introducción', 'Introduction'),
+                title: t('¿Por qué existe la Founding Round?', 'Why does the Founding Round exist?'),
+                content: t(`S'Narai se encuentra actualmente en una etapa previa a la preventa inmobiliaria tradicional.\n\nEsta etapa recibe el nombre de **Founding Round** y tiene un objetivo muy específico: permitir que un grupo limitado de inversionistas participe en la estructuración inicial del proyecto antes del inicio de la comercialización pública.\n\nLas condiciones disponibles durante esta etapa no estarán disponibles una vez que el proyecto avance hacia la preventa.`, `S'Narai is currently in a stage prior to traditional real estate pre-sales.\n\nThis stage is called the **Founding Round** and has a very specific objective: to allow a limited group of investors to participate in the initial structuring of the project before public commercialization begins.\n\nThe conditions available during this stage will not be available once the project moves to pre-sales.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('El Momento Actual', 'The Current Stage'),
+                title: t('¿Qué significa participar hoy?', 'What does it mean to participate today?'),
+                content: t(`Durante la Founding Round el proyecto aún se encuentra consolidando diversos procesos:\n\n* estructuración financiera\n* integración legal\n* consolidación comercial\n* fortalecimiento institucional\n* preparación para la preventa\n\nPrecisamente por asumir esa etapa temprana, los participantes reciben condiciones preferenciales de adquisición.`, `During the Founding Round, the project is still consolidating various processes:\n\n* financial structuring\n* legal integration\n* commercial consolidation\n* institutional strengthening\n* pre-sale preparation\n\nPrecisely by assuming this early stage, participants receive preferential acquisition conditions.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Estructura', 'Structure'),
+                title: t('Las tres Founding Rounds', 'The three Founding Rounds'),
+                content: t(`La Founding Round se divide en tres emisiones consecutivas.\n\n**Founding Round I**\nPrecio inicial de participación.\n\n**Founding Round II**\nUna vez concluida la primera emisión, el precio aumenta.\n\n**Founding Round III**\nÚltima emisión antes de la preventa pública.\n\nCada ronda posee una cantidad limitada de certificados. Una vez agotada una ronda, Pandoras no volverá a emitir certificados bajo esas condiciones.`, `The Founding Round is divided into three consecutive issues.\n\n**Founding Round I**\nInitial participation price.\n\n**Founding Round II**\nOnce the first issue concludes, the price increases.\n\n**Founding Round III**\nFinal issue before public pre-sale.\n\nEach round has a limited amount of certificates. Once a round is sold out, Pandoras will not issue certificates under those conditions again.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Valor', 'Value'),
+                title: t('Dos fuentes de creación de valor', 'Two sources of value creation'),
+                content: t(`Es importante entender que existen dos mecanismos independientes.\n\n### Valor de emisión\nCada ronda posee un precio distinto de participación. Este incremento responde exclusivamente al avance del proceso de estructuración.\n\n### Valor del activo\nPosteriormente, el valor del proyecto dependerá de factores propios del desarrollo inmobiliario:\n* avance de obra\n* consolidación operativa\n* demanda\n* ocupación\n* ingresos generados\n\nAmbos procesos son diferentes y no deben confundirse.`, `It is important to understand that there are two independent mechanisms.\n\n### Issuance value\nEach round has a different participation price. This increase responds exclusively to the progress of the structuring process.\n\n### Asset value\nSubsequently, the value of the project will depend on factors inherent to real estate development:\n* construction progress\n* operational consolidation\n* demand\n* occupancy\n* generated income\n\nBoth processes are different and should not be confused.`),
+                stats: []
+            }
+        }
+    ] : [];
+
+    const howToBuyBlocks = materialSlug === 'how-to-buy' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Paso 1 y 2', 'Step 1 & 2'),
+                title: t('Descubrimiento y Análisis', 'Discovery and Analysis'),
+                content: t(`**Paso 1: Solicita una sesión privada**\nDurante la reunión resolveremos dudas sobre el proyecto, estructura, documentación y modelo financiero.\n\n**Paso 2: Revisa el Data Room**\nTendrás acceso a documentación legal, arquitectura, modelo financiero y materiales comerciales.`, `**Step 1: Request a private session**\nDuring the meeting we will resolve questions about the project, structure, documentation, and financial model.\n\n**Step 2: Review the Data Room**\nYou will have access to legal documentation, architecture, financial model, and commercial materials.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Paso 3 y 4', 'Step 3 & 4'),
+                title: t('Selección y Formalización', 'Selection and Formalization'),
+                content: t(`**Paso 3: Selecciona la Founding Round disponible**\nCada ronda posee precio, disponibilidad y cantidad limitada.\n\n**Paso 4: Formaliza tu participación**\nDependiendo del método elegido podrás participar mediante:\n* transferencia bancaria (SPEI)\n* transferencia internacional\n* activos digitales (opcional)\n\n*No es necesario utilizar tecnología blockchain para participar.*`, `**Step 3: Select the available Founding Round**\nEach round has a price, availability, and limited quantity.\n\n**Step 4: Formalize your participation**\nDepending on the chosen method, you can participate via:\n* bank transfer (SPEI)\n* international transfer\n* digital assets (optional)\n\n*It is not necessary to use blockchain technology to participate.*`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Paso 5 y 6', 'Step 5 & 6'),
+                title: t('Recepción y Seguimiento', 'Reception and Tracking'),
+                content: t(`**Paso 5: Recepción de documentación**\nUna vez validada la operación recibirás tu confirmación, documentación correspondiente y acceso al portal del inversionista.\n\n**Paso 6: Seguimiento**\nDesde el Portal podrás consultar la evolución del proyecto, documentación, comunicados, eventos y avances.`, `**Step 5: Document reception**\nOnce the transaction is validated, you will receive your confirmation, corresponding documentation, and access to the investor portal.\n\n**Step 6: Tracking**\nFrom the Portal, you can check the project's evolution, documentation, announcements, events, and progress.`),
+                stats: []
+            }
+        }
+    ] : [];
+
+    const tokenomicsBlocks = materialSlug === 'tokenomics' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Introducción', 'Introduction'),
+                title: t('Mecanismos de Oferta', 'Supply Mechanisms'),
+                content: t(`La Founding Round utiliza un modelo de emisión escalonada diseñado para recompensar la participación temprana.\n\nNo se trata de una especulación de precios sino de un mecanismo transparente de estructuración.`, `The Founding Round uses a staggered issuance model designed to reward early participation.\n\nThis is not about price speculation but a transparent structuring mechanism.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Estructura', 'Structure'),
+                title: t('Founding Rounds y Oferta Limitada', 'Founding Rounds and Limited Supply'),
+                content: t(`**Round I:** Precio inicial.\n**Round II:** Incremento programado.\n**Round III:** Última emisión antes de la preventa.\n\nCada ronda posee una cantidad determinada de certificados. Al agotarse, no vuelve a emitirse y el proyecto continúa con la siguiente ronda.`, `**Round I:** Initial price.\n**Round II:** Scheduled increase.\n**Round III:** Final issue before pre-sale.\n\nEach round has a specific amount of certificates. Once sold out, it is not re-issued and the project continues with the next round.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Políticas', 'Policies'),
+                title: t('Transparencia Total', 'Total Transparency'),
+                content: t(`**Política de emisión:**\nPandoras únicamente emite los certificados correspondientes a la ronda vigente. Las rondas anteriores permanecen exclusivamente en manos de quienes participaron oportunamente.\n\n**Transparencia:**\nTodas las reglas de emisión permanecen definidas desde el inicio del proyecto. No existen modificaciones arbitrarias posteriores.`, `**Issuance policy:**\nPandoras only issues certificates corresponding to the current round. Previous rounds remain exclusively in the hands of those who participated appropriately.\n\n**Transparency:**\nAll issuance rules remain defined from the project's inception. There are no subsequent arbitrary modifications.`),
+                stats: []
+            }
+        }
+    ] : [];
+
+    const developerTrackRecordBlocks = materialSlug === 'developer-track-record' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Equipo',
+                title: 'S\\'Narai: Especialistas Multidisciplinarios',
+                content: `S'Narai reúne especialistas provenientes de distintas disciplinas para desarrollar un modelo inmobiliario respaldado por procesos institucionales y tecnología.`,
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Áreas de Expertise', 'Areas of Expertise'),
+                title: t('Arquitectura, Desarrollo y Operación', 'Architecture, Development, and Operation'),
+                content: t(`**Arquitectura:**\nEquipo especializado en diseño bioclimático y hospitalidad. Objetivos: eficiencia operativa, integración con el entorno y experiencia del huésped.\n\n**Desarrollo:**\nEquipo responsable de planeación, ejecución y coordinación.\n\n**Operación:**\nEspecialistas en renta vacacional, administración, experiencia del cliente y optimización de ingresos.`, `**Architecture:**\nTeam specialized in bioclimatic design and hospitality. Objectives: operational efficiency, integration with the environment, and guest experience.\n\n**Development:**\nTeam responsible for planning, execution, and coordination.\n\n**Operation:**\nSpecialists in vacation rentals, administration, customer experience, and revenue optimization.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Infraestructura', 'Infrastructure'),
+                title: t('Pandoras Growth OS', 'Pandoras Growth OS'),
+                content: t(`Proporciona la infraestructura tecnológica utilizada para seguimiento documental, administración, comunicación, automatización comercial y trazabilidad operativa.\n\n**Filosofía:**\nConstruimos activos reales apoyados por procesos digitales. La tecnología no reemplaza el activo; fortalece su administración.`, `Provides the technological infrastructure used for document tracking, administration, communication, commercial automation, and operational traceability.\n\n**Philosophy:**\nWe build real assets supported by digital processes. Technology does not replace the asset; it strengthens its administration.`),
+                stats: []
+            }
+        }
+    ] : [];
+
+    const architectureDossierBlocks = materialSlug === 'architecture-dossier' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Concepto', 'Concept'),
+                title: t('Naturaleza y Hospitalidad', 'Nature and Hospitality'),
+                content: t(`S'Narai fue concebido como un desarrollo boutique donde arquitectura, naturaleza y hospitalidad conviven bajo una misma filosofía.`, `S'Narai was conceived as a boutique development where architecture, nature, and hospitality coexist under the same philosophy.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Principios', 'Principles'),
+                title: t('Diseño Bioclimático', 'Bioclimatic Design'),
+                content: t(`El proyecto incorpora estrategias pasivas para mejorar el confort y reducir el consumo energético. Entre ellas:\n* orientación solar\n* ventilación natural\n* control térmico\n* iluminación natural\n* vegetación integrada\n* selección eficiente de materiales\n\nEstas decisiones buscan disminuir costos operativos y mejorar la experiencia del huésped.`, `The project incorporates passive strategies to improve comfort and reduce energy consumption. Among them:\n* solar orientation\n* natural ventilation\n* thermal control\n* natural lighting\n* integrated vegetation\n* efficient material selection\n\nThese decisions aim to lower operating costs and enhance the guest experience.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Espacios', 'Spaces'),
+                title: t('Amenidades Boutique', 'Boutique Amenities'),
+                content: t(`El proyecto cuenta con:\n* Rooftop\n* Alberca\n* Áreas comunes\n* Jardines\n* Amenidades boutique\n\n*Nota: Los renders representan la visión arquitectónica actual y podrán evolucionar durante el proceso ejecutivo sin alterar la esencia conceptual del proyecto.*`, `The project features:\n* Rooftop\n* Pool\n* Common areas\n* Gardens\n* Boutique amenities\n\n*Note: The renders represent the current architectural vision and may evolve during the executive process without altering the conceptual essence of the project.*`),
+                stats: []
+            }
+        }
+    ] : [];
+
+    const financialModelBlocks = materialSlug === 'financial-model' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Objetivo', 'Objective'),
+                title: t('Lógica Financiera', 'Financial Logic'),
+                content: t(`Presentar la lógica financiera utilizada para estructurar S'Narai.`, `To present the financial logic used to structure S'Narai.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Estructura', 'Structure'),
+                title: t('Estructura de Capital', 'Capital Structure'),
+                content: t(`Los recursos obtenidos serán destinados principalmente a:\n* adquisición del terreno\n* desarrollo ejecutivo\n* permisos\n* construcción\n* equipamiento\n* capital de trabajo`, `The funds obtained will be primarily allocated to:\n* land acquisition\n* executive development\n* permits\n* construction\n* equipment\n* working capital`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Modelo', 'Model'),
+                title: t('Operación y Escenarios', 'Operation and Scenarios'),
+                content: t(`El proyecto contempla ingresos provenientes de operación de rentas de corta estancia. Las proyecciones consideran distintos escenarios de ocupación:\n\n* **Conservador:** Mercado con menor demanda.\n* **Esperado:** Escenario base utilizado para la planeación.\n* **Optimista:** Mayor ritmo de ocupación y tarifas.`, `The project contemplates income from short-term rental operations. The projections consider different occupancy scenarios:\n\n* **Conservative:** Market with lower demand.\n* **Expected:** Base scenario used for planning.\n* **Optimistic:** Higher occupancy rate and tariffs.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Consideraciones', 'Considerations'),
+                title: t('Riesgos', 'Risks'),
+                content: t(`El desempeño futuro dependerá de múltiples factores: mercado, ejecución, economía, turismo y demanda.\n\n*Este documento no constituye una garantía de rendimiento.*`, `Future performance will depend on multiple factors: market, execution, economy, tourism, and demand.\n\n*This document does not constitute a guarantee of returns.*`),
+                stats: []
+            }
+        }
+    ] : [];
+
+    const partnerProgramBlocks = materialSlug === 'partner-program' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Introducción', 'Introduction'),
+                title: t('Growth Partner Program', 'Growth Partner Program'),
+                content: t(`El Growth Partner Program fue diseñado para profesionales que desean representar proyectos patrimoniales bajo un modelo transparente y escalable.`, `The Growth Partner Program was designed for professionals who wish to represent wealth projects under a transparent and scalable model.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Beneficios', 'Benefits'),
+                title: t('Soporte Institucional', 'Institutional Support'),
+                content: t(`Los Growth Partners reciben acceso a:\n* materiales comerciales\n* Investor Briefings\n* documentación\n* seguimiento de prospectos\n* soporte institucional`, `Growth Partners receive access to:\n* commercial materials\n* Investor Briefings\n* documentation\n* prospect tracking\n* institutional support`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Portal', 'Portal'),
+                title: t('Portal del Gestor', 'Manager Portal'),
+                content: t(`Desde el Dashboard es posible administrar prospectos, consultar actividad, descargar materiales, monitorear oportunidades y dar seguimiento al pipeline comercial.\n\n**Comisiones:**\nLas condiciones comerciales se encuentran establecidas dentro del programa correspondiente. Cada operación es registrada y validada conforme al proceso institucional de Pandoras.`, `From the Dashboard it is possible to manage prospects, check activity, download materials, monitor opportunities, and track the commercial pipeline.\n\n**Commissions:**\nCommercial conditions are established within the corresponding program. Each operation is registered and validated according to Pandoras' institutional process.`),
+                stats: []
+            }
+        }
+    ] : [];
+
+    const marketResearchBlocks = materialSlug === 'market-research' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Región', 'Region'),
+                title: t('Riviera Nayarit', 'Riviera Nayarit'),
+                content: t(`La Riviera Nayarit se ha consolidado como uno de los mercados turísticos e inmobiliarios con mayor crecimiento del Pacífico mexicano.`, `Riviera Nayarit has consolidated itself as one of the fastest-growing tourist and real estate markets in the Mexican Pacific.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Ubicación', 'Location'),
+                title: t('Bucerías: Atractivo y Conectividad', 'Bucerías: Appeal and Connectivity'),
+                content: t(`Su ubicación estratégica permite conectar rápidamente con Nuevo Vallarta, Punta Mita y Puerto Vallarta. Esto ha incrementado su atractivo para turismo nacional e internacional.`, `Its strategic location allows for quick connections to Nuevo Vallarta, Punta Mita, and Puerto Vallarta. This has increased its appeal for national and international tourism.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Análisis', 'Analysis'),
+                title: t('Tendencias y Perspectiva', 'Trends and Perspective'),
+                content: t(`Factores que impulsan la demanda:\n* crecimiento turístico\n* infraestructura y conectividad aérea\n* jubilados internacionales y nómadas digitales\n* oferta hotelera limitada\n\nEl desarrollo de infraestructura regional continúa fortaleciendo la competitividad del corredor Bahía de Banderas.`, `Factors driving demand:\n* tourism growth\n* infrastructure and air connectivity\n* international retirees and digital nomads\n* limited hotel supply\n\nThe development of regional infrastructure continues to strengthen the competitiveness of the Bahía de Banderas corridor.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: 'Posicionamiento',
+                title: 'La propuesta S\\'Narai',
+                content: `S'Narai busca participar en esta tendencia mediante un producto boutique orientado a calidad, eficiencia operativa y ubicación estratégica.`,
+                stats: []
+            }
+        }
+    ] : [];
+
+    const executiveInvestmentBriefBlocks = materialSlug === 'executive-investment-brief' ? [
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Executive Summary', 'Executive Summary'),
+                title: t('Un nuevo estándar de inversión', 'A new investment standard'),
+                content: t(`S'Narai es un desarrollo inmobiliario boutique ubicado en la Zona Dorada de Bucerías, diseñado para combinar arquitectura contemporánea, operación de hospitalidad y una estructura institucional apoyada por Pandoras Growth OS.\n\nActualmente el proyecto se encuentra en su **Founding Round**, una etapa previa a la preventa pública donde un grupo limitado de inversionistas puede participar bajo condiciones preferenciales de emisión.`, `S'Narai is a boutique real estate development located in the Golden Zone of Bucerías, designed to combine contemporary architecture, hospitality operations, and an institutional structure supported by Pandoras Growth OS.\n\nCurrently, the project is in its **Founding Round**, a stage prior to public pre-sales where a limited group of investors can participate under preferential issuance conditions.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Infraestructura', 'Infrastructure'),
+                title: t('Soporte y Trazabilidad', 'Support and Traceability'),
+                content: t(`Pandoras proporciona la infraestructura operativa, tecnológica y comercial que permite administrar el proyecto con altos estándares de trazabilidad, documentación y seguimiento.`, `Pandoras provides the operational, technological, and commercial infrastructure that allows managing the project with high standards of traceability, documentation, and tracking.`),
+                stats: []
+            }
+        },
+        {
+            type: 'info',
+            data: {
+                sectionLabel: t('Oportunidad', 'Opportunity'),
+                title: t('Participación Temprana', 'Early Participation'),
+                content: t(`La oportunidad consiste en participar desde una etapa temprana del ciclo de desarrollo, antes del inicio de la comercialización tradicional, dentro de un mercado con fundamentos sólidos de crecimiento turístico e inmobiliario.\n\nEste documento resume la tesis de inversión, la estructura institucional, el modelo operativo y la propuesta de valor de S'Narai para inversionistas interesados en proyectos patrimoniales de largo plazo.`, `The opportunity consists of participating from an early stage of the development cycle, before the start of traditional commercialization, within a market with solid fundamentals of tourism and real estate growth.\n\nThis document summarizes the investment thesis, the institutional structure, the operational model, and the value proposition of S'Narai for investors interested in long-term wealth projects.`),
+                stats: []
+            }
+        }
+    ] : [];
+
     const customBlocks = financialScenarioBlocks.length > 0 ? financialScenarioBlocks 
+        : foundingRoundGuideBlocks.length > 0 ? foundingRoundGuideBlocks
+        : howToBuyBlocks.length > 0 ? howToBuyBlocks
+        : tokenomicsBlocks.length > 0 ? tokenomicsBlocks
+        : developerTrackRecordBlocks.length > 0 ? developerTrackRecordBlocks
+        : architectureDossierBlocks.length > 0 ? architectureDossierBlocks
+        : financialModelBlocks.length > 0 ? financialModelBlocks
+        : partnerProgramBlocks.length > 0 ? partnerProgramBlocks
+        : marketResearchBlocks.length > 0 ? marketResearchBlocks
+        : executiveInvestmentBriefBlocks.length > 0 ? executiveInvestmentBriefBlocks 
         : investorJourneyBlocks.length > 0 ? investorJourneyBlocks
         : realtorSalesKitBlocks.length > 0 ? realtorSalesKitBlocks
         : faqBlocks.length > 0 ? faqBlocks

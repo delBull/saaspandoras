@@ -294,26 +294,6 @@ export const snaraiMaterialsES: MarketingMaterial[] = [
         ]
     },
     {
-        "id": "hotel-operator",
-        "title": "Operación Hotelera y Property Management",
-        "metadata": {
-            "audience": "Inversionistas enfocados en flujo",
-            "purpose": "Garantizar la calidad de operación",
-            "estimatedReadTime": "6 min",
-            "salesMoment": "Due Diligence Operativo"
-        },
-        "objective": "Explicar quién y cómo operará el edificio.",
-        "description": "Estrategia de comercialización de rentas vacacionales. Canales de distribución (Airbnb Luxe, Booking, Agencias directas), estándares de servicio (concierge, limpieza) y mantenimiento del activo.",
-        "url": "#",
-        "contentPreview": [
-            {
-                "section": "Comisiones y Mantenimiento",
-                "text": "Desglose del porcentaje que retiene el operador hotelero y el fondo de reserva para el mantenimiento del edificio."
-            }
-        ]
-    }
-,
-    {
         "id": "founding-round-guide",
         "title": "Founding Round Guide",
         "metadata": {
@@ -614,25 +594,5 @@ export const snaraiMaterialsEN: MarketingMaterial[] = [
         ]
     },
     {
-        "id": "hotel-operator",
-        "title": "Hotel Operations and Property Management",
-        "metadata": {
-            "audience": "Yield-focused investors",
-            "purpose": "Guarantee operational quality",
-            "estimatedReadTime": "6 min",
-            "salesMoment": "Operational Due Diligence"
-        },
-        "objective": "Explain who and how the building will be operated.",
-        "description": "Vacation rental commercialization strategy. Distribution channels (Airbnb Luxe, Booking, direct agencies), service standards (concierge, cleaning), and asset maintenance.",
-        "url": "#",
-        "contentPreview": [
-            {
-                "section": "Commissions and Maintenance",
-                "text": "Breakdown of the percentage retained by the hotel operator and the reserve fund for building maintenance."
-            }
-        ]
-    }
-];
-
 // Default export for backward compatibility if needed, although state/route.ts should handle locale logic
 export const snaraiMaterials = snaraiMaterialsES;
