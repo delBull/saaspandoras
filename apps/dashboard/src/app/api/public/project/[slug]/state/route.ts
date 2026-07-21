@@ -32,6 +32,7 @@ import { headers } from "next/headers";
 import { getWalletBalance } from "thirdweb/wallets";
 
 export const runtime = "nodejs";
+export const revalidate = 300; // Next.js level cache
 
 // CORS Headers Helper
 const getCorsHeaders = (origin: string | null) => ({
@@ -712,7 +713,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     if (isLive) {
       response.headers.set("Cache-Control", "no-store, max-age=0");
     } else {
-      response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
     }
 
     return response;

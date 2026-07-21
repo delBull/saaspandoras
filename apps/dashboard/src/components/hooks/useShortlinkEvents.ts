@@ -32,7 +32,7 @@ export function useShortlinkEvents(slug = "w", refreshInterval = 300000) { // 5 
     fetchEvents();
 
     // Auto-refresh every 5 minutes
-    const interval = setInterval(fetchEvents, refreshInterval);
+    const interval = setInterval(() => { if (!document.hidden) fetchEvents(); }, refreshInterval);
 
     return () => clearInterval(interval);
   }, [slug, refreshInterval]);

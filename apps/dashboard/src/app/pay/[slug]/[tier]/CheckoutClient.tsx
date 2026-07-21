@@ -244,7 +244,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             }
         }
         syncStatus();
-        const interval = setInterval(syncStatus, 30000); // Polling every 30s
+        const interval = setInterval(() => { if (!document.hidden) syncStatus(); }, 30000); // Polling every 30s
         return () => clearInterval(interval);
     }, [targetContract]);
 

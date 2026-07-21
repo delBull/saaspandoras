@@ -84,7 +84,7 @@ export function WalletFundMonitor() {
   useEffect(() => {
     fetch_();
     // Refresh every 5 minutes
-    const id = setInterval(() => fetch_(), 5 * 60 * 1000);
+    const id = setInterval(() => { if (!document.hidden) fetch_(); }, 5 * 60 * 1000);
     return () => clearInterval(id);
   }, [fetch_]);
 

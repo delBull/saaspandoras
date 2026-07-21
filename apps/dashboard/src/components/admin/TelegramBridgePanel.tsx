@@ -1088,8 +1088,8 @@ export function TelegramBridgePanel() {
         fetchStatus();
         fetchEconomy();
         fetchAlerts();
-        const intv = setInterval(fetchStatus, 15_000);
-        const alertIntv = setInterval(fetchAlerts, 30_000);
+        const intv = setInterval(() => { if (!document.hidden) fetchStatus(); }, 15_000);
+        const alertIntv = setInterval(() => { if (!document.hidden) fetchAlerts(); }, 30_000);
         return () => { clearInterval(intv); clearInterval(alertIntv); };
     }, [fetchStatus, fetchEconomy, fetchAlerts]);
 

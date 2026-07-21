@@ -26,7 +26,7 @@ export function OperationsPanel() {
     // Auto-refresh status every 10s
     useEffect(() => {
         fetchStatus();
-        const interval = setInterval(fetchStatus, 10000);
+        const interval = setInterval(() => { if (!document.hidden) fetchStatus(); }, 10000);
         return () => clearInterval(interval);
     }, []);
 
