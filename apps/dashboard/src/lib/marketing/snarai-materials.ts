@@ -12,7 +12,6 @@ export interface MarketingMaterial {
     contentPreview: { section: string; text: string }[];
     url: string;
 }
-
 export const snaraiMaterialsES: MarketingMaterial[] = [
     {
         "id": "executive-investment-brief",
@@ -23,13 +22,17 @@ export const snaraiMaterialsES: MarketingMaterial[] = [
             "estimatedReadTime": "3 min",
             "salesMoment": "Descubrimiento inicial"
         },
-        "objective": "An Executive Overview for Prospective Investors",
-        "description": "Este documento no intenta vender. Intenta responder una sola pregunta: '¿Vale la pena que dedique una hora de mi tiempo a estudiar esto?'",
+        "objective": "Resumen ejecutivo de S'Narai y Pandoras.",
+        "description": "S'Narai es un desarrollo inmobiliario boutique concebido para integrar arquitectura contemporánea, hospitalidad y una infraestructura operativa diseñada bajo estándares institucionales. S'Narai no busca reinventar el mercado inmobiliario; busca modernizar la forma en que los desarrollos se estructuran, administran y presentan ante inversionistas.",
         "url": "/en/institutional/executive-investment-brief",
         "contentPreview": [
             {
-                "section": "Executive Summary",
-                "text": "Resumen muy ejecutivo de qué es S'Narai, qué hace Pandoras y qué oportunidad existe."
+                "section": "Infraestructura Operativa",
+                "text": "Pandoras proporciona la infraestructura tecnológica, documental y comercial que soporta el ciclo completo del proyecto bajo un modelo centralizado de Growth OS."
+            },
+            {
+                "section": "La Oportunidad",
+                "text": "Participar durante la etapa de estructuración permite acceder al proyecto antes de la preventa tradicional, acompañando el desarrollo desde sus primeras etapas."
             }
         ]
     },
@@ -65,63 +68,63 @@ export const snaraiMaterialsES: MarketingMaterial[] = [
             "estimatedReadTime": "10 min",
             "salesMoment": "Reunión de ventas o seguimiento profundo"
         },
-        "objective": "Analizar los números y la estructura de capital.",
-        "description": "El pitch deck oficial que detalla la oportunidad comercial en Riviera Nayarit, el modelo financiero, el plan maestro arquitectónico y las fases de desarrollo (Semilla, Construcción, Operación).",
+        "objective": "Visión ejecutiva del modelo de negocio.",
+        "description": "El Investment Deck presenta la estructura completa del proyecto S'Narai, incluyendo la estrategia comercial, estructura de capital, calendario de ejecución y lógica de participación para inversionistas tempranos. S'Narai no busca reinventar el mercado inmobiliario; busca modernizar la forma en que los desarrollos se estructuran, administran y presentan ante inversionistas.",
         "url": "https://drive.google.com/file/d/1X42yC0R7665NfV9j_Zk5672/view?usp=sharing",
         "contentPreview": [
             {
-                "section": "Desglose Financiero (TIR y Yields)",
-                "text": "Proyecciones de ocupación, tarifas promedio (ADR), y distribución de ingresos (70% inversionistas / 30% operación) en diferentes escenarios."
+                "section": "Founding Rounds",
+                "text": "Etapa privada de estructuración previa a la comercialización. Las rondas tempranas ofrecen un menor precio de emisión debido a la participación en etapas iniciales."
             },
             {
-                "section": "Roadmap de Ejecución",
-                "text": "Cronograma desde la constitución del Fideicomiso y Preventa F&F (Q2 2026) hasta el Soft Opening (Q1 2028)."
+                "section": "Proyecciones",
+                "text": "Escenarios conservadores, esperados y optimistas basados en estudios de mercado y análisis financiero, sirviendo como herramienta de planeación y evaluación."
             }
         ]
     },
     {
         "id": "smart-contract-audit",
-        "title": "Arquitectura On-Chain & Contratos Inteligentes",
+        "title": "Arquitectura Digital y Contratos Inteligentes",
         "metadata": {
             "audience": "Técnicos / Inversionistas Institucionales",
             "purpose": "Generar confianza técnica",
             "estimatedReadTime": "15 min",
             "salesMoment": "Due Diligence (Transparencia)"
         },
-        "objective": "Demostrar la seguridad e inmutabilidad de la red.",
-        "description": "Resumen técnico de los Smart Contracts desplegados en la red blockchain. Detalla el token standard (ERC-1155/ERC-20), las funciones de minteo y quema de certificados, y el mecanismo automatizado de distribución de ganancias.",
+        "objective": "Trazabilidad y registro inmutable.",
+        "description": "Pandoras utiliza contratos inteligentes como infraestructura tecnológica para establecer reglas verificables de emisión y trazabilidad. S'Narai no busca reinventar el mercado inmobiliario; busca modernizar la forma en que los desarrollos se estructuran, administran y presentan ante inversionistas.",
         "url": "#",
         "contentPreview": [
             {
-                "section": "El 'Dividend Distributor' Contract",
-                "text": "Cómo las utilidades hoteleras se inyectan como USDC y se distribuyen instantáneamente a las wallets de los tenedores de Certificados, sin intervención humana."
+                "section": "Infraestructura Programable y Registro Inmutable",
+                "text": "Operaciones registradas mediante infraestructura blockchain, proporcionando evidencia verificable y un historial resistente a alteraciones que complementa la documentación legal."
             },
             {
-                "section": "Gobernanza Descentralizada",
-                "text": "El sistema de votación on-chain que permite a los token holders tomar decisiones críticas sobre remodelaciones, operadores hoteleros o la posible venta en bloque del edificio."
+                "section": "Evolución de la Plataforma",
+                "text": "Arquitectura diseñada para incorporar gradualmente nuevas capacidades de automatización operativa e integración con servicios financieros digitales."
             }
         ]
     },
     {
         "id": "legal-structure",
-        "title": "Estructura Legal y Fideicomiso (NOM-151)",
+        "title": "Estructura Legal y Participación Institucional",
         "metadata": {
             "audience": "Abogados / Inversionistas",
             "purpose": "Validar la certeza jurídica",
             "estimatedReadTime": "12 min",
             "salesMoment": "Due Diligence (Cierre)"
         },
-        "objective": "Comprender cómo lo digital se ata a la propiedad real en México.",
-        "description": "Documento clave que explica el puente entre la Blockchain y las Leyes Mexicanas. Describe el rol del Fideicomiso Maestro Inmobiliario, y cómo los Smart Contracts actúan como instrucciones irrevocables validadas mediante la NOM-151.",
+        "objective": "Comprender la arquitectura jurídica de la participación.",
+        "description": "S'Narai se desarrolla mediante una estructura jurídica formal en México, respaldada por contratos de participación, documentación institucional y procesos de validación que permiten administrar el proyecto con altos estándares de transparencia. S'Narai no busca reinventar el mercado inmobiliario; busca modernizar la forma en que los desarrollos se estructuran, administran y presentan ante inversionistas.",
         "url": "#",
         "contentPreview": [
             {
-                "section": "El Fideicomiso",
-                "text": "S'Narai SA de CV aporta el inmueble al Fideicomiso. Los certificados digitales representan derechos de fideicomisario, garantizando que el activo no puede ser embargado ni vendido sin el consenso de la DAO."
+                "section": "Estructura Jurídica",
+                "text": "La participación de cada inversionista queda documentada mediante instrumentos contractuales y registros internos que forman parte del ecosistema operativo de Pandoras Growth OS."
             },
             {
-                "section": "Firma Electrónica Avanzada",
-                "text": "El proceso de KYC/AML automatizado y la firma de contratos de adhesión con validez jurídica oficial ante la SE."
+                "section": "Formalización y Evidencia",
+                "text": "Todo el proceso de incorporación contempla validación de identidad, aceptación documental y evidencia digital de cada operación, conservada mediante mecanismos de trazabilidad."
             }
         ]
     },
@@ -323,13 +326,17 @@ export const snaraiMaterialsEN: MarketingMaterial[] = [
             "estimatedReadTime": "3 min",
             "salesMoment": "Initial Discovery"
         },
-        "objective": "An Executive Overview for Prospective Investors",
-        "description": "This document is not trying to sell. It aims to answer a single question: 'Is this worth an hour of my time to study?'",
+        "objective": "Executive summary of S'Narai and Pandoras.",
+        "description": "S'Narai is a boutique real estate development conceived to integrate contemporary architecture, hospitality, and an operational infrastructure designed under institutional standards. S'Narai does not seek to reinvent the real estate market; it seeks to modernize the way developments are structured, managed, and presented to investors.",
         "url": "/en/institutional/executive-investment-brief",
         "contentPreview": [
             {
-                "section": "Executive Summary",
-                "text": "A highly executive summary of what S'Narai is, what Pandoras does, and what the opportunity entails."
+                "section": "Operational Infrastructure",
+                "text": "Pandoras provides the technological, documentary, and commercial infrastructure that supports the complete cycle of the project under a centralized Growth OS model."
+            },
+            {
+                "section": "The Opportunity",
+                "text": "Participating during the structuring stage allows accessing the project before traditional presales, accompanying the development from its early stages."
             }
         ]
     },
@@ -365,63 +372,63 @@ export const snaraiMaterialsEN: MarketingMaterial[] = [
             "estimatedReadTime": "10 min",
             "salesMoment": "Sales meeting or deep dive"
         },
-        "objective": "Analyze the numbers and capital structure.",
-        "description": "The official pitch deck detailing the commercial opportunity in Riviera Nayarit, the financial model, the architectural master plan, and the development phases (Seed, Construction, Operation).",
+        "objective": "Executive vision of the business model.",
+        "description": "The Investment Deck presents the complete structure of the S'Narai project, including the commercial strategy, capital structure, execution schedule, and participation logic for early investors. S'Narai does not seek to reinvent the real estate market; it seeks to modernize the way developments are structured, managed, and presented to investors.",
         "url": "https://drive.google.com/file/d/1X42yC0R7665NfV9j_Zk5672/view?usp=sharing",
         "contentPreview": [
             {
-                "section": "Financial Breakdown (IRR and Yields)",
-                "text": "Occupancy projections, average daily rates (ADR), and revenue distribution (70% investors / 30% operations) across different scenarios."
+                "section": "Founding Rounds",
+                "text": "Private structuring stage prior to commercialization. Early rounds offer a lower issuance price due to participation in initial stages."
             },
             {
-                "section": "Execution Roadmap",
-                "text": "Timeline from Trust constitution and F&F Presale (Q2 2026) to Soft Opening (Q1 2028)."
+                "section": "Projections",
+                "text": "Conservative, expected, and optimistic scenarios based on market studies and financial analysis, serving as a planning and evaluation tool."
             }
         ]
     },
     {
         "id": "smart-contract-audit",
-        "title": "On-Chain Architecture & Smart Contracts",
+        "title": "Digital Architecture and Smart Contracts",
         "metadata": {
             "audience": "Tech / Institutional Investors",
             "purpose": "Build technical trust",
             "estimatedReadTime": "15 min",
             "salesMoment": "Due Diligence (Transparency)"
         },
-        "objective": "Demonstrate the security and immutability of the network.",
-        "description": "Technical summary of the Smart Contracts deployed on the blockchain network. Details the token standard (ERC-1155/ERC-20), minting and burning functions, and the automated profit distribution mechanism.",
+        "objective": "Traceability and immutable registry.",
+        "description": "Pandoras uses smart contracts as technological infrastructure to establish verifiable issuance and traceability rules. S'Narai does not seek to reinvent the real estate market; it seeks to modernize the way developments are structured, managed, and presented to investors.",
         "url": "#",
         "contentPreview": [
             {
-                "section": "The 'Dividend Distributor' Contract",
-                "text": "How hotel profits are injected as USDC and distributed instantly to Certificate holders' wallets, without human intervention."
+                "section": "Programmable Infrastructure & Immutable Registry",
+                "text": "Operations recorded via blockchain infrastructure, providing verifiable evidence and a tamper-resistant history that complements legal documentation."
             },
             {
-                "section": "Decentralized Governance",
-                "text": "The on-chain voting system that allows token holders to make critical decisions about renovations, hotel operators, or the potential block sale of the building."
+                "section": "Platform Evolution",
+                "text": "Architecture designed to gradually incorporate new operational automation capabilities and integration with digital financial services."
             }
         ]
     },
     {
         "id": "legal-structure",
-        "title": "Legal Structure and Trust (NOM-151)",
+        "title": "Legal Structure and Institutional Participation",
         "metadata": {
             "audience": "Lawyers / Investors",
             "purpose": "Validate legal certainty",
             "estimatedReadTime": "12 min",
             "salesMoment": "Due Diligence (Closing)"
         },
-        "objective": "Understand how the digital ties to real property in Mexico.",
-        "description": "Key document explaining the bridge between Blockchain and Mexican Laws. Describes the role of the Master Real Estate Trust, and how Smart Contracts act as irrevocable instructions validated via NOM-151.",
+        "objective": "Understand the legal architecture of participation.",
+        "description": "S'Narai is developed through a formal legal structure in Mexico, backed by participation contracts, institutional documentation, and validation processes that allow managing the project with high transparency standards. S'Narai does not seek to reinvent the real estate market; it seeks to modernize the way developments are structured, managed, and presented to investors.",
         "url": "#",
         "contentPreview": [
             {
-                "section": "The Trust",
-                "text": "S'Narai SA de CV contributes the property to the Trust. Digital certificates represent trust beneficiary rights, ensuring the asset cannot be seized or sold without DAO consensus."
+                "section": "Legal Structure",
+                "text": "Each investor's participation is documented through contractual instruments and internal records that form part of the operational ecosystem of Pandoras Growth OS."
             },
             {
-                "section": "Advanced Electronic Signature",
-                "text": "The automated KYC/AML process and the signing of adhesion contracts with official legal validity."
+                "section": "Formalization and Evidence",
+                "text": "The entire incorporation process includes identity validation, documentary acceptance, and digital evidence of each operation, preserved through traceability mechanisms."
             }
         ]
     },
@@ -613,6 +620,5 @@ export const snaraiMaterialsEN: MarketingMaterial[] = [
         ]
     }
 ];
-
 // Default export for backward compatibility if needed, although state/route.ts should handle locale logic
 export const snaraiMaterials = snaraiMaterialsES;
