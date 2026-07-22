@@ -132,16 +132,16 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
                 </div>
 
                 {/* RIGHT ZONE: RESOURCES */}
-                <div className="grid grid-rows-[auto_1fr_auto] gap-[30px] lg:gap-[40px] p-10 lg:p-[80px_60px] overflow-hidden">
+                <div className="grid grid-rows-[auto_1fr_auto] gap-[20px] lg:gap-[25px] p-6 lg:p-[40px_60px] overflow-hidden">
                     
                     {/* DOCUMENTACIÓN */}
                     <div className="animate-[fadeInUp_0.6s_ease_backwards] [animation-delay:0.2s]">
                         <div className="text-[0.7rem] uppercase tracking-[3px] text-[#D4A853] mb-[20px] flex items-center gap-[15px] after:content-[''] after:flex-1 after:h-[1px] after:bg-gradient-to-r after:from-[#D4A853] after:to-transparent">
                             Documentación
                         </div>
-                        <div className="flex flex-col gap-[20px]">
+                        <div className="flex flex-col gap-[12px]">
                             {config.documents.map((doc: any, i: number) => (
-                                <div key={i} className="flex flex-col sm:flex-row items-center justify-between p-[25px_30px] bg-white/5 border border-white/5 transition-all duration-300 hover:bg-[#D4A853]/5 hover:border-[#D4A853]/30 hover:translate-x-[10px] gap-[20px] sm:gap-0 text-center sm:text-left">
+                                <div key={i} className="flex flex-col sm:flex-row items-center justify-between p-[15px_20px] bg-white/5 border border-white/5 transition-all duration-300 hover:bg-[#D4A853]/5 hover:border-[#D4A853]/30 hover:translate-x-[10px] gap-[15px] sm:gap-0 text-center sm:text-left">
                                     <div>
                                         <h3 className="text-[1.1rem] font-medium mb-[5px] flex items-center gap-2 justify-center sm:justify-start">
                                             <DocumentTextIcon className="w-5 h-5 text-[#D4A853]" />
@@ -164,13 +164,13 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
 
                     {/* COMUNIDAD */}
                     <div className="animate-[fadeInUp_0.6s_ease_backwards] [animation-delay:0.3s]">
-                        <div className="text-[0.7rem] uppercase tracking-[3px] text-[#D4A853] mb-[20px] flex items-center gap-[15px] after:content-[''] after:flex-1 after:h-[1px] after:bg-gradient-to-r after:from-[#D4A853] after:to-transparent">
+                        <div className="text-[0.7rem] uppercase tracking-[3px] text-[#D4A853] mb-[15px] flex items-center gap-[15px] after:content-[''] after:flex-1 after:h-[1px] after:bg-gradient-to-r after:from-[#D4A853] after:to-transparent">
                             Comunidad
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[20px]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[15px]">
                             {config.community.map((comm: any, i: number) => (
-                                <div key={i} className="p-[30px] bg-white/5 border border-white/5 text-center transition-all duration-300 hover:border-[#D4A853] hover:bg-[#D4A853]/5">
-                                    <div className="text-[2rem] mb-[15px] flex justify-center text-[#D4A853]">
+                                <div key={i} className="p-[20px] bg-white/5 border border-white/5 text-center transition-all duration-300 hover:border-[#D4A853] hover:bg-[#D4A853]/5">
+                                    <div className="text-[1.5rem] mb-[10px] flex justify-center text-[#D4A853]">
                                         {comm.type === 'chat' ? <ChatBubbleOvalLeftEllipsisIcon className="w-8 h-8" /> : <MegaphoneIcon className="w-8 h-8" />}
                                     </div>
                                     <h3 className="text-[0.9rem] font-semibold mb-[10px]">{comm.label || `Link ${i+1}`}</h3>
@@ -189,15 +189,15 @@ export default async function ResourceHubPage({ params }: { params: Promise<{ sl
 
                     {/* CONTACTO / CALENDARIO SOBERANO */}
                     {calendarConfig?.isActive && (
-                        <div className="p-[30px] border border-[#D4A853]/20 bg-gradient-to-br from-[#D4A853]/5 to-transparent text-center animate-[fadeInUp_0.6s_ease_backwards] [animation-delay:0.4s]">
-                            <div className="text-[0.8rem] uppercase tracking-[2px] text-[#888888] mb-[20px]">
+                        <div className="p-[20px] border border-[#D4A853]/20 bg-gradient-to-br from-[#D4A853]/5 to-transparent text-center animate-[fadeInUp_0.6s_ease_backwards] [animation-delay:0.4s]">
+                            <div className="text-[0.8rem] uppercase tracking-[2px] text-[#888888] mb-[15px]">
                                 Solicitar una conversación privada
                             </div>
                             <a 
                                 href={calendarConfig.calendarUrl} 
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-block px-[40px] py-[18px] bg-transparent border-2 border-[#D4A853] text-[#D4A853] font-semibold text-[0.85rem] uppercase tracking-[2px] transition-all duration-300 hover:bg-[#D4A853] hover:text-[#050505]"
+                                className="inline-block px-[30px] py-[12px] bg-transparent border-2 border-[#D4A853] text-[#D4A853] font-semibold text-[0.85rem] uppercase tracking-[2px] transition-all duration-300 hover:bg-[#D4A853] hover:text-[#050505]"
                             >
                                 Agendar Reunión
                             </a>
