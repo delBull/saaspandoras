@@ -1,3 +1,9 @@
 {
-    "CodeGPT.apiKey": "Gemini CLI"
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false,
+  "css.customData": [],
+  "editor.quickSuggestions": {
+    "strings": true
+  }
 }
