@@ -8,7 +8,7 @@ export default function TermsPage() {
   return (
     <main className="min-h-screen bg-black text-white px-6 py-24">
       <div className="max-w-3xl mx-auto">
-        <Link href="/v2" className="text-[8px] tracking-[0.5em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors">
+        <Link href="/v3" className="text-[8px] tracking-[0.5em] text-zinc-700 hover:text-zinc-400 uppercase transition-colors">
           ← Volver
         </Link>
 

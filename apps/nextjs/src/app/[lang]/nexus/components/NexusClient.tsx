@@ -24,12 +24,12 @@ const categories = [
     color: "from-blue-500/20 to-purple-500/20",
     border: "border-blue-500/30",
     links: [
-      { name: "Protocol Overview", path: "/protocol" },
-      { name: "Utility Protocol", path: "/utility-protocol" },
-      { name: "Protocol Story", path: "/protocol-story" },
-      { name: "Litepaper", path: "/litepaper" },
-      { name: "Whitepaper", path: "/whitepaper" },
-      { name: "Roadmap", path: "/roadmap" },
+      { name: "Protocol Overview", path: "https://dash.pandoras.finance/protocol" },
+      { name: "Utility Protocol", path: "https://dash.pandoras.finance/utility-protocol" },
+      { name: "Protocol Story", path: "https://dash.pandoras.finance/protocol-story" },
+      { name: "Litepaper", path: "https://dash.pandoras.finance/litepaper" },
+      { name: "Whitepaper", path: "https://dash.pandoras.finance/whitepaper" },
+      { name: "Roadmap", path: "https://dash.pandoras.finance/roadmap" },
     ]
   },
   {
@@ -39,15 +39,15 @@ const categories = [
     color: "from-emerald-500/20 to-teal-500/20",
     border: "border-emerald-500/30",
     links: [
-      { name: "Asset Capitalization", path: "/asset-capitalization" },
-      { name: "Growth OS", path: "/growth-os" },
-      { name: "Ambassadors", path: "/ambassadors" },
-      { name: "Founders", path: "/founders" },
-      { name: "Bitcoin Initiative", path: "/bitcoin-initiative" },
-      { name: "Events", path: "/events" },
-      { name: "Apply", path: "/apply" },
-      { name: "Join", path: "/join" },
-      { name: "Waitlist Success", path: "/waitlist-success" },
+      { name: "Asset Capitalization", path: "https://dash.pandoras.finance/asset-capitalization" },
+      { name: "Growth OS", path: "https://dash.pandoras.finance/growth-os" },
+      { name: "Ambassadors", path: "https://dash.pandoras.finance/ambassadors" },
+      { name: "Founders", path: "https://dash.pandoras.finance/founders" },
+      { name: "Bitcoin Initiative", path: "https://dash.pandoras.finance/bitcoin-initiative" },
+      { name: "Events", path: "https://dash.pandoras.finance/events" },
+      { name: "Apply", path: "https://dash.pandoras.finance/apply" },
+      { name: "Join", path: "https://dash.pandoras.finance/join" },
+      { name: "Waitlist Success", path: "https://dash.pandoras.finance/waitlist-success" },
     ]
   },
   {
@@ -57,10 +57,10 @@ const categories = [
     color: "from-orange-500/20 to-red-500/20",
     border: "border-orange-500/30",
     links: [
-      { name: "Login / Start", path: "/access" },
-      { name: "App Dashboard", path: "/dashboard" },
-      { name: "User Profile", path: "/dashboard/profile" },
-      { name: "Business Profile", path: "/dashboard/profile/projects" },
+      { name: "Login / Start", path: "https://dash.pandoras.finance/access" },
+      { name: "App Dashboard", path: "https://dash.pandoras.finance/dashboard" },
+      { name: "User Profile", path: "https://dash.pandoras.finance/dashboard/profile" },
+      { name: "Business Profile", path: "https://dash.pandoras.finance/dashboard/profile/projects" },
       { name: "Main Home", path: "/" },
     ]
   },
@@ -71,11 +71,13 @@ const categories = [
     color: "from-zinc-500/20 to-gray-500/20",
     border: "border-zinc-500/30",
     links: [
+      { name: "Institutional Book", path: "/institutional-book" },
       { name: "General Resources", path: "/resources" },
       { name: "Materials", path: "/materials" },
     ]
   }
 ];
+
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
