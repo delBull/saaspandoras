@@ -21,7 +21,7 @@ const noNeedProcessRoute = [
   "/en/__next_devtools__/client(.*)",
 ];
 
-const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card", "/v2(.*)", "/v3(.*)"];
+const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card", "/v2(.*)", "/v3(.*)", "/institutional-book(.*)"];
 
 const publicRoute = [
   "/(\\w{2}/)?signin(.*)",
