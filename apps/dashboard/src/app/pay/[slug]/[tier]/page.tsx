@@ -1,5 +1,8 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
