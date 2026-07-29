@@ -1,5 +1,7 @@
 'use client';
 
+// Cache Bust: 2026-07-29-v2-checkout-features-deploy
+
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, darkTheme } from "thirdweb/react";
