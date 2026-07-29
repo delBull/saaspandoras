@@ -6,7 +6,7 @@ import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, d
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
-import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square, X } from 'lucide-react';
+import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square, X, Crown, Star } from 'lucide-react';
 import { LegalDocModal } from '@/components/legal/LegalDocModal';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useConnectModal } from "thirdweb/react";
@@ -214,6 +214,47 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
         const statusData = calculatePhaseStatus(rawPhase, totalSupply, accumulatedTokensBefore);
         return statusData.isClickable || statusData.status === 'active';
     }, [rawPhase, totalSupply, isStatusLoading, accumulatedTokensBefore]);
+
+    // Dynamic Tier Threshold Logic based on Quantity of Titles
+    const currentTierInfo = useMemo(() => {
+        const qty = safeAmount;
+        if (qty >= 2000) {
+            return {
+                tierName: "Riviera Owner",
+                badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+                icon: <Crown className="w-4 h-4 text-purple-400" />,
+                nextText: "Máximo Nivel de Membresía"
+            };
+        } else if (qty >= 500) {
+            return {
+                tierName: "Embajador / Institucional",
+                badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+                icon: <Crown className="w-4 h-4 text-amber-400" />,
+                nextText: `Faltan ${(2000 - qty).toLocaleString()} títulos para Riviera Owner`
+            };
+        } else if (qty >= 50) {
+            return {
+                tierName: "Residente",
+                badgeColor: "bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30",
+                icon: <Zap className="w-4 h-4 text-[#D4AF37]" />,
+                nextText: `Faltan ${(500 - qty).toLocaleString()} títulos para Nivel Embajador`
+            };
+        } else if (qty >= 10) {
+            return {
+                tierName: "Explorador",
+                badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+                icon: <Star className="w-4 h-4 text-emerald-400" />,
+                nextText: `Faltan ${(50 - qty).toLocaleString()} títulos para Nivel Residente`
+            };
+        } else {
+            return {
+                tierName: "Participación Inicial",
+                badgeColor: "bg-zinc-800/80 text-zinc-400 border-zinc-700",
+                icon: <Star className="w-4 h-4 text-zinc-400" />,
+                nextText: `Faltan ${(10 - qty).toLocaleString()} títulos para Nivel Explorador`
+            };
+        }
+    }, [safeAmount]);
 
     // 🛡️ On-chain Status Synchronization
     useEffect(() => {
@@ -825,6 +866,19 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                     </div>
                                                 </div>
 
+                                                {/* Dynamic Membership Tier Indicator */}
+                                                <div className="bg-black/40 rounded-2xl p-4 border border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 text-xs font-bold ${currentTierInfo.badgeColor}`}>
+                                                            {currentTierInfo.icon}
+                                                            <span>{currentTierInfo.tierName}</span>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[11px] text-zinc-400 font-medium leading-tight">
+                                                        {currentTierInfo.nextText}
+                                                    </span>
+                                                </div>
+
                                                 {/* Action Area */}
                                                 <div className="space-y-4 pt-2">
                                                     {isCheckingAccess ? (
@@ -990,6 +1044,36 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-xl px-5 text-sm text-white focus:outline-none focus:border-[#D4AF37] transition-colors"
                                                             />
                                                         </div>
+
+                                                        {/* Legal Validation Block for Traditional Payment */}
+                                                        <div className="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-3 my-3">
+                                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 border-b border-white/5 pb-2">
+                                                                <FileText className="w-3.5 h-3.5 text-emerald-400" style={{ color: brandColor }} /> Validación Legal Requerida
+                                                            </h4>
+                                                            <div className="space-y-3">
+                                                                <label className="flex items-start gap-3 cursor-pointer group">
+                                                                    <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, agreement: !prev.agreement}))}>
+                                                                        {legalChecks.agreement ? <CheckSquare className="w-4 h-4 text-emerald-500" /> : <Square className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
+                                                                    </div>
+                                                                    <p className="text-[11px] text-zinc-400 leading-snug">He leído y acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('agreement'); }} className="text-emerald-400 hover:underline">Acuerdo Marco de Participación</button>.</p>
+                                                                </label>
+
+                                                                <label className="flex items-start gap-3 cursor-pointer group">
+                                                                    <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, nature: !prev.nature}))}>
+                                                                        {legalChecks.nature ? <CheckSquare className="w-4 h-4 text-emerald-500" /> : <Square className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
+                                                                    </div>
+                                                                    <p className="text-[11px] text-zinc-400 leading-snug">Entiendo que <strong>NO</strong> adquiero acciones ni propiedad directa, sino participación digital.</p>
+                                                                </label>
+
+                                                                <label className="flex items-start gap-3 cursor-pointer group">
+                                                                    <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, risk: !prev.risk}))}>
+                                                                        {legalChecks.risk ? <CheckSquare className="w-4 h-4 text-emerald-500" /> : <Square className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
+                                                                    </div>
+                                                                    <p className="text-[11px] text-zinc-400 leading-snug">He leído y acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('risk-disclosure'); }} className="text-emerald-400 hover:underline">Aviso Integral de Riesgos</button> y las <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('phase-dynamics'); }} className="text-emerald-400 hover:underline">Cláusulas de Fases de proyecto</button>.</p>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
                                                         <div className="pt-2">
                                                             <button
                                                                 onClick={() => submitFastLane(false)}
