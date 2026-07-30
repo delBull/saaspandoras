@@ -624,10 +624,8 @@ router.post("/recovery/request", async (req: Request, res: Response) => {
             metadata: { method: address ? 'wallet' : 'telegram' }
         });
 
-        // In a real app, this would be returned only via the alternative channel or admin
         return res.status(200).json({
-            message: "Recovery token generated",
-            token // RETURNED FOR ALPHA/DEV PURPOSES
+            message: "Recovery token generated and logged"
         });
     } catch (error) {
         console.error(" Recovery Request Error:", error);

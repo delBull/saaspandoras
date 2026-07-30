@@ -52,8 +52,15 @@ router.all(EXTERNAL_PATHS, async (req: Request, res: Response) => {
         return res.status(500).json({ error: "Configuration Error: Infinite Loop detected in proxy." });
     }
 
+    // 🛡️ SSRF / PROTOCOL INJECTION GUARD
+    const rawUrl = req.originalUrl || '';
+    if (rawUrl.includes('\0') || rawUrl.includes('://') || rawUrl.includes('//')) {
+        console.error("🚨 [PROXY] Blocked potential SSRF / protocol injection:", rawUrl);
+        return res.status(400).json({ error: "Bad Request: Invalid path format." });
+    }
+
     // Normalize the path: Ensure it always uses the /api/v1/external prefix for the dashboard
-    let targetPath = normalize('/' + (req.originalUrl || '').split('?')[0].replace(/\.\./g, ''));
+    let targetPath = normalize('/' + rawUrl.split('?')[0].replace(/\.\./g, ''));
     
     // Strip query string for matching
     const purePath = targetPath.split('?')[0];

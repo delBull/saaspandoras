@@ -12,8 +12,8 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 
-if (!DEPLOY_SECRET) {
-    throw new Error("DEPLOY_SECRET missing");
+if (!DEPLOY_SECRET || DEPLOY_SECRET.trim() === "") {
+    console.warn("⚠️ [SECURITY WARNING] DEPLOY_SECRET is not configured or empty.");
 }
 
 app.get("/health", (_, res) => {
@@ -208,7 +208,8 @@ setInterval(() => {
 
 app.post("/deploy/process-job", async (req, res) => {
 
-    if (req.headers["x-deploy-secret"] !== DEPLOY_SECRET) {
+    const providedSecret = req.headers["x-deploy-secret"];
+    if (!DEPLOY_SECRET || !providedSecret || providedSecret !== DEPLOY_SECRET) {
         return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -224,7 +225,10 @@ app.post("/deploy/process-job", async (req, res) => {
 app.post("/deploy/nft-pass", async (req, res) => {
     // ... (Keep existing sync endpoint for simpler NFT passes if preferred, or refactor later)
     res.setTimeout(120_000);
-    if (req.headers["x-deploy-secret"] !== DEPLOY_SECRET) return res.status(401).json({ error: "Unauthorized" });
+    const providedSecret = req.headers["x-deploy-secret"];
+    if (!DEPLOY_SECRET || !providedSecret || providedSecret !== DEPLOY_SECRET) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
     try {
         const { config, network } = req.body;
         const address = await deployNFTPassServer(config, network);
