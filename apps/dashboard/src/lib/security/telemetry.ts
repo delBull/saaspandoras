@@ -49,16 +49,22 @@ export class TelemetryService {
     }
 
     const emoji = this.getRiskEmoji(riskLevel);
-    
-    let text = `${emoji} *${title}*\n\n${message}`;
-    
+
+    const env = process.env.NODE_ENV || 'production';
+    const sourceApp = process.env.NEXT_PUBLIC_APP_NAME || 'Pandoras Growth OS';
+
+    let formattedText = `${emoji} <b>[${riskLevel}] Security & Ops Alert</b>\n`;
+    formattedText += `<b>Source:</b> ${sourceApp} (${env})\n`;
+    formattedText += `<b>Event:</b> ${title}\n`;
+    formattedText += `<b>Details:</b> ${message}\n`;
+
     if (metadata && Object.keys(metadata).length > 0) {
-      text += `\n\n\`\`\`json\n${JSON.stringify(metadata, null, 2)}\n\`\`\``;
+      formattedText += `\n<b>Context:</b>\n<code>${JSON.stringify(metadata, null, 2)}</code>`;
     }
 
     // Add timestamp
     const time = new Date().toISOString();
-    text += `\n\n_🕒 ${time}_`;
+    formattedText += `\n\n_🕒 ${time}_`;
 
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
@@ -69,8 +75,8 @@ export class TelemetryService {
       },
       body: JSON.stringify({
         chat_id: chatId,
-        text,
-        parse_mode: 'Markdown',
+        text: formattedText,
+        parse_mode: 'HTML',
         disable_web_page_preview: true,
       }),
     });

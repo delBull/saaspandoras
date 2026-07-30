@@ -81,13 +81,16 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 2. Admin Route Protection — redirect unauthenticated users
-  if (pathname.startsWith("/admin")) {
+  // 2. Admin Route Protection — redirect unauthenticated users or block unauthenticated API calls
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const token = request.cookies.get('__pbox_sid')?.value ||
-      request.cookies.get('auth_token')?.value;
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace('Bearer ', '');
 
-    if (!token && !pathname.startsWith("/api/")) {
-      // Only block page routes (not API routes)
+    if (!token) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      }
       return NextResponse.redirect(new URL("/", request.url));
     }
   }

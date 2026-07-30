@@ -60,23 +60,26 @@ export function validateTelegramInitData(initData: string): { isValid: boolean; 
  * Envia una alerta de seguridad u operativa al canal de admins de Telegram
  */
 export async function sendTelegramAlert(message: string): Promise<void> {
-    if (!BOT_TOKEN) return;
+    const token = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_SECURITY_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_SECURITY_CHAT_ID;
     
-    // Configura TELEGRAM_ADMIN_CHAT_ID en tu .env.local
-    const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID; 
-    if (!adminChatId) {
-        console.warn("⚠️ TELEGRAM_ADMIN_CHAT_ID no configurado, no se enviará alerta.");
+    if (!token || !chatId) {
+        console.warn("⚠️ TELEGRAM_SECURITY_BOT_TOKEN or TELEGRAM_SECURITY_CHAT_ID missing.");
         return;
     }
 
+    const env = process.env.NODE_ENV || 'production';
+    const sourceApp = process.env.NEXT_PUBLIC_APP_NAME || 'Pandoras Growth OS';
+
     try {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                chat_id: adminChatId,
-                text: `🚨 <b>Pandora's Growth OS Alert</b>\n\n${message}`,
-                parse_mode: 'HTML'
+                chat_id: chatId,
+                text: `🚨 <b>[CRITICAL] Security & Ops Alert</b>\n<b>Source:</b> ${sourceApp} (${env})\n\n${message}`,
+                parse_mode: 'HTML',
+                disable_web_page_preview: true
             })
         });
     } catch (e) {

@@ -87,7 +87,10 @@ function UserAvatar({ userId, size = 12 }: { userId: string; size?: number }) {
             target.style.display = 'none';
             const parent = target.parentElement;
             if (parent) {
-              parent.innerHTML = `<div class="w-full h-full rounded-lg bg-gradient-to-br ${getColorFromWallet(userId)} flex items-center justify-center font-mono text-white font-bold text-xs">${displayText}</div>`;
+              const fallback = document.createElement('div');
+              fallback.className = `w-full h-full rounded-lg bg-gradient-to-br ${getColorFromWallet(userId)} flex items-center justify-center font-mono text-white font-bold text-xs`;
+              fallback.textContent = displayText;
+              parent.replaceChildren(fallback);
             }
           }}
         />

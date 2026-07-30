@@ -509,13 +509,33 @@ router.post("/logout-scope", async (req: Request, res: Response) => {
     }
 });
 
+function requireAdmin(req: Request, res: Response, next: any) {
+    try {
+        const pubBase64 = process.env.JWT_PUBLIC_KEY;
+        if (!pubBase64) {
+            return res.status(500).json({ error: 'Auth configuration missing' });
+        }
+        const publicKey = Buffer.from(pubBase64, 'base64').toString('utf-8');
+        const token = (req as any).cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as any;
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+        (req as any).user = decoded;
+        next();
+    } catch {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+}
+
 // ADMIN: POST /admin/users/:id/freeze
-router.post("/admin/users/:id/freeze", async (req: Request, res: Response) => {
+router.post("/admin/users/:id/freeze", requireAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { reason } = req.body;
-
-        // TODO: Add Admin Authorization Check
 
         await db.update(users)
             .set({ status: 'FROZEN', updatedAt: new Date() })
@@ -538,7 +558,7 @@ router.post("/admin/users/:id/freeze", async (req: Request, res: Response) => {
 });
 
 // ADMIN: POST /admin/users/merge
-router.post("/admin/users/merge", async (req: Request, res: Response) => {
+router.post("/admin/users/merge", requireAdmin, async (req: Request, res: Response) => {
     try {
         const { sourceUserId, targetUserId } = req.body;
 
