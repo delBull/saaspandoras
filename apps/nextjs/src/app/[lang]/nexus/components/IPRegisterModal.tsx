@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Clock, Plus, Trash2, Check, RefreshCw, X, ChevronRight, ListTodo, Layers, Calendar, ArrowUpRight, FolderGit2, Code2, Cpu } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle2, Clock, Plus, Trash2, Check, RefreshCw, X, ChevronRight, ListTodo, Layers, Calendar, ArrowUpRight, FolderGit2, Code2, Cpu, Search } from 'lucide-react';
 
 interface IPAsset {
   id: string;
@@ -13,6 +13,8 @@ interface IPAsset {
   authority: string;
   owner: string;
   notes: string;
+  riskAssessment?: 'LOW' | 'MEDIUM' | 'HIGH';
+  findingsCount?: number;
 }
 
 interface TaskItem {
@@ -35,7 +37,9 @@ const INITIAL_ASSETS: IPAsset[] = [
     status: 'ABANDONED',
     authority: 'IMPI (México)',
     owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Solicitud archivada por el IMPI (Expediente 3394059). Permite reiniciar la estrategia registral limpia desde la marca madre.'
+    notes: 'Solicitud archivada por el IMPI (Expediente 3394059). Permite reiniciar la estrategia registral limpia desde la marca madre.',
+    riskAssessment: 'LOW',
+    findingsCount: 1
   },
   {
     id: 'PAND-MARK-001',
@@ -45,7 +49,9 @@ const INITIAL_ASSETS: IPAsset[] = [
     status: 'PENDING',
     authority: 'IMPI (México) / USPTO (USA)',
     owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Prioridad 1. Protege la palabra madre en ambas clases críticas antes de la apertura de licencias en EE.UU.'
+    notes: 'Examen de anterioridades en Marcanet completado (Riesgo BAJO). Búsqueda realizada para PANDORAS y PANDORA\'S en Clases 36 y 42. Sin marcas idénticas ni conflictos graves.',
+    riskAssessment: 'LOW',
+    findingsCount: 6
   },
   {
     id: 'PAND-MARK-002',
@@ -55,7 +61,9 @@ const INITIAL_ASSETS: IPAsset[] = [
     status: 'PLANNED',
     authority: 'IMPI (México)',
     owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Infraestructura de activos reales, tokenización y comercialización crediticia.'
+    notes: 'Infraestructura de activos reales, tokenización y comercialización crediticia.',
+    riskAssessment: 'LOW',
+    findingsCount: 0
   },
   {
     id: 'PAND-MARK-003',
@@ -65,7 +73,9 @@ const INITIAL_ASSETS: IPAsset[] = [
     status: 'PLANNED',
     authority: 'IMPI (México)',
     owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Sistema operativo comercial, herramientas de inteligencia artificial y dashboards.'
+    notes: 'Sistema operativo comercial, herramientas de inteligencia artificial y dashboards.',
+    riskAssessment: 'LOW',
+    findingsCount: 0
   },
   {
     id: 'PAND-IP-CORE',
@@ -75,7 +85,9 @@ const INITIAL_ASSETS: IPAsset[] = [
     status: 'ACTIVE',
     authority: 'Safe-Keep / Indautor Depósito',
     owner: 'Pandoras IP Holding / MXHUB',
-    notes: 'Propiedad inalienable del Holding. Ninguna filial ni inversionista operativo puede reclamar titularidad.'
+    notes: 'Propiedad inalienable del Holding. Ninguna filial ni inversionista operativo puede reclamar titularidad.',
+    riskAssessment: 'LOW',
+    findingsCount: 0
   }
 ];
 
@@ -97,12 +109,22 @@ const INITIAL_TASKS: TaskItem[] = [
     title: 'Búsqueda de Disponibilidad Fonética "PANDORAS" (IMPI)',
     category: 'IP & Trademarks',
     priority: 'HIGH',
-    completed: false,
-    dueDate: '2026-08-03',
-    detail: 'Examen previo de anterioridades en el Marcanet del IMPI para Clases 36 (Finanzas) y 42 (Tecnología) a nombre de MXHUB S.A. de C.V.'
+    completed: true,
+    dueDate: '2026-07-31',
+    detail: 'Examen de anterioridades en Marcanet completado (Riesgo BAJO). Evidencia documentada en /nexus Data Room.'
   },
   {
     id: 'TSK-W1-03',
+    week: 'Semana 1',
+    title: 'Preparación de Solicitud IMPI Marca Madre "PANDORAS"',
+    category: 'IP & Trademarks',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-08-05',
+    detail: 'Definición de clasificación de productos/servicios para Clases 36 + 42 y selección de denominación PANDORAS vs PANDORA\'S.'
+  },
+  {
+    id: 'TSK-W1-04',
     week: 'Semana 1',
     title: 'Ingreso Solicitud IMPI Marca Madre "PANDORAS"',
     category: 'IP & Trademarks',
@@ -187,6 +209,15 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
   const [notifying, setNotifying] = useState(false);
   const [notified, setNotified] = useState(false);
 
+  // New Asset / Search Registration form state
+  const [showAssetForm, setShowAssetForm] = useState(false);
+  const [newAssetName, setNewAssetName] = useState('');
+  const [newAssetCategory, setNewAssetCategory] = useState('Marca Denominativa');
+  const [newAssetClasses, setNewAssetClasses] = useState('Clase 36 + Clase 42');
+  const [newAssetAuthority, setNewAssetAuthority] = useState('IMPI (México)');
+  const [newAssetRisk, setNewAssetRisk] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
+  const [newAssetNotes, setNewAssetNotes] = useState('');
+
   // New task form state
   const [newTitle, setNewTitle] = useState('');
   const [newDetail, setNewDetail] = useState('');
@@ -198,11 +229,22 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
   // Persistence in localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const storedAssets = localStorage.getItem('pandoras_ip_assets_custom');
+    if (storedAssets) {
+      try { setAssets(JSON.parse(storedAssets)); } catch {}
+    }
     const storedTasks = localStorage.getItem('pandoras_ip_tasks_30d');
     if (storedTasks) {
       try { setTasks(JSON.parse(storedTasks)); } catch {}
     }
   }, []);
+
+  const saveAssets = (updated: IPAsset[]) => {
+    setAssets(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pandoras_ip_assets_custom', JSON.stringify(updated));
+    }
+  };
 
   const saveTasks = (updated: TaskItem[]) => {
     setTasks(updated);
@@ -219,6 +261,46 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
   const deleteTask = (id: string) => {
     const updated = tasks.filter(t => t.id !== id);
     saveTasks(updated);
+  };
+
+  const handleAddAsset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAssetName.trim()) return;
+
+    const newAssetItem: IPAsset = {
+      id: `PAND-MARK-${Math.floor(100 + Math.random() * 900)}`,
+      name: newAssetName.trim(),
+      category: newAssetCategory,
+      classes: newAssetClasses,
+      status: 'PENDING',
+      authority: newAssetAuthority,
+      owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
+      notes: newAssetNotes.trim() || 'Búsqueda de disponibilidad registrada de forma interactiva.',
+      riskAssessment: newAssetRisk,
+      findingsCount: 0
+    };
+
+    const updatedAssets = [newAssetItem, ...assets];
+    saveAssets(updatedAssets);
+    setSelectedAsset(newAssetItem);
+    setNewAssetName('');
+    setNewAssetNotes('');
+    setShowAssetForm(false);
+
+    // Auto-create task in roadmap
+    const newTask: TaskItem = {
+      id: `TSK-${Math.floor(100 + Math.random() * 900)}`,
+      week: 'Semana 1',
+      title: `Preparación de Solicitud "${newAssetItem.name}"`,
+      category: 'IP & Trademarks',
+      priority: 'HIGH',
+      completed: false,
+      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '2026-08-05',
+      detail: `Definición de productos/servicios para ${newAssetItem.classes} y presentación ante ${newAssetItem.authority}.`
+    };
+    saveTasks([newTask, ...tasks]);
+
+    sendDiscordAlert(`Nueva Búsqueda/Marca Registrada: ${newAssetItem.name} (Riesgo: ${newAssetItem.riskAssessment})`);
   };
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -287,7 +369,7 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
               </div>
               <div>
                 <h3 className="text-base md:text-lg font-light text-white tracking-tight">IP Governance & Corporate OS</h3>
-                <p className="text-xs text-zinc-400 font-light">Plan de Ejecución a 30 Días & Corporate Data Room</p>
+                <p className="text-xs text-zinc-400 font-light">Gestión Interactiva de Marcas, Plan 30 Días & Data Room</p>
               </div>
             </div>
 
@@ -301,7 +383,7 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>Master Register</span>
+                  <span>Master Register ({assets.length})</span>
                 </button>
                 <button
                   onClick={() => setTab('TASKS')}
@@ -332,23 +414,120 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
             </div>
           </div>
 
-          {/* TAB 1: MASTER REGISTER */}
+          {/* TAB 1: MASTER REGISTER & INTERACTIVE ASSET CREATOR */}
           {tab === 'REGISTER' && (
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               {/* Status Summary Banner */}
-              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/[0.03] flex items-start gap-4">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-xs font-normal text-amber-300">Diagnóstico IMPI Expediente 3394059 (Histórico): ABANDONADO</p>
-                  <p className="text-xs text-zinc-400 leading-relaxed font-light">
-                    La solicitud de <em>Pandoras Foundation</em> fue archivada por el IMPI. <strong className="text-white">Conclusión estratégica:</strong> No existe activo registral previo ni cesión requerida entre Juan Pablo y MXHUB. Se reinicia el registro limpio de la marca madre <strong className="text-amber-400">"PANDORAS"</strong> a nombre directo de <strong>MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.</strong> en Clases 36 + 42. Usa el distintivo PANDORAS™.
-                  </p>
+              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/[0.03] flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-normal text-amber-300">Análisis Marcanet Finalizado: PANDORAS / PANDORA'S (Clases 36 + 42)</p>
+                    <p className="text-xs text-zinc-400 leading-relaxed font-light">
+                      Examen de anterioridad completado (6 hallazgos analizados, 0 conflictos graves). <strong className="text-white">Clasificación: RIESGO BAJO.</strong> Se procede con la marca madre <strong className="text-amber-400">PANDORAS™</strong> a nombre directo de <strong>MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.</strong>
+                    </p>
+                  </div>
                 </div>
+
+                <button
+                  onClick={() => setShowAssetForm(!showAssetForm)}
+                  className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-normal transition-all flex items-center gap-1.5 shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Registrar Búsqueda / Marca</span>
+                </button>
               </div>
+
+              {/* Add New Asset Form (Collapsible) */}
+              <AnimatePresence>
+                {showAssetForm && (
+                  <motion.form
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    onSubmit={handleAddAsset}
+                    className="p-4 border border-amber-500/30 rounded-xl bg-zinc-950 space-y-3 overflow-hidden"
+                  >
+                    <p className="text-xs text-amber-400 uppercase font-mono">Registrar Nueva Búsqueda / Denominación IP</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Ej. PANDORAS FINANCE..."
+                        value={newAssetName}
+                        onChange={(e) => setNewAssetName(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
+                      />
+                      <select
+                        value={newAssetCategory}
+                        onChange={(e) => setNewAssetCategory(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300"
+                      >
+                        <option value="Marca Denominativa Principal">Marca Denominativa Principal</option>
+                        <option value="Marca Mixta (Nombre + Logo)">Marca Mixta (Nombre + Logo)</option>
+                        <option value="Marca Secundaria / Ecosistema">Marca Secundaria / Ecosistema</option>
+                        <option value="Copyright / Código Fuente">Copyright / Código Fuente</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Clases (Ej. Clase 36 + Clase 42)"
+                        value={newAssetClasses}
+                        onChange={(e) => setNewAssetClasses(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-zinc-600"
+                      />
+                      <select
+                        value={newAssetAuthority}
+                        onChange={(e) => setNewAssetAuthority(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300"
+                      >
+                        <option value="IMPI (México)">IMPI (México)</option>
+                        <option value="USPTO (EE.UU.)">USPTO (EE.UU.)</option>
+                        <option value="WIPO / Internacional">WIPO / Internacional</option>
+                        <option value="Indautor Depósito">Indautor Depósito</option>
+                      </select>
+                      <select
+                        value={newAssetRisk}
+                        onChange={(e) => setNewAssetRisk(e.target.value as any)}
+                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300"
+                      >
+                        <option value="LOW">Riesgo Bajo (Aprobado)</option>
+                        <option value="MEDIUM">Riesgo Medio (Revisar)</option>
+                        <option value="HIGH">Riesgo Alto (Conflicto)</option>
+                      </select>
+                    </div>
+
+                    <textarea
+                      placeholder="Conclusiones de la búsqueda fonética u observaciones corporativas..."
+                      value={newAssetNotes}
+                      onChange={(e) => setNewAssetNotes(e.target.value)}
+                      rows={2}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600"
+                    />
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAssetForm(false)}
+                        className="px-3 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-400 hover:text-white"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-normal transition-colors"
+                      >
+                        Guardar Activo & Generar Hito
+                      </button>
+                    </div>
+                  </motion.form>
+                )}
+              </AnimatePresence>
 
               {/* Asset List */}
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-wider text-zinc-400 font-mono">Registro Institucional de Activos IP</p>
+                <p className="text-xs uppercase tracking-wider text-zinc-400 font-mono">Registro Institucional de Activos IP ({assets.length})</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {assets.map((asset) => {
                     const isSelected = selectedAsset?.id === asset.id;
@@ -390,8 +569,15 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                 <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-900/30 space-y-3">
                   <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
                     <div>
-                      <h4 className="text-sm font-normal text-white">{selectedAsset.name}</h4>
-                      <p className="text-xs text-amber-400 font-mono mt-0.5">Titular Propuesto: {selectedAsset.owner}</p>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-normal text-white">{selectedAsset.name}</h4>
+                        {selectedAsset.riskAssessment && (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
+                            Riesgo Legal: {selectedAsset.riskAssessment}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-amber-400 font-mono mt-0.5">Titular Registral: {selectedAsset.owner}</p>
                     </div>
                     <button
                       onClick={() => sendDiscordAlert(`Notificación de Marca: ${selectedAsset.name}`)}
