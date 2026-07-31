@@ -58,16 +58,25 @@ export async function POST(req: NextRequest) {
     const link = `${BASE_URL}/libros/${bookSlug}?token=${token}`;
 
     // Send via Telegram instead of email (uses existing security bot pattern)
-    const botToken = process.env.TELEGRAM_SECURITY_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_SECURITY_CHAT_ID ?? '8605526720';
+    const botToken = process.env.TELEGRAM_SECURITY_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_SECURITY_CHAT_ID || process.env.TELEGRAM_ADMIN_CHAT_ID || '8605526720';
 
-    if (botToken) {
-      const text = `🔐 <b>Pandoras — Acceso a Libro Institucional</b>\n\n📚 Libro: <b>${bookSlug}</b>\n⏱️ Expira en: <b>2 horas</b>\n\n🔗 Enlace de acceso:\n<code>${link}</code>`;
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
-      });
+    if (!botToken) {
+      console.warn('⚠️ TELEGRAM_SECURITY_BOT_TOKEN is missing in Vercel environment variables');
+      return NextResponse.json({ ok: false, error: 'Telegram Bot Token not configured in Vercel' }, { status: 500 });
+    }
+
+    const text = `🔐 <b>Pandoras — Acceso a Documento Institucional</b>\n\n📚 Documento: <b>${bookSlug}</b>\n⏱️ Expira en: <b>2 horas</b>\n\n🔗 Enlace de acceso:\n${link}`;
+    const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    });
+
+    if (!tgRes.ok) {
+      const errText = await tgRes.text();
+      console.error('❌ Telegram API error:', errText);
+      return NextResponse.json({ ok: false, error: errText }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
