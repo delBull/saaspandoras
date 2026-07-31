@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+
 let cachedPrices: any = null;
 let lastFetch = 0;
 const CACHE_TTL = 60 * 1000; // 60 seconds
