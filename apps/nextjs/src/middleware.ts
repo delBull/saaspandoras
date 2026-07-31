@@ -21,7 +21,8 @@ const noNeedProcessRoute = [
   "/en/__next_devtools__/client(.*)",
 ];
 
-const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card", "/v2(.*)", "/v3(.*)", "/institutional-book(.*)"];
+// /libros/* is protected via HMAC magic link (server-side token gate) — no locale redirect needed
+const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/test-nft-card", "/v2(.*)", "/v3(.*)", "/institutional-book(.*)", "/libros(.*)"];
 
 const publicRoute = [
   "/(\\w{2}/)?signin(.*)",
@@ -90,7 +91,8 @@ export default async function middleware(
     return NextResponse.redirect(new URL("/v3", req.url));
   }
   // All /v2, /v3 and static public routes are fully public — no auth, no locale injection
-  if (pathname.startsWith("/v2") || pathname.startsWith("/v3") || pathname.startsWith("/institutional-book")) {
+  // /libros/* has its own server-side HMAC magic link gate — let it through
+  if (pathname.startsWith("/v2") || pathname.startsWith("/v3") || pathname.startsWith("/institutional-book") || pathname.startsWith("/libros")) {
     return NextResponse.next();
   }
 

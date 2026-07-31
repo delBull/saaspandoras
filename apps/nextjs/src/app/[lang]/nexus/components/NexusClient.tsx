@@ -71,6 +71,8 @@ const categories = [
     color: "from-zinc-500/20 to-gray-500/20",
     border: "border-zinc-500/30",
     links: [
+      { name: "📜 Constitución de Pandoras (v2.0)", path: "/libros/constitucion" },
+      { name: "📚 Institutional Library (Libros I–IV)", path: "/libros" },
       { name: "Institutional Book", path: "/institutional-book" },
       { name: "General Resources", path: "/resources" },
       { name: "Materials", path: "/materials" },
