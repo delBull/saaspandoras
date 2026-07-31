@@ -186,3 +186,36 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
+// ── PATCH /api/v1/internal/api-keys  →  Update callbackUrl & permissions ──────
+
+export async function PATCH(req: NextRequest) {
+  if (!await isAdminAuthorized(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { fingerprint: fp, callbackUrl, permissions } = await req.json();
+    if (!fp) return NextResponse.json({ error: "fingerprint required" }, { status: 400 });
+
+    const record = await db.query.integrationClients.findFirst({
+      where: eq(integrationClients.keyFingerprint, fp),
+    });
+
+    if (!record) return NextResponse.json({ error: "Key not found" }, { status: 404 });
+
+    const updateData: Record<string, any> = { updatedAt: new Date() };
+    if (callbackUrl !== undefined) updateData.callbackUrl = callbackUrl || null;
+    if (permissions !== undefined) updateData.permissions = permissions;
+
+    await db
+      .update(integrationClients)
+      .set(updateData)
+      .where(eq(integrationClients.id, record.id));
+
+    return NextResponse.json({ success: true, message: `API Key '${record.name}' actualizada.` });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+

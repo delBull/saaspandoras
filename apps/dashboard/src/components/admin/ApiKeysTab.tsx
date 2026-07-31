@@ -147,6 +147,43 @@ export function ApiKeysTab() {
     }
   };
 
+  // Editing state for Webhook URL
+  const [editingFp, setEditingFp] = useState<string | null>(null);
+  const [editWebhookUrl, setEditWebhookUrl] = useState('');
+  const [updatingWebhook, setUpdatingWebhook] = useState(false);
+
+  const handleStartEditWebhook = (fp: string, currentUrl: string | null) => {
+    setEditingFp(fp);
+    setEditWebhookUrl(currentUrl || '');
+  };
+
+  const handleSaveWebhook = async (fp: string) => {
+    setUpdatingWebhook(true);
+    try {
+      const res = await fetch('/api/v1/internal/api-keys', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+        },
+        body: JSON.stringify({ fingerprint: fp, callbackUrl: editWebhookUrl }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('✅ Webhook URL actualizado correctamente');
+        setEditingFp(null);
+        await fetchClients();
+      } else {
+        toast.error(data.error || 'Error al actualizar webhook');
+      }
+    } catch {
+      toast.error('Error de conexión al actualizar webhook');
+    } finally {
+      setUpdatingWebhook(false);
+    }
+  };
+
   const handleRevoke = async (fingerprint: string, name: string) => {
     if (!confirm(`¿Revocar la key "${name}"? Esta acción desactiva el acceso inmediatamente.`)) return;
 
@@ -432,11 +469,51 @@ export function ApiKeysTab() {
                         <span className="text-zinc-500 text-xs font-mono">
                           fp: <span className="text-zinc-400">{client.keyFingerprint}</span>
                         </span>
-                        {client.callbackUrl && (
-                          <span className="text-zinc-500 text-xs flex items-center gap-1">
-                            <Globe className="w-3 h-3" />
-                            <span className="truncate max-w-[200px]">{client.callbackUrl}</span>
-                          </span>
+                        {editingFp === client.keyFingerprint ? (
+                          <div className="flex items-center gap-2 mt-1 w-full max-w-md">
+                            <input
+                              type="url"
+                              value={editWebhookUrl}
+                              onChange={e => setEditWebhookUrl(e.target.value)}
+                              placeholder="https://api.tu-dominio.com/webhooks"
+                              className="flex-1 px-3 py-1 bg-zinc-800 border border-yellow-500/40 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none"
+                            />
+                            <Button
+                              size="sm"
+                              disabled={updatingWebhook}
+                              onClick={() => handleSaveWebhook(client.keyFingerprint)}
+                              className="h-7 text-xs bg-yellow-500 hover:bg-yellow-400 text-black px-2 py-0"
+                            >
+                              Guardar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingFp(null)}
+                              className="h-7 text-xs text-zinc-400 hover:text-white px-2 py-0"
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            {client.callbackUrl ? (
+                              <span className="text-zinc-400 text-xs flex items-center gap-1 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700">
+                                <Globe className="w-3 h-3 text-blue-400" />
+                                <span className="truncate max-w-[240px] font-mono text-[11px]">{client.callbackUrl}</span>
+                              </span>
+                            ) : (
+                              <span className="text-zinc-600 text-xs italic">Sin webhook configurado</span>
+                            )}
+                            {client.isActive && (
+                              <button
+                                onClick={() => handleStartEditWebhook(client.keyFingerprint, client.callbackUrl)}
+                                className="text-[11px] text-yellow-400 hover:underline ml-1"
+                              >
+                                {client.callbackUrl ? 'Editar webhook' : '+ Agregar webhook'}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-wrap gap-1 mt-2">
