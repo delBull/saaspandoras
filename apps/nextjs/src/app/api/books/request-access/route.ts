@@ -57,27 +57,54 @@ export async function POST(req: NextRequest) {
     const token = await generateToken(email, bookSlug);
     const link = `${BASE_URL}/libros/${bookSlug}?token=${token}`;
 
-    // Send via Telegram instead of email (uses existing security bot pattern)
-    const botToken = process.env.TELEGRAM_SECURITY_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
-    // Target personal user chat ID as numeric integer (8605526720)
+    // Dual Delivery Channel: Telegram + Discord Webhook (Private Admin Channel)
+    const botToken = process.env.TELEGRAM_SECURITY_BOT_TOKEN;
+    const discordWebhook = process.env.DISCORD_SECURITY_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
     const chatId = 8605526720;
 
-    if (!botToken) {
-      console.warn('⚠️ TELEGRAM_SECURITY_BOT_TOKEN is missing in Vercel environment variables');
-      return NextResponse.json({ ok: false, error: 'Telegram Bot Token not configured in Vercel' }, { status: 500 });
+    const text = `🔐 <b>Pandoras — Acceso a Documento Institucional</b>\n\n📚 Documento: <b>${bookSlug}</b>\n⏱️ Expira en: <b>2 horas</b>\n\n🔗 Enlace de acceso:\n${link}`;
+
+    let sent = false;
+
+    // Option 1: Send via Discord Webhook if available (100% reliable for private admin channels)
+    if (discordWebhook) {
+      try {
+        const discordRes = await fetch(discordWebhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: `🔐 **Pandoras — Acceso a Documento Institucional**\n📚 **Documento:** ${bookSlug}\n⏱️ **Expira en:** 2 horas\n🔗 **Enlace:** ${link}`,
+          }),
+        });
+        if (discordRes.ok) sent = true;
+      } catch (e) {
+        console.error('❌ Discord Webhook error:', e);
+      }
     }
 
-    const text = `🔐 <b>Pandoras — Acceso a Documento Institucional</b>\n\n📚 Documento: <b>${bookSlug}</b>\n⏱️ Expira en: <b>2 horas</b>\n\n🔗 Enlace de acceso:\n${link}`;
-    const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' }),
-    });
+    // Option 2: Send via Telegram Bot API
+    if (botToken) {
+      try {
+        const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' }),
+        });
+        if (tgRes.ok) sent = true;
+        else {
+          const errText = await tgRes.text();
+          console.error('❌ Telegram API error:', errText);
+        }
+      } catch (e) {
+        console.error('❌ Telegram fetch error:', e);
+      }
+    }
 
-    if (!tgRes.ok) {
-      const errText = await tgRes.text();
-      console.error('❌ Telegram API error:', errText);
-      return NextResponse.json({ ok: false, error: errText }, { status: 500 });
+    if (!sent) {
+      return NextResponse.json(
+        { ok: false, error: 'No notification channel configured or delivery failed. Check Vercel env vars.' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ ok: true });
