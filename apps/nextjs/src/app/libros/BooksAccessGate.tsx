@@ -4,11 +4,15 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 const BOOK_LABELS: Record<string, string> = {
-  'constitucion': 'Constitución de Pandoras — Documento Supremo v2.0',
-  'libro-i': 'Libro I — Institutional Corporate Architecture',
-  'libro-ii': 'Libro II — Financial Engine',
-  'libro-iii': 'Libro III — Protocol & Technology',
-  'libro-iv': 'Libro IV — Governance',
+  'constitucion': 'Libro 0 — Constitución de Pandoras (Documento Supremo)',
+  'libro-i': 'Libro I — Corporate Charter (Estructura de Organización)',
+  'libro-ii': 'Libro II — Corporate Governance (Matriz de Control)',
+  'libro-iii': 'Libro III — Institutional Treasury (Gestión de Reservas)',
+  'libro-iv': 'Libro IV — IP & Asset Register (Registro de Activos & Ciclo de Vida)',
+  'libro-v': 'Libro V — Licensing Framework (Licenciamiento Territorial)',
+  'libro-vi': 'Libro VI — Technology Platform & Capital Engine',
+  'libro-vii': 'Libro VII — Growth & Expansion (Roadmap Geográfico)',
+  'libro-viii': 'Libro VIII — Institutional Doctrine (Doctrina Estratégica)',
 };
 
 export default function BooksAccessGate({ bookSlug }: { bookSlug: string }) {
