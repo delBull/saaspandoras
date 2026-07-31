@@ -281,14 +281,7 @@ export async function POST(req: NextRequest) {
     const ownerContext = isCorePandora ? 'pandora' : 'client';
     const leadType = scope === 'b2b' ? 'founder_prospect' : 'user_prospect';
 
-    // ... (Keep existing domain verification logic)
-    const isSecretKey = keyType === 'secret';
-    if (!isSecretKey && projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
-      const isAllowed = projectContext.allowedDomains.some(domain => requestOrigin?.toLowerCase().includes(domain.toLowerCase()));
-      if (!isAllowed) {
-        return NextResponse.json({ error: 'Unauthorized domain' }, { status: 403 });
-      }
-    }
+
 
     if (consent !== true) {
       return NextResponse.json({ error: 'Consent is required' }, { status: 400 });
