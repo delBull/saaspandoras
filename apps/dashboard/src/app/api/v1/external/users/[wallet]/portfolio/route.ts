@@ -19,12 +19,17 @@ export async function GET(
 
     try {
         // 1. Get all memberships for this wallet
-        const memberships = await db.query.daoMembers.findMany({
-            where: eq(daoMembers.wallet, wallet),
-            with: {
-                project: true
-            }
-        });
+        const memberships = await db
+            .select({
+                projectId: daoMembers.projectId,
+                votingPower: daoMembers.votingPower,
+                artifactsCount: daoMembers.artifactsCount,
+                projectSlug: projects.slug,
+                projectName: projects.title,
+            })
+            .from(daoMembers)
+            .leftJoin(projects, eq(daoMembers.projectId, projects.id))
+            .where(eq(daoMembers.wallet, wallet));
 
         // 2. Get user balances (for global claimable rewards)
         const balance = await db.query.userBalances.findFirst({
@@ -34,13 +39,10 @@ export async function GET(
         // 3. Map with rewards
         const portfolio = memberships.map(m => ({
             projectId: m.projectId,
-            projectSlug: (m as any).project?.slug || "",
-            projectName: (m as any).project?.title || "Unknown Project",
+            projectSlug: m.projectSlug || "",
+            projectName: m.projectName || "Unknown Project",
             votingPower: m.votingPower,
             artifactsCount: m.artifactsCount,
-            // In a real scenario, you'd fetch distributed rewards from a distributions table
-            // For now, we'll return 0 or fetch from a hypothetical rewards field if it existed
-            // Global claimable rewards from userBalances
             claimableRewards: balance?.usdcBalance || "0.00", 
             currency: "USDC"
         }));
