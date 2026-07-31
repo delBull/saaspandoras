@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 
 const ADMIN_EMAIL = 'marco.munoz9@gmail.com';
 const MAGIC_LINK_SECRET = process.env.BOOKS_MAGIC_LINK_SECRET ?? 'pandoras_books_secret_2026';
@@ -8,15 +7,32 @@ const TOKEN_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 export const runtime = 'edge';
 
-function generateToken(email: string, bookSlug: string): string {
+async function generateToken(email: string, bookSlug: string): Promise<string> {
   const exp = Date.now() + TOKEN_TTL_MS;
   const payload = `${email}:${bookSlug}:${exp}`;
-  const sig = crypto
-    .createHmac('sha256', MAGIC_LINK_SECRET)
-    .update(payload)
-    .digest('hex');
+
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(MAGIC_LINK_SECRET);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    encoder.encode(payload)
+  );
+
+  const sig = Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+
   const raw = JSON.stringify({ email, bookSlug, exp, sig });
-  return Buffer.from(raw).toString('base64url');
+  return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 export async function POST(req: NextRequest) {
@@ -38,7 +54,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid book' }, { status: 400 });
     }
 
-    const token = generateToken(email, bookSlug);
+    const token = await generateToken(email, bookSlug);
     const link = `${BASE_URL}/libros/${bookSlug}?token=${token}`;
 
     // Send via Telegram instead of email (uses existing security bot pattern)

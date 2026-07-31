@@ -9,7 +9,7 @@ export default async function ConstitucionPage({
 }) {
   const params = await searchParams;
   const token = params.token ?? '';
-  const payload = verifyBookToken(token);
+  const payload = await verifyBookToken(token);
   const authorized = !!payload && payload.bookSlug === 'constitucion';
 
   if (!authorized) {
