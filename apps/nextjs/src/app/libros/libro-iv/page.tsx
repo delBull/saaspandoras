@@ -1,4 +1,4 @@
-import { verifyBookToken } from '~/lib/books-auth';
+import { verifyBookToken, isTokenAuthorizedForBook } from '~/lib/books-auth';
 import BooksAccessGate from '../BooksAccessGate';
 import LibroIVClient from '~/app/libros/libro-iv/LibroIVClient';
 
@@ -10,7 +10,7 @@ export default async function LibroIVPage({
   const params = await searchParams;
   const token = params.token ?? '';
   const payload = await verifyBookToken(token);
-  const authorized = !!payload && payload.bookSlug === 'libro-iv';
+  const authorized = isTokenAuthorizedForBook(payload, 'libro-iv');
 
   if (!authorized) {
     return <BooksAccessGate bookSlug="libro-iv" />;

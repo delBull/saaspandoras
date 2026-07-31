@@ -1,4 +1,4 @@
-import { verifyBookToken } from '~/lib/books-auth';
+import { verifyBookToken, isTokenAuthorizedForBook } from '~/lib/books-auth';
 import BooksAccessGate from '../BooksAccessGate';
 import ConstitucionClient from '~/app/libros/constitucion/ConstitucionClient';
 
@@ -10,7 +10,7 @@ export default async function ConstitucionPage({
   const params = await searchParams;
   const token = params.token ?? '';
   const payload = await verifyBookToken(token);
-  const authorized = !!payload && payload.bookSlug === 'constitucion';
+  const authorized = isTokenAuthorizedForBook(payload, 'constitucion');
 
   if (!authorized) {
     return <BooksAccessGate bookSlug="constitucion" />;

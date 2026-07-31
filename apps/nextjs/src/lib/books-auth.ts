@@ -36,12 +36,16 @@ export async function verifyBookToken(token: string): Promise<TokenPayload | nul
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
 
-    if (payload.sig !== expectedSig) {
-      return null;
-    }
+    if (payload.sig !== expectedSig) return null;
 
     return { email: payload.email, bookSlug: payload.bookSlug, exp: payload.exp };
   } catch {
     return null;
   }
+}
+
+export function isTokenAuthorizedForBook(payload: TokenPayload | null, targetSlug: string): boolean {
+  if (!payload) return false;
+  if (Date.now() > payload.exp) return false;
+  return payload.bookSlug === 'all' || payload.bookSlug === targetSlug;
 }
