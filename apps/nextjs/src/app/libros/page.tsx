@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 function GridBg() {
@@ -65,11 +65,9 @@ const BOOKS = [
   },
 ];
 
-function BookCard({ book, index }: { book: typeof BOOKS[0]; index: number }) {
-  const [email, setEmail] = useState('marco.munoz9@gmail.com');
+function BookCard({ book, index, activeToken }: { book: typeof BOOKS[0]; index: number; activeToken?: string }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const handleRequest = async () => {
     setLoading(true);
@@ -77,13 +75,15 @@ function BookCard({ book, index }: { book: typeof BOOKS[0]; index: number }) {
       await fetch('/api/books/request-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, bookSlug: book.slug }),
+        body: JSON.stringify({ email: 'marco.munoz9@gmail.com', bookSlug: book.slug }),
       });
       setSent(true);
     } finally {
       setLoading(false);
     }
   };
+
+  const bookUrl = activeToken ? `/libros/${book.slug}?token=${activeToken}` : `/libros/${book.slug}`;
 
   return (
     <motion.div
@@ -113,8 +113,16 @@ function BookCard({ book, index }: { book: typeof BOOKS[0]; index: number }) {
         ))}
       </ul>
 
-      {/* Access */}
-      {!sent ? (
+      {/* Access / Open Button */}
+      {activeToken ? (
+        <Link
+          href={bookUrl}
+          className="mt-auto w-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 rounded-xl px-4 py-2.5 text-xs text-white transition-all duration-200 flex items-center justify-center gap-2 font-light"
+        >
+          <span>Abrir Documento</span>
+          <span className="text-xs">→</span>
+        </Link>
+      ) : !sent ? (
         <button
           onClick={handleRequest}
           disabled={loading}
@@ -136,6 +144,21 @@ function BookCard({ book, index }: { book: typeof BOOKS[0]; index: number }) {
 }
 
 export default function LibrosIndexPage() {
+  const [token, setToken] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      sessionStorage.setItem('pandoras_books_token', urlToken);
+      setToken(urlToken);
+    } else {
+      const stored = sessionStorage.getItem('pandoras_books_token');
+      if (stored) setToken(stored);
+    }
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#060606] text-white selection:bg-white/10">
       <GridBg />
@@ -160,7 +183,7 @@ export default function LibrosIndexPage() {
         {/* Books grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {BOOKS.map((book, i) => (
-            <BookCard key={book.slug} book={book} index={i} />
+            <BookCard key={book.slug} book={book} index={i} activeToken={token} />
           ))}
         </div>
 

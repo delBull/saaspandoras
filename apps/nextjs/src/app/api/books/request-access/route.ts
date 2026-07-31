@@ -52,14 +52,11 @@ export async function POST(req: NextRequest) {
     // Delivery Channel: Discord Webhook Only (Private Admin Channel)
     const discordWebhook = process.env.DISCORD_SECURITY_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
 
-    const validBooks = ['all', 'constitucion', 'libro-i', 'libro-ii', 'libro-iii', 'libro-iv'];
-    const targetSlug = bookSlug || 'all';
-    if (!validBooks.includes(targetSlug)) {
-      return NextResponse.json({ error: 'Invalid book' }, { status: 400 });
-    }
+    // Always issue token with 'all' scope so requesting access unlocks all books globally for 2 hours
+    const targetSlug = 'all';
     const token = await generateToken(email, targetSlug);
-    const destinationPath = targetSlug === 'all' ? '/libros' : `/libros/${targetSlug}`;
-    const link = `${BASE_URL}${destinationPath}?token=${token}`;
+    const destinationPath = `/libros?token=${token}`;
+    const link = `${BASE_URL}${destinationPath}`;
 
     if (!discordWebhook) {
       console.warn('⚠️ DISCORD_WEBHOOK_URL is missing in Vercel environment variables');

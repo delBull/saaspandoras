@@ -301,7 +301,10 @@ export default function LibroIClient({ token }: { token: string }) {
         <p className="text-[9px] uppercase tracking-[0.6em] text-zinc-800">
           Pandoras Group · Libro I · Confidencial · {new Date().getFullYear()}
         </p>
-        <div className="mt-6 flex gap-6">
+        <div className="mt-6 flex gap-6 flex-wrap justify-center">
+          <a href={`/libros?token=${token}`} className="text-xs text-zinc-700 hover:text-zinc-400 transition-colors">
+            ← Galería de Libros
+          </a>
           <a href={`/libros/libro-ii?token=${token}`} className="text-xs text-zinc-700 hover:text-zinc-400 transition-colors">
             Libro II: Financial Engine →
           </a>
