@@ -35,8 +35,22 @@ async function generateToken(email: string, bookSlug: string): Promise<string> {
   return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// Simple in-memory rate limiting map for edge runtime (IP -> timestamp)
+const rateLimitMap = new Map<string, number>();
+const RATE_LIMIT_COOLDOWN_MS = 3000; // 3 seconds cooldown
+
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || 'unknown-ip';
+    const lastRequest = rateLimitMap.get(ip);
+    const now = Date.now();
+
+    if (lastRequest && now - lastRequest < RATE_LIMIT_COOLDOWN_MS) {
+      return NextResponse.json({ ok: false, error: 'Demasiadas solicitudes. Por favor espera unos segundos.' }, { status: 429 });
+    }
+
+    rateLimitMap.set(ip, now);
+
     const { email, bookSlug } = await req.json() as { email: string; bookSlug: string };
 
     if (!email || !bookSlug) {
@@ -64,11 +78,44 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      const bookTitles: Record<string, string> = {
+        'all': '📚 Acceso Global (Todos los Libros 0–VIII & Standards)',
+        'constitucion': '📖 Libro 0 — Constitution (Documento Supremo)',
+        'libro-i': '📖 Libro I — Corporate Charter',
+        'libro-ii': '📖 Libro II — Corporate Governance',
+        'libro-iii': '📖 Libro III — Institutional Treasury',
+        'libro-iv': '📖 Libro IV — IP & Asset Register',
+        'libro-v': '📖 Libro V — Licensing Framework',
+        'libro-vi': '📖 Libro VI — Technology Platform & Capital Engine',
+        'libro-vii': '📖 Libro VII — Growth & Expansion',
+        'libro-viii': '📖 Libro VIII — Institutional Doctrine',
+      };
+
+      const displayTitle = bookTitles[bookSlug] || bookSlug;
+
       const discordRes = await fetch(discordWebhook, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: `🔐 **Pandoras — Acceso a Biblioteca Institucional**\n📚 **Documento:** ${targetSlug === 'all' ? 'Acceso Global (Todos los Libros)' : targetSlug}\n⏱️ **Expira en:** 2 horas\n🔗 **Enlace:** ${link}`,
+          username: 'Pandoras Institutional Governance',
+          avatar_url: 'https://pandoras.finance/favicon.ico',
+          embeds: [
+            {
+              title: '🔐 Token de Acceso Firmado — Pandoras Institutional Library',
+              description: `Se ha generado un token de acceso seguro para la lectura de la documentación institucional.`,
+              color: 0xd97706, // Amber gold
+              fields: [
+                { name: '👤 Usuario Autorizado', value: email, inline: true },
+                { name: '📚 Recurso Solicitado', value: displayTitle, inline: true },
+                { name: '⏱️ Validez del Enlace', value: '2 Horas (TTL Hmac SHA-256)', inline: false },
+                { name: '🔗 Enlace Único de Acceso', value: `[👉 Haz clic para acceder a la Biblioteca](${link})` },
+              ],
+              footer: {
+                text: 'Pandoras Group Holdings · Protocolo de Seguridad Corporativa',
+              },
+              timestamp: new Date().toISOString(),
+            },
+          ],
         }),
       });
 

@@ -15,6 +15,7 @@ import {
   Shield,
   Briefcase
 } from "lucide-react";
+import { IPRegisterModal } from "./IPRegisterModal";
 
 const categories = [
   {
@@ -113,9 +114,12 @@ const itemVariants: Variants = {
 
 export default function NexusClient() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [isIpModalOpen, setIsIpModalOpen] = useState(false);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4 md:p-8 lg:p-12 overflow-hidden bg-background">
+      <IPRegisterModal isOpen={isIpModalOpen} onClose={() => setIsIpModalOpen(false)} />
+
       {/* Abstract Background Elements */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] bg-primary/5 rounded-full blur-[100px] mix-blend-screen" />
@@ -156,6 +160,20 @@ export default function NexusClient() {
           >
             Centralized access to the entire ecosystem. Navigate through protocol documentation, growth initiatives, and platform access.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-4 flex gap-3"
+          >
+            <button
+              onClick={() => setIsIpModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-light tracking-wide transition-all shadow-lg backdrop-blur-md flex items-center gap-2"
+            >
+              <Shield className="w-4 h-4 text-amber-400" />
+              <span>🛡️ Abrir IP Register & Tareas de Ejecución</span>
+            </button>
+          </motion.div>
         </header>
 
         <motion.div 
