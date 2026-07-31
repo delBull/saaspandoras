@@ -173,32 +173,37 @@ export async function POST(req: NextRequest) {
     let targetProjectId: number;
     resolutionMethod = 'unknown';
 
-    // Priority 1: Generic Autodiscovery via Origin/Allowed-Domains
-    if (autoDiscoveredProjectId) {
-      targetProjectId = autoDiscoveredProjectId;
-      resolutionMethod = 'origin_autodiscovery_final';
-    } 
-    // Priority 2: Standard resolution
-    else if (projectId === 'external' || !projectId) {
-      targetProjectId = Number(clientProjectId || 3); // Fallback to Project 3 (Pandoras Access)
-      resolutionMethod = projectId === 'external' ? 'explicit_external' : 'client_default';
-    } else if (isNaN(Number(projectId))) {
+    // Priority 1: Explicit projectId passed in body or query param
+    if (projectId && !isNaN(Number(projectId))) {
+      targetProjectId = Number(projectId);
+      resolutionMethod = 'explicit_id';
+    } else if (projectId && typeof projectId === 'string' && projectId !== 'external') {
       const canonicalSlug = resolveProjectSlug(projectId);
       const projectBySlug = await db.query.projects.findFirst({
-        where: (projects, { ilike }) => ilike(projects.slug, canonicalSlug),
+        where: (projects, { ilike, eq, or }) => or(
+          ilike(projects.slug, canonicalSlug),
+          ilike(projects.slug, projectId)
+        ),
         columns: { id: true }
       });
-      
+
       if (projectBySlug) {
         targetProjectId = projectBySlug.id;
         resolutionMethod = 'slug_match';
       } else {
-        targetProjectId = Number(clientProjectId || 3);
+        targetProjectId = Number(clientProjectId || 2); // Default to Project 2 (Narai/S'Narai) or Client default
         resolutionMethod = 'slug_mismatch_fallback';
       }
-    } else {
-      targetProjectId = Number(projectId);
-      resolutionMethod = 'explicit_id';
+    } 
+    // Priority 2: Generic Autodiscovery via Origin/Allowed-Domains
+    else if (autoDiscoveredProjectId) {
+      targetProjectId = autoDiscoveredProjectId;
+      resolutionMethod = 'origin_autodiscovery_final';
+    } 
+    // Priority 3: Standard resolution (Client API Key default or Fallback)
+    else {
+      targetProjectId = Number(clientProjectId || 2); // Default to S'Narai (ID 2) or client default
+      resolutionMethod = 'client_default';
     }
 
     console.error(`[Growth OS] 🎯 Project Resolved: ID=${targetProjectId}, Method=${resolutionMethod}, Requested=${projectId}`);
@@ -234,7 +239,7 @@ export async function POST(req: NextRequest) {
     const scope = (bodyScope === 'b2b' || isB2BOrigin) ? 'b2b' : 'b2c';
 
     // 1.5 Security Check: Allowed Domains (ONLY FOR PUBLIC KEYS)
-    const projectContext = await db.query.projects.findFirst({
+    let projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
       columns: { 
         allowedDomains: true, 
@@ -247,6 +252,23 @@ export async function POST(req: NextRequest) {
         whatsappPhone: true
       }
     });
+
+    if (!projectContext) {
+      // Fallback to S'Narai (ID 2) or first active project so multi-tenant key never fails with 404
+      projectContext = await db.query.projects.findFirst({
+        where: or(eq(projects.id, 2), eq(projects.slug, 'snarai')),
+        columns: {
+          allowedDomains: true,
+          slug: true,
+          title: true,
+          businessCategory: true,
+          discordWebhookUrl: true,
+          description: true,
+          tagline: true,
+          whatsappPhone: true
+        }
+      });
+    }
 
     if (!projectContext) {
       return NextResponse.json({ error: 'Invalid project context' }, { status: 404 });
