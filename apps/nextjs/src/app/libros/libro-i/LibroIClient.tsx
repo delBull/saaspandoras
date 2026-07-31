@@ -36,16 +36,16 @@ function ChapterSplash({ number, title, anchor }: { number: string; title: strin
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   return (
-    <section id={anchor} ref={ref} className="min-h-screen flex flex-col items-center justify-center bg-[#060606] relative overflow-hidden">
-      <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
+    <section id={anchor} ref={ref} className="min-h-[45vh] flex flex-col items-center justify-center bg-[#060606] relative overflow-hidden my-12">
+      <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         className="text-center px-6"
       >
-        <p className="text-[9px] uppercase tracking-[0.6em] text-zinc-700 mb-8">Sección {number}</p>
-        <h2 className="text-4xl md:text-6xl lg:text-7xl font-thin tracking-tight text-white max-w-3xl mx-auto leading-[1.1]">{title}</h2>
+        <p className="text-[10px] uppercase tracking-[0.6em] text-blue-400/80 mb-4">{number}</p>
+        <h2 className="text-3xl md:text-5xl font-thin tracking-tight text-white max-w-3xl mx-auto leading-[1.1]">{title}</h2>
       </motion.div>
     </section>
   );
@@ -55,15 +55,15 @@ function ManifestoQuote({ text, sub }: { text: string; sub?: string }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   return (
-    <section ref={ref} className="min-h-[70vh] flex flex-col items-center justify-center px-6 py-24 bg-[#070707]">
+    <section ref={ref} className="min-h-[40vh] flex flex-col items-center justify-center px-6 py-20 bg-[#070707] my-16 border-y border-white/[0.04]">
       <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={inView ? { opacity: 1, scale: 1 } : {}}
-        transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         className="text-center max-w-4xl mx-auto"
       >
-        <p className="text-3xl md:text-5xl lg:text-6xl font-thin text-white leading-[1.15] tracking-tight">{text}</p>
-        {sub && <p className="mt-8 text-zinc-600 text-sm font-light tracking-[0.2em] uppercase">{sub}</p>}
+        <p className="text-2xl md:text-4xl font-thin text-white leading-[1.25] tracking-tight italic">"{text}"</p>
+        {sub && <p className="mt-6 text-blue-400/80 text-xs font-light tracking-[0.3em] uppercase">{sub}</p>}
       </motion.div>
     </section>
   );
@@ -71,7 +71,7 @@ function ManifestoQuote({ text, sub }: { text: string; sub?: string }) {
 
 function Section({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <section className={`min-h-screen px-6 py-32 flex flex-col items-center bg-[#080808] ${className}`}>
+    <section className={`px-6 py-16 flex flex-col items-center bg-[#060606] ${className}`}>
       <div className="max-w-4xl w-full">{children}</div>
     </section>
   );
@@ -83,57 +83,85 @@ export default function LibroIClient({ token }: { token: string }) {
       <GridBg />
 
       {/* Cover */}
-      <section className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-[#060606]">
+      <section className="min-h-[85vh] flex flex-col items-center justify-center relative overflow-hidden bg-[#060606] border-b border-white/[0.04]">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 text-center px-6"
         >
-          <p className="text-[9px] uppercase tracking-[0.7em] text-zinc-700 mb-16">Pandoras Holdings · Confidencial</p>
+          <p className="text-[10px] uppercase tracking-[0.7em] text-zinc-600 mb-12">Pandoras Holdings · Confidencial</p>
           <p className="text-xs uppercase tracking-[0.5em] text-blue-400/80 mb-4">Libro I</p>
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-thin tracking-tight text-white max-w-4xl mx-auto leading-[1.05] mb-6">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-thin tracking-tight text-white max-w-5xl mx-auto leading-[1.05] mb-6">
             Corporate Charter
           </h1>
-          <p className="text-zinc-500 text-sm font-light max-w-md mx-auto mt-8">
-            Estructura Corporativa Nivel 1, 2 y 3 · Holding · Operativas LLC · SPVs
+          <p className="text-zinc-400 text-sm font-light max-w-xl mx-auto mt-6 leading-relaxed">
+            Estructura Corporativa Nivel 1, 2 y 3 · Holding · Operativas LLC · SPVs · Ownership & Lifecycle
           </p>
         </motion.div>
       </section>
 
-      {/* Sec 01 */}
-      <ChapterSplash number="01" title="Arquitectura Corporativa en 3 Niveles" anchor="sec1" />
+      {/* Capítulo 1 */}
+      <ChapterSplash number="CAPÍTULO 1" title="Purpose of the Holding" anchor="cap1" />
       <Section>
         <Reveal>
-          <p className="text-[9px] uppercase tracking-[0.5em] text-zinc-700 mb-12">01 — Estructura Institucional</p>
-          <p className="text-2xl md:text-3xl font-thin text-white leading-[1.6] mb-10">
+          <p className="text-[10px] uppercase tracking-[0.5em] text-blue-400 mb-6">Capítulo 1 — Propósito del Holding</p>
+          <p className="text-2xl md:text-3xl font-thin text-white leading-[1.6] mb-8">
             Pandoras Holdings no es una empresa operativa.<br />
             Pandoras Holdings es la entidad titular y administradora<br />
             de los activos estratégicos del grupo.
           </p>
-          <p className="text-zinc-400 font-light leading-relaxed max-w-2xl">
-            La arquitectura corporativa de Pandoras separa estrictamente el patrimonio estratégico de los riesgos operativos comerciales y del levantamiento de capital en mercados locales.
-          </p>
+          <div className="space-y-4 text-zinc-400 text-sm font-light leading-relaxed">
+            <p>
+              El Holding existe exclusivamente para concentrar, proteger y administrar la propiedad intelectual, el código fuente, la tesorería estratégica, el portfolio de participaciones y la marca corporativa.
+            </p>
+            <p>
+              Al mantenerse al margen de las operaciones comerciales directas con clientes finales, el Holding queda blindado frente a contingencias operativas, disputas locales o demandas comerciales de las filiales.
+            </p>
+          </div>
         </Reveal>
+      </Section>
 
-        <Reveal delay={0.2} className="mt-16 space-y-6">
-          <div className="border border-blue-500/20 rounded-xl p-6 bg-white/[0.01]">
-            <p className="text-xs uppercase tracking-widest text-blue-400 mb-2">Nivel 1: Pandoras Holdings (Entidad Matriz)</p>
-            <p className="text-zinc-400 text-sm font-light leading-relaxed">
-              Concentra, protege y administra el patrimonio estratégico: Propiedad Intelectual, Tesorería, Portfolio de Participaciones, Gobernanza y Licenciamiento Global.
-            </p>
+      {/* Capítulo 2 */}
+      <ChapterSplash number="CAPÍTULO 2" title="Corporate Architecture en 3 Niveles" anchor="cap2" />
+      <Section>
+        <Reveal>
+          <div className="space-y-6">
+            <div className="border border-blue-500/20 rounded-xl p-6 bg-white/[0.01]">
+              <p className="text-xs uppercase tracking-widest text-blue-400 mb-2">Nivel 1: Pandoras Holdings (Entidad Matriz)</p>
+              <p className="text-zinc-400 text-xs font-light leading-relaxed">
+                Titular inalienable de la Propiedad Intelectual, Growth OS, Capital Engine, Marcas, Tesorería Estratégica y Contratos Maestros de Licencia.
+              </p>
+            </div>
+            <div className="border border-emerald-500/20 rounded-xl p-6 bg-white/[0.01]">
+              <p className="text-xs uppercase tracking-widest text-emerald-400 mb-2">Nivel 2: Compañías Operativas (Pandoras USA LLC / LATAM)</p>
+              <p className="text-zinc-400 text-xs font-light leading-relaxed">
+                Entidades territoriales creadas para comercialización, nómina, ventas y facturación local mediante Contratos de Licencia Exclusiva. No poseen el software ni las marcas.
+              </p>
+            </div>
+            <div className="border border-purple-500/20 rounded-xl p-6 bg-white/[0.01]">
+              <p className="text-xs uppercase tracking-widest text-purple-400 mb-2">Nivel 3: Project SPVs (Entidades de Propósito Específico)</p>
+              <p className="text-zinc-400 text-xs font-light leading-relaxed">
+                Vehículos fiduciarios/legales independientes aislados para cada activo real (ej. S'Narai Bucerías). Las contingencias de un SPV jamás comprometen al Holding ni a la LLC operativa.
+              </p>
+            </div>
           </div>
-          <div className="border border-emerald-500/20 rounded-xl p-6 bg-white/[0.01]">
-            <p className="text-xs uppercase tracking-widest text-emerald-400 mb-2">Nivel 2: Compañías Operativas (Pandoras USA LLC / LATAM)</p>
-            <p className="text-zinc-400 text-sm font-light leading-relaxed">
-              Adquieren derechos de comercialización, operación, nómina y facturación mediante Contratos de Licencia Territorial Exclusiva. No poseen el software ni las marcas.
-            </p>
-          </div>
-          <div className="border border-purple-500/20 rounded-xl p-6 bg-white/[0.01]">
-            <p className="text-xs uppercase tracking-widest text-purple-400 mb-2">Nivel 3: Project SPVs (Entidades de Propósito Específico)</p>
-            <p className="text-zinc-400 text-sm font-light leading-relaxed">
-              Entidades jurídicas independientes aisladas para cada activo real (ej. S'Narai Bucerías). Contingencias de un SPV jamás comprometen al Holding ni a la LLC operativa.
-            </p>
+        </Reveal>
+      </Section>
+
+      {/* Capítulo 3 */}
+      <ChapterSplash number="CAPÍTULO 3" title="Corporate Entities & Ownership" anchor="cap3" />
+      <Section>
+        <Reveal>
+          <div className="space-y-6 text-zinc-400 text-sm font-light leading-relaxed">
+            <div>
+              <h4 className="text-white text-base font-normal mb-2">Pandoras USA Operations LLC</h4>
+              <p className="text-xs text-zinc-400">Entidad de Nivel 2 dedicada al levantamiento de capital internacional y operaciones en Estados Unidos. Los inversionistas en rondas corporativas adquieren participación en esta LLC, aislando el 100% de la propiedad intelectual alojada en el Holding.</p>
+            </div>
+            <div>
+              <h4 className="text-white text-base font-normal mb-2">Reglas de Propiedad (Ownership Principles)</h4>
+              <p className="text-xs text-zinc-400">La IP, marcas, patentes y tesorería estratégica pertenecen de forma inalienable al Holding. Las operativas únicamente reciben licencias de uso temporal sujetas al pago de Royalty Fees.</p>
+            </div>
           </div>
         </Reveal>
       </Section>
