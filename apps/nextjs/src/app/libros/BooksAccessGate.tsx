@@ -72,31 +72,22 @@ export default function BooksAccessGate({ bookSlug }: { bookSlug: string }) {
         </p>
 
         {!sent ? (
-          <div className="flex flex-col gap-3">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="correo@pandoras.finance"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-700 focus:outline-none focus:border-white/20 transition-colors"
-            />
-            <button
-              onClick={handleRequest}
-              disabled={loading}
-              className="w-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white transition-all duration-200 disabled:opacity-40"
-            >
-              {loading ? 'Enviando...' : 'Solicitar acceso via Telegram'}
-            </button>
-          </div>
+          <button
+            onClick={handleRequest}
+            disabled={loading}
+            className="w-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl px-4 py-3.5 text-sm text-white transition-all duration-200 disabled:opacity-40 font-light tracking-wide"
+          >
+            {loading ? 'Solicitando...' : 'Solicitar Acceso'}
+          </button>
         ) : (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="border border-white/[0.06] rounded-xl px-6 py-5 bg-white/[0.02]"
           >
-            <p className="text-zinc-300 text-sm font-light mb-1">Enlace enviado</p>
+            <p className="text-zinc-300 text-sm font-light mb-1">Enlace Solicitado</p>
             <p className="text-zinc-600 text-xs">
-              Revisa tu Telegram (@DelBullSecurity_bot). El enlace expira en 2 horas.
+              Revisa tu canal privado en Discord. El enlace expira en 2 horas.
             </p>
           </motion.div>
         )}

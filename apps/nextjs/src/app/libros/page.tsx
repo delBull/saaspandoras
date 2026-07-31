@@ -114,35 +114,20 @@ function BookCard({ book, index }: { book: typeof BOOKS[0]; index: number }) {
       </ul>
 
       {/* Access */}
-      {!open ? (
+      {!sent ? (
         <button
-          onClick={() => setOpen(true)}
-          className="mt-auto w-full border border-white/[0.06] hover:border-white/20 rounded-xl px-4 py-2.5 text-xs text-zinc-400 hover:text-white transition-all duration-200 flex items-center justify-center gap-2"
+          onClick={handleRequest}
+          disabled={loading}
+          className="mt-auto w-full border border-white/[0.06] hover:border-white/20 rounded-xl px-4 py-2.5 text-xs text-zinc-300 hover:text-white transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-40"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          Solicitar acceso
+          {loading ? 'Solicitando...' : 'Solicitar Acceso'}
         </button>
-      ) : !sent ? (
-        <div className="mt-auto flex flex-col gap-2">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-700 focus:outline-none focus:border-white/20 transition-colors"
-          />
-          <button
-            onClick={handleRequest}
-            disabled={loading}
-            className="w-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white transition-all duration-200 disabled:opacity-40"
-          >
-            {loading ? 'Enviando...' : 'Enviar enlace via Telegram →'}
-          </button>
-        </div>
       ) : (
         <div className="mt-auto border border-white/[0.05] rounded-xl px-4 py-3 bg-white/[0.02]">
-          <p className="text-zinc-400 text-xs">Enlace enviado a <span className="text-zinc-300">@DelBullSecurity_bot</span></p>
+          <p className="text-zinc-400 text-xs">Enlace enviado a tu <span className="text-zinc-300">Discord Privado</span></p>
           <p className="text-zinc-700 text-[10px] mt-1">Expira en 2 horas</p>
         </div>
       )}
