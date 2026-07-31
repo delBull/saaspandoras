@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
 
     // Send via Telegram instead of email (uses existing security bot pattern)
     const botToken = process.env.TELEGRAM_SECURITY_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_SECURITY_CHAT_ID || process.env.TELEGRAM_ADMIN_CHAT_ID || '8605526720';
+    // Always target personal user chat ID 8605526720 (never bot ID/channel ID)
+    const chatId = process.env.TELEGRAM_SECURITY_CHAT_ID || '8605526720';
 
     if (!botToken) {
       console.warn('⚠️ TELEGRAM_SECURITY_BOT_TOKEN is missing in Vercel environment variables');
