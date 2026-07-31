@@ -72,7 +72,6 @@ const categories = [
     border: "border-zinc-500/30",
     links: [
       { name: "🏛️ Institutional Operating Model (Libros 0–VIII)", path: "/libros" },
-      { name: "📜 Constitución de Pandoras (v2.0)", path: "/libros/constitucion" },
       { name: "Institutional Book", path: "/institutional-book" },
       { name: "General Resources", path: "/resources" },
       { name: "Materials", path: "/materials" },
