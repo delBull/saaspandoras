@@ -72,15 +72,52 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       return NextResponse.json({ success: true });
     }
 
-    // 2. Build live context
+    // 2. Fetch Live Project Analytics & Phase Data from DB
+    let liveStats: any = {};
+    try {
+      const { calculatePhaseStats } = await import('@/lib/projects/stats');
+      liveStats = await calculatePhaseStats(projectRecord.id);
+    } catch (e) {
+      console.warn(`[Telegram Bot] Could not fetch live phase stats for project ${projectId}`, e);
+    }
+
+    const currentPhase = liveStats?.currentPhase || liveStats?.phases?.[0];
     const projectContext = {
       title: projectRecord.title,
-      currentPrice: metadata?.tokenPriceUsd || 50,
-      totalUnits: metadata?.totalUnits || 8,
-      availableUnits: metadata?.availableUnits || 8,
-      progressPercentage: metadata?.progressPercentage || 0,
-      treasury: '0'
+      slug: projectRecord.slug,
+      currentPrice: currentPhase?.tokenPrice || metadata?.tokenPriceUsd || 50,
+      phaseName: currentPhase?.name || 'Fase Fundadores',
+      tokensSold: currentPhase?.tokensSold || 0,
+      totalUnits: currentPhase?.totalTokens || metadata?.totalUnits || 30000,
+      availableUnits: currentPhase?.remainingTokens || metadata?.availableUnits || 30000,
+      progressPercentage: currentPhase?.percent || metadata?.progressPercentage || 0,
+      treasury: liveStats?.treasuryDisplay || '0 USDC',
+      holdersCount: liveStats?.holdersCount || 0
     };
+
+    // Deep context injection for S'Narai
+    if (projectId === 'snarai') {
+      botInstructions = `${botInstructions || ''}
+
+INFORMACIÓN INSTITUCIONAL Y LEGAL COMPLETA DE S'NARAI:
+- Ubicación / Concepto: Proyecto residencial boutique de lujo en Riviera Nayarit (México), desarrollado por Aztecas Tokenización y respaldado por la arquitectura Pandoras Growth OS (Titular registral MXHUB S.A. de C.V.).
+- Modelo de Capitalización: Fraccionamiento mediante Títulos Digitales y Licenciamiento Territorial.
+- Fases de Inversión:
+  * Fase Actual: ${projectContext.phaseName}
+  * Precio por Título Digital / Token: $${projectContext.currentPrice} USD / USDC.
+  * Progreso de la Fase: ${projectContext.progressPercentage}% completado (${projectContext.tokensSold} tokens vendidos de ${projectContext.totalUnits}).
+  * Miembros DAO / Holders: ${projectContext.holdersCount}.
+- Opciones de Compra / Pago:
+  1. En Línea / Web3: USDC / USDT vía red Sepolia/Polygon a través de la dApp/Portal oficial.
+  2. Fast Lane / Transferencia SPEI: Opción de reserva y pago en moneda local (MXN) con aprobación administrativa y hash de acuerdo digital.
+- Gobernanza & Derechos:
+  * Cada Título Digital representa poder de voto proporcional en la DAO de S'Narai.
+  * Distribuciones de utilidades pro-rata en USDC directamente a la wallet/balance del usuario.
+  * Acceso al Data Room Institucional (/nexus) organizado en 6 carpetas (Company, IP, Technology, Business, Legal, Investor).
+- Documentación Registral & Legal:
+  * La marca madre PANDORAS™ está registrada bajo titularidad inalienable de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. (Clases 36 y 42).
+- Tono: Profesional, ejecutivo, cortés, altamente conocedor del real estate tokenizado y la tecnología Web3. Invita siempre al usuario a conectar su wallet o acceder a Mi Portal (/portal).`;
+    }
 
     // 3. Generate AI Response
     const aiResponseText = await generateBotResponse({

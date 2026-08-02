@@ -57,40 +57,34 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     { role: 'user', content: userMessage }
   ];
 
-  try {
-    const isOllamaEnabled = !!process.env.OLLAMA_API_KEY || !!process.env.OLLAMA_BASE_URL;
+    const projectSlug = projectContext?.slug?.toLowerCase() || '';
+    const isSnarai = projectSlug === 'snarai';
+
+    // Project-specific variable resolution for granular analytics and metering
+    const apiKey = (isSnarai && process.env.OLLAMA_SNARAI_API_KEY) || process.env.OLLAMA_SNARAI_API_KEY || process.env.OLLAMA_API_KEY || '';
+    const rawBaseUrl = (isSnarai && process.env.OLLAMA_SNARAI_BASE_URL) || process.env.OLLAMA_SNARAI_BASE_URL || process.env.OLLAMA_BASE_URL || "https://api.ollama.com/v1";
+    const aiModel = (isSnarai && process.env.OLLAMA_SNARAI_MODEL) || process.env.OLLAMA_SNARAI_MODEL || process.env.OLLAMA_MODEL || 'llama3.1:8b';
+
+    const isOllamaEnabled = !!apiKey || !!rawBaseUrl;
     let botResponseText = "";
 
     if (isOllamaEnabled) {
-      const baseUrl = (process.env.OLLAMA_BASE_URL || "http://localhost:11434").replace(/\/v1\/?$/, '');
-      const aiModel = process.env.OLLAMA_MODEL || 'llama3';
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      if (process.env.OLLAMA_API_KEY) {
-        headers['Authorization'] = `Bearer ${process.env.OLLAMA_API_KEY}`;
-      }
+      const baseUrl = rawBaseUrl.endsWith('/v1') ? rawBaseUrl : `${rawBaseUrl.replace(/\/$/, '')}/v1`;
 
-      const ollamaResponse = await fetch(`${baseUrl}/api/chat`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model: aiModel,
-          messages: messages,
-          stream: false,
-          options: {
-            temperature: 0.3
-          }
-        })
+      // Modern Ollama / Cloud provider OpenAI compatibility endpoint
+      const aiClient = new OpenAI({
+        baseURL: baseUrl,
+        apiKey: apiKey || 'ollama-key',
       });
 
-      if (!ollamaResponse.ok) {
-        const errText = await ollamaResponse.text();
-        throw new Error(`Ollama API error (${ollamaResponse.status}): ${errText}`);
-      }
+      const response = await aiClient.chat.completions.create({
+        model: aiModel,
+        messages: messages,
+        temperature: 0.3,
+        max_tokens: 350,
+      });
 
-      const data = await ollamaResponse.json();
-      botResponseText = data.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
+      botResponseText = response.choices[0]?.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
     } else {
       const aiClient = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY || "missing-key",

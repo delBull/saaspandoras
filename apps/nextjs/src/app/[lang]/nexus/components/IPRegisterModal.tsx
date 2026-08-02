@@ -231,11 +231,11 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
     if (typeof window === 'undefined') return;
     const storedAssets = localStorage.getItem('pandoras_ip_assets_custom');
     if (storedAssets) {
-      try { setAssets(JSON.parse(storedAssets)); } catch {}
+      try { setAssets(JSON.parse(storedAssets)); } catch { }
     }
     const storedTasks = localStorage.getItem('pandoras_ip_tasks_30d');
     if (storedTasks) {
-      try { setTasks(JSON.parse(storedTasks)); } catch {}
+      try { setTasks(JSON.parse(storedTasks)); } catch { }
     }
   }, []);
 
@@ -378,27 +378,24 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
               <div className="flex p-1 bg-zinc-950 border border-zinc-800 rounded-xl text-xs">
                 <button
                   onClick={() => setTab('REGISTER')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                    tab === 'REGISTER' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${tab === 'REGISTER' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
+                    }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
                   <span>Master Register ({assets.length})</span>
                 </button>
                 <button
                   onClick={() => setTab('TASKS')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                    tab === 'TASKS' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${tab === 'TASKS' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
+                    }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Plan 30 Días ({tasks.length})</span>
                 </button>
                 <button
                   onClick={() => setTab('DATAROOM')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                    tab === 'DATAROOM' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${tab === 'DATAROOM' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
+                    }`}
                 >
                   <FolderGit2 className="w-3.5 h-3.5" />
                   <span>Corporate Data Room</span>
@@ -541,11 +538,10 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                       <div
                         key={asset.id}
                         onClick={() => setSelectedAsset(asset)}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                          isSelected
+                        className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected
                             ? 'border-amber-500/60 bg-amber-500/[0.04]'
                             : 'border-zinc-800/80 bg-zinc-900/20 hover:border-zinc-700'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <span className="text-xs text-white font-normal">{asset.name}</span>
@@ -697,20 +693,18 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                       {weekTasks.map((task) => (
                         <div
                           key={task.id}
-                          className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-4 ${
-                            task.completed
+                          className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-4 ${task.completed
                               ? 'border-zinc-800/40 bg-zinc-950/40 opacity-60'
                               : 'border-zinc-800 bg-zinc-900/20 hover:border-zinc-700'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start gap-3 flex-1">
                             <button
                               onClick={() => toggleTask(task.id)}
-                              className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                                task.completed
+                              className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${task.completed
                                   ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
                                   : 'border-zinc-700 hover:border-amber-400'
-                              }`}
+                                }`}
                             >
                               {task.completed && <Check className="w-3.5 h-3.5" />}
                             </button>
@@ -722,9 +716,8 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                                 <span className="text-[10px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950 text-zinc-400 font-mono">
                                   {task.category}
                                 </span>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-mono ${
-                                  task.priority === 'HIGH' ? 'text-amber-400 bg-amber-950/40' : 'text-zinc-400 bg-zinc-800'
-                                }`}>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-mono ${task.priority === 'HIGH' ? 'text-amber-400 bg-amber-950/40' : 'text-zinc-400 bg-zinc-800'
+                                  }`}>
                                   {task.priority}
                                 </span>
                               </div>
