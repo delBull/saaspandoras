@@ -13,9 +13,38 @@ export async function generateBotResponse(context: {
 }) {
   const { projectName, userMessage, projectContext, botInstructions, chatId } = context;
 
+  // Hermes Core Intelligence Engine Integration (Phase 1)
+  const { KnowledgePackLoader } = await import('@/lib/hermes/knowledge-pack');
+  const { HermesDecisionEngine } = await import('@/lib/hermes/decision-engine');
+  
+  const projectSlug = projectContext?.slug || projectName || 'snarai';
+  const pack = KnowledgePackLoader.getPack(projectSlug);
+  
+  const customerMemory = {
+    leadId: chatId || 'guest-session',
+    acquisitionChannel: 'telegram',
+    expressedIntent: 'explore' as const,
+    concernsAndObjections: [],
+    topicsDiscussed: [],
+    documentsSent: []
+  };
+
+  const { mission, recommendedAction } = HermesDecisionEngine.evaluateNextMission(
+    projectSlug,
+    customerMemory,
+    'ENGAGED',
+    userMessage
+  );
+
+  console.info(`[Hermes Engine] Mission Goal: ${mission.goal}, Target State: ${mission.targetState}`);
+
   // Build the strict system prompt with Sales Pitch & Objection Handling Matrix
   const systemPrompt = `Eres "HERMES PATRIMONIAL", el Gestor Patrimonial IA Autónomo y Conserje Oficial para el proyecto "${projectName}".
 Tu objetivo es asesorar, calificar prospectos, resolver dudas legales/técnicas y guiar a los clientes hacia el cierre de su inversión de manera cortes, profesional y ejecutiva.
+
+ACCIONES RECOMENDADAS POR HERMES DECISION ENGINE:
+- Meta de la Misión: ${mission.goal} (Estado Objetivo: ${mission.targetState})
+- Recomendación de Cierre: ${recommendedAction}
 
 CONTEXTO DEL PROYECTO (DATA EN VIVO DE BASE DE DATOS):
 - Título/Proyecto: ${projectContext?.title || projectName}
@@ -27,16 +56,8 @@ CONTEXTO DEL PROYECTO (DATA EN VIVO DE BASE DE DATOS):
 - Tesorería/TVL: ${projectContext?.treasury || '0'}
 - Miembros DAO / Holders: ${projectContext?.holdersCount || 0}
 
-PITCH DE VENTAS ESTRUCTURADO (THE INVESTOR PITCH):
-S'Narai no es un desarrollo inmobiliario tradicional; es un activo residencial boutique tokenizado en Riviera Nayarit (México) que te permite adquirir fracciones patrimoniales con liquidez, transparencia Web3 y distribuciones periódicas en USDC. Estás invirtiendo en la fase de mayor plusvalía ($${projectContext?.currentPrice || 50} USD por Título Digital).
-
-MATRIZ DE MANEJO DE OBJECIONES (OBJECTION CLOSING MATRIX):
-1. Objeción: "¿Es seguro comprar propiedad con tokens / crypto?"
-   ➔ Respuesta: Totalmente. El Título Digital representa tu participación en la DAO patrimonial respaldada por el inmueble real. Si prefieres no usar cripto, puedes adquirir tus títulos en Pesos Mexicanos (MXN) vía transferencia SPEI con contrato digital firmado (Fast Lane).
-2. Objeción: "¿Qué garantía legal tengo sobre la marca y el proyecto?"
-   ➔ Respuesta: El proyecto opera bajo la arquitectura de Pandoras Growth OS y la titularidad registral inalienable de MXHUB Ecosistema Blockchain S.A. de C.V. (Titular registral de PANDORAS™ en IMPI Clases 36 y 42). Puedes revisar la estructura en nuestro Data Room (/nexus).
-3. Objeción: "Quiero pensarlo / consultarlo luego."
-   ➔ Respuesta: Entiendo perfectamente. La Fase Fundadores está limitada a $${projectContext?.currentPrice || 50} USD por título. Puedo compartirte el Dossier Legal o reservarte tu posición durante 24 horas sin compromiso vía Fast Lane.
+PITCH DE VENTAS (PACK: ${pack.name}):
+${pack.salesPitch}
 
 REGLAS ESTRICTAS DE SEGURIDAD (ANTI-ABUSO):
 1. NUNCA des consejos de inversión ni prometas retornos exactos. Si te preguntan por rendimientos, da estimaciones y redirige al Aviso de Riesgos.

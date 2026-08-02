@@ -128,14 +128,53 @@ INFORMACIÓN INSTITUCIONAL Y LEGAL COMPLETA DE S'NARAI:
       chatId: chatId.toString()
     });
 
-    // 4. Send response back to Telegram User
+    // Record Behavior Event in Hermes Intelligence Engine (Phase 4)
+    const { HermesIntelligenceEngine } = await import('@/lib/hermes/intelligence-engine');
+    const { HermesCommerceEngine } = await import('@/lib/hermes/commerce-engine');
+
+    HermesIntelligenceEngine.recordBehaviorEvent({
+      projectSlug: projectId,
+      eventType: text.toLowerCase().includes('comprar') || text.toLowerCase().includes('reserva') ? 'INITIATED_CHECKOUT' : 'VIEWED_PHASE',
+      channel: 'telegram',
+      metadata: { textLength: text.length }
+    });
+
+    const web3Checkout = HermesCommerceEngine.createCheckoutSession({
+      leadId: chatId.toString(),
+      projectSlug: projectId,
+      tokenPriceUsd: projectContext.currentPrice,
+      paymentMethod: 'WEB3_USDC'
+    });
+
+    const speiFastlane = HermesCommerceEngine.createCheckoutSession({
+      leadId: chatId.toString(),
+      projectSlug: projectId,
+      tokenPriceUsd: projectContext.currentPrice,
+      paymentMethod: 'SPEI_FASTLANE'
+    });
+
+    // 4. Send response back to Telegram User with Dynamic Inline Keyboard (Phase 2 & 3 - Communications & Commerce)
+    const inlineKeyboard = {
+      inline_keyboard: [
+        [
+          { text: "📊 Ver Fase & Precios", callback_data: "action_view_phase" },
+          { text: "📑 Dossier Legal (/nexus)", url: "https://pandoras.finance/nexus" }
+        ],
+        [
+          { text: "💳 Comprar Web3 (USDC)", url: web3Checkout.checkoutUrl },
+          { text: "🇲🇽 Reserva SPEI (Pesos)", url: speiFastlane.checkoutUrl }
+        ]
+      ]
+    };
+
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
         text: aiResponseText,
-        parse_mode: 'Markdown'
+        parse_mode: 'Markdown',
+        reply_markup: inlineKeyboard
       })
     });
 

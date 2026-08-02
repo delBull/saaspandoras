@@ -1,0 +1,25 @@
+{
+  "name": "@pandoras/hermes-runtime",
+  "version": "1.0.0",
+  "description": "Hermes AI Agent Runtime Engine — Horizontal Agent Framework for Pandoras Growth OS",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@pandoras/hermes-sdk": "workspace:*",
+    "openai": "^4.52.0"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}

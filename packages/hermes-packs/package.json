@@ -1,0 +1,22 @@
+{
+  "name": "@pandoras/hermes-packs",
+  "version": "1.0.0",
+  "description": "Domain & Industry Strategy Packs for Hermes AI Agent Runtime Engine",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}
