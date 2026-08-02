@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
   ShieldCheck, 
@@ -31,6 +31,244 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GrowthOSLeadModal } from "@/components/marketing/GrowthOSLeadModal";
+
+// ─────────────────── HERMES DEMO PLAYGROUND ───────────────────
+
+const INDUSTRIES = [
+  {
+    id: 'real_estate',
+    label: '🏠 Real Estate',
+    color: 'amber',
+    agentName: 'Hermes Patrimonial',
+    pack: 'real-estate-premium',
+    channels: ['Telegram', 'WhatsApp', 'Web'],
+    capabilities: ['AI Agents', 'CRM', 'Commerce', 'Analytics', 'Voice'],
+    conversation: [
+      { role: 'user', text: 'Hola, me interesa invertir en el proyecto. ¿Cuánto cuesta un certificado?' },
+      { role: 'agent', text: 'Bienvenido. Los Certificados de Participación tienen un precio base de $8,500 USD en la Fase 1, con plusvalía proyectada del 12–15% anual. ¿Le gustaría recibir el dossier completo por este canal?' },
+      { role: 'user', text: 'Sí, me interesa. ¿Puedo pagar en pesos?' },
+      { role: 'agent', text: 'Por supuesto. Contamos con **SPEI Fast Lane** para reservas en Pesos Mexicanos (MXN). Su lugar queda bloqueado por 7 días mientras se procesa la transferencia. ¿Le genero el link de reserva?' },
+    ]
+  },
+  {
+    id: 'auto',
+    label: '🚗 Automotriz',
+    color: 'blue',
+    agentName: 'Hermes AutoAdvisor',
+    pack: 'automotive-sales',
+    channels: ['WhatsApp', 'Web Widget', 'Telegram'],
+    capabilities: ['AI Agents', 'CRM', 'Analytics', 'Scheduling'],
+    conversation: [
+      { role: 'user', text: 'Quiero información sobre el BMW Serie 3 2025' },
+      { role: 'agent', text: 'Hola, bienvenido a BMW México. El Serie 3 2025 está disponible desde $895,900 MXN. Tenemos en stock el color Carbon Black y Alpine White. ¿Le gustaría agendar una prueba de manejo?' },
+      { role: 'user', text: 'Sí, este sábado si es posible' },
+      { role: 'agent', text: 'Perfecto. Tengo disponibilidad el sábado a las 10:00, 12:00 y 16:00 hrs en la Agencia Lomas. ¿Cuál horario le conviene? Confirmo su cita y le envío el link de confirmación.' },
+    ]
+  },
+  {
+    id: 'legal',
+    label: '⚖️ Legal / Firma',
+    color: 'purple',
+    agentName: 'Hermes Legal Concierge',
+    pack: 'legal-advisory',
+    channels: ['Web Widget', 'Email', 'WhatsApp'],
+    capabilities: ['AI Agents', 'CRM', 'Knowledge Engine', 'Analytics'],
+    conversation: [
+      { role: 'user', text: 'Necesito asesoría para constituir una empresa' },
+      { role: 'agent', text: 'Con gusto le oriento. Para la constitución de una empresa en México, las figuras más comunes son SAPI de CV, SA de CV y SAS. ¿Ya tiene definido el número de socios y el tipo de actividad comercial?' },
+      { role: 'user', text: 'Somos 3 socios y es para tecnología' },
+      { role: 'agent', text: 'Excelente. Para una startup tecnológica con 3 socios, recomendamos la figura **SAS (Sociedad por Acciones Simplificada)**. Bajo costo, constitución rápida y sin capital mínimo. ¿Le agendo una consulta de 30 min con el área corporativa?' },
+    ]
+  },
+  {
+    id: 'healthcare',
+    label: '🏥 Salud / Clínica',
+    color: 'emerald',
+    agentName: 'Hermes MedAssist',
+    pack: 'healthcare-ops',
+    channels: ['WhatsApp', 'Web Widget', 'SMS'],
+    capabilities: ['AI Agents', 'CRM', 'Scheduling', 'Knowledge Engine'],
+    conversation: [
+      { role: 'user', text: 'Quiero agendar una cita con cardiología' },
+      { role: 'agent', text: 'Hola, bienvenido al Centro Médico Integral. Tenemos disponibilidad en Cardiología para este miércoles y viernes. ¿Es consulta de primera vez o seguimiento?' },
+      { role: 'user', text: 'Primera vez, me la recomendó mi médico familiar' },
+      { role: 'agent', text: 'Entendido. Le agendo el miércoles a las 11:30 con el Dr. Ramírez. Necesitará traer sus estudios previos si los tiene. Le envío confirmación y recordatorio 2 horas antes. ¿Alguna pregunta adicional?' },
+    ]
+  }
+];
+
+type ColorConfig = { border: string; badge: string; text: string; btn: string; bg: string; bubble: string };
+const colorMap: Record<string, ColorConfig> = {
+  amber: { border: 'border-amber-500/30', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30', text: 'text-amber-400', btn: 'bg-amber-500 hover:bg-amber-400 text-black', bg: 'bg-amber-500/5', bubble: 'bg-amber-500/10 border-amber-500/20 text-amber-100' },
+  blue: { border: 'border-blue-500/30', badge: 'bg-blue-500/10 text-blue-400 border-blue-500/30', text: 'text-blue-400', btn: 'bg-blue-500 hover:bg-blue-400 text-white', bg: 'bg-blue-500/5', bubble: 'bg-blue-500/10 border-blue-500/20 text-blue-100' },
+  purple: { border: 'border-purple-500/30', badge: 'bg-purple-500/10 text-purple-400 border-purple-500/30', text: 'text-purple-400', btn: 'bg-purple-500 hover:bg-purple-400 text-white', bg: 'bg-purple-500/5', bubble: 'bg-purple-500/10 border-purple-500/20 text-purple-100' },
+  emerald: { border: 'border-emerald-500/30', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', text: 'text-emerald-400', btn: 'bg-emerald-500 hover:bg-emerald-400 text-white', bg: 'bg-emerald-500/5', bubble: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-100' },
+};
+
+function HermesPlayground({ onCTA }: { onCTA: () => void }) {
+  const [selectedId, setSelectedId] = useState('real_estate');
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  const industry = INDUSTRIES.find(i => i.id === selectedId) ?? INDUSTRIES[0]!;
+  const c: ColorConfig = colorMap[industry.color] ?? colorMap['amber']!;
+
+  useEffect(() => {
+    setVisibleCount(0);
+    setIsTyping(false);
+    let count = 0;
+    const run = () => {
+      if (count >= industry.conversation.length) { setIsTyping(false); return; }
+      const msg = industry.conversation[count];
+      if (!msg) { setIsTyping(false); return; }
+      if (msg.role === 'agent') { setIsTyping(true); }
+      setTimeout(() => {
+        setIsTyping(false);
+        setVisibleCount(v => v + 1);
+        count++;
+        setTimeout(run, msg.role === 'agent' ? 1200 : 600);
+      }, msg.role === 'agent' ? 1400 : 400);
+    };
+    const t = setTimeout(run, 400);
+    return () => clearTimeout(t);
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [visibleCount, isTyping]);
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-12">
+        <span className={`inline-flex items-center gap-2 text-xs font-mono px-4 py-1.5 rounded-full border mb-4 ${c.badge}`}>
+          <Sparkles className="w-3.5 h-3.5" />
+          Demo Playground — Hermes en Vivo
+        </span>
+        <h2 className="text-3xl md:text-4xl font-light text-white mb-4">
+          Mira cómo Hermes opera en <span className={`font-normal ${c.text}`}>tu industria</span>
+        </h2>
+        <p className="text-sm text-zinc-400 max-w-2xl mx-auto font-light">
+          Selecciona una industria y observa cómo Hermes adapta su conocimiento, tono y capacidades a cada contexto. Sin tocar código.
+        </p>
+      </div>
+
+      {/* Industry Selector */}
+      <div className="flex flex-wrap justify-center gap-3 mb-10">
+        {INDUSTRIES.map(ind => {
+          const ic: ColorConfig = colorMap[ind.color] ?? colorMap['amber']!;
+          const active = ind.id === selectedId;
+          return (
+            <button
+              key={ind.id}
+              onClick={() => setSelectedId(ind.id)}
+              className={`px-5 py-2.5 rounded-2xl text-sm font-medium transition-all border ${active ? `${ic.btn} border-transparent shadow-lg` : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+            >
+              {ind.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={selectedId}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.3 }}
+          className={`border rounded-3xl overflow-hidden ${c.border} ${c.bg}`}
+        >
+          {/* Agent Header */}
+          <div className={`flex items-center justify-between px-6 py-4 border-b ${c.border} bg-black/30`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${industry.color === 'amber' ? 'bg-amber-400' : industry.color === 'blue' ? 'bg-blue-400' : industry.color === 'purple' ? 'bg-purple-400' : 'bg-emerald-400'}`} />
+              <span className="text-sm font-medium text-white">{industry.agentName}</span>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${c.badge}`}>pack:{industry.pack}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {industry.channels.map(ch => (
+                <span key={ch} className="text-[10px] font-mono text-zinc-500 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">{ch}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3">
+            {/* Chat Simulation */}
+            <div className="lg:col-span-2 p-6">
+              <div ref={chatRef} className="space-y-4 h-64 overflow-y-auto pr-2 scrollbar-hide">
+                {industry.conversation.slice(0, visibleCount).map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-zinc-800 text-zinc-200 rounded-br-sm'
+                        : `border ${c.bubble} rounded-bl-sm`
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </motion.div>
+                ))}
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex justify-start"
+                  >
+                    <div className={`px-4 py-3 rounded-2xl border ${c.bubble} rounded-bl-sm`}>
+                      <span className="flex gap-1 items-center h-4">
+                        <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${c.text}`} style={{ animationDelay: '0ms' }} />
+                        <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${c.text}`} style={{ animationDelay: '150ms' }} />
+                        <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${c.text}`} style={{ animationDelay: '300ms' }} />
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              <button
+                onClick={onCTA}
+                className={`mt-6 w-full py-3 rounded-2xl text-sm font-medium transition-all ${c.btn} shadow-lg`}
+              >
+                Solicitar Acceso — Instalar en Mi Organización
+              </button>
+            </div>
+
+            {/* Capabilities Panel */}
+            <div className={`border-t lg:border-t-0 lg:border-l ${c.border} p-6 bg-black/20`}>
+              <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-4">Capabilities Activas</p>
+              <div className="space-y-2 mb-6">
+                {['AI Agents', 'Memory Engine / CRM', 'Voice AI', 'WhatsApp', 'Telegram', 'Analytics', 'Knowledge Engine', 'Commerce / Pagos', 'Marketplace', 'Treasury / Web3', 'Governance'].map(cap => {
+                  const active = industry.capabilities.some(c => cap.includes(c) || c.includes((cap.split('/')[0] ?? '').trim()));
+                  return (
+                    <div key={cap} className={`flex items-center gap-2 text-xs ${active ? 'text-white' : 'text-zinc-700'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] flex-shrink-0 ${active ? `${c.badge}` : 'border-zinc-800 bg-transparent text-zinc-700'}`}>
+                        {active ? '✔' : '✖'}
+                      </span>
+                      {cap}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="border-t border-zinc-800/60 pt-4">
+                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Canales Activos</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {industry.channels.map(ch => (
+                    <span key={ch} className={`text-[10px] font-mono px-2 py-0.5 rounded border ${c.badge}`}>{ch}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function HermesEnterpriseLandingPage() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
@@ -61,6 +299,7 @@ export default function HermesEnterpriseLandingPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-xs text-zinc-400 font-light">
+            <a href="#demo" className="hover:text-white transition-colors text-amber-400">Demo Live</a>
             <a href="#ecosystem" className="hover:text-white transition-colors">Ecosistema</a>
             <a href="#packs" className="hover:text-white transition-colors">Domain Packs</a>
             <a href="#whitelabel" className="hover:text-white transition-colors">White-Label Platform</a>
@@ -179,6 +418,11 @@ export default function HermesEnterpriseLandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ─────────────────── INTERACTIVE DEMO PLAYGROUND ─────────────────── */}
+      <section id="demo" className="py-24 px-6 border-t border-zinc-800/80 bg-zinc-950/60">
+        <HermesPlayground onCTA={() => handleOpenCTA('hermes_demo_cta')} />
       </section>
 
       {/* PARADIGM SHIFT SECTION */}

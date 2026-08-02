@@ -574,6 +574,37 @@ export async function POST(req: NextRequest) {
         console.error("[Webhook] Background FastPath failed (non-critical):", e.message);
       });
 
+      // 🚨 PANDORAS ALERTS WEBHOOK DISPATCH (Discord — same var used across platform)
+      const pandorasAlertsWebhookUrl = process.env.DISCORD_WEBHOOK_PANDORAS_ALERTS;
+      if (pandorasAlertsWebhookUrl) {
+        const isB2BLead = scope === 'b2b' || metadata?.moduleInterest || metadata?.company;
+        const alertPayload = {
+          embeds: [{
+            title: isB2BLead ? "🏢 NUEVA SOLICITUD DE PLATAFORMA ENTERPRISE" : "👤 NUEVO LEAD CAPTURADO",
+            color: isB2BLead ? 0xf59e0b : 0x10b981,
+            fields: [
+              { name: "Email", value: result.email || "N/A", inline: true },
+              { name: "Nombre", value: result.name || "Sin nombre", inline: true },
+              { name: "Teléfono / WhatsApp", value: result.phoneNumber || "No proporcionado", inline: true },
+              { name: "Organización / Empresa", value: metadata?.company || "No especificada", inline: true },
+              { name: "Módulo Solicitado", value: metadata?.moduleInterest || "General", inline: true },
+              { name: "Volumen Leads/Mes", value: metadata?.monthlyLeads || "N/A", inline: true },
+              { name: "Origen / Landing", value: result.origin || "Direct", inline: false },
+              { name: "Scoring Intención", value: result.intent || "explore", inline: true },
+              { name: "Acción Sugerida", value: "Revisar en Admin Dashboard para aprobar Tenant", inline: false }
+            ],
+            timestamp: new Date().toISOString(),
+            footer: { text: "Pandora's Platform Engine — Alerts v1.0" }
+          }]
+        };
+
+        fetch(pandorasAlertsWebhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(alertPayload)
+        }).catch(err => console.warn('[Pandoras Alerts] Failed to send webhook alert:', err.message));
+      }
+
     } catch (whError: any) { 
       console.error("[Webhook] Critical queueing error:", whError.message);
       /* Non-critical — never block lead registration */ 

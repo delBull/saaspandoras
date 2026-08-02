@@ -15,7 +15,7 @@ interface GrowthOSLeadModalProps {
 const TOTAL_SLOTS = 50;
 const FALLBACK_REMAINING = 44; // 50 - 6 seed
 
-export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadModalProps) {
+export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthOSLeadModalProps) {
   const [step, setStep] = useState<"form" | "success">("form");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +34,7 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
     phone: "",
     company: "",
     monthlyLeads: "",
+    moduleInterest: "solo_hermes",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -47,8 +48,8 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
     setIsLoading(true);
 
     try {
-      // Determine priority intent: if they provide company or high lead volume → invest/VIP
-      const isHighIntent = !!form.company || parseInt(form.monthlyLeads || "0") >= 500;
+      // Determine priority intent based on company or module interest
+      const isHighIntent = !!form.company || form.moduleInterest === "full_platform" || parseInt(form.monthlyLeads || "0") >= 500;
       const intent = isHighIntent ? "invest" : "explore";
 
       const res = await fetch("/api/v1/marketing/leads/register", {
@@ -60,18 +61,17 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
           phoneNumber: form.phone || undefined,
           intent,
           consent: true,
-          // Route this to the Growth OS project/category
           projectId: "pandoras_access",
           origin: typeof window !== "undefined" ? window.location.href : "/growth-os",
           scope: "b2b",
           metadata: {
-            // Independent Growth OS tags — always prefixed B2B_ by the engine
             tags: ["B2B_GROWTH_OS", "B2B_EARLY_ACCESS", ...(isHighIntent ? ["B2B_FULL_UNIT"] : [])],
-            source: "growth-os-landing",
+            source: source || "growth-os-landing",
             type: "growth_os_signup",
             tier: tierName || "entry",
             company: form.company || undefined,
             monthlyLeads: form.monthlyLeads || undefined,
+            moduleInterest: form.moduleInterest,
             interest: isHighIntent ? "full_unit" : "growth_os_access",
           },
         }),
@@ -83,7 +83,6 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
       }
 
       setStep("success");
-      // Decrement slot counter immediately in UI, then refetch real count
       void refetchSlots();
     } catch (err: any) {
       setError(err?.message || "Algo salió mal. Intenta de nuevo.");
@@ -94,8 +93,7 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
 
   const handleClose = () => {
     onClose();
-    // Reset after animation
-    setTimeout(() => { setStep("form"); setForm({ name: "", email: "", phone: "", company: "", monthlyLeads: "" }); setError(null); }, 300);
+    setTimeout(() => { setStep("form"); setForm({ name: "", email: "", phone: "", company: "", monthlyLeads: "", moduleInterest: "solo_hermes" }); setError(null); }, 300);
   };
 
   return (
@@ -179,6 +177,23 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
                       required
                       className="w-full bg-zinc-900 border border-zinc-800 text-white text-sm px-4 py-3 rounded-xl placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                     />
+
+                    {/* Module Interest Selector */}
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-400 mb-1 tracking-wider">¿Qué deseas instalar?</label>
+                      <select
+                        name="moduleInterest"
+                        value={form.moduleInterest}
+                        onChange={handleChange}
+                        className="w-full bg-zinc-900 border border-zinc-800 text-sm px-4 py-3 rounded-xl text-white focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all"
+                      >
+                        <option value="solo_hermes">🤖 Solo Hermes AI (Agentes Autónomos)</option>
+                        <option value="growth_os">⚡ Growth OS (CRM + Automatización)</option>
+                        <option value="full_platform">🏛️ Plataforma Completa Pandora's (Web3/Tokenización)</option>
+                        <option value="not_sure">❓ No estoy seguro (Asesoría)</option>
+                      </select>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3">
                       <input
                         name="company"
@@ -191,7 +206,7 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
                         name="monthlyLeads"
                         value={form.monthlyLeads}
                         onChange={handleChange}
-                        className="bg-zinc-900 border border-zinc-800 text-sm px-4 py-3 rounded-xl text-zinc-400 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all appearance-none"
+                        className="bg-zinc-900 border border-zinc-800 text-sm px-4 py-3 rounded-xl text-zinc-400 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
                       >
                         <option value="">Leads/mes</option>
                         <option value="0-100">0–100</option>
@@ -228,44 +243,27 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName }: GrowthOSLeadMod
               ) : (
                 <motion.div
                   key="success"
-                  initial={{ opacity: 0, scale: 0.96 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="p-8 sm:p-10 text-center relative z-10 min-h-[400px] flex flex-col items-center justify-center"
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="p-8 sm:p-10 text-center relative z-10"
                 >
-                  <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", delay: 0.1 }}
-                    className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mb-6"
-                  >
-                    <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-                  </motion.div>
-
-                  <h3 className="text-3xl font-black tracking-tighter uppercase italic text-white mb-3">
-                    Posición <span className="text-emerald-400">asegurada</span>
-                  </h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed mb-2 max-w-xs mx-auto">
-                    Tu acceso Genesis está siendo procesado. Recibirás instrucciones prioritarias en tu email.
-                  </p>
-                  <p className="text-zinc-600 text-xs font-black uppercase tracking-widest">
-                    No compartas este acceso — es único para tu identidad.
-                  </p>
-
-                  <div className="mt-8 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-left w-full max-w-sm">
-                    <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest mb-2">Próximos pasos</p>
-                    <div className="space-y-2 text-xs text-zinc-400">
-                      <p className="flex items-center gap-2"><Zap className="w-3 h-3 text-emerald-400 flex-shrink-0" /> Revisa tu email en los próximos minutos</p>
-                      <p className="flex items-center gap-2"><Zap className="w-3 h-3 text-purple-400 flex-shrink-0" /> Activa tu acceso con el link exclusivo</p>
-                      <p className="flex items-center gap-2"><Zap className="w-3 h-3 text-emerald-400 flex-shrink-0" /> Conecta tu wallet para finalizar el ritual</p>
-                    </div>
+                  <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl flex items-center justify-center mx-auto mb-6 text-emerald-400">
+                    <CheckCircle2 className="w-8 h-8" />
                   </div>
+
+                  <h3 className="text-2xl font-black uppercase italic tracking-tight text-white mb-3">
+                    ¡Solicitud Recibida!
+                  </h3>
+                  <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                    Tu lugar ha sido reservado. Nuestro equipo revisará la información de tu organización y te contactará directamente para coordinar la demostración y habilitación de tu entorno.
+                  </p>
 
                   <button
                     onClick={handleClose}
-                    className="mt-6 text-zinc-600 hover:text-zinc-400 text-[10px] font-black uppercase tracking-widest transition-colors"
+                    className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all"
                   >
-                    Cerrar
+                    Entendido
                   </button>
                 </motion.div>
               )}
