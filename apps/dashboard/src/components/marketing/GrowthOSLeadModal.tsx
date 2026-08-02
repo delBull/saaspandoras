@@ -9,6 +9,7 @@ interface GrowthOSLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   tierName?: string;
+  source?: string;
 }
 
 const TOTAL_SLOTS = 50;
