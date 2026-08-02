@@ -5,6 +5,64 @@ import { eq } from 'drizzle-orm';
 import { generateBotResponse } from '@/lib/marketing/bot-engine';
 import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 
+/**
+ * 📢 VOICE NOTE GENERATOR ENGINE (ELEVENLABS API)
+ * Convierte respuestas de texto de Hermes a notas de voz de Telegram
+ */
+async function generateVoiceNoteBuffer(text: string, voiceId: string, apiKey: string): Promise<Buffer | null> {
+  try {
+    const cleanText = text.replace(/[*_#`[\]()]/g, '').trim(); // Remove Markdown syntax for voice TTS
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        text: cleanText,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[ElevenLabs Voice] API returned status ${response.status}`);
+      return null;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (err) {
+    console.error('[ElevenLabs Voice] Error generating audio:', err);
+    return null;
+  }
+}
+
+async function sendTelegramVoiceNote(botToken: string, chatId: number, audioBuffer: Buffer) {
+  try {
+    const formData = new FormData();
+    const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+    formData.append('chat_id', chatId.toString());
+    formData.append('voice', blob, 'hermes_voice_note.mp3');
+
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendVoice`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      console.warn('[Telegram Voice] Failed to send voice note:', errData);
+    }
+  } catch (err) {
+    console.error('[Telegram Voice] Error sending voice note:', err);
+  }
+}
+
 async function handler(req: Request, props: { params: Promise<{ projectId: string }> }) {
   try {
     const params = await props.params;
@@ -34,21 +92,21 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     const body = await req.json();
     const { message } = body;
 
-    // Telegram sends a lot of events (typing, etc). We only care about text messages.
-    // ALWAYS return 200 to Telegram so they don't retry endlessly.
-    if (!message || !message.text) {
+    // Telegram sends a lot of events (typing, etc). We process text or voice notes.
+    if (!message || (!message.text && !message.voice)) {
       return NextResponse.json({ success: true });
     }
 
     const chatId = message.chat.id;
-    const text = message.text;
+    let text = message.text || "";
+    const isVoiceMessage = !!message.voice;
 
     let botToken = metadata?.botConfig?.telegramToken;
     let botInstructions = metadata?.aiKnowledgeBase || metadata?.botConfig?.instructions;
 
     if (projectId === 'snarai') {
        botToken = botToken || process.env.TELEGRAM_SNARAI_BOT_TOKEN;
-       botInstructions = botInstructions || `Eres el Conserje Oficial de S'Narai, un proyecto inmobiliario premium de Riviera Nayarit (México) operado por Aztecas Tokenización y Pandoras Protocol. Tu objetivo es asistir a los usuarios de manera cortés, premium y muy profesional.`;
+       botInstructions = botInstructions || `Eres el Gestor Patrimonial e Inmobiliario Oficial de S'Narai, un desarrollo boutique de lujo en la Zona Dorada de Bucerías (Riviera Nayarit, México) operado por Aztecas Hub S.A.P.I. de C.V. Tu objetivo es asistir a los usuarios de manera cortés, ejecutiva y muy profesional.`;
     }
 
     if (!botToken) {
@@ -58,7 +116,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
 
     // Intercept /start command for a custom welcome message
     if (text.trim() === '/start') {
-      const welcomeMessage = `¡Hola! Soy el Conserje Oficial de *${projectRecord.title}*. 🏛️\n\nEstoy aquí para resolver cualquier duda que tengas sobre el proyecto, las fases de inversión y cómo adquirir tus Títulos Digitales.\n\n¿En qué te puedo ayudar hoy?`;
+      const welcomeMessage = `¡Hola! Soy Hermes, el Gestor Patrimonial e Inmobiliario Oficial de *${projectRecord.title}*. 🏛️\n\nEstoy aquí para resolver cualquier duda que tengas sobre la propiedad fraccionada en Bucerías, los Certificados de Participación respaldados por Aztecas Hub S.A.P.I. de C.V. y el uso de tus estancias de lujo.\n\n¿En qué te puedo ayudar hoy?`;
 
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
@@ -70,6 +128,11 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
         })
       });
       return NextResponse.json({ success: true });
+    }
+
+    // Handle incoming voice note transcription fallback if text is empty
+    if (isVoiceMessage && !text) {
+      text = "El usuario ha enviado una nota de voz preguntando por la propiedad y los certificados de S'Narai.";
     }
 
     // 2. Fetch Live Project Analytics & Phase Data from DB
@@ -99,24 +162,17 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     if (projectId === 'snarai') {
       botInstructions = `${botInstructions || ''}
 
-INFORMACIÓN INSTITUCIONAL Y LEGAL COMPLETA DE S'NARAI:
-- Ubicación / Concepto: Proyecto residencial boutique de lujo en Riviera Nayarit (México), desarrollado por Aztecas Tokenización y respaldado por la arquitectura Pandoras Growth OS (Titular registral MXHUB S.A. de C.V.).
-- Modelo de Capitalización: Fraccionamiento mediante Títulos Digitales y Licenciamiento Territorial.
-- Fases de Inversión:
+INFORMACIÓN INSTITUCIONAL COMPLETA DE S'NARAI:
+- Ubicación / Concepto: Desarrollo residencial boutique de lujo en la Zona Dorada de Bucerías, Riviera Nayarit (México), desarrollado por Aztecas Real Estate (+15 años de experiencia) y operado corporativamente bajo Aztecas Hub S.A.P.I. de C.V.
+- Modelo de Participación: Propiedad Fraccionada mediante Certificados de Participación.
+- Fases de Adquisición:
   * Fase Actual: ${projectContext.phaseName}
-  * Precio por Título Digital / Token: $${projectContext.currentPrice} USD / USDC.
-  * Progreso de la Fase: ${projectContext.progressPercentage}% completado (${projectContext.tokensSold} tokens vendidos de ${projectContext.totalUnits}).
-  * Miembros DAO / Holders: ${projectContext.holdersCount}.
-- Opciones de Compra / Pago:
-  1. En Línea / Web3: USDC / USDT vía red Sepolia/Polygon a través de la dApp/Portal oficial.
-  2. Fast Lane / Transferencia SPEI: Opción de reserva y pago en moneda local (MXN) con aprobación administrativa y hash de acuerdo digital.
-- Gobernanza & Derechos:
-  * Cada Título Digital representa poder de voto proporcional en la DAO de S'Narai.
-  * Distribuciones de utilidades pro-rata en USDC directamente a la wallet/balance del usuario.
-  * Acceso al Data Room Institucional (/nexus) organizado en 6 carpetas (Company, IP, Technology, Business, Legal, Investor).
-- Documentación Registral & Legal:
-  * La marca madre PANDORAS™ está registrada bajo titularidad inalienable de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. (Clases 36 y 42).
-- Tono: Profesional, ejecutivo, cortés, altamente conocedor del real estate tokenizado y la tecnología Web3. Invita siempre al usuario a conectar su wallet o acceder a Mi Portal (/portal).`;
+  * Precio por Certificado: $${projectContext.currentPrice} USD.
+  * Progreso de la Fase: ${projectContext.progressPercentage}% completado.
+- Opciones de Pago:
+  1. Transferencia SPEI (Pesos MXN) mediante Fast Lane con reserva de 7 días (Soft-Lock) y emisión de contrato.
+  2. En Línea / Web3: USDC vía portal oficial.
+- Tono: Profesional, ejecutivo, cortés, enfocado en el valor patrimonial inmobiliario.`;
     }
 
     // 3. Generate AI Response
@@ -128,7 +184,7 @@ INFORMACIÓN INSTITUCIONAL Y LEGAL COMPLETA DE S'NARAI:
       chatId: chatId.toString()
     });
 
-    // Record Behavior Event in Hermes Intelligence Engine (Phase 4)
+    // Record Behavior Event in Hermes Intelligence Engine
     const { HermesIntelligenceEngine } = await import('@/lib/hermes/intelligence-engine');
     const { HermesCommerceEngine } = await import('@/lib/hermes/commerce-engine');
 
@@ -153,20 +209,21 @@ INFORMACIÓN INSTITUCIONAL Y LEGAL COMPLETA DE S'NARAI:
       paymentMethod: 'SPEI_FASTLANE'
     });
 
-    // 4. Send response back to Telegram User with Dynamic Inline Keyboard (Phase 2 & 3 - Communications & Commerce)
+    // 4. Send response back to Telegram User with Dynamic Inline Keyboard
     const inlineKeyboard = {
       inline_keyboard: [
         [
           { text: "📊 Ver Fase & Precios", callback_data: "action_view_phase" },
-          { text: "📑 Dossier Legal (/nexus)", url: "https://pandoras.finance/nexus" }
+          { text: "📑 Data Room S'Narai", url: "https://snarai.com/portal" }
         ],
         [
-          { text: "💳 Comprar Web3 (USDC)", url: web3Checkout.checkoutUrl },
-          { text: "🇲🇽 Reserva SPEI (Pesos)", url: speiFastlane.checkoutUrl }
+          { text: "🇲🇽 Reserva SPEI (Pesos MXN)", url: speiFastlane.checkoutUrl },
+          { text: "💳 Comprar Web3 (USDC)", url: web3Checkout.checkoutUrl }
         ]
       ]
     };
 
+    // Send Text Message
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -178,11 +235,22 @@ INFORMACIÓN INSTITUCIONAL Y LEGAL COMPLETA DE S'NARAI:
       })
     });
 
+    // 🎙️ Voice Note Feature (ElevenLabs API)
+    // If the user sent a voice message or ElevenLabs credentials are configured
+    const elevenVoiceId = process.env.ELEVENLABS_VOICE_ID || process.env.ELEVENLABS_SNARAI_VOICE_ID || '9Godp7dNohUvXk6qp0gS';
+    const elevenApiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_SNARAI_API_KEY;
+
+    if (elevenApiKey && (isVoiceMessage || process.env.ENABLE_HERMES_ALWAYS_VOICE === 'true')) {
+      const voiceBuffer = await generateVoiceNoteBuffer(aiResponseText, elevenVoiceId, elevenApiKey);
+      if (voiceBuffer) {
+        await sendTelegramVoiceNote(botToken, chatId, voiceBuffer);
+      }
+    }
+
     return NextResponse.json({ success: true });
 
   } catch (error) {
     console.error("[Telegram Bot] Webhook Error:", error);
-    // Even if it fails, return 200 so Telegram doesn't queue and spam the webhook
     return NextResponse.json({ success: true });
   }
 }

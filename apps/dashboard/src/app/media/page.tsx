@@ -53,8 +53,8 @@ export default function PandorasMediaCoLandingPage() {
 
           <div className="hidden md:flex items-center gap-8 text-xs text-zinc-400 font-light">
             <a href="#prospeccion" className="hover:text-white transition-colors">Prospección Distribuida</a>
-            <a href="#canales" className="hover:text-white transition-colors">Omnicanalidad</a>
             <a href="#tri-hub" className="hover:text-white transition-colors">Comunicación Tridireccional</a>
+            <Link href="/growth-os/hermes" className="hover:text-indigo-400 transition-colors">Hermes AI OS</Link>
           </div>
 
           <Button 
@@ -98,6 +98,37 @@ export default function PandorasMediaCoLandingPage() {
             <Zap className="w-4 h-4 text-indigo-400" />
             <span>Conectar con Hermes Agent OS</span>
           </Link>
+        </div>
+      </section>
+
+      {/* PROSPECCION DISTRIBUIDA SECTION */}
+      <section id="prospeccion" className="py-20 px-6 border-t border-zinc-800/80 bg-zinc-950/80">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-xs px-3 py-1 font-mono mb-4">Prospección Distribuida</Badge>
+            <h2 className="text-3xl font-light text-white mb-4">Generación de Demanda Masiva</h2>
+            <p className="text-sm text-zinc-400 max-w-2xl mx-auto font-light">
+              Media Co opera campañas multicanal con atribución precisa, capturando clientes de alto interés directamente hacia el CRM de Growth OS.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="border border-zinc-800 rounded-2xl bg-zinc-900/40 p-6">
+              <Target className="w-8 h-8 text-indigo-400 mb-4" />
+              <h3 className="text-base font-medium text-white mb-2">Segmentación de Alto Valor</h3>
+              <p className="text-xs text-zinc-400 font-light">Filtros B2B e inversionistas de alto patrimonio calificados desde la primera interacción.</p>
+            </div>
+            <div className="border border-zinc-800 rounded-2xl bg-zinc-900/40 p-6">
+              <Send className="w-8 h-8 text-purple-400 mb-4" />
+              <h3 className="text-base font-medium text-white mb-2">Campañas Distribuidas</h3>
+              <p className="text-xs text-zinc-400 font-light">Despliegue coordinado en redes, newsletters y canales directos impulsados por Media Co.</p>
+            </div>
+            <div className="border border-zinc-800 rounded-2xl bg-zinc-900/40 p-6">
+              <BarChart3 className="w-8 h-8 text-emerald-400 mb-4" />
+              <h3 className="text-base font-medium text-white mb-2">Atribución Transparente</h3>
+              <p className="text-xs text-zinc-400 font-light">Métricas de conversión y retorno registradas en tiempo real en el Dashboard.</p>
+            </div>
+          </div>
         </div>
       </section>
 

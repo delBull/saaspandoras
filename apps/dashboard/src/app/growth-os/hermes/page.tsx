@@ -62,9 +62,9 @@ export default function HermesEnterpriseLandingPage() {
 
           <div className="hidden md:flex items-center gap-8 text-xs text-zinc-400 font-light">
             <a href="#ecosystem" className="hover:text-white transition-colors">Ecosistema</a>
-            <a href="#runtime" className="hover:text-white transition-colors">Hermes Runtime</a>
             <a href="#packs" className="hover:text-white transition-colors">Domain Packs</a>
             <a href="#whitelabel" className="hover:text-white transition-colors">White-Label Platform</a>
+            <Link href="/media" className="hover:text-white transition-colors">Media Co</Link>
           </div>
 
           <Button 
@@ -111,13 +111,13 @@ export default function HermesEnterpriseLandingPage() {
             <ChevronRight className="w-4 h-4" />
           </Button>
 
-          <Link
-            href="/agency/vault"
+          <Button
+            onClick={() => handleOpenCTA('hermes_portal_cta')}
             className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-sm font-light transition-all flex items-center justify-center gap-2"
           >
             <Building2 className="w-4 h-4 text-amber-400" />
             <span>Portal de Gestores (White-Label)</span>
-          </Link>
+          </Button>
         </div>
 
         {/* ENTERPRISE DASHBOARD & MULTI-AGENT VISUALIZATION */}

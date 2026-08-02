@@ -57,7 +57,7 @@ export default function PandorasPlatformLandingPage() {
           <div className="hidden md:flex items-center gap-8 text-xs text-zinc-400 font-light">
             <a href="#ecosystem" className="hover:text-white transition-colors">Ecosistema</a>
             <Link href="/growth-os/hermes" className="hover:text-amber-400 transition-colors">Hermes AI Platform</Link>
-            <a href="#media" className="hover:text-white transition-colors">Media Infrastructure</a>
+            <Link href="/media" className="hover:text-white transition-colors">Media Co</Link>
             <a href="#marketplace" className="hover:text-white transition-colors">Agent Marketplace</a>
           </div>
 
@@ -152,7 +152,7 @@ export default function PandorasPlatformLandingPage() {
               </div>
               <h3 className="text-base font-medium text-white mb-2">Pandora's Media Co</h3>
               <p className="text-xs text-zinc-400 font-light mb-4">Generación de demanda, prospección distribuida y comunicación de marca automatizada.</p>
-              <button onClick={() => handleOpenCTA('media_co_info')} className="text-xs text-indigo-400 hover:text-indigo-300 font-mono flex items-center gap-1">Ver Media Infrastructure <ArrowUpRight className="w-3 h-3" /></button>
+              <Link href="/media" className="text-xs text-indigo-400 hover:text-indigo-300 font-mono flex items-center gap-1">Ver Media Infrastructure <ArrowUpRight className="w-3 h-3" /></Link>
             </div>
 
             {/* Layer 4: Agent Marketplace */}
@@ -163,7 +163,7 @@ export default function PandorasPlatformLandingPage() {
               </div>
               <h3 className="text-base font-medium text-white mb-2">Agent Marketplace</h3>
               <p className="text-xs text-zinc-400 font-light mb-4">Catálogo de Domain Packs, workflows y herramientas listas para instalar en 1-clic.</p>
-              <Link href="/agency/vault" className="text-xs text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1">Ir al Portal de Gestores <ArrowUpRight className="w-3 h-3" /></Link>
+              <button onClick={() => handleOpenCTA('marketplace_info')} className="text-xs text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1">Explorar Marketplace <ArrowUpRight className="w-3 h-3" /></button>
             </div>
 
             {/* Layer 5: Commerce Infrastructure */}
