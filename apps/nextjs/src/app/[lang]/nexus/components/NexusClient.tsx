@@ -13,7 +13,9 @@ import {
   Zap,
   Users,
   Shield,
-  Briefcase
+  Briefcase,
+  Radio,
+  Cpu
 } from "lucide-react";
 import { IPRegisterModal } from "./IPRegisterModal";
 
@@ -35,13 +37,15 @@ const categories = [
   },
   {
     id: "growth",
-    title: "Growth & Community",
+    title: "Growth & Platform Infrastructure",
     icon: <Rocket className="w-5 h-5" />,
     color: "from-emerald-500/20 to-teal-500/20",
     border: "border-emerald-500/30",
     links: [
+      { name: "Growth OS (Ecosystem Portal)", path: "https://dash.pandoras.finance/growth-os" },
+      { name: "Hermes AI Platform (AI-OS)", path: "https://dash.pandoras.finance/growth-os/hermes" },
+      { name: "Pandora's Media Co (Demand Engine)", path: "https://dash.pandoras.finance/media" },
       { name: "Asset Capitalization", path: "https://dash.pandoras.finance/asset-capitalization" },
-      { name: "Growth OS", path: "https://dash.pandoras.finance/growth-os" },
       { name: "Ambassadors", path: "https://dash.pandoras.finance/ambassadors" },
       { name: "Founders", path: "https://dash.pandoras.finance/founders" },
       { name: "Bitcoin Initiative", path: "https://dash.pandoras.finance/bitcoin-initiative" },
@@ -67,7 +71,7 @@ const categories = [
   },
   {
     id: "resources",
-    title: "Resources",
+    title: "Resources & Institutional Books",
     icon: <BookOpen className="w-5 h-5" />,
     color: "from-zinc-500/20 to-gray-500/20",
     border: "border-zinc-500/30",
@@ -77,6 +81,7 @@ const categories = [
       { name: "📜 Pandoras Asset Standard (PAS v1.0)", path: "/libros/libro-iv" },
       { name: "🔑 Licensing Framework (Libro V)", path: "/libros/libro-v" },
       { name: "💻 Tech Platform & Capital Engine (Libro VI)", path: "/libros/libro-vi" },
+      { name: "🤖 Hermes Agent OS & Kernel Architecture (Libro IX)", path: "/libros/libro-ix" },
       { name: "🚀 Growth & Expansion Roadmap (Libro VII)", path: "/libros/libro-vii" },
       { name: "⚖️ Institutional Doctrine (Libro VIII)", path: "/libros/libro-viii" },
       { name: "🛠️ Institutional Execution Manual", path: "/libros" },
@@ -86,7 +91,6 @@ const categories = [
     ]
   }
 ];
-
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -148,109 +152,76 @@ export default function NexusClient() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/50"
+            className="text-3xl md:text-5xl font-light tracking-tight text-foreground mb-2"
           >
-            Pandora's Nexus
+            PANDORA'S <span className="font-semibold text-primary">NEXUS</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="mt-3 text-sm md:text-base text-muted-foreground max-w-xl mx-auto"
+            className="text-sm md:text-base text-muted-foreground max-w-lg font-light"
           >
-            Centralized access to the entire ecosystem. Navigate through protocol documentation, growth initiatives, and platform access.
+            Unified Index of Public Platform Infrastructure, Growth OS, Hermes & Media Engine
           </motion.p>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-4 flex gap-3"
-          >
-            <button
-              onClick={() => setIsIpModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-light tracking-wide transition-all shadow-lg backdrop-blur-md flex items-center gap-2"
-            >
-              <Shield className="w-4 h-4 text-amber-400" />
-              <span>🛡️ Abrir IP Register & Tareas de Ejecución</span>
-            </button>
-          </motion.div>
         </header>
 
+        {/* Category Grid */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1 overflow-y-auto pr-1 pb-4"
         >
-          {categories.map((category) => (
+          {categories.map((cat) => (
             <motion.div
-              key={category.id}
+              key={cat.id}
               variants={itemVariants}
-              onMouseEnter={() => setActiveCategory(category.id)}
-              onMouseLeave={() => setActiveCategory(null)}
-              className={`relative flex flex-col h-full rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl overflow-hidden group transition-all duration-500 ease-out ${
-                activeCategory === category.id ? "border-white/20 shadow-2xl shadow-white/5" : ""
-              }`}
+              className={`flex flex-col rounded-3xl border ${cat.border} bg-card/40 backdrop-blur-xl p-6 transition-all duration-300 hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/5 group relative overflow-hidden`}
             >
-              {/* Category Gradient Background */}
-              <div 
-                className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-              />
+              <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
               
-              <div className="relative z-10 p-6 flex flex-col h-full">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className={`p-2 rounded-xl bg-white/5 border ${category.border} text-foreground`}>
-                    {category.icon}
-                  </div>
-                  <h2 className="text-xl font-semibold tracking-tight">
-                    {category.title}
-                  </h2>
+              <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
+                <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 text-primary">
+                  {cat.icon}
                 </div>
+                <h2 className="text-lg font-medium text-foreground tracking-tight">{cat.title}</h2>
+              </div>
 
-                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
-                  <AnimatePresence>
-                    {category.links.map((link, idx) => (
-                      <motion.div
-                        key={link.path}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                      >
-                        <Link 
-                          href={link.path}
-                          className="group/link flex items-center justify-between p-3 rounded-xl hover:bg-white/10 transition-colors duration-200 border border-transparent hover:border-white/10"
-                        >
-                          <span className="text-sm font-medium text-foreground/80 group-hover/link:text-foreground transition-colors">
-                            {link.name}
-                          </span>
-                          <ChevronRight className="w-4 h-4 text-foreground/40 group-hover/link:text-foreground transform group-hover/link:translate-x-1 transition-all" />
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
+              <div className="flex flex-col space-y-2 flex-1 relative z-10">
+                {cat.links.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link.path}
+                    target={link.path.startsWith("http") ? "_blank" : "_self"}
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-xs text-muted-foreground hover:text-foreground transition-all duration-200 group/link"
+                  >
+                    <span className="truncate pr-2">{link.name}</span>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/link:opacity-100 text-primary transition-all -translate-x-1 group-hover/link:translate-x-0 shrink-0" />
+                  </a>
+                ))}
               </div>
             </motion.div>
           ))}
         </motion.div>
-      </motion.div>
 
-      {/* Global styles for custom scrollbar within cards if needed */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-        }
-        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-        }
-      `}} />
+        {/* Footer info & CTA */}
+        <footer className="mt-6 pt-4 border-t border-border/40 flex flex-col md:flex-row items-center justify-between text-xs text-muted-foreground shrink-0 gap-4">
+          <div>
+            <span>Pandora's Growth OS & Platform Ecosystem</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsIpModalOpen(true)}
+              className="hover:text-primary transition-colors text-xs underline font-mono"
+            >
+              IP & Patent Registry
+            </button>
+            <span className="font-mono text-[10px] text-muted-foreground/60">v2.5 Live</span>
+          </div>
+        </footer>
+      </motion.div>
     </div>
   );
 }
