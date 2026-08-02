@@ -1,6 +1,7 @@
 /**
- * 🏛️ PANDORAS KERNEL SDK — Multi-Tenant Agent Operating System Contracts (v2.0)
+ * 🏛️ PANDORAS KERNEL SDK — Multi-Tenant Agent Operating System Contracts (v2.1)
  * Tenant OS, Brand Engine, Installation Engine, Feature Flags, Domain Mapping & Security Vault
+ * + CommunicationEndpoints & Universal Multi-Channel Router
  */
 
 export type TenantLifecycleStatus = 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'PAUSED' | 'ARCHIVED';
@@ -43,9 +44,87 @@ export interface TenantDomainMapping {
 
 export interface TenantSecretVaultEntry {
   tenantId: string;
-  provider: 'openai' | 'telegram' | 'whatsapp' | 'stripe' | 'telnyx';
+  provider: 
+    | 'openai' 
+    | 'telegram' 
+    | 'whatsapp' 
+    | 'stripe' 
+    | 'telnyx' 
+    | 'bandwidth' 
+    | 'signalwire' 
+    | 'twilio' 
+    | 'resend' 
+    | 'meta_cloud' 
+    | 'custom_byo';
   encryptedValue: string;
   updatedAt: number;
+}
+
+/**
+ * 📡 CommunicationEndpoint & Universal Multi-Channel Protocol
+ * Abstracción total del canal e infraestructura de transporte.
+ * Elimina el concepto de "número de Hermes"; cada Tenant registra sus CommunicationEndpoints.
+ * Hermes interactúa exclusivamente vía `channel = "whatsapp" | "voice" | ...` y `send(message)`.
+ * El Kernel resuelve dinámicamente si utiliza Telnyx, SignalWire, Twilio o credenciales propias del cliente (BYO).
+ */
+export type CommunicationChannel = 
+  | 'telegram'
+  | 'whatsapp'
+  | 'sms'
+  | 'voice'
+  | 'email'
+  | 'widget'
+  | 'facebook'
+  | 'instagram'
+  | 'messenger'
+  | 'custom_webhook';
+
+export type CommunicationProviderType = 
+  | 'telnyx'
+  | 'signalwire'
+  | 'bandwidth'
+  | 'twilio'
+  | 'resend'
+  | 'meta_cloud'
+  | 'client_byo' // Bring Your Own Infrastructure
+  | 'custom';
+
+export interface CommunicationEndpoint {
+  id: string;
+  tenantId: string;
+  channel: CommunicationChannel;
+  provider: CommunicationProviderType;
+  identifier: string; // e.g. "+18005550199", "@snarai_bot", "ventas@snarai.com", "widget_app_snarai", "page_id_102938"
+  credentialsRef: string; // Referencia en SecretVault
+  isActive: boolean;
+  assignedAgentId?: string;
+  routeRules?: {
+    priority?: number;
+    fallbackEndpointId?: string;
+  };
+  metadata?: Record<string, any>;
+}
+
+export interface UniversalOutboundMessage {
+  tenantId: string;
+  endpointId?: string; // Opcional: Si se omite, el Kernel auto-selecciona el CommunicationEndpoint activo para el canal
+  channel: CommunicationChannel;
+  recipientIdentifier: string; // Phone, Telegram ChatId, Email, SessionID
+  content: string;
+  mediaUrls?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface UniversalOutboundCall {
+  tenantId: string;
+  endpointId?: string;
+  recipientPhone: string;
+  initialPrompt?: string;
+  voiceConfig?: {
+    voiceId?: string;
+    speed?: number;
+    providerOverride?: CommunicationProviderType;
+  };
 }
 
 export interface TenantConfiguration {
@@ -57,116 +136,101 @@ export interface TenantConfiguration {
   features: TenantFeatures;
   capabilities: TenantCapabilities;
   domainMapping?: TenantDomainMapping;
+  communicationEndpoints?: CommunicationEndpoint[];
   billingPlan: 'STARTER' | 'GROWTH' | 'ENTERPRISE';
   createdAt: number;
+  updatedAt: number;
 }
 
-export interface TenantContext {
-  tenantId: string;
-  brand: BrandConfiguration;
-  features: TenantFeatures;
-  capabilities: TenantCapabilities;
-  lifecycle: TenantLifecycleStatus;
-  locale: string;
-}
-
-export interface AgentInstance {
-  id: string;
-  tenantId: string;
-  name: string;
+export interface DomainPackManifest {
   packId: string;
-  channels: Array<'telegram' | 'whatsapp' | 'voice' | 'email' | 'web'>;
-  status: 'ONLINE' | 'MAINTENANCE' | 'PAUSED';
-  createdAt: number;
-}
-
-export interface AgentBlueprint {
-  blueprintId: string;
+  version: string;
   name: string;
-  packId: string;
-  defaultBrand: BrandConfiguration;
-  defaultFeatures: TenantFeatures;
-  recommendedChannels: string[];
+  description: string;
+  requiredCapabilities: string[];
+  defaultAgentConfigs: Array<{
+    role: string;
+    systemPrompt: string;
+    allowedTools: string[];
+  }>;
 }
 
-export interface InstallationOptions {
+export interface TenantInstallationRequest {
   tenantId: string;
-  blueprintId: string;
-  customName?: string;
-  brandOverride?: Partial<BrandConfiguration>;
+  packId: string;
+  customBrandOverrides?: Partial<BrandConfiguration>;
 }
 
-export class AgentInstaller {
-  static async installBlueprint(options: InstallationOptions): Promise<{ agentInstance: AgentInstance; status: 'INSTALLED' }> {
-    const agentId = `AGT-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
-    console.info(`[Pandoras Installation Engine] Installing Blueprint '${options.blueprintId}' for Tenant '${options.tenantId}' -> Agent ID: ${agentId}`);
-
-    const agentInstance: AgentInstance = {
-      id: agentId,
-      tenantId: options.tenantId,
-      name: options.customName || `Agent ${options.blueprintId}`,
-      packId: 'snarai',
-      channels: ['telegram', 'web'],
-      status: 'ONLINE',
-      createdAt: Date.now()
-    };
-
-    return { agentInstance, status: 'INSTALLED' };
-  }
+export interface TenantInstallationResult {
+  tenantId: string;
+  packId: string;
+  status: 'SUCCESS' | 'FAILED';
+  installedAgentIds: string[];
+  installedCommunicationEndpoints: CommunicationEndpoint[];
+  error?: string;
 }
 
-export class TenantRegistry {
-  private static tenants: Map<string, TenantConfiguration> = new Map([
-    [
-      'tenant_001',
-      {
-        tenantId: 'tenant_001',
-        slug: 'pandoras-internal',
-        name: 'Pandoras Internal (S\'Narai)',
-        brand: {
-          name: "S'Narai Riviera Nayarit",
-          voice: { tone: 'executive', language: 'es-MX' },
-          signature: "Equipo S'Narai Patrimonial"
-        },
-        lifecycle: 'ACTIVE',
-        features: {
-          voiceAI: true,
-          whatsapp: true,
-          telegram: true,
-          web3Checkout: true,
-          speiFastLane: true,
-          customDomain: true,
-          enabledPacks: ['snarai']
-        },
-        capabilities: {
-          maxAgents: 100,
-          maxContacts: 1000000,
-          monthlyConversationsLimit: 500000,
-          allowedChannels: ['telegram', 'web', 'whatsapp', 'voice', 'email']
-        },
-        billingPlan: 'ENTERPRISE',
-        createdAt: Date.now()
-      }
-    ]
-  ]);
+export interface TenantRuntimeContext {
+  tenant: TenantConfiguration;
+  secrets: Map<string, string>;
+  endpoints: CommunicationEndpoint[];
+}
 
-  static registerTenant(tenant: TenantConfiguration): void {
-    this.tenants.set(tenant.tenantId, tenant);
+export class PandorasKernelSDK {
+  private static tenants = new Map<string, TenantConfiguration>();
+  private static installationLogs: TenantInstallationResult[] = [];
+
+  static registerTenant(config: TenantConfiguration): void {
+    this.tenants.set(config.tenantId, config);
   }
 
   static getTenant(tenantId: string): TenantConfiguration | undefined {
     return this.tenants.get(tenantId);
   }
 
-  static createContext(tenantId: string): TenantContext {
-    const tenant = this.getTenant(tenantId) || this.getTenant('tenant_001')!;
-    return {
-      tenantId: tenant.tenantId,
-      brand: tenant.brand,
-      features: tenant.features,
-      capabilities: tenant.capabilities,
-      lifecycle: tenant.lifecycle,
-      locale: tenant.brand.voice.language || 'es-MX'
+  /**
+   * Resuelve dinámicamente el CommunicationEndpoint adecuado para un canal dado de un tenant
+   */
+  static resolveEndpoint(tenantId: string, channel: CommunicationChannel): CommunicationEndpoint | undefined {
+    const tenant = this.tenants.get(tenantId);
+    if (!tenant || !tenant.communicationEndpoints) return undefined;
+    
+    return tenant.communicationEndpoints.find(ep => ep.channel === channel && ep.isActive);
+  }
+
+  static installPack(request: TenantInstallationRequest): TenantInstallationResult {
+    const tenant = this.tenants.get(request.tenantId);
+    if (!tenant) {
+      return {
+        tenantId: request.tenantId,
+        packId: request.packId,
+        status: 'FAILED',
+        installedAgentIds: [],
+        installedCommunicationEndpoints: [],
+        error: `Tenant '${request.tenantId}' not registered in Pandoras Kernel.`
+      };
+    }
+
+    if (!tenant.features.enabledPacks.includes(request.packId)) {
+      tenant.features.enabledPacks.push(request.packId);
+    }
+
+    const result: TenantInstallationResult = {
+      tenantId: request.tenantId,
+      packId: request.packId,
+      status: 'SUCCESS',
+      installedAgentIds: [`agent_${request.tenantId}_${request.packId}_lead`],
+      installedCommunicationEndpoints: tenant.communicationEndpoints || []
     };
+
+    this.installationLogs.push(result);
+    return result;
+  }
+
+  static getInstallationHistory(tenantId?: string): TenantInstallationResult[] {
+    if (tenantId) {
+      return this.installationLogs.filter(log => log.tenantId === tenantId);
+    }
+    return this.installationLogs;
   }
 }

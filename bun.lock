@@ -410,6 +410,13 @@
         "typescript": "5.4.5",
       },
     },
+    "packages/pandoras-knowledge-sdk": {
+      "name": "@pandoras/knowledge-sdk",
+      "version": "1.0.0",
+      "devDependencies": {
+        "typescript": "5.4.5",
+      },
+    },
     "packages/protocol-deployer": {
       "name": "@pandoras/protocol-deployer",
       "version": "0.1.1",
@@ -1325,6 +1332,8 @@
     "@pandoras/hermes-sdk": ["@pandoras/hermes-sdk@workspace:packages/hermes-sdk"],
 
     "@pandoras/kernel-sdk": ["@pandoras/kernel-sdk@workspace:packages/pandoras-kernel-sdk"],
+
+    "@pandoras/knowledge-sdk": ["@pandoras/knowledge-sdk@workspace:packages/pandoras-knowledge-sdk"],
 
     "@pandoras/protocol-deployer": ["@pandoras/protocol-deployer@workspace:packages/protocol-deployer"],
 
