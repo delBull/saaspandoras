@@ -238,9 +238,21 @@ function ClientPortalContent() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: org.status === 'trial' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)', color: org.status === 'trial' ? '#f59e0b' : '#10b981', border: `1px solid ${org.status === 'trial' ? '#f59e0b33' : '#10b98133'}` }}>
-            ● Status: {org.status.toUpperCase()}
+          <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: org.status === 'trial' || org.plan === 'sandbox' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)', color: org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b' : '#10b981', border: `1px solid ${org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b33' : '#10b98133'}` }}>
+            ● {org.plan === 'sandbox' ? 'SANDBOX / TRIAL (14 días)' : `STATUS: ${org.status.toUpperCase()}`}
           </span>
+          {(org.status === 'trial' || org.plan === 'sandbox') && (
+            <a
+              href="mailto:hello@pandoras.finance?subject=Activacion%20Plan%20Pro%20Hermes%20OS"
+              style={{
+                fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
+                background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff',
+                textDecoration: 'none', boxShadow: '0 4px 12px rgba(124,58,237,0.3)'
+              }}
+            >
+              💳 Brincar a Modo Pro →
+            </a>
+          )}
         </div>
       </div>
 
