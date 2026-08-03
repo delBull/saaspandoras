@@ -126,22 +126,53 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
       || process.env.OLLAMA_MODEL 
       || 'llama3.1:8b';
 
-    const baseUrl = rawBaseUrl.endsWith('/v1') ? rawBaseUrl : `${rawBaseUrl.replace(/\/$/, '')}/v1`;
+    let botResponseText = "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
 
-    // 100% Ollama Execution Engine (No OpenAI Dependency)
-    const aiClient = new OpenAI({
-      baseURL: baseUrl,
-      apiKey: apiKey,
-    });
+    // If using the official Ollama Cloud API (ollama.com), we must use the native Ollama REST API
+    // because their cloud doesn't expose the /v1/chat/completions OpenAI compatibility wrapper
+    if (rawBaseUrl.includes('ollama.com')) {
+      // the docs say the base URL is https://ollama.com/api, so we append /chat
+      const baseClean = rawBaseUrl.replace(/\/$/, '');
+      const ollamaEndpoint = baseClean.endsWith('/api') ? `${baseClean}/chat` : `${baseClean}/api/chat`;
+      
+      const ollamaRes = await fetch(ollamaEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: aiModel,
+          messages: messages,
+          stream: false,
+          options: {
+            temperature: 0.3
+          }
+        })
+      });
 
-    const response = await aiClient.chat.completions.create({
-      model: aiModel,
-      messages: messages,
-      temperature: 0.3,
-      max_tokens: 350,
-    });
+      if (!ollamaRes.ok) {
+        throw new Error(`Ollama Cloud API Error: ${ollamaRes.status} ${await ollamaRes.text()}`);
+      }
+      const data = await ollamaRes.json();
+      botResponseText = data?.message?.content || botResponseText;
+    } else {
+      // For Groq, OpenAI, or Local Ollama which support the OpenAI SDK standard
+      const baseUrl = rawBaseUrl.endsWith('/v1') ? rawBaseUrl : `${rawBaseUrl.replace(/\/$/, '')}/v1`;
+      const aiClient = new OpenAI({
+        baseURL: baseUrl,
+        apiKey: apiKey,
+      });
 
-    const botResponseText = response.choices[0]?.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
+      const response = await aiClient.chat.completions.create({
+        model: aiModel,
+        messages: messages,
+        temperature: 0.3,
+        max_tokens: 350,
+      });
+
+      botResponseText = response.choices[0]?.message?.content || botResponseText;
+    }
 
     // Save updated conversational memory back to Redis
     if (redis && redisKey) {
