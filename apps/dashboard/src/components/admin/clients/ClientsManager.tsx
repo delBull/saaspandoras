@@ -340,7 +340,13 @@ export function ClientsManager() {
                                         </TableCell>
                                         <TableCell className="py-2.5">
                                             <div className="flex flex-col gap-0.5">
-                                                <Badge variant="outline" className="text-[10px] bg-zinc-950 max-w-[120px] truncate">{client.source}</Badge>
+                                                <Badge
+                                                    variant="outline"
+                                                    title={client.source || 'Direct Link'}
+                                                    className="text-[10px] bg-zinc-950 max-w-[130px] truncate cursor-help border-zinc-800 text-zinc-300"
+                                                >
+                                                    {(client.source || 'Direct').replace('https://dash.pandoras.finance', '')}
+                                                </Badge>
                                                 {isHermesClient ? (
                                                     <span className="text-[10px] text-amber-400 font-mono">🤖 HERMES OS</span>
                                                 ) : (

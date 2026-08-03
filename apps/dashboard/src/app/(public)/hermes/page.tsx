@@ -120,21 +120,23 @@ export default function HermesPublicSandbox() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: text,
+          userMessage: text,
           industry: industry.id,
           companyName: companyName.trim() || "Pandora's",
         }),
       });
       const data = await res.json();
 
-      if (res.status === 429 || data.limitReached) {
+      if (res.status === 429 || data.limitReached || data.trialExpired) {
         setBlocked(true);
         setMessages(m => [...m, {
           role: 'agent',
-          text: '⚠️ Has alcanzado el límite de la sesión de demostración. Contacta a nuestro equipo para activar tu acceso completo a Hermes Runtime en producción.',
+          text: data.message || '⚠️ Has alcanzado el límite de la sesión de demostración. Contacta a nuestro equipo para activar tu acceso completo a Hermes Runtime en producción.',
         }]);
+      } else if (!res.ok || data.error) {
+        setMessages(m => [...m, { role: 'agent', text: `⚠️ ${data.error || 'No se pudo obtener respuesta'}` }]);
       } else {
-        setMessages(m => [...m, { role: 'agent', text: data.reply || data.message || '...' }]);
+        setMessages(m => [...m, { role: 'agent', text: data.response || data.reply || '...' }]);
         if (typeof data.remaining === 'number') setRemaining(data.remaining);
       }
     } catch {
@@ -236,6 +238,23 @@ export default function HermesPublicSandbox() {
 
           {/* ── CHAT PANEL ── */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
+
+            {/* Permanent Pro / Custom Integration Banner (Prominent Header) */}
+            <div style={{ marginBottom: 16, padding: '16px 20px', background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(79,70,229,0.06))', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 2 }}>
+                  🚀 Desbloquea Hermes OS en Producción
+                </div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                  Planes desde $299 USD/mes. Incluye conectores Telegram/WhatsApp, base de conocimiento e integración S'Narai.
+                </div>
+              </div>
+              <a href="mailto:hello@pandoras.finance?subject=Solicitud%20Plan%20Pro%20Hermes%20OS"
+                style={{ padding: '9px 18px', borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                Activar Plan Pro →
+              </a>
+            </div>
+
             <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
               {/* Agent header */}
@@ -321,22 +340,6 @@ export default function HermesPublicSandbox() {
                   Enviar
                 </button>
               </div>
-            </div>
-
-            {/* Permanent Pro / Custom Integration Banner */}
-            <div style={{ marginTop: 16, padding: '18px 22px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 3 }}>
-                  🚀 Desbloquea Hermes OS en Producción
-                </div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
-                  Planes desde $299 USD/mes. Incluye conectores Telegram/WhatsApp, base de conocimiento propia e integración con S'Narai.
-                </div>
-              </div>
-              <a href="mailto:hello@pandoras.finance?subject=Solicitud%20Plan%20Pro%20Hermes%20OS"
-                style={{ padding: '9px 18px', borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                Activar Plan Pro →
-              </a>
             </div>
 
             {/* CTA when blocked */}
