@@ -19,6 +19,7 @@ import { executeGrowthActions, computeNextGrowthMetadata } from '@/lib/marketing
 import { IdentityResolver } from '@/lib/marketing/identity-resolver';
 import { AttributionManager } from '@/lib/marketing/scoring-engine';
 import { resolveProjectSlug } from '@/lib/project-utils';
+import { detectProductFromOrigin } from '@/lib/platform/product-registry';
 
 
 export const dynamic = 'force-dynamic';
@@ -238,6 +239,14 @@ export async function POST(req: NextRequest) {
     // Rule: B2B is ALWAYS owner: pandora. B2C is usually owner: client unless it's Pandoras own B2C
     const scope = (bodyScope === 'b2b' || isB2BOrigin) ? 'b2b' : 'b2c';
 
+    // ── PLATFORM OS v3: Auto-assign Product Context ──────────────────────────────
+    // 🔒 S'Narai (projectId=2) always defaults to TOKENIZATION — never overridden.
+    // detectProductFromOrigin() checks URL path patterns to assign the correct product.
+    const { productFamily, product: detectedProduct } = detectProductFromOrigin(origin || requestOrigin);
+    // Allow explicit override from body (e.g. direct B2B form submissions)
+    const finalProductFamily = body.productFamily || productFamily;
+    const finalProduct = body.product || detectedProduct;
+
     // 1.5 Security Check: Allowed Domains (ONLY FOR PUBLIC KEYS)
     let projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
@@ -372,7 +381,11 @@ export async function POST(req: NextRequest) {
       consent: true,
       metadata: finalMetadata,
       status: (isHighIntent ? 'hot' : (existingLead ? (existingLead as any).status : 'active')) as any,
-      score: isHighIntent ? 100 : (existingLead ? undefined : 50), // Set high score for VIPs
+      score: isHighIntent ? 100 : (existingLead ? undefined : 50),
+      // Platform OS v3: Product context
+      productFamily: finalProductFamily,
+      product: finalProduct,
+      crmStage: (existingLead as any)?.crmStage || 'LEAD',
       updatedAt: new Date(),
     };
 

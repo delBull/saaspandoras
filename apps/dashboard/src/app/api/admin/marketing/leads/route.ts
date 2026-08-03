@@ -90,6 +90,9 @@ export async function GET(req: NextRequest) {
         phoneNumber: marketingLeads.phoneNumber,
         walletAddress: marketingLeads.walletAddress,
         origin: marketingLeads.origin,
+        productFamily: marketingLeads.productFamily,
+        product: marketingLeads.product,
+        crmStage: marketingLeads.crmStage,
         createdAt: marketingLeads.createdAt,
         updatedAt: marketingLeads.updatedAt,
         projectName: projects.title

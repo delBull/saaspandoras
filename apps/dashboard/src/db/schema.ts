@@ -2080,6 +2080,19 @@ export const marketingLeads = pgTable("marketing_leads", {
   isDeleted: boolean("is_deleted").default(false).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+
+  // ── Platform OS v3: Product Context (Phase 1) ──────────────────────────────
+  // productFamily: Which product family this lead belongs to
+  // INFRASTRUCTURE | GROWTH_OS | CAPITAL | FOUNDATION
+  productFamily: varchar("product_family", { length: 50 }).default("INFRASTRUCTURE").notNull(),
+
+  // product: Specific product the lead is interested in
+  // TOKENIZATION | RWA | SPV | HERMES | MEDIA_CO | CRM_STANDALONE
+  product: varchar("product", { length: 50 }).default("TOKENIZATION").notNull(),
+
+  // crmStage: Commercial pipeline stage (CRM ends here, infra picks up at Closed Won)
+  // LEAD | QUALIFIED | ASSESSMENT | PROPOSAL | CLOSED_WON | CLOSED_LOST
+  crmStage: varchar("crm_stage", { length: 50 }).default("LEAD").notNull(),
 }, (t) => ({
   // A lead is unique per Project + Identity (Email, Wallet or Fingerprint hash)
   projectIdentityIdx: uniqueIndex("marketing_leads_project_identity_idx").on(t.projectId, t.identityHash),
@@ -2820,5 +2833,68 @@ export const campaignTrackersRelations = relations(campaignTrackers, ({ one }) =
   shortlink: one(shortlinks, {
     fields: [campaignTrackers.shortlinkId],
     references: [shortlinks.id],
+  }),
+}));
+
+// ════════════════════════════════════════════════════════════════════════════════
+// PLATFORM OS v3 — INSTALLED PRODUCTS
+// ════════════════════════════════════════════════════════════════════════════════
+// One project (= Organization) can have N installed products.
+// Hermes, Media Co, Tokenization, etc. are all installed_products rows.
+//
+// 🔒 PROTECTION: Never insert projectId = 2 (S'Narai) from Provisioning Engine.
+//    Guarded in provisioning-engine.ts via PROTECTED_PROJECT_IDS = [2].
+// ════════════════════════════════════════════════════════════════════════════════
+
+export const installedProducts = pgTable("installed_products", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  // FK to projects (= Organizations). NEVER project ID 2 (S'Narai) from auto-provisioning.
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+
+  // Which product is installed
+  product: varchar("product", { length: 50 }).notNull(),              // HERMES | MEDIA_CO | TOKENIZATION | SPV
+  productFamily: varchar("product_family", { length: 50 }).notNull(), // GROWTH_OS | INFRASTRUCTURE | CAPITAL
+
+  // Commercial plan and status
+  plan: varchar("plan", { length: 50 }).default("sandbox").notNull(),   // sandbox | starter | growth | enterprise
+  status: varchar("status", { length: 50 }).default("trial").notNull(), // trial | active | suspended | churned
+
+  // Capabilities installed for this product+plan combination
+  // e.g. { voice: false, analytics: true, multiagent: false }
+  capabilities: jsonb("capabilities").default({}).notNull(),
+
+  // Connectors installed and their config
+  // e.g. { telegram: { botToken: '...', webhookUrl: '...' }, signalwire: {...} }
+  connectors: jsonb("connectors").default({}).notNull(),
+
+  // Product configuration (prompt, branding, knowledge_pack)
+  config: jsonb("config").default({}).notNull(),
+
+  // Snapshot of runtime state — regenerated on config changes
+  runtimeManifest: jsonb("runtime_manifest").default({}).notNull(),
+
+  // Portal access — JWT token for magic-link client portal (single-use, 7 days)
+  portalToken: text("portal_token").unique(),
+  portalTokenUsed: boolean("portal_token_used").default(false).notNull(),
+  portalSessionToken: text("portal_session_token"), // Active session after magic link consumed
+
+  // Activation tracking
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  // One product type per project (each product installed once per org)
+  projectProductUniqueIdx: uniqueIndex("installed_products_project_product_idx").on(t.projectId, t.product),
+  statusIdx: index("installed_products_status_idx").on(t.status),
+  portalTokenIdx: index("installed_products_portal_token_idx").on(t.portalToken),
+}));
+
+export const installedProductsRelations = relations(installedProducts, ({ one }) => ({
+  project: one(projects, {
+    fields: [installedProducts.projectId],
+    references: [projects.id],
   }),
 }));

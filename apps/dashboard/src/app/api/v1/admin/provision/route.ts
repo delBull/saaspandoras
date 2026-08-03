@@ -1,37 +1,34 @@
 import { NextResponse } from 'next/server';
-import { PlatformProvisioningEngine } from '@/lib/provisioning/provisioning-engine';
-import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+import { ProvisioningEngine } from '@/lib/platform/provisioning-engine';
+import { ProductKey, PlanKey } from '@/lib/platform/product-registry';
 
-async function handler(req: Request) {
+export async function POST(request: Request) {
   try {
-    const adminKey = req.headers.get('x-admin-key');
-    const secretAdminKey = process.env.PANDORAS_ADMIN_SECRET || process.env.PANDORAS_SECRET_KEY;
+    const body = await request.json();
+    const { leadId, product, plan = 'sandbox', trialDays = 14, existingProjectId } = body;
 
-    if (secretAdminKey && adminKey !== secretAdminKey) {
-      return NextResponse.json({ error: "Unauthorized Provisioning Request" }, { status: 401 });
+    if (!leadId) {
+      return NextResponse.json({ error: 'leadId is required' }, { status: 400 });
     }
 
-    const body = await req.json();
-    const { tenantSlug, companyName, contactEmail, tier = 'PROFESSIONAL', customCapabilities, isPublicMarketplace } = body;
-
-    if (!tenantSlug || !companyName || !contactEmail) {
-      return NextResponse.json({ error: "Missing required fields: tenantSlug, companyName, contactEmail" }, { status: 400 });
+    if (!product) {
+      return NextResponse.json({ error: 'product is required' }, { status: 400 });
     }
 
-    const result = await PlatformProvisioningEngine.provisionTenant({
-      tenantSlug,
-      companyName,
-      contactEmail,
-      tier,
-      customCapabilities,
-      isPublicMarketplace
+    const result = await ProvisioningEngine.provision({
+      leadId,
+      product: product as ProductKey,
+      plan: plan as PlanKey,
+      trialDays: Number(trialDays) || 14,
+      existingProjectId: existingProjectId ? Number(existingProjectId) : undefined,
     });
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error("[Provisioning API] Error provisioning tenant:", error);
-    return NextResponse.json({ error: error?.message || "Provisioning Failed" }, { status: 500 });
+    console.error('[API Provisioning Error]:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Provisioning failed' },
+      { status: 500 }
+    );
   }
 }
-
-export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter });
