@@ -74,7 +74,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
 
     if (!projectRecord) {
       console.warn(`[Telegram Bot] Webhook received for unknown project: ${projectId}`);
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ error: "Unknown project" }, { status: 400 });
     }
 
     const metadata = (projectRecord.w2eConfig as any) || {};
@@ -93,7 +93,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
 
     // Telegram sends a lot of events (typing, etc). We process text or voice notes.
     if (!message || (!message.text && !message.voice)) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ error: "No text or voice" });
     }
 
     const chatId = message.chat.id;
@@ -110,7 +110,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
 
     if (!botToken) {
       console.warn(`[Telegram Bot] No token found for project: ${projectId}`);
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ error: "No token configured for project" }, { status: 400 });
     }
 
     // Intercept /start command for a custom welcome message
