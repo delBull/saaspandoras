@@ -97,20 +97,32 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     // Project-specific variable resolution for granular analytics and metering
     // NOTE: isOllamaEnabled must ONLY be true when a real API key is explicitly configured.
     // rawBaseUrl has a default fallback so we cannot use it to determine if Ollama is intended.
-    // Resolve Ollama Endpoint (Default to Ollama Base URL or Cloud Provider)
-    const rawBaseUrl = (isSnarai && process.env.OLLAMA_SNARAI_BASE_URL) 
-      || process.env.OLLAMA_SNARAI_BASE_URL 
+    // ─────────────────────────────────────────────────────────────
+    // v4.2 Runtime Manifest Integration
+    // Load LLM configuration strictly from the Tenant Manifest
+    // ─────────────────────────────────────────────────────────────
+    
+    // Internal fetch of manifest config from DB to avoid HTTP loopbacks
+    const { db } = await import('@/db');
+    const { projects } = await import('@/db/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const dbProject = await db.select().from(projects).where(eq(projects.slug, projectSlug)).limit(1);
+    const dbConfig: any = (dbProject.length > 0 && dbProject[0]?.tenantRuntimeConfig) ? dbProject[0].tenantRuntimeConfig : {};
+    
+    const rawBaseUrl = dbConfig?.providers?.llm?.baseUrl 
+      || (isSnarai ? process.env.OLLAMA_SNARAI_BASE_URL : null)
       || process.env.OLLAMA_BASE_URL 
       || process.env.OLLAMA_HOST 
       || 'http://127.0.0.1:11434';
       
-    const apiKey = (isSnarai && process.env.OLLAMA_SNARAI_API_KEY) 
-      || process.env.OLLAMA_SNARAI_API_KEY 
+    const apiKey = dbConfig?.providers?.llm?.apiKeyRef 
+      || (isSnarai ? process.env.OLLAMA_SNARAI_API_KEY : null)
       || process.env.OLLAMA_API_KEY 
       || 'ollama-key';
       
-    const aiModel = (isSnarai && process.env.OLLAMA_SNARAI_MODEL) 
-      || process.env.OLLAMA_SNARAI_MODEL 
+    const aiModel = dbConfig?.providers?.llm?.model 
+      || (isSnarai ? process.env.OLLAMA_SNARAI_MODEL : null)
       || process.env.OLLAMA_MODEL 
       || 'llama3.1:8b';
 

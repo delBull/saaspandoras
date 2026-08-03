@@ -380,6 +380,7 @@ export const projects = pgTable("projects", {
   isDeleted: boolean("is_deleted").default(false).notNull(),
   legalConfig: jsonb("legal_config").default({}).notNull(), // V3: Legal agreement templates & NOM-151 config
   extraConfig: jsonb("extra_config").default({}).notNull(), // V4: Resource Hub, Sovereign Calendar, Event Engine config
+  tenantRuntimeConfig: jsonb("tenant_runtime_config"), // V4.2: Hermes Runtime Manifest overrides
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
   isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),

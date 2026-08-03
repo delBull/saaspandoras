@@ -33,6 +33,7 @@
     "@pandoras/core-webhooks": "workspace:*",
     "@pandoras/gamification": "workspace:*",
     "@pandoras/identity-sdk": "workspace:*",
+    "@pandoras/runtime-sdk": "workspace:*",
     "@pandoras/protocol-deployer": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",
