@@ -27,7 +27,8 @@ export const ProtocolApplicationEmail = ({
         <Body style={main}>
             <Container style={container}>
                 <Section style={header}>
-                    <Text style={logo}>PANDORA'S W2E</Text>
+                    <Img src="https://dash.pandoras.finance/apple-touch-icon.png" width="40" height="40" alt="Pandora's" style={{ borderRadius: '8px', margin: '0 auto 12px', display: 'block' }} />
+                    <Text style={logo}>PANDORA'S PLATFORM OS</Text>
                 </Section>
 
                 <Heading style={h1}>Paso Siguiente</Heading>

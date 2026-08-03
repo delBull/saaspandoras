@@ -39,8 +39,9 @@ export function StarterKnowledgeWizard({ onComplete }: WizardProps) {
 
   const handleFaqChange = (idx: number, field: 'question' | 'answer', val: string) => {
     const next = [...faqs];
-    if (next[idx]) {
-      next[idx][field] = val;
+    const item = next[idx];
+    if (item) {
+      item[field] = val;
       setFaqs(next);
     }
   };

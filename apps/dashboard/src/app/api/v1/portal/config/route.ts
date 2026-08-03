@@ -7,9 +7,9 @@ import { eq } from 'drizzle-orm';
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { sessionToken, installedProductId, config } = body;
+    const { sessionToken, installedProductId, config, connectors } = body;
 
-    if (!sessionToken || !installedProductId || !config) {
+    if (!sessionToken || !installedProductId) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
@@ -20,18 +20,27 @@ export async function PATCH(request: Request) {
 
     const currentProduct = await db.query.installedProducts.findFirst({
       where: eq(installedProducts.id, installedProductId),
-      columns: { config: true },
+      columns: { config: true, connectors: true },
     });
 
-    const currentConfig = (currentProduct?.config as Record<string, any>) || {};
-    const updatedConfig = { ...currentConfig, ...config };
+    const updatePayload: Record<string, any> = { updatedAt: new Date() };
+
+    if (config) {
+      const currentConfig = (currentProduct?.config as Record<string, any>) || {};
+      updatePayload.config = { ...currentConfig, ...config };
+    }
+
+    if (connectors) {
+      const currentConnectors = (currentProduct?.connectors as Record<string, any>) || {};
+      updatePayload.connectors = { ...currentConnectors, ...connectors };
+    }
 
     await db.update(installedProducts)
-      .set({ config: updatedConfig, updatedAt: new Date() })
+      .set(updatePayload)
       .where(eq(installedProducts.id, installedProductId));
 
-    return NextResponse.json({ success: true, config: updatedConfig });
+    return NextResponse.json({ success: true, updatedPayload: updatePayload });
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Failed to update config' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to update configuration or connectors' }, { status: 500 });
   }
 }

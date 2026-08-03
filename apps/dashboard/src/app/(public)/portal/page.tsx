@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { StarterKnowledgeWizard } from '@/components/portal/StarterKnowledgeWizard';
 import Image from 'next/image';
@@ -33,6 +33,22 @@ interface OrgContext {
 }
 
 export default function ClientPortalPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', background: '#08080C', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#7c3aed', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>Cargando Centro de Operaciones...</div>
+          <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    }>
+      <ClientPortalContent />
+    </Suspense>
+  );
+}
+
+function ClientPortalContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -43,11 +59,15 @@ export default function ClientPortalPage() {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardCompleted, setWizardCompleted] = useState(false);
 
+
   // Config state
   const [prompt, setPrompt] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [telegramBotToken, setTelegramBotToken] = useState('');
+  const [whatsappPhone, setWhatsappPhone] = useState('');
   const [knowledgePack, setKnowledgePack] = useState<any>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [savedConnectorsSuccess, setSavedConnectorsSuccess] = useState(false);
 
   useEffect(() => {
     async function loadPortal() {
@@ -84,6 +104,10 @@ export default function ClientPortalPage() {
           setOrg(data.organization);
           setPrompt(data.organization.config?.prompt || '');
           setCompanyName(data.organization.name || '');
+
+          const connectors = data.organization.connectors || {};
+          setTelegramBotToken(connectors.telegram?.botToken || '');
+          setWhatsappPhone(connectors.whatsapp?.phone || '');
 
           // Check if knowledge wizard is needed
           if (!data.organization.config?.knowledgePack) {
@@ -144,6 +168,33 @@ export default function ClientPortalPage() {
       }
     } catch {
       alert('Error al guardar cambios');
+    }
+  };
+
+  const handleSaveConnectors = async () => {
+    const sessionToken = localStorage.getItem('pandoras_portal_session');
+    if (!sessionToken || !org?.activeProduct?.id) return;
+
+    try {
+      const res = await fetch('/api/v1/portal/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionToken,
+          installedProductId: org.activeProduct.id,
+          connectors: {
+            telegram: { botToken: telegramBotToken },
+            whatsapp: { phone: whatsappPhone },
+          },
+        }),
+      });
+
+      if (res.ok) {
+        setSavedConnectorsSuccess(true);
+        setTimeout(() => setSavedConnectorsSuccess(false), 3000);
+      }
+    } catch {
+      alert('Error al guardar conectores');
     }
   };
 
@@ -212,6 +263,8 @@ export default function ClientPortalPage() {
                   intelligence: '⚡ Intelligence Studio',
                   knowledge: '📚 Knowledge Studio',
                   channels: '📡 Conectores & Canales',
+                  tools: '🛠️ Herramientas & Capacidades',
+                  skills: '🎓 Procedimientos / Skills',
                   voice: '🎙️ Voice Studio',
                   analytics: '📊 Mission Control',
                   multiagent: '🤖 Multi-Agentes',
@@ -283,25 +336,104 @@ export default function ClientPortalPage() {
               </div>
             )}
 
-            {/* Tab 3: Channels */}
+            {/* Tab 3.5: Tools & Capabilities */}
+            {activeTab === 'tools' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
+                <h2 style={{ fontSize: 18, margin: '0 0 6px' }}>🛠️ Catálogo Universal de Herramientas</h2>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Herramientas del sistema que Hermes puede ejecutar automáticamente.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#a78bfa' }}>📅 Agendamiento (calendar.schedule)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Agenda citas tentativamente en el calendario del negocio.</div>
+                    <div style={{ fontSize: 11, color: '#10b981', marginTop: 8 }}>● Activo</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#a78bfa' }}>💳 SPEI Fast Lane (payments.create_spei_link)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Genera referencias de pago bancario SPEI en tiempo real.</div>
+                    <div style={{ fontSize: 11, color: '#10b981', marginTop: 8 }}>● Activo</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#a78bfa' }}>📊 CRM Sync (crm.update_stage)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Actualiza automáticamente el estado comercial del prospecto.</div>
+                    <div style={{ fontSize: 11, color: '#10b981', marginTop: 8 }}>● Activo</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#a78bfa' }}>📜 Holdings RWA (tokenization.get_holdings)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Consulta certficados y poder de voto on-chain.</div>
+                    <div style={{ fontSize: 11, color: '#10b981', marginTop: 8 }}>● Activo</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3.6: Skills & Procedures */}
+            {activeTab === 'skills' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
+                <h2 style={{ fontSize: 18, margin: '0 0 6px' }}>🎓 Procedimientos de Negocio (Skills)</h2>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Flujos paso a paso pre-configurados para tu industria.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>🏠 Calificar Comprador Patrimonial</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>1. Identifica presupuesto → 2. Verifica forma de pago → 3. Agenda reunión.</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>🪙 Adquisición de Certificado S'Narai</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>1. Consulta disponibilidad → 2. Genera CLABE SPEI → 3. Confirma acreditación.</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3: Channels & Connectors */}
             {activeTab === 'channels' && (
               <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
                 <h2 style={{ fontSize: 18, margin: '0 0 6px' }}>Webhooks & Canales Activos</h2>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Conecta tus canales de comunicación a la infraestructura de Hermes.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Conecta tus credenciales de Telegram y WhatsApp para activar Hermes en producción.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Webchat */}
                   <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>💬 Webchat / Widget</div>
-                    <div style={{ fontSize: 12, color: '#10b981', marginBottom: 8 }}>● Listo para usar</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>💬 Webchat / Widget HTML</div>
+                    <div style={{ fontSize: 12, color: '#10b981', marginBottom: 8 }}>● Listo para integrar en tu web</div>
                     <code style={{ fontSize: 11, background: '#08080C', padding: '8px 12px', borderRadius: 6, display: 'block', color: 'rgba(255,255,255,0.6)' }}>
                       &lt;script src="https://dash.pandoras.finance/widget.js" data-project="{org.slug}"&gt;&lt;/script&gt;
                     </code>
                   </div>
 
+                  {/* Telegram Input */}
                   <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>✈️ Telegram Webhook</div>
-                    <code style={{ fontSize: 11, background: '#08080C', padding: '8px 12px', borderRadius: 6, display: 'block', color: 'rgba(255,255,255,0.6)' }}>
-                      https://dash.pandoras.finance/api/v1/hermes/telegram/webhook?project={org.slug}
-                    </code>
+                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>✈️ Bot de Telegram (botToken)</div>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: '0 0 10px' }}>Pega el token obtenido de BotFather para vincular tu bot directamente.</p>
+                    <input
+                      value={telegramBotToken}
+                      onChange={e => setTelegramBotToken(e.target.value)}
+                      placeholder="Ej. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                      style={{ ...inputStyle, marginBottom: 8 }}
+                    />
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                      Webhook URL: <code style={{ color: '#a78bfa' }}>https://dash.pandoras.finance/api/v1/hermes/webhook/telegram?slug={org.slug}</code>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Input */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>🟢 WhatsApp Business API / Phone</div>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: '0 0 10px' }}>Ingresa el número de WhatsApp asociado a tu negocio.</p>
+                    <input
+                      value={whatsappPhone}
+                      onChange={e => setWhatsappPhone(e.target.value)}
+                      placeholder="Ej. +52 55 1234 5678"
+                      style={{ ...inputStyle, marginBottom: 8 }}
+                    />
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                      Webhook URL: <code style={{ color: '#a78bfa' }}>https://dash.pandoras.finance/api/v1/hermes/webhook/whatsapp?slug={org.slug}</code>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+                    <button onClick={handleSaveConnectors} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      Guardar Conectores
+                    </button>
+                    {savedConnectorsSuccess && <span style={{ color: '#10b981', fontSize: 13 }}>✓ Conectores guardados correctamente</span>}
                   </div>
                 </div>
               </div>

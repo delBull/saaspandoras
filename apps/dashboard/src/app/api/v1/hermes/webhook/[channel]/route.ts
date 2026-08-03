@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ExecutionEngine } from '@/lib/hermes/execution-engine';
 import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { generateBotResponse } from '@/lib/marketing/bot-engine';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
- * 📡 Pandora's Platform OS v3 — Unified Multi-Tenant Webhook Endpoint
+ * 📡 Pandora's Platform OS v5 — Autonomous Webhook Endpoint powered by ExecutionEngine Kernel
  * /api/v1/hermes/webhook/[channel]
- *
- * Channel: 'telegram' | 'whatsapp' | 'webchat' | 'signalwire'
- * Query Params: ?slug=org-slug OR ?projectId=123
  */
 export async function POST(
   req: NextRequest,
@@ -36,17 +33,9 @@ export async function POST(
       return NextResponse.json({ error: 'Project or slug parameter is required' }, { status: 400 });
     }
 
-    // Resolve tenant context via OrganizationSDK
-    const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
-    const installed = orgContext.activeProduct;
-
-    if (!installed || installed.status === 'suspended') {
-      return NextResponse.json({ error: 'Hermes product is not active for this organization' }, { status: 403 });
-    }
-
     const body = await req.json();
 
-    // Extract user message based on channel payload format
+    // Extract message & chatId
     let userMessage = '';
     let chatId = '';
 
@@ -65,57 +54,39 @@ export async function POST(
       return NextResponse.json({ ok: true, note: 'No text message to process' });
     }
 
-    // Build custom knowledge prompt from Client KnowledgePack (Wizard output)
-    const knowledgePack = (installed.config as any)?.knowledgePack;
-    let customKnowledgePrompt = '';
-
-    if (knowledgePack) {
-      customKnowledgePrompt = `
-BASE DE CONOCIMIENTO CONFIGURADA POR LA EMPRESA (${knowledgePack.companyName || orgContext.name}):
-- Industria: ${knowledgePack.industry || 'General'}
-- Descripción: ${knowledgePack.description || ''}
-- Horario de Atención: ${knowledgePack.schedule || ''}
-- Contacto: Teléfono: ${knowledgePack.phone || ''}, Email: ${knowledgePack.email || ''}
-- Servicios / Productos Clave: ${(knowledgePack.services || []).join(', ')}
-- Preguntas Frecuentes (FAQs):
-${(knowledgePack.faqs || []).map((f: any) => `  * Q: ${f.question}\n    A: ${f.answer}`).join('\n')}
-      `;
-    }
-
-    const customSystemPrompt = (installed.config as any)?.prompt || `Eres Hermes, el Agente Autónomo de ${orgContext.name}. Atiende a los clientes con amabilidad y precisión.`;
-    const fullSystemPrompt = `${customSystemPrompt}\n\n${customKnowledgePrompt}`;
-
-    // Execute Bot Engine with resolved context
-    const botReply = await generateBotResponse({
-      userMessage,
+    // Execute Kernel via ExecutionEngine
+    const result = await ExecutionEngine.execute({
+      projectId,
       chatId,
-      projectSlug: orgContext.slug,
-      projectName: orgContext.name,
-      customSystemPrompt: fullSystemPrompt,
-      projectContext: {
-        title: orgContext.name,
-        slug: orgContext.slug,
-      }
+      userMessage,
+      channel
     });
 
-    // If Telegram webhook, reply back directly if bot token exists
-    if (channel === 'telegram' && chatId && (installed.connectors as any)?.telegram?.botToken) {
-      const botToken = (installed.connectors as any).telegram.botToken;
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: botReply })
-      }).catch(e => console.error('[Webhook Telegram Send Error]:', e));
+    // Handle channel-specific responses (e.g. Telegram API)
+    if (channel === 'telegram' && chatId) {
+      const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
+      const botToken = (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
+
+      if (botToken) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: result.reply })
+        }).catch(e => console.error('[Webhook Telegram Send Error]:', e));
+      }
     }
 
     return NextResponse.json({
       ok: true,
       channel,
-      project: orgContext.slug,
-      reply: botReply
+      intent: result.intent,
+      requiresHuman: result.requiresHuman,
+      actionExecuted: result.actionExecuted,
+      reply: result.reply
     });
+
   } catch (error: any) {
-    console.error('[Hermes Unified Webhook Error]:', error);
-    return NextResponse.json({ error: error?.message || 'Webhook processing failed' }, { status: 500 });
+    console.error('[Hermes OS v5 Webhook Error]:', error);
+    return NextResponse.json({ error: error?.message || 'Execution Engine processing failed' }, { status: 500 });
   }
 }
