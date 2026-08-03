@@ -99,7 +99,6 @@ export class PlatformProvisioningEngine {
       const [newProject] = await db.insert(projects).values({
         slug: cleanSlug,
         title: companyName,
-        symbol: cleanSlug.substring(0, 4).toUpperCase(),
         description: `Organización autónoma para ${companyName}`,
         w2eConfig: {
           tier,
@@ -108,12 +107,10 @@ export class PlatformProvisioningEngine {
           isPublicMarketplace,
           provisionedAt: new Date().toISOString(),
         } as any,
-        metadata: {
-          contactEmail,
-          scope: 'enterprise_b2b',
-        } as any,
       }).returning();
-
+      if (!newProject) {
+        throw new Error("Failed to provision new project: insert returned no rows.");
+      }
       projectId = newProject.id;
     }
 
