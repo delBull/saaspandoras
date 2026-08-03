@@ -95,11 +95,14 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     const isSnarai = projectSlug === 'snarai';
 
     // Project-specific variable resolution for granular analytics and metering
+    // NOTE: isOllamaEnabled must ONLY be true when a real API key is explicitly configured.
+    // rawBaseUrl has a default fallback so we cannot use it to determine if Ollama is intended.
     const apiKey = (isSnarai && process.env.OLLAMA_SNARAI_API_KEY) || process.env.OLLAMA_SNARAI_API_KEY || process.env.OLLAMA_API_KEY || '';
-    const rawBaseUrl = (isSnarai && process.env.OLLAMA_SNARAI_BASE_URL) || process.env.OLLAMA_SNARAI_BASE_URL || process.env.OLLAMA_BASE_URL || "https://api.ollama.com/v1";
+    const rawBaseUrl = (isSnarai && process.env.OLLAMA_SNARAI_BASE_URL) || process.env.OLLAMA_SNARAI_BASE_URL || process.env.OLLAMA_BASE_URL || '';
     const aiModel = (isSnarai && process.env.OLLAMA_SNARAI_MODEL) || process.env.OLLAMA_SNARAI_MODEL || process.env.OLLAMA_MODEL || 'llama3.1:8b';
 
-    const isOllamaEnabled = !!apiKey || !!rawBaseUrl;
+    // Only use Ollama/custom LLM path when BOTH a key AND a base URL are explicitly set
+    const isOllamaEnabled = !!apiKey && !!rawBaseUrl;
     let botResponseText = "";
 
     if (isOllamaEnabled) {
