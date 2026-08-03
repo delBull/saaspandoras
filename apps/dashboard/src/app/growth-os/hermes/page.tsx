@@ -462,10 +462,10 @@ export default function HermesEnterpriseLandingPage() {
       {/* WHAT IS HERMES */}
       <section id="ecosystem" className="py-24 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-3 py-1 font-mono mb-4">Plataforma Operativa</Badge>
-          <h2 className="text-3xl md:text-4xl font-light text-white mb-4">¿Qué es Hermes?</h2>
+          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-3 py-1 font-mono mb-4">Pandora's Control Plane v4.1</Badge>
+          <h2 className="text-3xl md:text-4xl font-light text-white mb-4">¿Qué es Hermes Runtime?</h2>
           <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto font-light">
-            Hermes es la infraestructura de agentes autónomos de Pandoras Growth OS. Un runtime empresarial diseñado para crear, instalar y operar agentes inteligentes personalizados para cualquier industria.
+            Hermes es el <strong>Runtime de Ejecución de Inteligencia Autónoma</strong> de Pandora's Platform OS. Un motor empresarial multi-tenant diseñado para crear, aprovisionar y operar agentes inteligentes mediante un <strong>Centro de Operaciones Guiado en 7 Studios</strong>.
           </p>
         </div>
 

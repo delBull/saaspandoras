@@ -157,3 +157,75 @@ export class CapabilityEngine {
     return TIER_CAPABILITIES[tier] || [];
   }
 }
+
+/**
+ * Organization Health Status Interface & Evaluator (v4.1 Control Plane)
+ */
+export type HealthState = 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'UNCONFIGURED';
+
+export interface ComponentHealth {
+  state: HealthState;
+  label: string;
+  message?: string;
+  lastSync?: string;
+}
+
+export interface TenantHealthStatus {
+  identity: ComponentHealth;
+  ai: ComponentHealth;
+  voice: ComponentHealth;
+  knowledge: ComponentHealth;
+  channels: ComponentHealth;
+  payments: ComponentHealth;
+  crm: ComponentHealth;
+}
+
+export class TenantHealthEvaluator {
+  public static evaluateHealth(tenantConfig: {
+    identityPack?: any;
+    aiProviderKey?: string;
+    hasVoiceKey?: boolean;
+    knowledgeDocsCount?: number;
+    hasActiveChannel?: boolean;
+    hasPaymentSetup?: boolean;
+  }): TenantHealthStatus {
+    return {
+      identity: {
+        state: tenantConfig.identityPack ? 'HEALTHY' : 'WARNING',
+        label: 'Identity',
+        message: tenantConfig.identityPack ? 'Identity Pack Cargado' : 'Pendiente cargar Identity Pack'
+      },
+      ai: {
+        state: tenantConfig.aiProviderKey ? 'HEALTHY' : 'CRITICAL',
+        label: 'AI Model',
+        message: tenantConfig.aiProviderKey ? 'Model Provider Activo' : 'API Key de IA requerida'
+      },
+      voice: {
+        state: tenantConfig.hasVoiceKey ? 'HEALTHY' : 'UNCONFIGURED',
+        label: 'Voice AI',
+        message: tenantConfig.hasVoiceKey ? 'ElevenLabs Conectado' : 'Voz no configurada'
+      },
+      knowledge: {
+        state: (tenantConfig.knowledgeDocsCount || 0) > 0 ? 'HEALTHY' : 'WARNING',
+        label: 'Knowledge',
+        message: (tenantConfig.knowledgeDocsCount || 0) > 0 ? `${tenantConfig.knowledgeDocsCount} Docs Indexados` : 'Knowledge RAG vacío'
+      },
+      channels: {
+        state: tenantConfig.hasActiveChannel ? 'HEALTHY' : 'CRITICAL',
+        label: 'Communication',
+        message: tenantConfig.hasActiveChannel ? 'Canales activos (Telegram/WA)' : 'Sin canales conectados'
+      },
+      payments: {
+        state: tenantConfig.hasPaymentSetup ? 'HEALTHY' : 'WARNING',
+        label: 'Payments',
+        message: tenantConfig.hasPaymentSetup ? 'SPEI / Crypto Activo' : 'Configurar SPEI Banregio'
+      },
+      crm: {
+        state: 'HEALTHY',
+        label: 'CRM Memory',
+        message: 'Grafo de intenciones activo'
+      }
+    };
+  }
+}
+

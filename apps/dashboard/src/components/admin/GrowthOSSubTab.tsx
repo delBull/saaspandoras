@@ -505,7 +505,7 @@ export default function GrowthOSSubTab() {
   const [isTogglingCourse, setIsTogglingCourse] = useState<string | null>(null);
 
   // Section Navigation
-  const [activeSection, setActiveSection] = useState<'overview' | 'crm' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence' | 'developers'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'crm' | 'provisioning' | 'monetization' | 'content' | 'market-attack' | 'performance' | 'roadmap' | 'intelligence' | 'developers'>('overview');
 
   // States for testing live data
   const [isTestingData, setIsTestingData] = useState(false);
@@ -1147,6 +1147,73 @@ export default function GrowthOSSubTab() {
             </button>
           ))}
         </div>
+
+        {activeSection === 'provisioning' && (
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-800 pb-6">
+              <div>
+                <h3 className="text-2xl font-black text-white flex items-center gap-3">
+                  <Zap className="w-6 h-6 text-amber-400" />
+                  Platform Provisioning Console (1-Clic Tenant Setup)
+                </h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Aprovisionamiento automático de Organizaciones (Tenants), asignación de Capabilities e inyección de Identity Pack.
+                </p>
+              </div>
+              <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-3 py-1 font-mono">
+                ENGINE V1.0 READY
+              </Badge>
+            </div>
+
+            {/* Quick Provision Form */}
+            <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800/80 space-y-4">
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider text-amber-400/90">
+                Aprovisionar Nueva Organización
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input id="prov-slug" placeholder="Tenant Slug (ej: bmw-mexico)" className="bg-zinc-900 border-zinc-800 text-white text-xs" />
+                <Input id="prov-name" placeholder="Nombre Empresa (ej: BMW México)" className="bg-zinc-900 border-zinc-800 text-white text-xs" />
+                <Input id="prov-email" placeholder="Email Contacto (ej: admin@bmw.mx)" className="bg-zinc-900 border-zinc-800 text-white text-xs" />
+              </div>
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-[11px] text-zinc-500 font-mono">
+                  Stack: Professional (AI Agents, CRM, WhatsApp, Voice AI, RAG)
+                </span>
+                <UIButton
+                  size="sm"
+                  className="bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-widest px-6"
+                  onClick={async () => {
+                    const slug = (document.getElementById('prov-slug') as HTMLInputElement)?.value;
+                    const name = (document.getElementById('prov-name') as HTMLInputElement)?.value;
+                    const email = (document.getElementById('prov-email') as HTMLInputElement)?.value;
+                    if (!slug || !name || !email) { toast.error("Completa slug, nombre y email"); return; }
+                    
+                    toast.loading("Aprovisionando Tenant...", { id: 'prov-toast' });
+                    try {
+                      const res = await fetch('/api/v1/admin/provision', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tenantSlug: slug, companyName: name, contactEmail: email, tier: 'PROFESSIONAL' })
+                      });
+                      const data = await res.json();
+                      toast.dismiss('prov-toast');
+                      if (data.success) {
+                        toast.success(`Tenant ${slug} aprovisionado con éxito! Key: ${data.apiKey.slice(0, 10)}...`);
+                      } else {
+                        toast.error(data.error || "Fallo el aprovisionamiento");
+                      }
+                    } catch (e) {
+                      toast.dismiss('prov-toast');
+                      toast.error("Error de conexión");
+                    }
+                  }}
+                >
+                  Aprovisionar Tenant (1-Clic)
+                </UIButton>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeSection === 'market-attack' && (
           <MarketAttackEngine 

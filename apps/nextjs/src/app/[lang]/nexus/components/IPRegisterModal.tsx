@@ -88,6 +88,30 @@ const INITIAL_ASSETS: IPAsset[] = [
     notes: 'Propiedad inalienable del Holding. Ninguna filial ni inversionista operativo puede reclamar titularidad.',
     riskAssessment: 'LOW',
     findingsCount: 0
+  },
+  {
+    id: 'PAND-CONST-v3',
+    name: 'Pandora\'s Product Constitution (10 Principios)',
+    category: 'Marco Doctrinario & Gobernanza de Producto',
+    classes: 'Libro 0 — Documento Supremo',
+    status: 'ACTIVE',
+    authority: 'Pandoras Holdings / Consejo',
+    owner: 'Pandoras IP Holding / MXHUB',
+    notes: 'Los 10 Principios Invariables de Producto y Congelamiento de Arquitectura v3.0 (Architecture Freeze v3.0). Regula el desarrollo de software y capacidades.',
+    riskAssessment: 'LOW',
+    findingsCount: 0
+  },
+  {
+    id: 'PAND-HERMES-RUNTIME',
+    name: 'Hermes Runtime & Multi-Tenant Agent OS',
+    category: 'Trade Secret & Architecture Standard',
+    classes: 'Clase 9 (Software) + Clase 42 (SaaS/AI)',
+    status: 'ACTIVE',
+    authority: 'Pandoras IP Holding',
+    owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
+    notes: 'Motor de Ejecución de Inteligencia Autónoma multi-tenant sobre el cual corren los Agent Packs, Capabilities y adaptadores omnicanal.',
+    riskAssessment: 'LOW',
+    findingsCount: 0
   }
 ];
 

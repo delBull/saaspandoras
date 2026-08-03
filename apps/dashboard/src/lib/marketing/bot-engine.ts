@@ -97,44 +97,39 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     // Project-specific variable resolution for granular analytics and metering
     // NOTE: isOllamaEnabled must ONLY be true when a real API key is explicitly configured.
     // rawBaseUrl has a default fallback so we cannot use it to determine if Ollama is intended.
-    const apiKey = (isSnarai && process.env.OLLAMA_SNARAI_API_KEY) || process.env.OLLAMA_SNARAI_API_KEY || process.env.OLLAMA_API_KEY || '';
-    const rawBaseUrl = (isSnarai && process.env.OLLAMA_SNARAI_BASE_URL) || process.env.OLLAMA_SNARAI_BASE_URL || process.env.OLLAMA_BASE_URL || '';
-    const aiModel = (isSnarai && process.env.OLLAMA_SNARAI_MODEL) || process.env.OLLAMA_SNARAI_MODEL || process.env.OLLAMA_MODEL || 'llama3.1:8b';
+    // Resolve Ollama Endpoint (Default to Ollama Base URL or Cloud Provider)
+    const rawBaseUrl = (isSnarai && process.env.OLLAMA_SNARAI_BASE_URL) 
+      || process.env.OLLAMA_SNARAI_BASE_URL 
+      || process.env.OLLAMA_BASE_URL 
+      || process.env.OLLAMA_HOST 
+      || 'http://127.0.0.1:11434';
+      
+    const apiKey = (isSnarai && process.env.OLLAMA_SNARAI_API_KEY) 
+      || process.env.OLLAMA_SNARAI_API_KEY 
+      || process.env.OLLAMA_API_KEY 
+      || 'ollama-key';
+      
+    const aiModel = (isSnarai && process.env.OLLAMA_SNARAI_MODEL) 
+      || process.env.OLLAMA_SNARAI_MODEL 
+      || process.env.OLLAMA_MODEL 
+      || 'llama3.1:8b';
 
-    // Only use Ollama/custom LLM path when BOTH a key AND a base URL are explicitly set
-    const isOllamaEnabled = !!apiKey && !!rawBaseUrl;
-    let botResponseText = "";
+    const baseUrl = rawBaseUrl.endsWith('/v1') ? rawBaseUrl : `${rawBaseUrl.replace(/\/$/, '')}/v1`;
 
-    if (isOllamaEnabled) {
-      const baseUrl = rawBaseUrl.endsWith('/v1') ? rawBaseUrl : `${rawBaseUrl.replace(/\/$/, '')}/v1`;
+    // 100% Ollama Execution Engine (No OpenAI Dependency)
+    const aiClient = new OpenAI({
+      baseURL: baseUrl,
+      apiKey: apiKey,
+    });
 
-      // Modern Ollama / Cloud provider OpenAI compatibility endpoint
-      const aiClient = new OpenAI({
-        baseURL: baseUrl,
-        apiKey: apiKey || 'ollama-key',
-      });
+    const response = await aiClient.chat.completions.create({
+      model: aiModel,
+      messages: messages,
+      temperature: 0.3,
+      max_tokens: 350,
+    });
 
-      const response = await aiClient.chat.completions.create({
-        model: aiModel,
-        messages: messages,
-        temperature: 0.3,
-        max_tokens: 350,
-      });
-
-      botResponseText = response.choices[0]?.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
-    } else {
-      const aiClient = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "missing-key",
-      });
-
-      const response = await aiClient.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: messages,
-        temperature: 0.3,
-        max_tokens: 300,
-      });
-      botResponseText = response.choices[0]?.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
-    }
+    const botResponseText = response.choices[0]?.message?.content || "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
 
     // Save updated conversational memory back to Redis
     if (redis && redisKey) {
