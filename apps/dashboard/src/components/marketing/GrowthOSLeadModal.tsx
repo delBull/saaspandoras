@@ -19,6 +19,7 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthO
   const [step, setStep] = useState<"form" | "success">("form");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [responseData, setResponseData] = useState<any>(null);
 
   // Dynamic slot counter — fetches real lead count, refetches after submission
   const { data: slotsData, mutate: refetchSlots } = useSWR<{ remaining: number }>(
@@ -77,11 +78,12 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthO
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "Error al procesar tu solicitud.");
       }
 
+      setResponseData(data);
       setStep("success");
       void refetchSlots();
     } catch (err: any) {
@@ -256,14 +258,41 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthO
                     ¡Solicitud Recibida!
                   </h3>
                   <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-                    Tu lugar ha sido reservado. Nuestro equipo revisará la información de tu organización y te contactará directamente para coordinar la demostración y habilitación de tu entorno.
+                    Tu lugar ha sido reservado. Puedes proceder con la reserva directa o probar el Sandbox guiado de evaluación por 15 minutos:
                   </p>
+
+                  <div className="space-y-3 mb-6">
+                    {responseData?.automaticCheckoutUrl && (
+                      <a
+                        href={responseData.automaticCheckoutUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                      >
+                        ⚡ Reserva Directa Digital ($500 USD)
+                      </a>
+                    )}
+
+                    {responseData?.sandboxTrial?.url && (
+                      <div className="space-y-2">
+                        <a
+                          href={responseData.sandboxTrial.url}
+                          className="w-full py-3.5 bg-gradient-to-r from-purple-600/30 to-amber-600/30 hover:from-purple-600/40 hover:to-amber-600/40 border border-amber-500/30 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/10"
+                        >
+                          🧪 Iniciar Sandbox de Evaluación (Acceso Inmediato)
+                        </a>
+                        <p className="text-[10px] text-amber-400/90 font-mono font-medium flex items-center justify-center gap-1 bg-amber-500/10 py-1.5 px-3 rounded-lg border border-amber-500/20">
+                          ⏱️ PRUEBA LIMITADA: Tu sesión expira estrictamente en 15 minutos (Máx. 10 consultas). ¡Aprovecha tu tiempo!
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
                   <button
                     onClick={handleClose}
-                    className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all"
+                    className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white font-medium text-xs rounded-xl transition-all"
                   >
-                    Entendido
+                    Cerrar
                   </button>
                 </motion.div>
               )}

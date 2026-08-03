@@ -610,13 +610,31 @@ export async function POST(req: NextRequest) {
       /* Non-critical — never block lead registration */ 
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      id: result.id, 
-      identityId,
-      alreadyRegistered,
-      message: alreadyRegistered ? 'Already on the list' : 'Lead captured successfully'
-    });
+      // 🎟️ VÍA B: AUTOMATIC RESERVA & SANDBOX TRIAL TOKEN GENERATION
+      const isB2BLead = scope === 'b2b' || metadata?.moduleInterest || metadata?.company;
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance');
+      
+      // Auto-generated $500 USD Deposit Checkout Link (Vía B Direct Digital Closing)
+      const automaticCheckoutUrl = `${baseUrl}/pay/deposit-500?leadId=${result.id}&email=${encodeURIComponent(result.email || '')}`;
+      
+      // Rate-Limited Sandbox Trial Session Token (Valid for 15 minutes, 10 agent queries max)
+      const trialSessionToken = `sandbox_trial_${result.id}_${Date.now()}`;
+      const sandboxTrialUrl = `${baseUrl}/growth-os/sandbox?token=${trialSessionToken}&expires=${Date.now() + 15 * 60 * 1000}`;
+
+      return NextResponse.json({ 
+        success: true, 
+        id: result.id, 
+        identityId,
+        alreadyRegistered,
+        automaticCheckoutUrl: isB2BLead ? automaticCheckoutUrl : undefined,
+        sandboxTrial: isB2BLead ? {
+          url: sandboxTrialUrl,
+          expiresInMinutes: 15,
+          maxQueriesAllowed: 10,
+          token: trialSessionToken
+        } : undefined,
+        message: alreadyRegistered ? 'Already on the list' : 'Lead captured successfully'
+      });
 
   } catch (error) {
     console.error('❌ Marketing Lead Registration Error:', error);

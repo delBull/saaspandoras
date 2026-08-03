@@ -24,7 +24,7 @@ export class HermesCommerceEngine {
     tokenPriceUsd: number;
     amountTokens?: number;
     paymentMethod: 'WEB3_USDC' | 'SPEI_FASTLANE';
-  }): CommerceCheckoutSession {
+  }): CommerceCheckoutSession & { speiDetails?: Record<string, string> } {
     const { leadId, projectSlug, tokenPriceUsd, amountTokens = 1, paymentMethod } = params;
     const sessionId = `CHK-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
     const totalUsd = tokenPriceUsd * amountTokens;
@@ -32,9 +32,18 @@ export class HermesCommerceEngine {
 
     const baseUrl = projectSlug === 'snarai' 
       ? 'https://snarai.pandoras.finance/portal' 
-      : 'https://pandoras.finance/pay';
+      : 'https://dash.pandoras.finance/pay';
 
     const checkoutUrl = `${baseUrl}?action=${action}&session=${sessionId}&tokens=${amountTokens}&amount=${totalUsd}`;
+
+    // Dynamic Organization Billing Profile resolution (Multi-tenant SPEI Rails)
+    const speiDetails = paymentMethod === 'SPEI_FASTLANE' ? {
+      beneficiary: process.env.SPEI_BENEFICIARY || process.env.NEXT_PUBLIC_SPEI_BENEFICIARY || "Beneficiario Institucional",
+      commercialName: process.env.SPEI_COMMERCIAL_NAME || "Pandora's Platform",
+      bankName: process.env.SPEI_BANK_NAME || "Banregio",
+      clabe: process.env.SPEI_BANK_CLABE || "",
+      concept: `RESERVA-${sessionId}`,
+    } : undefined;
 
     return {
       sessionId,
@@ -45,6 +54,7 @@ export class HermesCommerceEngine {
       totalUsd,
       paymentMethod,
       checkoutUrl,
+      speiDetails,
       expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24h expiration
       status: 'PENDING'
     };

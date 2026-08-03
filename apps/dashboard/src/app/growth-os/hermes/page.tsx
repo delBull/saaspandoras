@@ -310,7 +310,7 @@ export default function HermesEnterpriseLandingPage() {
             onClick={() => handleOpenCTA('hermes_nav_cta')}
             className="bg-amber-500 hover:bg-amber-400 text-black text-xs font-medium px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-500/10"
           >
-            Solicitar Acceso Enterprise
+            Solicitar Enterprise Assessment
           </Button>
         </div>
       </header>
@@ -346,7 +346,7 @@ export default function HermesEnterpriseLandingPage() {
             size="lg"
             className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-black font-medium text-sm px-8 py-4 rounded-2xl shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
           >
-            <span>Activar Tu Ecosistema de Agentes</span>
+            <span>Solicitar Enterprise Assessment (30 min)</span>
             <ChevronRight className="w-4 h-4" />
           </Button>
 
