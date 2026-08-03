@@ -107,54 +107,92 @@ const colorMap: Record<string, ColorConfig> = {
 
 function HermesPlayground({ onCTA }: { onCTA: () => void }) {
   const [selectedId, setSelectedId] = useState('real_estate');
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
+  const [customCompany, setCustomCompany] = useState('');
+  const [messages, setMessages] = useState<{ role: 'user' | 'agent'; text: string }[]>([]);
+  const [inputMsg, setInputMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [remainingMsg, setRemainingMsg] = useState<number | null>(10);
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
   const industry = INDUSTRIES.find(i => i.id === selectedId) ?? INDUSTRIES[0]!;
   const c: ColorConfig = colorMap[industry.color] ?? colorMap['amber']!;
 
+  // Reset conversation when industry changes
   useEffect(() => {
-    setVisibleCount(0);
-    setIsTyping(false);
-    let count = 0;
-    const run = () => {
-      if (count >= industry.conversation.length) { setIsTyping(false); return; }
-      const msg = industry.conversation[count];
-      if (!msg) { setIsTyping(false); return; }
-      if (msg.role === 'agent') { setIsTyping(true); }
-      setTimeout(() => {
-        setIsTyping(false);
-        setVisibleCount(v => v + 1);
-        count++;
-        setTimeout(run, msg.role === 'agent' ? 1200 : 600);
-      }, msg.role === 'agent' ? 1400 : 400);
-    };
-    const t = setTimeout(run, 400);
-    return () => clearTimeout(t);
+    setMessages(industry.conversation.map(m => ({ role: m.role as 'user' | 'agent', text: m.text })));
+    setRateLimitError(null);
   }, [selectedId]);
 
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [visibleCount, isTyping]);
+  }, [messages, isLoading]);
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!inputMsg.trim() || isLoading) return;
+
+    const userText = inputMsg.trim();
+    setInputMsg('');
+    setRateLimitError(null);
+
+    // Add user message to history
+    const updatedHistory = [...messages, { role: 'user' as const, text: userText }];
+    setMessages(updatedHistory);
+    setIsLoading(true);
+
+    try {
+      const companyName = customCompany.trim() || (selectedId === 'real_estate' ? "S'Narai Real Estate" : selectedId === 'auto' ? "BMW México" : selectedId === 'legal' ? "Legal Concierge" : "Centro Médico");
+      
+      const res = await fetch('/api/v1/hermes/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName,
+          industry: industry.label,
+          userMessage: userText,
+          history: updatedHistory.slice(-6).map(m => ({ role: m.role === 'agent' ? 'assistant' : 'user', content: m.text }))
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          setRateLimitError(data.message || 'Has alcanzado el límite diario de prueba en Sandbox (10 mensajes).');
+          setRemainingMsg(0);
+        } else {
+          setMessages(prev => [...prev, { role: 'agent', text: `⚠️ Error de conexión en Sandbox: ${data.details || data.error || 'Error de servidor'}` }]);
+        }
+      } else {
+        if (data.remaining !== undefined) setRemainingMsg(data.remaining);
+        setMessages(prev => [...prev, { role: 'agent', text: data.response }]);
+      }
+    } catch (err) {
+      console.error('[Sandbox Client Error]', err);
+      setMessages(prev => [...prev, { role: 'agent', text: '⚠️ Error de red al comunicarse con Hermes Sandbox.' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-12">
         <span className={`inline-flex items-center gap-2 text-xs font-mono px-4 py-1.5 rounded-full border mb-4 ${c.badge}`}>
           <Sparkles className="w-3.5 h-3.5" />
-          Demo Playground — Hermes en Vivo
+          Interactive Sandbox — Prueba a Hermes en Vivo
         </span>
         <h2 className="text-3xl md:text-4xl font-light text-white mb-4">
-          Mira cómo Hermes opera en <span className={`font-normal ${c.text}`}>tu industria</span>
+          Interactúa con Hermes en <span className={`font-normal ${c.text}`}>tu empresa e industria</span>
         </h2>
         <p className="text-sm text-zinc-400 max-w-2xl mx-auto font-light">
-          Selecciona una industria y observa cómo Hermes adapta su conocimiento, tono y capacidades a cada contexto. Sin tocar código.
+          Escribe un mensaje real en la ventana de chat y comprueba cómo Hermes razona, califica y responde en tiempo real con Inteligencia Autónoma.
         </p>
       </div>
 
-      {/* Industry Selector */}
-      <div className="flex flex-wrap justify-center gap-3 mb-10">
+      {/* Industry & Custom Company Controls */}
+      <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
         {INDUSTRIES.map(ind => {
           const ic: ColorConfig = colorMap[ind.color] ?? colorMap['amber']!;
           const active = ind.id === selectedId;
@@ -162,12 +200,27 @@ function HermesPlayground({ onCTA }: { onCTA: () => void }) {
             <button
               key={ind.id}
               onClick={() => setSelectedId(ind.id)}
-              className={`px-5 py-2.5 rounded-2xl text-sm font-medium transition-all border ${active ? `${ic.btn} border-transparent shadow-lg` : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+              className={`px-4 py-2 rounded-2xl text-xs font-medium transition-all border ${active ? `${ic.btn} border-transparent shadow-lg` : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
             >
               {ind.label}
             </button>
           );
         })}
+      </div>
+
+      {/* Company Name Customizer Bar */}
+      <div className="max-w-xl mx-auto mb-8 flex items-center gap-3 bg-zinc-900/80 border border-zinc-800 p-2 rounded-2xl">
+        <Building2 className="w-4 h-4 text-zinc-400 ml-2 flex-shrink-0" />
+        <input
+          type="text"
+          placeholder="Personalizar Nombre de Tu Empresa (ej. Inmobiliaria Aztecas)"
+          value={customCompany}
+          onChange={(e) => setCustomCompany(e.target.value)}
+          className="bg-transparent text-xs text-white placeholder-zinc-500 border-none outline-none flex-grow"
+        />
+        <span className="text-[10px] text-zinc-500 font-mono px-2 py-1 bg-zinc-800 rounded">
+          Sandbox Mode
+        </span>
       </div>
 
       <AnimatePresence mode="wait">
@@ -180,31 +233,31 @@ function HermesPlayground({ onCTA }: { onCTA: () => void }) {
           className={`border rounded-3xl overflow-hidden ${c.border} ${c.bg}`}
         >
           {/* Agent Header */}
-          <div className={`flex items-center justify-between px-6 py-4 border-b ${c.border} bg-black/30`}>
+          <div className={`flex items-center justify-between px-6 py-4 border-b ${c.border} bg-black/40`}>
             <div className="flex items-center gap-3">
               <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${industry.color === 'amber' ? 'bg-amber-400' : industry.color === 'blue' ? 'bg-blue-400' : industry.color === 'purple' ? 'bg-purple-400' : 'bg-emerald-400'}`} />
-              <span className="text-sm font-medium text-white">{industry.agentName}</span>
+              <span className="text-sm font-medium text-white">{customCompany.trim() ? `Hermes (${customCompany.trim()})` : industry.agentName}</span>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${c.badge}`}>pack:{industry.pack}</span>
             </div>
             <div className="flex items-center gap-2">
-              {industry.channels.map(ch => (
-                <span key={ch} className="text-[10px] font-mono text-zinc-500 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">{ch}</span>
-              ))}
+              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
+                Límite Sandbox: {remainingMsg !== null ? `${remainingMsg}/10` : '10/10'}
+              </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3">
-            {/* Chat Simulation */}
-            <div className="lg:col-span-2 p-6">
-              <div ref={chatRef} className="space-y-4 h-64 overflow-y-auto pr-2 scrollbar-hide">
-                {industry.conversation.slice(0, visibleCount).map((msg, i) => (
+            {/* Interactive Live Chat */}
+            <div className="lg:col-span-2 p-6 flex flex-col justify-between h-[420px]">
+              <div ref={chatRef} className="space-y-4 overflow-y-auto pr-2 flex-grow scrollbar-hide">
+                {messages.map((msg, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                    <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs leading-relaxed ${
                       msg.role === 'user'
                         ? 'bg-zinc-800 text-zinc-200 rounded-br-sm'
                         : `border ${c.bubble} rounded-bl-sm`
@@ -213,12 +266,8 @@ function HermesPlayground({ onCTA }: { onCTA: () => void }) {
                     </div>
                   </motion.div>
                 ))}
-                {isTyping && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex justify-start"
-                  >
+                {isLoading && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                     <div className={`px-4 py-3 rounded-2xl border ${c.bubble} rounded-bl-sm`}>
                       <span className="flex gap-1 items-center h-4">
                         <span className={`w-1.5 h-1.5 rounded-full animate-bounce ${c.text}`} style={{ animationDelay: '0ms' }} />
@@ -228,40 +277,55 @@ function HermesPlayground({ onCTA }: { onCTA: () => void }) {
                     </div>
                   </motion.div>
                 )}
+                {rateLimitError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-mono">
+                    ⚠️ {rateLimitError}
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Input Bar */}
+              <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Escribe un mensaje de prueba para Hermes..."
+                  value={inputMsg}
+                  onChange={(e) => setInputMsg(e.target.value)}
+                  disabled={isLoading || (remainingMsg !== null && remainingMsg <= 0)}
+                  className="flex-grow bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !inputMsg.trim() || (remainingMsg !== null && remainingMsg <= 0)}
+                  className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${c.btn} disabled:opacity-50 flex items-center gap-1`}
+                >
+                  Enviar
+                </button>
+              </form>
+            </div>
+
+            {/* Capabilities Panel */}
+            <div className={`border-t lg:border-t-0 lg:border-l ${c.border} p-6 bg-black/20 flex flex-col justify-between`}>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-4">Capabilities Activas en Sandbox</p>
+                <div className="space-y-2 mb-6">
+                  {['AI Autonomous Agents', 'CRM & Memory Engine', 'RAG Knowledge Pack', 'Omnichannel Dispatcher', 'SPEI / Web3 Commerce', 'Rate Limiter Guard'].map(cap => (
+                    <div key={cap} className="flex items-center gap-2 text-xs text-white">
+                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] flex-shrink-0 ${c.badge}`}>
+                        ✔
+                      </span>
+                      <span className="text-zinc-300 font-light">{cap}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <button
                 onClick={onCTA}
-                className={`mt-6 w-full py-3 rounded-2xl text-sm font-medium transition-all ${c.btn} shadow-lg`}
+                className={`w-full py-3 rounded-2xl text-xs font-medium transition-all ${c.btn} shadow-lg mt-4`}
               >
-                Solicitar Acceso — Instalar en Mi Organización
+                Instalar Hermes en Mi Empresa
               </button>
-            </div>
-
-            {/* Capabilities Panel */}
-            <div className={`border-t lg:border-t-0 lg:border-l ${c.border} p-6 bg-black/20`}>
-              <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-4">Capabilities Activas</p>
-              <div className="space-y-2 mb-6">
-                {['AI Agents', 'Memory Engine / CRM', 'Voice AI', 'WhatsApp', 'Telegram', 'Analytics', 'Knowledge Engine', 'Commerce / Pagos', 'Marketplace', 'Treasury / Web3', 'Governance'].map(cap => {
-                  const active = industry.capabilities.some(c => cap.includes(c) || c.includes((cap.split('/')[0] ?? '').trim()));
-                  return (
-                    <div key={cap} className={`flex items-center gap-2 text-xs ${active ? 'text-white' : 'text-zinc-700'}`}>
-                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] flex-shrink-0 ${active ? `${c.badge}` : 'border-zinc-800 bg-transparent text-zinc-700'}`}>
-                        {active ? '✔' : '✖'}
-                      </span>
-                      {cap}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="border-t border-zinc-800/60 pt-4">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Canales Activos</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {industry.channels.map(ch => (
-                    <span key={ch} className={`text-[10px] font-mono px-2 py-0.5 rounded border ${c.badge}`}>{ch}</span>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -269,6 +333,8 @@ function HermesPlayground({ onCTA }: { onCTA: () => void }) {
     </div>
   );
 }
+
+// ─────────────────── HERMES CORE FEATURES & VALUE MATRIX ───────────────────
 
 export default function HermesEnterpriseLandingPage() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);

@@ -107,6 +107,11 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
        // Force priority of ENV variables for S'Narai in case the DB has stale/incorrect data
        botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN || botToken;
        botInstructions = botInstructions || `Eres el Gestor Patrimonial e Inmobiliario Oficial de S'Narai, un desarrollo boutique de lujo en la Zona Dorada de Bucerías (Riviera Nayarit, México) operado por Aztecas Hub S.A.P.I. de C.V. Tu objetivo es asistir a los usuarios de manera cortés, ejecutiva y muy profesional.`;
+    } else {
+       // Multi-Tenant KnowledgePack Resolution for External Projects
+       const { KnowledgePackLoader } = await import('@/lib/hermes/knowledge-pack');
+       const pack = KnowledgePackLoader.getPack(projectId, (projectRecord as any).tenantRuntimeConfig || metadata);
+       botInstructions = botInstructions || pack.systemInstructions;
     }
 
     if (!botToken) {

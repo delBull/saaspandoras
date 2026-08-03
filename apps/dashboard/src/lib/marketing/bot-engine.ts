@@ -5,20 +5,23 @@ import Redis from 'ioredis';
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
 
 export async function generateBotResponse(context: {
-  projectName: string;
+  projectName?: string;
   userMessage: string;
-  projectContext: any;
+  projectContext?: any;
   botInstructions?: string;
   chatId?: string;
+  history?: { role: 'user' | 'assistant'; content: string }[];
+  projectSlug?: string;
+  customSystemPrompt?: string;
 }) {
-  const { projectName, userMessage, projectContext, botInstructions, chatId } = context;
+  const { projectName = 'S\'Narai', userMessage, projectContext, botInstructions, chatId, customSystemPrompt } = context;
 
   // Hermes Core Intelligence Engine Integration (Phase 1)
   const { KnowledgePackLoader } = await import('@/lib/hermes/knowledge-pack');
   const { HermesDecisionEngine } = await import('@/lib/hermes/decision-engine');
   
-  const projectSlug = projectContext?.slug || projectName || 'snarai';
-  const pack = KnowledgePackLoader.getPack(projectSlug);
+  const projectSlug = context.projectSlug || projectContext?.slug || projectName || 'snarai';
+  const pack = KnowledgePackLoader.getPack(projectSlug, projectContext);
   
   const customerMemory = {
     leadId: chatId || 'guest-session',
@@ -38,8 +41,8 @@ export async function generateBotResponse(context: {
 
   console.info(`[Hermes Engine] Mission Goal: ${mission.goal}, Target State: ${mission.targetState}`);
 
-  // Build the strict system prompt with Sales Pitch & Objection Handling Matrix
-  const systemPrompt = `Eres "HERMES PATRIMONIAL", el Gestor Patrimonial IA Autónomo y Conserje Oficial para el proyecto "${projectName}".
+  // Build the system prompt. If a customSystemPrompt is passed (e.g. from Sandbox or dynamic tenant), use it.
+  const systemPrompt = customSystemPrompt || `Eres "HERMES PATRIMONIAL", el Gestor Patrimonial IA Autónomo y Conserje Oficial para el proyecto "${projectName}".
 Tu objetivo es asesorar, calificar prospectos, resolver dudas legales/técnicas y guiar a los clientes hacia el cierre de su inversión de manera cortes, profesional y ejecutiva.
 
 ACCIONES RECOMENDADAS POR HERMES DECISION ENGINE:
@@ -62,17 +65,16 @@ ${pack.salesPitch}
 REGLAS ESTRICTAS DE SEGURIDAD (ANTI-ABUSO):
 1. NUNCA des consejos de inversión ni prometas retornos exactos. Si te preguntan por rendimientos, da estimaciones y redirige al Aviso de Riesgos.
 2. Si el usuario te pregunta cosas fuera del contexto del proyecto ${projectName}, discúlpate cortésmente y diles que solo puedes hablar sobre ${projectName}.
-3. Responde de forma MUY concisa y al grano (es un chat de Telegram). Usa emojis con moderación.
-4. Medios de Pago: USDC/USDT vía Web3 en dApp o SPEI Fast Lane en Pesos MXN.
+3. Responde de forma MUY concisa y al grano. Usa emojis con moderación.
 
 INSTRUCCIONES ADICIONALES DEL PROYECTO:
 ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para adquirir posiciones."}`;
 
-  let history: { role: 'user' | 'assistant', content: string }[] = [];
+  let history: { role: 'user' | 'assistant', content: string }[] = context.history || [];
   const redisKey = chatId ? `telegram_bot_context:${projectName}:${chatId}` : null;
 
-  // Fetch conversational memory from Redis
-  if (redis && redisKey) {
+  // Fetch conversational memory from Redis if not manually passed
+  if (!context.history && redis && redisKey) {
     try {
       const storedContext = await redis.get(redisKey);
       if (storedContext) {
@@ -124,7 +126,7 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     const aiModel = dbConfig?.providers?.llm?.model 
       || (isSnarai ? process.env.OLLAMA_SNARAI_MODEL : null)
       || process.env.OLLAMA_MODEL 
-      || 'qwen2.5:latest';
+      || 'gpt-oss:20b';
 
     let botResponseText = "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
 

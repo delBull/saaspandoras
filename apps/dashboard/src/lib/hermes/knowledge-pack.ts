@@ -61,8 +61,69 @@ export class KnowledgePackLoader {
     ['snarai', SNARAI_KNOWLEDGE_PACK]
   ]);
 
-  static getPack(projectSlug: string): KnowledgePack {
+  static getPack(projectSlug: string, customConfig?: any): KnowledgePack {
     const slug = projectSlug.toLowerCase();
-    return this.packs.get(slug) || SNARAI_KNOWLEDGE_PACK;
+    
+    // Always return S'Narai pack for snarai
+    if (slug === 'snarai') {
+      return SNARAI_KNOWLEDGE_PACK;
+    }
+
+    if (this.packs.has(slug)) {
+      return this.packs.get(slug)!;
+    }
+
+    // Check if custom KnowledgePack was provided in tenantRuntimeConfig
+    if (customConfig?.knowledgePack) {
+      const customPack: KnowledgePack = {
+        id: customConfig.knowledgePack.id || `${slug}_pack_v1`,
+        name: customConfig.knowledgePack.name || `${slug} Knowledge Pack`,
+        version: customConfig.knowledgePack.version || '1.0.0',
+        industry: customConfig.knowledgePack.industry || 'general',
+        systemInstructions: customConfig.knowledgePack.systemInstructions || `Eres Hermes, el Agente IA de ${slug}.`,
+        publicKnowledge: customConfig.knowledgePack.publicKnowledge || {
+          title: slug,
+          summary: `Agente IA para ${slug}`,
+          pricingDetails: {},
+          faqs: customConfig.knowledgePack.faqs || []
+        },
+        objectionRules: customConfig.knowledgePack.objectionRules || [],
+        salesPitch: customConfig.knowledgePack.salesPitch || `Bienvenido a ${slug}. ¿En qué te puedo asesorar hoy?`
+      };
+      return customPack;
+    }
+
+    // Construct domain dynamic Knowledge Pack based on industry
+    const industry = (customConfig?.industry || 'generic').toLowerCase();
+    const title = customConfig?.title || slug;
+
+    return {
+      id: `${slug}_dynamic_pack`,
+      name: `${title} Dynamic Pack`,
+      version: '1.0.0',
+      industry: industry,
+      systemInstructions: `Eres Hermes, el Agente Autónomo de Inteligencia Corporativa para "${title}". Tu misión es calificar prospectos, resolver dudas y guiar hacia el cierre.`,
+      publicKnowledge: {
+        title: title,
+        summary: `Servicios y atención de ${title} operado bajo Pandoras Growth OS.`,
+        pricingDetails: {},
+        faqs: [
+          {
+            question: `¿Qué servicios ofrece ${title}?`,
+            answer: `${title} ofrece soluciones especializadas en su sector con atención inmediata.`
+          }
+        ]
+      },
+      objectionRules: [
+        {
+          triggerPattern: "precio|costo|cotiz|valor",
+          objectionCategory: "pricing",
+          recommendedResponse: `Nuestros precios y planes están diseñados a la medida de tus requerimientos. ¿Te gustaría agendar una llamada breve con un especialista de ${title}?`,
+          suggestedDocument: "COTIZACION_OFICIAL"
+        }
+      ],
+      salesPitch: `En ${title} ofrecemos soluciones de alto valor adaptadas a tus necesidades. Te acompañamos en todo el proceso de contratación o compra.`
+    };
   }
 }
+
