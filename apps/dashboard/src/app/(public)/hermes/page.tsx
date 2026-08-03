@@ -91,6 +91,12 @@ export default function HermesPublicSandbox() {
   const [started, setStarted] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const updateCompanyName = (name: string) => {
+    setCompanyName(name);
+    const cleanName = name.trim() || 'tu empresa';
+    setMessages([{ role: 'agent', text: `Hola, soy ${industry.agentName} de ${cleanName}. ¿En qué puedo ayudarte hoy?` }]);
+  };
+
   const switchIndustry = (ind: Industry) => {
     setIndustry(ind);
     const name = companyName.trim() || 'tu empresa';
@@ -183,8 +189,8 @@ export default function HermesPublicSandbox() {
               </label>
               <input
                 value={companyName}
-                onChange={e => setCompanyName(e.target.value)}
-                placeholder="Ej: BMW México, Clínica Sana..."
+                onChange={e => updateCompanyName(e.target.value)}
+                placeholder="Ej: BMW México, Rabbitty, Clínica Sana..."
                 style={{
                   width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 12px',
@@ -317,17 +323,33 @@ export default function HermesPublicSandbox() {
               </div>
             </div>
 
+            {/* Permanent Pro / Custom Integration Banner */}
+            <div style={{ marginTop: 16, padding: '18px 22px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 3 }}>
+                  🚀 Desbloquea Hermes OS en Producción
+                </div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
+                  Planes desde $299 USD/mes. Incluye conectores Telegram/WhatsApp, base de conocimiento propia e integración con S'Narai.
+                </div>
+              </div>
+              <a href="mailto:hello@pandoras.finance?subject=Solicitud%20Plan%20Pro%20Hermes%20OS"
+                style={{ padding: '9px 18px', borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                Activar Plan Pro →
+              </a>
+            </div>
+
             {/* CTA when blocked */}
             {blocked && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 style={{ marginTop: 16, padding: '20px 24px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 12 }}>
                 <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>¿Listo para activar Hermes en {companyName.trim() || 'tu empresa'}?</div>
                 <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 14 }}>
-                  Agenda un assessment con nuestro equipo y activamos Hermes en producción en 48 hrs.
+                  Has consumido tus mensajes de prueba. Solicita la activación de tu instancia dedicada de Hermes OS en 48 hrs.
                 </div>
                 <a href="mailto:hello@pandoras.finance?subject=Hermes%20Assessment%20Request"
                   style={{ display: 'inline-block', padding: '10px 22px', borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>
-                  Solicitar Assessment →
+                  Solicitar Instancia Dedicada →
                 </a>
               </motion.div>
             )}

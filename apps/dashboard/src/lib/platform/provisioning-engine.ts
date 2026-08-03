@@ -186,9 +186,12 @@ export const ProvisioningEngine = {
       .set({ portalToken, updatedAt: new Date() })
       .where(eq(installedProducts.id, installed.id));
 
-    // Update lead CRM stage to 'PROVISIONED'
+    // Update lead CRM stage to 'PROVISIONED' and set provisioned flag in metadata
+    const currentMeta = (lead.metadata as Record<string, any>) || {};
+    const updatedMeta = { ...currentMeta, provisioned: true, installedProductId: installed.id, provisionedAt: new Date().toISOString() };
+
     await db.update(marketingLeads)
-      .set({ crmStage: 'CLOSED_WON', updatedAt: new Date() } as any)
+      .set({ crmStage: 'CLOSED_WON', metadata: updatedMeta, updatedAt: new Date() } as any)
       .where(eq(marketingLeads.id, leadId));
 
     // ── Step 8: Send invitation email ────────────────────────────────────

@@ -316,13 +316,15 @@ export function ClientsManager() {
                             <TableBody>
                                 {filteredClients.map(client => {
                                     const isHermesClient = client.source?.includes('hermes') || (client.metadata as any)?.product === 'HERMES';
+                                    const isProvisioned = (client.metadata as any)?.provisioned === true || (client.metadata as any)?.installedProductId;
+
                                     return (
                                     <TableRow key={client.id} className="border-zinc-800 hover:bg-zinc-900/50">
-                                        <TableCell>
-                                            <div className="font-medium text-white">{client.name || "Sin Nombre"}</div>
-                                            <div className="text-xs text-zinc-500">{client.email}</div>
+                                        <TableCell className="py-2.5">
+                                            <div className="font-medium text-white text-xs">{client.name || "Sin Nombre"}</div>
+                                            <div className="text-[11px] text-zinc-500 truncate max-w-[160px]">{client.email}</div>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="py-2.5">
                                             {client.whatsapp ? (
                                                 <a
                                                     href={`https://wa.me/${client.whatsapp.replace(/[^0-9]/g, '')}`}
@@ -336,9 +338,9 @@ export function ClientsManager() {
                                                 <span className="text-zinc-600 text-xs">—</span>
                                             )}
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col gap-1">
-                                                <Badge variant="outline" className="text-xs bg-zinc-950 max-w-[140px] truncate">{client.source}</Badge>
+                                        <TableCell className="py-2.5">
+                                            <div className="flex flex-col gap-0.5">
+                                                <Badge variant="outline" className="text-[10px] bg-zinc-950 max-w-[120px] truncate">{client.source}</Badge>
                                                 {isHermesClient ? (
                                                     <span className="text-[10px] text-amber-400 font-mono">🤖 HERMES OS</span>
                                                 ) : (
@@ -346,40 +348,48 @@ export function ClientsManager() {
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-zinc-400 text-xs">
+                                        <TableCell className="text-zinc-400 text-xs py-2.5">
                                             {(client.metadata as any)?.protocol?.sow_history?.length > 0 ? (
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-zinc-300">{(client.metadata as any).protocol.sow_history.slice(-1)[0].tier}</span>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-zinc-300 text-xs">{(client.metadata as any).protocol.sow_history.slice(-1)[0].tier}</span>
                                                     <span className="text-[10px] opacity-50">{new Date((client.metadata as any).protocol.sow_history.slice(-1)[0].sent_at).toLocaleDateString()}</span>
                                                 </div>
-                                            ) : <span className="text-zinc-600">-</span>}
+                                            ) : <span className="text-zinc-600 text-xs">-</span>}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="py-2.5">
                                             <ProtocolStageBadge metadata={client.metadata} />
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2 items-center">
+                                        <TableCell className="text-right py-2.5">
+                                            <div className="flex justify-end gap-1.5 items-center">
                                                 {isHermesClient && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-7 text-xs border-amber-500/40 text-amber-300 hover:bg-amber-950/40 font-mono"
-                                                        onClick={async () => {
-                                                            if (!confirm(`¿Aprovisionar Hermes OS para ${client.email}?`)) return;
-                                                            try {
-                                                                const res = await fetch('/api/v1/admin/provision', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ leadId: client.id, product: 'HERMES', plan: 'starter' }),
-                                                                });
-                                                                const d = await res.json();
-                                                                if (d.success) alert(`🚀 Hermes aprovisionado! URL del Portal: ${d.portalUrl}`);
-                                                                else alert(`Error: ${d.error}`);
-                                                            } catch (e: any) { alert(e.message); }
-                                                        }}
-                                                    >
-                                                        🚀 Aprovisionar Hermes
-                                                    </Button>
+                                                    isProvisioned ? (
+                                                        <Badge variant="outline" className="h-6 text-[10px] border-green-500/40 text-green-400 bg-green-950/30 font-mono">
+                                                            ✅ Aprovisionado
+                                                        </Badge>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-6 px-2 text-[11px] border-amber-500/40 text-amber-300 hover:bg-amber-950/40 font-mono"
+                                                            onClick={async () => {
+                                                                if (!confirm(`¿Aprovisionar Hermes OS para ${client.email}?`)) return;
+                                                                try {
+                                                                    const res = await fetch('/api/v1/admin/provision', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ leadId: client.id, product: 'HERMES', plan: 'starter' }),
+                                                                    });
+                                                                    const d = await res.json();
+                                                                    if (d.success) {
+                                                                        alert(`🚀 Hermes aprovisionado! URL del Portal: ${d.portalUrl}`);
+                                                                        loadClients();
+                                                                    } else alert(`Error: ${d.error}`);
+                                                                } catch (e: any) { alert(e.message); }
+                                                            }}
+                                                        >
+                                                            🚀 Aprovisionar
+                                                        </Button>
+                                                    )
                                                 )}
                                                 <ProtocolActions
                                                     client={client}
