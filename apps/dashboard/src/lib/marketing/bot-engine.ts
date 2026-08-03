@@ -124,7 +124,7 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     const aiModel = dbConfig?.providers?.llm?.model 
       || (isSnarai ? process.env.OLLAMA_SNARAI_MODEL : null)
       || process.env.OLLAMA_MODEL 
-      || 'llama3.1:8b';
+      || 'llama3.1';
 
     let botResponseText = "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
 
