@@ -223,6 +223,7 @@ export const ProvisioningEngine = {
               { name: 'Producto', value: `${product} (${plan})`, inline: true },
               { name: 'Project ID', value: String(projectId), inline: true },
               { name: 'Portal URL', value: portalUrl, inline: false },
+              { name: '⚡ Admin Dashboard', value: '[👉 Ver en la pestaña Clientes del Admin](https://dash.pandoras.finance/admin/dashboard?tab=clients)', inline: false },
             ],
             timestamp: new Date().toISOString(),
             footer: { text: "Pandora's Provisioning Engine v3" },

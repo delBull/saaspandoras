@@ -57,19 +57,21 @@ const COLORS = {
  * Notify about a new Protocol Application Lead
  */
 export async function notifyNewLead(projectTitle: string, userEmail: string, score: number, packageType: string, summary: string) {
+    const adminClientsUrl = 'https://dash.pandoras.finance/admin/dashboard?tab=clients';
     const fields: DiscordField[] = [
         { name: 'Package', value: packageType, inline: true },
         { name: 'Score', value: score.toString(), inline: true },
         { name: 'Email', value: userEmail, inline: true },
-        { name: 'Summary', value: summary.substring(0, 1024) }
+        { name: 'Summary', value: summary.substring(0, 512) },
+        { name: '⚡ Acción Rápida Admin', value: `[👉 Ir a Clientes en Admin Dashboard para Aprovisionar](${adminClientsUrl})`, inline: false }
     ];
 
     const embed: DiscordEmbed = {
-        title: `🚀 New Protocol Application: ${projectTitle}`,
+        title: `🚀 Nuevo Lead Registrado: ${projectTitle}`,
         color: COLORS.SUCCESS,
         fields,
         timestamp: new Date().toISOString(),
-        footer: { text: 'Pandora\'s Lead System' }
+        footer: { text: "Pandora's Lead System — Direct Action Enabled" }
     };
 
     await sendDiscordNotification(DISCORD_WEBHOOK_LEADS, '', [embed]);
@@ -79,16 +81,18 @@ export async function notifyNewLead(projectTitle: string, userEmail: string, sco
  * Notify about a Human Support Request from WhatsApp
  */
 export async function notifySupportRequest(phone: string, lastMessage: string, context: string) {
+    const adminClientsUrl = 'https://dash.pandoras.finance/admin/dashboard?tab=clients';
     const embed: DiscordEmbed = {
         title: `👨‍💼 WhatsApp Human Support Requested`,
         description: `User **${phone}** requested an agent.`,
         color: COLORS.WARNING,
         fields: [
             { name: 'Context/Flow', value: context, inline: true },
-            { name: 'Last Message', value: lastMessage || 'N/A' }
+            { name: 'Last Message', value: lastMessage || 'N/A' },
+            { name: '⚡ Acción Admin', value: `[👉 Ir a Clientes en Admin Dashboard](${adminClientsUrl})`, inline: false }
         ],
         timestamp: new Date().toISOString(),
-        footer: { text: 'Reply via WhatsApp Dashboard' }
+        footer: { text: 'Reply via Dashboard' }
     };
 
     await sendDiscordNotification(DISCORD_WEBHOOK_ALERTS, '<@&MANAGER_ROLE_ID> Support needed!', [embed]);
