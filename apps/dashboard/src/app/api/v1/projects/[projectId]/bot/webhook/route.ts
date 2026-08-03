@@ -9,7 +9,7 @@ import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
  * 📢 VOICE NOTE GENERATOR ENGINE (ELEVENLABS API)
  * Convierte respuestas de texto de Hermes a notas de voz de Telegram
  */
-async function generateVoiceNoteBuffer(text: string, voiceId: string, apiKey: string): Promise<Buffer | null> {
+async function generateVoiceNoteBuffer(text: string, voiceId: string, apiKey: string): Promise<ArrayBuffer | null> {
   try {
     const cleanText = text.replace(/[*_#`[\]()]/g, '').trim(); // Remove Markdown syntax for voice TTS
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -34,15 +34,14 @@ async function generateVoiceNoteBuffer(text: string, voiceId: string, apiKey: st
       return null;
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    return await response.arrayBuffer();
   } catch (err) {
     console.error('[ElevenLabs Voice] Error generating audio:', err);
     return null;
   }
 }
 
-async function sendTelegramVoiceNote(botToken: string, chatId: number, audioBuffer: Buffer) {
+async function sendTelegramVoiceNote(botToken: string, chatId: number, audioBuffer: ArrayBuffer) {
   try {
     const formData = new FormData();
     const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
@@ -224,7 +223,7 @@ INFORMACIÓN INSTITUCIONAL COMPLETA DE S'NARAI:
     };
 
     // Send Text Message
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -234,6 +233,24 @@ INFORMACIÓN INSTITUCIONAL COMPLETA DE S'NARAI:
         reply_markup: inlineKeyboard
       })
     });
+    
+    if (!tgRes.ok) {
+      const errText = await tgRes.text();
+      console.error('[Telegram Bot] Failed to send message. Telegram API Response:', errText, 'AI Text:', aiResponseText);
+      
+      // Fallback: Try again without Markdown if it failed due to markdown parsing
+      if (errText.includes('can\'t parse entities')) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: aiResponseText, // Raw text
+            reply_markup: inlineKeyboard
+          })
+        });
+      }
+    }
 
     // 🎙️ Voice Note Feature (ElevenLabs API)
     // If the user sent a voice message or ElevenLabs credentials are configured
@@ -254,5 +271,8 @@ INFORMACIÓN INSTITUCIONAL COMPLETA DE S'NARAI:
     return NextResponse.json({ success: true });
   }
 }
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Allow enough time for LLM generation
 
 export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter });
