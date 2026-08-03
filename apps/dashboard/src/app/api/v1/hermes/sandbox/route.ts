@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateBotResponse } from '@/lib/marketing/bot-engine';
 import { Redis } from 'ioredis';
 
-// Strictly limit sandbox usage to max 10 messages per IP per day to conserve LLM resources
+// Strictly limit sandbox usage to max 10 messages/day AND max 30 total lifetime messages per IP
 const SANDBOX_DAILY_LIMIT = 10;
+const SANDBOX_LIFETIME_LIMIT = 30;
 let redis: Redis | null = null;
 
 if (process.env.REDIS_URL) {
@@ -14,8 +15,9 @@ if (process.env.REDIS_URL) {
   }
 }
 
-// In-memory fallback rate limiter
+// In-memory fallback rate limiters
 const inMemoryLimits = new Map<string, { count: number; date: string }>();
+const inMemoryLifetime = new Map<string, number>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,14 +32,17 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'sandbox-user';
     const today: string = new Date().toISOString().split('T')[0] ?? '';
     const rateLimitKey = `hermes:sandbox:ratelimit:${ip}:${today}`;
+    const lifetimeKey = `hermes:sandbox:lifetime:${ip}`;
 
     let currentCount = 0;
+    let lifetimeCount = 0;
 
     if (redis) {
       currentCount = await redis.incr(rateLimitKey);
       if (currentCount === 1) {
         await redis.expire(rateLimitKey, 86400); // 24 hours
       }
+      lifetimeCount = await redis.incr(lifetimeKey);
     } else {
       const record = inMemoryLimits.get(rateLimitKey);
       if (!record || record.date !== today) {
@@ -47,12 +52,27 @@ export async function POST(req: NextRequest) {
         record.count += 1;
         currentCount = record.count;
       }
+
+      const lifeVal = (inMemoryLifetime.get(lifetimeKey) || 0) + 1;
+      inMemoryLifetime.set(lifetimeKey, lifeVal);
+      lifetimeCount = lifeVal;
     }
 
+    // Check Lifetime Cap (Trial Period Expiration)
+    if (lifetimeCount > SANDBOX_LIFETIME_LIMIT) {
+      return NextResponse.json({
+        error: 'Periodo de Prueba Agotado',
+        message: `Has completado el periodo de prueba gratuito en el Sandbox de Hermes (máximo ${SANDBOX_LIFETIME_LIMIT} mensajes totales). Para conectar a Hermes con tu empresa en producción y habilitar volumen ilimitado, activa tu plan en Pandora's Growth OS.`,
+        remaining: 0,
+        trialExpired: true
+      }, { status: 429 });
+    }
+
+    // Check Daily Cap
     if (currentCount > SANDBOX_DAILY_LIMIT) {
       return NextResponse.json({
-        error: 'Límite de Sandbox alcanzado',
-        message: `Has alcanzado el límite gratuito de ${SANDBOX_DAILY_LIMIT} mensajes por día en el Sandbox de Hermes. Para habilitar volumen ilimitado y conectar tu empresa, activa tu plan en Growth OS.`,
+        error: 'Límite de Sandbox diario alcanzado',
+        message: `Has alcanzado el límite diario de ${SANDBOX_DAILY_LIMIT} mensajes. Vuelve mañana o activa tu plan en Growth OS para uso ilimitado.`,
         remaining: 0
       }, { status: 429 });
     }
@@ -74,6 +94,19 @@ export async function POST(req: NextRequest) {
         industry: effectiveIndustry
       }
     });
+
+    // Record intelligence event for Growth OS Mission Control Analytics
+    try {
+      const { HermesIntelligenceEngine } = await import('@/lib/hermes/intelligence-engine');
+      HermesIntelligenceEngine.recordBehaviorEvent({
+        projectSlug: 'sandbox',
+        eventType: 'HANDLED_OBJECTION',
+        channel: 'web',
+        metadata: { companyName: effectiveCompany, industry: effectiveIndustry, ip, currentCount, lifetimeCount }
+      });
+    } catch (err) {
+      // Non-blocking telemetry
+    }
 
     return NextResponse.json({
       success: true,
