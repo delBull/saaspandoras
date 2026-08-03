@@ -211,6 +211,7 @@ export function ClientsManager() {
 
     // Filter state
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedProductFilter, setSelectedProductFilter] = useState<'ALL' | 'TOKENIZATION' | 'HERMES'>('ALL');
 
     useEffect(() => {
         loadClients();
@@ -225,12 +226,20 @@ export function ClientsManager() {
         setLoading(false);
     }
 
-    const filteredClients = clientsList.filter(c =>
-        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.walletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.whatsapp?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredClients = clientsList.filter(c => {
+        const matchesSearch =
+            c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.walletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.whatsapp?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const isHermes = c.source?.includes('hermes') || (c.metadata as any)?.product === 'HERMES';
+
+        if (selectedProductFilter === 'HERMES') return matchesSearch && isHermes;
+        if (selectedProductFilter === 'TOKENIZATION') return matchesSearch && !isHermes;
+
+        return matchesSearch;
+    });
 
     return (
         <div className="space-y-6">
@@ -259,10 +268,35 @@ export function ClientsManager() {
                 </div>
             </div>
 
+            {/* Product Family Filter Bar */}
+            <div className="flex gap-2 mb-4">
+                <Badge
+                    variant={selectedProductFilter === 'ALL' ? 'default' : 'outline'}
+                    className={`cursor-pointer px-3 py-1 text-xs ${selectedProductFilter === 'ALL' ? 'bg-purple-600 hover:bg-purple-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}
+                    onClick={() => setSelectedProductFilter('ALL')}
+                >
+                    🌐 Todos los Productos
+                </Badge>
+                <Badge
+                    variant={selectedProductFilter === 'TOKENIZATION' ? 'default' : 'outline'}
+                    className={`cursor-pointer px-3 py-1 text-xs ${selectedProductFilter === 'TOKENIZATION' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}
+                    onClick={() => setSelectedProductFilter('TOKENIZATION')}
+                >
+                    🪙 Tokenización (S'Narai / RWA)
+                </Badge>
+                <Badge
+                    variant={selectedProductFilter === 'HERMES' ? 'default' : 'outline'}
+                    className={`cursor-pointer px-3 py-1 text-xs ${selectedProductFilter === 'HERMES' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}
+                    onClick={() => setSelectedProductFilter('HERMES')}
+                >
+                    🤖 Hermes Agent OS
+                </Badge>
+            </div>
+
             <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
-                    <CardTitle>Base de Clientes</CardTitle>
-                    <CardDescription>Gestión de leads y bridge de pagos.</CardDescription>
+                    <CardTitle>Base de Clientes Multi-Producto</CardTitle>
+                    <CardDescription>Gestión de clientes de Hermes OS, Tokenización RWA y Media Co.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
@@ -273,14 +307,16 @@ export function ClientsManager() {
                                 <TableRow className="border-zinc-800 hover:bg-zinc-900">
                                     <TableHead>Cliente</TableHead>
                                     <TableHead>WhatsApp</TableHead>
-                                    <TableHead>Fuente</TableHead>
+                                    <TableHead>Fuente / Producto</TableHead>
                                     <TableHead>Activity</TableHead>
                                     <TableHead>Stage</TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredClients.map(client => (
+                                {filteredClients.map(client => {
+                                    const isHermesClient = client.source?.includes('hermes') || (client.metadata as any)?.product === 'HERMES';
+                                    return (
                                     <TableRow key={client.id} className="border-zinc-800 hover:bg-zinc-900/50">
                                         <TableCell>
                                             <div className="font-medium text-white">{client.name || "Sin Nombre"}</div>
@@ -300,8 +336,17 @@ export function ClientsManager() {
                                                 <span className="text-zinc-600 text-xs">—</span>
                                             )}
                                         </TableCell>
-                                        <TableCell><Badge variant="outline" className="text-xs bg-zinc-950">{client.source}</Badge></TableCell>
-                                        <TableCell className="text-zinc-400 text-xs text-xs">
+                                        <TableCell>
+                                            <div className="flex flex-col gap-1">
+                                                <Badge variant="outline" className="text-xs bg-zinc-950 max-w-[140px] truncate">{client.source}</Badge>
+                                                {isHermesClient ? (
+                                                    <span className="text-[10px] text-amber-400 font-mono">🤖 HERMES OS</span>
+                                                ) : (
+                                                    <span className="text-[10px] text-indigo-400 font-mono">🪙 TOKENIZACIÓN</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-zinc-400 text-xs">
                                             {(client.metadata as any)?.protocol?.sow_history?.length > 0 ? (
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-zinc-300">{(client.metadata as any).protocol.sow_history.slice(-1)[0].tier}</span>
@@ -314,6 +359,28 @@ export function ClientsManager() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2 items-center">
+                                                {isHermesClient && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-xs border-amber-500/40 text-amber-300 hover:bg-amber-950/40 font-mono"
+                                                        onClick={async () => {
+                                                            if (!confirm(`¿Aprovisionar Hermes OS para ${client.email}?`)) return;
+                                                            try {
+                                                                const res = await fetch('/api/v1/admin/provision', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ leadId: client.id, product: 'HERMES', plan: 'starter' }),
+                                                                });
+                                                                const d = await res.json();
+                                                                if (d.success) alert(`🚀 Hermes aprovisionado! URL del Portal: ${d.portalUrl}`);
+                                                                else alert(`Error: ${d.error}`);
+                                                            } catch (e: any) { alert(e.message); }
+                                                        }}
+                                                    >
+                                                        🚀 Aprovisionar Hermes
+                                                    </Button>
+                                                )}
                                                 <ProtocolActions
                                                     client={client}
                                                     onSuccess={loadClients}
@@ -339,7 +406,8 @@ export function ClientsManager() {
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     )}
