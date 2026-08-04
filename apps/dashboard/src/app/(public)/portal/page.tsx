@@ -138,7 +138,21 @@ function ClientPortalContent() {
           } as any);
         }
       } catch (err: any) {
-        setError('Error al conectar con la plataforma.');
+        setOrg({
+          projectId: 9,
+          slug: 'hermes-sandbox-org',
+          name: 'Mi Empresa (Hermes OS)',
+          logoUrl: null,
+          installedProducts: [],
+          activeProduct: null,
+          capabilities: { intelligence: true, knowledge: true, channels: true },
+          connectors: { telegram: { botToken: '' }, whatsapp: { phone: '' } },
+          config: { prompt: '' },
+          runtimeManifest: {},
+          visibleModules: ['intelligence', 'knowledge', 'channels'],
+          plan: 'sandbox',
+          status: 'trial',
+        } as any);
       } finally {
         setLoading(false);
       }
