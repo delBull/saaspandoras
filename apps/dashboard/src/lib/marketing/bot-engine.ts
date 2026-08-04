@@ -112,21 +112,32 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
     const dbProject = await db.select().from(projects).where(eq(projects.slug, projectSlug)).limit(1);
     const dbConfig: any = (dbProject.length > 0 && dbProject[0]?.tenantRuntimeConfig) ? dbProject[0].tenantRuntimeConfig : {};
     
-    const rawBaseUrl = dbConfig?.providers?.llm?.baseUrl 
-      || (isSnarai ? process.env.OLLAMA_SNARAI_BASE_URL : null)
-      || process.env.OLLAMA_BASE_URL 
-      || process.env.OLLAMA_HOST 
-      || 'http://127.0.0.1:11434';
-      
     const apiKey = dbConfig?.providers?.llm?.apiKeyRef 
       || (isSnarai ? process.env.OLLAMA_SNARAI_API_KEY : null)
       || process.env.OLLAMA_API_KEY 
+      || process.env.GROQ_API_KEY
+      || process.env.OPENAI_API_KEY
       || 'ollama-key';
+      
+    let rawBaseUrl = dbConfig?.providers?.llm?.baseUrl 
+      || (isSnarai ? process.env.OLLAMA_SNARAI_BASE_URL : null)
+      || process.env.OLLAMA_BASE_URL 
+      || process.env.OLLAMA_HOST;
+
+    if (!rawBaseUrl) {
+      if (process.env.GROQ_API_KEY) {
+        rawBaseUrl = 'https://api.groq.com/openai';
+      } else if (process.env.OPENAI_API_KEY) {
+        rawBaseUrl = 'https://api.openai.com';
+      } else {
+        rawBaseUrl = 'http://127.0.0.1:11434';
+      }
+    }
       
     const aiModel = dbConfig?.providers?.llm?.model 
       || (isSnarai ? process.env.OLLAMA_SNARAI_MODEL : null)
       || process.env.OLLAMA_MODEL 
-      || 'gpt-oss:20b';
+      || (process.env.GROQ_API_KEY ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini');
 
     let botResponseText = "Lo siento, estoy teniendo problemas para procesar la información en este momento.";
 
