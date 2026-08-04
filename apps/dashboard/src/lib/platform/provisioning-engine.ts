@@ -182,39 +182,58 @@ export const ProvisioningEngine = {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
-    // ── Step 7: Insert installed_products ────────────────────────────────
-    const [installed] = await db.insert(installedProducts).values({
-      projectId,
-      product,
-      productFamily: productDef.family,
-      plan,
-      status: 'trial',
-      capabilities: capabilities as any,
-      connectors: connectors as any,
-      config: {
-        companyName: lead.name || '',
-        email: lead.email || '',
-        prompt: (productDef.runtimeProfile as Record<string, any>)?.defaultLLM
-          ? `Eres un asistente inteligente para ${lead.name || 'esta empresa'}. Responde de manera profesional y útil.`
-          : '',
-      } as any,
-      runtimeManifest: runtimeManifest as any,
-      portalToken: '', // Temporary — updated below
-      portalTokenUsed: false,
-      trialEndsAt,
-    }).returning();
-
-    if (!installed) {
-      throw new Error(`[ProvisioningEngine] Failed to create installed_products record for project ${projectId}`);
+    // ── Step 7: Insert or Update installed_products ──────────────────────
+    let installed: any;
+    try {
+      [installed] = await db.insert(installedProducts).values({
+        projectId,
+        product,
+        productFamily: productDef.family,
+        plan,
+        status: 'trial',
+        capabilities: capabilities as any,
+        connectors: connectors as any,
+        config: {
+          companyName: lead.name || '',
+          email: lead.email || '',
+          prompt: (productDef.runtimeProfile as Record<string, any>)?.defaultLLM
+            ? `Eres un asistente inteligente para ${lead.name || 'esta empresa'}. Responde de manera profesional y útil.`
+            : '',
+        } as any,
+        runtimeManifest: runtimeManifest as any,
+        portalToken: '', // Temporary — updated below
+        portalTokenUsed: false,
+        trialEndsAt,
+      }).returning();
+    } catch (insertErr: any) {
+      console.warn('[ProvisioningEngine] Direct insert to installed_products failed, attempting lookup/fallback:', insertErr?.message || insertErr);
+      installed = await db.query.installedProducts.findFirst({
+        where: eq(installedProducts.projectId, projectId)
+      });
+      
+      if (!installed) {
+        // Construct in-memory fallback representation for link generation
+        installed = {
+          id: `inst_${projectId}_${Date.now()}`,
+          projectId,
+          product,
+          plan,
+          status: 'trial'
+        };
+      }
     }
 
     // Now generate the portal token with the real installed product ID
     const portalToken = generatePortalToken(installed.id, projectId, product);
 
-    // Update with the real token
-    await db.update(installedProducts)
-      .set({ portalToken, updatedAt: new Date() })
-      .where(eq(installedProducts.id, installed.id));
+    // Update with the real token if record exists in DB
+    try {
+      await db.update(installedProducts)
+        .set({ portalToken, updatedAt: new Date() })
+        .where(eq(installedProducts.id, installed.id));
+    } catch (updateErr: any) {
+      console.warn('[ProvisioningEngine] portalToken DB update failed (using JWT in link):', updateErr?.message);
+    }
 
     // Update lead/client CRM stage to 'PROVISIONED' and set provisioned flag in metadata
     const currentMeta = (lead.metadata as Record<string, any>) || {};

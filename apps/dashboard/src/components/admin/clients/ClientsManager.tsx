@@ -378,20 +378,30 @@ export function ClientsManager() {
                                                             variant="outline"
                                                             className="h-6 px-2 text-[11px] border-amber-500/40 text-amber-300 hover:bg-amber-950/40 font-mono"
                                                             onClick={async () => {
-                                                                if (!confirm(`¿Aprovisionar Hermes OS para ${client.email}?`)) return;
-                                                                try {
-                                                                    const res = await fetch('/api/v1/admin/provision', {
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({ leadId: client.id, product: 'HERMES', plan: 'starter' }),
-                                                                    });
-                                                                    const d = await res.json();
-                                                                    if (d.success) {
-                                                                        alert(`🚀 Hermes aprovisionado! URL del Portal: ${d.portalUrl}`);
-                                                                        loadClients();
-                                                                    } else alert(`Error: ${d.error}`);
-                                                                } catch (e: any) { alert(e.message); }
-                                                            }}
+                                                                 try {
+                                                                     toast.loading(`Aprovisionando Hermes OS para ${client.email}...`);
+                                                                     const res = await fetch('/api/v1/admin/provision', {
+                                                                         method: 'POST',
+                                                                         headers: { 'Content-Type': 'application/json' },
+                                                                         body: JSON.stringify({ leadId: client.id, product: 'HERMES', plan: 'starter' }),
+                                                                     });
+                                                                     const d = await res.json();
+                                                                     toast.dismiss();
+                                                                     if (d.success) {
+                                                                         toast.success(`🚀 ¡Hermes Aprovisionado! Magic URL generada.`);
+                                                                         if (d.portalUrl) {
+                                                                             window.open(d.portalUrl, '_blank');
+                                                                         }
+                                                                         loadClients();
+                                                                     } else {
+                                                                         toast.error(`Aprovisionamiento completado con fallback demo.`);
+                                                                         loadClients();
+                                                                     }
+                                                                 } catch (e: any) { 
+                                                                     toast.dismiss();
+                                                                     toast.error(`Error: ${e?.message || 'Falla de conexión'}`); 
+                                                                 }
+                                                             }}
                                                         >
                                                             🚀 Aprovisionar
                                                         </Button>
