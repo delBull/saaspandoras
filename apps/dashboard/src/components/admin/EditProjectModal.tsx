@@ -38,8 +38,10 @@ interface EditProjectModalProps {
 
 export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAddress }: EditProjectModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [botTokenInput, setBotTokenInput] = useState('');
-  const [isRegisteringBot, setIsRegisteringBot] = useState(false);
+
+  const binding = project?.hermesBinding ?? null;
+  const isExistingBinding = binding?.bindingMode === "existing";
+  const hasBinding = binding !== null;
 
   const methods = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema as any),
@@ -153,30 +155,6 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
     }
   };
 
-  const handleRegisterBot = async () => {
-    if (!project || !botTokenInput) return;
-    setIsRegisteringBot(true);
-    try {
-      const response = await fetch(`/api/v1/projects/${project.id}/bot/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ botToken: botTokenInput })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('Bot vinculado exitosamente y Webhook registrado');
-        setBotTokenInput('');
-        onSuccess();
-      } else {
-        toast.error(data.message || 'Error al vincular el bot');
-      }
-    } catch (err) {
-      toast.error('Error de conexión al registrar el bot');
-    } finally {
-      setIsRegisteringBot(false);
-    }
-  };
-
   if (!project) return null;
 
   return (
@@ -199,7 +177,7 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
               <TabsTrigger value="visuals" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Visuales</TabsTrigger>
               <TabsTrigger value="community" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Comunidad</TabsTrigger>
               <TabsTrigger value="mechanics" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Mecánicas</TabsTrigger>
-              <TabsTrigger value="bots" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">IA / Bots</TabsTrigger>
+              <TabsTrigger value="bots" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white font-semibold">🤖 Hermes Agent</TabsTrigger>
             </TabsList>
 
             {/* TAB: IDENTITY */}
@@ -482,48 +460,109 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
               </div>
             </TabsContent>
 
-            {/* TAB: BOTS */}
-            <TabsContent value="bots" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
-                <h4 className="text-sm font-bold text-emerald-400 mb-4 flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" /> Configuración de Asistente IA
-                </h4>
-                <p className="text-sm text-zinc-400 mb-6">
-                  Activa el bot de soporte en Telegram para tu protocolo. Nuestro Growth OS Engine manejará la inteligencia artificial y las respuestas automáticamente.
-                </p>
 
-                <div className="space-y-4">
-                  <Label className="flex items-center gap-2 font-bold text-zinc-300">
-                    Token del Bot (API Token)
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      type="password"
-                      value={botTokenInput}
-                      onChange={(e) => setBotTokenInput(e.target.value)}
-                      className="bg-zinc-950 border-zinc-800 focus:ring-emerald-500 flex-1" 
-                      placeholder="Ej: 8639272150:AAEVRsfHMP-9EzWRRvkZFR..."
-                    />
-                    <Button 
-                      type="button"
-                      onClick={handleRegisterBot}
-                      disabled={isRegisteringBot || !botTokenInput}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
-                    >
-                      {isRegisteringBot ? <Loader2 className="w-4 h-4 animate-spin" /> : "Vincular"}
-                    </Button>
+
+            {/* TAB: HERMES AGENT — Status Adapter (V5.1 Architecture) */}
+            {/* 🔒 This tab is READ-ONLY for Pandora's Admin.            */}
+            {/*    All Hermes config lives in Hermes Console.             */}
+            <TabsContent value="bots" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="space-y-4">
+
+                {/* ── Header + SSO Button ──────────────────────────────── */}
+                <div className="bg-zinc-900 border border-purple-500/30 rounded-2xl p-5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl">🤖</div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2 mb-0.5">
+                        Hermes OS
+                        {isExistingBinding ? (
+                          <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold tracking-wide">🛡️ EXISTING BINDING</span>
+                        ) : hasBinding ? (
+                          <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold tracking-wide">● PROVISIONED</span>
+                        ) : (
+                          <span className="text-[9px] bg-zinc-500/20 text-zinc-400 border border-zinc-500/30 px-2 py-0.5 rounded-full font-semibold tracking-wide">○ NOT BOUND</span>
+                        )}
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        {isExistingBinding
+                          ? 'Golden Reference Tenant — configuración solo en Hermes Console'
+                          : hasBinding
+                            ? 'Binding Layer V5.1 — instancia activa'
+                            : 'Sin binding de Hermes — aprovisiona para activar'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50 mt-4 text-xs text-zinc-400 leading-relaxed">
-                    <strong className="text-zinc-300 block mb-2">Instrucciones rápidas:</strong>
-                    <ol className="list-decimal pl-4 space-y-1">
-                      <li>Abre Telegram y busca a <a href="https://t.me/botfather" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">@BotFather</a>.</li>
-                      <li>Envía el comando <code className="text-lime-400">/newbot</code> y sigue los pasos para crear tu bot.</li>
-                      <li>Copia el "HTTP API Token" que te dará al finalizar y pégalo aquí arriba.</li>
-                    </ol>
+                  <a
+                    href={`/growth-os/hermes`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-purple-900/30 transition-all no-underline"
+                  >
+                    Abrir Hermes Console 🚀
+                  </a>
+                </div>
+
+                {/* ── Binding Status Card ──────────────────────────────── */}
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl divide-y divide-zinc-800/70">
+                  <div className="flex items-center justify-between px-4 py-3 text-xs">
+                    <span className="text-zinc-400">Instance ID</span>
+                    <code className="text-purple-300 font-mono text-[11px]">
+                      {binding?.hermesInstanceId ?? '—'}
+                    </code>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 text-xs">
+                    <span className="text-zinc-400">Binding Mode</span>
+                    <span className={`font-semibold uppercase tracking-wider text-[10px] ${isExistingBinding ? 'text-amber-400' : hasBinding ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                      {isExistingBinding ? 'existing (read-only)' : hasBinding ? 'provisioned' : 'sin binding'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 text-xs">
+                    <span className="text-zinc-400">Plan</span>
+                    <span className="text-zinc-200 font-medium">{binding?.plan ?? '—'}</span>
                   </div>
                 </div>
+
+                {/* ── S'Narai read-only notice ─────────────────────────── */}
+                {isExistingBinding && (
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3">
+                    <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                      <strong className="text-amber-400">🛡️ Protección activa:</strong> S&apos;Narai es el Golden Reference Tenant.
+                      Su configuración de agente, prompts, bot tokens y base de conocimientos se gestionan
+                      exclusivamente desde <strong>Hermes Console</strong>.
+                      Pandora&apos;s Admin solo puede ver el estado del binding.
+                    </p>
+                  </div>
+                )}
+
+                {/* ── Capabilities Grid (read-only) ────────────────────── */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-3">Capabilities Activas</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: 'identity', label: 'Identity', icon: '🪪' },
+                      { key: 'knowledge', label: 'Knowledge', icon: '🧠' },
+                      { key: 'runtime', label: 'Runtime', icon: '⚡' },
+                      { key: 'analytics', label: 'Analytics', icon: '📊' },
+                      { key: 'voice', label: 'Voice', icon: '🎙️' },
+                      { key: 'multiagent', label: 'Multi-Agent', icon: '🕸️' },
+                    ].map(cap => {
+                      const active = ['identity', 'knowledge', 'runtime', 'analytics'].includes(cap.key);
+                      return (
+                        <div key={cap.key} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] border ${active ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-600'}`}>
+                          <span>{cap.icon}</span>
+                          <span className="font-medium">{cap.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-zinc-600 mt-3">
+                    Para habilitar o deshabilitar capabilities, abre Hermes Console → Plan & Capabilities.
+                  </p>
+                </div>
+
               </div>
             </TabsContent>
+
           </Tabs>
 
           <DialogFooter className="mt-8 gap-3 sm:gap-0">

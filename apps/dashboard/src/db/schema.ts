@@ -2860,6 +2860,17 @@ export const installedProducts = pgTable("installed_products", {
   plan: varchar("plan", { length: 50 }).default("sandbox").notNull(),   // sandbox | starter | growth | enterprise
   status: varchar("status", { length: 50 }).default("trial").notNull(), // trial | active | suspended | churned
 
+  // ── Hermes Binding Layer (V5.1 Architecture) ──────────────────────────────
+  // hermesInstanceId: persistent ID of the Hermes OS instance.
+  //   - 'provisioned' mode: auto-generated as 'hermes_inst_{projectId}' on provision
+  //   - 'existing' mode: set manually (e.g. 'snarai_prod_hermes' for S'Narai)
+  // bindingMode: how this product was connected to Hermes.
+  //   - 'provisioned': created by ProvisioningEngine (new clients)
+  //   - 'existing': manually attached (S'Narai golden reference tenant, legacy)
+  // 🔒 S'Narai (projectId=2) is ALWAYS 'existing'. Never 'provisioned'.
+  hermesInstanceId: varchar("hermes_instance_id", { length: 100 }),
+  bindingMode: varchar("binding_mode", { length: 20 }).default("provisioned").notNull(), // 'provisioned' | 'existing'
+
   // Capabilities installed for this product+plan combination
   // e.g. { voice: false, analytics: true, multiagent: false }
   capabilities: jsonb("capabilities").default({}).notNull(),

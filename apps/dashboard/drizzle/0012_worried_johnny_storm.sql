@@ -1,0 +1,2 @@
+ALTER TABLE "installed_products" ADD COLUMN "hermes_instance_id" varchar(100);--> statement-breakpoint
+ALTER TABLE "installed_products" ADD COLUMN "binding_mode" varchar(20) DEFAULT 'provisioned' NOT NULL;

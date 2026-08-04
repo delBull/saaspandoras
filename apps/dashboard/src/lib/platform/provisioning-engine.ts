@@ -32,7 +32,9 @@ import { generatePortalToken } from './portal-auth';
 
 // ── 🔒 S'Narai Protection ────────────────────────────────────────────────────
 // NEVER modify or provision against these projects.
-const PROTECTED_PROJECT_IDS = [2]; // S'Narai — has live smart contracts on Sepolia
+// ID=2 → S'Narai in staging | ID=17 → S'Narai in main production
+// Both have binding_mode='existing' in installed_products — seeded manually.
+const PROTECTED_PROJECT_IDS = [2, 17]; // S'Narai — has live smart contracts on Sepolia
 const PROTECTED_PROJECT_SLUGS = ['snarai', 'snarai-protocol', 'narai'];
 
 function assertNotProtected(projectId: number, slug?: string) {
@@ -191,6 +193,12 @@ export const ProvisioningEngine = {
         productFamily: productDef.family,
         plan,
         status: 'trial',
+        // ── Hermes Binding (V5.1) ────────────────────────────────────────
+        // ProvisioningEngine always creates 'provisioned' bindings.
+        // 'existing' bindings (e.g. S'Narai) are seeded manually.
+        bindingMode: 'provisioned' as any,
+        hermesInstanceId: `hermes_inst_${projectId}`,
+        // ────────────────────────────────────────────────────────────────
         capabilities: capabilities as any,
         connectors: connectors as any,
         config: {

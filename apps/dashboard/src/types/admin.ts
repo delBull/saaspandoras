@@ -37,6 +37,7 @@ export interface Project {
   dueDiligenceReportUrl?: string;
   legalStatus?: string;
   fiduciaryEntity?: string;
+  hermesBinding?: HermesBindingInfo | null;
   applicantName?: string;
   applicantEmail?: string;
   applicantPhone?: string;
@@ -119,3 +120,22 @@ export interface UserData {
 }
 
 export type UserRole = "applicant" | "pandorian" | "admin";
+
+export type HermesBindingMode = 'existing' | 'provisioned';
+
+export interface HermesBindingInfo {
+  hermesInstanceId: string | null;
+  bindingMode: string | null;
+  plan: string | null;
+}
+
+export interface ProjectHermesBinding {
+  id: string;
+  projectId: string | number;
+  hermesInstanceId: string;
+  mode: HermesBindingMode;
+  status: 'active' | 'inactive' | 'paused';
+  capabilities: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}

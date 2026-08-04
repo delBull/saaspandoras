@@ -8,6 +8,7 @@ import { projects as projectsSchema } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { validateAdminSession } from "@/lib/admin-auth";
+import { getHermesBinding } from "@/lib/platform/hermes-binding";
 import { logger } from "@/lib/logger";
 import { headers } from "next/headers";
 import slugify from "slugify";
@@ -141,7 +142,14 @@ export async function GET(request: Request) {
         hasLinks: !!(projectsData[0].website ?? projectsData[0].whitepaperUrl ?? projectsData[0].twitterUrl)
       } : 'No projects');
 
-      return NextResponse.json(projectsData);
+      const projectsWithBindings = await Promise.all(
+        projectsData.map(async (p) => ({
+          ...p,
+          hermesBinding: await getHermesBinding(p.id),
+        }))
+      );
+
+      return NextResponse.json(projectsWithBindings);
     } catch (queryError) {
       console.error('❌ Admin API: Comprehensive query failed, trying fallback query:', queryError);
 
@@ -190,7 +198,14 @@ export async function GET(request: Request) {
           featured: formattedProjects[0].featured
         } : 'No projects');
 
-        return NextResponse.json(formattedProjects);
+        const formattedProjectsWithBindings = await Promise.all(
+          formattedProjects.map(async (p) => ({
+            ...p,
+            hermesBinding: await getHermesBinding(Number(p.id)),
+          }))
+        );
+
+        return NextResponse.json(formattedProjectsWithBindings);
       } catch (fallbackError) {
         console.error('❌ Admin API: Fallback query also failed:', fallbackError);
         return NextResponse.json(
