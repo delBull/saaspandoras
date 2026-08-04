@@ -67,6 +67,12 @@ function ClientPortalContent() {
   const [isSubmittingUpgrade, setIsSubmittingUpgrade] = useState(false);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
 
+  // Embedded Portal Test Console Drawer state
+  const [showTestDrawer, setShowTestDrawer] = useState(false);
+  const [testInputMessage, setTestInputMessage] = useState('');
+  const [testChatMessages, setTestChatMessages] = useState<Array<{ role: 'user' | 'agent'; text: string }>>([]);
+  const [isTestChatLoading, setIsTestChatLoading] = useState(false);
+
   // Config state
   const [prompt, setPrompt] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -350,18 +356,23 @@ function ClientPortalContent() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a
-            href="/growth-os/hermes#sandbox"
-            target="_blank"
-            rel="noreferrer"
+          <button
+            onClick={() => {
+              if (testChatMessages.length === 0) {
+                setTestChatMessages([
+                  { role: 'agent', text: `¡Hola! Soy Hermes, el asistente autónomo para ${companyName || org.name || 'tu negocio'}. ¿En qué te puedo ayudar hoy?` }
+                ]);
+              }
+              setShowTestDrawer(true);
+            }}
             style={{
               fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
               background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)',
-              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
             }}
           >
-            ⚡ Probar Agente en Vivo ↗
-          </a>
+            ⚡ Probar Agente con Mis Datos 💬
+          </button>
           <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: org.status === 'trial' || org.plan === 'sandbox' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)', color: org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b' : '#10b981', border: `1px solid ${org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b33' : '#10b98133'}` }}>
             ● {org.plan === 'sandbox' ? 'SANDBOX / TRIAL (3 días)' : `STATUS: ${org.status.toUpperCase()}`}
           </span>
@@ -872,6 +883,122 @@ function ClientPortalContent() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 💬 Portal Test Console Drawer UI */}
+      {showTestDrawer && (
+        <div style={{
+          position: 'fixed', bottom: 20, right: 20, zIndex: 9999,
+          width: 420, height: 560, background: '#0D0D14', border: '1px solid rgba(16,185,129,0.4)',
+          borderRadius: 20, boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 20px rgba(16,185,129,0.15)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden'
+        }}>
+          {/* Drawer Header */}
+          <div style={{ padding: '14px 18px', background: 'rgba(16,185,129,0.1)', borderBottom: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Simulador Hermes: {companyName || org?.name || 'Mi Empresa'}</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>Probando con tus datos de Portal & Prompt</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowTestDrawer(false)}
+              style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 16 }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Messages Body */}
+          <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {testChatMessages.map((msg, idx) => (
+              <div
+                key={idx}
+                style={{
+                  alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                  background: msg.role === 'user' ? 'linear-gradient(135deg, #7c3aed, #4f46e5)' : 'rgba(255,255,255,0.05)',
+                  border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 14,
+                  padding: '10px 14px',
+                  color: '#fff',
+                  fontSize: 13,
+                  lineHeight: 1.5
+                }}
+              >
+                {msg.text}
+              </div>
+            ))}
+            {isTestChatLoading && (
+              <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '10px 14px', color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                Hermes está pensando...
+              </div>
+            )}
+          </div>
+
+          {/* Input Footer */}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!testInputMessage.trim() || isTestChatLoading) return;
+
+              const userText = testInputMessage.trim();
+              setTestInputMessage('');
+              setTestChatMessages(prev => [...prev, { role: 'user', text: userText }]);
+              setIsTestChatLoading(true);
+
+              try {
+                const res = await fetch('/api/v1/hermes/sandbox', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    companyName: companyName || org?.name || 'Mi Empresa',
+                    industry: knowledgePack?.industry || 'General',
+                    customPrompt: prompt,
+                    userMessage: userText,
+                    history: testChatMessages.map(m => ({ role: m.role, content: m.text }))
+                  }),
+                });
+
+                const data = await res.json();
+                if (data.response) {
+                  setTestChatMessages(prev => [...prev, { role: 'agent', text: data.response }]);
+                } else if (data.message) {
+                  setTestChatMessages(prev => [...prev, { role: 'agent', text: `⚠️ ${data.message}` }]);
+                } else {
+                  setTestChatMessages(prev => [...prev, { role: 'agent', text: 'Respuesta recibida correctamente.' }]);
+                }
+              } catch {
+                setTestChatMessages(prev => [...prev, { role: 'agent', text: 'Error al conectar con Hermes.' }]);
+              } finally {
+                setIsTestChatLoading(false);
+              }
+            }}
+            style={{ padding: 12, borderTop: '1px solid rgba(255,255,255,0.08)', background: '#09090F', display: 'flex', gap: 8 }}
+          >
+            <input
+              type="text"
+              placeholder="Escribe un mensaje de prueba..."
+              value={testInputMessage}
+              onChange={e => setTestInputMessage(e.target.value)}
+              style={{
+                flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 10, padding: '10px 14px', color: '#fff', fontSize: 13, outline: 'none'
+              }}
+            />
+            <button
+              type="submit"
+              disabled={isTestChatLoading}
+              style={{
+                padding: '10px 16px', background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              Enviar
+            </button>
+          </form>
         </div>
       )}
     </div>
