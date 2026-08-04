@@ -222,12 +222,12 @@ export const ProvisioningEngine = {
 
     await db.update(marketingLeads)
       .set({ crmStage: 'CLOSED_WON', metadata: updatedMeta, updatedAt: new Date() } as any)
-      .where(eq(marketingLeads.id, leadId))
+      .where(eq(marketingLeads.id, lead.id))
       .catch(() => null);
 
     await db.update(clients)
       .set({ status: 'onboarding', metadata: updatedMeta, updatedAt: new Date() } as any)
-      .where(eq(clients.id, leadId))
+      .where(eq(clients.id, lead.id))
       .catch(() => null);
 
     // ── Step 8: Send invitation email ────────────────────────────────────
