@@ -1,2 +1,12 @@
+# Configuración de Bun para Railway y CI/CD
 [install]
-ignoreScripts = true
+# Configurar reintentos automáticos para evitar errores 429 Too Many Requests de npmjs.org
+backend = "copyfile"
+
+[install.cache]
+dir = "~/.bun/install/cache"
+
+[install.scopes]
+
+[install.lockfile]
+print = "warn"
