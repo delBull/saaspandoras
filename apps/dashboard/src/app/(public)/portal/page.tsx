@@ -503,6 +503,16 @@ function ClientPortalContent() {
               <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
                 <h2 style={{ fontSize: 18, margin: '0 0 6px' }}>Personality & System Prompt</h2>
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Define las instrucciones base con las que Hermes responderá a tus prospectos.</p>
+
+                {/* Mini Guide */}
+                <div style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', padding: 16, borderRadius: 12, marginBottom: 20, fontSize: 12, lineHeight: 1.6, color: 'rgba(255,255,255,0.8)' }}>
+                  <strong style={{ color: '#a78bfa' }}>💡 Mini-Guía de Entrenamiento de Personalidad:</strong>
+                  <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                    <li><strong>Nombre Público:</strong> Nombre exacto de tu negocio (ej. <em>Rabbitty Rewards</em>). Hermes usará este nombre al presentarse.</li>
+                    <li><strong>System Prompt:</strong> Escribe en 2-3 frases el rol, tono y objetivo principal de tu agente (ej. <em>"Eres un asistente ejecutivo especializado en programas de lealtad. Saluda con amabilidad y califica el presupuesto del cliente."</em>).</li>
+                  </ul>
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
                     <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 6 }}>Nombre Público del Negocio</label>
@@ -532,6 +542,16 @@ function ClientPortalContent() {
                     ✨ Ejecutar Wizard de Conocimiento (4 Pasos)
                   </button>
                 </div>
+
+                {/* Mini Guide */}
+                <div style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', padding: 16, borderRadius: 12, marginBottom: 20, fontSize: 12, lineHeight: 1.6, color: 'rgba(255,255,255,0.8)' }}>
+                  <strong style={{ color: '#a78bfa' }}>💡 Mini-Guía de Base de Conocimiento:</strong>
+                  <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                    <li>Hermes consulta esta información en milisegundos antes de construir cualquier respuesta.</li>
+                    <li>Mantén actualizados tus horarios de atención, precios de productos y respuestas a preguntas frecuentes para evitar alucinaciones.</li>
+                  </ul>
+                </div>
+
                 {knowledgePack || org.config?.knowledgePack ? (
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: 20, borderRadius: 12, border: '1px solid rgba(124,58,237,0.2)', fontSize: 13, lineHeight: 1.8, color: 'rgba(255,255,255,0.8)' }}>
                     <div><strong>Nombre Comercial:</strong> {(knowledgePack || org.config.knowledgePack).companyName}</div>
@@ -608,18 +628,34 @@ function ClientPortalContent() {
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Conecta tus credenciales de Telegram y WhatsApp para activar Hermes en producción.</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {/* Webchat */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>💬 Webchat / Widget HTML</div>
-                    <div style={{ fontSize: 12, color: '#10b981', marginBottom: 8 }}>● Listo para integrar en tu web</div>
-                    <code style={{ fontSize: 11, background: '#08080C', padding: '8px 12px', borderRadius: 6, display: 'block', color: 'rgba(255,255,255,0.6)' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      💬 Webchat / Widget HTML <span style={{ fontSize: 10, background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 8px', borderRadius: 12 }}>● Listo</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: 12 }}>
+                      <strong>📖 Guía de Integración Rápida (1 Minuto):</strong>
+                      <ol style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                        <li>Copia el bloque de código script de abajo.</li>
+                        <li>Pégalo dentro del <code>&lt;head&gt;</code> o antes de la etiqueta <code>&lt;/body&gt;</code> en tu sitio web o landing page.</li>
+                        <li>¡Listo! El burbuja de chat flotante de Hermes aparecerá automáticamente atendiendo a tus visitantes.</li>
+                      </ol>
+                    </div>
+                    <code style={{ fontSize: 11, background: '#08080C', padding: '10px 14px', borderRadius: 8, display: 'block', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.2)' }}>
                       &lt;script src="https://dash.pandoras.finance/widget.js" data-project="{org.slug}"&gt;&lt;/script&gt;
                     </code>
                   </div>
 
-                  {/* Telegram Input */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>✈️ Bot de Telegram (botToken)</div>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: '0 0 10px' }}>Pega el token obtenido de BotFather para vincular tu bot directamente.</p>
+                  {/* Telegram Input & Guide */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>✈️ Bot de Telegram (botToken)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: 12 }}>
+                      <strong>📖 Guía para obtener tu Bot Token en Telegram:</strong>
+                      <ol style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                        <li>Abre Telegram y busca al bot oficial <strong>@BotFather</strong>.</li>
+                        <li>Envía el comando <code>/newbot</code> y asigna un nombre a tu bot (ej. <em>MiEmpresaBot</em>).</li>
+                        <li>Copia el <strong>HTTP API Token</strong> generado y pégalo en el campo de abajo.</li>
+                      </ol>
+                    </div>
                     <input
                       value={telegramBotToken}
                       onChange={e => setTelegramBotToken(e.target.value)}
@@ -627,14 +663,20 @@ function ClientPortalContent() {
                       style={{ ...inputStyle, marginBottom: 8 }}
                     />
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                      Webhook URL: <code style={{ color: '#a78bfa' }}>https://dash.pandoras.finance/api/v1/hermes/webhook/telegram?slug={org.slug}</code>
+                      Webhook registrado: <code style={{ color: '#a78bfa' }}>https://dash.pandoras.finance/api/v1/hermes/webhook/telegram?slug={org.slug}</code>
                     </div>
                   </div>
 
-                  {/* WhatsApp Input */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>🟢 WhatsApp Business API / Phone</div>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: '0 0 10px' }}>Ingresa el número de WhatsApp asociado a tu negocio.</p>
+                  {/* WhatsApp Input & Guide */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🟢 WhatsApp Business API / Phone</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: 12 }}>
+                      <strong>📖 Guía de Número & Conexión WhatsApp:</strong>
+                      <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                        <li><strong>Número Personal vs Business API:</strong> Un número personal se puede ingresar para pruebas iniciales o redirección rápida, pero para que Hermes responda autónomamente por mensajes de WhatsApp en producción de 24/7 sin bloquear tu teléfono personal, requiere la <strong>WhatsApp Business API</strong> o un número virtual dedicado.</li>
+                        <li>Ingresa tu número con código de país (ej. <em>+5215512345678</em>).</li>
+                      </ul>
+                    </div>
                     <input
                       value={whatsappPhone}
                       onChange={e => setWhatsappPhone(e.target.value)}
@@ -642,7 +684,7 @@ function ClientPortalContent() {
                       style={{ ...inputStyle, marginBottom: 8 }}
                     />
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                      Webhook URL: <code style={{ color: '#a78bfa' }}>https://dash.pandoras.finance/api/v1/hermes/webhook/whatsapp?slug={org.slug}</code>
+                      Webhook API: <code style={{ color: '#a78bfa' }}>https://dash.pandoras.finance/api/v1/hermes/webhook/whatsapp?slug={org.slug}</code>
                     </div>
                   </div>
 
