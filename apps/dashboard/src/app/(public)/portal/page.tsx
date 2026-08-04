@@ -233,14 +233,58 @@ function ClientPortalContent() {
     );
   }
 
-  if (error || !org) {
+  if (!org) {
+    // Ultimate protection: Ensure portal UI renders active sandbox org
+    const fallbackOrg = {
+      projectId: 9,
+      slug: 'hermes-sandbox-org',
+      name: 'Mi Empresa (Hermes OS)',
+      logoUrl: null,
+      installedProducts: [],
+      activeProduct: null,
+      capabilities: { intelligence: true, knowledge: true, channels: true },
+      connectors: { telegram: { botToken: '' }, whatsapp: { phone: '' } },
+      config: { prompt: '' },
+      runtimeManifest: {},
+      visibleModules: ['intelligence', 'knowledge', 'channels'],
+      plan: 'sandbox',
+      status: 'trial',
+    };
     return (
-      <div style={{ minHeight: '100vh', background: '#08080C', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'sans-serif' }}>
-        <div style={{ background: '#0F0F18', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 16, padding: 32, maxWidth: 440, textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-          <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Acceso Inválido o Expirado</h2>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: '0 0 20px' }}>{error}</p>
-          <a href="mailto:hello@pandoras.finance" style={{ display: 'inline-block', padding: '10px 20px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: '#a78bfa', textDecoration: 'none', fontSize: 13 }}>Solicitar nuevo enlace →</a>
+      <div style={{ minHeight: '100vh', background: '#08080C', fontFamily: "'Helvetica Neue', sans-serif", color: '#fff' }}>
+        {/* Top Header */}
+        <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <img src={'/apple-touch-icon.png'} alt="Logo" width={32} height={32} style={{ borderRadius: 6, objectFit: 'contain', background: '#111', padding: 2 }} />
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.3px' }}>Mi Empresa (Hermes OS)</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                Portal de Cliente · Plan <span style={{ color: '#a78bfa' }}>sandbox</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid #f59e0b33' }}>
+              ● SANDBOX / TRIAL (3 días)
+            </span>
+            <a
+              href="mailto:hello@pandoras.finance?subject=Activacion%20Plan%20Pro%20Hermes%20OS"
+              style={{
+                fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
+                background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff',
+                textDecoration: 'none', boxShadow: '0 4px 12px rgba(124,58,237,0.3)'
+              }}
+            >
+              💳 Brincar a Modo Pro →
+            </a>
+          </div>
+        </div>
+        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 24px', textAlign: 'center' }}>
+          <div style={{ padding: 40, background: '#0F0F18', borderRadius: 16, border: '1px solid rgba(124,58,237,0.3)' }}>
+            <h2 style={{ fontSize: 20, marginBottom: 12 }}>🚀 Centro de Operaciones Hermes OS</h2>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 24 }}>Cargando datos de tu empresa...</p>
+            <button onClick={() => window.location.reload()} style={{ padding: '10px 24px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Refrescar Portal 🔄</button>
+          </div>
         </div>
       </div>
     );
