@@ -83,9 +83,11 @@ export const ProvisioningEngine = {
       throw new Error(`[ProvisioningEngine] Unknown product: ${product}`);
     }
 
-    // ── Step 1: Load lead or client ───────────────────────────────────────
+    // ── Step 1: Load lead or client (by ID or Email) ─────────────────────
+    const isEmail = leadId.includes('@');
+
     let lead = await db.query.marketingLeads.findFirst({
-      where: eq(marketingLeads.id, leadId),
+      where: isEmail ? eq(marketingLeads.email, leadId) : eq(marketingLeads.id, leadId),
     }).catch(() => null);
 
     let clientRecord: any = null;
@@ -93,7 +95,7 @@ export const ProvisioningEngine = {
     if (!lead) {
       // Fallback: Check in clients table (CRM identity table)
       clientRecord = await db.query.clients.findFirst({
-        where: eq(clients.id, leadId),
+        where: isEmail ? eq(clients.email, leadId) : eq(clients.id, leadId),
       }).catch(() => null);
 
       if (!clientRecord) {
