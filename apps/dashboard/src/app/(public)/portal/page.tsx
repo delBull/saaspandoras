@@ -360,6 +360,24 @@ function ClientPortalContent() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <a
+            href="/portal/login"
+            onClick={() => {
+              localStorage.removeItem('pandoras_portal_session');
+            }}
+            style={{
+              padding: '6px 14px',
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.5)',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              textDecoration: 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            🔒 Cambiar / Salir
+          </a>
           <button
             onClick={() => {
               if (testChatMessages.length === 0) {
