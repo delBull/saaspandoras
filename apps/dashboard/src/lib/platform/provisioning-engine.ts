@@ -19,7 +19,7 @@
  */
 
 import { db } from '@/db';
-import { projects, installedProducts, marketingLeads } from '@/db/schema';
+import { projects, installedProducts, marketingLeads, clients } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import {
   PRODUCT_REGISTRY,
@@ -83,13 +83,33 @@ export const ProvisioningEngine = {
       throw new Error(`[ProvisioningEngine] Unknown product: ${product}`);
     }
 
-    // ── Step 1: Load lead ─────────────────────────────────────────────────
-    const lead = await db.query.marketingLeads.findFirst({
+    // ── Step 1: Load lead or client ───────────────────────────────────────
+    let lead = await db.query.marketingLeads.findFirst({
       where: eq(marketingLeads.id, leadId),
-    });
+    }).catch(() => null);
+
+    let clientRecord: any = null;
 
     if (!lead) {
-      throw new Error(`[ProvisioningEngine] Lead not found: ${leadId}`);
+      // Fallback: Check in clients table (CRM identity table)
+      clientRecord = await db.query.clients.findFirst({
+        where: eq(clients.id, leadId),
+      }).catch(() => null);
+
+      if (!clientRecord) {
+        throw new Error(`[ProvisioningEngine] Lead or Client not found: ${leadId}`);
+      }
+
+      lead = {
+        id: clientRecord.id,
+        name: clientRecord.name || 'Cliente',
+        email: clientRecord.email,
+        metadata: clientRecord.metadata || {},
+      } as any;
+    }
+
+    if (!lead) {
+      throw new Error(`[ProvisioningEngine] Lead or Client not found: ${leadId}`);
     }
 
     // ── Step 2: Resolve or Create Project (= Organization) ───────────────
@@ -186,13 +206,19 @@ export const ProvisioningEngine = {
       .set({ portalToken, updatedAt: new Date() })
       .where(eq(installedProducts.id, installed.id));
 
-    // Update lead CRM stage to 'PROVISIONED' and set provisioned flag in metadata
+    // Update lead/client CRM stage to 'PROVISIONED' and set provisioned flag in metadata
     const currentMeta = (lead.metadata as Record<string, any>) || {};
     const updatedMeta = { ...currentMeta, provisioned: true, installedProductId: installed.id, provisionedAt: new Date().toISOString() };
 
     await db.update(marketingLeads)
       .set({ crmStage: 'CLOSED_WON', metadata: updatedMeta, updatedAt: new Date() } as any)
-      .where(eq(marketingLeads.id, leadId));
+      .where(eq(marketingLeads.id, leadId))
+      .catch(() => null);
+
+    await db.update(clients)
+      .set({ status: 'onboarding', metadata: updatedMeta, updatedAt: new Date() } as any)
+      .where(eq(clients.id, leadId))
+      .catch(() => null);
 
     // ── Step 8: Send invitation email ────────────────────────────────────
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
