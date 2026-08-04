@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateBotResponse } from '@/lib/marketing/bot-engine';
 import { Redis } from 'ioredis';
 
-// Strictly limit sandbox usage to max 10 messages/day AND max 30 total lifetime messages per IP
-const SANDBOX_DAILY_LIMIT = 10;
-const SANDBOX_LIFETIME_LIMIT = 30;
+// Global Freno de Mano: Max 100 sandbox requests/day across ALL users combined (First-Come, First-Served)
+// Keeps sandbox token usage strictly under ~2% of total quota
+const GLOBAL_DAILY_SANDBOX_CAP = 100;
+
+// Tight per-IP limits for cold lead magnet prospection
+const SANDBOX_DAILY_LIMIT = 3;
+const SANDBOX_LIFETIME_LIMIT = 10;
+
 let redis: Redis | null = null;
 
 if (process.env.REDIS_URL) {
@@ -18,6 +23,7 @@ if (process.env.REDIS_URL) {
 // In-memory fallback rate limiters
 const inMemoryLimits = new Map<string, { count: number; date: string }>();
 const inMemoryLifetime = new Map<string, number>();
+let globalDailyCount = { count: 0, date: '' };
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,19 +37,30 @@ export async function POST(req: NextRequest) {
     // Determine client IP for rate limiting
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'sandbox-user';
     const today: string = new Date().toISOString().split('T')[0] ?? '';
+    const globalKey = `hermes:sandbox:global:${today}`;
     const rateLimitKey = `hermes:sandbox:ratelimit:${ip}:${today}`;
     const lifetimeKey = `hermes:sandbox:lifetime:${ip}`;
 
+    let totalGlobalToday = 0;
     let currentCount = 0;
     let lifetimeCount = 0;
 
     if (redis) {
+      totalGlobalToday = await redis.incr(globalKey);
+      if (totalGlobalToday === 1) await redis.expire(globalKey, 86400);
+
       currentCount = await redis.incr(rateLimitKey);
-      if (currentCount === 1) {
-        await redis.expire(rateLimitKey, 86400); // 24 hours
-      }
+      if (currentCount === 1) await redis.expire(rateLimitKey, 86400);
+
       lifetimeCount = await redis.incr(lifetimeKey);
     } else {
+      if (globalDailyCount.date !== today) {
+        globalDailyCount = { count: 1, date: today };
+      } else {
+        globalDailyCount.count += 1;
+      }
+      totalGlobalToday = globalDailyCount.count;
+
       const record = inMemoryLimits.get(rateLimitKey);
       if (!record || record.date !== today) {
         inMemoryLimits.set(rateLimitKey, { count: 1, date: today });
@@ -58,21 +75,31 @@ export async function POST(req: NextRequest) {
       lifetimeCount = lifeVal;
     }
 
-    // Check Lifetime Cap (Trial Period Expiration)
+    // 1. Check Global Freno de Mano (First-Come, First-Served Daily Capacity)
+    if (totalGlobalToday > GLOBAL_DAILY_SANDBOX_CAP) {
+      return NextResponse.json({
+        error: 'Capacidad Global del Sandbox Agotada por Hoy',
+        message: `El Sandbox interactivo ha alcanzado su capacidad diaria máxima de prueba por hoy (First-Come, First-Served). Para asegurar el rendimiento operativo, vuelve mañana o activa tu prueba dedicada para tu empresa.`,
+        remaining: 0,
+        globalCapReached: true
+      }, { status: 429 });
+    }
+
+    // 2. Check Lifetime Cap (Trial Period Expiration for IP)
     if (lifetimeCount > SANDBOX_LIFETIME_LIMIT) {
       return NextResponse.json({
         error: 'Periodo de Prueba Agotado',
-        message: `Has completado el periodo de prueba gratuito en el Sandbox de Hermes (máximo ${SANDBOX_LIFETIME_LIMIT} mensajes totales). Para conectar a Hermes con tu empresa en producción y habilitar volumen ilimitado, activa tu plan en Pandora's Growth OS.`,
+        message: `Has completado tus ${SANDBOX_LIFETIME_LIMIT} mensajes de prueba gratuita en este Sandbox. Activa Hermes OS dedicado para tu empresa.`,
         remaining: 0,
         trialExpired: true
       }, { status: 429 });
     }
 
-    // Check Daily Cap
+    // 3. Check Daily Cap for IP
     if (currentCount > SANDBOX_DAILY_LIMIT) {
       return NextResponse.json({
         error: 'Límite de Sandbox diario alcanzado',
-        message: `Has alcanzado el límite diario de ${SANDBOX_DAILY_LIMIT} mensajes. Vuelve mañana o activa tu plan en Growth OS para uso ilimitado.`,
+        message: `Has alcanzado tu límite diario de ${SANDBOX_DAILY_LIMIT} mensajes de prueba. Vuelve mañana o activa tu plan dedicado.`,
         remaining: 0
       }, { status: 429 });
     }

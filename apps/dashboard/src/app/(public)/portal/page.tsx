@@ -237,21 +237,47 @@ function ClientPortalContent() {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: org.status === 'trial' || org.plan === 'sandbox' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)', color: org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b' : '#10b981', border: `1px solid ${org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b33' : '#10b98133'}` }}>
-            ● {org.plan === 'sandbox' ? 'SANDBOX / TRIAL (14 días)' : `STATUS: ${org.status.toUpperCase()}`}
+            ● {org.plan === 'sandbox' ? 'SANDBOX / TRIAL (3 días)' : `STATUS: ${org.status.toUpperCase()}`}
           </span>
           {(org.status === 'trial' || org.plan === 'sandbox') && (
-            <a
-              href="mailto:hello@pandoras.finance?subject=Activacion%20Plan%20Pro%20Hermes%20OS"
-              style={{
-                fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
-                background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff',
-                textDecoration: 'none', boxShadow: '0 4px 12px rgba(124,58,237,0.3)'
-              }}
-            >
-              💳 Brincar a Modo Pro →
-            </a>
+            <>
+              <button
+                onClick={async () => {
+                  const sessionToken = localStorage.getItem('pandoras_portal_session');
+                  if (!sessionToken) return;
+                  if (!confirm('¿Deseas solicitar 3 días adicionales de prueba a tu ejecutivo?')) return;
+                  try {
+                    const res = await fetch('/api/v1/portal/extend-trial', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ sessionToken, reason: 'Solicitud manual desde Client Portal' }),
+                    });
+                    const d = await res.json();
+                    if (d.success) alert('📩 ¡Solicitud enviada! Tu ejecutivo ha sido notificado para autorizar tu extensión.');
+                    else alert(d.error || 'Error al enviar solicitud');
+                  } catch { alert('Error de conexión'); }
+                }}
+                style={{
+                  fontSize: 11, fontWeight: 500, padding: '6px 12px', borderRadius: 8,
+                  background: 'rgba(255,255,255,0.05)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)',
+                  cursor: 'pointer'
+                }}
+              >
+                ⏳ Ampliar Prueba (3 días)
+              </button>
+              <a
+                href="mailto:hello@pandoras.finance?subject=Activacion%20Plan%20Pro%20Hermes%20OS"
+                style={{
+                  fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
+                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff',
+                  textDecoration: 'none', boxShadow: '0 4px 12px rgba(124,58,237,0.3)'
+                }}
+              >
+                💳 Brincar a Modo Pro →
+              </a>
+            </>
           )}
         </div>
       </div>
