@@ -177,7 +177,7 @@ function HermesPlayground({ onCTA }: { onCTA: () => void }) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div id="sandbox" className="max-w-6xl mx-auto scroll-mt-24">
       <div className="text-center mb-12">
         <span className={`inline-flex items-center gap-2 text-xs font-mono px-4 py-1.5 rounded-full border mb-4 ${c.badge}`}>
           <Sparkles className="w-3.5 h-3.5" />
@@ -416,13 +416,13 @@ export default function HermesEnterpriseLandingPage() {
             <ChevronRight className="w-4 h-4" />
           </Button>
 
-          <Button
-            onClick={() => handleOpenCTA('hermes_portal_cta')}
+          <Link
+            href="/portal"
             className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-sm font-light transition-all flex items-center justify-center gap-2"
           >
             <Building2 className="w-4 h-4 text-amber-400" />
-            <span>Portal de Gestores (White-Label)</span>
-          </Button>
+            <span>Ingresar a Mi Portal de Gestor →</span>
+          </Link>
         </div>
 
         {/* ENTERPRISE DASHBOARD & MULTI-AGENT VISUALIZATION */}

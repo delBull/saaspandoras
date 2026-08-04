@@ -351,7 +351,7 @@ function ClientPortalContent() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <a
-            href="/growth-os/hermes"
+            href="/growth-os/hermes#sandbox"
             target="_blank"
             rel="noreferrer"
             style={{
