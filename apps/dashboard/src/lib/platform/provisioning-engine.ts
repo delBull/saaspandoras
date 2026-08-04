@@ -150,7 +150,7 @@ export const ProvisioningEngine = {
         title,
         slug,
         description: `Organization provisioned for ${title} via Hermes Provisioning Engine`,
-        status: 'active' as any,
+        status: 'active_client' as any,
         allowedDomains: [] as any,
         legalConfig: {} as any,
         extraConfig: {} as any,
