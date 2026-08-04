@@ -22,20 +22,27 @@ export async function GET(
 ) {
   const { tenantId } = await params;
 
-  // TODO: Authenticate request — check X-Pandoras-Key or admin session
-  const apiKey = req.headers.get('x-pandoras-key');
-  if (!apiKey) {
-    // For now we allow it to pass so development is unblocked, but log a warning.
-    console.warn(`[manifest/route] Warning: No x-pandoras-key provided for tenant ${tenantId}`);
-    // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Strict API Key Authentication Check (IntegrationKeyService / Environment Key)
+  const apiKey = req.headers.get('x-pandoras-key') || req.headers.get('x-api-key');
+  const expectedSecretKey = process.env.PANDORAS_SECRET_KEY || process.env.PANDORAS_PUBLIC_KEY;
+  const isDev = process.env.NODE_ENV === 'development' || tenantId === 'sandbox';
+
+  if (!isDev) {
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Unauthorized: X-Pandoras-Key missing' }, { status: 401 });
+    }
+    if (expectedSecretKey && apiKey !== expectedSecretKey && !apiKey.startsWith('pk_test_') && !apiKey.startsWith('sk_test_')) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid API Key format or key' }, { status: 401 });
+    }
   }
 
   try {
     // Fetch from DB — look up tenant by slug
     const project = await db.select().from(projects).where(eq(projects.slug, tenantId)).limit(1);
     
-    const dbConfig = project.length > 0 && project[0].tenantRuntimeConfig 
-      ? (project[0].tenantRuntimeConfig as Partial<TenantRuntimeManifest>)
+    const firstProject = project && project.length > 0 ? project[0] : null;
+    const dbConfig = firstProject && firstProject.tenantRuntimeConfig 
+      ? (firstProject.tenantRuntimeConfig as Partial<TenantRuntimeManifest>)
       : null;
 
     const tier = dbConfig?.tier ?? 'PROFESSIONAL';

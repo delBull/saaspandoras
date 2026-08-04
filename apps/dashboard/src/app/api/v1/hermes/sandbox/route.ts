@@ -28,7 +28,7 @@ let globalDailyCount = { count: 0, date: '' };
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { companyName, industry, customPrompt, userMessage, history = [] } = body;
+    const { companyName, industry, customPrompt, userMessage, history = [], referralContext } = body;
 
     if (!userMessage || typeof userMessage !== 'string') {
       return NextResponse.json({ error: 'Mensaje de usuario requerido' }, { status: 400 });
@@ -104,10 +104,41 @@ export async function POST(req: NextRequest) {
       }, { status: 429 });
     }
 
-    // Build dynamic system prompt for Sandbox
+    // Build dynamic system prompt for Sandbox & Referral Trust Journey
     const effectiveCompany = companyName || 'Mi Empresa';
     const effectiveIndustry = industry || 'General';
-    const basePrompt = customPrompt || `Eres Hermes, el Agente Autónomo de Inteligencia Corporativa de ${effectiveCompany} (Industria: ${effectiveIndustry}). Tu objetivo es atender a los clientes con máxima elegancia, responder sus dudas sobre servicios/productos, agendar citas y calificar leads.`;
+
+    let conciergeInstructions = '';
+    if (referralContext) {
+      conciergeInstructions = `\n\nHERMES CONCIERGE MODE (REFERRAL TRUST JOURNEY ACTIVO):
+- Origen del Contacto: Referido por ${referralContext.referredBy || 'Círculo Cercano'} (${referralContext.relationship || 'VIP Family'}).
+- Prioridad: ${referralContext.priorityTier || 'VIP'}.
+- REGLAS DE TONO E INSTITUCIONALIDAD:
+  • NUNCA uses lenguaje de presión, ventas agresivas ni FOMO ("compra antes de que suba", "oportunidad de tu vida").
+  • Habla con máxima elegancia institucional sobre la preservación de PATRIMONIO y PARTICIPACIÓN DESDE EL ORIGEN (Etapa Cero).
+  • Salta las preguntas frías de prospección. Reconoce el origen de la invitación y guía hacia la tesis del proyecto y agendamiento con los fundadores.`;
+    }
+
+    // Evaluate Hermes OS v7 Journey & Playbook Engine
+    const { HermesJourneyEngine } = await import('@/lib/hermes/journey-engine');
+    const selectedJourneyId = referralContext ? 'family_referral_journey' : (effectiveIndustry.includes('Web3') || effectiveCompany.toLowerCase().includes('oscar') ? 'web3_sovereign_education' : 'family_referral_journey');
+    const { journey, playbook, objectiveState } = HermesJourneyEngine.evaluateJourney(selectedJourneyId);
+
+    const journeyPromptInjection = `\n\nHERMES OS V7 JOURNEY & OBJECTIVE ENGINE:
+- Journey Activo: ${journey.name} (Persona: ${journey.persona})
+- Meta del Journey: ${journey.goal}
+- Playbook Activo: ${playbook.name} (Etapa Actual: ${objectiveState.currentStageId})
+- Objetivo de la Etapa: ${playbook.stages.find(s => s.id === objectiveState.currentStageId)?.objective}
+- Acción Sugerida: ${objectiveState.recommendedAction}`;
+
+    const basePrompt = (customPrompt ? `${customPrompt}\n\n` : '') + `Eres Hermes, el Agente Autónomo de Inteligencia Corporativa de ${effectiveCompany} (Industria: ${effectiveIndustry}).${conciergeInstructions}${journeyPromptInjection}
+
+REGLAS DE FORMATO VISUAL Y ESTILO:
+- Utiliza siempre emojis relevantes (✨, 🚀, 💡, 📅, 💳, 📌, 🎯) para dar dinamismo a tus respuestas.
+- Organiza tu respuesta en párrafos cortos separados por doble salto de línea (enter).
+- Usa listas con viñetas (•) o numeración cuando menciones opciones, precios o características.
+- Usa negritas (**texto**) para destacar términos clave, precios o acciones importantes.
+- NUNCA entregues texto plano sin formato ni párrafos apelmazados.`;
 
     // Call Hermes Bot Engine using Sandbox mode
     const botResponseText = await generateBotResponse({

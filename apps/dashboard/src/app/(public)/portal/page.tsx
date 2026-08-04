@@ -82,6 +82,10 @@ function ClientPortalContent() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [savedConnectorsSuccess, setSavedConnectorsSuccess] = useState(false);
 
+  // CRM Leads State
+  const [portalLeads, setPortalLeads] = useState<any[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(false);
+
   useEffect(() => {
     async function loadPortal() {
       setLoading(true);
@@ -453,6 +457,10 @@ function ClientPortalContent() {
                   { id: 'intelligence', label: 'Intelligence Studio', icon: '⚡', category: 'Core', desc: 'System Prompt & Identidad', badge: '● ACTIVO' },
                   { id: 'knowledge', label: 'Knowledge Studio', icon: '📚', category: 'Core', desc: 'FAQ & Base de Conocimiento', badge: '● ACTIVO' },
                   { id: 'channels', label: 'Conectores & Canales', icon: '📡', category: 'Core', desc: 'Telegram / WhatsApp / Web', badge: '● ACTIVO' },
+                  { id: 'conversations', label: 'Conversation Center', icon: '💬', category: 'Core', desc: 'Chats en Vivo & Take Over', badge: '● ACTIVO' },
+                  { id: 'leads', label: 'CRM & Prospectos', icon: '👥', category: 'Core', desc: 'Leads & Score de Intención', badge: '● ACTIVO' },
+                  { id: 'payments', label: 'Transacciones SPEI', icon: '💳', category: 'Core', desc: 'Órdenes & SPEI Generados', badge: '● ACTIVO' },
+                  { id: 'journeys', label: 'Journeys & Playbooks v7', icon: '🧭', category: 'Core', desc: 'Objetivos & Playbooks Activos', badge: '● ACTIVO' },
                   { id: 'tools', label: 'Herramientas & SPEI', icon: '🛠️', category: 'Pro Suite', desc: 'Cobros SPEI & Agendamiento', badge: '✨ SIMULADOR PRO' },
                   { id: 'skills', label: 'Skills & Procedimientos', icon: '🎓', category: 'Pro Suite', desc: 'Soporte Autónomo & Workflows', badge: '✨ SIMULADOR PRO' },
                   { id: 'voice', label: 'Voice Studio AI', icon: '🎙️', category: 'Pro Suite', desc: 'Llamadas de Voz en Vivo', badge: '✨ DEMO EN VIVO' },
@@ -699,7 +707,244 @@ function ClientPortalContent() {
               </div>
             )}
 
-            {/* Interactive Pro Simulators for Trial */}
+            {/* Tab 3.5: Conversation Center */}
+            {activeTab === 'conversations' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div>
+                    <h2 style={{ fontSize: 18, margin: '0 0 4px', color: '#fff' }}>💬 Conversation Center & Live Inspection</h2>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Inspecciona las pláticas de la IA en tiempo real y toma el control cuando lo desees.</p>
+                  </div>
+                  <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(16,185,129,0.3)' }}>
+                    ● 2 Conversaciones Activas
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, height: 420 }}>
+                  {/* Left Column: Conversation List */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 4 }}>Conversaciones Recientes</div>
+                    
+                    <div style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', padding: 12, borderRadius: 8, cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: '#fff' }}>
+                        <span>Juan Pérez</span>
+                        <span style={{ fontSize: 10, color: '#10b981' }}>Telegram</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>"¿Puedo apartar con SPEI?"</div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                        <span style={{ fontSize: 9, background: 'rgba(16,185,129,0.2)', color: '#10b981', padding: '1px 6px', borderRadius: 4 }}>Score: 92%</span>
+                        <span style={{ fontSize: 9, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', padding: '1px 6px', borderRadius: 4 }}>Closing</span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 12, borderRadius: 8, cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>
+                        <span>Cliente Web Demo</span>
+                        <span style={{ fontSize: 10, color: '#a78bfa' }}>Webchat</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>"¿Cuáles son los precios de lista?"</div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                        <span style={{ fontSize: 9, background: 'rgba(16,185,129,0.2)', color: '#10b981', padding: '1px 6px', borderRadius: 4 }}>Score: 85%</span>
+                        <span style={{ fontSize: 9, background: 'rgba(124,58,237,0.2)', color: '#a78bfa', padding: '1px 6px', borderRadius: 4 }}>Discovery</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Chat Inspection & Human Takeover Panel */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column' }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Juan Pérez (Telegram)</div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Dueño actual: <strong style={{ color: '#10b981' }}>Hermes AI Agent</strong></div>
+                      </div>
+                      <button
+                        onClick={() => alert('✋ ¡Has tomado el control manual de esta conversación! Hermes no responderá hasta que le devuelvas el control.')}
+                        style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', padding: '6px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        ✋ Tomar Control Manual (Human Takeover)
+                      </button>
+                    </div>
+
+                    {/* Messages Body */}
+                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+                      <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: 10, fontSize: 12, maxWidth: '80%' }}>
+                        <strong>Juan Pérez:</strong> Hola, me interesa invertir en la Etapa Cero. ¿Puedo apartar con SPEI?
+                      </div>
+                      <div style={{ alignSelf: 'flex-end', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', padding: '10px 14px', borderRadius: 10, fontSize: 12, maxWidth: '80%', color: '#fff' }}>
+                        <strong>Hermes AI Agent:</strong> ¡Hola Juan! Por supuesto. Contamos con SPEI Fast Lane para reservar de forma inmediata. ¿Te genero la CLABE personalizada ahora?
+                      </div>
+                    </div>
+
+                    {/* Footer Input for Manual Override */}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        placeholder="Intervenir y enviar un mensaje manual..."
+                        style={{ flex: 1, background: '#08080C', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 12 }}
+                      />
+                      <button style={{ background: '#7c3aed', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        Enviar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeTab === 'leads' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div>
+                    <h2 style={{ fontSize: 18, margin: '0 0 4px', color: '#fff' }}>👥 CRM & Prospectos Capturados</h2>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Leads en tiempo real calificados y atendidos autónomamente por Hermes.</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      setLoadingLeads(true);
+                      try {
+                        const sessionToken = localStorage.getItem('pandoras_portal_session') || 'ps_demo_session';
+                        const res = await fetch(`/api/v1/portal/leads?sessionToken=${sessionToken}`);
+                        const data = await res.json();
+                        if (data.leads) setPortalLeads(data.leads);
+                      } catch {}
+                      setLoadingLeads(false);
+                    }}
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#a78bfa', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {loadingLeads ? 'Cargando...' : '🔄 Actualizar CRM'}
+                  </button>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
+                        <th style={{ padding: '10px 14px' }}>Prospecto</th>
+                        <th style={{ padding: '10px 14px' }}>Contacto</th>
+                        <th style={{ padding: '10px 14px' }}>Canal / Origen</th>
+                        <th style={{ padding: '10px 14px' }}>Intención</th>
+                        <th style={{ padding: '10px 14px' }}>Score</th>
+                        <th style={{ padding: '10px 14px' }}>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {portalLeads.length > 0 ? (
+                        portalLeads.map((lead, idx) => (
+                          <tr key={lead.id || idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td style={{ padding: '12px 14px', fontWeight: 600, color: '#fff' }}>{lead.name || 'Prospecto Web/Telegram'}</td>
+                            <td style={{ padding: '12px 14px', color: 'rgba(255,255,255,0.7)' }}>{lead.email || lead.phone || 'N/A'}</td>
+                            <td style={{ padding: '12px 14px' }}>
+                              <span style={{ fontSize: 11, background: 'rgba(124,58,237,0.15)', color: '#a78bfa', padding: '2px 8px', borderRadius: 4 }}>
+                                {lead.origin || 'Hermes Webchat'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 14px', color: '#10b981', fontWeight: 600 }}>{lead.intent || 'explore'}</td>
+                            <td style={{ padding: '12px 14px', color: '#f59e0b', fontWeight: 700 }}>{lead.score || 85}%</td>
+                            <td style={{ padding: '12px 14px' }}>
+                              <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 8px', borderRadius: 12 }}>
+                                ● {lead.status || 'Active'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
+                            <div>👥 No hay prospectos registrados aún en esta sesión.</div>
+                            <div style={{ fontSize: 12, marginTop: 4 }}>Usa el simulador "Probar Agente con Mis Datos" para calificar a tu primer lead.</div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 5: Transacciones & SPEI */}
+            {activeTab === 'payments' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
+                <h2 style={{ fontSize: 18, margin: '0 0 4px', color: '#fff' }}>💳 Transacciones & Referencias SPEI</h2>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Historial de apartado y cobros automáticos generados por Hermes.</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 12 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>REFERENCIAS SPEI EMITIDAS</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#a78bfa', marginTop: 4 }}>3 Referencias</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 12 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>RECAUDACIÓN EN TRIAL</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#10b981', marginTop: 4 }}>$25,500 MXN</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 12 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>ESTADO DE SPEI FAST LANE</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#f59e0b', marginTop: 4 }}>● Activo 24/7</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 5.5: Journeys & Playbooks Studio */}
+            {activeTab === 'journeys' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 16, padding: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div>
+                    <h2 style={{ fontSize: 18, margin: '0 0 4px', color: '#fff' }}>🧭 Journeys & Playbooks Engine v7</h2>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Metodologías comerciales ejecutables y orquestación por objetivos de negocio.</p>
+                  </div>
+                  <span style={{ fontSize: 11, background: 'rgba(124,58,237,0.15)', color: '#a78bfa', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(124,58,237,0.3)' }}>
+                    ● 2 Journeys Activos en Kernel
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                  {/* Journey Card 1: Family & VIP Referral */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div>
+                        <span style={{ fontSize: 10, background: 'rgba(124,58,237,0.2)', color: '#a78bfa', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>S'NARAI & REAL ESTATE</span>
+                        <h3 style={{ fontSize: 15, margin: '8px 0 2px', color: '#fff' }}>💎 Referral Trust Journey (Familia & VIP)</h3>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Persona: S'Narai Concierge</div>
+                      </div>
+                      <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>● ACTIVO</span>
+                    </div>
+
+                    <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 12 }}>
+                      <div style={{ color: '#a78bfa', fontWeight: 600, marginBottom: 4 }}>🎯 Objective Engine:</div>
+                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>Meta: Agendar Sesión Privada de Patrimonio con Fundadores</div>
+                      <div style={{ color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Playbook: <code>snarai_investor_playbook</code> (3 Etapas)</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', padding: '3px 8px', borderRadius: 4 }}>calendar.schedule</span>
+                      <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', padding: '3px 8px', borderRadius: 4 }}>payments.create_spei_link</span>
+                    </div>
+                  </div>
+
+                  {/* Journey Card 2: Oscar Web3 & Sovereign Knowledge */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div>
+                        <span style={{ fontSize: 10, background: 'rgba(16,185,129,0.2)', color: '#10b981', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>OSCAR & SOBERANÍA WEB3</span>
+                        <h3 style={{ fontSize: 15, margin: '8px 0 2px', color: '#fff' }}>🌐 Web3 & Sovereign Knowledge Journey</h3>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Persona: OscarBot (Educador Web3 & Soberanía)</div>
+                      </div>
+                      <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>● ACTIVO</span>
+                    </div>
+
+                    <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 12 }}>
+                      <div style={{ color: '#10b981', fontWeight: 600, marginBottom: 4 }}>🎯 Objective Engine:</div>
+                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>Meta: Agendar Workshop de Soberanía Digital y Auto-custodia</div>
+                      <div style={{ color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Playbook: <code>oscar_web3_sovereignty_playbook</code> (2 Etapas)</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', padding: '3px 8px', borderRadius: 4 }}>calendar.schedule</span>
+                      <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', padding: '3px 8px', borderRadius: 4 }}>sovereign_triage</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {activeTab === 'voice' && (
               <div style={{ background: '#0F0F18', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 16, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -953,12 +1198,25 @@ function ClientPortalContent() {
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>Probando con tus datos de Portal & Prompt</div>
               </div>
             </div>
-            <button
-              onClick={() => setShowTestDrawer(false)}
-              style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 16 }}
-            >
-              ✕
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                onClick={() => {
+                  setTestChatMessages([
+                    { role: 'agent', text: `✨ Bienvenido al recorrido privado. Marco nos pidió preparar una experiencia exclusiva para los cercanos a la familia antes del lanzamiento abierto. ¿En qué te puedo asesorar sobre la Etapa Cero?` }
+                  ]);
+                }}
+                style={{ background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)', color: '#a78bfa', padding: '3px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
+                title="Activa el modo Concierge para referidos VIP"
+              >
+                💎 Simular Referido VIP
+              </button>
+              <button
+                onClick={() => setShowTestDrawer(false)}
+                style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 16 }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {/* Messages Body */}
@@ -972,10 +1230,11 @@ function ClientPortalContent() {
                   background: msg.role === 'user' ? 'linear-gradient(135deg, #7c3aed, #4f46e5)' : 'rgba(255,255,255,0.05)',
                   border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.1)',
                   borderRadius: 14,
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   color: '#fff',
                   fontSize: 13,
-                  lineHeight: 1.5
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap'
                 }}
               >
                 {msg.text}
@@ -1008,7 +1267,12 @@ function ClientPortalContent() {
                     industry: knowledgePack?.industry || 'General',
                     customPrompt: prompt,
                     userMessage: userText,
-                    history: testChatMessages.map(m => ({ role: m.role, content: m.text }))
+                    history: testChatMessages.map(m => ({ role: m.role, content: m.text })),
+                    referralContext: testChatMessages.length > 0 && testChatMessages[0]?.text?.includes('Marco nos pidió') ? {
+                      referredBy: 'Marco / Círculo Cercano',
+                      relationship: 'VIP Family & Friends',
+                      priorityTier: 'VIP'
+                    } : null
                   }),
                 });
 

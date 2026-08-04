@@ -19,9 +19,24 @@ export async function generateBotResponse(context: {
   // Hermes Core Intelligence Engine Integration (Phase 1)
   const { KnowledgePackLoader } = await import('@/lib/hermes/knowledge-pack');
   const { HermesDecisionEngine } = await import('@/lib/hermes/decision-engine');
+  const { dataProviderSingleton } = await import('@/lib/hermes/data-provider');
   
   const projectSlug = context.projectSlug || projectContext?.slug || projectName || 'snarai';
   const pack = KnowledgePackLoader.getPack(projectSlug, projectContext);
+  
+  // Resolve real-time project state using Universal DataProvider
+  const resolvedState = await dataProviderSingleton.getProjectState(projectSlug);
+  const liveContext = resolvedState ? {
+    title: resolvedState.title,
+    slug: resolvedState.slug,
+    currentPrice: resolvedState.metadata?.tokenPrice,
+    phaseName: resolvedState.metadata?.phaseName,
+    availableUnits: resolvedState.metadata?.availableUnits,
+    progressPercentage: resolvedState.metadata?.progressPercentage,
+    treasury: resolvedState.treasuryDisplay,
+    holdersCount: resolvedState.holdersCount,
+    ...projectContext
+  } : projectContext;
   
   const customerMemory = {
     leadId: chatId || 'guest-session',
@@ -42,22 +57,21 @@ export async function generateBotResponse(context: {
   console.info(`[Hermes Engine] Mission Goal: ${mission.goal}, Target State: ${mission.targetState}`);
 
   // Build the system prompt. If a customSystemPrompt is passed (e.g. from Sandbox or dynamic tenant), use it.
-  const systemPrompt = customSystemPrompt || `Eres "HERMES PATRIMONIAL", el Gestor Patrimonial IA Autónomo y Conserje Oficial para el proyecto "${projectName}".
+  const systemPrompt = customSystemPrompt || `Eres "HERMES PATRIMONIAL", el Gestor Patrimonial IA Autónomo y Conserje Oficial para el proyecto "${liveContext?.title || projectName}".
 Tu objetivo es asesorar, calificar prospectos, resolver dudas legales/técnicas y guiar a los clientes hacia el cierre de su inversión de manera cortes, profesional y ejecutiva.
 
 ACCIONES RECOMENDADAS POR HERMES DECISION ENGINE:
 - Meta de la Misión: ${mission.goal} (Estado Objetivo: ${mission.targetState})
 - Recomendación de Cierre: ${recommendedAction}
 
-CONTEXTO DEL PROYECTO (DATA EN VIVO DE BASE DE DATOS):
-- Título/Proyecto: ${projectContext?.title || projectName}
-- Precio Actual: $${projectContext?.currentPrice || 'N/A'} USD / USDC
-- Fase Activa: ${projectContext?.phaseName || 'Fase Fundadores'}
-- Unidades Totales: ${projectContext?.totalUnits || 'N/A'}
-- Unidades Disponibles: ${projectContext?.availableUnits || 'N/A'}
-- Progreso de Fondeo: ${projectContext?.progressPercentage || 0}%
-- Tesorería/TVL: ${projectContext?.treasury || '0'}
-- Miembros DAO / Holders: ${projectContext?.holdersCount || 0}
+CONTEXTO DEL PROYECTO (DATA EN VIVO DESDE UNIVERSAL DATA PROVIDER):
+- Título/Proyecto: ${liveContext?.title || projectName}
+- Precio Actual: $${liveContext?.currentPrice || 'N/A'} USD / USDC
+- Fase Activa: ${liveContext?.phaseName || 'Fase Fundadores'}
+- Unidades Disponibles: ${liveContext?.availableUnits || 'N/A'}
+- Progreso de Fondeo: ${liveContext?.progressPercentage || 0}%
+- Tesorería/TVL: ${liveContext?.treasury || '0'}
+- Miembros DAO / Holders: ${liveContext?.holdersCount || 0}
 
 PITCH DE VENTAS (PACK: ${pack.name}):
 ${pack.salesPitch}

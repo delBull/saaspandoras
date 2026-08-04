@@ -81,18 +81,18 @@ const INDUSTRIES = [
     ]
   },
   {
-    id: 'healthcare',
-    label: '🏥 Salud / Clínica',
+    id: 'web3_education',
+    label: '🌐 Web3 & Soberanía Digital',
     color: 'emerald',
-    agentName: 'Hermes MedAssist',
-    pack: 'healthcare-ops',
-    channels: ['WhatsApp', 'Web Widget', 'SMS'],
-    capabilities: ['AI Agents', 'CRM', 'Scheduling', 'Knowledge Engine'],
+    agentName: 'OscarBot (Educador Web3 & Soberanía)',
+    pack: 'web3-sovereign-education',
+    channels: ['Telegram', 'Web Widget', 'WhatsApp'],
+    capabilities: ['AI Agents', 'CRM', 'Knowledge Engine', 'Scheduling'],
     conversation: [
-      { role: 'user', text: 'Quiero agendar una cita con cardiología' },
-      { role: 'agent', text: 'Hola, bienvenido al Centro Médico Integral. Tenemos disponibilidad en Cardiología para este miércoles y viernes. ¿Es consulta de primera vez o seguimiento?' },
-      { role: 'user', text: 'Primera vez, me la recomendó mi médico familiar' },
-      { role: 'agent', text: 'Entendido. Le agendo el miércoles a las 11:30 con el Dr. Ramírez. Necesitará traer sus estudios previos si los tiene. Le envío confirmación y recordatorio 2 horas antes. ¿Alguna pregunta adicional?' },
+      { role: 'user', text: 'Hola Oscar, me interesa aprender sobre soberanía digital y custodia Web3' },
+      { role: 'agent', text: '¡Bienvenido! La soberanía digital comienza por entender la auto-custodia de tus activos y la identidad descentralizada. ¿Buscas educación inicial en Bitcoin/Web3 o arquitectura de nodos y privacidad avanzada?' },
+      { role: 'user', text: 'Busco educación inicial y cómo proteger mi patrimonio' },
+      { role: 'agent', text: 'Excelente decisión. Contamos con el **Web3 Sovereign Academy Playbook**. Te puedo agendar un workshop de introducción o enviarte la guía de auto-custodia. ¿Cuál prefieres?' },
     ]
   }
 ];
@@ -385,25 +385,25 @@ export default function HermesEnterpriseLandingPage() {
       <section className="relative pt-24 pb-20 px-6 max-w-7xl mx-auto text-center">
         <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-4 py-1.5 rounded-full mb-8 font-mono inline-flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Pandoras Growth OS — Autonomous Agent Infrastructure</span>
+          <span>Pandoras Growth OS v7 — Enterprise AI Operating System</span>
         </Badge>
 
         <h1 className="text-4xl md:text-6xl font-light tracking-tight text-white max-w-5xl mx-auto leading-tight mb-8">
-          AI Agent Infrastructure para empresas que quieren <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent font-normal">operar con inteligencia autónoma</span>
+          El Sistema Operativo de IA donde <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent font-normal">cada interacción persigue metas de negocio</span>
         </h1>
 
         <p className="text-lg md:text-xl text-zinc-300 font-light max-w-3xl mx-auto mb-6 leading-relaxed">
-          Instala tu propio ecosistema de agentes autónomos bajo tu marca.
+          Instala Journeys, Playbooks ejecutables y agentes autónomos bajo tu marca sin tocar el Kernel.
         </p>
 
         <p className="text-sm md:text-base text-zinc-400 font-light max-w-2xl mx-auto mb-10 leading-relaxed">
-          Pandoras permite que cualquier empresa despegue agentes inteligentes especializados para ventas, atención, operaciones y crecimiento, utilizando una infraestructura compartida, segura y escalable.
+          Pandoras permite a empresas como S'Narai y clínicas como Oscar operar con <strong>Referral Trust Journeys sin FOMO</strong>, calificar prospectos en tiempo real y ejecutar cierres SPEI 24/7.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-zinc-400 font-mono mb-12">
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Sin construir tecnología desde cero</span>
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Sin contratar equipos de IA</span>
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Sin desarrollar sistemas complejos</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Journey Engine & Playbooks Activos</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Objective Engine con Cierre SPEI</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Referral Trust Journeys Institucionales</span>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -432,9 +432,9 @@ export default function HermesEnterpriseLandingPage() {
               <div className="w-3 h-3 rounded-full bg-red-500/80" />
               <div className="w-3 h-3 rounded-full bg-amber-500/80" />
               <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-              <span className="text-xs font-mono text-zinc-400 ml-2">Pandoras Agent Platform OS — Tenant: Luxury Homes Riviera (tenant_002)</span>
+              <span className="text-xs font-mono text-zinc-400 ml-2">Pandoras Enterprise AI OS v7 — Multi-Tenant Control Plane</span>
             </div>
-            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">Multi-Tenant Active</Badge>
+            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">Kernel v6 Congelado · Journeys v7 Active</Badge>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -442,14 +442,15 @@ export default function HermesEnterpriseLandingPage() {
             <div className="border border-zinc-800/60 rounded-2xl bg-zinc-900/40 p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-xs font-medium text-white">Hermes Real Estate Advisor</h4>
-                  <p className="text-[11px] text-amber-400 font-mono">Pack: real-estate-premium</p>
+                  <h4 className="text-xs font-medium text-white">S'Narai Concierge (Etapa Cero)</h4>
+                  <p className="text-[11px] text-amber-400 font-mono">Journey: family_referral_journey</p>
                 </div>
                 <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[9px]">ONLINE</Badge>
               </div>
-              <p className="text-[11px] text-zinc-400 mb-3">Prospecta, califica y envía dossiers legales.</p>
-              <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono border-t border-zinc-800/60 pt-2">
-                <Globe className="w-3 h-3" /> Web | Telegram | WhatsApp
+              <p className="text-[11px] text-zinc-400 mb-3">Trust Journey de preservación patrimonial y agendamiento con fundadores.</p>
+              <div className="text-[10px] font-mono text-zinc-500 border-t border-zinc-800/60 pt-2 flex justify-between">
+                <span>Playbook: investor_v1</span>
+                <span className="text-emerald-400">Objective: Meeting</span>
               </div>
             </div>
 
@@ -457,14 +458,15 @@ export default function HermesEnterpriseLandingPage() {
             <div className="border border-zinc-800/60 rounded-2xl bg-zinc-900/40 p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-xs font-medium text-white">Hermes B2B Sales Agent</h4>
-                  <p className="text-[11px] text-indigo-400 font-mono">Pack: enterprise-b2b</p>
+                  <h4 className="text-xs font-medium text-white">Oscar (Educador Web3 & Soberanía)</h4>
+                  <p className="text-[11px] text-blue-400 font-mono">Journey: web3_sovereign_education</p>
                 </div>
-                <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[9px]">ONLINE</Badge>
+                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px]">ONLINE</Badge>
               </div>
-              <p className="text-[11px] text-zinc-400 mb-3">Califica leads y agenda reuniones corporativas.</p>
-              <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono border-t border-zinc-800/60 pt-2">
-                <PhoneCall className="w-3 h-3" /> Voice AI | Email | Web
+              <p className="text-[11px] text-zinc-400 mb-3">Educación en soberanía digital, auto-custodia y agendamiento de workshops.</p>
+              <div className="text-[10px] font-mono text-zinc-500 border-t border-zinc-800/60 pt-2 flex justify-between">
+                <span>Playbook: sovereign_v1</span>
+                <span className="text-emerald-400">Objective: Workshop</span>
               </div>
             </div>
 
@@ -472,14 +474,15 @@ export default function HermesEnterpriseLandingPage() {
             <div className="border border-zinc-800/60 rounded-2xl bg-zinc-900/40 p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-xs font-medium text-white">Customer Success Agent</h4>
-                  <p className="text-[11px] text-emerald-400 font-mono">Pack: support-operations</p>
+                  <h4 className="text-xs font-medium text-white">Sofía Media Journal</h4>
+                  <p className="text-[11px] text-purple-400 font-mono">Journey: editorial_authority_journey</p>
                 </div>
-                <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[9px]">ONLINE</Badge>
+                <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-[9px]">ONLINE</Badge>
               </div>
-              <p className="text-[11px] text-zinc-400 mb-3">Soporte post-venta y resolución de dudas.</p>
-              <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono border-t border-zinc-800/60 pt-2">
-                <MessageSquare className="w-3 h-3" /> Web Widget | Telegram
+              <p className="text-[11px] text-zinc-400 mb-3">Captación editorial y educación de comunidad.</p>
+              <div className="text-[10px] font-mono text-zinc-500 border-t border-zinc-800/60 pt-2 flex justify-between">
+                <span>Playbook: editorial_v1</span>
+                <span className="text-emerald-400">Objective: Subscribe</span>
               </div>
             </div>
           </div>

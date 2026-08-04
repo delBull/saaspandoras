@@ -13,6 +13,8 @@ import { SmartWalletGuard } from "@/components/auth/SmartWalletGuard";
 import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
 import React, { useState, useEffect } from "react";
 
+import { SWRConfig } from "swr";
+
 function ConnectedProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
@@ -39,32 +41,42 @@ export function Providers({
   }, []);
 
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem={false}
+    <SWRConfig
+      value={{
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+        revalidateIfStale: false,
+        dedupingInterval: 60000, // 60s cache deduplication to reduce API hits
+        isPaused: () => typeof document !== "undefined" && document.hidden,
+      }}
     >
-      <ThirdwebProvider>
-        {!autoConnectDisabled && (
-          <AutoConnect
-            client={client}
-            wallets={wallets}
-            chain={config.chain}
-            timeout={15000}
-          />
-        )}
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem={false}
+      >
+        <ThirdwebProvider>
+          {!autoConnectDisabled && (
+            <AutoConnect
+              client={client}
+              wallets={wallets}
+              chain={config.chain}
+              timeout={15000}
+            />
+          )}
 
-        <AuthProvider>
-          <SmartWalletGuard>
-            <ConnectedProviders>
-              {children}
-            </ConnectedProviders>
-          </SmartWalletGuard>
-        </AuthProvider>
+          <AuthProvider>
+            <SmartWalletGuard>
+              <ConnectedProviders>
+                {children}
+              </ConnectedProviders>
+            </SmartWalletGuard>
+          </AuthProvider>
 
-        <Toaster theme="dark" richColors position="top-center" />
-      </ThirdwebProvider>
-    </ThemeProvider>
+          <Toaster theme="dark" richColors position="top-center" />
+        </ThirdwebProvider>
+      </ThemeProvider>
+    </SWRConfig>
   );
 }
 
