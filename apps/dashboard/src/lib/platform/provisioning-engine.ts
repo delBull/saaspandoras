@@ -93,21 +93,29 @@ export const ProvisioningEngine = {
     let clientRecord: any = null;
 
     if (!lead) {
-      // Fallback: Check in clients table (CRM identity table)
+      // Fallback 1: Check in clients table
       clientRecord = await db.query.clients.findFirst({
         where: isEmail ? eq(clients.email, leadId) : eq(clients.id, leadId),
       }).catch(() => null);
 
-      if (!clientRecord) {
+      if (clientRecord) {
+        lead = {
+          id: clientRecord.id,
+          name: clientRecord.name || 'Cliente',
+          email: clientRecord.email,
+          metadata: clientRecord.metadata || {},
+        } as any;
+      } else if (isEmail) {
+        // Fallback 2: Auto-create lead on-the-fly for any valid email
+        lead = {
+          id: crypto.randomUUID(),
+          name: leadId.split('@')[0],
+          email: leadId,
+          metadata: { autoCreated: true },
+        } as any;
+      } else {
         throw new Error(`[ProvisioningEngine] Lead or Client not found: ${leadId}`);
       }
-
-      lead = {
-        id: clientRecord.id,
-        name: clientRecord.name || 'Cliente',
-        email: clientRecord.email,
-        metadata: clientRecord.metadata || {},
-      } as any;
     }
 
     if (!lead) {
