@@ -350,6 +350,18 @@ function ClientPortalContent() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <a
+            href="/growth-os/hermes"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
+              background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)',
+              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            ⚡ Probar Agente en Vivo ↗
+          </a>
           <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: org.status === 'trial' || org.plan === 'sandbox' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)', color: org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b' : '#10b981', border: `1px solid ${org.status === 'trial' || org.plan === 'sandbox' ? '#f59e0b33' : '#10b98133'}` }}>
             ● {org.plan === 'sandbox' ? 'SANDBOX / TRIAL (3 días)' : `STATUS: ${org.status.toUpperCase()}`}
           </span>
