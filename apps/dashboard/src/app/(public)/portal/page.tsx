@@ -448,20 +448,18 @@ function ClientPortalContent() {
                 </div>
               </div>
 
-              {/* Categorized Grid Navigation Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                 {[
-                  { id: 'intelligence', label: 'Intelligence Studio', icon: '⚡', category: 'Core Trial', desc: 'System Prompt & Identidad', isPro: false },
-                  { id: 'knowledge', label: 'Knowledge Studio', icon: '📚', category: 'Core Trial', desc: 'FAQ & Base de Conocimiento', isPro: false },
-                  { id: 'channels', label: 'Conectores & Canales', icon: '📡', category: 'Core Trial', desc: 'Telegram / WhatsApp / Web', isPro: false },
-                  { id: 'tools', label: 'Herramientas & SPEI', icon: '🛠️', category: 'Pro Suite', desc: 'Cobros SPEI & Agendamiento', isPro: true },
-                  { id: 'skills', label: 'Skills & Procedimientos', icon: '🎓', category: 'Pro Suite', desc: 'Soporte Autónomo & Workflows', isPro: true },
-                  { id: 'voice', label: 'Voice Studio AI', icon: '🎙️', category: 'Pro Suite', desc: 'Llamadas de Voz en Vivo', isPro: true },
-                  { id: 'analytics', label: 'Mission Control', icon: '📊', category: 'Pro Suite', desc: 'Analytics & Conversión', isPro: true },
-                  { id: 'multiagent', label: 'Multi-Agentes OS', icon: '🤖', category: 'Pro Suite', desc: 'Orquestación de Agentes', isPro: true },
+                  { id: 'intelligence', label: 'Intelligence Studio', icon: '⚡', category: 'Core', desc: 'System Prompt & Identidad', badge: '● ACTIVO' },
+                  { id: 'knowledge', label: 'Knowledge Studio', icon: '📚', category: 'Core', desc: 'FAQ & Base de Conocimiento', badge: '● ACTIVO' },
+                  { id: 'channels', label: 'Conectores & Canales', icon: '📡', category: 'Core', desc: 'Telegram / WhatsApp / Web', badge: '● ACTIVO' },
+                  { id: 'tools', label: 'Herramientas & SPEI', icon: '🛠️', category: 'Pro Suite', desc: 'Cobros SPEI & Agendamiento', badge: '✨ SIMULADOR PRO' },
+                  { id: 'skills', label: 'Skills & Procedimientos', icon: '🎓', category: 'Pro Suite', desc: 'Soporte Autónomo & Workflows', badge: '✨ SIMULADOR PRO' },
+                  { id: 'voice', label: 'Voice Studio AI', icon: '🎙️', category: 'Pro Suite', desc: 'Llamadas de Voz en Vivo', badge: '✨ DEMO EN VIVO' },
+                  { id: 'analytics', label: 'Mission Control', icon: '📊', category: 'Pro Suite', desc: 'Analytics & ROI Estimado', badge: '✨ CALCULADORA PRO' },
+                  { id: 'multiagent', label: 'Multi-Agentes OS', icon: '🤖', category: 'Pro Suite', desc: 'Orquestación de Agentes', badge: '✨ PRO SUITE' },
                 ].map(tab => {
                   const isActive = activeTab === tab.id;
-                  const isLocked = tab.isPro && (org.plan === 'sandbox' || org.status === 'trial');
 
                   return (
                     <div
@@ -476,9 +474,7 @@ function ClientPortalContent() {
                           : 'rgba(255, 255, 255, 0.02)',
                         border: isActive
                           ? '1px solid rgba(167,139,250,0.6)'
-                          : isLocked
-                          ? '1px solid rgba(255,255,255,0.06)'
-                          : '1px solid rgba(255,255,255,0.1)',
+                          : '1px solid rgba(255,255,255,0.08)',
                         transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                         boxShadow: isActive ? '0 8px 24px rgba(124,58,237,0.25)' : 'none',
                         position: 'relative',
@@ -487,15 +483,9 @@ function ClientPortalContent() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                         <span style={{ fontSize: 20 }}>{tab.icon}</span>
-                        {isLocked ? (
-                          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
-                            🔒 PRO
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                            ● ACTIVO
-                          </span>
-                        )}
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: tab.badge.includes('ACTIVO') ? 'rgba(16,185,129,0.15)' : 'rgba(124,58,237,0.2)', color: tab.badge.includes('ACTIVO') ? '#10b981' : '#a78bfa', border: `1px solid ${tab.badge.includes('ACTIVO') ? 'rgba(16,185,129,0.3)' : 'rgba(124,58,237,0.3)'}` }}>
+                          {tab.badge}
+                        </span>
                       </div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? '#ffffff' : 'rgba(255,255,255,0.85)', letterSpacing: '-0.2px', marginBottom: 2 }}>
                         {tab.label}
@@ -709,40 +699,100 @@ function ClientPortalContent() {
               </div>
             )}
 
-            {/* Pro Locked Modules Teaser Render */}
-            {['tools', 'skills', 'voice', 'analytics', 'multiagent'].includes(activeTab) && (org.plan === 'sandbox' || org.status === 'trial') && (
-              <div style={{ background: '#0F0F18', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 16, padding: 36, textAlign: 'center' }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>
-                  {activeTab === 'tools' && '🛠️ Herramientas de Cobro SPEI & Agendamiento'}
-                  {activeTab === 'skills' && '🎓 Skills Engine & Procedimientos Autónomos'}
-                  {activeTab === 'voice' && '🎙️ Voice Studio (Llamadas de Voz AI en Tiempo Real)'}
-                  {activeTab === 'analytics' && '📊 Mission Control Analytics & Conversión'}
-                  {activeTab === 'multiagent' && '🤖 Orquestación Multi-Agentes de Inteligencia'}
-                </h2>
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', maxWidth: 580, margin: '0 auto 24px', lineHeight: 1.6 }}>
-                  Este módulo forma parte de la Suite <strong>Hermes OS Pro / Enterprise</strong>. Permite a tu empresa automatizar llamadas de voz, integrar pasarelas de pago instantáneas y desplegar equipos de inteligencia autónoma.
-                </p>
-                <button
-                  onClick={() => {
-                    setUpgradeModalModule(activeTab);
-                    setUpgradeSuccess(false);
-                    setShowUpgradeModal(true);
-                  }}
-                  style={{
-                    padding: '12px 28px',
-                    borderRadius: 10,
-                    background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-                    color: '#fff',
-                    border: 'none',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 16px rgba(124,58,237,0.4)'
-                  }}
-                >
-                  ⚡ Desbloquear Módulo Pro en 1-Clic →
-                </button>
+            {/* Interactive Pro Simulators for Trial */}
+            {activeTab === 'voice' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 16, padding: 28 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div>
+                    <h2 style={{ fontSize: 18, margin: '0 0 4px', color: '#fff' }}>🎙️ Voice Studio AI — Agentes de Voz en Vivo</h2>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0 }}>Llamadas entrantes y salientes automatizadas con voz ultrasintética natural.</p>
+                  </div>
+                  <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(16,185,129,0.3)' }}>● Simulación de Voz Lista</span>
+                </div>
+
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#a78bfa', marginBottom: 8 }}>📱 Probar Simulación de Llamada de Salida:</div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <input
+                      placeholder="Tu número telefónico (+52 55 1234 5678)"
+                      style={{ flex: 1, background: '#08080C', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 13 }}
+                    />
+                    <button
+                      onClick={() => alert('📞 ¡Llamada de demostración solicitada! En un momento recibirás la llamada de prueba de Hermes Voice Agent.')}
+                      style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      📞 Iniciar Llamada de Prueba
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
+                    ⚡ Hermes Voice puede realizar hasta 500 llamadas de calificación por hora en el Plan Pro.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'analytics' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 16, padding: 28 }}>
+                <h2 style={{ fontSize: 18, margin: '0 0 6px', color: '#fff' }}>📊 Mission Control & Calculadora de ROI</h2>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Medición en tiempo real del impacto financiero de Hermes en tu empresa.</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 16 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Horas Ahorradas / Mes</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981', marginTop: 4 }}>42.5 hrs</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Atención 24/7 sin descanso</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 16 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Costo Ejecutivo Equivalente</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>$1,800 USD</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Sueldo base + prestaciones</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 16 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Ahorro Neto con Hermes Pro</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#a78bfa', marginTop: 4 }}>+$1,501 USD/mes</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>ROI del 502% el primer mes</div>
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center', paddingTop: 10 }}>
+                  <button
+                    onClick={() => { setUpgradeModalModule('analytics'); setShowUpgradeModal(true); }}
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,0.4)' }}
+                  >
+                    💳 Activar Hermes Pro ($299/mes) para Desbloquear Analytics Completos →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'multiagent' && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 16, padding: 28 }}>
+                <h2 style={{ fontSize: 18, margin: '0 0 6px', color: '#fff' }}>🤖 Enjambre Multi-Agentes de Inteligencia</h2>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Agentes especializados trabajando en equipo para tu empresa.</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(124,58,237,0.2)', padding: 16, borderRadius: 12 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>1. Agente SDR (Prospección)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Capta leads en WhatsApp / Webchat y los califica.</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(124,58,237,0.2)', padding: 16, borderRadius: 12 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>2. Agente Closer (SPEI Payment)</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Genera la referencia de apartado SPEI y liquida la compra.</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(124,58,237,0.2)', padding: 16, borderRadius: 12 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>3. Agente Soporte Post-Venta</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Envía el comprobante digital y resuelve dudas frecuentes.</div>
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <button
+                    onClick={() => { setUpgradeModalModule('multiagent'); setShowUpgradeModal(true); }}
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,0.4)' }}
+                  >
+                    🤖 Activar Orquestación Multi-Agente Pro →
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -964,7 +1014,17 @@ function ClientPortalContent() {
 
                 const data = await res.json();
                 if (data.response) {
-                  setTestChatMessages(prev => [...prev, { role: 'agent', text: data.response }]);
+                  let reply = data.response;
+                  const lower = userText.toLowerCase();
+
+                  // Inject Tool Action Card Simulation
+                  if (lower.includes('cita') || lower.includes('agendar') || lower.includes('reunión')) {
+                    reply += '\n\n⚡ **[TOOL EXECUTED: calendar.schedule]**\n📅 *Cita tentativamente agendada en Google Calendar para el cliente.*';
+                  } else if (lower.includes('pagar') || lower.includes('spei') || lower.includes('precio') || lower.includes('comprar')) {
+                    reply += '\n\n💳 **[TOOL EXECUTED: payments.create_spei_link]**\n🏦 *Referencia CLABE SPEI generada automáticamente.*';
+                  }
+
+                  setTestChatMessages(prev => [...prev, { role: 'agent', text: reply }]);
                 } else if (data.message) {
                   setTestChatMessages(prev => [...prev, { role: 'agent', text: `⚠️ ${data.message}` }]);
                 } else {
