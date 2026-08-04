@@ -249,10 +249,20 @@ export default function HermesPublicSandbox() {
                   Planes desde $299 USD/mes. Incluye conectores Telegram/WhatsApp, base de conocimiento e integración S'Narai.
                 </div>
               </div>
-              <a href="mailto:hello@pandoras.finance?subject=Solicitud%20Plan%20Pro%20Hermes%20OS"
-                style={{ padding: '9px 18px', borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <button
+                onClick={() => {
+                  const email = prompt('Por favor ingresa tu correo para activar tu acceso a Hermes OS Pro:');
+                  if (email) {
+                    fetch('/api/v1/marketing/leads/register', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email, source: 'sandbox_pro_banner', product: 'HERMES' }),
+                    }).then(() => alert('🚀 ¡Solicitud recibida! Te enviamos tu acceso por correo.')).catch(() => alert('Gracias. Te contactaremos a la brevedad.'));
+                  }
+                }}
+                style={{ padding: '9px 18px', borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}>
                 Activar Plan Pro →
-              </a>
+              </button>
             </div>
 
             <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
