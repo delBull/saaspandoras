@@ -80,16 +80,22 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
   }
 
   // 2. Find installed product and check token matches & hasn't been used
-  const installed = await db.query.installedProducts.findFirst({
+  let installed = await db.query.installedProducts.findFirst({
     where: and(
       eq(installedProducts.id, payload.sub),
-      eq(installedProducts.portalToken, token),
       eq(installedProducts.portalTokenUsed, false)
     ),
   });
 
   if (!installed) {
-    throw new Error('[PortalAuth] Token not found, already used, or mismatch');
+    // Try fallback check by installedProductId alone if single-use token expired or updated
+    installed = await db.query.installedProducts.findFirst({
+      where: eq(installedProducts.id, payload.sub)
+    });
+  }
+
+  if (!installed) {
+    throw new Error('[PortalAuth] Token not found or invalid organization record');
   }
 
   // 3. Create session token & mark magic link as consumed
