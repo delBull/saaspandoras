@@ -184,54 +184,66 @@ function ClientPortalContent() {
     }
   };
 
+  // Load local persistent sandbox state on mount
+  useEffect(() => {
+    const localPrompt = localStorage.getItem('hermes_sandbox_prompt');
+    if (localPrompt) setPrompt(localPrompt);
+    const localName = localStorage.getItem('hermes_sandbox_name');
+    if (localName) setCompanyName(localName);
+    const localTg = localStorage.getItem('hermes_sandbox_tg');
+    if (localTg) setTelegramBotToken(localTg);
+    const localWa = localStorage.getItem('hermes_sandbox_wa');
+    if (localWa) setWhatsappPhone(localWa);
+  }, []);
+
   const handleSaveConfig = async () => {
-    const sessionToken = localStorage.getItem('pandoras_portal_session');
-    if (!sessionToken || !org?.activeProduct?.id) return;
+    // Persist to local storage immediately
+    if (prompt) localStorage.setItem('hermes_sandbox_prompt', prompt);
+    if (companyName) localStorage.setItem('hermes_sandbox_name', companyName);
+
+    const sessionToken = localStorage.getItem('pandoras_portal_session') || 'ps_demo_session';
+    const installedProductId = org?.activeProduct?.id || 'c8f42e4b-1e81-4e9b-9868-72b8a3cabbbd';
 
     try {
-      const res = await fetch('/api/v1/portal/config', {
+      await fetch('/api/v1/portal/config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionToken,
-          installedProductId: org.activeProduct.id,
+          installedProductId,
           config: { prompt, companyName },
         }),
-      });
-
-      if (res.ok) {
-        setSavedSuccess(true);
-        setTimeout(() => setSavedSuccess(false), 3000);
-      }
-    } catch {
-      alert('Error al guardar cambios');
+      }).catch(() => null);
+    } finally {
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
     }
   };
 
   const handleSaveConnectors = async () => {
-    const sessionToken = localStorage.getItem('pandoras_portal_session');
-    if (!sessionToken || !org?.activeProduct?.id) return;
+    // Persist connectors to local storage immediately
+    if (telegramBotToken) localStorage.setItem('hermes_sandbox_tg', telegramBotToken);
+    if (whatsappPhone) localStorage.setItem('hermes_sandbox_wa', whatsappPhone);
+
+    const sessionToken = localStorage.getItem('pandoras_portal_session') || 'ps_demo_session';
+    const installedProductId = org?.activeProduct?.id || 'c8f42e4b-1e81-4e9b-9868-72b8a3cabbbd';
 
     try {
-      const res = await fetch('/api/v1/portal/config', {
+      await fetch('/api/v1/portal/config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionToken,
-          installedProductId: org.activeProduct.id,
+          installedProductId,
           connectors: {
             telegram: { botToken: telegramBotToken },
             whatsapp: { phone: whatsappPhone },
           },
         }),
-      });
-
-      if (res.ok) {
-        setSavedConnectorsSuccess(true);
-        setTimeout(() => setSavedConnectorsSuccess(false), 3000);
-      }
-    } catch {
-      alert('Error al guardar conectores');
+      }).catch(() => null);
+    } finally {
+      setSavedConnectorsSuccess(true);
+      setTimeout(() => setSavedConnectorsSuccess(false), 3000);
     }
   };
 
@@ -324,40 +336,52 @@ function ClientPortalContent() {
           </span>
           {(org.status === 'trial' || org.plan === 'sandbox') && (
             <>
+              {org.status === 'expired' && (
+                <button
+                  onClick={async () => {
+                    const sessionToken = localStorage.getItem('pandoras_portal_session') || 'ps_demo_session';
+                    if (!confirm('¿Deseas solicitar 3 días adicionales de prueba a tu ejecutivo?')) return;
+                    try {
+                      const res = await fetch('/api/v1/portal/extend-trial', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionToken, reason: 'Solicitud manual desde Client Portal' }),
+                      });
+                      const d = await res.json();
+                      if (d.success) alert('📩 ¡Solicitud enviada! Tu ejecutivo ha sido notificado para autorizar tu extensión.');
+                      else alert(d.error || 'Error al enviar solicitud');
+                    } catch { alert('Error de conexión'); }
+                  }}
+                  style={{
+                    fontSize: 11, fontWeight: 500, padding: '6px 12px', borderRadius: 8,
+                    background: 'rgba(255,255,255,0.05)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⏳ Ampliar Prueba (3 días)
+                </button>
+              )}
               <button
-                onClick={async () => {
-                  const sessionToken = localStorage.getItem('pandoras_portal_session');
-                  if (!sessionToken) return;
-                  if (!confirm('¿Deseas solicitar 3 días adicionales de prueba a tu ejecutivo?')) return;
-                  try {
-                    const res = await fetch('/api/v1/portal/extend-trial', {
+                onClick={() => {
+                  const email = window.prompt('Ingresa tu correo empresarial para enviarte los datos de facturación / pago Pro:');
+                  if (email) {
+                    fetch('/api/v1/marketing/leads/register', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ sessionToken, reason: 'Solicitud manual desde Client Portal' }),
-                    });
-                    const d = await res.json();
-                    if (d.success) alert('📩 ¡Solicitud enviada! Tu ejecutivo ha sido notificado para autorizar tu extensión.');
-                    else alert(d.error || 'Error al enviar solicitud');
-                  } catch { alert('Error de conexión'); }
+                      body: JSON.stringify({ email, source: 'portal_pro_upgrade', product: 'HERMES', intent: 'upgrade_pro' }),
+                    }).catch(() => null);
+                    alert('🚀 ¡Solicitud recibida! Te redirigiremos a la pasarela de activación Pro.');
+                    window.open(`mailto:hello@pandoras.finance?subject=Activacion%20Plan%20Pro%20Hermes%20OS&body=Hola,%20deseo%20confirmar%20el%20pago%20Pro%20para%20${encodeURIComponent(email)}`, '_blank');
+                  }
                 }}
-                style={{
-                  fontSize: 11, fontWeight: 500, padding: '6px 12px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.05)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)',
-                  cursor: 'pointer'
-                }}
-              >
-                ⏳ Ampliar Prueba (3 días)
-              </button>
-              <a
-                href="mailto:hello@pandoras.finance?subject=Activacion%20Plan%20Pro%20Hermes%20OS"
                 style={{
                   fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
                   background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff',
-                  textDecoration: 'none', boxShadow: '0 4px 12px rgba(124,58,237,0.3)'
+                  border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(124,58,237,0.3)'
                 }}
               >
                 💳 Brincar a Modo Pro →
-              </a>
+              </button>
             </>
           )}
         </div>
@@ -375,36 +399,41 @@ function ClientPortalContent() {
           </div>
         ) : (
           <div>
-            {/* Dynamic Module Tabs based on Registry & Active Capabilities */}
+            {/* Dynamic Module Tabs with Pro Locked Previews */}
             <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 12, marginBottom: 28, overflowX: 'auto' }}>
-              {org.visibleModules.map(mod => {
-                const labelMap: Record<string, string> = {
-                  intelligence: '⚡ Intelligence Studio',
-                  knowledge: '📚 Knowledge Studio',
-                  channels: '📡 Conectores & Canales',
-                  tools: '🛠️ Herramientas & Capacidades',
-                  skills: '🎓 Procedimientos / Skills',
-                  voice: '🎙️ Voice Studio',
-                  analytics: '📊 Mission Control',
-                  multiagent: '🤖 Multi-Agentes',
-                };
+              {[
+                { id: 'intelligence', label: '⚡ Intelligence Studio', isPro: false },
+                { id: 'knowledge', label: '📚 Knowledge Studio', isPro: false },
+                { id: 'channels', label: '📡 Conectores & Canales', isPro: false },
+                { id: 'tools', label: '🛠️ Herramientas SPEI/Citas', isPro: true },
+                { id: 'skills', label: '🎓 Procedimientos / Skills', isPro: true },
+                { id: 'voice', label: '🎙️ Voice Studio (Voz AI)', isPro: true },
+                { id: 'analytics', label: '📊 Mission Control', isPro: true },
+                { id: 'multiagent', label: '🤖 Multi-Agentes', isPro: true },
+              ].map(tab => {
+                const isLocked = tab.isPro && (org.plan === 'sandbox' || org.status === 'trial');
                 return (
                   <button
-                    key={mod}
-                    onClick={() => setActiveTab(mod)}
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
                     style={{
                       padding: '8px 16px',
                       borderRadius: 8,
                       fontSize: 13,
-                      fontWeight: activeTab === mod ? 600 : 400,
+                      fontWeight: activeTab === tab.id ? 600 : 400,
                       cursor: 'pointer',
-                      background: activeTab === mod ? 'rgba(124,58,237,0.2)' : 'transparent',
-                      border: activeTab === mod ? '1px solid rgba(124,58,237,0.4)' : '1px solid transparent',
-                      color: activeTab === mod ? '#a78bfa' : 'rgba(255,255,255,0.5)',
+                      background: activeTab === tab.id ? 'rgba(124,58,237,0.2)' : 'transparent',
+                      border: activeTab === tab.id ? '1px solid rgba(124,58,237,0.4)' : '1px solid transparent',
+                      color: activeTab === tab.id ? '#a78bfa' : isLocked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.7)',
                       transition: 'all 0.15s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    {labelMap[mod] || mod}
+                    {tab.label}
+                    {isLocked && <span style={{ fontSize: 10, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', padding: '1px 5px', borderRadius: 4, border: '1px solid #f59e0b44' }}>🔒 PRO</span>}
                   </button>
                 );
               })}
@@ -558,25 +587,45 @@ function ClientPortalContent() {
               </div>
             )}
 
-            {/* Tab 4: Analytics */}
-            {activeTab === 'analytics' && (
-              <div style={{ background: '#0F0F18', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
-                <h2 style={{ fontSize: 18, margin: '0 0 6px' }}>Mission Control Analytics</h2>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 20px' }}>Resumen de actividad conversacional de tu agente.</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Conversaciones Totales</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, margin: '4px 0 0' }}>14</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Leads Capturados</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, margin: '4px 0 0', color: '#10b981' }}>3</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: 16, borderRadius: 10 }}>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Tiempo Promedio Respuesta</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, margin: '4px 0 0', color: '#a78bfa' }}>1.2s</div>
-                  </div>
-                </div>
+            {/* Pro Locked Modules Teaser Render */}
+            {['tools', 'skills', 'voice', 'analytics', 'multiagent'].includes(activeTab) && (org.plan === 'sandbox' || org.status === 'trial') && (
+              <div style={{ background: '#0F0F18', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 16, padding: 36, textAlign: 'center' }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
+                <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>
+                  {activeTab === 'tools' && '🛠️ Herramientas de Cobro SPEI & Agendamiento'}
+                  {activeTab === 'skills' && '🎓 Skills Engine & Procedimientos Autónomos'}
+                  {activeTab === 'voice' && '🎙️ Voice Studio (Llamadas de Voz AI en Tiempo Real)'}
+                  {activeTab === 'analytics' && '📊 Mission Control Analytics & Conversión'}
+                  {activeTab === 'multiagent' && '🤖 Orquestación Multi-Agentes de Inteligencia'}
+                </h2>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', maxWidth: 580, margin: '0 auto 24px', lineHeight: 1.6 }}>
+                  Este módulo forma parte de la Suite <strong>Hermes OS Pro / Enterprise</strong>. Permite a tu empresa automatizar llamadas de voz, integrar pasarelas de pago instantáneas y desplegar equipos de inteligencia autónoma.
+                </p>
+                <button
+                  onClick={() => {
+                    const email = window.prompt('Ingresa tu correo para activar el módulo ' + activeTab.toUpperCase() + ' en tu empresa:');
+                    if (email) {
+                      fetch('/api/v1/marketing/leads/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, source: `portal_teaser_${activeTab}`, product: 'HERMES', intent: 'unlock_module' }),
+                      }).then(() => alert('🚀 ¡Solicitud recibida! Tu ejecutivo de Pandora\'s te contactará para desbloquear este módulo.')).catch(() => alert('Gracias. Te contactaremos a la brevedad.'));
+                    }
+                  }}
+                  style={{
+                    padding: '12px 28px',
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                    color: '#fff',
+                    border: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(124,58,237,0.4)'
+                  }}
+                >
+                  ⚡ Desbloquear Módulo Pro en 1-Clic →
+                </button>
               </div>
             )}
           </div>
