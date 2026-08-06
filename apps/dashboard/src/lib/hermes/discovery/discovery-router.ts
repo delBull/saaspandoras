@@ -14,8 +14,8 @@
 import { db } from '@/db';
 import { projects, installedProducts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { DiscoveryCompiler } from '../../lib/hermes/runtimes/discovery-compiler';
-import { CompiledDiscoveryManifest } from '../../lib/hermes/runtimes/discovery-types';
+import { DiscoveryCompiler } from '../runtimes/discovery-compiler';
+import { CompiledDiscoveryManifest } from '../runtimes/discovery-types';
 
 // In-memory cache: avoid recompiling on every request
 const manifestCache = new Map<string, { manifest: CompiledDiscoveryManifest; checksum: string }>();
