@@ -15,6 +15,7 @@ interface UsersTableProps {
 export function UsersTable({ users }: UsersTableProps) {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [usersPage, setUsersPage] = useState(1);
+  const [isCompressed, setIsCompressed] = useState(false);
 
   // Ensure users is always an array - memoized to prevent unnecessary re-renders
   const usersArray = useMemo(() => Array.isArray(users) ? users : [], [users]);
@@ -109,6 +110,16 @@ export function UsersTable({ users }: UsersTableProps) {
 
           {/* Controles */}
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            {/* Compressed view toggle */}
+            <button
+              onClick={() => setIsCompressed(prev => !prev)}
+              className={`px-3 py-2 rounded-lg text-xs font-mono border transition-all flex items-center gap-1.5 ${
+                isCompressed ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold' : 'bg-zinc-900 text-zinc-400 border-zinc-600 hover:text-white'
+              }`}
+            >
+              <span>{isCompressed ? '↕️ Vista Detallada' : '↔️ Vista Comprimida'}</span>
+            </button>
+
             {/* Ordenamiento */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400">Orden:</span>

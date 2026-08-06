@@ -230,11 +230,13 @@ export function sanitizeUrl(url: any): string | null {
     }
   }
   
-  // Handle relative paths - Force pointing back to the Dashboard to ensure assets load correctly on Narai/External
+  // Handle relative paths - Use current origin when in browser or fallback to env/production URL
   if (cleanUrl.startsWith('/')) {
+    if (typeof window !== 'undefined') {
+      return cleanUrl; // Local browser handles relative paths natively
+    }
     let baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
     if (baseUrl === '/' || baseUrl === '//') baseUrl = 'https://dash.pandoras.finance';
-    // Remove trailing slash from baseUrl if present
     baseUrl = baseUrl.replace(/\/$/, '');
     return `${baseUrl}${cleanUrl}`;
   }

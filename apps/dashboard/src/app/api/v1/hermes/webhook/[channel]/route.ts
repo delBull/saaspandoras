@@ -24,9 +24,11 @@ export async function POST(
 
     let projectId: number | null = projectIdStr ? parseInt(projectIdStr, 10) : null;
 
-    if (!projectId && slug) {
+    const targetSlug = slug || 'snarai';
+
+    if (!projectId) {
       const proj = await db.query.projects.findFirst({
-        where: eq(projects.slug, slug),
+        where: eq(projects.slug, targetSlug),
         columns: { id: true }
       });
       if (proj) projectId = proj.id;
@@ -61,7 +63,14 @@ export async function POST(
       }
 
       const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
-      const botToken = metadata?.botConfig?.telegramToken || (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
+      let botToken = metadata?.botConfig?.telegramToken || (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
+
+      // Env override parity with the legacy route (bot/webhook/route.ts): the
+      // S'Narai bot token is managed via Railway env (TELEGRAM_SNARAI_BOT_TOKEN)
+      // so it can be rotated without touching the DB.
+      if (projectRecord.slug === 'snarai') {
+        botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN || botToken;
+      }
 
       body.botToken = botToken;
       body.projectRecord = projectRecord;
@@ -81,7 +90,9 @@ export async function POST(
 
       const reply = TelegramAdapter.render(result);
 
-      if (botToken && reply) {
+      // CompatibilityProvider already replied via the Telegram runtime router
+      // (it returns an intentionally empty reply so we avoid double-sending).
+      if (botToken && reply && reply.trim()) {
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
