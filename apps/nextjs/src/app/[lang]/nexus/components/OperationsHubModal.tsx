@@ -2,7 +2,23 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Clock, Plus, Trash2, Check, RefreshCw, X, ChevronRight, ListTodo, Layers, Calendar, ArrowUpRight, FolderGit2, Code2, Cpu, Search } from 'lucide-react';
+import {
+  Shield,
+  Plus,
+  Trash2,
+  Check,
+  RefreshCw,
+  X,
+  Layers,
+  Calendar,
+  ArrowUpRight,
+  FolderGit2,
+  Code2,
+  Cpu,
+  TerminalSquare,
+  Activity,
+} from 'lucide-react';
+import TaskTerminal, { TerminalTask } from './TaskTerminal';
 
 interface IPAsset {
   id: string;
@@ -21,11 +37,12 @@ interface TaskItem {
   id: string;
   week: string;
   title: string;
-  category: 'IP & Trademarks' | 'Legal & Corporate' | 'Tech & Data Room';
+  category: 'IP & Trademarks' | 'Legal & Corporate' | 'Tech & Data Room' | 'Operaciones' | 'Marketing & Media' | 'Finanzas';
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   completed: boolean;
   dueDate: string;
   detail: string;
+  requester?: string;
 }
 
 const INITIAL_ASSETS: IPAsset[] = [
@@ -225,15 +242,16 @@ const INITIAL_TASKS: TaskItem[] = [
   }
 ];
 
-export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<'REGISTER' | 'TASKS' | 'DATAROOM'>('REGISTER');
+type Tab = 'REGISTER' | 'TASKS' | 'DATAROOM' | 'TERMINAL';
+
+export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [tab, setTab] = useState<Tab>('TERMINAL');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
   const [notifying, setNotifying] = useState(false);
   const [notified, setNotified] = useState(false);
 
-  // New Asset / Search Registration form state
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [newAssetName, setNewAssetName] = useState('');
   const [newAssetCategory, setNewAssetCategory] = useState('Marca Denominativa');
@@ -242,15 +260,13 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
   const [newAssetRisk, setNewAssetRisk] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
   const [newAssetNotes, setNewAssetNotes] = useState('');
 
-  // New task form state
   const [newTitle, setNewTitle] = useState('');
   const [newDetail, setNewDetail] = useState('');
-  const [newCategory, setNewCategory] = useState<'IP & Trademarks' | 'Legal & Corporate' | 'Tech & Data Room'>('IP & Trademarks');
+  const [newCategory, setNewCategory] = useState<TaskItem['category']>('IP & Trademarks');
   const [newPriority, setNewPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
   const [newWeek, setNewWeek] = useState<string>('Semana 1');
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Persistence in localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const storedAssets = localStorage.getItem('pandoras_ip_assets_custom');
@@ -311,7 +327,6 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
     setNewAssetNotes('');
     setShowAssetForm(false);
 
-    // Auto-create task in roadmap
     const newTask: TaskItem = {
       id: `TSK-${Math.floor(100 + Math.random() * 900)}`,
       week: 'Semana 1',
@@ -352,18 +367,38 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
     sendDiscordAlert(`Nueva Tarea Creada (${newTask.week}): ${newTask.title}`);
   };
 
-  const sendDiscordAlert = async (customMessage?: string) => {
+  const handleTerminalTask = (task: TerminalTask) => {
+    const taskItem: TaskItem = {
+      id: task.id,
+      week: task.week,
+      title: task.title,
+      category: task.category as TaskItem['category'],
+      priority: task.priority,
+      completed: task.completed,
+      dueDate: task.dueDate,
+      detail: task.detail,
+      requester: task.requester,
+    };
+    saveTasks([taskItem, ...tasks]);
+  };
+
+  const sendDiscordAlert = async (message: string, requester = 'Nexus Ops') => {
     setNotifying(true);
     try {
-      const msg = customMessage || (selectedAsset ? `Estatus IP: ${selectedAsset.name} (${selectedAsset.status})` : 'Actualización de Roadmap IP');
-      await fetch('/api/books/request-access', {
+      const res = await fetch('/api/nexus/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'marco.munoz9@gmail.com',
-          bookSlug: `📋 Nexus Governance: ${msg}`
-        })
+          kind: 'alert',
+          message,
+          requester,
+          task: selectedAsset ? selectedAsset.name : undefined,
+        }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.warn('[Nexus Ops] Discord alert failed:', data);
+      }
       setNotified(true);
       setTimeout(() => setNotified(false), 4000);
     } finally {
@@ -376,90 +411,134 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
   const completedCount = tasks.filter(t => t.completed).length;
   const progressPct = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
+  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'TERMINAL', label: 'TERMINAL', icon: <TerminalSquare className="w-3.5 h-3.5" /> },
+    { id: 'REGISTER', label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'TASKS', label: `TAREAS (${tasks.length})`, icon: <Calendar className="w-3.5 h-3.5" /> },
+    { id: 'DATAROOM', label: 'DATA ROOM', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
+  ];
+
+  const assetBadge = (status: IPAsset['status']) => {
+    const map: Record<string, string> = {
+      ACTIVE: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+      PENDING: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
+      PLANNED: 'border-blue-500/20 bg-blue-500/10 text-blue-300',
+      ABANDONED: 'border-rose-500/20 bg-rose-500/10 text-rose-300',
+    };
+    return map[status] || 'border-white/10 bg-black/40 text-zinc-400';
+  };
+
+  const prioBadge = (p: TaskItem['priority']) => {
+    if (p === 'HIGH') return 'border-rose-500/20 bg-rose-500/10 text-rose-300';
+    if (p === 'MEDIUM') return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
+    return 'border-white/10 bg-black/40 text-zinc-400';
+  };
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-4xl max-h-[90vh] bg-[#0c0c0e] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+          initial={{ opacity: 0, scale: 0.96, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 10 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          className="relative w-full max-w-5xl max-h-[92vh] bg-[#08080A] border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(168,85,247,0.12)] flex flex-col"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/80 bg-zinc-900/40">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                <Shield className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base md:text-lg font-light text-white tracking-tight">IP Governance & Corporate OS</h3>
-                <p className="text-xs text-zinc-400 font-light">Gestión Interactiva de Marcas, Plan 30 Días & Data Room</p>
+          {/* Header command bar */}
+          <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3 border-b border-white/10 bg-[#0C0C10]">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-300 shrink-0">
+                <Shield className="w-4 h-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-zinc-100 tracking-tight truncate">NEXUS OPERATIONS HUB</h3>
+                  <span className="hidden sm:flex items-center gap-1 font-mono text-[9px] text-purple-300/80">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-60" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500" />
+                    </span>
+                    LIVE
+                  </span>
+                </div>
+                <p className="text-[10px] font-mono text-zinc-500 truncate">TAREAS PENDIENTES · IP · DATA ROOM · #pandoras-security</p>
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2">
-              <div className="flex p-1 bg-zinc-950 border border-zinc-800 rounded-xl text-xs">
-                <button
-                  onClick={() => setTab('REGISTER')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${tab === 'REGISTER' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
-                    }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Master Register ({assets.length})</span>
-                </button>
-                <button
-                  onClick={() => setTab('TASKS')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${tab === 'TASKS' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
-                    }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>Plan 30 Días ({tasks.length})</span>
-                </button>
-                <button
-                  onClick={() => setTab('DATAROOM')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${tab === 'DATAROOM' ? 'bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30' : 'text-zinc-400 hover:text-white'
-                    }`}
-                >
-                  <FolderGit2 className="w-3.5 h-3.5" />
-                  <span>Corporate Data Room</span>
-                </button>
-              </div>
-
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="hidden lg:flex items-center gap-1.5 font-mono text-[10px] text-zinc-500">
+                <Activity className="w-3 h-3 text-purple-300" />
+                v2.5
+              </span>
               <button
                 onClick={onClose}
-                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-lg transition-colors ml-2"
+                className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors border border-transparent hover:border-white/10"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* TAB 1: MASTER REGISTER & INTERACTIVE ASSET CREATOR */}
+          {/* Tabs */}
+          <div className="flex items-center gap-1.5 px-4 md:px-5 py-2.5 border-b border-white/10 bg-black/30 overflow-x-auto">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] tracking-wider transition-all whitespace-nowrap ${
+                  tab === t.id
+                    ? 'border border-purple-500/30 bg-purple-500/10 text-purple-300'
+                    : 'border border-white/10 bg-black/40 text-zinc-500 hover:text-zinc-200 hover:border-white/20'
+                }`}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* TAB: TERMINAL */}
+          {tab === 'TERMINAL' && (
+            <div className="p-5 overflow-y-auto flex-1 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-mono uppercase tracking-widest text-purple-300">Adicionador de Tareas Pendientes</p>
+                  <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                    Responde las preguntas del terminal · la tarea queda pendiente y se envía a #pandoras-security
+                  </p>
+                </div>
+                <span className="hidden sm:block px-2 py-1 rounded-lg border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono text-[10px]">
+                  sudo nexus ops
+                </span>
+              </div>
+              <TaskTerminal onTaskCreated={handleTerminalTask} />
+            </div>
+          )}
+
+          {/* TAB: OPS REGISTER */}
           {tab === 'REGISTER' && (
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              {/* Status Summary Banner */}
-              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/[0.03] flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-xs font-normal text-amber-300">Análisis Marcanet Finalizado: PANDORAS / PANDORA'S (Clases 36 + 42)</p>
-                    <p className="text-xs text-zinc-400 leading-relaxed font-light">
-                      Examen de anterioridad completado (6 hallazgos analizados, 0 conflictos graves). <strong className="text-white">Clasificación: RIESGO BAJO.</strong> Se procede con la marca madre <strong className="text-amber-400">PANDORAS™</strong> a nombre directo de <strong>MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.</strong>
+            <div className="p-5 overflow-y-auto flex-1 space-y-5">
+              <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-purple-500/20 bg-purple-500/[0.03]">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="w-8 h-8 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-300 flex items-center justify-center shrink-0">
+                    <Layers className="w-4 h-4" />
+                  </span>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-[11px] font-mono uppercase tracking-wider text-amber-300">Análisis Marcanet Finalizado: PANDORAS / PANDORA'S (Clases 36 + 42)</p>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Examen de anterioridad completado (6 hallazgos, 0 conflictos graves). <strong className="text-white">Clasificación: RIESGO BAJO.</strong> Se procede con la marca madre <strong className="text-amber-300">PANDORAS™</strong> a nombre directo de <strong>MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.</strong>
                     </p>
                   </div>
                 </div>
-
                 <button
                   onClick={() => setShowAssetForm(!showAssetForm)}
-                  className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-normal transition-all flex items-center gap-1.5 shrink-0"
+                  className="px-3 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-mono transition-all flex items-center gap-1.5 shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>+ Registrar Búsqueda / Marca</span>
+                  <Plus className="w-3.5 h-3.5" />
+                  + REGISTRAR MARCA
                 </button>
               </div>
 
-              {/* Add New Asset Form (Collapsible) */}
               <AnimatePresence>
                 {showAssetForm && (
                   <motion.form
@@ -467,21 +546,21 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     onSubmit={handleAddAsset}
-                    className="p-4 border border-amber-500/30 rounded-xl bg-zinc-950 space-y-3 overflow-hidden"
+                    className="p-4 border border-white/10 rounded-xl bg-[#0C0C10] space-y-3 overflow-hidden"
                   >
-                    <p className="text-xs text-amber-400 uppercase font-mono">Registrar Nueva Búsqueda / Denominación IP</p>
+                    <p className="text-[11px] text-purple-300 uppercase font-mono">Registrar Nueva Búsqueda / Denominación IP</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <input
                         type="text"
                         placeholder="Ej. PANDORAS FINANCE..."
                         value={newAssetName}
                         onChange={(e) => setNewAssetName(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
                       />
                       <select
                         value={newAssetCategory}
                         onChange={(e) => setNewAssetCategory(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
                       >
                         <option value="Marca Denominativa Principal">Marca Denominativa Principal</option>
                         <option value="Marca Mixta (Nombre + Logo)">Marca Mixta (Nombre + Logo)</option>
@@ -496,12 +575,12 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                         placeholder="Clases (Ej. Clase 36 + Clase 42)"
                         value={newAssetClasses}
                         onChange={(e) => setNewAssetClasses(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-zinc-600"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
                       />
                       <select
                         value={newAssetAuthority}
                         onChange={(e) => setNewAssetAuthority(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
                       >
                         <option value="IMPI (México)">IMPI (México)</option>
                         <option value="USPTO (EE.UU.)">USPTO (EE.UU.)</option>
@@ -511,7 +590,7 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                       <select
                         value={newAssetRisk}
                         onChange={(e) => setNewAssetRisk(e.target.value as any)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
                       >
                         <option value="LOW">Riesgo Bajo (Aprobado)</option>
                         <option value="MEDIUM">Riesgo Medio (Revisar)</option>
@@ -524,20 +603,20 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                       value={newAssetNotes}
                       onChange={(e) => setNewAssetNotes(e.target.value)}
                       rows={2}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600"
+                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
                     />
 
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
                         onClick={() => setShowAssetForm(false)}
-                        className="px-3 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-400 hover:text-white"
+                        className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-zinc-400 hover:text-white"
                       >
                         Cancelar
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-normal transition-colors"
+                        className="px-4 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-200 text-xs font-mono transition-colors"
                       >
                         Guardar Activo & Generar Hito
                       </button>
@@ -546,37 +625,31 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                 )}
               </AnimatePresence>
 
-              {/* Asset List */}
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-wider text-zinc-400 font-mono">Registro Institucional de Activos IP ({assets.length})</p>
+                <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-mono">Registro Institucional de Activos IP ({assets.length})</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {assets.map((asset) => {
                     const isSelected = selectedAsset?.id === asset.id;
-                    let badgeBg = 'bg-zinc-800 text-zinc-400 border-zinc-700';
-                    if (asset.status === 'ABANDONED') badgeBg = 'bg-rose-950/60 text-rose-400 border-rose-800/60';
-                    if (asset.status === 'PENDING') badgeBg = 'bg-amber-950/60 text-amber-400 border-amber-800/60';
-                    if (asset.status === 'PLANNED') badgeBg = 'bg-blue-950/60 text-blue-400 border-blue-800/60';
-                    if (asset.status === 'ACTIVE') badgeBg = 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60';
-
                     return (
                       <div
                         key={asset.id}
                         onClick={() => setSelectedAsset(asset)}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected
-                            ? 'border-amber-500/60 bg-amber-500/[0.04]'
-                            : 'border-zinc-800/80 bg-zinc-900/20 hover:border-zinc-700'
-                          }`}
+                        className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-purple-500/40 bg-purple-500/[0.04]'
+                            : 'border-white/10 bg-[#0C0C10] hover:border-white/20'
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <span className="text-xs text-white font-normal">{asset.name}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-mono tracking-wider ${badgeBg}`}>
+                          <span className="text-xs text-zinc-100">{asset.name}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-mono tracking-wider ${assetBadge(asset.status)}`}>
                             {asset.status}
                           </span>
                         </div>
-                        <p className="text-[11px] text-zinc-400 font-light mb-2">{asset.category} · {asset.classes}</p>
-                        <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-2 border-t border-zinc-800/50">
+                        <p className="text-[11px] text-zinc-400 mb-2">{asset.category} · {asset.classes}</p>
+                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 pt-2 border-t border-white/10">
                           <span>{asset.authority}</span>
-                          <span className="font-mono">{asset.id}</span>
+                          <span>{asset.id}</span>
                         </div>
                       </div>
                     );
@@ -584,58 +657,64 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                 </div>
               </div>
 
-              {/* Selected Asset Details */}
               {selectedAsset && (
-                <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-900/30 space-y-3">
-                  <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+                <div className="p-5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-normal text-white">{selectedAsset.name}</h4>
+                        <h4 className="text-sm text-zinc-100">{selectedAsset.name}</h4>
                         {selectedAsset.riskAssessment && (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono">
                             Riesgo Legal: {selectedAsset.riskAssessment}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-amber-400 font-mono mt-0.5">Titular Registral: {selectedAsset.owner}</p>
+                      <p className="text-[11px] text-purple-300 font-mono mt-0.5">Titular Registral: {selectedAsset.owner}</p>
                     </div>
                     <button
                       onClick={() => sendDiscordAlert(`Notificación de Marca: ${selectedAsset.name}`)}
                       disabled={notifying}
-                      className="px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[11px] font-mono transition-colors flex items-center gap-1.5 disabled:opacity-50"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${notifying ? 'animate-spin' : ''}`} />
-                      <span>{notified ? 'Enviado a Discord ✓' : 'Notificar a Discord'}</span>
+                      <span>{notified ? 'ENVIADO A DISCORD ✓' : 'NOTIFICAR A DISCORD'}</span>
                     </button>
                   </div>
-                  <p className="text-xs text-zinc-300 font-light leading-relaxed">{selectedAsset.notes}</p>
+                  <p className="text-xs text-zinc-300 leading-relaxed">{selectedAsset.notes}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* TAB 2: PLAN 30 DÍAS & ACCIONES */}
+          {/* TAB: TAREAS */}
           {tab === 'TASKS' && (
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              {/* Progress & Quick Stats */}
-              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex items-center justify-between gap-4">
+            <div className="p-5 overflow-y-auto flex-1 space-y-5">
+              <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <p className="text-xs text-zinc-400 font-mono">Plan de Ejecución Institucional (Próximos 30 Días)</p>
-                  <p className="text-lg font-light text-white">{completedCount} de {tasks.length} Hitos Completados ({progressPct}%)</p>
+                  <p className="text-[11px] text-zinc-500 font-mono">Plan de Ejecución Institucional + Pendientes</p>
+                  <p className="text-lg font-light text-zinc-100">{completedCount} de {tasks.length} Tareas Completadas ({progressPct}%)</p>
                 </div>
-                <div className="w-36 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
+                <div className="w-36 h-2 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                  <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${progressPct}%` }} />
                 </div>
-                <button
-                  onClick={() => setShowAddForm(!showAddForm)}
-                  className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-normal transition-all flex items-center gap-1.5 shrink-0"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Añadir Hito</span>
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => setTab('TERMINAL')}
+                    className="px-3.5 py-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[11px] font-mono transition-all flex items-center gap-1.5"
+                  >
+                    <TerminalSquare className="w-3.5 h-3.5" />
+                    ADICIONAR
+                  </button>
+                  <button
+                    onClick={() => setShowAddForm(!showAddForm)}
+                    className="px-3.5 py-2 rounded-lg bg-black/40 hover:bg-white/5 border border-white/10 text-zinc-300 text-[11px] font-mono transition-all flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    HITO 30D
+                  </button>
+                </div>
               </div>
 
-              {/* Add Task Form (Collapsible) */}
               <AnimatePresence>
                 {showAddForm && (
                   <motion.form
@@ -643,26 +722,27 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     onSubmit={handleAddTask}
-                    className="p-4 border border-zinc-800 rounded-xl bg-zinc-950/80 space-y-3 overflow-hidden"
+                    className="p-4 border border-white/10 rounded-xl bg-[#0C0C10] space-y-3 overflow-hidden"
                   >
-                    <p className="text-xs text-amber-400 uppercase font-mono">Nuevo Hito del Plan 30 Días</p>
+                    <p className="text-[11px] text-purple-300 uppercase font-mono">Nuevo Hito del Plan 30 Días</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <input
                         type="text"
                         placeholder="Título del hito..."
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
                       />
                       <select
                         value={newWeek}
                         onChange={(e) => setNewWeek(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
                       >
                         <option value="Semana 1">Semana 1: Arquitectura & Solicitud IMPI</option>
                         <option value="Semana 2">Semana 2: Corporate Resolution & Tech Ownership</option>
                         <option value="Semana 3">Semana 3: Master Licensing & Data Room</option>
                         <option value="Semana 4">Semana 4: Due Diligence Readiness Audit</option>
+                        <option value="Pendientes">Pendientes (fuera de plan)</option>
                       </select>
                     </div>
                     <textarea
@@ -670,22 +750,25 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                       value={newDetail}
                       onChange={(e) => setNewDetail(e.target.value)}
                       rows={2}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
+                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
                     />
                     <div className="flex gap-3">
                       <select
                         value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value as any)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300"
+                        onChange={(e) => setNewCategory(e.target.value as TaskItem['category'])}
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
                       >
                         <option value="IP & Trademarks">IP & Trademarks</option>
                         <option value="Legal & Corporate">Legal & Corporate</option>
                         <option value="Tech & Data Room">Tech & Data Room</option>
+                        <option value="Operaciones">Operaciones</option>
+                        <option value="Marketing & Media">Marketing & Media</option>
+                        <option value="Finanzas">Finanzas</option>
                       </select>
                       <select
                         value={newPriority}
-                        onChange={(e) => setNewPriority(e.target.value as any)}
-                        className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300"
+                        onChange={(e) => setNewPriority(e.target.value as 'HIGH' | 'MEDIUM' | 'LOW')}
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
                       >
                         <option value="HIGH">Prioridad Alta</option>
                         <option value="MEDIUM">Prioridad Media</option>
@@ -693,7 +776,7 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                       </select>
                       <button
                         type="submit"
-                        className="ml-auto px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-normal transition-colors"
+                        className="ml-auto px-4 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-200 text-xs font-mono transition-colors"
                       >
                         Guardar Hito
                       </button>
@@ -702,58 +785,66 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                 )}
               </AnimatePresence>
 
-              {/* Tasks List by Week */}
-              {['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'].map((weekName) => {
+              {['Pendientes', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'].map((weekName) => {
                 const weekTasks = tasks.filter(t => t.week === weekName);
                 if (weekTasks.length === 0) return null;
 
                 return (
                   <div key={weekName} className="space-y-3">
-                    <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2">
-                      <Calendar className="w-4 h-4 text-amber-400" />
-                      <h4 className="text-xs uppercase tracking-wider text-amber-400 font-mono">{weekName}</h4>
+                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                      <Calendar className={`w-4 h-4 ${weekName === 'Pendientes' ? 'text-purple-300' : 'text-zinc-500'}`} />
+                      <h4 className={`text-[11px] uppercase tracking-wider font-mono ${weekName === 'Pendientes' ? 'text-purple-300' : 'text-zinc-500'}`}>
+                        {weekName}
+                      </h4>
+                      <span className="ml-auto font-mono text-[10px] text-zinc-600">{weekTasks.length}</span>
                     </div>
                     <div className="space-y-2">
                       {weekTasks.map((task) => (
                         <div
                           key={task.id}
-                          className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-4 ${task.completed
-                              ? 'border-zinc-800/40 bg-zinc-950/40 opacity-60'
-                              : 'border-zinc-800 bg-zinc-900/20 hover:border-zinc-700'
-                            }`}
+                          className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-4 ${
+                            task.completed
+                              ? 'border-white/5 bg-black/30 opacity-60'
+                              : 'border-white/10 bg-[#0C0C10] hover:border-white/20'
+                          }`}
                         >
                           <div className="flex items-start gap-3 flex-1">
                             <button
                               onClick={() => toggleTask(task.id)}
-                              className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${task.completed
+                              className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                                task.completed
                                   ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                                  : 'border-zinc-700 hover:border-amber-400'
-                                }`}
+                                  : 'border-zinc-700 hover:border-purple-400'
+                              }`}
                             >
                               {task.completed && <Check className="w-3.5 h-3.5" />}
                             </button>
-                            <div className="space-y-1">
+                            <div className="space-y-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`text-xs font-normal ${task.completed ? 'line-through text-zinc-400' : 'text-white'}`}>
+                                <span className={`text-xs ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}`}>
                                   {task.title}
                                 </span>
-                                <span className="text-[10px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950 text-zinc-400 font-mono">
+                                <span className="text-[10px] px-2 py-0.5 rounded border border-white/10 bg-black/40 text-zinc-400 font-mono">
                                   {task.category}
                                 </span>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-mono ${task.priority === 'HIGH' ? 'text-amber-400 bg-amber-950/40' : 'text-zinc-400 bg-zinc-800'
-                                  }`}>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-mono ${prioBadge(task.priority)}`}>
                                   {task.priority}
                                 </span>
+                                {task.requester && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono">
+                                    {task.requester}
+                                  </span>
+                                )}
                               </div>
-                              <p className="text-xs text-zinc-400 font-light leading-relaxed">{task.detail}</p>
+                              <p className="text-xs text-zinc-400 leading-relaxed">{task.detail}</p>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] text-zinc-400 font-mono">{task.dueDate}</span>
+                            <span className="text-[10px] text-zinc-500 font-mono">{task.dueDate}</span>
                             <button
                               onClick={() => deleteTask(task.id)}
-                              className="p-1 text-zinc-400 hover:text-rose-400 transition-colors"
+                              className="p-1 text-zinc-500 hover:text-rose-400 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -767,85 +858,87 @@ export function IPRegisterModal({ isOpen, onClose }: { isOpen: boolean; onClose:
             </div>
           )}
 
-          {/* TAB 3: CORPORATE DATA ROOM */}
+          {/* TAB: DATA ROOM */}
           {tab === 'DATAROOM' && (
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/[0.03]">
-                <p className="text-xs text-amber-300 font-mono uppercase mb-1">Estructura del Corporate Data Room (/nexus)</p>
-                <p className="text-xs text-zinc-400 font-light leading-relaxed">
+            <div className="p-5 overflow-y-auto flex-1 space-y-5">
+              <div className="p-4 rounded-xl border border-purple-500/20 bg-purple-500/[0.03]">
+                <p className="text-[11px] text-purple-300 font-mono uppercase mb-1">Estructura del Corporate Data Room (/nexus)</p>
+                <p className="text-xs text-zinc-400 leading-relaxed">
                   Cadena documental organizada en 6 módulos institucionales para due diligence e inversionistas estratégicos.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20 space-y-2">
-                  <div className="flex items-center gap-2 text-amber-400 font-mono text-xs">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
+                  <div className="flex items-center gap-2 text-purple-300 font-mono text-xs">
                     <FolderGit2 className="w-4 h-4" />
                     <span>01_company</span>
                   </div>
-                  <p className="text-xs text-zinc-300 font-light">Estatutos de constitución, libro de accionistas de MXHUB S.A. de C.V. y resoluciones corporativas de asamblea.</p>
+                  <p className="text-xs text-zinc-300">Estatutos de constitución, libro de accionistas de MXHUB S.A. de C.V. y resoluciones corporativas de asamblea.</p>
                 </div>
 
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20 space-y-2">
-                  <div className="flex items-center gap-2 text-rose-400 font-mono text-xs">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
+                  <div className="flex items-center gap-2 text-rose-300 font-mono text-xs">
                     <Shield className="w-4 h-4" />
                     <span>02_ip</span>
                   </div>
-                  <p className="text-xs text-zinc-300 font-light">Registro IMPI PANDORAS™, depósitos de código fuente, marcas denominativas y expedientes AEP.</p>
+                  <p className="text-xs text-zinc-300">Registro IMPI PANDORAS™, depósitos de código fuente, marcas denominativas y expedientes AEP.</p>
                 </div>
 
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20 space-y-2">
-                  <div className="flex items-center gap-2 text-indigo-400 font-mono text-xs">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
+                  <div className="flex items-center gap-2 text-indigo-300 font-mono text-xs">
                     <Code2 className="w-4 h-4" />
                     <span>03_technology</span>
                   </div>
-                  <p className="text-xs text-zinc-300 font-light">Arquitectura Growth OS v3.0, repositorios bajo control, smart contracts verificados y deployer keys.</p>
+                  <p className="text-xs text-zinc-300">Arquitectura Growth OS v3.0, repositorios bajo control, smart contracts verificados y deployer keys.</p>
                 </div>
 
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20 space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
+                  <div className="flex items-center gap-2 text-emerald-300 font-mono text-xs">
                     <Cpu className="w-4 h-4" />
                     <span>04_business</span>
                   </div>
-                  <p className="text-xs text-zinc-300 font-light">Modelos financieros, proyecciones de cobro de Platform Fees/Royalty Fees y pipeline de alianzas RWA.</p>
+                  <p className="text-xs text-zinc-300">Modelos financieros, proyecciones de cobro de Platform Fees/Royalty Fees y pipeline de alianzas RWA.</p>
                 </div>
 
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20 space-y-2">
-                  <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
+                  <div className="flex items-center gap-2 text-cyan-300 font-mono text-xs">
                     <FolderGit2 className="w-4 h-4" />
                     <span>05_legal</span>
                   </div>
-                  <p className="text-xs text-zinc-300 font-light">Master License Agreement (Holding ➔ USA LLC), convenios de confidencialidad NDA y licencias territoriales.</p>
+                  <p className="text-xs text-zinc-300">Master License Agreement (Holding ➔ USA LLC), convenios de confidencialidad NDA y licencias territoriales.</p>
                 </div>
 
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20 space-y-2">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
                   <div className="flex items-center gap-2 text-amber-300 font-mono text-xs">
                     <ArrowUpRight className="w-4 h-4" />
                     <span>06_investor</span>
                   </div>
-                  <p className="text-xs text-zinc-300 font-light">Institutional Pitch, Data Room index, modelos SAFE y estructura de participación en Pandoras USA LLC.</p>
+                  <p className="text-xs text-zinc-300">Institutional Pitch, Data Room index, modelos SAFE y estructura de participación en Pandoras USA LLC.</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Footer Actions */}
-          <div className="px-6 py-4 border-t border-zinc-800/80 bg-zinc-900/40 flex items-center justify-between">
-            <span className="text-[11px] text-zinc-400">Titular Registral: MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.</span>
-            <div className="flex gap-3">
+          {/* Footer status bar */}
+          <div className="px-5 py-3 border-t border-white/10 bg-[#0C0C10] flex items-center justify-between gap-3">
+            <span className="font-mono text-[10px] text-zinc-500 truncate">
+              MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. · HOLDING
+            </span>
+            <div className="flex items-center gap-3 shrink-0">
               <button
-                onClick={() => sendDiscordAlert('Resumen de Plan 30 Días Enviado')}
+                onClick={() => sendDiscordAlert('Resumen de Operaciones Enviado')}
                 disabled={notifying}
-                className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs transition-colors flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[11px] font-mono transition-colors flex items-center gap-1.5"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${notifying ? 'animate-spin' : ''}`} />
-                <span>Enviar Resumen a Discord</span>
+                <span>{notified ? 'ENVIADO ✓' : 'ENVIAR A DISCORD'}</span>
               </button>
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs transition-colors font-light"
+                className="px-4 py-2 bg-black/40 hover:bg-white/5 border border-white/10 text-zinc-300 rounded-lg text-[11px] font-mono transition-colors"
               >
-                Cerrar Módulo
+                CERRAR
               </button>
             </div>
           </div>

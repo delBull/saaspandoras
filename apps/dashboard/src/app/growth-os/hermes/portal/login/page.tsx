@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+
+const USED_EMAILS_KEY = 'hermes_used_emails';
 
 export default function PortalLoginPage() {
   const [email, setEmail] = useState('');
@@ -10,6 +12,47 @@ export default function PortalLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [sentSuccess, setSentSuccess] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [usedEmails, setUsedEmails] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(USED_EMAILS_KEY);
+      if (stored) {
+        setUsedEmails(JSON.parse(stored).filter((e: unknown) => typeof e === 'string'));
+      }
+    } catch {
+      // ignore corrupted storage
+    }
+  }, []);
+
+  useEffect(() => {
+    const onClickOutside = (ev: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(ev.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const rememberEmail = (value: string) => {
+    const clean = value.trim().toLowerCase();
+    if (!clean || !clean.includes('@')) return;
+    const next = [clean, ...usedEmails.filter((e) => e !== clean)].slice(0, 8);
+    setUsedEmails(next);
+    try {
+      localStorage.setItem(USED_EMAILS_KEY, JSON.stringify(next));
+    } catch {
+      // storage unavailable
+    }
+  };
+
+  const suggestions = usedEmails.filter((e) =>
+    !email || e.toLowerCase().startsWith(email.trim().toLowerCase())
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +78,7 @@ export default function PortalLoginPage() {
       }
 
       setSentSuccess(true);
+      rememberEmail(email);
       if (data.magicLink) {
         setGeneratedLink(data.magicLink);
       }
@@ -180,24 +224,73 @@ export default function PortalLoginPage() {
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
                 Correo Electrónico de Cliente
               </label>
-              <input
-                type="email"
-                required
-                placeholder="ejemplo@tuempresa.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  color: '#fff',
-                  fontSize: 14,
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
+              <div ref={wrapperRef} style={{ position: 'relative' }}>
+                <input
+                  ref={inputRef}
+                  type="email"
+                  required
+                  placeholder="ejemplo@tuempresa.com"
+                  autoComplete="email"
+                  value={email}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onChange={(e) => { setEmail(e.target.value); setShowSuggestions(true); }}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: 10,
+                    padding: '12px 16px',
+                    color: '#fff',
+                    fontSize: 14,
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    left: 0,
+                    right: 0,
+                    background: '#12121a',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    boxShadow: '0 12px 30px rgba(0,0,0,0.6)',
+                    zIndex: 20
+                  }}>
+                    <div style={{ padding: '6px 12px', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Usados recientemente
+                    </div>
+                    {suggestions.map((sug) => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => {
+                          setEmail(sug);
+                          setShowSuggestions(false);
+                          inputRef.current?.focus();
+                        }}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'left',
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'rgba(255,255,255,0.85)',
+                          fontSize: 13,
+                          padding: '10px 14px',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(124,58,237,0.12)'; }}
+                        onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'transparent'; }}
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <button

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { projects, installedProducts, users, accessRequests, administrators } from '@/db/schema';
-import { eq, or, ilike } from 'drizzle-orm';
+import { projects, installedProducts, users, accessRequests } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { generatePortalToken } from '@/lib/platform/portal-auth';
+import { sendEmail } from '@/lib/email/client';
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,19 +51,16 @@ export async function POST(req: NextRequest) {
 
     console.info(`[MagicLink API] Magic Link generated for ${cleanEmail}: ${magicLink}`);
 
-    // Try sending email via internal helper if available
+    // Send the magic link via Resend
     try {
-      const emailRes = await fetch(`${baseUrl}/api/v1/internal/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: cleanEmail,
-          subject: 'Acceso a tu Consola Hermes OS',
-          html: `<p>Hola,</p><p>Haz click en el siguiente enlace para ingresar a tu Consola Hermes OS:</p><p><a href="${magicLink}">${magicLink}</a></p>`
-        })
-      }).catch(() => null);
+      const emailRes = await sendEmail({
+        to: cleanEmail,
+        subject: 'Acceso a tu Consola Hermes OS',
+        html: `<p>Hola,</p><p>Haz click en el siguiente enlace para ingresar a tu Consola Hermes OS:</p><p><a href="${magicLink}">${magicLink}</a></p>`
+      });
+      console.info(`[MagicLink API] Email dispatched for ${cleanEmail}:`, emailRes);
     } catch (e) {
-      console.warn('[MagicLink API] Optional email dispatch skipped:', e);
+      console.warn('[MagicLink API] Email dispatch failed:', e);
     }
 
     return NextResponse.json({

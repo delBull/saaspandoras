@@ -11,8 +11,9 @@ import {
   ArrowUpRight,
   ChevronRight,
   Activity,
+  TerminalSquare,
 } from "lucide-react";
-import { IPRegisterModal } from "./IPRegisterModal";
+import { OperationsHubModal } from "./OperationsHubModal";
 
 interface NexusLink {
   name: string;
@@ -174,7 +175,7 @@ export default function NexusClient() {
 
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#08080A] text-zinc-100 font-sans">
-      <IPRegisterModal isOpen={isIpModalOpen} onClose={() => setIsIpModalOpen(false)} />
+      <OperationsHubModal isOpen={isIpModalOpen} onClose={() => setIsIpModalOpen(false)} />
 
       {/* Ambient background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -217,8 +218,8 @@ export default function NexusClient() {
               onClick={() => setIsIpModalOpen(true)}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
             >
-              <Shield className="w-3 h-3" />
-              IP & PATENT REGISTRY
+              <TerminalSquare className="w-3 h-3" />
+              OPERATIONS HUB
             </button>
           </div>
         </header>
@@ -297,7 +298,7 @@ export default function NexusClient() {
             <span className="text-zinc-500/40">•</span>
             <span className="text-purple-300/80">5 CATEGORIES</span>
             <span className="text-zinc-500/40">•</span>
-            <span>IP REGISTRY ONLINE</span>
+            <span>OPS HUB ONLINE</span>
           </span>
         </footer>
       </div>
