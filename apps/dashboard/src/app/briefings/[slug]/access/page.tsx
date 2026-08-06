@@ -5,7 +5,7 @@ import { db } from '~/db';
 import { projects, projectBriefings } from '~/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export default async function AccessHubPage({ params }: { params: { slug: string } }) {
+export default async function AccessHubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
   // 1. Validate project

@@ -15,8 +15,7 @@ export default async function ProjectResourcesPage({ params }: { params: Promise
     // Auth Check
     const { session } = await getAuth(await headers());
     if (!session?.address) {
-        return <UnauthorizedAccess title="No tienes acceso a este CMS" 
-                  description="Necesitas conectar tu billetera administrativa." />;
+        return <UnauthorizedAccess authError="Necesitas conectar tu billetera administrativa para acceder a este CMS." />;
     }
 
     // Get Project

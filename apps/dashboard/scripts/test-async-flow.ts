@@ -18,6 +18,10 @@ async function testAsyncFlow() {
   }
 
   const job = jobs[0];
+  if (!job) {
+    console.error('❌ No se encontró ningún job en estado "Waiting Callback".');
+    process.exit(1);
+  }
   console.log(`✅ Job encontrado: ${job.id} (Provider: ${job.providerId})`);
 
   if (!job.callbackSecret) {
@@ -67,6 +71,10 @@ async function testAsyncFlow() {
   // 5. Verify the DB state updated to Completed
   const updatedJobs = await db.select().from(hermesJobs).where(eq(hermesJobs.id, job.id)).limit(1);
   const updatedJob = updatedJobs[0];
+  if (!updatedJob) {
+    console.error('❌ No se pudo re-leer el job tras el callback.');
+    process.exit(1);
+  }
 
   console.log(`📊 Estado final en DB: ${updatedJob.state}`);
   

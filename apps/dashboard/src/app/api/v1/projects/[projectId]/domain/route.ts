@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { ProjectDomainService } from "@/lib/domain/project-domain-service";
 
-export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   try {
     const rawAuth = req.headers.get('authorization');
     const apiKey = req.headers.get('x-api-key') || (rawAuth?.startsWith('Bearer ') ? rawAuth.substring(7) : null);

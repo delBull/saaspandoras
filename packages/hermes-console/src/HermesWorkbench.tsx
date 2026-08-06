@@ -174,7 +174,7 @@ export function HermesWorkbench({ tenantId }: HermesWorkbenchProps) {
                     <div className="flex items-center gap-2 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
                         <BoltIcon className="w-4 h-4 text-purple-400" />
                         <span className="font-bold text-purple-300 tracking-wider">HERMES OS</span>
-                        <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-mono">v1.0-STABLE</span>
+                        <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-mono">{projection.system.version}</span>
                     </div>
 
                     <div className="h-4 w-px bg-white/10" />
@@ -188,7 +188,7 @@ export function HermesWorkbench({ tenantId }: HermesWorkbenchProps) {
                         <span>•</span>
                         <span>Tenant: <strong className="text-zinc-200">{projection?.tenant?.slug}</strong></span>
                         <span>•</span>
-                        <span>Providers: <strong className="text-zinc-200">{projection?.capabilityMesh?.length || 4} Active</strong></span>
+                        <span>Providers: <strong className="text-zinc-200">{projection?.capabilityMesh?.length || 0} Active</strong></span>
                         <span>•</span>
                         <span>Engine: <strong className="text-zinc-200">{projection.system.version}</strong></span>
                     </div>
@@ -243,7 +243,7 @@ export function HermesWorkbench({ tenantId }: HermesWorkbenchProps) {
                         {activeDomain === 'operations' && <OperationsView projection={projection} setInspectorData={setInspectorData} />}
                         {activeDomain === 'identity' && <IdentityView projection={projection} setInspectorData={setInspectorData} />}
                         {activeDomain === 'mesh' && <CapabilityMeshView projection={projection} setInspectorData={setInspectorData} />}
-                        {activeDomain === 'trace' && <ExecutionTraceGraphView setInspectorData={setInspectorData} />}
+                        {activeDomain === 'trace' && <ExecutionTraceGraphView projection={projection} setInspectorData={setInspectorData} />}
                         {['knowledge', 'workflows', 'explorer', 'settings'].includes(activeDomain) && (
                             <div className="h-full flex flex-col items-center justify-center text-zinc-500 border border-dashed border-white/10 rounded-2xl p-12 bg-white/[0.01]">
                                 <SparklesIcon className="w-10 h-10 text-purple-400 mb-3 animate-pulse" />
@@ -295,37 +295,42 @@ export function HermesWorkbench({ tenantId }: HermesWorkbenchProps) {
                             <div className="flex-1 p-3 overflow-y-auto font-mono text-xs text-zinc-300 space-y-1.5 bg-[#070709]">
                                 {activeConsoleTab === 'events' && (
                                     <>
-                                        <div className="flex items-center gap-3 text-zinc-400">
-                                            <span className="text-zinc-600">[01:04:12]</span>
-                                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px]">JOB_COMPLETED</span>
-                                            <span>Task `job_async_9082` transition to state: `Completed`</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-zinc-400">
-                                            <span className="text-zinc-600">[01:04:09]</span>
-                                            <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px]">CALLBACK_RECV</span>
-                                            <span>HMAC verification passed for provider `pandoras-media-co`</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-zinc-400">
-                                            <span className="text-zinc-600">[01:03:55]</span>
-                                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px]">JOB_ENQUEUED</span>
-                                            <span>Job stored in `hermes_jobs` (State: `Waiting Callback`, TTL: 1h)</span>
-                                        </div>
+                                        {(projection?.recentJournal && projection.recentJournal.length > 0) ? (
+                                            projection.recentJournal.map((entry: any, idx: number) => {
+                                                const failed = entry.executionStatus === 'failed';
+                                                const completed = entry.executionStatus === 'completed' || entry.executionStatus === 'success';
+                                                const providerName = typeof entry.resolvedProvider === 'string'
+                                                    ? entry.resolvedProvider
+                                                    : (entry.resolvedProvider as any)?.name || 'kernel';
+                                                return (
+                                                    <div key={idx} className="flex items-center gap-3 text-zinc-400">
+                                                        <span className="text-zinc-600">[{new Date(entry.createdAt).toLocaleTimeString()}]</span>
+                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${failed ? 'bg-red-500/10 text-red-400' : completed ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                                            {String(entry.executionStatus).toUpperCase()}
+                                                        </span>
+                                                        <span>Job `{String(entry.requestId).slice(0, 8)}` — {entry.capability} → {providerName}</span>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="text-zinc-500 text-xs">No hay ejecuciones registradas todavía en hermes_journal.</div>
+                                        )}
                                     </>
                                 )}
 
                                 {activeConsoleTab === 'logs' && (
                                     <>
-                                        <div className="text-zinc-400"><span className="text-purple-400">INFO</span> [HermesExecutionEngine] Initialized capability bindings (image.generate, text.completion)</div>
-                                        <div className="text-zinc-400"><span className="text-emerald-400">SUCCESS</span> [PostgresScheduler] hermes_jobs sync ok. 0 zombie jobs purged.</div>
-                                        <div className="text-zinc-400"><span className="text-blue-400">DEBUG</span> [DecisionJournal] Appended record into `hermes_journal`</div>
+                                        <div className="text-zinc-400"><span className="text-purple-400">INFO</span> [HermesExecutionEngine] Sesiones activas: {projection.operationsSnapshot.activeSessions}</div>
+                                        <div className="text-zinc-400"><span className="text-purple-400">INFO</span> [HermesExecutionEngine] Ejecuciones corriendo: {projection.operationsSnapshot.runningExecutions}</div>
+                                        <div className="text-zinc-400"><span className="text-purple-400">INFO</span> [HermesExecutionEngine] Jobs en cola: {projection.operationsSnapshot.pendingJobs}</div>
+                                        <div className="text-zinc-400"><span className="text-emerald-400">SUCCESS</span> [DecisionJournal] {projection.operationsSnapshot.recentEvents} registros · error rate {(projection.operationsSnapshot.errorRate * 100).toFixed(1)}%</div>
                                     </>
                                 )}
 
                                 {activeConsoleTab === 'thoughts' && (
-                                    <>
-                                        <div className="text-amber-300/80">🧠 Cognitive Router: Input matched capability `image.generate`. Selecting optimal provider `pandoras-media-co` based on latency metric (120ms).</div>
-                                        <div className="text-amber-300/80">🧠 Policy Engine: Verifying tenant rate limits for `{projection?.tenant?.slug}`. Approved (Priority: Normal).</div>
-                                    </>
+                                    <div className="text-zinc-500 text-xs">
+                                        El kernel no registra pensamientos internos. Los eventos reales de ejecución se muestran en la pestaña EVENTS.
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -579,7 +584,7 @@ function CapabilityMeshView({ projection, setInspectorData }: any) {
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                             {binding.health}
                                         </span>
-                                        <span className="text-zinc-500">{binding.latencyMs}ms</span>
+                                        <span className="text-zinc-500">{binding.latencyMs != null ? `${binding.latencyMs}ms` : 'n/a'}</span>
                                     </div>
                                 </div>
                             ))}
@@ -591,64 +596,109 @@ function CapabilityMeshView({ projection, setInspectorData }: any) {
     );
 }
 
-{/* COGNITIVE EXECUTION TRACE GRAPH (Native React/SVG Live Flow) */}
-function ExecutionTraceGraphView({ setInspectorData }: any) {
-    const [selectedNode, setSelectedNode] = useState('policy');
+{/* COGNITIVE EXECUTION TRACE GRAPH (Real hermes_journal traces) */}
+function ExecutionTraceGraphView({ projection, setInspectorData }: any) {
+    const [selectedNode, setSelectedNode] = useState('status');
 
-    const nodes = [
-        { id: 'input', label: 'Input Recibido', detail: '¿Cuál es el supply total?', time: '09:01:11', color: 'bg-emerald-500' },
-        { id: 'knowledge', label: 'Knowledge Runtime', detail: 'search.semantic → kernel_knowledge', time: '09:01:11', color: 'bg-blue-500' },
-        { id: 'policy', label: 'Policy Engine', detail: 'Evaluation: APPROVED', time: '09:01:12', color: 'bg-purple-500' },
-        { id: 'executor', label: 'Language Executor', detail: 'language.generate → ollama (1.2s)', time: '09:01:13', color: 'bg-amber-500' },
-        { id: 'response', label: 'Response Yielded', detail: 'Delivered to Telegram Channel', time: '09:01:14', color: 'bg-emerald-500' }
-    ];
+    const entries = projection?.recentJournal || [];
+    const entry = entries[0];
+    const providerName = entry
+        ? (typeof entry.resolvedProvider === 'string'
+            ? entry.resolvedProvider
+            : (entry.resolvedProvider as any)?.name || 'kernel')
+        : null;
+
+    const nodes = entry
+        ? [
+            {
+                id: 'input',
+                label: 'Input Recibido',
+                detail: `Request \`${String(entry.requestId).slice(0, 8)}\``,
+                time: new Date(entry.createdAt).toLocaleTimeString(),
+                color: 'bg-emerald-500'
+            },
+            {
+                id: 'capability',
+                label: 'Capability Router',
+                detail: entry.capability,
+                time: new Date(entry.createdAt).toLocaleTimeString(),
+                color: 'bg-purple-500'
+            },
+            {
+                id: 'provider',
+                label: 'Provider Binding',
+                detail: providerName,
+                time: new Date(entry.createdAt).toLocaleTimeString(),
+                color: 'bg-amber-500'
+            },
+            {
+                id: 'status',
+                label: 'Execution Result',
+                detail: String(entry.executionStatus || 'unknown').toUpperCase(),
+                time: new Date(entry.createdAt).toLocaleTimeString(),
+                color: entry.executionStatus === 'failed'
+                    ? 'bg-red-500'
+                    : (entry.executionStatus === 'completed' || entry.executionStatus === 'success')
+                        ? 'bg-emerald-500'
+                        : 'bg-blue-500'
+            }
+        ]
+        : [];
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-bold text-zinc-100">Cognitive Activity Graph</h3>
-                    <p className="text-xs text-zinc-500 font-mono mt-0.5">Live execution pipeline with node-level inspection</p>
+                    <p className="text-xs text-zinc-500 font-mono mt-0.5">Última ejecución registrada en hermes_journal</p>
                 </div>
-                <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs font-mono text-purple-300">
-                    Session: msg_01J08G92K
-                </span>
+                {entry && (
+                    <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs font-mono text-purple-300">
+                        Session: {String(entry.requestId).slice(0, 12)}
+                    </span>
+                )}
             </div>
 
             {/* Flow Graph Nodes */}
             <div className="bg-[#0C0C10] p-6 rounded-2xl border border-white/10 space-y-4 font-mono">
-                <div className="flex flex-col space-y-6 relative pl-6 border-l border-white/10">
-                    {nodes.map((node) => (
-                        <div 
-                            key={node.id} 
-                            onClick={() => {
-                                setSelectedNode(node.id);
-                                setInspectorData({
-                                    type: 'graph_node',
-                                    title: node.label,
-                                    details: {
-                                        timestamp: node.time,
-                                        details: node.detail,
-                                        status: 'SUCCESS',
-                                        latency: '12ms'
-                                    }
-                                });
-                            }}
-                            className={`relative cursor-pointer transition-all p-3 rounded-xl border ${
-                                selectedNode === node.id 
-                                    ? 'bg-purple-500/10 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.1)]' 
-                                    : 'bg-black/30 border-white/5 hover:border-white/20'
-                            }`}
-                        >
-                            <div className={`absolute -left-[31px] top-4 w-3.5 h-3.5 rounded-full ${node.color} border-4 border-[#0C0C10]`} />
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-zinc-200">{node.label}</span>
-                                <span className="text-[10px] text-zinc-500">{node.time}</span>
+                {nodes.length === 0 ? (
+                    <div className="text-xs text-zinc-500 text-center py-8">
+                        No hay ejecuciones registradas todavía en hermes_journal para este tenant.
+                    </div>
+                ) : (
+                    <div className="flex flex-col space-y-6 relative pl-6 border-l border-white/10">
+                        {nodes.map((node) => (
+                            <div 
+                                key={node.id} 
+                                onClick={() => {
+                                    setSelectedNode(node.id);
+                                    setInspectorData({
+                                        type: 'graph_node',
+                                        title: node.label,
+                                        details: {
+                                            timestamp: node.time,
+                                            details: node.detail,
+                                            status: node.detail,
+                                            latency: 'n/a'
+                                        }
+                                    });
+                                }}
+                                className={`relative cursor-pointer transition-all p-3 rounded-xl border ${
+                                    selectedNode === node.id 
+                                        ? 'bg-purple-500/10 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.1)]' 
+                                        : 'bg-black/30 border-white/5 hover:border-white/20'
+                                }`}
+                            >
+                                <div className={`absolute -left-[31px] top-4 w-3.5 h-3.5 rounded-full ${node.color} border-4 border-[#0C0C10]`} />
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-zinc-200">{node.label}</span>
+                                    <span className="text-[10px] text-zinc-500">{node.time}</span>
+                                </div>
+                                <p className="text-xs text-zinc-400 mt-1">{node.detail}</p>
                             </div>
-                            <p className="text-xs text-zinc-400 mt-1">{node.detail}</p>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

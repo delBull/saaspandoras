@@ -428,13 +428,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                     const tokenPrice = Number(project.tokenPriceUsd || 50);
                     const units = Math.floor(Number(p.amount) / (tokenPrice > 0 ? tokenPrice : 50));
                     const apiBase = apiKey.startsWith('pk_live_') ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
+                    const isCertified = (p.agreementHash || slug === 'snarai') && p.status === 'completed';
 
                     return {
                         isVerifiable,
                         agreementId: p.agreementId || p.id,
                         agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
-                        legalPortalUrl: p.legalPortalUrl || `${apiBase}/legal/certificate/${p.agreementId || p.id}?project=${slug}&units=${units}&origin=${encodeURIComponent(origin)}`,
-                        status: ((p.agreementHash || slug === 'snarai') && p.status === 'completed') ? "certified" : "pending",
+                        // Legal certificate URL is only exposed once the purchase is confirmed on-chain,
+                        // otherwise the certificate page would be reachable before payment confirmation.
+                        legalPortalUrl: isCertified ? (p.legalPortalUrl || `${apiBase}/legal/certificate/${p.agreementId || p.id}?project=${slug}&units=${units}&origin=${encodeURIComponent(origin)}`) : null,
+                        status: isCertified ? "certified" : "pending",
                         units: units || 1, 
                         amount: Number(p.amount) || 0, 
                         date: p.createdAt

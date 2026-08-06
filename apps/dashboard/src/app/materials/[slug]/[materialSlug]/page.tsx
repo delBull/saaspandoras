@@ -91,7 +91,7 @@ Este documento modela seis escenarios financieros hipotéticos con los mismos su
 
 export default async function MaterialPage({ params, searchParams }: { params: Promise<{ slug: string, materialSlug: string }>, searchParams?: Promise<{ lang?: string }> }) {
     const { slug, materialSlug } = await params;
-    const t = (es, en) => lang === 'en' ? en : es;
+    const t = (es: string, en: string) => lang === 'en' ? en : es;
     const resolvedSearchParams = searchParams ? await searchParams : {};
     const lang = resolvedSearchParams.lang || 'es';
     

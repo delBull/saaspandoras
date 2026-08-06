@@ -5,7 +5,7 @@ import { projects, projectBriefings } from '~/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { BriefingRenderer } from '~/components/briefings/BriefingRenderer';
 
-export default async function BriefingPage({ params }: { params: { slug: string; briefingSlug: string } }) {
+export default async function BriefingPage({ params }: { params: Promise<{ slug: string; briefingSlug: string }> }) {
   const { slug, briefingSlug } = await params;
 
   // 1. Validate project

@@ -30,12 +30,9 @@ export async function GET(
         }
 
         // Check if requester is the applicant (owner)
-        // [TEMPORARY BYPASS PARA TESTING]
-        /*
         if (project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
             return NextResponse.json({ error: 'Forbidden: You do not own this project' }, { status: 403 });
         }
-        */
 
         // 2. Lazy Cleanup: Auto-expire old on_hold purchases for THIS project
         await db.update(purchases)

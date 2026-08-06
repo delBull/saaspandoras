@@ -26,9 +26,16 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const projectRecord = await db.query.projects.findFirst({
+    // Resolve project by id OR slug (the dashboard sends a numeric id,
+    // while legacy integrations call with the slug).
+    let projectRecord = await db.query.projects.findFirst({
       where: eq(projects.slug, projectId)
     });
+    if (!projectRecord && /^\d+$/.test(projectId)) {
+      projectRecord = await db.query.projects.findFirst({
+        where: eq(projects.id, Number(projectId))
+      });
+    }
 
     if (!projectRecord || projectRecord.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
       return NextResponse.json({ success: false, error: "Forbidden: Only project owner can register bot" }, { status: 403 });
@@ -40,8 +47,9 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     const host = req.headers.get('host');
     const protocol = host?.includes('localhost') ? 'http' : 'https';
     
-    // Register webhook with Telegram, including secret_token for request validation
-    const webhookUrl = `${protocol}://${host}/api/v1/projects/${projectId}/bot/webhook`;
+    // Register webhook with Telegram, including secret_token for request validation.
+    // Use the canonical slug so the webhook route (which resolves by slug) matches.
+    const webhookUrl = `${protocol}://${host}/api/v1/projects/${projectRecord.slug}/bot/webhook`;
     const telegramRes = await fetch(
       `https://api.telegram.org/bot${botToken}/setWebhook?url=${webhookUrl}&secret_token=${webhookSecret}`
     );
@@ -84,7 +92,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
 
       await db.update(projects)
         .set({ w2eConfig: newConfig })
-        .where(eq(projects.slug, projectId));
+        .where(eq(projects.slug, projectRecord.slug));
     }
 
     return NextResponse.json({ 

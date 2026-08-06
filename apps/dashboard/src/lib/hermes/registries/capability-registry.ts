@@ -25,10 +25,10 @@ export class CapabilityRegistry {
   }
 
   /**
-   * Retrieves all capabilities for a specific domain (e.g. 'editorial')
+   * Retrieves all capabilities for a specific namespace (e.g. 'content')
    */
   public getByDomain(domain: string): CapabilityDefinition[] {
-    return Array.from(this.capabilities.values()).filter(c => c.domain === domain);
+    return Array.from(this.capabilities.values()).filter(c => c.namespace === domain);
   }
 
   /**

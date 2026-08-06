@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { installedProducts, projects, hermesJobs, hermesJournal } from '@/db/schema';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, sql, desc } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
 import { validatePortalSession } from '@/lib/platform/portal-auth';
 
@@ -99,6 +99,46 @@ export async function GET(request: Request, context: { params: Promise<{ tenantI
     const recentEvents = journalRes?.total || 0;
     const errorRate = recentEvents > 0 ? (journalRes?.errors || 0) / recentEvents : 0;
 
+    // Real capability mesh derived from journal executions (no fabricated providers/latencies)
+    const meshRows = await db.select({
+        capability: hermesJournal.capability,
+        provider: hermesJournal.resolvedProvider
+    })
+        .from(hermesJournal)
+        .where(eq(hermesJournal.tenantId, strTenantId));
+
+    const meshMap = new Map<string, Map<string, Record<string, unknown>>>();
+    for (const row of meshRows) {
+        if (!row.capability) continue;
+        const providerName = typeof row.provider === 'string'
+            ? row.provider
+            : (row.provider as any)?.name || 'kernel';
+        if (!meshMap.has(row.capability)) meshMap.set(row.capability, new Map());
+        meshMap.get(row.capability)!.set(providerName, {
+            resolver: 'primary',
+            implementation: providerName,
+            health: 'HEALTHY',
+            latencyMs: null
+        });
+    }
+    const capabilityMesh = Array.from(meshMap.entries()).map(([capability, bindings]) => ({
+        capability,
+        bindings: Array.from(bindings.values())
+    }));
+
+    // Real recent executions for the console dock / trace graph
+    const recentJournal = await db.select({
+        requestId: hermesJournal.requestId,
+        capability: hermesJournal.capability,
+        executionStatus: hermesJournal.executionStatus,
+        resolvedProvider: hermesJournal.resolvedProvider,
+        createdAt: hermesJournal.createdAt
+    })
+        .from(hermesJournal)
+        .where(eq(hermesJournal.tenantId, strTenantId))
+        .orderBy(desc(hermesJournal.createdAt))
+        .limit(8);
+
     // This is the Projection Model adapted for the Workbench.
     // Profile is now derived from the request auth context, not hardcoded.
     return NextResponse.json({
@@ -110,46 +150,25 @@ export async function GET(request: Request, context: { params: Promise<{ tenantI
         },
         system: {
             health: hermes.status === 'active' || hermes.status === 'trial' ? 'HEALTHY' : 'SUSPENDED',
-            version: 'v5.2.0-rc1',
-            uptime: '99.98%'
+            version: 'v1.0-STABLE'
         },
         identityRuntime: {
             brandName: project.title,
             baseCurrency: 'USD',
-            voice: 'concierge',
-            installedPacks: ['referral_trust_concierge'],
-            contextDefaults: {
-                timezone: 'UTC',
-                language: 'es'
-            }
+            voice: 'assistant',
+            installedPacks: []
         },
         knowledgeRuntime: {
-            contentGraphNodes: 120,
-            discoveryGraphNodes: 45,
-            workflowGraphNodes: 12,
-            indexes: ['semantic_faq', 'project_data']
+            indexes: []
         },
-        capabilityMesh: [
-            {
-                capability: 'language.generate',
-                bindings: [
-                    { resolver: 'primary', implementation: 'ollama', health: 'HEALTHY', latencyMs: 45 },
-                    { resolver: 'fallback', implementation: 'openai', health: 'HEALTHY', latencyMs: 320 }
-                ]
-            },
-            {
-                capability: 'search.semantic',
-                bindings: [
-                    { resolver: 'primary', implementation: 'kernel_knowledge', health: 'HEALTHY', latencyMs: 15 }
-                ]
-            }
-        ],
+        capabilityMesh,
         operationsSnapshot: {
             activeSessions: sessionsRes?.count || 0,
             runningExecutions: runningRes?.count || 0,
             pendingJobs: pendingRes?.count || 0,
             errorRate: Number(errorRate.toFixed(4)),
             recentEvents: recentEvents
-        }
+        },
+        recentJournal
     });
 }

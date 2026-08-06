@@ -33,7 +33,7 @@ async function handler(req: Request) {
         return NextResponse.json({ error: 'No ambassador found for this wallet' }, { status: 404 });
     }
 
-    if (ambassador.status !== 'active') {
+    if (ambassador.status === 'APPLIED' || ambassador.status === 'SUSPENDED') {
         return NextResponse.json({ error: 'Ambassador is not active' }, { status: 403 });
     }
 

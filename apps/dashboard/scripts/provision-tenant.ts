@@ -24,7 +24,8 @@ function parseArgs() {
   const parsed: Record<string, string> = {};
   for (const arg of args) {
     const [key, value] = arg.replace('--', '').split('=');
-    parsed[key] = value;
+    if (key === undefined) continue;
+    parsed[key] = value ?? 'true';
   }
   return parsed;
 }

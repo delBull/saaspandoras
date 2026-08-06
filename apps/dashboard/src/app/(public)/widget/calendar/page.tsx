@@ -5,13 +5,14 @@ export const metadata: Metadata = {
   description: 'Embeddable investment calendar for external properties',
 };
 
-export default function WhitelabelCalendarWidget({
+export default async function WhitelabelCalendarWidget({
   searchParams,
 }: {
-  searchParams: { projectId?: string; theme?: string };
+  searchParams: Promise<{ projectId?: string; theme?: string }>;
 }) {
-  const projectId = searchParams.projectId || 'default';
-  const isDark = searchParams.theme === 'dark' || !searchParams.theme;
+  const sp = await searchParams;
+  const projectId = sp.projectId || 'default';
+  const isDark = sp.theme === 'dark' || !sp.theme;
 
   return (
     <div className={`min-h-screen w-full flex flex-col items-center justify-center p-4 transition-colors ${

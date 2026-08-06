@@ -1,9 +1,12 @@
 import React from 'react';
-import { ShieldCheck, ArrowLeft, CheckCircle2, Globe, Lock, Calendar, Hash, FileText } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, CheckCircle2, Clock, Globe, Lock, Calendar, Hash, FileText } from 'lucide-react';
 import { CertificateActions } from '@/components/legal/CertificateActions';
 import { db } from '@/db';
 import { purchases as purchasesSchema, projects as projectsSchema } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getContract, readContract } from 'thirdweb';
+import { defineChain } from 'thirdweb/chains';
+import { client as twClient } from '@/lib/thirdweb-client';
 
 export default async function CertificatePage({ 
   params, 
@@ -15,35 +18,78 @@ export default async function CertificatePage({
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
   const projectSlug = resolvedSearchParams.project || 'snarai';
-  const units = resolvedSearchParams.units || '3';
   const origin = resolvedSearchParams.origin || '';
   
   // URL de retorno inteligente: si viene de una landing, intenta abrir el portal por defecto
   const returnUrl = origin ? `${origin}?openPortal=true` : '/';
-  
-  let wallet = null;
 
-  // 1. Extraer wallet de IDs especiales
-  if (id.startsWith('virtual-')) {
-    wallet = id.replace('virtual-', '');
-  } else if (id.startsWith('global-')) {
-    wallet = id.replace('global-', '');
-  } else {
-    // 2. Si es un ID de DB, buscar el titular
-    try {
-      const purchase = await db.query.purchases.findFirst({
-        where: eq(purchasesSchema.id, id)
-      });
-      if (purchase) wallet = purchase.userId;
-    } catch (e) {
-      console.error("Error fetching purchase wallet:", e);
-    }
-  }
-
-  // 3. Fetch Project for Dynamic Legal Entity
+  // 0. Fetch Project for Dynamic Legal Entity (needed for on-chain verification)
   const project = await db.query.projects.findFirst({
     where: eq(projectsSchema.slug, projectSlug)
   });
+
+  // ── VERIFICACIÓN SERVER-SIDE ──
+  // Nunca se confía en los query params. Las unidades, hash y fecha se derivan
+  // de una fuente confirmada (purchase completed o balance on-chain).
+  let wallet: string | null = null;
+  let units: number | null = null;
+  let agreementHash: string | null = null;
+  let certifiedDate: Date | null = null;
+  let isVerified = false;
+
+  const certId = id;
+
+  // 1. IDs virtuales/globales: validar balance on-chain en el momento del render
+  if (certId.startsWith('virtual-') || certId.startsWith('global-')) {
+    wallet = certId.replace(/^(virtual|global)-/, '');
+    const resolvedContract = (project?.licenseContractAddress || project?.contractAddress) as string | undefined;
+    const chainId = project?.chainId as number | undefined;
+    if (wallet.startsWith('0x') && resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000" && chainId) {
+      try {
+        const contract = getContract({
+          client: twClient,
+          chain: defineChain(Number(chainId)),
+          address: resolvedContract
+        });
+        const rawBalance = await Promise.race([
+          readContract({
+            contract,
+            method: "function balanceOf(address) view returns (uint256)",
+            params: [wallet as `0x${string}`]
+          }),
+          new Promise<bigint>((_, reject) => setTimeout(() => reject(new Error("RPC Timeout")), 4000))
+        ]).catch(() => 0n);
+        const balance = rawBalance > BigInt(1e12) ? Number(rawBalance / BigInt(1e18)) : Number(rawBalance);
+        if (balance > 0) {
+          units = balance;
+          certifiedDate = new Date();
+          agreementHash = `VERIFIED-ONCHAIN-${wallet.slice(-8).toUpperCase()}`;
+          isVerified = true;
+        }
+      } catch (e) {
+        console.error("[Certificate] On-chain verification failed:", e);
+      }
+    }
+  } else {
+    // 2. IDs de BD: solo se certifica si la purchase está 'completed'
+    try {
+      const purchase = await db.query.purchases.findFirst({
+        where: eq(purchasesSchema.id, certId)
+      });
+      if (purchase) {
+        wallet = purchase.userId;
+        if (purchase.status === 'completed') {
+          const tokenPrice = Number(project?.tokenPriceUsd || 50);
+          units = Math.floor(Number(purchase.amount) / (tokenPrice > 0 ? tokenPrice : 50));
+          agreementHash = purchase.agreementHash || (projectSlug === 'snarai' ? `PENDING-${purchase.id.slice(0, 8)}` : null);
+          certifiedDate = purchase.updatedAt || purchase.createdAt;
+          isVerified = (units ?? 0) > 0;
+        }
+      }
+    } catch (e) {
+      console.error("[Certificate] Error fetching purchase:", e);
+    }
+  }
 
   const legalEntity = project?.fiduciaryEntity || "Pandoras Protocol Entity";
   const projectName = project?.title || projectSlug.toUpperCase().replace('SNARAI', "S'NARAI");
@@ -88,10 +134,17 @@ export default async function CertificatePage({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-white/5 pb-10 print:pb-4 print:border-zinc-100">
               <div className="space-y-2">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-narai-gold print:text-[8px]">Estado del Documento</p>
-                <div className="flex items-center gap-3 text-emerald-400 print:text-emerald-700">
-                  <CheckCircle2 size={22} className="print:w-4 print:h-4" />
-                  <span className="text-base font-black uppercase tracking-widest print:text-sm">Verificado & Registrado</span>
-                </div>
+                {isVerified ? (
+                  <div className="flex items-center gap-3 text-emerald-400 print:text-emerald-700">
+                    <CheckCircle2 size={22} className="print:w-4 print:h-4" />
+                    <span className="text-base font-black uppercase tracking-widest print:text-sm">Verificado & Registrado</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 text-amber-400 print:text-amber-700">
+                    <Clock size={22} className="print:w-4 print:h-4" />
+                    <span className="text-base font-black uppercase tracking-widest print:text-sm">Pendiente de Confirmación</span>
+                  </div>
+                )}
               </div>
               <div className="space-y-2 lg:text-right print:text-right">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 print:text-[8px] print:text-zinc-400">ID de Referencia</p>
@@ -133,7 +186,7 @@ export default async function CertificatePage({
                   <p className="text-3xl font-black text-white italic tracking-tighter print:text-xl print:text-black">Títulos de Participación</p>
                   <div className="pt-4 flex items-center gap-3 print:pt-1">
                     <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/10 print:bg-zinc-50 print:border-zinc-200 print:px-2 print:py-1">
-                       <span className="text-lg font-black text-narai-gold font-mono print:text-sm">{units}</span>
+                       <span className="text-lg font-black text-narai-gold font-mono print:text-sm">{isVerified ? units : '—'}</span>
                        <span className="ml-2 text-[10px] font-bold text-white/30 uppercase tracking-widest print:text-[8px] print:text-zinc-400">Unidades</span>
                     </div>
                   </div>
@@ -145,19 +198,25 @@ export default async function CertificatePage({
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 print:text-[8px] print:text-zinc-400">Fecha Registro</p>
                       <div className="flex items-center gap-2 text-white/60 print:text-black">
                         <Calendar size={14} className="print:w-3 print:h-3" />
-                        <span className="text-xs font-bold font-mono print:text-[10px]">01/05/2026</span>
+                        <span className="text-xs font-bold font-mono print:text-[10px]">
+                          {certifiedDate ? new Date(certifiedDate).toLocaleDateString('es-MX') : 'Pendiente de confirmación'}
+                        </span>
                       </div>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 print:text-[8px] print:text-zinc-400">Hash Red</p>
                       <div className="flex items-center gap-2 text-white/60 print:text-black">
                         <Hash size={14} className="print:w-3 print:h-3" />
-                        <span className="text-xs font-bold font-mono print:text-[10px]">Ox82a...19e</span>
+                        <span className="text-xs font-bold font-mono print:text-[10px]">{agreementHash || 'Pendiente de registro'}</span>
                       </div>
                     </div>
                   </div>
                   <div className="pt-2 print:pt-0">
-                    <p className="text-[9px] text-white/30 italic print:text-[8px] print:text-zinc-400">Validado mediante consenso criptográfico en red Polygon PoS.</p>
+                    {isVerified ? (
+                      <p className="text-[9px] text-white/30 italic print:text-[8px] print:text-zinc-400">Validado mediante consenso criptográfico en red Polygon PoS.</p>
+                    ) : (
+                      <p className="text-[9px] text-amber-300/60 italic print:text-[8px] print:text-amber-700">Este documento se emitirá una vez que el proyecto confirme tu inversión.</p>
+                    )}
                   </div>
                </div>
             </div>
@@ -186,7 +245,13 @@ export default async function CertificatePage({
                 </div>
              </div>
              <div className="print:hidden">
-              <CertificateActions />
+              {isVerified ? (
+                <CertificateActions />
+              ) : (
+                <div className="px-6 py-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 text-amber-300 text-[10px] font-black uppercase tracking-widest text-center">
+                  Disponible cuando el proyecto confirme tu inversión
+                </div>
+              )}
              </div>
           </div>
         </div>

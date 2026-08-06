@@ -18,9 +18,14 @@ export class PackCompiler {
     console.log(`[Compiler] Compiling pack ${sourceManifest.id} for tenant ${tenantId}...`);
 
     // 1. Resolve Overrides (Deep merge logic goes here, simplified for now)
+    // Source manifest declares knowledge as KnowledgeItem[] (id → source);
+    // flatten it into the slot map the runtime consumes, then merge tenant overrides.
+    const sourceSlots = Object.fromEntries(
+      (sourceManifest.knowledge || []).map(item => [item.id, item.source])
+    );
     const resolvedOverrides = {
-      ...sourceManifest.knowledgeSlots,
-      ...tenantOverrides.knowledgeSlots,
+      ...sourceSlots,
+      ...(tenantOverrides.knowledgeSlots || {}),
       // More domain resolution here...
     };
 

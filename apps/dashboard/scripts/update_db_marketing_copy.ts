@@ -13,9 +13,6 @@ async function updateDB() {
       await db.update(projectBriefings)
         .set({
           title: mat.title,
-          objective: mat.objective,
-          description: mat.description,
-          contentPreview: mat.contentPreview
         })
         .where(
           and(
@@ -23,7 +20,7 @@ async function updateDB() {
             eq(projectBriefings.slug, mat.id)
           )
         );
-      console.log(`Updated ${mat.id} in DB`);
+      console.log(`Updated ${mat.id} in DB (only title — objective/description/contentPreview have no column on project_briefings)`);
     }
   }
   
