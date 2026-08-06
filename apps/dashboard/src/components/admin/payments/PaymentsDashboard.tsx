@@ -16,6 +16,11 @@ export function PaymentsDashboard() {
     const [stats, setStats] = useState({ totalRevenue: 0, activeLinks: 0, totalLinks: 0, pendingPayment: 0, activeClients: 0 });
     const [links, setLinks] = useState<any[]>([]);
     const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const LINKS_PER_PAGE = 10;
+    const totalPages = Math.max(1, Math.ceil(links.length / LINKS_PER_PAGE));
+    const paginatedLinks = links.slice((currentPage - 1) * LINKS_PER_PAGE, currentPage * LINKS_PER_PAGE);
 
     useEffect(() => {
         loadData();
@@ -185,13 +190,13 @@ export function PaymentsDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800">
-                                {links.map((link) => (
-                                    <tr key={link.id} className="hover:bg-zinc-800/20">
+                                {paginatedLinks.map((link) => (
+                                    <tr key={link.id} className="hover:bg-zinc-800/20 font-mono">
                                         <td className="px-4 py-3">
                                             <div className="font-medium text-white">{link.title}</div>
                                             <div className="text-xs text-zinc-500">{link.id}</div>
                                         </td>
-                                        <td className="px-4 py-3 text-lime-400 font-mono">
+                                        <td className="px-4 py-3 text-lime-400 font-mono font-bold">
                                             {Number(link.amount).toLocaleString()} {link.currency}
                                         </td>
                                         <td className="px-4 py-3">
@@ -199,7 +204,7 @@ export function PaymentsDashboard() {
                                                 {link.isActive ? 'Activo' : 'Inactivo'}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-3 text-zinc-400">
+                                        <td className="px-4 py-3 text-zinc-400 text-xs">
                                             {formatDistanceToNow(new Date(link.createdAt), { addSuffix: true, locale: es })}
                                         </td>
                                         <td className="px-4 py-3 text-right">
@@ -214,7 +219,7 @@ export function PaymentsDashboard() {
                                 ))}
                                 {links.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
+                                        <td colSpan={5} className="px-4 py-8 text-center text-zinc-500 font-mono text-xs">
                                             No hay links generados aún.
                                         </td>
                                     </tr>
@@ -222,6 +227,32 @@ export function PaymentsDashboard() {
                             </tbody>
                         </table>
                     </div>
+
+                    {links.length > 10 && (
+                      <div className="flex justify-between items-center pt-4 mt-4 border-t border-zinc-800 font-mono text-xs text-zinc-400">
+                        <span>Página {currentPage} de {totalPages}</span>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            className="h-8 bg-zinc-950 border-zinc-800"
+                          >
+                            Anterior
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            className="h-8 bg-zinc-950 border-zinc-800"
+                          >
+                            Siguiente
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

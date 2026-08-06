@@ -118,7 +118,7 @@ export default function PortalLoginPage() {
               Hemos procesado el acceso para <strong>{email}</strong>.
             </div>
 
-            {generatedLink && (
+            {generatedLink ? (
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                 <a
                   href={generatedLink}
@@ -136,9 +136,13 @@ export default function PortalLoginPage() {
                     boxShadow: '0 4px 14px rgba(124,58,237,0.4)'
                   }}
                 >
-                  🚀 Entrar al Portal Ahora
+                  🚀 Entrar al Portal Ahora (Dev Mode)
                 </a>
               </div>
+            ) : (
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 12, lineHeight: 1.5 }}>
+                Por seguridad, abre el enlace que enviamos a tu correo para iniciar sesión de forma segura.
+              </p>
             )}
 
             <button

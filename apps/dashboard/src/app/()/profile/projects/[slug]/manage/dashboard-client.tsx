@@ -116,6 +116,13 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setActiveTab('hermes_os')} 
+                        className="px-4 py-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-500/20 transition-all text-sm font-bold flex items-center gap-2 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
+                    >
+                        <SparklesIcon className="w-4 h-4 text-purple-400" />
+                        HERMES CONSOLE
+                    </button>
                     <Link href={`/profile/projects/${project.slug}/premium`} className="px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-400 rounded-lg hover:bg-amber-600/30 transition-all text-sm font-bold">
                         PDF PREMIUM
                     </Link>

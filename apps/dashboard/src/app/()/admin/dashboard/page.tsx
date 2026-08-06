@@ -371,6 +371,12 @@ export default function AdminDashboardPage() {
   const filteredProjects = useMemo(() => {
     let filtered = enhancedProjects;
 
+    // Exclude Hermes OS tenants from the traditional "Protocolos" tab
+    // (they live in the dedicated Hermes Tenants tab)
+    filtered = filtered.filter(project =>
+      !(project.slug === 'snarai' || project.slug?.includes('hermes') || project.w2eConfig?.isHermes)
+    );
+
     // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(project => project.status === statusFilter);
@@ -440,7 +446,7 @@ export default function AdminDashboardPage() {
       draft: 0, // Add draft status to counts
     };
 
-    enhancedProjects.forEach(project => {
+    filteredProjects.forEach(project => {
       if (project.status && project.status in counts) {
         counts[project.status] = (counts[project.status] ?? 0) + 1;
       } else {
@@ -449,17 +455,17 @@ export default function AdminDashboardPage() {
     });
 
     console.log('🔧 Status counts breakdown:', {
-      total: enhancedProjects.length,
+      total: filteredProjects.length,
       pending: counts.pending,
       approved: counts.approved,
       live: counts.live,
       completed: counts.completed,
       rejected: counts.rejected,
-      detailed: enhancedProjects.map(p => ({ id: p.id, status: p.status }))
+      detailed: filteredProjects.map(p => ({ id: p.id, status: p.status }))
     });
 
     return counts;
-  }, [enhancedProjects]);
+  }, [filteredProjects]);
 
   // Find current user ID based on wallet
   const currentUserId = useMemo(() => {

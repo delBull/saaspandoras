@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { PaymentsDashboard } from "./payments/PaymentsDashboard";
 import { CoursesAdminPanel } from "./CoursesAdminPanel";
 import { ApiKeysTab } from "./ApiKeysTab";
+import { HermesTenantsAdminView } from "./HermesTenantsAdminView";
 
 interface Swap {
   txHash: string;
@@ -80,6 +81,9 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           </button>
           <button onClick={() => setTab('clients')} className={`pb-2 font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
             Clientes
+          </button>
+          <button onClick={() => setTab('hermes')} className={`pb-2 font-semibold ${activeTab === 'hermes' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-1.5`}>
+            🔑 Hermes Tenants
           </button>
 
           {showMarketing && (
@@ -150,6 +154,10 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
 
       {activeTab === 'clients' && (
         <ClientsManager />
+      )}
+
+      {activeTab === 'hermes' && (
+        <HermesTenantsAdminView />
       )}
 
       {activeTab === 'marketing' && showMarketing && (
