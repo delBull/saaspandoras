@@ -32,10 +32,7 @@ export function ResourceHubTab({ project }: { project: any }) {
     const w2e = typeof project.w2eConfig === 'string'
         ? (() => { try { return JSON.parse(project.w2eConfig); } catch { return {}; } })()
         : (project.w2eConfig || {});
-    const [aiKnowledgeBase, setAiKnowledgeBase] = useState<string>(w2e.aiKnowledgeBase || '');
-    const [botToken, setBotToken] = useState<string>(w2e.botConfig?.telegramToken || '');
-    const [savingAI, setSavingAI] = useState(false);
-    const [registeringBot, setRegisteringBot] = useState(false);
+
 
     // Shortlink states
     const [shortlinkSlug, setShortlinkSlug] = useState('');
@@ -136,46 +133,6 @@ export function ResourceHubTab({ project }: { project: any }) {
         }
     };
 
-    const handleSaveAI = async () => {
-        setSavingAI(true);
-        try {
-            const newW2eConfig = { ...w2e, aiKnowledgeBase, botConfig: { ...w2e.botConfig, telegramToken: botToken } };
-            const res = await fetch(`/api/v1/projects/${project.id}/admin/config`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ w2eConfig: newW2eConfig })
-            });
-            if (!res.ok) throw new Error('Failed to save AI config');
-            toast.success('Configuración IA guardada ✓');
-        } catch {
-            toast.error('Error al guardar la configuración IA');
-        } finally {
-            setSavingAI(false);
-        }
-    };
-
-    const handleRegisterBot = async () => {
-        if (!botToken) return toast.error('Ingresa un Bot Token válido');
-        setRegisteringBot(true);
-        try {
-            const res = await fetch(`/api/v1/projects/${project.slug}/bot/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ botToken })
-            });
-            const data = await res.json();
-            if (data.success) {
-                toast.success('¡Bot vinculado exitosamente a Telegram!');
-                await handleSaveAI();
-            } else {
-                toast.error(`Error: ${data.error}`);
-            }
-        } catch {
-            toast.error('Error de conexión al registrar el bot');
-        } finally {
-            setRegisteringBot(false);
-        }
-    };
 
     const updateMdDoc = (key: string, value: string) => {
         setConfig({
@@ -412,55 +369,7 @@ export function ResourceHubTab({ project }: { project: any }) {
                 )}
             </div>
 
-            {/* AI Assistant */}
-            <div className="bg-zinc-900/50 border border-purple-500/20 rounded-2xl p-6 space-y-4">
-                <div className="flex flex-col gap-2 mb-4">
-                    <h4 className="text-sm font-bold uppercase tracking-widest text-purple-400 flex items-center gap-2">
-                        <SparklesIcon className="w-4 h-4" />
-                        AI Agent (Knowledge Base)
-                    </h4>
-                    <p className="text-xs text-zinc-500">
-                        Pega aquí información en texto plano (FAQ, transcripciones, datos duros). El Agente de IA usará esto como su cerebro principal para responder en Telegram y Widget.
-                    </p>
-                </div>
-                
-                <textarea
-                    value={aiKnowledgeBase}
-                    onChange={(e) => setAiKnowledgeBase(e.target.value)}
-                    className="w-full h-48 bg-black border border-purple-500/20 rounded-xl p-4 text-sm text-purple-200/70 focus:border-purple-400 focus:outline-none resize-none"
-                    placeholder="Ejemplo: 'El proyecto se lanzó en 2024. El precio del token es de $0.50. El equipo fundador es...'"
-                />
 
-                <div className="pt-4 border-t border-white/5 space-y-3">
-                    <h5 className="text-xs font-bold uppercase text-zinc-500">Telegram Bot Integration</h5>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={botToken}
-                            onChange={(e) => setBotToken(e.target.value)}
-                            placeholder="Pega el Token de BotFather (ej. 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)"
-                            className="flex-1 bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-purple-400 focus:outline-none"
-                        />
-                        <button
-                            onClick={handleRegisterBot}
-                            disabled={registeringBot || !botToken}
-                            className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50"
-                        >
-                            {registeringBot ? 'Conectando...' : 'Vincular Bot'}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                    <button
-                        onClick={handleSaveAI}
-                        disabled={savingAI}
-                        className="bg-purple-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-purple-500 transition-colors shadow-[0_0_15px_rgba(147,51,234,0.3)]"
-                    >
-                        {savingAI ? 'Guardando...' : 'Actualizar Cerebro AI'}
-                    </button>
-                </div>
-            </div>
 
             {/* Links de Comunidad */}
             <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 space-y-4">

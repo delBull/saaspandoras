@@ -45,7 +45,7 @@ import { UserGovernanceList } from "../user/UserGovernanceList";
 import type { ProjectData } from "@/app/()/projects/types";
 import { defineChain, getContract, readContract, resolveMethod } from "thirdweb";
 import { useReadContract, useWalletBalance } from "thirdweb/react";
-import { getTargetAmount } from "@/lib/project-utils";
+import { getTargetAmount, sanitizeUrl } from "@/lib/project-utils";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 import { calculatePhaseStatus, getProjectPhasesWithStats } from "@/lib/phase-utils";
@@ -798,22 +798,22 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       </div>
 
       {/* SECCIÓN PERSISTENTE: Enlaces y Recursos (Visible siempre debajo de los tabs) */}
-      <div className="mt-12 border-t border-zinc-700/50 pt-8">
+      <div className="mt-12 border-t border-zinc-700/50 pt-8 relative z-20">
         {(() => {
           // Acceso seguro a propiedades opcionales
-          const projectObj = project as unknown as Record<string, unknown>;
+          const projectObj = project as any;
           const hasLinks = projectObj.website_url || projectObj.whitepaper_url || projectObj.twitter_url || projectObj.discord_url || projectObj.telegram_url || projectObj.video_pitch;
 
           return hasLinks ? (
             <SectionCard title="Enlaces y Recursos" icon={ExternalLink}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Website */}
-                {typeof projectObj.website_url === 'string' && projectObj.website_url && (
+                {projectObj.website_url && (
                   <a
-                    href={projectObj.website_url}
+                    href={sanitizeUrl(projectObj.website_url) || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group relative z-10"
                   >
                     <Globe className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
                     <div>
@@ -824,12 +824,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 )}
 
                 {/* Whitepaper/Litepaper */}
-                {typeof projectObj.whitepaper_url === 'string' && projectObj.whitepaper_url && (
+                {projectObj.whitepaper_url && (
                   <a
-                    href={projectObj.whitepaper_url}
+                    href={sanitizeUrl(projectObj.whitepaper_url) || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group relative z-10"
                   >
                     <FileText className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
                     <div>
@@ -842,12 +842,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
 
 
                 {/* Twitter */}
-                {typeof projectObj.twitter_url === 'string' && projectObj.twitter_url && (
+                {projectObj.twitter_url && (
                   <a
-                    href={projectObj.twitter_url}
+                    href={sanitizeUrl(projectObj.twitter_url) || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group relative z-10"
                   >
                     <Twitter className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
                     <div>
@@ -858,28 +858,28 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 )}
 
                 {/* Discord */}
-                {typeof projectObj.discord_url === 'string' && projectObj.discord_url && (
+                {projectObj.discord_url && (
                   <a
-                    href={projectObj.discord_url}
+                    href={sanitizeUrl(projectObj.discord_url) || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group relative z-10"
                   >
                     <MessageCircle className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
                     <div>
                       <p className="text-white font-medium">Discord</p>
-                      <p className="text-zinc-400 text-sm">Únete a la comunidad</p>
+                      <p className="text-zinc-400 text-sm">Comunidad de desarrollo</p>
                     </div>
                   </a>
                 )}
 
                 {/* Telegram */}
-                {typeof projectObj.telegram_url === 'string' && projectObj.telegram_url && (
+                {projectObj.telegram_url && (
                   <a
-                    href={projectObj.telegram_url}
+                    href={sanitizeUrl(projectObj.telegram_url) || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group relative z-10"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/send.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300 filter invert-0 dark:invert" alt="Telegram" />
@@ -891,12 +891,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 )}
 
                 {/* Video Pitch */}
-                {typeof projectObj.video_pitch === 'string' && projectObj.video_pitch && (
+                {projectObj.video_pitch && (
                   <a
-                    href={projectObj.video_pitch}
+                    href={sanitizeUrl(projectObj.video_pitch) || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group relative z-10"
                   >
                     <PlayCircle className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
                     <div>

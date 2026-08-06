@@ -2063,6 +2063,8 @@ export const marketingLeads = pgTable("marketing_leads", {
   
   status: marketingLeadStatusEnum("status").default("active").notNull(),
   intent: marketingLeadIntentEnum("intent").default("explore").notNull(),
+  source: varchar("source", { length: 255 }), // Tracked from URL or form
+  contactContext: jsonb("contact_context").default({}), // Stateful context from Golden Links/Sessions
   score: integer("score").default(0).notNull(),
   quality: marketingLeadQualityEnum("quality").default("low").notNull(),
   
@@ -2885,6 +2887,11 @@ export const installedProducts = pgTable("installed_products", {
   // Snapshot of runtime state — regenerated on config changes
   runtimeManifest: jsonb("runtime_manifest").default({}).notNull(),
 
+  // Sprint 1.5: Pack Installer System properties
+  packId: varchar("pack_id", { length: 100 }), // e.g., 'referral_trust_concierge'
+  version: varchar("version", { length: 50 }).default('1.0.0'),
+  migrationsVersion: integer("migrations_version").default(0),
+
   // Portal access — JWT token for magic-link client portal (single-use, 7 days)
   portalToken: text("portal_token").unique(),
   portalTokenUsed: boolean("portal_token_used").default(false).notNull(),
@@ -2909,3 +2916,87 @@ export const installedProductsRelations = relations(installedProducts, ({ one })
     references: [projects.id],
   }),
 }));
+
+// ============================================================================
+// 🏛️ HERMES OS RUNTIME FOUNDATION (SPRINT 1.2)
+// Core entities: Campaigns, Golden Links, Sessions, Events
+// ============================================================================
+
+export const goldenLinks = pgTable("golden_links", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  campaignId: integer("campaign_id").references(() => campaigns.id).notNull(),
+  slug: varchar("slug", { length: 150 }).notNull().unique(), // e.g., 'primos-2026/sofia'
+  channel: varchar("channel", { length: 50 }), // 'web', 'telegram', 'whatsapp'
+  referrerId: varchar("referrer_id", { length: 100 }),
+  relationshipOverride: varchar("relationship_override", { length: 50 }), // 'family', 'investor'
+  isActive: boolean("is_active").default(true).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const conversationSessions = pgTable("conversation_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: integer("tenant_id").references(() => projects.id).notNull(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id), // Can be anonymous initially
+  channel: varchar("channel", { length: 50 }).notNull(), // 'web_widget', 'telegram'
+  contactContext: jsonb("contact_context").default({}), // Flushed from Redis when session ends
+  journeyId: varchar("journey_id", { length: 100 }), // The journey being executed
+  currentStage: varchar("current_stage", { length: 100 }),
+  isActive: boolean("is_active").default(true).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  metadata: jsonb("metadata").default({}),
+});
+
+export const hermesEvents = pgTable("hermes_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: integer("tenant_id").references(() => projects.id).notNull(),
+  sessionId: uuid("session_id").references(() => conversationSessions.id),
+  leadId: uuid("lead_id").references(() => marketingLeads.id),
+  eventType: varchar("event_type", { length: 100 }).notNull(), // Strictly: domain.entity.action (e.g. 'campaign.link.clicked')
+  payload: jsonb("payload").default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// --- ARTIFACT STORE ---
+export const compiledArtifacts = pgTable("compiled_artifacts", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => projects.id).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'runtime' | 'content' | 'discovery' | 'media' | 'reasoning'
+  checksum: varchar("checksum", { length: 100 }).notNull(),
+  version: varchar("version", { length: 50 }).notNull(),
+  uri: varchar("uri", { length: 500 }).notNull(), // S3, R2, or local path
+  sizeBytes: integer("size_bytes").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ----------------------------------------------------------------------------
+// HERMES OS TABLES (SPRINT 9)
+// ----------------------------------------------------------------------------
+
+export const hermesJobs = pgTable("hermes_jobs", {
+  id: varchar("id", { length: 255 }).primaryKey(), // executionId
+  tenantId: varchar("tenant_id", { length: 255 }).notNull(),
+  state: varchar("state", { length: 50 }).notNull(), // JobState
+  request: jsonb("request").notNull(), // ExecutionRequest
+  result: jsonb("result"), // ExecutionResult
+  callbackSecret: varchar("callback_secret", { length: 255 }),
+  providerId: varchar("provider_id", { length: 255 }),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const hermesJournal = pgTable("hermes_journal", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  requestId: varchar("request_id", { length: 255 }).notNull(),
+  tenantId: varchar("tenant_id", { length: 255 }).notNull(),
+  capability: varchar("capability", { length: 255 }).notNull(),
+  executionStatus: varchar("execution_status", { length: 50 }).notNull(),
+  artifactsGenerated: integer("artifacts_generated").default(0),
+  resolvedBinding: jsonb("resolved_binding"),
+  resolvedProvider: jsonb("resolved_provider"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

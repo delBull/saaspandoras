@@ -85,9 +85,24 @@ const categories = [
       { name: "🚀 Growth & Expansion Roadmap (Libro VII)", path: "/libros/libro-vii" },
       { name: "⚖️ Institutional Doctrine (Libro VIII)", path: "/libros/libro-viii" },
       { name: "🛠️ Institutional Execution Manual", path: "/libros" },
-      { name: "Institutional Book", path: "/institutional-book" },
-      { name: "General Resources", path: "/resources" },
-      { name: "Materials", path: "/materials" },
+      { name: "Institutional Book", path: "/institutional-book" }
+    ]
+  },
+  {
+    id: "hermes",
+    title: "Hermes Cognitive OS",
+    icon: <Cpu className="w-5 h-5" />,
+    color: "from-purple-500/20 to-indigo-500/20",
+    border: "border-purple-500/30",
+    links: [
+      { name: "Vision", path: "/libros/libro-ix#vision" },
+      { name: "🔒 Constitution (ADRs 000-011)", path: "https://github.com/Pandoras/dApps/tree/main/saaspandoras/apps/dashboard/docs/adr" },
+      { name: "Architecture", path: "/libros/libro-ix#architecture" },
+      { name: "Contracts", path: "/libros/libro-ix#contracts" },
+      { name: "SDK", path: "/libros/libro-ix#sdk" },
+      { name: "APIs", path: "/libros/libro-ix#apis" },
+      { name: "Tutorials", path: "/libros/libro-ix#tutorials" },
+      { name: "Examples", path: "/libros/libro-ix#examples" },
     ]
   }
 ];

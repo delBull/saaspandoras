@@ -73,7 +73,7 @@ export const ExploreStep1Email = ({
 
             {(projectSlug === 'narai' || projectSlug === 'snarai') && (
               <Text className="text-black text-[14px] leading-[24px] mt-4">
-                <strong>Acceso Exclusivo:</strong> También puedes descargar el <Link href="https://snarai.aztecaz.xyz/docs/Narai_Private_Dossier.pdf" className="text-blue-600 underline">Narai Private Dossier</Link> para ver los detalles técnicos y financieros del proyecto.
+                <strong>Acceso Exclusivo:</strong> También puedes descargar el <Link href="https://dash.pandoras.finance/resources/snarai/docs/dossier?lang=es&v=2" className="text-blue-600 underline">Narai Private Dossier</Link> para ver los detalles técnicos y financieros del proyecto.
               </Text>
             )}
 

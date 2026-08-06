@@ -417,7 +417,7 @@ export default function HermesEnterpriseLandingPage() {
           </Button>
 
           <Link
-            href="/portal"
+            href="/growth-os/hermes/portal"
             className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-sm font-light transition-all flex items-center justify-center gap-2"
           >
             <Building2 className="w-4 h-4 text-amber-400" />

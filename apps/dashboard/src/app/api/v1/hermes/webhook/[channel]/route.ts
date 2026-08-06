@@ -4,6 +4,9 @@ import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { HermesExecutionEngine } from '@/lib/hermes/kernel/execution/execution-api';
+import { TelegramAdapter } from '@/lib/hermes/adapters/telegram-adapter';
+import { ExecutionRequest } from '@/lib/hermes/contracts/universal';
 
 /**
  * 📡 Pandora's Platform OS v5 — Autonomous Webhook Endpoint powered by ExecutionEngine Kernel
@@ -35,14 +38,62 @@ export async function POST(
 
     const body = await req.json();
 
-    // Extract message & chatId
     let userMessage = '';
     let chatId = '';
 
     if (channel === 'telegram') {
-      userMessage = body?.message?.text || '';
-      chatId = String(body?.message?.chat?.id || '');
-    } else if (channel === 'whatsapp') {
+      const projectRecord = await db.query.projects.findFirst({
+        where: eq(projects.id, projectId),
+      });
+
+      if (!projectRecord) {
+        return NextResponse.json({ error: 'Unknown project' }, { status: 400 });
+      }
+
+      const metadata = (projectRecord.w2eConfig as any) || {};
+      const storedSecret = metadata?.botConfig?.webhookSecret;
+
+      if (storedSecret) {
+        const requestSecret = req.headers.get('x-telegram-bot-api-secret-token');
+        if (!requestSecret || requestSecret !== storedSecret) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+      }
+
+      const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
+      const botToken = metadata?.botConfig?.telegramToken || (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
+
+      body.botToken = botToken;
+      body.projectRecord = projectRecord;
+      body.metadata = metadata;
+
+      const context = TelegramAdapter.parse(projectId, body);
+      userMessage = context.payload.userMessage;
+      chatId = context.payload.chatId;
+
+      if (!userMessage && !context.payload.raw?.callback_query) {
+        return NextResponse.json({ ok: true, note: 'Ignored non-message update' });
+      }
+
+      // Execute via Unified API
+      const engine = new HermesExecutionEngine();
+      const result = await engine.execute(context);
+
+      const reply = TelegramAdapter.render(result);
+
+      if (botToken && reply) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: reply })
+        }).catch(e => console.error('[Webhook Telegram Send Error]:', e));
+      }
+
+      return NextResponse.json({ ok: true, channel, result });
+    }
+
+    // Default fallback for other channels temporarily
+    if (channel === 'whatsapp') {
       userMessage = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || body?.message || '';
       chatId = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from || body?.from || '';
     } else {
@@ -54,7 +105,7 @@ export async function POST(
       return NextResponse.json({ ok: true, note: 'No text message to process' });
     }
 
-    // Execute Kernel via ExecutionEngine
+    // Legacy execution for non-telegram
     const result = await ExecutionEngine.execute({
       projectId,
       chatId,
@@ -62,26 +113,9 @@ export async function POST(
       channel
     });
 
-    // Handle channel-specific responses (e.g. Telegram API)
-    if (channel === 'telegram' && chatId) {
-      const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
-      const botToken = (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
-
-      if (botToken) {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: result.reply })
-        }).catch(e => console.error('[Webhook Telegram Send Error]:', e));
-      }
-    }
-
     return NextResponse.json({
       ok: true,
       channel,
-      intent: result.intent,
-      requiresHuman: result.requiresHuman,
-      actionExecuted: result.actionExecuted,
       reply: result.reply
     });
 

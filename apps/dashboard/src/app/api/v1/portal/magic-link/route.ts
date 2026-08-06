@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     // 4. Generate Magic Token (7 Days valid)
     const token = generatePortalToken(installedId, targetProject.id, 'hermes');
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
-    const magicLink = `${baseUrl}/portal?token=${token}`;
+    const magicLink = `${baseUrl}/growth-os/hermes/portal?token=${token}`;
 
     console.info(`[MagicLink API] Magic Link generated for ${cleanEmail}: ${magicLink}`);
 

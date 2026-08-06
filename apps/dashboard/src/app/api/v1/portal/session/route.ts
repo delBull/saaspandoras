@@ -5,7 +5,9 @@ import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const sessionToken = searchParams.get('sessionToken');
+    const sessionToken =
+      searchParams.get('sessionToken') ||
+      (request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || '');
 
     if (!sessionToken) {
       return NextResponse.json({ error: 'sessionToken is required' }, { status: 400 });

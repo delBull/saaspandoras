@@ -434,7 +434,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                         agreementId: p.agreementId || p.id,
                         agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
                         legalPortalUrl: p.legalPortalUrl || `${apiBase}/legal/certificate/${p.agreementId || p.id}?project=${slug}&units=${units}&origin=${encodeURIComponent(origin)}`,
-                        status: p.agreementHash ? "certified" : "pending",
+                        status: ((p.agreementHash || slug === 'snarai') && p.status === 'completed') ? "certified" : "pending",
                         units: units || 1, 
                         amount: Number(p.amount) || 0, 
                         date: p.createdAt
@@ -469,18 +469,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     let globalCertificate = null;
 
     try {
-        userTotalUnits = (certificates || []).reduce((acc, cert) => acc + (Number(cert.units) || 0), 0);
-        userTotalAmount = (certificates || []).reduce((acc, cert) => acc + (Number(cert.amount) || 0), 0); 
+        const certifiedCertificates = (certificates || []).filter(c => c.status === "certified");
+        userTotalUnits = certifiedCertificates.reduce((acc, cert) => acc + (Number(cert.units) || 0), 0);
+        userTotalAmount = certifiedCertificates.reduce((acc, cert) => acc + (Number(cert.amount) || 0), 0); 
         
-        if (certificates && certificates.length > 0) {
+        if (certifiedCertificates.length > 0 && userTotalUnits > 0) {
             const apiBase = apiKey.startsWith('pk_live_') ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
             const origin = req.headers.get("origin") || "";
             globalCertificate = {
-                isVerifiable: certificates.some(c => c.isVerifiable),
+                isVerifiable: certifiedCertificates.some(c => c.isVerifiable),
                 totalUnits: userTotalUnits,
                 totalAmount: userTotalAmount,
                 globalPortalUrl: `${apiBase}/legal/certificate/global-${wallet}?project=${slug}&units=${userTotalUnits}&origin=${encodeURIComponent(origin)}`, 
-                status: certificates.every(c => c.status === "certified") ? "certified" : "pending"
+                status: "certified"
             };
         }
     } catch (e) {

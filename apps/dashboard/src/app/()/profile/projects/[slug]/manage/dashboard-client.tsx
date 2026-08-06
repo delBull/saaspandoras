@@ -23,6 +23,8 @@ import { EventsTab } from './tabs/EventsTab';
 import { CommandCenterTab } from './tabs/CommandCenterTab';
 import { NewsletterTab } from './tabs/NewsletterTab';
 import { KnowledgeCenterTab } from './tabs/KnowledgeCenterTab';
+import HermesOsTab from './tabs/HermesOsTab';
+import { SparklesIcon } from '@heroicons/react/24/outline';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -42,7 +44,7 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter' | 'knowledge_center'>('command_center');
+    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter' | 'knowledge_center' | 'hermes_os'>('command_center');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -138,6 +140,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     { id: 'knowledge_center', label: 'Materiales & Briefings', icon: <DocumentTextIcon className="w-4 h-4 text-purple-400" /> },
                     { id: 'events', label: 'Eventos & Citas', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
                     { id: 'newsletter', label: 'Newsletter', icon: <EnvelopeIcon className="w-4 h-4" /> },
+                    { id: 'hermes_os', label: 'Hermes OS', icon: <SparklesIcon className="w-4 h-4 text-purple-400" /> },
                     { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                 ].map((tab) => (
                     <button
@@ -187,6 +190,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         {activeTab === 'knowledge_center' && <KnowledgeCenterTab project={project} />}
                         {activeTab === 'events' && <EventsTab project={project} />}
                         {activeTab === 'newsletter' && <NewsletterTab project={project} />}
+                        {activeTab === 'hermes_os' && <HermesOsTab project={project} config={config} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
                         {activeTab === 'purchases' && (
                             <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />

@@ -1,0 +1,31 @@
+{
+  "tenantId": 2,
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "heading",
+      "content": "Invertir en S'Narai",
+      "topics": [
+        "investment"
+      ]
+    },
+    {
+      "id": "node_2",
+      "type": "paragraph",
+      "content": "Puedes invertir desde $1000 USDC.",
+      "topics": [
+        "investment"
+      ]
+    },
+    {
+      "id": "node_3",
+      "type": "faq",
+      "content": "¿Es seguro?",
+      "topics": [
+        "security"
+      ]
+    }
+  ],
+  "checksum": "abcdef123",
+  "compiledAt": "2026-08-05T21:02:08.609Z"
+}
