@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function NexusPage() {
   return (
-    <main className="fixed inset-0 z-50 overflow-hidden bg-background text-foreground flex items-center justify-center">
+    <main className="fixed inset-0 z-50 overflow-hidden bg-[#08080A] text-zinc-100 flex items-center justify-center">
       <NexusClient />
     </main>
   );

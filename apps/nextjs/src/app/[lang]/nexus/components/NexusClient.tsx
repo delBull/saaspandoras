@@ -1,31 +1,52 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence, Variants } from "framer-motion";
-import Link from "next/link";
-import { 
-  Network, 
-  Rocket, 
-  BookOpen, 
-  LogOut,
-  ChevronRight,
-  Globe,
-  Zap,
-  Users,
+import { motion, Variants } from "framer-motion";
+import {
+  Network,
+  Rocket,
+  BookOpen,
   Shield,
-  Briefcase,
-  Radio,
-  Cpu
+  Cpu,
+  ArrowUpRight,
+  ChevronRight,
+  Activity,
 } from "lucide-react";
 import { IPRegisterModal } from "./IPRegisterModal";
 
-const categories = [
+interface NexusLink {
+  name: string;
+  path: string;
+}
+
+interface Category {
+  id: string;
+  title: string;
+  code: string;
+  icon: React.ReactNode;
+  accent: {
+    chip: string;
+    icon: string;
+    cardHover: string;
+    linkHover: string;
+    arrow: string;
+  };
+  links: NexusLink[];
+}
+
+const categories: Category[] = [
   {
     id: "protocol",
     title: "Core Protocol",
-    icon: <Network className="w-5 h-5" />,
-    color: "from-blue-500/20 to-purple-500/20",
-    border: "border-blue-500/30",
+    code: "CORE",
+    icon: <Network className="w-4 h-4" />,
+    accent: {
+      chip: "border-blue-500/20 bg-blue-500/10 text-blue-300",
+      icon: "text-blue-300",
+      cardHover: "hover:border-blue-500/40",
+      linkHover: "hover:bg-blue-500/5",
+      arrow: "text-blue-400",
+    },
     links: [
       { name: "Protocol Overview", path: "https://dash.pandoras.finance/protocol" },
       { name: "Utility Protocol", path: "https://dash.pandoras.finance/utility-protocol" },
@@ -33,14 +54,20 @@ const categories = [
       { name: "Litepaper", path: "https://dash.pandoras.finance/litepaper" },
       { name: "Whitepaper", path: "https://dash.pandoras.finance/whitepaper" },
       { name: "Roadmap", path: "https://dash.pandoras.finance/roadmap" },
-    ]
+    ],
   },
   {
     id: "growth",
     title: "Growth & Platform Infrastructure",
-    icon: <Rocket className="w-5 h-5" />,
-    color: "from-emerald-500/20 to-teal-500/20",
-    border: "border-emerald-500/30",
+    code: "GROWTH",
+    icon: <Rocket className="w-4 h-4" />,
+    accent: {
+      chip: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+      icon: "text-emerald-300",
+      cardHover: "hover:border-emerald-500/40",
+      linkHover: "hover:bg-emerald-500/5",
+      arrow: "text-emerald-400",
+    },
     links: [
       { name: "Growth OS (Ecosystem Portal)", path: "https://dash.pandoras.finance/growth-os" },
       { name: "Hermes AI Platform (AI-OS)", path: "https://dash.pandoras.finance/growth-os/hermes" },
@@ -53,190 +80,227 @@ const categories = [
       { name: "Apply", path: "https://dash.pandoras.finance/apply" },
       { name: "Join", path: "https://dash.pandoras.finance/join" },
       { name: "Waitlist Success", path: "https://dash.pandoras.finance/waitlist-success" },
-    ]
+    ],
   },
   {
     id: "access",
     title: "Platform & Access",
-    icon: <Shield className="w-5 h-5" />,
-    color: "from-orange-500/20 to-red-500/20",
-    border: "border-orange-500/30",
+    code: "ACCESS",
+    icon: <Shield className="w-4 h-4" />,
+    accent: {
+      chip: "border-orange-500/20 bg-orange-500/10 text-orange-300",
+      icon: "text-orange-300",
+      cardHover: "hover:border-orange-500/40",
+      linkHover: "hover:bg-orange-500/5",
+      arrow: "text-orange-400",
+    },
     links: [
       { name: "Login / Start", path: "https://dash.pandoras.finance/access" },
       { name: "App Dashboard", path: "https://dash.pandoras.finance/dashboard" },
       { name: "User Profile", path: "https://dash.pandoras.finance/dashboard/profile" },
       { name: "Business Profile", path: "https://dash.pandoras.finance/dashboard/profile/projects" },
       { name: "Main Home", path: "/" },
-    ]
+    ],
   },
   {
     id: "resources",
     title: "Resources & Institutional Books",
-    icon: <BookOpen className="w-5 h-5" />,
-    color: "from-zinc-500/20 to-gray-500/20",
-    border: "border-zinc-500/30",
+    code: "DOCS",
+    icon: <BookOpen className="w-4 h-4" />,
+    accent: {
+      chip: "border-zinc-500/20 bg-zinc-500/10 text-zinc-300",
+      icon: "text-zinc-300",
+      cardHover: "hover:border-zinc-500/40",
+      linkHover: "hover:bg-white/5",
+      arrow: "text-zinc-400",
+    },
     links: [
-      { name: "🏛️ Pandoras Institutional Framework (Libros 0–VIII)", path: "/libros" },
-      { name: "⚙️ IOM System & Architecture (5 Layers)", path: "/libros/constitucion" },
-      { name: "📜 Pandoras Asset Standard (PAS v1.0)", path: "/libros/libro-iv" },
-      { name: "🔑 Licensing Framework (Libro V)", path: "/libros/libro-v" },
-      { name: "💻 Tech Platform & Capital Engine (Libro VI)", path: "/libros/libro-vi" },
-      { name: "🤖 Hermes Agent OS & Kernel Architecture (Libro IX)", path: "/libros/libro-ix" },
-      { name: "🚀 Growth & Expansion Roadmap (Libro VII)", path: "/libros/libro-vii" },
-      { name: "⚖️ Institutional Doctrine (Libro VIII)", path: "/libros/libro-viii" },
-      { name: "🛠️ Institutional Execution Manual", path: "/libros" },
-      { name: "Institutional Book", path: "/institutional-book" }
-    ]
+      { name: "Pandoras Institutional Framework (Libros 0–VIII)", path: "/libros" },
+      { name: "IOM System & Architecture (5 Layers)", path: "/libros/constitucion" },
+      { name: "Pandoras Asset Standard (PAS v1.0)", path: "/libros/libro-iv" },
+      { name: "Licensing Framework (Libro V)", path: "/libros/libro-v" },
+      { name: "Tech Platform & Capital Engine (Libro VI)", path: "/libros/libro-vi" },
+      { name: "Hermes Agent OS & Kernel Architecture (Libro IX)", path: "/libros/libro-ix" },
+      { name: "Growth & Expansion Roadmap (Libro VII)", path: "/libros/libro-vii" },
+      { name: "Institutional Doctrine (Libro VIII)", path: "/libros/libro-viii" },
+      { name: "Institutional Execution Manual", path: "/libros" },
+      { name: "Institutional Book", path: "/institutional-book" },
+    ],
   },
   {
     id: "hermes",
     title: "Hermes Cognitive OS",
-    icon: <Cpu className="w-5 h-5" />,
-    color: "from-purple-500/20 to-indigo-500/20",
-    border: "border-purple-500/30",
+    code: "HERMES",
+    icon: <Cpu className="w-4 h-4" />,
+    accent: {
+      chip: "border-purple-500/20 bg-purple-500/10 text-purple-300",
+      icon: "text-purple-300",
+      cardHover: "hover:border-purple-500/40",
+      linkHover: "hover:bg-purple-500/5",
+      arrow: "text-purple-400",
+    },
     links: [
       { name: "Vision", path: "/libros/libro-ix#vision" },
-      { name: "🔒 Constitution (ADRs 000-011)", path: "https://github.com/Pandoras/dApps/tree/main/saaspandoras/apps/dashboard/docs/adr" },
+      { name: "Constitution (ADRs 000-011)", path: "https://github.com/Pandoras/dApps/tree/main/saaspandoras/apps/dashboard/docs/adr" },
       { name: "Architecture", path: "/libros/libro-ix#architecture" },
       { name: "Contracts", path: "/libros/libro-ix#contracts" },
       { name: "SDK", path: "/libros/libro-ix#sdk" },
       { name: "APIs", path: "/libros/libro-ix#apis" },
       { name: "Tutorials", path: "/libros/libro-ix#tutorials" },
       { name: "Examples", path: "/libros/libro-ix#examples" },
-    ]
-  }
+    ],
+  },
 ];
 
-const containerVariants: Variants = {
+const gridVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
-  }
+    transition: { staggerChildren: 0.07, delayChildren: 0.15 },
+  },
 };
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 15
-    }
-  }
+    transition: { type: "spring", stiffness: 120, damping: 18 },
+  },
 };
 
 export default function NexusClient() {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isIpModalOpen, setIsIpModalOpen] = useState(false);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-4 md:p-8 lg:p-12 overflow-hidden bg-background">
+    <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#08080A] text-zinc-100 font-sans">
       <IPRegisterModal isOpen={isIpModalOpen} onClose={() => setIsIpModalOpen(false)} />
 
-      {/* Abstract Background Elements */}
+      {/* Ambient background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] bg-primary/5 rounded-full blur-[100px] mix-blend-screen" />
-        <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-secondary/10 rounded-full blur-[80px] mix-blend-screen" />
-        
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]" />
+        <div className="absolute -top-1/4 left-1/4 w-[45vw] h-[45vw] bg-purple-500/[0.04] rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute -bottom-1/4 right-1/4 w-[35vw] h-[35vw] bg-blue-500/[0.04] rounded-full blur-[110px] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]" />
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="z-10 w-full max-w-7xl h-full max-h-[900px] flex flex-col"
-      >
-        <header className="flex flex-col items-center text-center mb-8 md:mb-12 shrink-0">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="inline-flex items-center justify-center p-3 mb-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl"
-          >
-            <Globe className="w-8 h-8 text-primary" />
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-3xl md:text-5xl font-light tracking-tight text-foreground mb-2"
-          >
-            PANDORA'S <span className="font-semibold text-primary">NEXUS</span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-sm md:text-base text-muted-foreground max-w-lg font-light"
-          >
-            Unified Index of Public Platform Infrastructure, Growth OS, Hermes & Media Engine
-          </motion.p>
-        </header>
-
-        {/* Category Grid */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1 overflow-y-auto pr-1 pb-4"
-        >
-          {categories.map((cat) => (
-            <motion.div
-              key={cat.id}
-              variants={itemVariants}
-              className={`flex flex-col rounded-3xl border ${cat.border} bg-card/40 backdrop-blur-xl p-6 transition-all duration-300 hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/5 group relative overflow-hidden`}
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
-              
-              <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
-                <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 text-primary">
-                  {cat.icon}
-                </div>
-                <h2 className="text-lg font-medium text-foreground tracking-tight">{cat.title}</h2>
-              </div>
-
-              <div className="flex flex-col space-y-2 flex-1 relative z-10">
-                {cat.links.map((link, idx) => (
-                  <a
-                    key={idx}
-                    href={link.path}
-                    target={link.path.startsWith("http") ? "_blank" : "_self"}
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-xs text-muted-foreground hover:text-foreground transition-all duration-200 group/link"
-                  >
-                    <span className="truncate pr-2">{link.name}</span>
-                    <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/link:opacity-100 text-primary transition-all -translate-x-1 group-hover/link:translate-x-0 shrink-0" />
-                  </a>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Footer info & CTA */}
-        <footer className="mt-6 pt-4 border-t border-border/40 flex flex-col md:flex-row items-center justify-between text-xs text-muted-foreground shrink-0 gap-4">
-          <div>
-            <span>Pandora's Growth OS & Platform Ecosystem</span>
+      <div className="relative z-10 w-full h-full flex flex-col">
+        {/* Top command bar */}
+        <header className="h-12 shrink-0 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] border-b border-white/10 font-mono">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-purple-500/30 bg-purple-500/10">
+                <span className="text-purple-300 text-[10px] tracking-widest">NEXUS</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-[10px] text-emerald-300">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                </span>
+                LIVE INDEX
+              </span>
+            </div>
+            <div className="hidden md:flex items-center gap-3 text-[10px] text-zinc-500 truncate">
+              <span className="text-zinc-500/40">•</span>
+              <span>5 Domains</span>
+              <span className="text-zinc-500/40">•</span>
+              <span>40 Destinations</span>
+              <span className="text-zinc-500/40">•</span>
+              <span>Engine: Nexus v1.0</span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-white/10 bg-black/40 text-zinc-400 text-[10px]">
+              <Activity className="w-3 h-3 text-purple-300" />
+              UNIFIED INDEX
+            </span>
             <button
               onClick={() => setIsIpModalOpen(true)}
-              className="hover:text-primary transition-colors text-xs underline font-mono"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
             >
-              IP & Patent Registry
+              <Shield className="w-3 h-3" />
+              IP & PATENT REGISTRY
             </button>
-            <span className="font-mono text-[10px] text-muted-foreground/60">v2.5 Live</span>
           </div>
+        </header>
+
+        {/* Scrollable bento area */}
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
+          <motion.div
+            variants={gridVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {categories.map((cat) => (
+              <motion.section
+                key={cat.id}
+                variants={cardVariants}
+                className={`flex flex-col rounded-2xl border border-white/10 bg-[#0C0C10] p-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(168,85,247,0.06)] ${cat.accent.cardHover} ${
+                  cat.id === "growth" || cat.id === "resources"
+                    ? "md:col-span-2"
+                    : cat.id === "access"
+                      ? "md:col-span-1"
+                      : cat.id === "hermes"
+                        ? "md:col-span-1"
+                        : ""
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4 shrink-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`flex items-center justify-center w-8 h-8 rounded-lg border ${cat.accent.chip} shrink-0`}>
+                      {cat.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-semibold text-zinc-100 truncate tracking-tight">{cat.title}</h2>
+                      <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{cat.code} · {cat.links.length} LINK{cat.links.length !== 1 ? "S" : ""}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600 shrink-0" />
+                </div>
+
+                <div className="flex flex-col gap-0.5 flex-1">
+                  {cat.links.map((link, idx) => {
+                    const external = link.path.startsWith("http");
+                    return (
+                      <a
+                        key={idx}
+                        href={link.path}
+                        target={external ? "_blank" : "_self"}
+                        rel={external ? "noopener noreferrer" : undefined}
+                        className={`group/link flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-mono text-zinc-400 hover:text-zinc-100 ${cat.accent.linkHover} transition-colors duration-150`}
+                      >
+                        <span className="truncate">
+                          <span className="text-zinc-600 mr-2">
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          {link.name}
+                        </span>
+                        {external ? (
+                          <ArrowUpRight className={`w-3 h-3 opacity-0 group-hover/link:opacity-100 ${cat.accent.arrow} shrink-0 transition-opacity`} />
+                        ) : (
+                          <ChevronRight className="w-3 h-3 opacity-0 group-hover/link:opacity-100 text-zinc-300 shrink-0 transition-opacity" />
+                        )}
+                      </a>
+                    );
+                  })}
+                </div>
+              </motion.section>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Bottom status bar */}
+        <footer className="h-9 shrink-0 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] border-t border-white/10 font-mono text-[10px] text-zinc-500">
+          <span className="truncate">UNIFIED INDEX · PANDORAS GROWTH OS & PLATFORM ECOSYSTEM</span>
+          <span className="hidden sm:flex items-center gap-3 shrink-0">
+            <span>NEXUS v2.5</span>
+            <span className="text-zinc-500/40">•</span>
+            <span className="text-purple-300/80">5 CATEGORIES</span>
+            <span className="text-zinc-500/40">•</span>
+            <span>IP REGISTRY ONLINE</span>
+          </span>
         </footer>
-      </motion.div>
+      </div>
     </div>
   );
 }
