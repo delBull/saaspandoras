@@ -5,12 +5,9 @@ import { useState, useEffect } from 'react';
 import {
   Shield,
   Plus,
-  Trash2,
-  Check,
   RefreshCw,
   X,
   Layers,
-  Calendar,
   ArrowUpRight,
   FolderGit2,
   Code2,
@@ -19,7 +16,7 @@ import {
   Activity,
 } from 'lucide-react';
 import TaskTerminal, { TerminalTask } from './TaskTerminal';
-import { TIPOS, TaskItem, tipoLabel } from './taskTypes';
+import { TaskItem } from './taskTypes';
 
 interface IPAsset {
   id: string;
@@ -121,7 +118,7 @@ const INITIAL_ASSETS: IPAsset[] = [
   }
 ];
 
-type Tab = 'REGISTER' | 'TASKS' | 'DATAROOM' | 'TERMINAL';
+type Tab = 'REGISTER' | 'DATAROOM' | 'TERMINAL';
 
 interface OpsModalProps {
   isOpen: boolean;
@@ -145,14 +142,6 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
   const [newAssetRisk, setNewAssetRisk] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
   const [newAssetNotes, setNewAssetNotes] = useState('');
 
-  const [newTitle, setNewTitle] = useState('');
-  const [newDetail, setNewDetail] = useState('');
-  const [newCategory, setNewCategory] = useState<TaskItem['category']>('IP & Trademarks');
-  const [newPriority, setNewPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
-  const [newTipo, setNewTipo] = useState<string>('OPERACION');
-  const [newWeek, setNewWeek] = useState<string>('Semana 1');
-  const [showAddForm, setShowAddForm] = useState(false);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const storedAssets = localStorage.getItem('pandoras_ip_assets_custom');
@@ -170,16 +159,6 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
 
   const saveTasks = (updated: TaskItem[]) => {
     setTasks(updated);
-  };
-
-  const toggleTask = (id: string) => {
-    const updated = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-    saveTasks(updated);
-  };
-
-  const deleteTask = (id: string) => {
-    const updated = tasks.filter(t => t.id !== id);
-    saveTasks(updated);
   };
 
   const handleAddAsset = (e: React.FormEvent) => {
@@ -219,32 +198,6 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
     saveTasks([newTask, ...tasks]);
 
     sendDiscordAlert(`Nueva Búsqueda/Marca Registrada: ${newAssetItem.name} (Riesgo: ${newAssetItem.riskAssessment})`);
-  };
-
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    const formattedDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '2026-08-07';
-
-    const newTask: TaskItem = {
-      id: `TSK-${Math.floor(100 + Math.random() * 900)}`,
-      week: newWeek,
-      title: newTitle.trim(),
-      category: newCategory,
-      priority: newPriority,
-      tipo: tipoLabel(newTipo),
-      completed: false,
-      dueDate: formattedDueDate,
-      detail: newDetail.trim() || 'Tarea operativa añadida a la hoja de ruta institucional.'
-    };
-
-    saveTasks([newTask, ...tasks]);
-    setNewTitle('');
-    setNewDetail('');
-    setShowAddForm(false);
-
-    sendDiscordAlert(`Nueva Tarea Creada (${newTask.week}): ${newTask.title}`);
   };
 
   const handleTerminalTask = (task: TerminalTask) => {
@@ -289,13 +242,9 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
 
   if (!isOpen) return null;
 
-  const completedCount = tasks.filter(t => t.completed).length;
-  const progressPct = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
-
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'TERMINAL', label: 'TERMINAL', icon: <TerminalSquare className="w-3.5 h-3.5" /> },
     { id: 'REGISTER', label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> },
-    { id: 'TASKS', label: `TAREAS (${tasks.length})`, icon: <Calendar className="w-3.5 h-3.5" /> },
     { id: 'DATAROOM', label: 'DATA ROOM', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
   ];
 
@@ -307,12 +256,6 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
       ABANDONED: 'border-rose-500/20 bg-rose-500/10 text-rose-300',
     };
     return map[status] || 'border-white/10 bg-black/40 text-zinc-400';
-  };
-
-  const prioBadge = (p: TaskItem['priority']) => {
-    if (p === 'HIGH') return 'border-rose-500/20 bg-rose-500/10 text-rose-300';
-    if (p === 'MEDIUM') return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
-    return 'border-white/10 bg-black/40 text-zinc-400';
   };
 
   return (
@@ -342,7 +285,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
                     LIVE
                   </span>
                 </div>
-                <p className="text-[10px] font-mono text-zinc-500 truncate">TAREAS PENDIENTES · IP · DATA ROOM · #pandoras-security</p>
+                <p className="text-[10px] font-mono text-zinc-500 truncate">OPERATIONS HUB · IP · DATA ROOM · #pandoras-security</p>
               </div>
             </div>
 
@@ -564,195 +507,6 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
                   <p className="text-xs text-zinc-300 leading-relaxed">{selectedAsset.notes}</p>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* TAB: TAREAS */}
-          {tab === 'TASKS' && (
-            <div className="p-5 overflow-y-auto flex-1 space-y-5">
-              <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-[11px] text-zinc-500 font-mono">Plan de Ejecución Institucional + Pendientes</p>
-                  <p className="text-lg font-light text-zinc-100">{completedCount} de {tasks.length} Tareas Completadas ({progressPct}%)</p>
-                </div>
-                <div className="w-36 h-2 bg-black/40 rounded-full overflow-hidden border border-white/10">
-                  <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${progressPct}%` }} />
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    onClick={() => setTab('TERMINAL')}
-                    className="px-3.5 py-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[11px] font-mono transition-all flex items-center gap-1.5"
-                  >
-                    <TerminalSquare className="w-3.5 h-3.5" />
-                    ADICIONAR
-                  </button>
-                  <button
-                    onClick={() => setShowAddForm(!showAddForm)}
-                    className="px-3.5 py-2 rounded-lg bg-black/40 hover:bg-white/5 border border-white/10 text-zinc-300 text-[11px] font-mono transition-all flex items-center gap-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    HITO 30D
-                  </button>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {showAddForm && (
-                  <motion.form
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    onSubmit={handleAddTask}
-                    className="p-4 border border-white/10 rounded-xl bg-[#0C0C10] space-y-3 overflow-hidden"
-                  >
-                    <p className="text-[11px] text-purple-300 uppercase font-mono">Nuevo Hito del Plan 30 Días</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        placeholder="Título del hito..."
-                        value={newTitle}
-                        onChange={(e) => setNewTitle(e.target.value)}
-                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
-                      />
-                      <select
-                        value={newWeek}
-                        onChange={(e) => setNewWeek(e.target.value)}
-                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
-                      >
-                        <option value="Semana 1">Semana 1: Arquitectura & Solicitud IMPI</option>
-                        <option value="Semana 2">Semana 2: Corporate Resolution & Tech Ownership</option>
-                        <option value="Semana 3">Semana 3: Master Licensing & Data Room</option>
-                        <option value="Semana 4">Semana 4: Due Diligence Readiness Audit</option>
-                        <option value="Pendientes">Pendientes (fuera de plan)</option>
-                      </select>
-                    </div>
-                    <textarea
-                      placeholder="Detalle de ejecución u observaciones..."
-                      value={newDetail}
-                      onChange={(e) => setNewDetail(e.target.value)}
-                      rows={2}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
-                    />
-                    <div className="flex gap-3">
-                      <select
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value as TaskItem['category'])}
-                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
-                      >
-                        <option value="IP & Trademarks">IP & Trademarks</option>
-                        <option value="Legal & Corporate">Legal & Corporate</option>
-                        <option value="Tech & Data Room">Tech & Data Room</option>
-                        <option value="Operaciones">Operaciones</option>
-                        <option value="Marketing & Media">Marketing & Media</option>
-                        <option value="Finanzas">Finanzas</option>
-                      </select>
-                      <select
-                        value={newTipo}
-                        onChange={(e) => setNewTipo(e.target.value)}
-                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
-                      >
-                        {TIPOS.map((t) => (
-                          <option key={t.key} value={t.key}>{t.label}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={newPriority}
-                        onChange={(e) => setNewPriority(e.target.value as 'HIGH' | 'MEDIUM' | 'LOW')}
-                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
-                      >
-                        <option value="HIGH">Prioridad Alta</option>
-                        <option value="MEDIUM">Prioridad Media</option>
-                        <option value="LOW">Prioridad Baja</option>
-                      </select>
-                      <button
-                        type="submit"
-                        className="ml-auto px-4 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-200 text-xs font-mono transition-colors"
-                      >
-                        Guardar Hito
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-purple-300/80 font-mono">
-                      TIPO: {tipoLabel(newTipo)} — {TIPOS.find((t) => t.key === newTipo)?.short ?? ''}
-                    </p>
-                  </motion.form>
-                )}
-              </AnimatePresence>
-
-              {['Pendientes', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'].map((weekName) => {
-                const weekTasks = tasks.filter(t => t.week === weekName);
-                if (weekTasks.length === 0) return null;
-
-                return (
-                  <div key={weekName} className="space-y-3">
-                    <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-                      <Calendar className={`w-4 h-4 ${weekName === 'Pendientes' ? 'text-purple-300' : 'text-zinc-500'}`} />
-                      <h4 className={`text-[11px] uppercase tracking-wider font-mono ${weekName === 'Pendientes' ? 'text-purple-300' : 'text-zinc-500'}`}>
-                        {weekName}
-                      </h4>
-                      <span className="ml-auto font-mono text-[10px] text-zinc-600">{weekTasks.length}</span>
-                    </div>
-                    <div className="space-y-2">
-                      {weekTasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-4 ${
-                            task.completed
-                              ? 'border-white/5 bg-black/30 opacity-60'
-                              : 'border-white/10 bg-[#0C0C10] hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3 flex-1">
-                            <button
-                              onClick={() => toggleTask(task.id)}
-                              className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                                task.completed
-                                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                                  : 'border-zinc-700 hover:border-purple-400'
-                              }`}
-                            >
-                              {task.completed && <Check className="w-3.5 h-3.5" />}
-                            </button>
-                            <div className="space-y-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`text-xs ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}`}>
-                                  {task.title}
-                                </span>
-                                <span className="text-[10px] px-2 py-0.5 rounded border border-white/10 bg-black/40 text-zinc-400 font-mono">
-                                  {task.category}
-                                </span>
-                                {task.tipo && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono">
-                                    {task.tipo}
-                                  </span>
-                                )}
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-mono ${prioBadge(task.priority)}`}>
-                                  {task.priority}
-                                </span>
-                                {task.requester && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono">
-                                    {task.requester}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-zinc-400 leading-relaxed">{task.detail}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] text-zinc-500 font-mono">{task.dueDate}</span>
-                            <button
-                              onClick={() => deleteTask(task.id)}
-                              className="p-1 text-zinc-500 hover:text-rose-400 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           )}
 

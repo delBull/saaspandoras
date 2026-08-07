@@ -13,8 +13,9 @@ import {
   Code2,
   MessageSquareText,
   ArrowUpRight,
+  Plus,
 } from 'lucide-react';
-import { TaskItem, tipoLabel } from './taskTypes';
+import { TIPOS, TaskItem, tipoLabel } from './taskTypes';
 
 interface Props {
   tasks: TaskItem[];
@@ -38,8 +39,30 @@ export default function TasksPanel({ tasks, setTasks }: Props) {
   const [sending, setSending] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
 
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDetail, setNewDetail] = useState('');
+  const [newCategory, setNewCategory] = useState<TaskItem['category']>('IP & Trademarks');
+  const [newPriority, setNewPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
+  const [newTipo, setNewTipo] = useState<string>('OPERACION');
+  const [newWeek, setNewWeek] = useState<string>('Semana 1');
+
+  const [tipoFilter, setTipoFilter] = useState('');
+
   const pending = tasks.filter((t) => !t.completed).length;
   const sorted = [...tasks].sort((a, b) => Number(a.completed) - Number(b.completed));
+  const filtered = tipoFilter
+    ? sorted.filter((t) => (t.tipo ? tipoLabel(t.tipo) : 'Operación') === tipoFilter)
+    : sorted;
+  const CATS: TaskItem['category'][] = [
+    'IP & Trademarks',
+    'Legal & Corporate',
+    'Tech & Data Room',
+    'Operaciones',
+    'Marketing & Media',
+    'Finanzas',
+  ];
+  const catGroups = CATS.filter((c) => filtered.some((t) => t.category === c));
 
   const confirmComplete = async (task: TaskItem) => {
     if (sending) return;
@@ -108,6 +131,55 @@ export default function TasksPanel({ tasks, setTasks }: Props) {
     setEvCode('');
     setEvLink('');
     setEvPhoto('');
+  };
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    const formattedDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '2026-08-07';
+
+    const newTask: TaskItem = {
+      id: `TSK-${Math.floor(100 + Math.random() * 900)}`,
+      week: newWeek,
+      title: newTitle.trim(),
+      category: newCategory,
+      priority: newPriority,
+      tipo: tipoLabel(newTipo),
+      completed: false,
+      dueDate: formattedDueDate,
+      detail: newDetail.trim() || 'Tarea operativa añadida a la hoja de ruta institucional.',
+    };
+
+    setTasks((prev) => [newTask, ...prev]);
+    setNewTitle('');
+    setNewDetail('');
+    setShowAddForm(false);
+    setFlash(`✓ ${newTask.id} · Hito registrado en el plan 30D`);
+    setTimeout(() => setFlash(null), 4000);
+
+    try {
+      const res = await fetch('/api/nexus/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'task',
+          requester: 'Nexus Ops',
+          task: newTask.title,
+          details: newTask.detail,
+          priority: newTask.priority,
+          category: newTask.category,
+          tipo: newTask.tipo,
+          dueDate: newTask.dueDate,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.warn('[Nexus Tasks] create notify failed:', data);
+      }
+    } catch (err: any) {
+      console.warn('[Nexus Tasks] create notify failed:', err);
+    }
   };
 
   const renderTask = (task: TaskItem) => {
@@ -268,14 +340,124 @@ export default function TasksPanel({ tasks, setTasks }: Props) {
 
   const renderList = () => (
     <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handleAddTask}
+            className="p-3 border border-purple-500/20 rounded-xl bg-[#0C0C10] space-y-2 overflow-hidden"
+          >
+            <p className="text-[9px] text-purple-300 uppercase font-mono">Nuevo Hito del Plan 30 Días</p>
+            <input
+              type="text"
+              placeholder="Título del hito..."
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
+            />
+            <select
+              value={newWeek}
+              onChange={(e) => setNewWeek(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-300 focus:outline-none focus:border-purple-500/40"
+            >
+              <option value="Semana 1">Semana 1: Arquitectura & Solicitud IMPI</option>
+              <option value="Semana 2">Semana 2: Corporate Resolution & Tech Ownership</option>
+              <option value="Semana 3">Semana 3: Master Licensing & Data Room</option>
+              <option value="Semana 4">Semana 4: Due Diligence Readiness Audit</option>
+              <option value="Pendientes">Pendientes (fuera de plan)</option>
+            </select>
+            <textarea
+              placeholder="Detalle de ejecución u observaciones..."
+              value={newDetail}
+              onChange={(e) => setNewDetail(e.target.value)}
+              rows={2}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/40"
+            />
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value as TaskItem['category'])}
+                className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500/40"
+              >
+                <option value="IP & Trademarks">IP & Trademarks</option>
+                <option value="Legal & Corporate">Legal & Corporate</option>
+                <option value="Tech & Data Room">Tech & Data Room</option>
+                <option value="Operaciones">Operaciones</option>
+                <option value="Marketing & Media">Marketing & Media</option>
+                <option value="Finanzas">Finanzas</option>
+              </select>
+              <select
+                value={newTipo}
+                onChange={(e) => setNewTipo(e.target.value)}
+                className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500/40"
+              >
+                {TIPOS.map((t) => (
+                  <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+              </select>
+              <select
+                value={newPriority}
+                onChange={(e) => setNewPriority(e.target.value as 'HIGH' | 'MEDIUM' | 'LOW')}
+                className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500/40"
+              >
+                <option value="HIGH">Prioridad Alta</option>
+                <option value="MEDIUM">Prioridad Media</option>
+                <option value="LOW">Prioridad Baja</option>
+              </select>
+              <button
+                type="submit"
+                className="ml-auto px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-200 text-[10px] font-mono transition-colors"
+              >
+                Guardar Hito
+              </button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
       {flash && (
         <div className="p-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-[10px] font-mono">
           {flash}
         </div>
       )}
-      {sorted.map(renderTask)}
-      {tasks.length === 0 && (
-        <p className="text-[11px] text-zinc-600 font-mono p-2">Sin tareas registradas.</p>
+      <div className="flex flex-wrap gap-1">
+        {TIPOS.map((t) => {
+          const active = tipoFilter === t.label;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTipoFilter(active ? '' : t.label)}
+              className={`px-2 py-0.5 rounded-full border font-mono transition-colors ${
+                active
+                  ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                  : 'bg-black/40 border-white/10 text-zinc-500 hover:border-white/25 hover:text-zinc-300'
+              }`}
+              title={t.short}
+            >
+              {t.key}
+            </button>
+          );
+        })}
+      </div>
+      {catGroups.length > 0 ? (
+        catGroups.map((cat) => {
+          const catTasks = filtered.filter((t) => t.category === cat);
+          if (catTasks.length === 0) return null;
+          return (
+            <div key={cat} className="space-y-1.5">
+              <div className="flex items-center gap-2 pt-1.5">
+                <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">{cat}</span>
+                <span className="ml-auto font-mono text-[9px] text-zinc-600">{catTasks.length}</span>
+              </div>
+              {catTasks.map(renderTask)}
+            </div>
+          );
+        })
+      ) : (
+        <p className="text-[11px] text-zinc-600 font-mono p-2">
+          {tipoFilter ? 'Sin tareas para este tipo.' : 'Sin tareas registradas.'}
+        </p>
       )}
     </div>
   );
@@ -286,20 +468,33 @@ export default function TasksPanel({ tasks, setTasks }: Props) {
         <Calendar className="w-3.5 h-3.5 text-purple-300" />
         <span className="text-[10px] font-mono tracking-widest text-zinc-300">TAREAS</span>
         {pending > 0 && (
-          <span className="px-1.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[9px] font-mono">
-            {pending} pendientes
+          <span className="w-4 h-4 rounded-full bg-rose-500 text-black text-[9px] font-bold flex items-center justify-center animate-pulse">
+            {pending}
           </span>
         )}
       </span>
-      {onClose ? (
-        <button onClick={onClose} className="p-1 text-zinc-400 hover:text-white rounded-lg">
-          <X className="w-4 h-4" />
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className={`px-2 py-1 rounded-lg border text-[9px] font-mono transition-all flex items-center gap-1 ${
+            showAddForm
+              ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+              : 'bg-black/40 border-white/10 text-zinc-300 hover:border-purple-500/30 hover:text-purple-300'
+          }`}
+        >
+          <Plus className="w-3 h-3" />
+          HITO 30D
         </button>
-      ) : (
-        <button onClick={() => setOpen(false)} className="p-1 text-zinc-400 hover:text-white rounded-lg">
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      )}
+        {onClose ? (
+          <button onClick={onClose} className="p-1 text-zinc-400 hover:text-white rounded-lg">
+            <X className="w-4 h-4" />
+          </button>
+        ) : (
+          <button onClick={() => setOpen(false)} className="p-1 text-zinc-400 hover:text-white rounded-lg">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 

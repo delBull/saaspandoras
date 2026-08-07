@@ -191,8 +191,6 @@ export default function NexusClient() {
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks]);
 
-  const pendingCount = tasks.filter((t) => !t.completed).length;
-
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#08080A] text-zinc-100 font-sans">
       <OperationsHubModal
@@ -242,15 +240,10 @@ export default function NexusClient() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setIsIpModalOpen(true)}
-                className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
               >
                 <TerminalSquare className="w-3 h-3" />
                 OPERATIONS HUB
-                {pendingCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-black text-[9px] font-bold flex items-center justify-center animate-pulse">
-                    {pendingCount}
-                  </span>
-                )}
               </button>
             </div>
           </div>
