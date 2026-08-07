@@ -19,6 +19,7 @@ import {
   Activity,
 } from 'lucide-react';
 import TaskTerminal, { TerminalTask } from './TaskTerminal';
+import { TIPOS, TaskItem, tipoLabel } from './taskTypes';
 
 interface IPAsset {
   id: string;
@@ -31,18 +32,6 @@ interface IPAsset {
   notes: string;
   riskAssessment?: 'LOW' | 'MEDIUM' | 'HIGH';
   findingsCount?: number;
-}
-
-interface TaskItem {
-  id: string;
-  week: string;
-  title: string;
-  category: 'IP & Trademarks' | 'Legal & Corporate' | 'Tech & Data Room' | 'Operaciones' | 'Marketing & Media' | 'Finanzas';
-  priority: 'HIGH' | 'MEDIUM' | 'LOW';
-  completed: boolean;
-  dueDate: string;
-  detail: string;
-  requester?: string;
 }
 
 const INITIAL_ASSETS: IPAsset[] = [
@@ -132,122 +121,18 @@ const INITIAL_ASSETS: IPAsset[] = [
   }
 ];
 
-const INITIAL_TASKS: TaskItem[] = [
-  // SEMANA 1: ARQUITECTURA DE MARCA & SOLICITUD
-  {
-    id: 'TSK-W1-01',
-    week: 'Semana 1',
-    title: 'Nexus IP Governance Operating System',
-    category: 'Tech & Data Room',
-    priority: 'HIGH',
-    completed: true,
-    dueDate: '2026-07-31',
-    detail: 'Plataforma interactiva desplegada en producción con control de estatus, tareas y alertas vía Discord.'
-  },
-  {
-    id: 'TSK-W1-02',
-    week: 'Semana 1',
-    title: 'Búsqueda de Disponibilidad Fonética "PANDORAS" (IMPI)',
-    category: 'IP & Trademarks',
-    priority: 'HIGH',
-    completed: true,
-    dueDate: '2026-07-31',
-    detail: 'Examen de anterioridades en Marcanet completado (Riesgo BAJO). Evidencia documentada en /nexus Data Room.'
-  },
-  {
-    id: 'TSK-W1-03',
-    week: 'Semana 1',
-    title: 'Preparación de Solicitud IMPI Marca Madre "PANDORAS"',
-    category: 'IP & Trademarks',
-    priority: 'HIGH',
-    completed: false,
-    dueDate: '2026-08-05',
-    detail: 'Definición de clasificación de productos/servicios para Clases 36 + 42 y selección de denominación PANDORAS vs PANDORA\'S.'
-  },
-  {
-    id: 'TSK-W1-04',
-    week: 'Semana 1',
-    title: 'Ingreso Solicitud IMPI Marca Madre "PANDORAS"',
-    category: 'IP & Trademarks',
-    priority: 'HIGH',
-    completed: false,
-    dueDate: '2026-08-07',
-    detail: 'Presentación de la solicitud oficial a nombre directo de MXHUB Ecosistema Blockchain S.A. de C.V. Uso del distintivo PANDORAS™.'
-  },
-
-  // SEMANA 2: CORPORATE RESOLUTION & OWNERSHIP AUDIT
-  {
-    id: 'TSK-W2-01',
-    week: 'Semana 2',
-    title: 'Corporate IP Resolution MXHUB S.A. de C.V.',
-    category: 'Legal & Corporate',
-    priority: 'HIGH',
-    completed: true,
-    dueDate: '2026-08-10',
-    detail: 'Resolución de asamblea formalizando que el 100% de desarrollos, marcas y software de Pandoras pertenecen inalienablemente a MXHUB.'
-  },
-  {
-    id: 'TSK-W2-02',
-    week: 'Semana 2',
-    title: 'Technology Ownership Register & Code Audit',
-    category: 'Tech & Data Room',
-    priority: 'HIGH',
-    completed: false,
-    dueDate: '2026-08-12',
-    detail: 'Auditoría de propiedad en repositorios Git: asignación de autoría y cláusulas `Owned by: MXHUB / IP Holding` en headers.'
-  },
-  {
-    id: 'TSK-W2-03',
-    week: 'Semana 2',
-    title: 'Smart Contract & Deployer Registry',
-    category: 'Tech & Data Room',
-    priority: 'MEDIUM',
-    completed: false,
-    dueDate: '2026-08-14',
-    detail: 'Registro institucional de contratos inteligentes desplegados (red, address, deployer wallet y licencias de uso).'
-  },
-
-  // SEMANA 3: LICENSING & INVESTOR DATA ROOM
-  {
-    id: 'TSK-W3-01',
-    week: 'Semana 3',
-    title: 'Master Licensing Framework v1 (Holding ➔ USA LLC)',
-    category: 'Legal & Corporate',
-    priority: 'HIGH',
-    completed: false,
-    dueDate: '2026-08-18',
-    detail: 'Borrador del Master License Agreement definiendo Royalty Fees (3%-10%), Platform Fees y Aislamiento de IP.'
-  },
-  {
-    id: 'TSK-W3-02',
-    week: 'Semana 3',
-    title: 'Estructuración del Corporate Data Room en 5 Carpetas',
-    category: 'Legal & Corporate',
-    priority: 'MEDIUM',
-    completed: false,
-    dueDate: '2026-08-21',
-    detail: 'Organización del Data Room institucional (/nexus 01_company, 02_ip, 03_technology, 04_business, 05_legal, 06_investor).'
-  },
-
-  // SEMANA 4: DUE DILIGENCE READINESS
-  {
-    id: 'TSK-W4-01',
-    week: 'Semana 4',
-    title: 'Due Diligence Readiness Audit & Investor Package',
-    category: 'Legal & Corporate',
-    priority: 'HIGH',
-    completed: false,
-    dueDate: '2026-08-28',
-    detail: 'Auditoría de validación para recepción de capital estratégico e inversionistas en Pandoras USA Operations LLC.'
-  }
-];
-
 type Tab = 'REGISTER' | 'TASKS' | 'DATAROOM' | 'TERMINAL';
 
-export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+interface OpsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  tasks: TaskItem[];
+  setTasks: React.Dispatch<React.SetStateAction<TaskItem[]>>;
+}
+
+export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModalProps) {
   const [tab, setTab] = useState<Tab>('TERMINAL');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
-  const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
   const [notifying, setNotifying] = useState(false);
   const [notified, setNotified] = useState(false);
@@ -264,6 +149,7 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [newDetail, setNewDetail] = useState('');
   const [newCategory, setNewCategory] = useState<TaskItem['category']>('IP & Trademarks');
   const [newPriority, setNewPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
+  const [newTipo, setNewTipo] = useState<string>('OPERACION');
   const [newWeek, setNewWeek] = useState<string>('Semana 1');
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -272,10 +158,6 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
     const storedAssets = localStorage.getItem('pandoras_ip_assets_custom');
     if (storedAssets) {
       try { setAssets(JSON.parse(storedAssets)); } catch { }
-    }
-    const storedTasks = localStorage.getItem('pandoras_ip_tasks_30d');
-    if (storedTasks) {
-      try { setTasks(JSON.parse(storedTasks)); } catch { }
     }
   }, []);
 
@@ -288,9 +170,6 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const saveTasks = (updated: TaskItem[]) => {
     setTasks(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pandoras_ip_tasks_30d', JSON.stringify(updated));
-    }
   };
 
   const toggleTask = (id: string) => {
@@ -354,6 +233,7 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
       title: newTitle.trim(),
       category: newCategory,
       priority: newPriority,
+      tipo: tipoLabel(newTipo),
       completed: false,
       dueDate: formattedDueDate,
       detail: newDetail.trim() || 'Tarea operativa añadida a la hoja de ruta institucional.'
@@ -374,6 +254,7 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
       title: task.title,
       category: task.category as TaskItem['category'],
       priority: task.priority,
+      tipo: task.tipo,
       completed: task.completed,
       dueDate: task.dueDate,
       detail: task.detail,
@@ -766,6 +647,15 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
                         <option value="Finanzas">Finanzas</option>
                       </select>
                       <select
+                        value={newTipo}
+                        onChange={(e) => setNewTipo(e.target.value)}
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
+                      >
+                        {TIPOS.map((t) => (
+                          <option key={t.key} value={t.key}>{t.label}</option>
+                        ))}
+                      </select>
+                      <select
                         value={newPriority}
                         onChange={(e) => setNewPriority(e.target.value as 'HIGH' | 'MEDIUM' | 'LOW')}
                         className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/40"
@@ -781,6 +671,9 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
                         Guardar Hito
                       </button>
                     </div>
+                    <p className="text-[10px] text-purple-300/80 font-mono">
+                      TIPO: {tipoLabel(newTipo)} — {TIPOS.find((t) => t.key === newTipo)?.short ?? ''}
+                    </p>
                   </motion.form>
                 )}
               </AnimatePresence>
@@ -827,6 +720,11 @@ export function OperationsHubModal({ isOpen, onClose }: { isOpen: boolean; onClo
                                 <span className="text-[10px] px-2 py-0.5 rounded border border-white/10 bg-black/40 text-zinc-400 font-mono">
                                   {task.category}
                                 </span>
+                                {task.tipo && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono">
+                                    {task.tipo}
+                                  </span>
+                                )}
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-mono ${prioBadge(task.priority)}`}>
                                   {task.priority}
                                 </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, Variants } from "framer-motion";
 import {
   Network,
@@ -14,6 +14,10 @@ import {
   TerminalSquare,
 } from "lucide-react";
 import { OperationsHubModal } from "./OperationsHubModal";
+import TasksPanel from "./TasksPanel";
+import { INITIAL_TASKS, TaskItem } from "./taskTypes";
+
+const TASKS_STORAGE_KEY = "pandoras_ip_tasks_30d";
 
 interface NexusLink {
   name: string;
@@ -173,9 +177,30 @@ const cardVariants: Variants = {
 export default function NexusClient() {
   const [isIpModalOpen, setIsIpModalOpen] = useState(false);
 
+  const [tasks, setTasks] = useState<TaskItem[]>(() => {
+    if (typeof window === "undefined") return INITIAL_TASKS;
+    try {
+      const stored = localStorage.getItem(TASKS_STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return INITIAL_TASKS;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
+
+  const pendingCount = tasks.filter((t) => !t.completed).length;
+
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#08080A] text-zinc-100 font-sans">
-      <OperationsHubModal isOpen={isIpModalOpen} onClose={() => setIsIpModalOpen(false)} />
+      <OperationsHubModal
+        isOpen={isIpModalOpen}
+        onClose={() => setIsIpModalOpen(false)}
+        tasks={tasks}
+        setTasks={setTasks}
+      />
 
       {/* Ambient background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -214,24 +239,32 @@ export default function NexusClient() {
               <Activity className="w-3 h-3 text-purple-300" />
               UNIFIED INDEX
             </span>
-            <button
-              onClick={() => setIsIpModalOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
-            >
-              <TerminalSquare className="w-3 h-3" />
-              OPERATIONS HUB
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setIsIpModalOpen(true)}
+                className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
+              >
+                <TerminalSquare className="w-3 h-3" />
+                OPERATIONS HUB
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-black text-[9px] font-bold flex items-center justify-center animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </header>
 
-        {/* Scrollable bento area */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
-          <motion.div
-            variants={gridVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-          >
+        {/* Scrollable bento area + tasks panel */}
+        <div className="flex-1 flex overflow-hidden min-h-0">
+          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
+            <motion.div
+              variants={gridVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+            >
             {categories.map((cat) => (
               <motion.section
                 key={cat.id}
@@ -287,7 +320,9 @@ export default function NexusClient() {
                 </div>
               </motion.section>
             ))}
-          </motion.div>
+            </motion.div>
+          </div>
+          <TasksPanel tasks={tasks} setTasks={setTasks} />
         </div>
 
         {/* Bottom status bar */}

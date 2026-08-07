@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { TIPOS, suggestTipo, normalizeTipo } from './taskTypes';
 
 export interface TerminalTask {
   id: string;
@@ -13,6 +14,7 @@ export interface TerminalTask {
   dueDate: string;
   detail: string;
   requester: string;
+  tipo: string;
 }
 
 interface LogLine {
@@ -97,6 +99,7 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
   const contextText = `${answers.task || ''} ${answers.details || ''}`;
   const suggestedPrio = suggestPriority(contextText);
   const suggestedCat = suggestCategory(contextText);
+  const suggestedType = suggestTipo(contextText);
   const dueDate = futureDate(7);
 
   const advance = (raw: string) => {
@@ -155,18 +158,11 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
         const catValue = value || suggestedCat;
         const cat = CATEGORIES.find((c) => c.toLowerCase().startsWith(catValue.trim().toLowerCase())) || catValue;
         append.push({ kind: 'out', text: `  → categoría: ${cat}` });
-        const id = makeTaskId();
-        setLastId(id);
-        append.push({ kind: 'cmd', text: '─'.repeat(46) });
-        append.push({ kind: 'ok', text: `  SOLICITANTE : ${answers.requester}` });
-        append.push({ kind: 'ok', text: `  TAREA       : ${answers.task}` });
-        append.push({ kind: 'ok', text: `  DETALLES    : ${answers.details || '(sin detalle)'}` });
-        append.push({ kind: 'ok', text: `  PRIORIDAD   : ${answers.priority}` });
-        append.push({ kind: 'ok', text: `  CATEGORÍA   : ${cat}` });
-        append.push({ kind: 'ok', text: `  ID          : ${id}` });
-        append.push({ kind: 'ok', text: `  FECHA       : ${dueDate}` });
-        append.push({ kind: 'cmd', text: '─'.repeat(46) });
-        append.push({ kind: 'cmd', text: '> run ▸ [y] enviar a #pandoras-security · [n] cancelar' });
+        append.push({ kind: 'out', text: '> type ▸ Elige un tipo de tarea:' });
+        TIPOS.forEach((t) => {
+          append.push({ kind: 'out', text: `  ${t.key.padEnd(12)} ${t.label} · ${t.short}` });
+        });
+        append.push({ kind: 'out', text: `  · sugerido: ${suggestedType}` });
         setAnswers((a) => ({ ...a, category: cat }));
         setLog(append);
         setStep(6);
@@ -174,6 +170,30 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
         return;
       }
       case 6: {
+        const tipoKey = normalizeTipo(value || suggestedType);
+        const tipoDef = TIPOS.find((t) => t.key === tipoKey);
+        const tipo = tipoDef ? tipoDef.label : value || suggestedType;
+        append.push({ kind: 'out', text: `  → tipo: ${tipo}${tipoDef ? ` — ${tipoDef.short}` : ''}` });
+        const id = makeTaskId();
+        setLastId(id);
+        append.push({ kind: 'cmd', text: '─'.repeat(46) });
+        append.push({ kind: 'ok', text: `  SOLICITANTE : ${answers.requester}` });
+        append.push({ kind: 'ok', text: `  TAREA       : ${answers.task}` });
+        append.push({ kind: 'ok', text: `  DETALLES    : ${answers.details || '(sin detalle)'}` });
+        append.push({ kind: 'ok', text: `  PRIORIDAD   : ${answers.priority}` });
+        append.push({ kind: 'ok', text: `  CATEGORÍA   : ${answers.category}` });
+        append.push({ kind: 'ok', text: `  TIPO        : ${tipo}` });
+        append.push({ kind: 'ok', text: `  ID          : ${id}` });
+        append.push({ kind: 'ok', text: `  FECHA       : ${dueDate}` });
+        append.push({ kind: 'cmd', text: '─'.repeat(46) });
+        append.push({ kind: 'cmd', text: '> run ▸ [y] enviar a #pandoras-security · [n] cancelar' });
+        setAnswers((a) => ({ ...a, tipo }));
+        setLog(append);
+        setStep(7);
+        setInput('');
+        return;
+      }
+      case 7: {
         const v = value.toLowerCase();
         if (v === 'y' || v === 'yes' || v === 'sí' || v === 'si' || v === '1') {
           void submitTask();
@@ -215,6 +235,7 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
           details: answers.details,
           priority: answers.priority,
           category: answers.category,
+          tipo: answers.tipo,
           dueDate,
           taskId: id,
         }),
@@ -242,6 +263,7 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
         dueDate,
         detail: answers.details || '',
         requester: answers.requester || '',
+        tipo: answers.tipo || 'Operación',
       });
       setDone(true);
     } catch (e: any) {
@@ -260,7 +282,8 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
       case 3: return 'detail ▸ Describe el contexto / detalles';
       case 4: return `prio ▸ [ALTA|MEDIA|BAJA] · sugerido: ${suggestedPrio}`;
       case 5: return `cat ▸ sugerido: ${suggestedCat}`;
-      case 6: return 'run ▸ [y] enviar a #pandoras-security · [n] cancelar';
+      case 6: return `type ▸ [ROADMAP|PLATAFORMA|CODIGO|ESTRUCTURA|ARQUITECTURA|NEGOCIO|OPERACION] · sugerido: ${suggestedType}`;
+      case 7: return 'run ▸ [y] enviar a #pandoras-security · [n] cancelar';
       default: return '';
     }
   };

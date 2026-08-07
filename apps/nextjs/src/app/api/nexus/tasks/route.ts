@@ -10,15 +10,19 @@ const COLORS = {
 };
 
 interface TaskPayload {
-  kind?: 'task' | 'alert';
+  kind?: 'task' | 'alert' | 'task-done';
   requester?: string;
   task?: string;
   details?: string;
   priority?: 'HIGH' | 'MEDIUM' | 'LOW';
   category?: string;
+  tipo?: string;
   dueDate?: string;
   taskId?: string;
   message?: string;
+  evidence?: string;
+  evidenceType?: string;
+  evidenceLink?: string;
 }
 
 const rateLimitMap = new Map<string, number>();
@@ -35,7 +39,7 @@ export async function POST(req: NextRequest) {
     rateLimitMap.set(ip, now);
 
     const body = await req.json() as TaskPayload;
-    const kind = body.kind === 'alert' ? 'alert' : 'task';
+    const kind = body.kind === 'alert' ? 'alert' : body.kind === 'task-done' ? 'task-done' : 'task';
     const WEBHOOK = process.env.DISCORD_SECURITY_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL || '';
 
     if (kind === 'task') {
@@ -49,7 +53,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Discord webhook not configured' }, { status: 500 });
     }
 
-    const taskId = body.taskId || `NX-${Date.now().toString(36).toUpperCase()}`;    const due = body.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const taskId = body.taskId || `NX-${Date.now().toString(36).toUpperCase()}`;
+    const due = body.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const truncate = (s: string, max = 1000) => (s.length > max ? `${s.slice(0, max)}…` : s);
 
     const embed: any =
       kind === 'task'
@@ -63,21 +69,41 @@ export async function POST(req: NextRequest) {
               { name: '📋 Tarea', value: body.task || 'N/A' },
               { name: '📝 Detalles', value: body.details || 'Sin detalles adicionales' },
               ...(body.category ? [{ name: '🏷️ Categoría', value: body.category, inline: true }] : []),
+              ...(body.tipo ? [{ name: '🧩 Tipo', value: body.tipo, inline: true }] : []),
             ],
             footer: { text: 'Nexus Operations Hub · Pendiente de atención' },
             timestamp: new Date().toISOString(),
           }
-        : {
-            title: '🔔 Nexus Operations Alert',
-            description: body.message || body.details || 'Actualización de operaciones',
-            color: COLORS.AMBER,
-            fields: [
-              { name: '👤 Origen', value: body.requester || 'Nexus Ops', inline: true },
-              ...(body.task ? [{ name: '📋 Contexto', value: body.task }] : []),
-            ],
-            footer: { text: 'Nexus Operations Hub' },
-            timestamp: new Date().toISOString(),
-          };
+        : kind === 'task-done'
+          ? {
+              title: `✅ Tarea Completada — ${taskId}`,
+              color: COLORS.GREEN,
+              fields: [
+                { name: '📋 Tarea', value: body.task || 'N/A' },
+                { name: '👤 Solicitante', value: body.requester || 'Nexus Ops', inline: true },
+                ...(body.category ? [{ name: '🏷️ Categoría', value: body.category, inline: true }] : []),
+                ...(body.tipo ? [{ name: '🧩 Tipo', value: body.tipo, inline: true }] : []),
+                { name: '🎯 Prioridad', value: body.priority || 'MEDIUM', inline: true },
+                { name: '📅 Vencimiento', value: due, inline: true },
+                ...(body.evidence
+                  ? [{ name: `🧾 Evidencia (${body.evidenceType || 'texto'})`, value: truncate(body.evidence) }]
+                  : []),
+                ...(body.evidenceLink ? [{ name: '🔗 Enlace', value: body.evidenceLink }] : []),
+              ],
+              footer: { text: 'Nexus Operations Hub · Completada con evidencia' },
+              timestamp: new Date().toISOString(),
+            }
+          : {
+              title: '🔔 Nexus Operations Alert',
+              description: body.message || body.details || 'Actualización de operaciones',
+              color: COLORS.AMBER,
+              fields: [
+                { name: '👤 Origen', value: body.requester || 'Nexus Ops', inline: true },
+                ...(body.task ? [{ name: '📋 Contexto', value: body.task }] : []),
+              ],
+              footer: { text: 'Nexus Operations Hub' },
+              timestamp: new Date().toISOString(),
+            };
 
     const discordRes = await fetch(WEBHOOK, {
       method: 'POST',
