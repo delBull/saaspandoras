@@ -350,6 +350,10 @@ export default function TasksPanel({ tasks, setTasks }: Props) {
             className="p-3 border border-purple-500/20 rounded-xl bg-[#0C0C10] space-y-2 overflow-hidden"
           >
             <p className="text-[9px] text-purple-300 uppercase font-mono">Nuevo Hito del Plan 30 Días</p>
+            <p className="text-[10px] text-zinc-500 leading-relaxed">
+              Un <span className="text-purple-300 font-mono">HITO 30D</span> es un objetivo de ejecución de la hoja de ruta institucional:
+              se agenda en una semana (1-4) o en Pendientes, y al guardarlo se notifica a #pandoras-security.
+            </p>
             <input
               type="text"
               placeholder="Título del hito..."
@@ -476,6 +480,7 @@ export default function TasksPanel({ tasks, setTasks }: Props) {
       <div className="flex items-center gap-1">
         <button
           onClick={() => setShowAddForm(!showAddForm)}
+          title="HITO 30D: registra un objetivo del plan de ejecución a 30 días (agenda Semana 1-4 o Pendientes) y notifícalo a #pandoras-security"
           className={`px-2 py-1 rounded-lg border text-[9px] font-mono transition-all flex items-center gap-1 ${
             showAddForm
               ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
