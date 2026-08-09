@@ -125,6 +125,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
       mitigationPlan: true,
       legalStatusDetails: true,
       protocolVersion: true,
+      ambassadorCommissionRate: true,
+      managerCommissionRate: true,
     };
 
     if (isId) {
@@ -267,6 +269,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (body.w2eConfig !== undefined) updates.w2eConfig = body.w2eConfig;
       if (body.legalConfig !== undefined) updates.legalConfig = body.legalConfig;
       if (body.protocolVersion !== undefined) updates.protocolVersion = Number(body.protocolVersion);
+      if (body.ambassadorCommissionRate !== undefined) updates.ambassadorCommissionRate = String(body.ambassadorCommissionRate);
+      if (body.managerCommissionRate !== undefined) updates.managerCommissionRate = String(body.managerCommissionRate);
 
       // Optional: generate new slug if title changed
       if (body.title && body.title !== existingProject.title) {
@@ -447,6 +451,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if ('adquireStrategy' in rawBody) updateSet.adquireStrategy = data.adquireStrategy ?? null;
     if ('mitigationPlan' in rawBody) updateSet.mitigationPlan = data.mitigationPlan ?? null;
     if ('legalConfig' in rawBody) updateSet.legalConfig = data.legalConfig ?? null;
+    if ('ambassadorCommissionRate' in rawBody) updateSet.ambassadorCommissionRate = data.ambassadorCommissionRate ?? null;
+    if ('managerCommissionRate' in rawBody) updateSet.managerCommissionRate = data.managerCommissionRate ?? null;
 
     // Actualizar el proyecto en la base de datos (MERGE strategy)
     await db

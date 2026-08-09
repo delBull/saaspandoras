@@ -136,7 +136,9 @@ export async function POST(req: Request) {
             if (ambassador && txHash) {
                 const tokenPriceUsd = project.tokenPriceUsd ? parseFloat(project.tokenPriceUsd as string) : 100;
                 const totalAmountUsdc = artifactsAcquired * tokenPriceUsd;
-                const commissionAmount = totalAmountUsdc * 0.04;
+                
+                const ambassadorRate = project.ambassadorCommissionRate ? parseFloat(project.ambassadorCommissionRate as string) : 4;
+                const commissionAmount = totalAmountUsdc * (ambassadorRate / 100);
 
                 // Link client to ambassador
                 await tx.insert(ambassadorClients).values({
@@ -149,13 +151,31 @@ export async function POST(req: Request) {
                     ambassadorId: ambassador.id,
                     clientWallet: walletLower,
                     amountUsdc: commissionAmount.toString(),
-                    type: 'DIRECT_SALE_4',
+                    type: 'DIRECT_SALE',
                     status: 'pending',
                     sourceTxHash: txHash,
                     sourceReference: `purchase_${projectIdNum}_${artifactsAcquired}`
                 }).onConflictDoNothing({ target: ambassadorCommissions.sourceTxHash });
 
                 console.log(`[register-holder] Commission $${commissionAmount} logged for ${ambassador.referralCode}`);
+
+                // Manager Override (PSM)
+                if (ambassador.managerId) {
+                    const managerRate = project.managerCommissionRate ? parseFloat(project.managerCommissionRate as string) : 3;
+                    const managerCommissionAmount = totalAmountUsdc * (managerRate / 100);
+
+                    await tx.insert(ambassadorCommissions).values({
+                        ambassadorId: ambassador.managerId,
+                        clientWallet: walletLower,
+                        amountUsdc: managerCommissionAmount.toString(),
+                        type: 'MANAGER_OVERRIDE',
+                        status: 'pending',
+                        sourceTxHash: `${txHash}_psm`,
+                        sourceReference: `purchase_${projectIdNum}_${artifactsAcquired}_psm`
+                    }).onConflictDoNothing({ target: ambassadorCommissions.sourceTxHash });
+
+                    console.log(`[register-holder] Manager Override $${managerCommissionAmount} logged for Manager ID ${ambassador.managerId}`);
+                }
             }
         });
 

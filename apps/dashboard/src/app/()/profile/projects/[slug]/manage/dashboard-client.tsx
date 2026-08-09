@@ -23,8 +23,9 @@ import { EventsTab } from './tabs/EventsTab';
 import { CommandCenterTab } from './tabs/CommandCenterTab';
 import { NewsletterTab } from './tabs/NewsletterTab';
 import { KnowledgeCenterTab } from './tabs/KnowledgeCenterTab';
+import { NetworkTab } from './tabs/NetworkTab';
 import HermesOsTab from './tabs/HermesOsTab';
-import { SparklesIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -44,7 +45,7 @@ interface ProjectFounderDashboardProps {
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter' | 'knowledge_center' | 'hermes_os'>('command_center');
+    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'network' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter' | 'knowledge_center' | 'hermes_os'>('command_center');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -137,6 +138,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                 {[
                     { id: 'command_center', label: 'Command Center', icon: <ClipboardDocumentIcon className="w-4 h-4 text-emerald-400" /> },
                     { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                    { id: 'network', label: 'Gestores Patrimoniales', icon: <UsersIcon className="w-4 h-4" /> },
                     { id: 'purchases', label: 'Reconciliación (Fast Lane)', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
                     { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
@@ -188,6 +190,7 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                                 loadingPhase={isLoadingPhase}
                             />
                         )}
+                        {activeTab === 'network' && <NetworkTab project={project} />}
                         {activeTab === 'treasury' && <TreasuryTab project={project} address={treasuryAddress} />}
                         {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
                         {activeTab === 'dao' && <DaoTreasuryTab project={project} />}
@@ -605,6 +608,10 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
     const [purchases, setPurchases] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [confirmPurchase, setConfirmPurchase] = useState<any | null>(null);
+    const [confirmAction, setConfirmAction] = useState<'approve' | 'reject'>('approve');
+    const [rejectReason, setRejectReason] = useState('');
+    const [signingError, setSigningError] = useState<string | null>(null);
 
     const fetchPurchases = async () => {
         if (!account?.address) return;
@@ -629,24 +636,52 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
         fetchPurchases();
     }, [account?.address, project.id]);
 
-    const handleAction = async (id: string, action: 'approve' | 'reject') => {
+    const openConfirmModal = (id: string, action: 'approve' | 'reject') => {
+        const purchase = purchases.find(p => p.id === id);
+        if (!purchase) return;
+        setConfirmPurchase(purchase);
+        setConfirmAction(action);
+        setRejectReason('');
+        setSigningError(null);
+    };
+
+    const handleAction = async () => {
         if (!account?.address) return;
+        if (!confirmPurchase) return;
+        const id = confirmPurchase.id;
+        const action = confirmAction;
 
         let reason = "";
         if (action === 'reject') {
-            reason = window.prompt("Ingresa la razón del rechazo (se enviará al usuario):") || "";
-            if (!reason) return;
+            reason = rejectReason.trim();
+            if (!reason) {
+                setSigningError("La razón del rechazo es obligatoria.");
+                return;
+            }
         }
 
         setProcessingId(id);
         try {
+            // 🛡️ HIGH-SECURITY STEP: Re-sign the exact operation with the owner's wallet.
+            // The backend verifies this signature before allowing approve/reject.
+            const message = `Pandoras Admin Action\nProject: ${project.id}\nPurchase: ${id}\nAction: ${action.toUpperCase()}`;
+            let signature = '';
+            try {
+                signature = await account.signMessage({ message });
+            } catch (sigError) {
+                console.error("Signature cancelled:", sigError);
+                toast.error("Firma cancelada. No se realizó ningún cambio.");
+                setProcessingId(null);
+                return;
+            }
+
             const res = await fetch(`/api/v1/projects/${project.id}/admin/purchases/approve`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "x-wallet-address": account.address
                 },
-                body: JSON.stringify({ purchaseId: id, action, reason })
+                body: JSON.stringify({ purchaseId: id, action, reason, signature, message, signerAddress: account.address })
             });
 
             if (res.ok) {
@@ -719,6 +754,7 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                 }
 
                 fetchPurchases();
+                setConfirmPurchase(null);
             } else {
                 const err = await res.json();
                 toast.error(err.error || "Error al procesar la acción");
@@ -791,14 +827,14 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                                 <div className="flex gap-2 w-full">
                                     <button
                                         disabled={processingId === p.id}
-                                        onClick={() => handleAction(p.id, 'reject')}
+                                        onClick={() => openConfirmModal(p.id, 'reject')}
                                         className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                                     >
                                         RECHAZAR
                                     </button>
                                     <button
                                         disabled={processingId === p.id}
-                                        onClick={() => handleAction(p.id, 'approve')}
+                                        onClick={() => openConfirmModal(p.id, 'approve')}
                                         className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-black rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {processingId === p.id ? '...' : <><CheckCircleIcon className="w-4 h-4" /> CONFIRMAR PAGO</>}
@@ -809,6 +845,103 @@ function PurchasesTab({ project, onUpdatePending }: { project: any, onUpdatePend
                     ))}
                 </div>
             )}
+
+            {/* 🔒 High-Security Action Confirmation Modal with Identity Re-verification */}
+            <AnimatePresence>
+                {confirmPurchase && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                        onClick={() => { if (!processingId) setConfirmPurchase(null); }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 10 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 10 }}
+                            className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6 space-y-5"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                                    <ExclamationTriangleIcon className="w-6 h-6 text-amber-500" />
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-black text-white">
+                                        {confirmAction === 'approve' ? 'Confirmar Pago' : 'Rechazar Pago'}
+                                    </h4>
+                                    <p className="text-xs text-zinc-400 mt-1">
+                                        Esta acción afecta dinero real y quedará registrada en el DAO. Debes firmar con tu wallet para verificar tu identidad.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-black/40 rounded-xl p-4 space-y-2 font-mono text-sm">
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-zinc-500">Ref</span>
+                                    <span className="text-blue-400 font-bold">{confirmPurchase.purchaseId}</span>
+                                </div>
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-zinc-500">Wallet</span>
+                                    <span className="text-white/80 text-xs break-all text-right">{confirmPurchase.userId}</span>
+                                </div>
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-zinc-500">Monto</span>
+                                    <span className="text-green-400 font-bold">${Number(confirmPurchase.amount).toLocaleString()} {confirmPurchase.currency || 'USD'}</span>
+                                </div>
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-zinc-500">Firmante</span>
+                                    <span className="text-white/80 text-xs break-all text-right">{account?.address}</span>
+                                </div>
+                            </div>
+
+                            {confirmAction === 'reject' && (
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    placeholder="Razón del rechazo (obligatoria, se envía al usuario)"
+                                    rows={3}
+                                    className="w-full bg-black/40 border border-zinc-700 rounded-xl p-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500"
+                                />
+                            )}
+
+                            {signingError && (
+                                <p className="text-xs text-red-500">{signingError}</p>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setConfirmPurchase(null)}
+                                    disabled={!!processingId}
+                                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleAction}
+                                    disabled={!!processingId}
+                                    className={`flex-1 py-3 rounded-xl text-xs font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${
+                                        confirmAction === 'approve'
+                                            ? 'bg-green-500 hover:bg-green-600 text-black'
+                                            : 'bg-red-500 hover:bg-red-600 text-white'
+                                    }`}
+                                >
+                                    {processingId ? (
+                                        <><span className="animate-spin w-3 h-3 border-2 border-current border-t-transparent rounded-full" /> FIRMANDO...</>
+                                    ) : (
+                                        <><CheckCircleIcon className="w-4 h-4" /> {confirmAction === 'approve' ? 'FIRMAR Y CONFIRMAR' : 'FIRMAR Y RECHAZAR'}</>
+                                    )}
+                                </button>
+                            </div>
+
+                            <p className="text-[10px] text-zinc-600 text-center">
+                                Se te pedirá firmar un mensaje con tu wallet. Solo el wallet del proyecto ({project.applicantWalletAddress?.slice(0, 10)}...) puede autorizar.
+                            </p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

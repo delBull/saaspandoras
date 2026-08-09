@@ -72,6 +72,8 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
       bankBeneficiary: project?.legalConfig?.bankInstructions?.beneficiary || '',
       bankName: project?.legalConfig?.bankInstructions?.bank || '',
       bankClabe: project?.legalConfig?.bankInstructions?.clabe || '',
+      ambassadorCommissionRate: (project?.ambassadorCommissionRate as any) || '4.00',
+      managerCommissionRate: (project?.managerCommissionRate as any) || '3.00',
     },
   });
 
@@ -107,6 +109,8 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
         bankBeneficiary: project.legalConfig?.bankInstructions?.beneficiary || '',
         bankName: project.legalConfig?.bankInstructions?.bank || '',
         bankClabe: project.legalConfig?.bankInstructions?.clabe || '',
+        ambassadorCommissionRate: (project.ambassadorCommissionRate as any) || '4.00',
+        managerCommissionRate: (project.managerCommissionRate as any) || '3.00',
       });
     }
   }, [project, methods]);
@@ -247,6 +251,8 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
                   />
                 </div>
               </div>
+
+
 
               <div className="pt-4 border-t border-zinc-800">
                 <h4 className="text-sm font-bold text-lime-400 mb-4 flex items-center gap-2">

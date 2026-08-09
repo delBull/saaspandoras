@@ -67,6 +67,8 @@ export interface Project {
   artifacts?: Array<{ type: string; address: string; name?: string }>;
   protocolVersion?: number;
   legalConfig?: any;
+  ambassadorCommissionRate?: string;
+  managerCommissionRate?: string;
 }
 
 export interface AdminData {

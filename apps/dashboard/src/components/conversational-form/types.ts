@@ -46,6 +46,10 @@ export const projectSchema = z.object({
   artefactUtility: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
   worktoearnMecanism: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
   integrationPlan: z.boolean().optional(),
+  
+  // Commission config
+  ambassadorCommissionRate: z.string().optional(),
+  managerCommissionRate: z.string().optional(),
 
   // Información del Creador
   applicantName: z.string().min(2, "El nombre es requerido").max(256),

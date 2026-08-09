@@ -7,6 +7,8 @@ import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { TelemetryService } from '@/lib/security/telemetry';
 import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+import { verifySignature } from 'thirdweb/auth';
+import { client } from '@/lib/thirdweb-client';
 
 async function handler(
     req: Request,
@@ -15,7 +17,7 @@ async function handler(
     try {
         const { projectId } = await params;
         const projectIdNum = parseInt(projectId);
-        const { purchaseId, action, reason } = await req.json();
+        const { purchaseId, action, reason, signature, message, signerAddress } = await req.json();
         const { session } = await getAuth(await headers());
         const walletAddress = session?.address;
 
@@ -31,6 +33,36 @@ async function handler(
         if (!project || project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+
+        // 1.5 HIGH-SECURITY STEP: Re-verify identity via wallet signature
+        // Approving/Rejecting a purchase affects real money transfers. Require a
+        // fresh signature of the exact operation from the project owner's wallet.
+        if (!signature || !message || !signerAddress) {
+            return NextResponse.json({ error: 'Signature required for this action' }, { status: 400 });
+        }
+
+        const expectedMessage = `Pandoras Admin Action\nProject: ${projectIdNum}\nPurchase: ${purchaseId}\nAction: ${String(action).toUpperCase()}`;
+        if (message !== expectedMessage) {
+            return NextResponse.json({ error: 'Invalid action message' }, { status: 400 });
+        }
+
+        const signerIsOwner = signerAddress.toLowerCase() === project.applicantWalletAddress?.toLowerCase();
+        if (!signerIsOwner) {
+            return NextResponse.json({ error: 'Forbidden: Signature must come from the project owner wallet' }, { status: 403 });
+        }
+
+        const signatureValid = await verifySignature({
+            client,
+            message,
+            signature,
+            address: signerAddress,
+        });
+
+        if (!signatureValid) {
+            console.error(`❌ [APPROVE] Signature verification FAILED for purchase ${purchaseId}`);
+            return NextResponse.json({ error: 'Invalid signature. Refresca e inténtalo de nuevo.' }, { status: 401 });
+        }
+        console.log(`✅ [APPROVE] Signature verified for ${signerAddress} (action=${action})`);
 
         // 2. Fetch Purchase and verify it belongs to this project
         const purchase = await db.query.purchases.findFirst({
@@ -127,7 +159,9 @@ async function handler(
                     if (ambassador) {
                         const tokenPriceUsd = project.tokenPriceUsd ? parseFloat(project.tokenPriceUsd as string) : 50;
                         const totalAmountUsdc = units * tokenPriceUsd;
-                        const commissionAmount = totalAmountUsdc * 0.04;
+                        
+                        const ambassadorRate = project.ambassadorCommissionRate ? parseFloat(project.ambassadorCommissionRate as string) : 4;
+                        const commissionAmount = totalAmountUsdc * (ambassadorRate / 100);
 
                         // Link client to ambassador
                         await tx.insert(ambassadorClients).values({
@@ -140,13 +174,31 @@ async function handler(
                             ambassadorId: ambassador.id,
                             clientWallet: targetWallet.toLowerCase(),
                             amountUsdc: commissionAmount.toString(),
-                            type: 'DIRECT_SALE_4',
+                            type: 'DIRECT_SALE',
                             status: 'pending',
                             sourceTxHash: purchaseId, // using purchaseId since no txHash for fiat approval
                             sourceReference: `fiat_purchase_${projectIdNum}_${units}`
                         }).onConflictDoNothing({ target: ambassadorCommissions.sourceTxHash });
 
                         console.log(`✅ Project ${projectId}: Commission $${commissionAmount} logged for ${ambassador.referralCode}`);
+
+                        // Manager Override (PSM)
+                        if (ambassador.managerId) {
+                            const managerRate = project.managerCommissionRate ? parseFloat(project.managerCommissionRate as string) : 3;
+                            const managerCommissionAmount = totalAmountUsdc * (managerRate / 100);
+
+                            await tx.insert(ambassadorCommissions).values({
+                                ambassadorId: ambassador.managerId,
+                                clientWallet: targetWallet.toLowerCase(),
+                                amountUsdc: managerCommissionAmount.toString(),
+                                type: 'MANAGER_OVERRIDE',
+                                status: 'pending',
+                                sourceTxHash: `${purchaseId}_psm`, // Append suffix to make it unique
+                                sourceReference: `fiat_purchase_${projectIdNum}_${units}_psm`
+                            }).onConflictDoNothing({ target: ambassadorCommissions.sourceTxHash });
+
+                            console.log(`✅ Project ${projectId}: Manager Override $${managerCommissionAmount} logged for Manager ID ${ambassador.managerId}`);
+                        }
 
                         // Log Reputation Event
                         await tx.insert(partnerReputationEvents).values({

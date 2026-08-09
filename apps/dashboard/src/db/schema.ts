@@ -12,7 +12,8 @@ import {
   uniqueIndex,
   index,
   uuid,
-  bigint
+  bigint,
+  doublePrecision
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -381,6 +382,10 @@ export const projects = pgTable("projects", {
   legalConfig: jsonb("legal_config").default({}).notNull(), // V3: Legal agreement templates & NOM-151 config
   extraConfig: jsonb("extra_config").default({}).notNull(), // V4: Resource Hub, Sovereign Calendar, Event Engine config
   tenantRuntimeConfig: jsonb("tenant_runtime_config"), // V4.2: Hermes Runtime Manifest overrides
+
+  // Commission Config
+  ambassadorCommissionRate: decimal("ambassador_commission_rate", { precision: 5, scale: 2 }).default("4.00"), // % Gestor
+  managerCommissionRate: decimal("manager_commission_rate", { precision: 5, scale: 2 }).default("3.00"), // % PSM
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
   isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
@@ -2445,7 +2450,9 @@ export const ambassadorRoleEnum = pgEnum("ambassador_role", [
 
 export const commissionTypeEnum = pgEnum("commission_type", [
   "DIRECT_SALE_4",
-  "RESIDUAL_YIELD_1"
+  "RESIDUAL_YIELD_1",
+  "DIRECT_SALE", // Generic dynamic sale
+  "MANAGER_OVERRIDE" // Manager dynamic sale
 ]);
 
 export const commissionStatusEnum = pgEnum("commission_status", [
@@ -2479,6 +2486,8 @@ export const ambassadors = pgTable("ambassadors", {
   origin: ambassadorOriginEnum("origin").default("pandoras").notNull(),
   status: ambassadorStatusEnum("status").default("FOUNDER").notNull(),
   role: ambassadorRoleEnum("role").default("GROWTH_PARTNER").notNull(),
+  managerId: uuid("manager_id"), // Self-referencing link to PSM
+
   
   // Activation
   activationStep: integer("activation_step").default(0).notNull(),
@@ -2543,7 +2552,13 @@ export const partnerCertifications = pgTable("partner_certifications", {
   ambassadorIdx: index("partner_certifications_amb_idx").on(t.ambassadorId),
 }));
 
-export const ambassadorsRelations = relations(ambassadors, ({ many }) => ({
+export const ambassadorsRelations = relations(ambassadors, ({ one, many }) => ({
+  manager: one(ambassadors, {
+    fields: [ambassadors.managerId],
+    references: [ambassadors.id],
+    relationName: "ambassador_manager"
+  }),
+  managed: many(ambassadors, { relationName: "ambassador_manager" }),
   clients: many(ambassadorClients),
   commissions: many(ambassadorCommissions),
   reputationEvents: many(partnerReputationEvents),
@@ -2999,4 +3014,144 @@ export const hermesJournal = pgTable("hermes_journal", {
   resolvedBinding: jsonb("resolved_binding"),
   resolvedProvider: jsonb("resolved_provider"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ============================================================================
+// 🏛️ OPERATIONAL STATE LAYER (SPRINT 19)
+// ============================================================================
+
+export const installedPacks = pgTable("installed_packs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  packId: varchar("pack_id", { length: 255 }).notNull(),
+  version: varchar("version", { length: 50 }).notNull(),
+  status: varchar("status", { length: 50 }).default('active').notNull(),
+  configuration: jsonb("configuration").default({}).notNull(),
+  installedAt: timestamp("installed_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const missions = pgTable("missions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  packId: varchar("pack_id", { length: 255 }).notNull(),
+  packVersion: varchar("pack_version", { length: 50 }).notNull(),
+  goalId: varchar("goal_id", { length: 255 }).notNull(),
+  status: varchar("status", { length: 50 }).default('active').notNull(),
+  currentPhase: varchar("current_phase", { length: 100 }).notNull(),
+  state: jsonb("state").default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const missionMilestones = pgTable("mission_milestones", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  missionId: varchar("mission_id", { length: 255 }).references(() => missions.id).notNull(),
+  key: varchar("key", { length: 255 }).notNull(),
+  status: boolean("status").default(false).notNull(), // completed
+  metadata: jsonb("metadata").default({}),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
+export const missionEvents = pgTable("mission_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  missionId: varchar("mission_id", { length: 255 }).references(() => missions.id).notNull(),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  payload: jsonb("payload").default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const missionSnapshots = pgTable("mission_snapshots", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  missionId: varchar("mission_id", { length: 255 }).references(() => missions.id).notNull(),
+  state: jsonb("state").default({}).notNull(),
+  phase: varchar("phase", { length: 100 }).notNull(),
+  milestones: jsonb("milestones").default([]).notNull(),
+  activeGoal: varchar("active_goal", { length: 255 }),
+  nextAction: varchar("next_action", { length: 255 }),
+  reason: jsonb("reason").default([]), // ["branding completed", "campaign phase reached"]
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ============================================================================
+// 🏛️ STRATEGY PERSISTENCE LAYER (SPRINT 21)
+// ============================================================================
+
+export const strategyDecisions = pgTable("strategy_decisions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  missionId: varchar("mission_id", { length: 255 }).notNull(),
+  packId: varchar("pack_id", { length: 255 }).notNull(),
+  packVersion: varchar("pack_version", { length: 50 }).notNull(),
+  decisionType: varchar("decision_type", { length: 50 }).notNull(), // 'propose_action', etc.
+  objective: text("objective").notNull(),
+  reason: jsonb("reason").notNull(), // StrategyDecisionReason
+  confidence: doublePrecision("confidence"),
+  workflow: varchar("workflow", { length: 255 }),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ============================================================================
+// 🏛️ GOVERNANCE LAYER (SPRINT 20.5)
+// ============================================================================
+
+export const operationalIntents = pgTable("operational_intents", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  missionId: varchar("mission_id", { length: 255 }).notNull(),
+  packId: varchar("pack_id", { length: 255 }).notNull(),
+  packVersion: varchar("pack_version", { length: 50 }).notNull(),
+  strategyDecisionId: varchar("strategy_decision_id", { length: 255 }).notNull(),
+  intentType: varchar("intent_type", { length: 100 }).notNull(),
+  objective: text("objective").notNull(),
+  rationale: text("rationale").notNull(),
+  constraints: jsonb("constraints").default([]).notNull(),
+  approvalPolicy: jsonb("approval_policy").default({}).notNull(),
+  status: varchar("status", { length: 50 }).default('proposed').notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgStatusIdx: index("operational_intents_org_status_idx").on(table.organizationId, table.status)
+}));
+
+export const operationalApprovals = pgTable("operational_approvals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  intentId: varchar("intent_id", { length: 255 }).references(() => operationalIntents.id).notNull(),
+  actorId: varchar("actor_id", { length: 255 }).notNull(),
+  decision: varchar("decision", { length: 50 }).notNull(), // 'approved' | 'rejected'
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const operationalIntentGovernanceEvents = pgTable("operational_intent_governance_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  intentId: varchar("intent_id", { length: 255 }).notNull(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  actorId: varchar("actor_id", { length: 255 }),
+  actorType: varchar("actor_type", { length: 50 }).notNull(),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  aggregateType: varchar("aggregate_type", { length: 100 }).notNull().default("operational_intent"),
+  aggregateId: varchar("aggregate_id", { length: 255 }).notNull(),
+  payload: jsonb("payload").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+  correlationId: varchar("correlation_id", { length: 255 }),
+  causationId: varchar("causation_id", { length: 255 }),
+}, (table) => ({
+  orgIdx: index("op_intent_gov_events_org_idx").on(table.organizationId),
+  intentIdx: index("op_intent_gov_events_intent_idx").on(table.intentId),
+}));
+
+export const outboxEvents = pgTable("outbox_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }),
+  aggregateType: varchar("aggregate_type", { length: 100 }).notNull(),
+  aggregateId: varchar("aggregate_id", { length: 255 }).notNull(),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  payload: jsonb("payload").notNull(),
+  status: varchar("status", { length: 20 }).default('pending').notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
 });

@@ -116,4 +116,7 @@ export const projectApiSchema = z.object({
       }).optional(),
     }).optional()
   ).optional(),
+
+  ambassadorCommissionRate: z.string().optional(),
+  managerCommissionRate: z.string().optional(),
 });
