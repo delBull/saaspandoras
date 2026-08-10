@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateDealRoomAccess } from "@/lib/admin-auth";
-import { getRoom, markMagicSent } from "@/lib/nexus-deals/repo";
+import { getRoom, markMagicSent, addSigners } from "@/lib/nexus-deals/repo";
 import { generateDealToken } from "@/lib/nexus-deals/tokens";
 import { sendDealMagicLink } from "@/lib/nexus-deals/email";
 import { KIND_LABEL } from "@/lib/nexus-deals/types";
@@ -26,6 +26,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (emails.length === 0) {
       return NextResponse.json({ error: "Proporciona al menos un email" }, { status: 400 });
     }
+
+    const fresh = await addSigners(room.id, emails, session.address ?? "unlock-token");
+    if (!fresh) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
     const base = `${BASE_URL}/deal/${room.publicId}`;
     const results: { email: string; ok: boolean; error?: string }[] = [];

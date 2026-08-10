@@ -50,6 +50,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [signError, setSignError] = useState<string | null>(null);
 
   const isProposal = room.kind === "PROPOSAL";
+  const unlocked = Boolean(initialEmail && rawToken);
 
   const requestMagic = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,9 +115,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
         </span>
       </header>
 
-      <div className="flex-1 flex flex-col md:flex-row min-h-0">
-        {/* Document */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+      {unlocked ? (
+        <div className="flex-1 flex flex-col md:flex-row min-h-0">
+          {/* Document */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-3xl mx-auto">
             <div className="mb-6">
               <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -237,55 +239,70 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   Firma registrada como concepto (pending-esign) · audit trail inmutable
                 </p>
               </motion.div>
-            ) : (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300">
-                    <Lock className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Acceso protegido</p>
-                    <p className="text-[10px] text-zinc-500">Por email</p>
-                  </div>
-                </div>
-
-                <h3 className="text-sm font-semibold text-white mb-1">Acceso para firmantes</h3>
-                <p className="text-[11px] text-zinc-500 mb-4 leading-relaxed">
-                  Este documento es personal y confidencial. Ingresa tu correo electrónico: si estás autorizado,
-                  recibirás un enlace único de acceso.
-                </p>
-
-                {emailSent ? (
-                  <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04]">
-                    <Check className="w-5 h-5 text-amber-300 mb-2" />
-                    <p className="text-[12px] text-amber-200">Enlace enviado</p>
-                    <p className="text-[10px] text-zinc-500 mt-1">Revisa tu bandeja de entrada. El enlace es de un solo uso y expira en 7 días.</p>
-                  </div>
-                ) : (
-                  <form onSubmit={requestMagic} className="space-y-3">
-                    <input
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-                    />
-                    {magicError && <p className="text-[11px] text-rose-400">{magicError}</p>}
-                    <button
-                      type="submit"
-                      disabled={sendingMagic || !email.includes("@")}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-[12px] font-mono transition-colors disabled:opacity-50"
-                    >
-                      {sendingMagic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                      ENVIAR ENLACE DE ACCESO
-                    </button>
-                  </form>
-                )}
-              </motion.div>
-            )}
+            ) : null}
           </div>
         </aside>
-      </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="w-full max-w-md mx-auto mt-8 md:mt-16">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl border border-amber-500/20 bg-[#0C0C10] p-6"
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <span className="flex items-center justify-center w-10 h-10 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                  <Lock className="w-4 h-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Acceso protegido</p>
+                  <p className="text-[10px] text-zinc-500 truncate">{room.publicId}</p>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                  {KIND_LABEL[room.kind]}
+                </span>
+              </div>
+
+              <h2 className="text-lg font-semibold text-white mb-1">Documento confidencial</h2>
+              <p className="text-[12px] text-zinc-400 leading-relaxed mb-5">
+                Este documento está restringido a los firmantes autorizados. Ingresa tu correo electrónico:
+                si estás registrado, recibirás un enlace único de acceso para leerlo y firmarlo.
+              </p>
+
+              {emailSent ? (
+                <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04]">
+                  <Check className="w-5 h-5 text-amber-300 mb-2" />
+                  <p className="text-[12px] text-amber-200">Enlace enviado</p>
+                  <p className="text-[10px] text-zinc-500 mt-1">Revisa tu bandeja de entrada. El enlace es de un solo uso y expira en 7 días.</p>
+                </div>
+              ) : (
+                <form onSubmit={requestMagic} className="space-y-3">
+                  <input
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                  />
+                  {magicError && <p className="text-[11px] text-rose-400">{magicError}</p>}
+                  <button
+                    type="submit"
+                    disabled={sendingMagic || !email.includes("@")}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-[12px] font-mono transition-colors disabled:opacity-50"
+                  >
+                    {sendingMagic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                    ENVIAR ENLACE DE ACCESO
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        </div>
+      )}
 
       <footer className="h-9 shrink-0 flex items-center justify-center px-4 bg-[#0C0C10] border-t border-white/10 font-mono text-[10px] text-zinc-600">
         Pandoras Group · Confidential · Transaction Room {room.publicId}
