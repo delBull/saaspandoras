@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRoomByPublicId, markViewed, signRoom, signRoomOnline } from "@/lib/nexus-deals/repo";
 import { verifyDealToken } from "@/lib/nexus-deals/tokens";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
+import { sendSignatureAlert } from "@/lib/nexus-deals/discord";
 import { verifySignature } from "thirdweb/auth";
 import { client } from "@/lib/thirdweb-client";
 
@@ -58,6 +59,15 @@ export async function POST(request: Request, { params }: { params: { publicId: s
         signatureMessage: message,
       });
 
+      await sendSignatureAlert({
+        roomLabel: `${room.publicId} · ${room.counterparty}`,
+        signerName: cleanName,
+        email: cleanWallet,
+        kind: room.kind,
+        online: true,
+        enteredIntoForce: updated?.status === "SIGNED",
+      });
+
       return NextResponse.json({ ok: true, status: updated?.status });
     }
 
@@ -99,6 +109,14 @@ export async function POST(request: Request, { params }: { params: { publicId: s
       wallet: cleanWallet,
       signature: cleanSig,
       signatureMessage: message,
+    });
+
+    await sendSignatureAlert({
+      roomLabel: `${room.publicId} · ${room.counterparty}`,
+      signerName: cleanName,
+      email: payload.email,
+      kind: room.kind,
+      enteredIntoForce: updated?.status === "SIGNED",
     });
 
     return NextResponse.json({ ok: true, status: updated?.status });

@@ -187,6 +187,13 @@ export default function DealRoomConsole() {
   );
   const progressIndex = selected ? STATUS_ORDER.indexOf(selected.status) : 0;
 
+  // Notificación interna: última firma/aceptación registrada en el room (visible en consola).
+  const lastSignEvent = useMemo(() => {
+    if (!selected) return null;
+    const signs = selected.audit.filter((ev) => ev.action === "Signed" || ev.action === "Accepted");
+    return signs[0] ?? null;
+  }, [selected]);
+
   const flashMsg = (msg: string) => {
     setFlash(msg);
     setTimeout(() => setFlash(null), 4000);
@@ -589,6 +596,17 @@ export default function DealRoomConsole() {
                         <span className="text-emerald-300">FIRMA ONLINE HABILITADA</span>
                         <span className="text-zinc-600">· cualquiera con el link puede firmar (nombre + wallet)</span>
                       </p>
+                    )}
+                    {lastSignEvent && (
+                      <div className="mt-2 flex items-start gap-2 p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05]">
+                        <Check className="w-3.5 h-3.5 text-emerald-300 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[10px] font-mono text-emerald-300">
+                            {lastSignEvent.actor} {lastSignEvent.action === "Accepted" ? "aceptó" : "firmó"} · {shortAt(lastSignEvent.at)}
+                          </p>
+                          {lastSignEvent.detail && <p className="text-[9px] text-zinc-500 mt-0.5">{lastSignEvent.detail}</p>}
+                        </div>
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">

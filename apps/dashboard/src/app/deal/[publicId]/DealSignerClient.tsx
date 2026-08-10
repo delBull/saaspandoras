@@ -45,6 +45,13 @@ const signerWallets = [
   }),
 ];
 
+// Botón de firma con identidad Pandoras: gradiente ámbar→esmeralda, sombra y márgenes consistentes.
+const SIGN_BUTTON_STYLE =
+  "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-mono text-[12px] tracking-wider " +
+  "bg-gradient-to-r from-amber-500/90 to-emerald-500/80 text-black font-semibold " +
+  "shadow-[0_4px_24px_rgba(245,158,11,0.25)] hover:shadow-[0_6px_32px_rgba(245,158,11,0.4)] " +
+  "hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none";
+
 interface Props {
   publicId: string;
   room: PublicRoom;
@@ -310,9 +317,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <button
                     type="submit"
                     disabled={signing || !signName.trim() || !account?.address}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 text-[12px] font-mono transition-colors disabled:opacity-50"
+                    className={SIGN_BUTTON_STYLE}
                   >
-                    {signing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSignature className="w-3.5 h-3.5" />}
+                    {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
                     {signing ? "FIRMANDO..." : isProposal ? "ACEPTAR PROPUESTA" : "FIRMAR DOCUMENTO"}
                   </button>
                 </form>
@@ -374,9 +381,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <button
                     type="submit"
                     disabled={signing || !signName.trim() || !account?.address}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 text-[12px] font-mono transition-colors disabled:opacity-50"
+                    className={SIGN_BUTTON_STYLE}
                   >
-                    {signing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSignature className="w-3.5 h-3.5" />}
+                    {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
                     {signing ? "FIRMANDO..." : isProposal ? "ACEPTAR PROPUESTA" : "FIRMAR DOCUMENTO"}
                   </button>
                 </form>

@@ -89,3 +89,40 @@ export async function sendDealRoomAlert(input: {
     },
   ]);
 }
+
+/**
+ * Notificación de firma/aceptación de un firmante al Deal Room (webhook Discord).
+ * Mensaje personalizado según el tipo de documento:
+ *  - PROPOSAL   → "X aceptó la propuesta"
+ *  - CHARTER    → "X firmó el documento fundacional"
+ *  - resto      → "X firmó el documento"
+ */
+export async function sendSignatureAlert(input: {
+  roomLabel: string;
+  signerName: string;
+  email?: string;
+  kind?: string;
+  online?: boolean;
+  enteredIntoForce?: boolean;
+}) {
+  const { roomLabel, signerName, email, kind, online, enteredIntoForce } = input;
+  const actionText =
+    kind === "PROPOSAL" ? "aceptó la propuesta" : kind === "CHARTER" ? "firmó el documento fundacional" : "firmó el documento";
+  const fields = [
+    { name: "Room", value: roomLabel, inline: true },
+    { name: "Firmante", value: `${signerName}${email ? ` · ${email}` : ""}`, inline: true },
+    ...(online ? [{ name: "Modo", value: "Online (openSign)", inline: true }] : []),
+    ...(enteredIntoForce
+      ? [{ name: "Acuerdo", value: "Todos firmaron · entró en vigor", inline: false }]
+      : []),
+  ];
+  return postDiscord("", [
+    {
+      title: `✅ ${signerName} ${actionText} — ${roomLabel}`,
+      color: enteredIntoForce ? COLORS.GREEN : COLORS.AMBER,
+      fields,
+      footer: { text: "Pandora's Nexus · Deal Room · Firma on-chain verificada (EIP-191)" },
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+}
