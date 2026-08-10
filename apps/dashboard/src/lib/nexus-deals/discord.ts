@@ -1,5 +1,8 @@
 const WEBHOOK =
-  process.env.DISCORD_SECURITY_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL || "";
+  process.env.DISCORD_WEBHOOK_URL ||
+  process.env.DISCORD_WEBHOOK_ALERTS ||
+  process.env.PANDORAS_ALERTS_WEBHOOK ||
+  "";
 
 const COLORS = {
   AMBER: 16761344,
@@ -10,7 +13,7 @@ const COLORS = {
 
 async function postDiscord(content: string, embeds: any[]) {
   if (!WEBHOOK) {
-    console.warn("⚠️ [Nexus Deals] DISCORD_SECURITY_WEBHOOK_URL missing");
+    console.warn("⚠️ [Nexus Deals] Discord webhook (DISCORD_WEBHOOK_URL/ALERTS) missing");
     return false;
   }
   try {
