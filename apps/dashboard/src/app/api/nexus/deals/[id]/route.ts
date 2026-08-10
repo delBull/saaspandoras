@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateDealRoomAccess } from "@/lib/admin-auth";
-import { getRoom, updateRoom, updateSection, deleteRoom, addSigners, removeSigner } from "@/lib/nexus-deals/repo";
+import { getRoom, updateRoom, updateSection, deleteRoom, addSigners, removeSigner, addSection, convertToAgreement } from "@/lib/nexus-deals/repo";
 import { DealKind } from "@/lib/nexus-deals/types";
 import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
 
@@ -37,6 +37,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       const after = await updateSection(params.id, String(body.sectionCode), body.content, actor);
       if (!after) return NextResponse.json({ error: "Sección no encontrada" }, { status: 404 });
       updated = after;
+    } else if (body.addSection === true) {
+      updated = (await addSection(params.id, actor))!;
+    } else if (body.convertAgreement === true) {
+      updated = (await convertToAgreement(params.id, actor))!;
     } else {
       const patch: Record<string, unknown> = { id: params.id, actor };
       if (KINDS.includes(body.kind)) patch.kind = body.kind;

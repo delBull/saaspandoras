@@ -18,6 +18,7 @@ import {
   Copy,
   ChevronRight,
   Eye,
+  Scale,
 } from "lucide-react";
 
 interface Section {
@@ -238,6 +239,33 @@ export default function DealRoomConsole() {
       await patch(selected.id, { status: step.status });
       if (step.status === "ACCEPTED") setSectionId("09");
       flashMsg(`✓ ${step.label}`);
+    } catch (e: any) {
+      flashMsg(`✗ ${e.message}`);
+    }
+  };
+
+  const addSection = async () => {
+    if (!selected) return;
+    try {
+      const room = await patch(selected.id, { addSection: true });
+      const added = room?.sections[room.sections.length - 1];
+      if (added) {
+        setSectionId(added.code);
+        setEditingId(added.id);
+        setDraftContent("");
+      }
+      flashMsg("✓ Sección agregada · edítala para darle contenido");
+    } catch (e: any) {
+      flashMsg(`✗ ${e.message}`);
+    }
+  };
+
+  const convertToAgreement = async () => {
+    if (!selected) return;
+    try {
+      await patch(selected.id, { convertAgreement: true });
+      setSectionId("01");
+      flashMsg("✓ Convertida en Acuerdo Legal · cláusulas legales anexadas (REVIEW)");
     } catch (e: any) {
       flashMsg(`✗ ${e.message}`);
     }
@@ -690,18 +718,34 @@ export default function DealRoomConsole() {
                   </button>
                 </div>
                 {view === "sections" && (
-                  <button
-                    onClick={runAction}
-                    disabled={!nextStep(selected)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-colors ${
-                      nextStep(selected)
-                        ? "bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200"
-                        : "bg-white/5 border border-white/10 text-zinc-600 cursor-not-allowed"
-                    }`}
-                  >
-                    <Activity className="w-3 h-3" />
-                    {nextStep(selected) ? nextStep(selected)?.label : "COMPLETADA"}
-                  </button>
+                  <>
+                    {selected.kind === "PROPOSAL" && (
+                      <button
+                        onClick={convertToAgreement}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 text-violet-200 text-[10px] font-mono tracking-wider transition-colors"
+                      >
+                        <Scale className="w-3 h-3" /> CONVERTIR EN ACUERDO LEGAL
+                      </button>
+                    )}
+                    <button
+                      onClick={addSection}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white text-[10px] font-mono tracking-wider transition-colors"
+                    >
+                      <Plus className="w-3 h-3" /> AGREGAR SECCIÓN
+                    </button>
+                    <button
+                      onClick={runAction}
+                      disabled={!nextStep(selected)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-colors ${
+                        nextStep(selected)
+                          ? "bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200"
+                          : "bg-white/5 border border-white/10 text-zinc-600 cursor-not-allowed"
+                      }`}
+                    >
+                      <Activity className="w-3 h-3" />
+                      {nextStep(selected) ? nextStep(selected)?.label : "COMPLETADA"}
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -820,7 +864,7 @@ export default function DealRoomConsole() {
                       <div className="rounded-2xl border border-white/10 bg-[#0C0C10] p-5">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-[9px] font-mono text-amber-300/80 uppercase tracking-widest">SECCIÓN {activeSection.code} / 09</p>
+                            <p className="text-[9px] font-mono text-amber-300/80 uppercase tracking-widest">SECCIÓN {activeSection.code} / {selected.sections.length}</p>
                             <h5 className="text-sm font-semibold text-zinc-100 mt-0.5">{activeSection.title}</h5>
                           </div>
                           {editingId === activeSection.id ? (
