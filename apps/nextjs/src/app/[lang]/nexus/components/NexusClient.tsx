@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Activity,
   TerminalSquare,
+  Handshake,
+  Landmark,
 } from "lucide-react";
 import { OperationsHubModal } from "./OperationsHubModal";
 import TasksPanel from "./TasksPanel";
@@ -245,6 +247,15 @@ export default function NexusClient() {
                 <TerminalSquare className="w-3 h-3" />
                 OPERATIONS HUB
               </button>
+              <a
+                href="https://dash.pandoras.finance/nexus/rooms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors"
+              >
+                <Handshake className="w-3 h-3" />
+                DEAL ROOM
+              </a>
             </div>
           </div>
         </header>
@@ -314,6 +325,40 @@ export default function NexusClient() {
               </motion.section>
             ))}
             </motion.div>
+
+            {/* Nivel 2 — Transaction Rooms / Deal Room */}
+            <motion.section
+              variants={cardVariants}
+              className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-[#0C0C10] to-amber-500/[0.04] p-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.06)] hover:border-amber-500/40"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="flex items-center justify-center w-10 h-10 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 shrink-0">
+                  <Landmark className="w-4 h-4" />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-zinc-100 tracking-tight truncate">Transaction Rooms · Institutional Deal Layer</h2>
+                    <span className="px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[9px] font-mono tracking-widest whitespace-nowrap">NIVEL 2</span>
+                  </div>
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest truncate">
+                    PROPOSAL · ROLE · COMPENSATION · DOCUMENTS · AGREEMENT · SIGNATURE · AUDIT
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://dash.pandoras.finance/nexus/rooms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] font-mono tracking-wider hover:bg-amber-500/20 transition-colors shrink-0"
+              >
+                <Handshake className="w-3.5 h-3.5" />
+                ABRIR DEAL ROOM
+                <ArrowUpRight className="w-3 h-3" />
+              </a>
+            </motion.section>
+            <p className="mt-2 text-[10px] text-zinc-600 font-mono px-1">
+              Nivel 2 del Nexus: salas de transacción privadas por relación (ej. Eduardo Garza) con propuesta, rol, compensación, documentos confidenciales, acuerdo, enmiendas y firma — con audit trail inmutable. El Nivel 1 (Data Room institucional) permanece intacto.
+            </p>
           </div>
           <TasksPanel tasks={tasks} setTasks={setTasks} />
         </div>
@@ -325,6 +370,8 @@ export default function NexusClient() {
             <span>NEXUS v2.5</span>
             <span className="text-zinc-500/40">•</span>
             <span className="text-purple-300/80">5 CATEGORIES</span>
+            <span className="text-zinc-500/40">•</span>
+            <span className="text-amber-300/80">DEAL ROOM ONLINE</span>
             <span className="text-zinc-500/40">•</span>
             <span>OPS HUB ONLINE</span>
           </span>

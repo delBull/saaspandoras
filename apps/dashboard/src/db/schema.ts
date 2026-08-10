@@ -3155,3 +3155,91 @@ export const outboxEvents = pgTable("outbox_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
 });
+
+// --- NEXUS DEAL ROOMS (Nivel 2 · Transaction Layer) ---
+
+export const nexusDealKindEnum = pgEnum("nexus_deal_kind", [
+  "PROPOSAL",   // Propuesta inicial de colaboración (no vinculante, documento de trabajo)
+  "AGREEMENT",  // Acuerdo de colaboración
+  "CONTRACT",   // Contrato formal
+  "AMENDMENT",  // Enmienda a un acuerdo existente
+]);
+
+export const nexusDealStatusEnum = pgEnum("nexus_deal_status", [
+  "DRAFT",
+  "PROPOSAL_SENT",
+  "REVIEW",
+  "ACCEPTED",
+  "SIGNED",
+  "EXECUTED",
+]);
+
+export const nexusSignerStatusEnum = pgEnum("nexus_signer_status", [
+  "PENDING",     // Email registrado, sin magic link enviado
+  "MAGIC_SENT",  // Magic link enviado
+  "VIEWED",      // Abrió el documento con token válido
+  "SIGNED",      // Firmó/aceptó
+]);
+
+export const nexusDealRooms = pgTable("nexus_deal_rooms", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  publicId: varchar("public_id", { length: 64 }).notNull().unique(),
+  kind: nexusDealKindEnum("kind").notNull().default("PROPOSAL"),
+  counterparty: text("counterparty").notNull(),
+  relation: text("relation").notNull().default("Strategic Partner"),
+  company: text("company").notNull().default("Pandoras USA Operations LLC"),
+  status: nexusDealStatusEnum("status").notNull().default("DRAFT"),
+  summary: text("summary"),
+  autoShare: boolean("auto_share").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const nexusDealSections = pgTable("nexus_deal_sections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  roomId: uuid("room_id").notNull().references(() => nexusDealRooms.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 4 }).notNull(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle").notNull().default(""),
+  content: text("content").notNull().default(""),
+});
+
+export const nexusDealAuditEvents = pgTable("nexus_deal_audit_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  roomId: uuid("room_id").notNull().references(() => nexusDealRooms.id, { onDelete: "cascade" }),
+  at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
+  actor: text("actor").notNull().default("Nexus Ops"),
+  action: text("action").notNull(),
+  detail: text("detail"),
+});
+
+export const nexusDealSigners = pgTable("nexus_deal_signers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  roomId: uuid("room_id").notNull().references(() => nexusDealRooms.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  status: nexusSignerStatusEnum("status").notNull().default("PENDING"),
+  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+  signedAt: timestamp("signed_at", { withTimezone: true }),
+  signatureName: text("signature_name"),
+  wallet: text("wallet"),
+}, (table) => ({
+  roomEmailIdx: uniqueIndex("nexus_signers_room_email_idx").on(table.roomId, table.email),
+}));
+
+export const nexusDealRoomsRelations = relations(nexusDealRooms, ({ many }) => ({
+  sections: many(nexusDealSections),
+  audit: many(nexusDealAuditEvents),
+  signers: many(nexusDealSigners),
+}));
+
+export const nexusDealSectionsRelations = relations(nexusDealSections, ({ one }) => ({
+  room: one(nexusDealRooms, { fields: [nexusDealSections.roomId], references: [nexusDealRooms.id] }),
+}));
+
+export const nexusDealAuditEventsRelations = relations(nexusDealAuditEvents, ({ one }) => ({
+  room: one(nexusDealRooms, { fields: [nexusDealAuditEvents.roomId], references: [nexusDealRooms.id] }),
+}));
+
+export const nexusDealSignersRelations = relations(nexusDealSigners, ({ one }) => ({
+  room: one(nexusDealRooms, { fields: [nexusDealSigners.roomId], references: [nexusDealRooms.id] }),
+}));
