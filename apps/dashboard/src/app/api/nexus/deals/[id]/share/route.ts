@@ -27,13 +27,26 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: "Proporciona al menos un email" }, { status: 400 });
     }
 
-    const fresh = await addSigners(room.id, emails, session.address ?? "unlock-token");
+    const fresh = await addSigners(room.id, emails, session?.address ?? "unlock-token");
     if (!fresh) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
     const base = `${BASE_URL}/deal/${room.publicId}`;
     const results: { email: string; ok: boolean; error?: string }[] = [];
+    const addedEmails = new Set(
+      (fresh?.signers ?? [])
+        .filter((s) => s.status === "PENDING" && emails.includes(s.email.toLowerCase()))
+        .map((s) => s.email.toLowerCase())
+    );
+
+    const existingSignerByEmail = new Map(
+      (room.signers ?? []).map((s) => [s.email.toLowerCase(), s.status])
+    );
 
     for (const email of emails) {
+      if (existingSignerByEmail.get(email) === "SIGNED") {
+        results.push({ email, ok: false, error: "Este firmante ya firmó el documento." });
+        continue;
+      }
       try {
         const token = generateDealToken(room.id, room.publicId, email);
         const magicUrl = `${base}?token=${encodeURIComponent(token)}`;
@@ -51,7 +64,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       }
     }
 
-    return NextResponse.json({ ok: true, publicUrl: base, results });
+    return NextResponse.json({ ok: true, publicUrl: base, addedCount: addedEmails.size, results });
   } catch (e: any) {
     console.error("❌ [Deals] share error:", e);
     return NextResponse.json({ error: e.message }, { status: 500 });

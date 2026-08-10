@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Handshake, Lock, Mail, Check, FileSignature, Loader2 } from "lucide-react";
+import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet } from "lucide-react";
+import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
+import { inAppWallet } from "thirdweb/wallets";
+import { client } from "@/lib/thirdweb-client";
+import { buildSignMessage } from "@/lib/nexus-deals/signing";
 
 interface PublicSection {
   code: string;
@@ -29,6 +33,15 @@ const KIND_LABEL: Record<PublicRoom["kind"], string> = {
   AMENDMENT: "Enmienda",
 };
 
+const signerWallets = [
+  inAppWallet({
+    auth: {
+      options: ["google", "apple", "telegram", "facebook", "email", "passkey"],
+      mode: "popup",
+    },
+  }),
+];
+
 interface Props {
   publicId: string;
   room: PublicRoom;
@@ -44,11 +57,11 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
   const [openSection, setOpenSection] = useState(room.sections[0]?.code ?? "01");
   const [signName, setSignName] = useState("");
-  const [signWallet, setSignWallet] = useState("");
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
 
+  const account = useActiveAccount();
   const isProposal = room.kind === "PROPOSAL";
   const unlocked = Boolean(initialEmail && rawToken);
 
@@ -75,14 +88,34 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
   const handleSign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signName.trim() || !rawToken) return;
+    const name = signName.trim();
+    if (!name || !rawToken || !account?.address) return;
     setSigning(true);
     setSignError(null);
     try {
+      const message = buildSignMessage({
+        publicId,
+        kind: room.kind,
+        counterparty: room.counterparty,
+        email: initialEmail ?? "",
+        name,
+      });
+      let signature = "";
+      try {
+        signature = await account.signMessage({ message });
+      } catch (sigErr) {
+        setSignError("Firma cancelada. No se registró ningún cambio.");
+        return;
+      }
+      if (!signature) {
+        setSignError("No se pudo generar la firma. Intenta de nuevo.");
+        return;
+      }
+
       const res = await fetch(`/api/public/deals/${publicId}/sign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: rawToken, name: signName, wallet: signWallet }),
+        body: JSON.stringify({ token: rawToken, name, wallet: account.address, signature }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al firmar");
@@ -207,36 +240,51 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 <p className="text-[11px] text-zinc-500 mb-4 leading-relaxed">
                   {isProposal
                     ? "Confirma que has leído la propuesta y estás de acuerdo con su contenido para continuar la colaboración."
-                    : "Ingresa tu nombre completo y (opcional) tu wallet para firmar este documento."}
+                    : "Ingresa tu nombre y conecta tu cuenta para firmar este documento."}
                 </p>
 
                 <form onSubmit={handleSign} className="space-y-3">
                   <input
                     type="text"
-                    placeholder="Nombre completo"
+                    placeholder="Nombre completo (obligatorio)"
                     value={signName}
                     onChange={(e) => setSignName(e.target.value)}
                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                   />
-                  <input
-                    type="text"
-                    placeholder="Wallet (0x...) · opcional"
-                    value={signWallet}
-                    onChange={(e) => setSignWallet(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-                  />
+
+                  {account?.address ? (
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/[0.06]">
+                      <Wallet className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Cuenta conectada</p>
+                        <p className="text-[10px] font-mono text-zinc-300 truncate">{account.address}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-white/10 bg-black/40 p-3">
+                      <p className="text-[10px] text-zinc-500 mb-2">Conecta tu cuenta con acceso social para firmar (gratis):</p>
+                      <ConnectButton
+                        client={client}
+                        wallets={signerWallets}
+                        connectButton={{ label: "Conectar y firmar" }}
+                        connectModal={{ size: "compact", title: "Verificar identidad", showThirdwebBranding: false }}
+                        theme={darkTheme({ colors: { primaryButtonBg: "#10b981", primaryButtonText: "#000" } })}
+                      />
+                    </div>
+                  )}
+
                   {signError && <p className="text-[11px] text-rose-400">{signError}</p>}
                   <button
                     type="submit"
-                    disabled={signing || !signName.trim()}
+                    disabled={signing || !signName.trim() || !account?.address}
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 text-[12px] font-mono transition-colors disabled:opacity-50"
                   >
                     {signing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSignature className="w-3.5 h-3.5" />}
-                    {isProposal ? "ACEPTAR PROPUESTA" : "FIRMAR DOCUMENTO"}
+                    {signing ? "FIRMANDO..." : isProposal ? "ACEPTAR PROPUESTA" : "FIRMAR DOCUMENTO"}
                   </button>
                 </form>
                 <p className="text-[9px] text-zinc-600 mt-3 text-center leading-relaxed">
-                  Firma registrada como concepto (pending-esign) · audit trail inmutable
+                  Al firmar se genera una firma on-chain verificada (EIP-191) con tu cuenta · audit trail inmutable
                 </p>
               </motion.div>
             ) : null}

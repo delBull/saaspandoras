@@ -199,14 +199,31 @@ export async function markViewed(roomId: string, email: string) {
     .where(and(eq(nexusDealSigners.roomId, roomId), eq(nexusDealSigners.email, email)));
 }
 
-export async function signRoom(roomId: string, email: string, name: string, wallet?: string) {
+export async function signRoom(
+  roomId: string,
+  email: string,
+  name: string,
+  opts: { wallet?: string; signature?: string; signatureMessage?: string } = {}
+) {
   const now = new Date();
   await db
     .update(nexusDealSigners)
-    .set({ status: "SIGNED", signedAt: now, signatureName: name, wallet: wallet ?? null })
+    .set({
+      status: "SIGNED",
+      signedAt: now,
+      signatureName: name,
+      wallet: opts.wallet ?? null,
+      signature: opts.signature ?? null,
+      signatureMessage: opts.signatureMessage ?? null,
+    })
     .where(and(eq(nexusDealSigners.roomId, roomId), eq(nexusDealSigners.email, email)));
 
-  await appendAudit(roomId, name, "Signed", `${email} firmó el acuerdo (concepto)`);
+  await appendAudit(
+    roomId,
+    name,
+    "Signed",
+    `${email} firmó on-chain${opts.wallet ? ` (${opts.wallet})` : ""}${opts.signature ? ` · sig ${opts.signature.slice(0, 12)}…` : ""}`
+  );
 
   // Si todos los signers firmaron → el room pasa a SIGNED
   const signers = await db

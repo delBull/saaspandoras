@@ -3152,9 +3152,33 @@ export const outboxEvents = pgTable("outbox_events", {
   status: varchar("status", { length: 20 }).default('pending').notNull(),
   attempts: integer("attempts").default(0).notNull(),
   lastError: text("last_error"),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  lockedBy: varchar("locked_by", { length: 255 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
 });
+
+// --- EXECUTION OS (ADR-018) ---
+
+export const executionRecords = pgTable("execution_records", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  missionId: varchar("mission_id", { length: 255 }).notNull(),
+  intentId: varchar("intent_id", { length: 255 }).notNull(),
+  capabilityId: varchar("capability_id", { length: 255 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull(),
+  state: varchar("state", { length: 20 }).default('QUEUED').notNull(),
+  result: jsonb("result"),
+  error: jsonb("error"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index("exec_records_org_idx").on(table.organizationId),
+  intentIdx: index("exec_records_intent_idx").on(table.intentId),
+  idempotencyIdx: uniqueIndex("exec_records_idempotency_idx").on(table.organizationId, table.capabilityId, table.idempotencyKey)
+}));
 
 // --- NEXUS DEAL ROOMS (Nivel 2 · Transaction Layer) ---
 
@@ -3222,6 +3246,8 @@ export const nexusDealSigners = pgTable("nexus_deal_signers", {
   signedAt: timestamp("signed_at", { withTimezone: true }),
   signatureName: text("signature_name"),
   wallet: text("wallet"),
+  signature: text("signature"),
+  signatureMessage: text("signature_message"),
 }, (table) => ({
   roomEmailIdx: uniqueIndex("nexus_signers_room_email_idx").on(table.roomId, table.email),
 }));

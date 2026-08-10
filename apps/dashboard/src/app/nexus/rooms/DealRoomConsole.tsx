@@ -143,7 +143,6 @@ export default function DealRoomConsole() {
   const [nrSigners, setNrSigners] = useState("");
 
   const [signersInput, setSignersInput] = useState("");
-  const [shareEmails, setShareEmails] = useState("");
   const [sharing, setSharing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -268,16 +267,48 @@ export default function DealRoomConsole() {
     }
   };
 
-  const addSigners = async () => {
+  const addAndShare = async () => {
     if (!selected) return;
     const emails = signersInput.split(",").map((s) => s.trim()).filter((s) => s.includes("@"));
     if (emails.length === 0) return;
+    setSharing(true);
     try {
-      await patch(selected.id, { signers: emails.map((email) => ({ email })) });
+      const res = await fetch(apiUrl(`/api/nexus/deals/${selected.id}/share`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al enviar");
+      const okCount = data.results.filter((r: any) => r.ok).length;
+      const added = data.addedCount ?? 0;
+      flashMsg(`✓ ${okCount}/${emails.length} emails enviados${added ? ` · ${added} nuevo(s) agregado(s)` : ""}`);
       setSignersInput("");
-      flashMsg(`✓ ${emails.length} signer${emails.length > 1 ? "s" : ""} agregado${emails.length > 1 ? "s" : ""}`);
+      load();
     } catch (e: any) {
       flashMsg(`✗ ${e.message}`);
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const resendSigner = async (email: string) => {
+    if (!selected) return;
+    setSharing(true);
+    try {
+      const res = await fetch(apiUrl(`/api/nexus/deals/${selected.id}/share`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails: [email] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al reenviar");
+      flashMsg(`✓ Magic link reenviado a ${email}`);
+      load();
+    } catch (e: any) {
+      flashMsg(`✗ ${e.message}`);
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -299,30 +330,6 @@ export default function DealRoomConsole() {
       flashMsg(`✓ Link público copiado: ${selected.publicId}`);
     } catch {
       window.prompt("Copia el link:", url);
-    }
-  };
-
-  const shareByEmail = async () => {
-    if (!selected) return;
-    const emails = shareEmails.split(",").map((s) => s.trim()).filter((s) => s.includes("@"));
-    if (emails.length === 0) return;
-    setSharing(true);
-    try {
-      const res = await fetch(apiUrl(`/api/nexus/deals/${selected.id}/share`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emails }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al enviar");
-      const okCount = data.results.filter((r: any) => r.ok).length;
-      flashMsg(`✓ ${okCount}/${emails.length} emails enviados con magic link`);
-      setShareEmails("");
-      load();
-    } catch (e: any) {
-      flashMsg(`✗ ${e.message}`);
-    } finally {
-      setSharing(false);
     }
   };
 
@@ -646,7 +653,7 @@ export default function DealRoomConsole() {
                 {view === "signers" && (
                   <div className="space-y-4">
                     <div className="p-4 rounded-2xl border border-white/10 bg-[#0C0C10]">
-                      <p className="text-[10px] font-mono text-amber-300 uppercase tracking-widest mb-2">AGREGAR FIRMANTES</p>
+                      <p className="text-[10px] font-mono text-amber-300 uppercase tracking-widest mb-2">AGREGAR Y COMPARTIR</p>
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -656,35 +663,16 @@ export default function DealRoomConsole() {
                           className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                         />
                         <button
-                          onClick={addSigners}
-                          className="px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-200 text-[10px] font-mono transition-colors"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <p className="text-[9px] text-zinc-600 mt-1.5">Solo estos emails pueden desbloquear el link público.</p>
-                    </div>
-
-                    <div className="p-4 rounded-2xl border border-white/10 bg-[#0C0C10]">
-                      <p className="text-[10px] font-mono text-amber-300 uppercase tracking-widest mb-3">COMPARTIR POR EMAIL (RESEND)</p>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="emails separados por coma"
-                          value={shareEmails}
-                          onChange={(e) => setShareEmails(e.target.value)}
-                          className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-                        />
-                        <button
-                          onClick={shareByEmail}
-                          disabled={sharing}
+                          onClick={addAndShare}
+                          disabled={sharing || !signersInput.includes("@")}
                           className="flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-200 text-[10px] font-mono transition-colors disabled:opacity-50"
                         >
-                          <Mail className="w-3 h-3" /> {sharing ? "ENVIANDO..." : "ENVIAR"}
+                          <Mail className="w-3 h-3" /> {sharing ? "ENVIANDO..." : "AGREGAR + ENVIAR"}
                         </button>
                       </div>
                       <p className="text-[9px] text-zinc-600 mt-1.5">
-                        Envía el link público con <span className="text-emerald-300">magic link integrado</span> (acceso directo para firmar).
+                        Al agregar un firmante se registra y se le envía su magic link automáticamente (Resend).
+                        Solo estos emails pueden desbloquear el link público.
                       </p>
                     </div>
 
@@ -700,6 +688,16 @@ export default function DealRoomConsole() {
                               {s.wallet && ` · ${s.wallet.slice(0, 10)}…`}
                             </p>
                           </div>
+                          {s.status !== "SIGNED" && (
+                            <button
+                              onClick={() => resendSigner(s.email)}
+                              disabled={sharing}
+                              title="Reenviar magic link"
+                              className="flex items-center gap-1 px-2 py-1 rounded-md border border-white/10 text-[9px] text-zinc-400 hover:text-amber-300 hover:border-amber-500/30 transition-colors disabled:opacity-50"
+                            >
+                              <Mail className="w-3 h-3" /> REENVIAR
+                            </button>
+                          )}
                           {s.status === "MAGIC_SENT" && (
                             <button
                               onClick={() => window.open(`${window.location.origin}/deal/${selected.publicId}`, "_blank")}
