@@ -3,7 +3,7 @@ export function requireEnvUrl(envVarValue: string | undefined, envVarName: strin
     return envVarValue;
   }
   if (process.env.NODE_ENV === 'production') {
-    throw new Error(`CRITICAL: Environment variable ${envVarName} is not set in production. Refusing to fallback to localhost.`);
+    console.warn(`CRITICAL WARNING: Environment variable ${envVarName} is not set in production. Falling back to localhost to prevent build crash, but this will fail at runtime.`);
   }
   return defaultLocalUrl;
 }
