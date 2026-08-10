@@ -16,6 +16,8 @@ export interface CreateRoomInput {
   summary?: string;
   note?: string;
   signers?: SignerInput[];
+  taskRef?: string;
+  openSign?: boolean;
   actor?: string;
 }
 
@@ -70,6 +72,8 @@ export async function createRoom(input: CreateRoomInput) {
       status: "DRAFT",
       summary: input.summary ?? null,
       autoShare: true,
+      openSign: input.openSign ?? false,
+      taskRef: input.taskRef ?? null,
       createdAt: now,
       updatedAt: now,
     })
@@ -98,7 +102,9 @@ export async function createRoom(input: CreateRoomInput) {
     roomId: id,
     actor,
     action: "Room created",
-    detail: `Deal Room ${publicId} abierto para ${input.counterparty} (${input.kind})`,
+    detail: `Deal Room ${publicId} abierto para ${input.counterparty} (${input.kind})${
+      input.taskRef ? ` · vinculado a tarea ${input.taskRef}` : ""
+    }`,
     at: now,
   });
 
@@ -113,6 +119,8 @@ export async function updateRoom(input: {
   company?: string;
   summary?: string;
   status?: string;
+  taskRef?: string;
+  openSign?: boolean;
   actor?: string;
 }) {
   const { id, actor = "Nexus Ops", ...fields } = input;
@@ -123,9 +131,34 @@ export async function updateRoom(input: {
   if (fields.company !== undefined) patch.company = fields.company;
   if (fields.summary !== undefined) patch.summary = fields.summary;
   if (fields.status !== undefined) patch.status = fields.status;
+  if (fields.taskRef !== undefined) patch.taskRef = fields.taskRef === "" ? null : fields.taskRef;
+  if (fields.openSign !== undefined) patch.openSign = fields.openSign;
+
+  if (fields.status === "EXECUTED" && !patch.enteredIntoForceAt) {
+    patch.enteredIntoForceAt = new Date();
+  }
 
   await db.update(nexusDealRooms).set(patch).where(eq(nexusDealRooms.id, id));
   await appendAudit(id, actor, "Room updated", JSON.stringify(fields).slice(0, 300));
+  return getRoom(id);
+}
+
+// Ciclo de vida: cuando una propuesta pasa a acuerdo legítimo (SIGNED) se registra
+// la fecha de entrada en vigor (15.15 del Charter: "entrará en vigor a partir de su
+// firma por todas las partes"). Al marcar EXECUTING inicia la fase de ejecución.
+export async function setRoomLifecycle(
+  id: string,
+  status: "SIGNED" | "EXECUTING" | "EXECUTED",
+  actor: string,
+  detail?: string
+) {
+  const now = new Date();
+  const patch: Record<string, unknown> = { status, updatedAt: now };
+  if (status === "SIGNED" || status === "EXECUTED") {
+    patch.enteredIntoForceAt = now;
+  }
+  await db.update(nexusDealRooms).set(patch).where(eq(nexusDealRooms.id, id));
+  await appendAudit(id, actor, status === "EXECUTED" ? "Executed" : status, detail ?? `Transición de ciclo de vida a ${status}`);
   return getRoom(id);
 }
 
@@ -233,9 +266,83 @@ export async function signRoom(
   if (signers.length > 0 && signers.every((s) => s.status === "SIGNED")) {
     await db
       .update(nexusDealRooms)
-      .set({ status: "SIGNED", updatedAt: now })
+      .set({ status: "SIGNED", enteredIntoForceAt: now, updatedAt: now })
       .where(eq(nexusDealRooms.id, roomId));
-    await appendAudit(roomId, "Nexus Ops", "Signed", "Todos los signers firmaron · estado SIGNED");
+    await appendAudit(
+      roomId,
+      "Nexus Ops",
+      "Signed",
+      "Todos los signers firmaron · estado SIGNED · acuerdo legítimo en vigor"
+    );
+  }
+
+  return getRoom(roomId);
+}
+
+// Firma "online": el firmante abre el link público de un room con openSign,
+// registra su nombre + wallet on-chain sin necesidad de email pre-registrado.
+export async function signRoomOnline(
+  roomId: string,
+  name: string,
+  opts: { wallet: string; signature: string; signatureMessage: string }
+) {
+  const now = new Date();
+  const email = opts.wallet.toLowerCase();
+
+  const existing = await db
+    .select({ id: nexusDealSigners.id })
+    .from(nexusDealSigners)
+    .where(and(eq(nexusDealSigners.roomId, roomId), eq(nexusDealSigners.email, email)))
+    .limit(1);
+
+  if (existing[0]) {
+    await db
+      .update(nexusDealSigners)
+      .set({
+        status: "SIGNED",
+        signedAt: now,
+        signatureName: name,
+        wallet: opts.wallet,
+        signature: opts.signature,
+        signatureMessage: opts.signatureMessage,
+      })
+      .where(eq(nexusDealSigners.id, existing[0].id));
+  } else {
+    await db.insert(nexusDealSigners).values({
+      roomId,
+      email,
+      status: "SIGNED",
+      signedAt: now,
+      signatureName: name,
+      wallet: opts.wallet,
+      signature: opts.signature,
+      signatureMessage: opts.signatureMessage,
+    });
+  }
+
+  await appendAudit(
+    roomId,
+    name,
+    "Signed",
+    `Firma online (openSign) · ${opts.wallet} · sig ${opts.signature.slice(0, 12)}…`
+  );
+
+  // Si todos los signers firmaron → el room pasa a SIGNED
+  const signers = await db
+    .select({ status: nexusDealSigners.status })
+    .from(nexusDealSigners)
+    .where(eq(nexusDealSigners.roomId, roomId));
+  if (signers.length > 0 && signers.every((s) => s.status === "SIGNED")) {
+    await db
+      .update(nexusDealRooms)
+      .set({ status: "SIGNED", enteredIntoForceAt: now, updatedAt: now })
+      .where(eq(nexusDealRooms.id, roomId));
+    await appendAudit(
+      roomId,
+      "Nexus Ops",
+      "Signed",
+      "Todos los signers firmaron · estado SIGNED · acuerdo legítimo en vigor"
+    );
   }
 
   return getRoom(roomId);
@@ -255,6 +362,8 @@ export function publicRoomView(room: NonNullable<Awaited<ReturnType<typeof getRo
     company: room.company,
     status: room.status,
     summary: room.summary,
+    openSign: room.openSign,
+    enteredIntoForceAt: room.enteredIntoForceAt ? room.enteredIntoForceAt.toISOString() : null,
     sections: room.sections,
   };
 }

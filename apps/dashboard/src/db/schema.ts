@@ -3187,6 +3187,7 @@ export const nexusDealKindEnum = pgEnum("nexus_deal_kind", [
   "AGREEMENT",  // Acuerdo de colaboración
   "CONTRACT",   // Contrato formal
   "AMENDMENT",  // Enmienda a un acuerdo existente
+  "CHARTER",    // Documento fundacional / governance (Founders Agreement, charter de LLC, pacto de socios)
 ]);
 
 export const nexusDealStatusEnum = pgEnum("nexus_deal_status", [
@@ -3195,6 +3196,7 @@ export const nexusDealStatusEnum = pgEnum("nexus_deal_status", [
   "REVIEW",
   "ACCEPTED",
   "SIGNED",
+  "EXECUTING",
   "EXECUTED",
 ]);
 
@@ -3215,6 +3217,9 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   status: nexusDealStatusEnum("status").notNull().default("DRAFT"),
   summary: text("summary"),
   autoShare: boolean("auto_share").notNull().default(true),
+  openSign: boolean("open_sign").notNull().default(false),
+  taskRef: text("task_ref"),
+  enteredIntoForceAt: timestamp("entered_into_force_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

@@ -48,12 +48,15 @@ interface Signer {
 interface Room {
   id: string;
   publicId: string;
-  kind: "PROPOSAL" | "AGREEMENT" | "CONTRACT" | "AMENDMENT";
+  kind: "PROPOSAL" | "AGREEMENT" | "CONTRACT" | "AMENDMENT" | "CHARTER";
   counterparty: string;
   relation: string;
   company: string;
-  status: "DRAFT" | "PROPOSAL_SENT" | "REVIEW" | "ACCEPTED" | "SIGNED" | "EXECUTED";
+  status: "DRAFT" | "PROPOSAL_SENT" | "REVIEW" | "ACCEPTED" | "SIGNED" | "EXECUTING" | "EXECUTED";
   summary?: string | null;
+  taskRef?: string | null;
+  openSign?: boolean | null;
+  enteredIntoForceAt?: string | null;
   createdAt: string;
   updatedAt: string;
   sections: Section[];
@@ -61,18 +64,20 @@ interface Room {
   signers: Signer[];
 }
 
-const KINDS: Room["kind"][] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT"];
+const KINDS: Room["kind"][] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT", "CHARTER"];
 const KIND_LABEL: Record<Room["kind"], string> = {
   PROPOSAL: "Propuesta de Colaboración",
   AGREEMENT: "Acuerdo",
   CONTRACT: "Contrato",
   AMENDMENT: "Enmienda",
+  CHARTER: "Documento Fundacional",
 };
 const KIND_BADGE: Record<Room["kind"], string> = {
   PROPOSAL: "border-blue-500/30 bg-blue-500/10 text-blue-300",
   AGREEMENT: "border-violet-500/30 bg-violet-500/10 text-violet-300",
   CONTRACT: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   AMENDMENT: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  CHARTER: "border-stone-500/30 bg-stone-500/10 text-stone-200",
 };
 const STATUS_LABEL: Record<Room["status"], string> = {
   DRAFT: "Borrador",
@@ -80,6 +85,7 @@ const STATUS_LABEL: Record<Room["status"], string> = {
   REVIEW: "En Revisión",
   ACCEPTED: "Aceptada",
   SIGNED: "Firmada",
+  EXECUTING: "En Ejecución",
   EXECUTED: "Ejecutada",
 };
 const STATUS_ACCENT: Record<Room["status"], string> = {
@@ -88,9 +94,10 @@ const STATUS_ACCENT: Record<Room["status"], string> = {
   REVIEW: "border-amber-500/20 bg-amber-500/10 text-amber-300",
   ACCEPTED: "border-violet-500/20 bg-violet-500/10 text-violet-300",
   SIGNED: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+  EXECUTING: "border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
   EXECUTED: "border-amber-400/20 bg-amber-400/10 text-amber-200",
 };
-const STATUS_ORDER: Room["status"][] = ["DRAFT", "PROPOSAL_SENT", "REVIEW", "ACCEPTED", "SIGNED", "EXECUTED"];
+const STATUS_ORDER: Room["status"][] = ["DRAFT", "PROPOSAL_SENT", "REVIEW", "ACCEPTED", "SIGNED", "EXECUTING", "EXECUTED"];
 const SIGNER_LABEL: Record<Signer["status"], string> = {
   PENDING: "Pendiente",
   MAGIC_SENT: "Magic link enviado",
@@ -117,6 +124,8 @@ function nextStep(room: Room): { label: string; status: Room["status"] } | null 
     case "ACCEPTED":
       return { label: "Solicitar Firma", status: "ACCEPTED" };
     case "SIGNED":
+      return { label: "Iniciar Ejecución", status: "EXECUTING" };
+    case "EXECUTING":
       return { label: "Marcar Ejecutado", status: "EXECUTED" };
     default:
       return null;
@@ -141,6 +150,8 @@ export default function DealRoomConsole() {
   const [nrSummary, setNrSummary] = useState("");
   const [nrNote, setNrNote] = useState("");
   const [nrSigners, setNrSigners] = useState("");
+  const [nrTaskRef, setNrTaskRef] = useState("");
+  const [nrOpenSign, setNrOpenSign] = useState(false);
 
   const [signersInput, setSignersInput] = useState("");
   const [sharing, setSharing] = useState(false);
@@ -243,6 +254,8 @@ export default function DealRoomConsole() {
           company: nrCompany,
           summary: nrSummary,
           note: nrNote,
+          taskRef: nrTaskRef,
+          openSign: nrOpenSign,
           signers: signers.map((email) => ({ email })),
         }),
       });
@@ -261,6 +274,8 @@ export default function DealRoomConsole() {
       setNrSummary("");
       setNrNote("");
       setNrSigners("");
+      setNrTaskRef("");
+      setNrOpenSign(false);
       flashMsg(`✓ Deal Room ${data.room.publicId} creado · link público auto-generado`);
     } catch (e: any) {
       flashMsg(`✗ ${e.message}`);
@@ -449,6 +464,22 @@ export default function DealRoomConsole() {
                 onChange={(e) => setNrSigners(e.target.value)}
                 className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
               />
+              <input
+                type="text"
+                placeholder="Tarea Operations vinculada (ej. TSK-W3-01) · interno"
+                value={nrTaskRef}
+                onChange={(e) => setNrTaskRef(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+              />
+              <label className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border border-white/10 bg-black/40 cursor-pointer">
+                <span className="text-[10px] text-zinc-400">Firma online (openSign) · sin email</span>
+                <input
+                  type="checkbox"
+                  checked={nrOpenSign}
+                  onChange={(e) => setNrOpenSign(e.target.checked)}
+                  className="accent-amber-500"
+                />
+              </label>
               <div className="flex gap-2 justify-end">
                 <button type="button" onClick={() => setShowNewRoom(false)} className="px-2 py-1 rounded-md border border-white/10 text-[10px] text-zinc-400 hover:text-white transition-colors">
                   Cancelar
@@ -541,9 +572,37 @@ export default function DealRoomConsole() {
                     </div>
                     <p className="text-[10px] font-mono text-zinc-500 mt-1">
                       {selected.relation} · {selected.company} · ROOM <span className="text-amber-300">{selected.publicId}</span>
+                      {selected.enteredIntoForceAt && (
+                        <span className="text-emerald-400"> · EN VIGOR DESDE {shortAt(selected.enteredIntoForceAt)}</span>
+                      )}
                     </p>
+                    {selected.taskRef && (
+                      <p className="flex items-center gap-1.5 mt-1 text-[9px] font-mono text-zinc-500">
+                        <Link2 className="w-3 h-3 text-amber-300/70" />
+                        TAREA OPERATIONS VINCULADA · <span className="text-amber-300">{selected.taskRef}</span>
+                        <span className="text-zinc-600">(interno · no visible al firmante)</span>
+                      </p>
+                    )}
+                    {selected.openSign && (
+                      <p className="flex items-center gap-1.5 mt-1 text-[9px] font-mono text-zinc-500">
+                        <FileSignature className="w-3 h-3 text-emerald-300/70" />
+                        <span className="text-emerald-300">FIRMA ONLINE HABILITADA</span>
+                        <span className="text-zinc-600">· cualquiera con el link puede firmar (nombre + wallet)</span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => patch(selected.id, { openSign: !selected.openSign }).then(() => flashMsg(selected.openSign ? "Firma online desactivada" : "✓ Firma online habilitada · cualquier persona con el link puede firmar"))}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-[10px] font-mono transition-colors ${
+                        selected.openSign
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                          : "border-white/10 bg-black/40 text-zinc-500 hover:text-white hover:border-white/25"
+                      }`}
+                      title="Habilitar/deshabilitar firma online (openSign)"
+                    >
+                      <FileSignature className="w-3 h-3" /> ONLINE
+                    </button>
                     <button
                       onClick={copyPublicLink}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] font-mono hover:bg-amber-500/20 transition-colors"

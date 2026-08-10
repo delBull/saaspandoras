@@ -7,7 +7,7 @@ import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const KINDS: DealKind[] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT"];
+const KINDS: DealKind[] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT", "CHARTER"];
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
@@ -45,6 +45,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       if (typeof body.company === "string") patch.company = body.company.trim();
       if (typeof body.summary === "string") patch.summary = body.summary.trim();
       if (typeof body.status === "string") patch.status = body.status;
+      if (typeof body.taskRef === "string") patch.taskRef = body.taskRef.trim();
+      if (typeof body.openSign === "boolean") patch.openSign = body.openSign;
       const after = await updateRoom(patch as any);
       updated = after!;
     }

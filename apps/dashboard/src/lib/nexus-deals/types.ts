@@ -9,6 +9,7 @@ export const KIND_LABEL: Record<DealKind, string> = {
   AGREEMENT: "Acuerdo",
   CONTRACT: "Contrato",
   AMENDMENT: "Enmienda",
+  CHARTER: "Documento Fundacional",
 };
 
 export const KIND_BADGE: Record<DealKind, string> = {
@@ -16,6 +17,7 @@ export const KIND_BADGE: Record<DealKind, string> = {
   AGREEMENT: "border-violet-500/30 bg-violet-500/10 text-violet-300",
   CONTRACT: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   AMENDMENT: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  CHARTER: "border-stone-500/30 bg-stone-500/10 text-stone-200",
 };
 
 export const STATUS_LABEL: Record<DealStatus, string> = {
@@ -24,6 +26,7 @@ export const STATUS_LABEL: Record<DealStatus, string> = {
   REVIEW: "En Revisión",
   ACCEPTED: "Aceptada",
   SIGNED: "Firmada",
+  EXECUTING: "En Ejecución",
   EXECUTED: "Ejecutada",
 };
 
@@ -33,6 +36,7 @@ export const STATUS_ORDER: DealStatus[] = [
   "REVIEW",
   "ACCEPTED",
   "SIGNED",
+  "EXECUTING",
   "EXECUTED",
 ];
 
