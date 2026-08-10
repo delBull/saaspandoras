@@ -1,3 +1,4 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
         // We now delegate the actual deployment to a persistent service on Railway
         // to avoid Vercel timeouts and "missing response" errors from public RPCs.
 
-        const DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000"; // Fallback for local dev
+        const DEPLOY_SERVICE_URL = requireEnvUrl(process.env.DEPLOY_SERVICE_URL, 'DEPLOY_SERVICE_URL', 'http://localhost:3000'); // Fallback for local dev
         const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 
         if (!DEPLOY_SECRET) {

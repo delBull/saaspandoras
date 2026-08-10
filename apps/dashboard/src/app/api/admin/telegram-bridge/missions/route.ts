@@ -1,10 +1,11 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getAuth, isAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-const EDGE_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const EDGE_API_URL = requireEnvUrl(process.env.NEXT_PUBLIC_API_URL, 'NEXT_PUBLIC_API_URL', 'http://localhost:8080');
 const CORE_KEY = process.env.PANDORA_CORE_KEY;
 
 export async function POST(req: NextRequest) {

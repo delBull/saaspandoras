@@ -1,3 +1,4 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import { db } from '~/db';
 import { sql, eq } from 'drizzle-orm';
 import { users as usersSchema } from '@/db/schema';
@@ -121,7 +122,7 @@ export async function syncThirdwebUser(userData: {
       // Usar la URL correcta en producción (Vercel URL) o desarrollo
       const baseUrl = process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        : requireEnvUrl(process.env.NEXT_PUBLIC_BASE_URL, 'NEXT_PUBLIC_BASE_URL', 'http://localhost:3000');
 
       const enrichedProfile = await fetch(`${baseUrl}/api/thirdweb-fetch?address=${userData.walletAddress}`, {
         method: 'GET',

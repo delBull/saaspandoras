@@ -1,6 +1,6 @@
 import { BindingRegistry } from './apps/dashboard/src/lib/pandoras/core/registries/binding-registry';
 import { ProviderRegistry } from './apps/dashboard/src/lib/pandoras/core/registries/provider-registry';
-import { MarketingProvider } from './apps/dashboard/src/lib/pandoras/core/providers/marketing/marketing.provider';
+import { MarketingProvider } from './apps/dashboard/src/lib/pandoras/core/engines/commercial/marketing.provider';
 import { ExecutionRequest } from './apps/dashboard/src/lib/pandoras/core/contracts';
 
 async function test() {
@@ -26,6 +26,22 @@ async function test() {
       id: 'test-user',
       type: 'USER',
       tenantId: '17' // S'Narai
+    },
+    context: {
+      executionId: 'test-exec-id',
+      timestamp: new Date().toISOString(),
+      trigger: 'manual',
+      input: {},
+      identitySnapshot: {
+        actor: { userId: 'test-user', roles: [] },
+        organization: { id: 'org-test', name: 'Test Org', brand: {}, voice: 'neutral', locale: 'en-US' },
+        environment: { stage: 'development', timezone: 'UTC', region: 'us-east-1', language: 'en', units: 'metric' },
+        capabilities: { available: [] },
+        packs: { installed: [] },
+        providers: {},
+        policies: { limits: { budgetUsd: 100, allowedModels: [], securityLevel: 'standard' } },
+        metadata: { executionId: 'test-exec', correlationId: 'corr', traceId: 'trace', sourceApp: 'hermes', version: '1.0' }
+      }
     },
     input: {}
   };

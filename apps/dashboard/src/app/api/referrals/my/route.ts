@@ -1,3 +1,4 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth";
@@ -45,7 +46,7 @@ export async function GET() {
       .limit(5);
 
     // Generar enlace personalizado
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const baseUrl = requireEnvUrl(process.env.NEXT_PUBLIC_APP_URL, 'NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
     const referralLink = `${baseUrl}/join?ref=${userWallet}`;
 
     return NextResponse.json({

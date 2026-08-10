@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from "@/db";
-import { marketingLeads, marketingLeadEvents } from "@/db/schema";
+import { marketingLeads, marketingLeadEvents, executionRecords, projects } from "@/db/schema";
 import { eq, and, gte, desc, sql, inArray } from "drizzle-orm";
 
 export interface CommandCenterStats {
@@ -99,7 +99,16 @@ export async function getCommandCenterStats(projectId: number): Promise<CommandC
 
     const leadMap = new Map(allLeads.map(l => [l.id, l]));
 
-    const activities = recentEvents.slice(0, 10).map(e => {
+    const projectData = await db.query.projects.findFirst({ where: eq(projects.id, projectId) });
+    const orgId = projectData ? `org_${projectData.slug}` : `org_${projectId}`;
+
+    const recentExecutions = await db.select()
+      .from(executionRecords)
+      .where(eq(executionRecords.organizationId, orgId))
+      .orderBy(desc(executionRecords.createdAt))
+      .limit(5);
+
+    const leadActivities = recentEvents.slice(0, 10).map(e => {
       const lead = leadMap.get(e.leadId);
       const isToday = e.createdAt ? new Date(e.createdAt) >= today : false;
       const name = lead?.name || lead?.email || 'Unknown';
@@ -108,8 +117,29 @@ export async function getCommandCenterStats(projectId: number): Promise<CommandC
         type: e.type,
         description: `${typeLabel} — ${name}`,
         isToday,
+        createdAt: e.createdAt,
       };
     });
+
+    const executionActivities = recentExecutions.map(e => {
+      const isToday = e.createdAt ? new Date(e.createdAt) >= today : false;
+      const resultMsg = e.state === 'SUCCEEDED' ? 'Ejecutado con éxito' : (e.state === 'FAILED' ? 'Fallo en ejecución' : 'En proceso');
+      return {
+        type: 'EXECUTION',
+        description: `Hermes: ${e.capabilityId} (${resultMsg})`,
+        isToday,
+        createdAt: e.createdAt,
+      };
+    });
+
+    const activities = [...executionActivities, ...leadActivities]
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      })
+      .slice(0, 10)
+      .map(a => ({ type: a.type, description: a.description, isToday: a.isToday }));
 
     const statusPriority: Record<string, number> = {
       new: 0,

@@ -49,15 +49,16 @@ export async function POST(req: NextRequest) {
     console.error(`[Growth OS] ➡️  New Lead Registration attempt from IP: ${ip}, API Key: ${apiKey?.substring(0, 10)}...`);
 
     // Use request origin/referer as fallback for origin if not provided in body
+    // SECURITY: Origin-based internal routing is tolerated for the dashboard's own
+    // public marketing forms, but the X-Internal-Service header is NEVER trusted
+    // (fully spoofable by any anonymous client).
     const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
-    const xInternalService = req.headers.get('x-internal-service');
 
     const isInternalDashboard = 
       requestOrigin?.includes('pandoras.finance') || 
       requestOrigin?.includes('localhost') ||
       requestOrigin?.includes('saaspandoras') ||
-      requestOrigin?.includes('railway.app') || // Include Vercel/Railway previews
-      xInternalService === 'pandoras-v2';
+      requestOrigin?.includes('railway.app'); // Include Vercel/Railway previews
     
     // EXPLICIT ROUTING: Generic Origin Resolution
     // Instead of hardcoding projects, we look up if the origin hostname is registered
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     let client;
     if (!apiKey && isInternalDashboard) {
-      console.error(`[Growth OS] Internal Service Bypass Detected. Origin: ${requestOrigin}, Service: ${xInternalService}`);
+      console.error(`[Growth OS] Internal Origin Bypass Detected. Origin: ${requestOrigin}`);
       // Use the core Pandora project for internal dashboard leads
       // Try by ID 3 first (Pandoras Access) then fallback to slug
       client = await db.query.integrationClients.findFirst({
@@ -208,6 +209,15 @@ export async function POST(req: NextRequest) {
     }
 
     console.error(`[Growth OS] 🎯 Project Resolved: ID=${targetProjectId}, Method=${resolutionMethod}, Requested=${projectId}`);
+
+    // ── TENANT SCOPE ENFORCEMENT ──────────────────────────────────────────────
+    // API-key clients may ONLY write leads to their own project. An explicit
+    // projectId in the body must match the authenticated client's tenant,
+    // otherwise this is a cross-tenant write attempt.
+    if (apiKey && clientProjectId && Number(clientProjectId) !== targetProjectId) {
+      console.warn(`[SECURITY] Cross-tenant lead write blocked: client project ${clientProjectId} attempted target ${targetProjectId} from IP ${ip}`);
+      return NextResponse.json({ error: 'Project scope denied' }, { status: 403 });
+    }
 
     // --- ATTRIBUTION ENGINE RESOLUTION ---
     const { AttributionResolver } = await import('@/lib/domain/attribution-resolver');

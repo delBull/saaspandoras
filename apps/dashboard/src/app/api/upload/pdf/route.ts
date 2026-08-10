@@ -1,3 +1,4 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import type { NextRequest } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     await writeFile(filePath, buffer);
 
     // Generate URL
-    const baseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'http://localhost:3001';
+    const baseUrl = requireEnvUrl(process.env.NEXT_PUBLIC_DASHBOARD_URL, 'NEXT_PUBLIC_DASHBOARD_URL', 'http://localhost:3001');
     const fileUrl = `${baseUrl}/uploads/${filename}`;
 
     return Response.json({

@@ -5,8 +5,26 @@ import { clients, paymentLinks, transactions, sowTemplates, marketingLeads } fro
 import { desc, eq, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
+import { getAuth, isAdmin } from "@/lib/auth";
+
+// ZERO TRUST GUARD: requires a verified JWT session with admin privileges.
+// Returns true if authorized. Admin-only actions below use this to reject
+// unauthenticated or non-admin RPC calls (server actions are RPC-reachable).
+async function isAuthorizedAdmin(): Promise<boolean> {
+  try {
+    const auth = await getAuth();
+    if (!auth.isVerified || !auth.session?.address) return false;
+    return await isAdmin(auth.session.address);
+  } catch (e) {
+    console.error("[Auth] isAuthorizedAdmin check failed:", e);
+    return false;
+  }
+}
 
 export async function getClients() {
+    if (!(await isAuthorizedAdmin())) {
+        return { success: false, error: "Unauthorized. Admin privileges required." };
+    }
     try {
         // Fetches all clients from the database
         const results = await db.select().from(clients).orderBy(desc(clients.createdAt));
@@ -35,6 +53,9 @@ export async function getClientLinks(clientId: string) {
 }
 
 export async function createClient(data: typeof clients.$inferInsert) {
+    if (!(await isAuthorizedAdmin())) {
+        return { success: false, error: "Unauthorized. Admin privileges required." };
+    }
     try {
         const [newClient] = await db.insert(clients).values(data).returning();
         return { success: true, data: newClient };
@@ -45,6 +66,9 @@ export async function createClient(data: typeof clients.$inferInsert) {
 }
 
 export async function createPaymentLink(data: typeof paymentLinks.$inferInsert) {
+    if (!(await isAuthorizedAdmin())) {
+        return { success: false, error: "Unauthorized. Admin privileges required." };
+    }
     try {
         const [link] = await db.insert(paymentLinks).values(data).returning();
         return { success: true, data: link };
@@ -224,6 +248,9 @@ export async function processPaymentSuccess(linkId: string) {
 }
 
 export async function manualSendReceipt(linkId: string) {
+    if (!(await isAuthorizedAdmin())) {
+        return { success: false, error: "Unauthorized. Admin privileges required." };
+    }
     try {
         const link = await db.query.paymentLinks.findFirst({
             where: eq(paymentLinks.id, linkId),
@@ -254,6 +281,9 @@ import type { ProtocolState, ProtocolMetadata } from "@/types/protocol-state";
 // ... (existing helper functions if any)
 
 export async function sendProtocolSOW(clientId: string, tier: SOWTier, templateId?: string, overrideAmount?: string) {
+    if (!(await isAuthorizedAdmin())) {
+        return { success: false, error: "Unauthorized. Admin privileges required." };
+    }
     try {
         const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId) });
         if (!client) return { success: false, error: "Client not found" };
@@ -368,6 +398,9 @@ export async function sendProtocolSOW(clientId: string, tier: SOWTier, templateI
 }
 
 export async function sendMSALink(clientId: string) {
+    if (!(await isAuthorizedAdmin())) {
+        return { success: false, error: "Unauthorized. Admin privileges required." };
+    }
     try {
         const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId) });
         if (!client) return { success: false, error: "Client not found" };
@@ -437,6 +470,9 @@ export async function acceptMSA(clientId: string, signature: string) {
 }
 
 export async function advanceProtocolState(clientId: string, targetState: ProtocolState) {
+    if (!(await isAuthorizedAdmin())) {
+        return { success: false, error: "Unauthorized. Admin privileges required." };
+    }
     try {
         const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId) });
         if (!client) return { success: false };

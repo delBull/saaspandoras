@@ -1,14 +1,31 @@
 'use server';
 
 import { EventRepository } from "@/lib/domain/event-repository";
-import { getAuth } from "@/lib/auth";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@/db";
+import { daoMembers } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+
+// ZERO TRUST TENANT GUARD: admins may access any project; founders may only
+// access projects they belong to (dao_members).
+async function assertProjectAccess(address: string, projectId: number): Promise<boolean> {
+  if (await isAdmin(address)) return true;
+  const membership = await db.select({ id: daoMembers.id })
+    .from(daoMembers)
+    .where(and(
+      eq(daoMembers.wallet, address),
+      eq(daoMembers.projectId, projectId)
+    ))
+    .limit(1);
+  return membership.length > 0;
+}
 
 export async function getProjectEvents(projectId: number) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.address && !session?.unverifiedAddress) throw new Error("Unauthorized");
+    if (!session?.address) throw new Error("Unauthorized");
 
     const events = await EventRepository.getEventsByProject(projectId);
 
@@ -31,6 +48,7 @@ export async function createProjectEvent(data: {
   try {
     const { session } = await getAuth(await headers());
     if (!session?.address) throw new Error("Unauthorized");
+    if (!(await assertProjectAccess(session.address, data.projectId))) throw new Error("Forbidden");
 
     const event = await EventRepository.createEvent({
       projectId: data.projectId,
@@ -62,7 +80,12 @@ export async function updateProjectEvent(id: number, data: {
     const { session } = await getAuth(await headers());
     if (!session?.address) throw new Error("Unauthorized");
 
-    const event = await EventRepository.updateEvent(id, {
+    // Tenant scope: resolve the event's project before mutating.
+    const event = await EventRepository.findById(id);
+    if (!event) throw new Error("NOT_FOUND");
+    if (!(await assertProjectAccess(session.address, (event as any).projectId))) throw new Error("Forbidden");
+
+    const updated = await EventRepository.updateEvent(id, {
       title: data.title,
       date: data.date,
       location: data.location,
@@ -72,7 +95,7 @@ export async function updateProjectEvent(id: number, data: {
 
     revalidatePath(`/admin/projects`);
     revalidatePath(`/profile/projects`);
-    return { success: true, event };
+    return { success: true, event: updated };
   } catch (error) {
     console.error("Error updating event:", error);
     return { success: false, error: "Failed to update event" };
@@ -84,8 +107,13 @@ export async function deleteProjectEvent(id: number) {
     const { session } = await getAuth(await headers());
     if (!session?.address) throw new Error("Unauthorized");
 
+    // Tenant scope: resolve the event's project before deleting.
+    const event = await EventRepository.findById(id);
+    if (!event) throw new Error("NOT_FOUND");
+    if (!(await assertProjectAccess(session.address, (event as any).projectId))) throw new Error("Forbidden");
+
     await EventRepository.deleteEvent(id);
-    
+
     revalidatePath(`/admin/projects`);
     revalidatePath(`/profile/projects`);
     return { success: true };

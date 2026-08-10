@@ -1,3 +1,4 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from "next/server";
 import { db } from "@/db"; // Fixed import path
 import { projects } from "@/db/schema";
@@ -266,7 +267,7 @@ export async function POST(
         }
 
         // 5. Signal Deployment Service (Fire and forget-ish, or just rely on worker)
-        let DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000";
+        let DEPLOY_SERVICE_URL = requireEnvUrl(process.env.DEPLOY_SERVICE_URL, 'DEPLOY_SERVICE_URL', 'http://localhost:3000');
         if (!DEPLOY_SERVICE_URL.startsWith("http")) {
             DEPLOY_SERVICE_URL = `https://${DEPLOY_SERVICE_URL}`;
         }

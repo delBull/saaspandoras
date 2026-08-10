@@ -1,3 +1,4 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth";
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
 
     // 📣 GROWTH ENGINE INTEGRATION: Register as Marketing Lead
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = requireEnvUrl(process.env.NEXT_PUBLIC_APP_URL, 'NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
       await fetch(`${baseUrl}/api/v1/marketing/leads/register`, {
         method: 'POST',
         headers: { 

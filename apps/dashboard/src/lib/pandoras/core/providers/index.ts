@@ -1,2 +1,2 @@
 export * from './abstract-provider';
-export * from './marketing/marketing.provider';
+export * from '../engines/commercial/marketing.provider';

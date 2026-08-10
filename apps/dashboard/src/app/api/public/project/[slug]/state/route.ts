@@ -416,7 +416,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                     finalUserId 
                         ? eq(purchasesSchema.userId, finalUserId) 
                         : eq(purchasesSchema.userId, normalizedWallet),
-                    sql`${purchasesSchema.status} IN ('completed', 'processing', 'pending', 'on_hold')`
+                    sql`${purchasesSchema.status} = 'completed'`
                 ),
                 orderBy: desc(purchasesSchema.createdAt)
             }).catch(() => []);

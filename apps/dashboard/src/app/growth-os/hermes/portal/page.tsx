@@ -58,7 +58,7 @@ function ClientPortalContent() {
           if (data.sessionToken) {
             localStorage.setItem('pandoras_portal_session', data.sessionToken);
           }
-          setTenantId(data.org.projectId);
+          setTenantId(data.organization?.projectId ?? data.org?.projectId);
         } else {
           localStorage.removeItem('pandoras_portal_session');
           window.location.href = '/growth-os/hermes/portal/login';

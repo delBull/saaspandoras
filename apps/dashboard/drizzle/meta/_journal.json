@@ -122,6 +122,20 @@
       "breakpoints": true
     },
     {
+      "idx": 17,
+      "version": "7",
+      "when": 1786316794398,
+      "tag": "0017_spotty_scarlet_spider",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786334254965,
+      "tag": "0018_even_mole_man",
+      "breakpoints": true
+    },
+    {
       "idx": 19,
       "version": "7",
       "when": 1786388634442,

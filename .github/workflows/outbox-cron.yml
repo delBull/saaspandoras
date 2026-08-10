@@ -1,0 +1,30 @@
+name: Outbox Processor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Permite ejecutar manualmente
+
+concurrency:
+  group: outbox-processor
+  cancel-in-progress: false # Impide workers simultáneos
+
+jobs:
+  process-outbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5 # Timeout estricto para evitar bloqueos
+    steps:
+      - name: Trigger Outbox API
+        run: |
+          RESPONSE=$(curl -X POST -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://dash.pandoras.finance/api/cron/process-outbox")
+          
+          if [ "$RESPONSE" != "200" ]; then
+            echo "API request failed with HTTP code $RESPONSE"
+            cat /tmp/response.txt
+            exit 1
+          fi
+          
+          echo "Outbox processed successfully."
+          cat /tmp/response.txt

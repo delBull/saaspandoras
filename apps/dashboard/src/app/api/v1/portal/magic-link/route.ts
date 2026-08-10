@@ -51,12 +51,90 @@ export async function POST(req: NextRequest) {
 
     console.info(`[MagicLink API] Magic Link generated for ${cleanEmail}: ${magicLink}`);
 
-    // Send the magic link via Resend
+    // Send the magic link via Resend with the Hermes branded identity + design
     try {
+      const firstName = user?.name?.split(' ')[0] || 'Cliente';
       const emailRes = await sendEmail({
         to: cleanEmail,
-        subject: 'Acceso a tu Consola Hermes OS',
-        html: `<p>Hola,</p><p>Haz click en el siguiente enlace para ingresar a tu Consola Hermes OS:</p><p><a href="${magicLink}">${magicLink}</a></p>`
+        from: `Pandora's Group <hello@pandoras.finance>`,
+        subject: 'Hermes OS — Tu enlace de acceso está listo',
+        html: `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hermes OS — Acceso</title>
+</head>
+<body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080C;min-height:100vh;">
+    <tr>
+      <td align="center" style="padding:48px 16px;">
+        <table width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;background:#0F0F18;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a0533 0%,#0a0a1a 100%);padding:32px 40px 28px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <div style="font-size:11px;letter-spacing:4px;text-transform:uppercase;color:rgba(160,120,255,0.7);margin-bottom:10px;">PANDORA'S PLATFORM OS</div>
+                    <div style="font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;line-height:1.2;">Hermes OS</div>
+                    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:0.5px;">Tu Centro de Operaciones</div>
+                  </td>
+                  <td align="right" valign="top">
+                    <img src="https://dash.pandoras.finance/apple-touch-icon.png" alt="Pandora's" width="48" height="48" style="border-radius:10px;object-fit:contain;background:#111;display:block;padding:4px;"/>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 8px;font-size:15px;color:rgba(255,255,255,0.5);letter-spacing:0.3px;">Hola,</p>
+              <p style="margin:0 0 28px;font-size:22px;font-weight:600;color:#ffffff;">${firstName},</p>
+              <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:rgba(255,255,255,0.65);">
+                Has solicitado acceso a tu consola de
+                <strong style="color:#a78bfa;">Hermes OS</strong>.
+                Usa el botón de abajo para entrar de forma segura:
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${magicLink}" target="_blank"
+                       style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:16px 40px;border-radius:10px;letter-spacing:0.3px;">
+                      Entrar a Hermes OS →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;">
+                Este enlace es de un solo uso y expira en 7 días.<br/>
+                Si no solicitaste este acceso, puedes ignorar este correo.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#080810;padding:24px 40px;border-top:1px solid rgba(255,255,255,0.05);">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.25);line-height:1.7;">
+                      <strong style="color:rgba(255,255,255,0.4);">Pandora's Platform OS</strong><br/>
+                      Enterprise Infrastructure for Intelligent Assets<br/>
+                      <a href="https://pandoras.finance" style="color:rgba(124,58,237,0.7);text-decoration:none;">pandoras.finance</a>
+                    </div>
+                  </td>
+                  <td align="right">
+                    <div style="font-size:10px;color:rgba(255,255,255,0.18);letter-spacing:2px;text-transform:uppercase;">Hermes OS</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
       });
       console.info(`[MagicLink API] Email dispatched for ${cleanEmail}:`, emailRes);
     } catch (e) {

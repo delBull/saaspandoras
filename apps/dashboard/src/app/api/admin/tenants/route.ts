@@ -1,7 +1,8 @@
+import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = requireEnvUrl(process.env.NEXT_PUBLIC_API_URL, 'NEXT_PUBLIC_API_URL', 'http://localhost:8080');
 
 export async function GET(request: NextRequest) {
     try {
