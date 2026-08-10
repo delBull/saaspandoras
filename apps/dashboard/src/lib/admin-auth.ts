@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
+import { verifyUnlockToken } from "@/lib/nexus-deals/tokens";
 import { logger } from "./logger";
 
 export interface AdminSession {
@@ -64,4 +65,26 @@ export async function validateAdminSession(reqHeaders?: Headers): Promise<{ sess
       errorResponse: NextResponse.json({ error: "Internal Server Error during Auth", requestId }, { status: 500 }) 
     };
   }
+}
+
+/**
+ * Autoriza la consola del Deal Room (Nivel 2).
+ * Acepta sesión de administrador O token de desbloqueo HMAC
+ * (enlace único del webhook de Discord, 2h de validez).
+ */
+export async function validateDealRoomAccess(
+  request: Request
+): Promise<{ session?: AdminSession; errorResponse?: NextResponse }> {
+  const admin = await validateAdminSession(request.headers);
+  if (admin.session) return admin;
+
+  const url = new URL(request.url);
+  const unlock = url.searchParams.get("unlock");
+  if (typeof unlock === "string" && unlock && (await verifyUnlockToken(unlock))) {
+    return { session: { userId: "unlock-token", address: "unlock-token", isVerified: true } };
+  }
+
+  return {
+    errorResponse: NextResponse.json({ error: "Unauthorized", requestId: "unlock-or-admin-required" }, { status: 401 }),
+  };
 }

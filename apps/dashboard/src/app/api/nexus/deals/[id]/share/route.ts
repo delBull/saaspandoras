@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateAdminSession } from "@/lib/admin-auth";
+import { validateDealRoomAccess } from "@/lib/admin-auth";
 import { getRoom, markMagicSent } from "@/lib/nexus-deals/repo";
 import { generateDealToken } from "@/lib/nexus-deals/tokens";
 import { sendDealMagicLink } from "@/lib/nexus-deals/email";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://dash.pandoras.finance";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  const { session, errorResponse } = await validateAdminSession(request.headers);
+  const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
 
   try {

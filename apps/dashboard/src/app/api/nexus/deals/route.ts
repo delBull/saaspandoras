@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateAdminSession } from "@/lib/admin-auth";
+import { validateDealRoomAccess } from "@/lib/admin-auth";
 import { listRooms, createRoom } from "@/lib/nexus-deals/repo";
 import { DealKind } from "@/lib/nexus-deals/types";
 import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const KINDS: DealKind[] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT"];
 
 export async function GET(request: Request) {
-  const { session, errorResponse } = await validateAdminSession(request.headers);
+  const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
   try {
     const rooms = await listRooms();
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { session, errorResponse } = await validateAdminSession(request.headers);
+  const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
   const actor = session!.address;
 

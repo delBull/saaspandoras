@@ -145,9 +145,14 @@ export default function DealRoomConsole() {
   const [shareEmails, setShareEmails] = useState("");
   const [sharing, setSharing] = useState(false);
 
+  const apiUrl = (path: string) => {
+    const unlock = new URLSearchParams(window.location.search).get("unlock");
+    return unlock ? `${path}?unlock=${encodeURIComponent(unlock)}` : path;
+  };
+
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/nexus/deals", { cache: "no-store" });
+      const res = await fetch(apiUrl("/api/nexus/deals"), { cache: "no-store" });
       if (!res.ok) throw new Error("No autorizado");
       const data = await res.json();
       setRooms(data.rooms ?? []);
@@ -176,7 +181,7 @@ export default function DealRoomConsole() {
   };
 
   const patch = async (id: string, body: Record<string, unknown>) => {
-    const res = await fetch(`/api/nexus/deals/${id}`, {
+    const res = await fetch(apiUrl(`/api/nexus/deals/${id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -227,7 +232,7 @@ export default function DealRoomConsole() {
       .map((s) => s.trim())
       .filter((s) => s.includes("@"));
     try {
-      const res = await fetch("/api/nexus/deals", {
+      const res = await fetch(apiUrl("/api/nexus/deals"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -301,7 +306,7 @@ export default function DealRoomConsole() {
     if (emails.length === 0) return;
     setSharing(true);
     try {
-      const res = await fetch(`/api/nexus/deals/${selected.id}/share`, {
+      const res = await fetch(apiUrl(`/api/nexus/deals/${selected.id}/share`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emails }),
@@ -323,7 +328,7 @@ export default function DealRoomConsole() {
     if (!selected) return;
     if (!window.confirm(`¿Eliminar el Deal Room de ${selected.counterparty} (${selected.publicId})?`)) return;
     try {
-      const res = await fetch(`/api/nexus/deals/${selected.id}`, { method: "DELETE" });
+      const res = await fetch(apiUrl(`/api/nexus/deals/${selected.id}`), { method: "DELETE" });
       if (!res.ok) throw new Error("Error al eliminar");
       setRooms((prev) => prev.filter((r) => r.id !== selected.id));
       setSelectedId(null);
