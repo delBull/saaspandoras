@@ -20,6 +20,7 @@ import {
   Eye,
   Scale,
 } from "lucide-react";
+import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 
 interface Section {
   id: string;
@@ -499,13 +500,21 @@ export default function DealRoomConsole() {
                 onChange={(e) => setNrSigners(e.target.value)}
                 className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
               />
-              <input
-                type="text"
-                placeholder="Tarea Operations vinculada (ej. TSK-W3-01) · interno"
-                value={nrTaskRef}
-                onChange={(e) => setNrTaskRef(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-              />
+              <label className="block">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">Tarea Operations vinculada · interno</span>
+                <select
+                  value={nrTaskRef}
+                  onChange={(e) => setNrTaskRef(e.target.value)}
+                  className="mt-1 w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-amber-500/40"
+                >
+                  <option value="">Sin tarea vinculada</option>
+                  {NEXUS_TASKS.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.id} · {t.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border border-white/10 bg-black/40 cursor-pointer">
                 <span className="text-[10px] text-zinc-400">Firma online (openSign) · sin email</span>
                 <input
@@ -613,9 +622,10 @@ export default function DealRoomConsole() {
                     </p>
                     {selected.taskRef && (
                       <p className="flex items-center gap-1.5 mt-1 text-[9px] font-mono text-zinc-500">
-                        <Link2 className="w-3 h-3 text-amber-300/70" />
+                        <Link2 className="w-3 h-3 text-amber-300/70 shrink-0" />
                         TAREA OPERATIONS VINCULADA · <span className="text-amber-300">{selected.taskRef}</span>
-                        <span className="text-zinc-600">(interno · no visible al firmante)</span>
+                        {taskTitle(selected.taskRef) && <span className="text-zinc-400 truncate">· {taskTitle(selected.taskRef)}</span>}
+                        <span className="text-zinc-600 whitespace-nowrap">(interno · no visible al firmante)</span>
                       </p>
                     )}
                     {selected.openSign && (
