@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet } from "lucide-react";
 import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
-import { inAppWallet } from "thirdweb/wallets";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
 
@@ -36,6 +36,10 @@ const KIND_LABEL: Record<PublicRoom["kind"], string> = {
   CHARTER: "Documento Fundacional",
 };
 
+// Wallets disponibles para firmar: el in-app (social/email/passkey) se mantiene
+// primero para no romper el flujo actual, y se agregan wallets externas (MetaMask,
+// Coinbase, Rabby, Rainbow y móviles vía WalletConnect). La firma es EIP-191
+// (firma de mensaje), por lo que es gratuita sin importar la wallet usada.
 const signerWallets = [
   inAppWallet({
     auth: {
@@ -43,6 +47,11 @@ const signerWallets = [
       mode: "popup",
     },
   }),
+  createWallet("io.metamask"),
+  createWallet("com.coinbase.wallet"),
+  createWallet("io.rabby"),
+  createWallet("me.rainbow"),
+  createWallet("walletConnect"),
 ];
 
 // Botón de firma con identidad Pandoras: gradiente ámbar→esmeralda, sombra y márgenes consistentes.
@@ -302,7 +311,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     </div>
                   ) : (
                     <div className="rounded-lg border border-white/10 bg-black/40 p-3">
-                      <p className="text-[10px] text-zinc-500 mb-2">Conecta tu cuenta con acceso social para firmar (gratis):</p>
+                      <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet (MetaMask, Coinbase, Rabby...) o tu cuenta social para firmar (gratis · sin gas):</p>
                       <ConnectButton
                         client={client}
                         wallets={signerWallets}
@@ -324,7 +333,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </button>
                 </form>
                 <p className="text-[9px] text-zinc-600 mt-3 text-center leading-relaxed">
-                  Al firmar se genera una firma on-chain verificada (EIP-191) con tu cuenta · audit trail inmutable
+                  Firma on-chain verificada (EIP-191) · gratis, sin gas · audit trail inmutable
                 </p>
               </motion.div>
             ) : isOpenSign ? (
@@ -366,7 +375,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     </div>
                   ) : (
                     <div className="rounded-lg border border-white/10 bg-black/40 p-3">
-                      <p className="text-[10px] text-zinc-500 mb-2">Conecta tu cuenta con acceso social para firmar (gratis):</p>
+                      <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet (MetaMask, Coinbase, Rabby...) o tu cuenta social para firmar (gratis · sin gas):</p>
                       <ConnectButton
                         client={client}
                         wallets={signerWallets}
@@ -388,7 +397,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </button>
                 </form>
                 <p className="text-[9px] text-zinc-600 mt-3 text-center leading-relaxed">
-                  Al firmar se genera una firma on-chain verificada (EIP-191) con tu cuenta · audit trail inmutable
+                  Firma on-chain verificada (EIP-191) · gratis, sin gas · audit trail inmutable
                 </p>
               </motion.div>
             ) : null}
