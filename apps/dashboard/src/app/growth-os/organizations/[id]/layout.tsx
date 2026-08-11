@@ -1,9 +1,30 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
+import { getOrganizationOverview } from './actions';
+import { db } from '@/db';
+import { installedProducts, projects } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 export default async function ControlPlaneLayout({ children, params }: { children: ReactNode, params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const orgId = resolvedParams?.id || 'org_snarai_sprint22';
+  const slugId = resolvedParams?.id;
+  const orgId = `org_${slugId}`;
+
+  // This layout is a server component, we can authorize and fetch capabilities here
+  await getOrganizationOverview(orgId);
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.slug, slugId || '')
+  });
+
+  // Check capabilities
+  const hermesInstall = project ? await db.query.installedProducts.findFirst({
+      where: and(
+          eq(installedProducts.projectId, project.id),
+          eq(installedProducts.productFamily, 'HERMES')
+      )
+  }) : null;
+  
+  const hasHermes = !!hermesInstall;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -15,18 +36,38 @@ export default async function ControlPlaneLayout({ children, params }: { childre
         </div>
         
         <nav className="flex-1 px-4 space-y-2 mt-4">
-          <Link href={`/growth-os/organizations/${orgId}`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+          <Link href={`/growth-os/organizations/${slugId}`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
             Overview
           </Link>
-          <Link href={`/growth-os/organizations/${orgId}/missions`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+          <Link href={`/growth-os/organizations/${slugId}/missions`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
             Mission Control
           </Link>
-          <Link href={`/growth-os/organizations/${orgId}/governance`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+          <Link href={`/growth-os/organizations/${slugId}/governance`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
             Governance Center
           </Link>
-          <Link href={`/growth-os/organizations/${orgId}/activity`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+          <Link href={`/growth-os/organizations/${slugId}/activity`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
             Activity & Audit
           </Link>
+          
+          {hasHermes && (
+            <>
+              <div className="pt-4 pb-2 px-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hermes</p>
+              </div>
+              <Link href={`/growth-os/organizations/${slugId}/hermes`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors pl-6">
+                Hermes Overview
+              </Link>
+              <Link href={`/growth-os/organizations/${slugId}/hermes/conversations`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors pl-6">
+                Conversations & Leads
+              </Link>
+              <Link href={`/growth-os/organizations/${slugId}/hermes/knowledge`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors pl-6">
+                Knowledge & Soul
+              </Link>
+              <Link href={`/growth-os/organizations/${slugId}/hermes/integrations`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors pl-6">
+                Integrations
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="p-4 border-t border-slate-800 text-xs">

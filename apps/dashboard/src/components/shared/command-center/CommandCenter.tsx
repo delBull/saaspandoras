@@ -14,9 +14,9 @@ import {
     QuestionMarkCircleIcon,
     CalendarDaysIcon
 } from '@heroicons/react/24/solid';
-import { FounderCopilot } from '../components/FounderCopilot';
-import { LeadTimelineModal } from '../components/LeadTimelineModal';
-import { CommandCenterGuideModal } from '../components/CommandCenterGuideModal';
+import { FounderCopilot } from './FounderCopilot';
+import { LeadTimelineModal } from './LeadTimelineModal';
+import { CommandCenterGuideModal } from './CommandCenterGuideModal';
 import { getCommandCenterStats, type CommandCenterStats } from '@/actions/command-center';
 import { SchedulerForm } from '@/components/scheduler/SchedulerForm';
 

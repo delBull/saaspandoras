@@ -12,7 +12,7 @@ export default function GovernanceButtons({ intentId, requestedOrganizationId }:
   const handleApprove = async () => {
     setLoading(true);
     setError(null);
-    const result = await approveIntent(requestedOrganizationId, intentId, 'Authorized by admin');
+    const result = await approveIntent(requestedOrganizationId, intentId, 'Authorized via Governance Center');
     
     if (result.success) {
       router.refresh();

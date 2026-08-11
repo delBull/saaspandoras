@@ -53,16 +53,11 @@ export class GetOrganizationOverviewQuery {
   }
 
   private async findProject(requestedOrganizationId: string): Promise<{ id: number; slug: string; name: string } | undefined> {
-    if (requestedOrganizationId.startsWith('org_')) {
-      const [project] = await db.select({ id: projects.id, slug: projects.slug, name: projects.title })
-        .from(projects)
-        .where(eq(projects.slug, requestedOrganizationId.slice(4)))
-        .limit(1);
-      return project;
-    }
+    if (!requestedOrganizationId.startsWith('org_')) return undefined;
+    
     const [project] = await db.select({ id: projects.id, slug: projects.slug, name: projects.title })
       .from(projects)
-      .where(eq(projects.id, parseInt(requestedOrganizationId, 10)))
+      .where(eq(projects.slug, requestedOrganizationId.slice(4)))
       .limit(1);
     return project;
   }

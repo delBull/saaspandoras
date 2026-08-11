@@ -27,9 +27,9 @@ import { client } from '@/lib/thirdweb-client';
 import DaoWizard from '@/components/admin/DaoWizard';
 import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
 import { LegalTab } from '@/components/projects/LegalTab';
-import { EventsTab } from '@/app/()/profile/projects/[slug]/manage/tabs/EventsTab';
+import { EventsTab } from '@/components/shared/tabs/EventsTab';
 import { ResourceHubTab } from '@/app/()/profile/projects/[slug]/manage/tabs/ResourceHubTab';
-import { KnowledgeCenterTab } from '@/app/()/profile/projects/[slug]/manage/tabs/KnowledgeCenterTab';
+import { KnowledgeCenterTab } from '@/components/shared/tabs/KnowledgeCenterTab';
 import type { Project } from '@/types/admin';
 
 interface MissionControlProps {

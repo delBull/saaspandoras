@@ -42,7 +42,7 @@ export interface KnowledgePack {
   id: string;
   name: string;
   version: string;
-  industry: 'real_estate_tokenized' | 'crypto_fintech' | 'saas_b2b' | 'generic' | string;
+  industry: 'real_estate_tokenized' | 'real_estate_fractional' | 'crypto_fintech' | 'saas_b2b' | 'generic' | string;
   systemInstructions: string;
   publicKnowledge: {
     title: string;
@@ -52,7 +52,7 @@ export interface KnowledgePack {
   };
   objectionRules: Array<{
     triggerPattern: string;
-    objectionCategory: 'security' | 'legal' | 'financial' | 'timing' | 'pricing' | 'technical';
+    objectionCategory: 'security' | 'legal' | 'financial' | 'timing' | 'pricing' | 'technical' | 'product';
     recommendedResponse: string;
     suggestedDocument?: string;
   }>;

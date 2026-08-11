@@ -61,7 +61,7 @@ export const BUILTIN_PLAYBOOKS: Record<string, PlaybookDefinition> = {
       {
         id: 'stage_qualification_objections',
         name: 'Resolución de Preguntas & Documentación',
-        objective: 'Responder dudas legales, de tokenización y certificar seguridad patrimonial.',
+        objective: 'Responder dudas sobre la estructura de Certificados de Participación, el marco jurídico de Aztecas Hub S.A.P.I. de C.V. y certificar seguridad patrimonial.',
         requiredData: ['email', 'phone'],
         nextStageId: 'stage_founder_meeting',
         suggestedAction: 'Compartir dossier informativo y validar interés.'
@@ -127,7 +127,7 @@ export const BUILTIN_JOURNEYS: Record<string, JourneyDefinition> = {
     id: 'family_referral_journey',
     name: 'Referral Trust Journey (Familia & VIP)',
     persona: 'S\'Narai Concierge',
-    goal: 'Agendar Sesión Privada de Patrimonio con Fundadores',
+    goal: 'Agendar Sesión Privada de Patrimonio con Fundadores o completar adquisición vía SPEI Fast Lane',
     playbookId: 'snarai_investor_playbook',
     allowedSkills: ['patrimonial_advisory', 'spei_checkout'],
     allowedTools: ['calendar.schedule', 'payments.create_spei_link'],

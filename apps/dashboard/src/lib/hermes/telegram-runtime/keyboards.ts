@@ -18,7 +18,7 @@ const MAIN_MENU_KB: TelegramKeyboard = {
     [{ text: '🏛️ Tesis del Proyecto', callback_data: 'action_thesis' }],
     [{ text: '📊 Fases & Precios', callback_data: 'action_phases' }],
     [{ text: '📑 Data Room', callback_data: 'action_dataroom' }],
-    [{ text: '💳 Adquirir Títulos', callback_data: 'action_buy' }],
+    [{ text: '💳 Adquirir Certificado', callback_data: 'action_buy' }],
     [{ text: '🤝 Reunión con Fundadores', callback_data: 'action_reunion' }],
     [{ text: '👤 Mi Posición', callback_data: 'action_position' }]
   ]
@@ -67,15 +67,15 @@ export const dataroomFullKeyboard = (): TelegramKeyboard => ({
 
 export const buySelectorKeyboard = (): TelegramKeyboard => ({
   inline_keyboard: [
-    [{ text: '🌐 Web3 · USDC/USDT', callback_data: 'action_buy_web3' }],
     [{ text: '🇲🇽 SPEI · Pesos MXN', callback_data: 'action_buy_spei' }],
+    [{ text: '🌐 Divisa Digital (USDC)', callback_data: 'action_buy_web3' }],
     BACK_ROW
   ]
 });
 
 export const buyWeb3Keyboard = (): TelegramKeyboard => ({
   inline_keyboard: [
-    [{ text: '💳 Ir al Checkout', url: buildCheckoutUrl() }],
+    [{ text: '💳 Ir al Checkout (USDC)', url: buildCheckoutUrl() }],
     [{ text: '🇲🇽 Prefiero SPEI', callback_data: 'action_buy_spei' }],
     BACK_ROW
   ]
@@ -105,7 +105,7 @@ export const reunionConfirmKeyboard = (): TelegramKeyboard => ({
 
 export const positionKeyboard = (): TelegramKeyboard => ({
   inline_keyboard: [
-    [{ text: '💳 Adquirir Títulos', callback_data: 'action_buy' }],
+    [{ text: '💳 Adquirir Certificado', callback_data: 'action_buy' }],
     [{ text: '🤝 Reunión con Fundadores', callback_data: 'action_reunion' }],
     BACK_ROW
   ]

@@ -19,12 +19,7 @@ import { ManageActivities } from '@/components/dao/ManageActivities';
 import { LegalTab } from './tabs/LegalTab';
 import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 import { ResourceHubTab } from './tabs/ResourceHubTab';
-import { EventsTab } from './tabs/EventsTab';
-import { CommandCenterTab } from './tabs/CommandCenterTab';
-import { NewsletterTab } from './tabs/NewsletterTab';
-import { KnowledgeCenterTab } from './tabs/KnowledgeCenterTab';
 import { NetworkTab } from './tabs/NetworkTab';
-import HermesOsTab from './tabs/HermesOsTab';
 import { SparklesIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 import { useActiveAccount } from 'thirdweb/react';
@@ -41,11 +36,12 @@ import {
 
 interface ProjectFounderDashboardProps {
     project: any; // Type strictly later
+    hasGrowthOs?: boolean;
 }
 
-export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
+export default function ProjectFounderDashboard({ project, hasGrowthOs }: ProjectFounderDashboardProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'command_center' | 'overview' | 'network' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'missions' | 'legal' | 'dao' | 'resource_hub' | 'events' | 'newsletter' | 'knowledge_center' | 'hermes_os'>('command_center');
+    const [activeTab, setActiveTab] = useState<'overview' | 'network' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'legal' | 'dao' | 'resource_hub'>('overview');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -117,39 +113,32 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => setActiveTab('hermes_os')} 
-                        className="px-4 py-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-500/20 transition-all text-sm font-bold flex items-center gap-2 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
-                    >
-                        <SparklesIcon className="w-4 h-4 text-purple-400" />
-                        HERMES CONSOLE
-                    </button>
                     <Link href={`/profile/projects/${project.slug}/premium`} className="px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-400 rounded-lg hover:bg-amber-600/30 transition-all text-sm font-bold">
                         PDF PREMIUM
                     </Link>
                     <Link href={`/projects/${project.slug}`} target="_blank" className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-800 transition-all text-sm font-bold">
                         VER PÁGINA PÚBLICA
                     </Link>
+                    {hasGrowthOs && (
+                        <Link href={`/growth-os/organizations/${project.slug}`} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all text-sm font-bold flex items-center gap-2">
+                            <SparklesIcon className="w-4 h-4" />
+                            OPEN GROWTH OS
+                        </Link>
+                    )}
                 </div>
             </div>
 
             {/* Navigation Tabs */}
             <div className="flex items-center gap-1 p-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl w-fit">
                 {[
-                    { id: 'command_center', label: 'Command Center', icon: <ClipboardDocumentIcon className="w-4 h-4 text-emerald-400" /> },
                     { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'network', label: 'Gestores Patrimoniales', icon: <UsersIcon className="w-4 h-4" /> },
                     { id: 'purchases', label: 'Reconciliación (Fast Lane)', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
                     { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                    { id: 'missions', label: 'Gamificación', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
                     { id: 'dao', label: 'DAO Treasury', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
                     { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
                     { id: 'resource_hub', label: 'Hub de Recursos', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                    { id: 'knowledge_center', label: 'Materiales & Briefings', icon: <DocumentTextIcon className="w-4 h-4 text-purple-400" /> },
-                    { id: 'events', label: 'Eventos & Citas', icon: <ClipboardDocumentIcon className="w-4 h-4" /> },
-                    { id: 'newsletter', label: 'Newsletter', icon: <EnvelopeIcon className="w-4 h-4" /> },
-                    { id: 'hermes_os', label: 'Hermes OS', icon: <SparklesIcon className="w-4 h-4 text-purple-400" /> },
                     { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
                 ].map((tab) => (
                     <button
@@ -179,9 +168,6 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
-                        {activeTab === 'command_center' && (
-                            <CommandCenterTab project={project} />
-                        )}
                         {activeTab === 'overview' && (
                             <OverviewTab
                                 project={project}
@@ -194,13 +180,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         {activeTab === 'treasury' && <TreasuryTab project={project} address={treasuryAddress} />}
                         {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
                         {activeTab === 'dao' && <DaoTreasuryTab project={project} />}
-                        {activeTab === 'missions' && <MissionsTab project={project} />}
                         {activeTab === 'legal' && <LegalTab project={project} />}
                         {activeTab === 'resource_hub' && <ResourceHubTab project={project} />}
-                        {activeTab === 'knowledge_center' && <KnowledgeCenterTab project={project} />}
-                        {activeTab === 'events' && <EventsTab project={project} />}
-                        {activeTab === 'newsletter' && <NewsletterTab project={project} />}
-                        {activeTab === 'hermes_os' && <HermesOsTab project={project} config={config} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
                         {activeTab === 'purchases' && (
                             <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />
@@ -213,21 +194,6 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
 }
 
 // Sub-components
-
-function MissionsTab({ project }: { project: any }) {
-    return (
-        <div className="space-y-6">
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                <h3 className="text-xl font-bold text-white mb-2">Gestor de Gamificación y Staking</h3>
-                <p className="text-zinc-400 text-sm mb-6">
-                    Crea y administra las misiones sociales o labores de staking para incentivar a tu comunidad. 
-                    Las misiones de tipo "Labor (Staking)" validan automáticamente la participación continua.
-                </p>
-                <ManageActivities projectId={project.id ? Number(project.id) : 0} />
-            </div>
-        </div>
-    );
-}
 
 function OverviewTab({ project, config, onTogglePhase, loadingPhase }: {
     project: any,

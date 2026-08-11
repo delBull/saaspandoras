@@ -1,6 +1,6 @@
 import React from 'react';
 import { HermesWorkbench } from '@pandoras/hermes-console';
-import TelegramBotConfigCard from './TelegramBotConfigCard';
+import TelegramBotConfigCard from '@/components/shared/tabs/TelegramBotConfigCard';
 import HermesGovernanceSection from '../components/HermesGovernanceSection';
 
 interface HermesOsTabProps {

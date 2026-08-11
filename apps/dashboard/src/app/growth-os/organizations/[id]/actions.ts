@@ -40,11 +40,13 @@ const FULL_PERMISSIONS: ControlPlanePermission[] = [
   'change_policy',
 ];
 
-const VIEW_PERMISSIONS: ControlPlanePermission[] = [
+const OPERATOR_PERMISSIONS: ControlPlanePermission[] = [
   'view_overview',
   'view_missions',
   'view_audit',
   'view_governance',
+  'approve_intent',
+  'reject_intent',
 ];
 
 async function getAuthenticatedSession(requestedOrganizationId: string): Promise<ControlPlaneContext> {
@@ -83,7 +85,7 @@ async function getAuthenticatedSession(requestedOrganizationId: string): Promise
     .filter((m): m is typeof m & { slug: string } => Boolean(m.slug))
     .map(m => ({
       organizationId: `org_${m.slug}`,
-      role: 'viewer' as ControlPlaneRole,
+      role: 'operator' as ControlPlaneRole,
     }));
 
   if (!authorizedOrganizations.some(o => o.organizationId === requestedOrganizationId)) {
@@ -95,8 +97,8 @@ async function getAuthenticatedSession(requestedOrganizationId: string): Promise
   return new ControlPlaneContext(
     `session_${address}`,
     address,
-    'viewer',
-    VIEW_PERMISSIONS,
+    'operator',
+    OPERATOR_PERMISSIONS,
     authorizedOrganizations
   );
 }

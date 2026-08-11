@@ -2,7 +2,8 @@ import { getPendingIntents } from '../actions';
 import GovernanceButtons from './components/GovernanceButtons';
 
 export default async function GovernanceCenterPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: requestedOrganizationId } = await Promise.resolve(params);
+  const { id } = await Promise.resolve(params);
+  const requestedOrganizationId = `org_${id}`;
   const data = await getPendingIntents(requestedOrganizationId);
 
   return (

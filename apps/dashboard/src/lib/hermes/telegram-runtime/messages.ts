@@ -2,7 +2,7 @@ import { LivePhaseData } from './live-phases';
 import { KnowledgePack } from '../types';
 
 const S_NARAI_TAGLINE =
-  'Boutique residencial de lujo tokenizado en la Zona Dorada de Bucerías, Riviera Nayarit.';
+  'Propiedad Fraccionada & Certificados de Participación en la Zona Dorada de Bucerías, Riviera Nayarit.';
 
 export const welcomeMessage = (firstName?: string): string => {
   const name = firstName ? `, ${firstName}` : '';
@@ -13,7 +13,7 @@ export const welcomeMessage = (firstName?: string): string => {
     '',
     S_NARAI_TAGLINE,
     '',
-    'Soy *Hermes*, tu gestor patrimonial digital. Te acompaño en cada paso: desde conocer la tesis del proyecto hasta adquirir tus Títulos Digitales.',
+    'Soy *Hermes*, tu gestor patrimonial digital. Te acompaño en cada paso: desde conocer la tesis del proyecto hasta adquirir tus Certificados de Participación.',
     '',
     '✨ *¿Qué deseas explorar?*'
   ].join('\n');
@@ -27,9 +27,9 @@ export const thesisMessage = (pack: KnowledgePack): string => {
     '',
     pack.salesPitch,
     '',
-    'La operación corre bajo la titularidad registral inalienable de *MXHUB Ecosistema Blockchain S.A. de C.V.* (Titular registral de PANDORAS™ en IMPI Clases 36 y 42).',
+    'La operación corre bajo la estructura corporativa de *Aztecas Hub S.A.P.I. de C.V.* con más de 15 años de experiencia de Aztecas Real Estate en Riviera Nayarit.',
     '',
-    'Puedes auditar la estructura completa en nuestro Data Room.'
+    'Puedes auditar la estructura completa en nuestro Data Room institucional.'
   ].join('\n');
 };
 
@@ -45,7 +45,7 @@ export const phasesMessage = (data: LivePhaseData, pack: KnowledgePack): string 
   const lines: string[] = [
     `📊 *Fases & Precios · S'Narai*`,
     '',
-    `Precio por Título Digital: *$${pack.publicKnowledge.pricingDetails?.tokenPriceUsd ?? data.activePhase?.tokenPrice ?? '—'} USD*`,
+    `Precio por Certificado de Participación: *$${pack.publicKnowledge.pricingDetails?.tokenPriceUsd ?? data.activePhase?.tokenPrice ?? '—'} USD*`,
     `Unidades totales: ${pack.publicKnowledge.pricingDetails?.totalUnits ?? 30000}`,
     ''
   ];
@@ -59,8 +59,8 @@ export const phasesMessage = (data: LivePhaseData, pack: KnowledgePack): string 
 
     const line = [
       `${emoji} *${phase.name}* — ${phase.status.statusLabel}`,
-      `   💵 ${phase.tokenPrice > 0 ? `$${phase.tokenPrice} USD / título` : 'Precio por definir'}`,
-      `   📈 ${phase.tokenAllocation.toLocaleString()} títulos`,
+      `   💵 ${phase.tokenPrice > 0 ? `$${phase.tokenPrice} USD / certificado` : 'Precio por definir'}`,
+      `   📈 ${phase.tokenAllocation.toLocaleString()} certificados disponibles`,
       `   🎯 Progreso: ${phase.status.percent.toFixed(1)}%`
     ].join('\n');
 
@@ -70,7 +70,7 @@ export const phasesMessage = (data: LivePhaseData, pack: KnowledgePack): string 
   lines.push(
     'Las fases posteriores a la activa se liberan de forma secuencial conforme la oferta avanza.',
     '',
-    '_Datos en vivo desde la cadena (on-chain)._'
+    '_Datos en tiempo real desde la plataforma Pandoras Growth OS._'
   );
 
   return lines.join('\n');
@@ -113,37 +113,37 @@ export const dataroomDossierMessage = (pack: KnowledgePack): string => {
 export const buySelectorMessage = (pack: KnowledgePack): string => {
   const price = pack.publicKnowledge.pricingDetails?.tokenPriceUsd ?? 50;
   return [
-    `💳 *Adquirir Títulos · S'Narai*`,
+    `💳 *Adquirir Certificados · S'Narai*`,
     '',
-    `La Fase Fundadores está en *$${price} USD por Título Digital*.`,
+    `La Etapa Fundadores está en *$${price} USD por Certificado de Participación*.`,
     '',
-    'Elige tu método de pago:',
+    'Elige tu método de adquisición:',
     '',
-    `🌐 *Web3 (USDC/USDT)*`,
-    '· Registro on-chain inmediato y transparente.',
-    '· Entras con social login (Google/Email) o tu wallet.',
-    '· Ideal si ya manejas criptomonedas.',
+    `🌐 *Divisa Digital (USDC)*`,
+    '· Registro institucional inmediato y auditable.',
+    '· Entra con social login (Google/Email) o tu cuenta digital.',
+    '· Ideal si ya manejas divisas digitales.',
     '',
     `🇲🇽 *SPEI (Pesos MXN)*`,
     '· Pagas por transferencia bancaria en pesos.',
     '· Contrato digital firmado y reserva Fast Lane.',
-    '· Ideal si no manejas criptomonedas.',
+    '· La opción más común entre nuestros miembros.',
     '',
-    'Ambos métodos reciben tu Título Digital con los mismos derechos.'
+    'Ambos métodos otorgan tu Certificado de Participación con los mismos derechos.'
   ].join('\n');
 };
 
 export const buyWeb3Message = (): string => {
   return [
-    `🌐 *Checkout Web3 · S'Narai*`,
+    `🌐 *Checkout Digital · S'Narai*`,
     '',
-    'Estás a un paso de tu Título Digital.',
+    'Estás a un paso de tu Certificado de Participación.',
     '',
     '1. Toca *Ir al Checkout* (se abre el portal de pago seguro).',
-    '2. Entra con *social login (Google/Email)* o conecta tu wallet.',
-    '3. Confirma el pago en *USDC/USDT*.',
+    '2. Entra con *social login (Google/Email)* o tu cuenta digital.',
+    '3. Confirma el pago en *USDC*.',
     '',
-    'Tu registro quedará on-chain al instante y tu Título Digital aparecerá en tu posición.'
+    'Tu registro quedará confirmado al instante y tu Certificado aparecerá en tu posición.'
   ].join('\n');
 };
 
@@ -151,14 +151,13 @@ export const buySpeiMessage = (): string => {
   return [
     `🇲🇽 *Checkout SPEI · S'Narai*`,
     '',
-    'Paga tus Títulos Digitales en pesos mexicanos, sin criptomonedas.',
+    'Adquiere tu Certificado de Participación en pesos mexicanos, sin divisas digitales.',
     '',
     '1. Toca *Ir al Checkout (SPEI)*.',
-    '2. En la pasarela elige *"Métodos tradicionales"*.',
-    '3. Completa tu *social login (Google/Email)* para continuar.',
-    '4. Sigue las instrucciones de transferencia SPEI y firma tu contrato digital.',
+    '2. Completa tu *social login (Google/Email)* para continuar.',
+    '3. Sigue las instrucciones de transferencia SPEI y firma tu contrato digital.',
     '',
-    'Tu reserva queda protegida y tu posición asegurada.'
+    'Tu reserva queda protegida (Soft-Lock 7 días) y tu posición asegurada.'
   ].join('\n');
 };
 
@@ -166,7 +165,7 @@ export const reunionMessage = (): string => {
   return [
     `🤝 *Reunión con Fundadores*`,
     '',
-    'Te ofrecemos una sesión privada de patrimonio con los fundadores de S\'Narai para resolver a fondo cualquier duda sobre la tokenización, la estructura legal y tu plan de inversión.',
+    'Te ofrecemos una sesión privada de patrimonio con los fundadores de S\'Narai para resolver a fondo cualquier duda sobre la estructura de Certificados de Participación, el marco jurídico corporativo y tu plan de adquisición.',
     '',
     '¿Quieres agendarla?'
   ].join('\n');
@@ -197,8 +196,8 @@ export const positionMessage = (): string => {
   return [
     `👤 *Tu Posición · S'Narai*`,
     '',
-    'Para consultar tus Títulos Digitales y distribuciones, entra al portal con la misma cuenta (email/wallet) que usaste al adquirir.',
+    'Para consultar tus Certificados de Participación y distribuciones de utilidades, entra al portal con la misma cuenta (email/cuenta digital) que usaste al adquirir.',
     '',
-    'Si aún no tienes posición, puedes adquirir en la Fase Fundadores.'
+    'Si aún no tienes posición, puedes adquirir en la Etapa Fundadores desde $50 USD.'
   ].join('\n');
 };

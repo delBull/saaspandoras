@@ -374,7 +374,7 @@ export default function AdminDashboardPage() {
     // Exclude Hermes OS tenants from the traditional "Protocolos" tab
     // (they live in the dedicated Hermes Tenants tab)
     filtered = filtered.filter(project =>
-      !(project.slug === 'snarai' || project.slug?.includes('hermes') || project.w2eConfig?.isHermes)
+      !(project.slug?.includes('hermes') || project.w2eConfig?.isHermes)
     );
 
     // Apply status filter

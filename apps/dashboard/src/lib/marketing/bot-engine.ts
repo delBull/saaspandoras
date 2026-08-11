@@ -20,9 +20,14 @@ export async function generateBotResponse(context: {
   const { KnowledgePackLoader } = await import('@/lib/hermes/knowledge-pack');
   const { HermesDecisionEngine } = await import('@/lib/hermes/decision-engine');
   const { dataProviderSingleton } = await import('@/lib/hermes/data-provider');
+  const { HermesSoulRegistry } = await import('@/lib/hermes/soul/snarai-soul');
   
   const projectSlug = context.projectSlug || projectContext?.slug || projectName || 'snarai';
   const pack = KnowledgePackLoader.getPack(projectSlug, projectContext);
+
+  // Resolve Soul for this project (identity, language policy, canonical URLs)
+  const soul = HermesSoulRegistry.getSoul(projectSlug);
+  const soulPrompt = soul ? HermesSoulRegistry.buildSoulPrompt(soul) : '';
   
   // Resolve real-time project state using Universal DataProvider
   const resolvedState = await dataProviderSingleton.getProjectState(projectSlug);
@@ -57,32 +62,31 @@ export async function generateBotResponse(context: {
   console.info(`[Hermes Engine] Mission Goal: ${mission.goal}, Target State: ${mission.targetState}`);
 
   // Build the system prompt. If a customSystemPrompt is passed (e.g. from Sandbox or dynamic tenant), use it.
-  const systemPrompt = customSystemPrompt || `Eres "HERMES PATRIMONIAL", el Gestor Patrimonial IA Autónomo y Conserje Oficial para el proyecto "${liveContext?.title || projectName}".
-Tu objetivo es asesorar, calificar prospectos, resolver dudas legales/técnicas y guiar a los clientes hacia el cierre de su inversión de manera cortes, profesional y ejecutiva.
+  // Otherwise build from Soul (identity + policies) + Knowledge (project facts) + live data.
+  const systemPrompt = customSystemPrompt || `${soulPrompt}
+
+ROL Y OBJETIVO:
+Eres "${soul?.agentName || 'HERMES PATRIMONIAL'}", el Gestor Patrimonial IA Autónomo para el proyecto "${liveContext?.title || projectName}".
+Tu objetivo es asesorar, calificar prospectos, resolver dudas y guiar hacia el cierre de forma ejecutiva y profesional.
 
 ACCIONES RECOMENDADAS POR HERMES DECISION ENGINE:
 - Meta de la Misión: ${mission.goal} (Estado Objetivo: ${mission.targetState})
 - Recomendación de Cierre: ${recommendedAction}
 
-CONTEXTO DEL PROYECTO (DATA EN VIVO DESDE UNIVERSAL DATA PROVIDER):
+CONTEXTO DEL PROYECTO (DATA EN TIEMPO REAL):
 - Título/Proyecto: ${liveContext?.title || projectName}
-- Precio Actual: $${liveContext?.currentPrice || 'N/A'} USD / USDC
-- Fase Activa: ${liveContext?.phaseName || 'Fase Fundadores'}
+- Precio Actual: $${liveContext?.currentPrice || 'N/A'} USD
+- Fase Activa: ${liveContext?.phaseName || 'Etapa Fundadores'}
 - Unidades Disponibles: ${liveContext?.availableUnits || 'N/A'}
 - Progreso de Fondeo: ${liveContext?.progressPercentage || 0}%
-- Tesorería/TVL: ${liveContext?.treasury || '0'}
-- Miembros DAO / Holders: ${liveContext?.holdersCount || 0}
+- Tesoría/TVL: ${liveContext?.treasury || '0'}
+- Miembros / Holders: ${liveContext?.holdersCount || 0}
 
-PITCH DE VENTAS (PACK: ${pack.name}):
+PITCH DEL PROYECTO (PACK: ${pack.name}):
 ${pack.salesPitch}
 
-REGLAS ESTRICTAS DE SEGURIDAD (ANTI-ABUSO):
-1. NUNCA des consejos de inversión ni prometas retornos exactos. Si te preguntan por rendimientos, da estimaciones y redirige al Aviso de Riesgos.
-2. Si el usuario te pregunta cosas fuera del contexto del proyecto ${projectName}, discúlpate cortésmente y diles que solo puedes hablar sobre ${projectName}.
-3. Responde de forma MUY concisa y al grano. Usa emojis con moderación.
-
 INSTRUCCIONES ADICIONALES DEL PROYECTO:
-${botInstructions || "Actúa con amabilidad y redirige al portal oficial para adquirir posiciones."}`;
+${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para adquirir posiciones.'}`;
 
   let history: { role: 'user' | 'assistant', content: string }[] = context.history || [];
   const redisKey = chatId ? `telegram_bot_context:${projectName}:${chatId}` : null;
@@ -107,24 +111,21 @@ ${botInstructions || "Actúa con amabilidad y redirige al portal oficial para ad
   ];
 
   try {
-    const projectSlug = projectContext?.slug?.toLowerCase() || '';
-    const isSnarai = projectSlug === 'snarai';
+    const resolvedSlug = (projectSlug && projectSlug !== 'undefined') ? projectSlug : 'snarai';
+    const isSnarai = resolvedSlug === 'snarai';
 
-    // Project-specific variable resolution for granular analytics and metering
-    // NOTE: isOllamaEnabled must ONLY be true when a real API key is explicitly configured.
-    // rawBaseUrl has a default fallback so we cannot use it to determine if Ollama is intended.
-    // ─────────────────────────────────────────────────────────────
-    // v4.2 Runtime Manifest Integration
-    // Load LLM configuration strictly from the Tenant Manifest
-    // ─────────────────────────────────────────────────────────────
-    
     // Internal fetch of manifest config from DB to avoid HTTP loopbacks
-    const { db } = await import('@/db');
-    const { projects } = await import('@/db/schema');
-    const { eq } = await import('drizzle-orm');
-    
-    const dbProject = await db.select().from(projects).where(eq(projects.slug, projectSlug)).limit(1);
-    const dbConfig: any = (dbProject.length > 0 && dbProject[0]?.tenantRuntimeConfig) ? dbProject[0].tenantRuntimeConfig : {};
+    let dbConfig: any = {};
+    try {
+      const { db } = await import('@/db');
+      const { projects } = await import('@/db/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const dbProject = await db.select().from(projects).where(eq(projects.slug, resolvedSlug)).limit(1);
+      dbConfig = (dbProject.length > 0 && dbProject[0]?.tenantRuntimeConfig) ? dbProject[0].tenantRuntimeConfig : {};
+    } catch (dbErr) {
+      console.warn('[BotEngine] DB lookup skipped or failed, falling back to local KnowledgePack/Soul:', dbErr);
+    }
     
     const apiKey = dbConfig?.providers?.llm?.apiKeyRef 
       || (isSnarai ? process.env.OLLAMA_SNARAI_API_KEY : null)

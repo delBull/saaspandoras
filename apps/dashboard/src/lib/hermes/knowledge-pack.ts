@@ -2,58 +2,143 @@ import { KnowledgePack } from './types';
 
 /**
  * Knowledge Pack Manager
- * Loads and provides modular knowledge packs for projects (e.g., S'Narai)
+ * Loads and provides modular knowledge packs for projects (e.g., S'Narai).
+ *
+ * DATA SOURCE: Narai/apps/web/src/knowledge/snarai.ts  (single source of truth)
+ * Soul (identity, voice, language/claims/escalation policies) → hermes/soul/snarai-soul.ts
  */
 
 export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
   id: 'snarai_real_estate_pack_v1',
   name: "S'Narai Riviera Nayarit Pack",
-  version: '1.0.0',
-  industry: 'real_estate_tokenized',
-  systemInstructions: `Eres HERMES PATRIMONIAL, el Gestor Patrimonial IA Autónomo para S'Narai.
-Tu objetivo es asesorar a inversionistas, calificar su perfil, resolver dudas legales y guiar hacia el cierre de posiciones en la Fase Fundadores.`,
+  version: '1.1.0',
+  industry: 'real_estate_fractional',
+  systemInstructions:
+    `Eres HERMES PATRIMONIAL, el Gestor Patrimonial IA Autónomo de S'Narai Riviera Nayarit.\n` +
+    `Tu misión es asesorar prospectos con voz ejecutiva y patrimonial, resolver dudas sobre ` +
+    `la estructura de Certificados de Participación y guiar hacia el cierre ` +
+    `(sesión con fundadores o adquisición directa vía SPEI Fast Lane).\n` +
+    `Operado corporativamente bajo Aztecas Hub S.A.P.I. de C.V. con +15 años de experiencia ` +
+    `de Aztecas Real Estate en Riviera Nayarit.`,
   publicKnowledge: {
     title: "S'Narai Riviera Nayarit",
-    summary: "Proyecto residencial boutique de lujo tokenizado en Riviera Nayarit (México), desarrollado por Aztecas Tokenización y respaldado por Pandoras Growth OS (Titularidad registral de marcas por MXHUB S.A. DE C.V.).",
+    summary:
+      "S'Narai es un desarrollo residencial boutique de lujo ubicado en la Zona Dorada de Bucerías, " +
+      'Riviera Nayarit, México, desarrollado por Aztecas Real Estate (+15 años de experiencia) ' +
+      'y operado corporativamente bajo Aztecas Hub S.A.P.I. de C.V. Ofrece un modelo de ' +
+      'Propiedad Fraccionada y Certificados de Participación que combinan estancias de lujo ' +
+      'con distribución de utilidades por rentas hoteleras y plusvalía inmobiliaria.',
     pricingDetails: {
-      currentPhase: "Fase Fundadores",
+      currentPhase: 'Etapa Fundadores',
       tokenPriceUsd: 50,
       minPurchaseTokens: 1,
       totalUnits: 30000,
-      acceptedCurrencies: ["USDC", "USDT", "MXN (SPEI Fast Lane)"]
+      acceptedCurrencies: ['USDC', 'MXN (SPEI Fast Lane)'],
+      tiers: [
+        {
+          id: 'PACK_EXPLORADOR',
+          name: 'Nivel Explorador',
+          priceUsd: 50,
+          description:
+            'Punto de entrada flexible al ecosistema S\'Narai para asegurar posicionamiento en la etapa fundadora.',
+          url: 'https://snarai.aztecaz.xyz/portal?tier=explorer',
+        },
+        {
+          id: 'PACK_RESIDENTE',
+          name: 'Nivel Residente',
+          priceUsd: 500,
+          description:
+            'Nivel recomendado que otorga estancias prioritarias anuales y bono adicional sobre la utilidad distribuida.',
+          url: 'https://snarai.aztecaz.xyz/portal?tier=residente',
+        },
+        {
+          id: 'PACK_EMBAJADOR',
+          name: 'Nivel Embajador',
+          priceUsd: 2500,
+          description:
+            'Participación de capital estratégico con voz directiva y máxima prioridad en reservaciones de alta temporada.',
+          url: 'https://snarai.aztecaz.xyz/portal?tier=ambassador',
+        },
+      ],
     },
     faqs: [
       {
-        question: "¿Qué es un Título Digital de S'Narai?",
-        answer: "Es la fracción patrimonial digital respaldada por la DAO del inmueble real que te otorga poder de voto y derecho a utilidades pro-rata en USDC."
+        question: '¿Qué recibo exactamente al adquirir un Certificado de Participación?',
+        answer:
+          'Recibes un Certificado de Participación emitido bajo Aztecas Hub S.A.P.I. de C.V. ' +
+          'que te otorga dos beneficios principales: 1) Derecho de uso personal para disfrutar ' +
+          'estancias de lujo en Bucerías y 2) Participación en las utilidades netas generadas ' +
+          'por la explotación comercial y renta hotelera del edificio.',
       },
       {
-        question: "¿Cómo puedo comprar si no manejo criptomonedas?",
-        answer: "Puedes utilizar la modalidad SPEI Fast Lane para pagar en Pesos Mexicanos (MXN) mediante transferencia bancaria y contrato digital firmado."
-      }
-    ]
+        question: '¿Cómo funciona el proceso de pago e inscripción en Pesos Mexicanos (MXN)?',
+        answer:
+          'Mediante el sistema SPEI Fast Lane puedes realizar tu pago por transferencia bancaria ' +
+          'en MXN. Tu cupo se bloquea inmediatamente (Soft-Lock por 7 días) y recibes tu ' +
+          'contrato digital de participación expedido por la S.A.P.I.',
+      },
+      {
+        question: '¿Puedo ceder o vender mi participación en el futuro?',
+        answer:
+          'Sí, tu derecho de participación es legalmente vinculante, heredable y puede cederse ' +
+          "o venderse en cualquier momento a través del tablero de transferencia interna de S'Narai.",
+      },
+      {
+        question: '¿Cuándo se comienzan a percibir los beneficios y utilidades?',
+        answer:
+          'Obtienes plusvalía proyectada (12-15% anual) desde el momento de tu adquisición ' +
+          'en etapa fundadora, y recibes distribuciones de utilidades por rentas una vez ' +
+          'concluida la obra e iniciada la operación hotelera.',
+      },
+    ],
   },
   objectionRules: [
     {
-      triggerPattern: "segur|tokens|cripto|crypto|riesgo",
-      objectionCategory: "security",
-      recommendedResponse: "El activo cuenta con respaldo patrimonial real y la infraestructura de Pandoras Growth OS. Además, si lo prefieres, puedes adquirir tus títulos en Pesos MXN con transferencia SPEI y contrato firmado (Fast Lane).",
-      suggestedDocument: "PANDORAS_LEGAL_DOSSIER"
+      triggerPattern: 'legal|empresa|sapi|certeza|contrato|garantía|propietario',
+      objectionCategory: 'legal',
+      recommendedResponse:
+        'Toda la estructura corporativa y patrimonial opera bajo Aztecas Hub S.A.P.I. de C.V., ' +
+        'brindando un marco corporativo transparente para la inversión colectiva y acuerdos de ' +
+        'participación digital plenamente vinculantes. Puedes revisar la documentación completa ' +
+        'en nuestro Data Room institucional: https://snarai.aztecaz.xyz/institutional/legal',
+      suggestedDocument: 'DATA_ROOM_LEGAL',
     },
     {
-      triggerPattern: "marca|garant|legal|mxhub|propietario",
-      objectionCategory: "legal",
-      recommendedResponse: "El proyecto opera bajo la titularidad registral inalienable de MXHUB Ecosistema Blockchain S.A. de C.V. (Titular registral de PANDORAS™ en IMPI Clases 36 y 42). Puedes auditar la estructura en nuestro Data Room (/nexus).",
-      suggestedDocument: "DATA_ROOM_NEXUS"
+      triggerPattern: 'rendimiento|retorno|porcentaje fijo|garantía|cuánto gano',
+      objectionCategory: 'financial',
+      recommendedResponse:
+        "S'Narai no promete retornos fijos garantizados por razones de cumplimiento regulatorio " +
+        'y transparencia. Las utilidades distribuidas provienen del desempeño real de las rentas ' +
+        'hoteleras operadas profesionalmente en Bucerías. Históricamente la zona registra ' +
+        'plusvalía del 12-15% anual proyectado, sin garantía.',
+      suggestedDocument: 'DATA_ROOM_FINANCIERO',
     },
     {
-      triggerPattern: "luego|despues|pensar|consultar",
-      objectionCategory: "timing",
-      recommendedResponse: "Entiendo perfectamente. Ten en cuenta que la Fase Fundadores a $50 USD por título está limitada a 30,000 unidades. Puedo reservarte tu posición sin compromiso durante 24 horas vía Fast Lane. ¿Te reservo una posición?",
-      suggestedDocument: "FAST_LANE_RESERVATION"
-    }
+      triggerPattern: 'mantenimiento|administración|hotelera|deterioro|gestión',
+      objectionCategory: 'product',
+      recommendedResponse:
+        'El desarrollo cuenta con administración hotelera profesional (concierge 24/7, limpieza y ' +
+        'mantenimiento) y un Fondo de Reserva destinado a mejoras mayores para garantizar que la ' +
+        'propiedad no pierda valor con el tiempo.',
+      suggestedDocument: 'DATA_ROOM_OPERATIVO',
+    },
+    {
+      triggerPattern: 'luego|después|pensar|consultar|más tiempo',
+      objectionCategory: 'timing',
+      recommendedResponse:
+        'Entiendo perfectamente. La Etapa Fundadores a $50 USD por Certificado está limitada a ' +
+        '30,000 unidades. Puedo reservarte tu posición sin compromiso durante 7 días vía ' +
+        'SPEI Fast Lane. ¿Te reservo una posición?',
+      suggestedDocument: 'FAST_LANE_RESERVATION',
+    },
   ],
-  salesPitch: "S'Narai no es un desarrollo inmobiliario tradicional; es un activo residencial boutique tokenizado en Riviera Nayarit que te permite adquirir fracciones patrimoniales con liquidez, transparencia Web3 y distribuciones periódicas en USDC. Estás invirtiendo en la fase de mayor plusvalía ($50 USD por Título Digital)."
+  salesPitch:
+    "S'Narai es un desarrollo residencial boutique de lujo en la Zona Dorada de Bucerías, " +
+    'Riviera Nayarit — a pasos del mar. A través de un modelo de Propiedad Fraccionada y ' +
+    'Certificados de Participación emitidos por Aztecas Hub S.A.P.I. de C.V., puedes ' +
+    'asegurar tu posición desde $50 USD, disfrutar estancias anuales de lujo y participar ' +
+    'en las utilidades de las rentas hoteleras. Transparencia corporativa completa, ' +
+    'liquidez garantizada y plusvalía proyectada en una de las zonas de mayor crecimiento de México.',
 };
 
 export class KnowledgePackLoader {
