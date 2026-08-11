@@ -52,7 +52,7 @@ export class OrganizationRuntime {
       locale: "es-MX",
       timezone: "America/Mexico_City",
       brand: {
-        logoUrl: "https://snarai.com/logo.png",
+        logoUrl: "https://snarai.aztecaz.xyz/logo.png",
         primaryColor: "#EAB308",
         tone: "premium, visionary, slightly mysterious"
       },

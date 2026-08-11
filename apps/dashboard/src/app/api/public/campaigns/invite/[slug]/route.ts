@@ -52,7 +52,7 @@ export async function GET(
     if (tenant.id === 2 && isDev) {
       targetUrl = 'http://localhost:3001'; // Assuming S'Narai is on port 3001 locally
     } else if (tenant.id === 2 && !isDev) {
-      targetUrl = 'https://snarai.com'; // or whatever the exact URL is
+      targetUrl = 'https://snarai.aztecaz.xyz';
     }
 
     const response = NextResponse.redirect(targetUrl, 302);

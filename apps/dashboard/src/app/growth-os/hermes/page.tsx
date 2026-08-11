@@ -142,7 +142,7 @@ function HermesPlayground({ onCTA }: { onCTA: () => void }) {
     setIsLoading(true);
 
     try {
-      const companyName = customCompany.trim() || (selectedId === 'real_estate' ? "S'Narai Real Estate" : selectedId === 'auto' ? "BMW México" : selectedId === 'legal' ? "Legal Concierge" : "Centro Médico");
+      const companyName = customCompany.trim() || (selectedId === 'real_estate' ? "Costa Heritage Realty" : selectedId === 'auto' ? "BMW México" : selectedId === 'legal' ? "Legal Concierge" : "Centro Médico");
       
       const res = await fetch('/api/v1/hermes/sandbox', {
         method: 'POST',

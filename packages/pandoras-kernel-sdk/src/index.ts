@@ -94,7 +94,7 @@ export interface CommunicationEndpoint {
   tenantId: string;
   channel: CommunicationChannel;
   provider: CommunicationProviderType;
-  identifier: string; // e.g. "+18005550199", "@snarai_bot", "ventas@snarai.com", "widget_app_snarai", "page_id_102938"
+  identifier: string; // e.g. "+18005550199", "@snarai_bot", "ventas@example.com", "widget_app_snarai", "page_id_102938"
   credentialsRef: string; // Referencia en SecretVault
   isActive: boolean;
   assignedAgentId?: string;

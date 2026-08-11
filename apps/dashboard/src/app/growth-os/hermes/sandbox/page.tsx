@@ -246,7 +246,7 @@ export default function HermesPublicSandbox() {
                   🚀 Desbloquea Hermes OS en Producción
                 </div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-                  Planes desde $299 USD/mes. Incluye conectores Telegram/WhatsApp, base de conocimiento e integración S'Narai.
+                  Planes desde $299 USD/mes. Incluye conectores Telegram/WhatsApp, base de conocimiento e integración con tu marca.
                 </div>
               </div>
               <button

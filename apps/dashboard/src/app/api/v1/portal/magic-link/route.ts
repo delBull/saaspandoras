@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { projects, installedProducts, users, accessRequests } from '@/db/schema';
+import { projects, installedProducts, users, accessRequests, marketingLeads } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generatePortalToken } from '@/lib/platform/portal-auth';
 import { sendEmail } from '@/lib/email/client';
+
+const MAGIC_LINK_EMAIL_DAILY_LIMIT = 3;
+const MAGIC_LINK_IP_DAILY_LIMIT = 10;
+
+// Simple in-memory rate-limit buckets (per UTC day). Reset on redeploy.
+const magicLinkEmailBuckets = new Map<string, { date: string; count: number }>();
+const magicLinkIpBuckets = new Map<string, { date: string; count: number }>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +22,28 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = email.trim().toLowerCase();
 
+    // Rate limiting: anti-spam / anti-enumeration (email + IP buckets, per UTC day)
+    const today = new Date().toISOString().slice(0, 10);
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+
+    const emailHit = magicLinkEmailBuckets.get(cleanEmail);
+    if (!emailHit || emailHit.date !== today) {
+      magicLinkEmailBuckets.set(cleanEmail, { date: today, count: 1 });
+    } else if (emailHit.count >= MAGIC_LINK_EMAIL_DAILY_LIMIT) {
+      return NextResponse.json({ error: 'Demasiados intentos para este correo hoy. Intenta de nuevo mañana.' }, { status: 429 });
+    } else {
+      emailHit.count += 1;
+    }
+
+    const ipHit = magicLinkIpBuckets.get(ip);
+    if (!ipHit || ipHit.date !== today) {
+      magicLinkIpBuckets.set(ip, { date: today, count: 1 });
+    } else if (ipHit.count >= MAGIC_LINK_IP_DAILY_LIMIT) {
+      return NextResponse.json({ error: 'Demasiados intentos desde esta conexión hoy. Intenta de nuevo mañana.' }, { status: 429 });
+    } else {
+      ipHit.count += 1;
+    }
+
     // 1. Find user or approved access request by email
     const [user] = await db.select().from(users).where(eq(users.email, cleanEmail)).limit(1);
     const [approvedRequest] = await db.select().from(accessRequests).where(eq(accessRequests.email, cleanEmail)).limit(1);
@@ -25,18 +54,37 @@ export async function POST(req: NextRequest) {
     );
 
     if (!isApproved) {
+      // Generic anti-enumeration message: never reveal whether the account exists
       return NextResponse.json({ 
-        error: 'Tu correo no cuenta con una suscripción o acceso aprobado a Hermes OS. Por favor solicita una evaluación en la página principal.' 
+        error: 'Si tu acceso ya fue aprobado, recibirás tu enlace en tu correo. Si no lo recibes, contacta a soporte en la página principal.' 
       }, { status: 403 });
     }
 
-    // 2. Resolve matching project or default to snarai (ID 17 in production)
-    const targetProjectId = 17;
-    const [project] = await db.select().from(projects).where(eq(projects.id, targetProjectId)).limit(1);
+    // 2. Resolve the tenant's project WITHOUT hardcoded defaults.
+    //    Priority: metadata on the approved request → lead record (email).
+    const meta = (approvedRequest?.metadata ?? {}) as { projectId?: number; projectSlug?: string };
+    let project: typeof projects.$inferSelect | undefined;
 
-    const activeProject = project || (await db.select().from(projects).where(eq(projects.slug, 'snarai')).limit(1))[0];
+    if (meta.projectId) {
+      [project] = await db.select().from(projects).where(eq(projects.id, Number(meta.projectId))).limit(1);
+    } else if (meta.projectSlug) {
+      [project] = await db.select().from(projects).where(eq(projects.slug, String(meta.projectSlug))).limit(1);
+    }
+
+    if (!project) {
+      const [lead] = await db
+        .select({ projectId: marketingLeads.projectId })
+        .from(marketingLeads)
+        .where(eq(marketingLeads.email, cleanEmail))
+        .limit(1);
+      if (lead?.projectId) {
+        [project] = await db.select().from(projects).where(eq(projects.id, lead.projectId)).limit(1);
+      }
+    }
+
+    const activeProject = project;
     if (!activeProject) {
-      return NextResponse.json({ error: 'No se encontró un proyecto activo asociado a esta cuenta.' }, { status: 404 });
+      return NextResponse.json({ error: 'No se encontró un proyecto activo asociado a esta cuenta. Usa el enlace de invitación que recibiste por correo.' }, { status: 404 });
     }
 
     // 3. Resolve installed product ID for Hermes
