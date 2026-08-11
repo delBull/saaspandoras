@@ -89,9 +89,11 @@ export const buySpeiKeyboard = (): TelegramKeyboard => ({
   ]
 });
 
+export const REUNION_CALENDAR_URL = 'https://dash.pandoras.finance/events/snarai/1';
+
 export const reunionKeyboard = (): TelegramKeyboard => ({
   inline_keyboard: [
-    [{ text: '📅 Sí, quiero agendar', callback_data: 'action_reunion_start' }],
+    [{ text: '📅 Seleccionar Fecha y Hora (Agenda)', url: REUNION_CALENDAR_URL }],
     BACK_ROW
   ]
 });

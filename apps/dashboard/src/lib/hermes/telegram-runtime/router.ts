@@ -181,10 +181,12 @@ async function handleObjection(ctx: BaseContext, state: TelegramLeadState, text:
 }
 
 async function handleAppointment(ctx: BaseContext) {
-  const reply = reunionAskEmailMessage();
-  await sendTelegramMessage(ctx.botToken, ctx.chatId, reply);
+  const reply = reunionMessage();
+  await sendTelegramMessage(ctx.botToken, ctx.chatId, reply, reunionKeyboard());
+  const state = await getTelegramState(ctx.project.id, String(ctx.chatId));
   await saveTelegramState(ctx.project.id, String(ctx.chatId), {
-    pendingInput: 'email',
+    salesState: advanceSalesState(state.salesState, 'QUALIFIED'),
+    pendingInput: 'none',
     lastAction: 'reunion'
   });
   return reply;

@@ -63,12 +63,20 @@ export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
     },
     faqs: [
       {
-        question: '¿Qué recibo exactamente al adquirir un Certificado de Participación?',
+        question: '¿Qué recibo exactamente al adquirir títulos en S\'Narai?',
         answer:
-          'Recibes un Certificado de Participación emitido bajo Aztecas Hub S.A.P.I. de C.V. ' +
-          'que te otorga dos beneficios principales: 1) Derecho de uso personal para disfrutar ' +
-          'estancias de lujo en Bucerías y 2) Participación en las utilidades netas generadas ' +
-          'por la explotación comercial y renta hotelera del edificio.',
+          'Al adquirir títulos digitales respaldados legalmente bajo Aztecas Hub S.A.P.I. de C.V., ' +
+          'recibes tu Certificado de Participación digital oficial. Este certificado es único, refleja ' +
+          'dinámicamente el número de títulos adquiridos, y puedes descargarlo e imprimirlo en PDF desde tu portal. ' +
+          'Te otorga dos beneficios principales: 1) Derecho a estancias de uso personal (según el nivel de títulos) ' +
+          'y 2) Participación en la distribución de utilidades del negocio total por la operación del desarrollo.',
+      },
+      {
+        question: '¿Cómo funcionan los derechos de estancias y rendimientos?',
+        answer:
+          'Dependiendo de la cantidad de títulos adquiridos, existen paquetes que otorgan derechos ' +
+          'a estancias prioritarias anuales en Bucerías, además de un porcentaje de rendimiento adicional ' +
+          'sobre las utilidades globales distribuidas por la operación del proyecto.',
       },
       {
         question: '¿Cómo funciona el proceso de pago e inscripción en Pesos Mexicanos (MXN)?',
@@ -86,9 +94,9 @@ export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
       {
         question: '¿Cuándo se comienzan a percibir los beneficios y utilidades?',
         answer:
-          'Obtienes plusvalía proyectada (12-15% anual) desde el momento de tu adquisición ' +
+          'Obtienes plusvalía proyectada desde el momento de tu adquisición ' +
           'en etapa fundadora, y recibes distribuciones de utilidades por rentas una vez ' +
-          'concluida la obra e iniciada la operación hotelera.',
+          'concluida la obra e iniciada la operación.',
       },
     ],
   },

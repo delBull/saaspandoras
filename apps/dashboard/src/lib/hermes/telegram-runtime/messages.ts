@@ -163,11 +163,11 @@ export const buySpeiMessage = (): string => {
 
 export const reunionMessage = (): string => {
   return [
-    `🤝 *Reunión con Fundadores*`,
+    `🤝 *Reunión Patrimonial con Fundadores*`,
     '',
     'Te ofrecemos una sesión privada de patrimonio con los fundadores de S\'Narai para resolver a fondo cualquier duda sobre la estructura de Certificados de Participación, el marco jurídico corporativo y tu plan de adquisición.',
     '',
-    '¿Quieres agendarla?'
+    '📅 *Selecciona tu fecha y hora en nuestra agenda oficial:*'
   ].join('\n');
 };
 
