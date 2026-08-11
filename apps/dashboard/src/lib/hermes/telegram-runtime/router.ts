@@ -303,8 +303,9 @@ export async function runAction(action: BotAction, ctx: BaseContext, state: Tele
 
     case 'action_buy_web3': {
       replyText = buyWeb3Message();
-      await sendTelegramMessage(botToken, chatId, replyText, buyWeb3Keyboard());
-      recordEvent(projectId, 'INITIATED_CHECKOUT', { method: 'web3' });
+      const checkoutUrl = buildCheckoutUrl({ ref: state.referralCode });
+      await sendTelegramMessage(botToken, chatId, replyText, buyWeb3Keyboard({ checkoutUrl }));
+      recordEvent(projectId, 'INITIATED_CHECKOUT', { method: 'web3', referralCode: state.referralCode });
       await saveTelegramState(project.id, String(chatId), {
         salesState: advanceSalesState(state.salesState, 'READY'),
         lastAction: 'buy_web3'
@@ -314,8 +315,9 @@ export async function runAction(action: BotAction, ctx: BaseContext, state: Tele
 
     case 'action_buy_spei': {
       replyText = buySpeiMessage();
-      await sendTelegramMessage(botToken, chatId, replyText, buySpeiKeyboard());
-      recordEvent(projectId, 'FASTLANE_RESERVATION', { method: 'spei' });
+      const checkoutUrl = buildCheckoutUrl({ ref: state.referralCode });
+      await sendTelegramMessage(botToken, chatId, replyText, buySpeiKeyboard({ checkoutUrl }));
+      recordEvent(projectId, 'FASTLANE_RESERVATION', { method: 'spei', referralCode: state.referralCode });
       await saveTelegramState(project.id, String(chatId), {
         salesState: advanceSalesState(state.salesState, 'READY'),
         lastAction: 'buy_spei'
@@ -380,12 +382,25 @@ export async function handleTelegramMessage(params: {
 
   const state = await getTelegramState(project.id, String(chatId));
 
-  // 2. /start & /menu → welcome + main menu
-  if (trimmed === '/start' || trimmed === '/menu' || trimmed === '/inicio') {
+  // 2. /start & /menu → welcome + main menu with referral parameter extraction
+  if (trimmed.startsWith('/start') || trimmed === '/menu' || trimmed === '/inicio') {
+    let extractedRef: string | undefined = undefined;
+    if (trimmed.startsWith('/start ')) {
+      const param = trimmed.replace('/start ', '').trim();
+      if (param.startsWith('ref_')) {
+        extractedRef = param.replace('ref_', '').trim();
+      } else if (param) {
+        extractedRef = param;
+      }
+    }
+
+    const refToSave = extractedRef || state.referralCode;
+
     await saveTelegramState(project.id, String(chatId), {
       salesState: advanceSalesState(state.salesState, 'CONTACTED'),
       journeyStageId: 'stage_welcome_thesis',
       pendingInput: 'none',
+      ...(refToSave ? { referralCode: refToSave } : {}),
       lastAction: 'start'
     });
     await sendMainMenu(ctx, firstName);

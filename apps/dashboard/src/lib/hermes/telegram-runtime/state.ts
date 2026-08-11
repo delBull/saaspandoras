@@ -11,6 +11,7 @@ export interface TelegramLeadState {
   walletAddress?: string;
   expressedIntent?: 'explore' | 'invest' | 'whitelist' | 'b2b';
   pendingInput?: 'email' | 'phone' | 'name' | 'wallet' | 'none';
+  referralCode?: string;
   lastAction?: string;
   updatedAt: number;
   createdAt: number;

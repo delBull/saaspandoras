@@ -73,17 +73,17 @@ export const buySelectorKeyboard = (): TelegramKeyboard => ({
   ]
 });
 
-export const buyWeb3Keyboard = (): TelegramKeyboard => ({
+export const buyWeb3Keyboard = (opts?: { checkoutUrl?: string }): TelegramKeyboard => ({
   inline_keyboard: [
-    [{ text: '💳 Ir al Checkout (USDC)', url: buildCheckoutUrl() }],
+    [{ text: '💳 Ir al Checkout (USDC)', url: opts?.checkoutUrl || buildCheckoutUrl() }],
     [{ text: '🇲🇽 Prefiero SPEI', callback_data: 'action_buy_spei' }],
     BACK_ROW
   ]
 });
 
-export const buySpeiKeyboard = (): TelegramKeyboard => ({
+export const buySpeiKeyboard = (opts?: { checkoutUrl?: string }): TelegramKeyboard => ({
   inline_keyboard: [
-    [{ text: '💳 Ir al Checkout (SPEI)', url: buildCheckoutUrl() }],
+    [{ text: '💳 Ir al Checkout (SPEI)', url: opts?.checkoutUrl || buildCheckoutUrl() }],
     [{ text: '🌐 Prefiero Web3', callback_data: 'action_buy_web3' }],
     BACK_ROW
   ]
