@@ -385,10 +385,13 @@ export async function handleTelegramMessage(params: {
   // 2. /start & /menu → welcome + main menu with referral parameter extraction
   if (trimmed.startsWith('/start') || trimmed === '/menu' || trimmed === '/inicio') {
     let extractedRef: string | undefined = undefined;
+    let extractedWallet: string | undefined = undefined;
     if (trimmed.startsWith('/start ')) {
       const param = trimmed.replace('/start ', '').trim();
       if (param.startsWith('ref_')) {
         extractedRef = param.replace('ref_', '').trim();
+      } else if (param.startsWith('wallet_')) {
+        extractedWallet = param.replace('wallet_', '').trim();
       } else if (param) {
         extractedRef = param;
       }
@@ -401,6 +404,7 @@ export async function handleTelegramMessage(params: {
       journeyStageId: 'stage_welcome_thesis',
       pendingInput: 'none',
       ...(refToSave ? { referralCode: refToSave } : {}),
+      ...(extractedWallet ? { walletAddress: extractedWallet } : {}),
       lastAction: 'start'
     });
     await sendMainMenu(ctx, firstName);
