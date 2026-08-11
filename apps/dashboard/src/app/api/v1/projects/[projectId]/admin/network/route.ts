@@ -14,7 +14,6 @@ async function handlerGet(
 ) {
     try {
         const { projectId } = await params;
-        const projectIdNum = parseInt(projectId);
         const { session } = await getAuth(await headers());
         const walletAddress = session?.address;
 
@@ -22,13 +21,22 @@ async function handlerGet(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const project = await db.query.projects.findFirst({
-            where: eq(projects.id, projectIdNum)
-        });
+        let project;
+        if (!isNaN(parseInt(projectId))) {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.id, parseInt(projectId))
+            });
+        } else {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.slug, projectId)
+            });
+        }
 
         if (!project || project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+
+        const projectIdNum = project.id;
 
         const network = await db.query.ambassadors.findMany({
             where: eq(ambassadors.projectId, projectIdNum),
@@ -61,7 +69,6 @@ async function handlerPut(
 ) {
     try {
         const { projectId } = await params;
-        const projectIdNum = parseInt(projectId);
         const body = await req.json();
         const { action, ambassadorId, managerId, ambassadorCommissionRate, managerCommissionRate, signature, message, signerAddress } = body;
         
@@ -72,13 +79,22 @@ async function handlerPut(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const project = await db.query.projects.findFirst({
-            where: eq(projects.id, projectIdNum)
-        });
+        let project;
+        if (!isNaN(parseInt(projectId))) {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.id, parseInt(projectId))
+            });
+        } else {
+            project = await db.query.projects.findFirst({
+                where: eq(projects.slug, projectId)
+            });
+        }
 
         if (!project || project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+
+        const projectIdNum = project.id;
 
         // Action: Update Rates
         if (action === 'update_rates') {

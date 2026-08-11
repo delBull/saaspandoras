@@ -56,7 +56,7 @@ export default function PandorasPlatformLandingPage() {
 
           <div className="hidden md:flex items-center gap-8 text-xs text-zinc-400 font-light">
             <a href="#ecosystem" className="hover:text-white transition-colors">Ecosistema</a>
-            <Link href="/growth-os/hermes" className="hover:text-amber-400 transition-colors">Hermes AI Platform</Link>
+            <Link href="/growth-os/hermes" className="hover:text-amber-400 transition-colors">Hermes Runtime</Link>
             <Link href="/media" className="hover:text-white transition-colors">Media Co</Link>
             <a href="#marketplace" className="hover:text-white transition-colors">Agent Marketplace</a>
           </div>
@@ -140,8 +140,8 @@ export default function PandorasPlatformLandingPage() {
                 <Badge className="bg-amber-500/20 text-amber-400 text-[9px] font-mono">AI-OS Infrastructure</Badge>
               </div>
               <h3 className="text-base font-medium text-white mb-2">Hermes Agent Platform</h3>
-              <p className="text-xs text-zinc-400 font-light mb-4">Infraestructura multi-tenant de agentes inteligentes autónomos con Memory Engine y Policy Engine.</p>
-              <Link href="/growth-os/hermes" className="text-xs text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1">Ver Hermes Platform <ArrowUpRight className="w-3 h-3" /></Link>
+              <p className="text-xs text-zinc-400 font-light mb-4">Runtime multi-tenant con Command Center en 7 Studios, Execution OS (Outbox), Intent Engine, Capability Registry y Governance Queue.</p>
+              <Link href="/growth-os/hermes" className="text-xs text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1">Ver Hermes Runtime v7 <ArrowUpRight className="w-3 h-3" /></Link>
             </div>
 
             {/* Layer 3: Media Infrastructure */}
@@ -204,7 +204,9 @@ export default function PandorasPlatformLandingPage() {
             <ChevronRight className="w-4 h-4 text-zinc-600" />
             <span className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300">Growth OS CRM</span>
             <ChevronRight className="w-4 h-4 text-zinc-600" />
-            <span className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">Hermes Agent OS</span>
+            <span className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">Hermes Runtime v7</span>
+            <ChevronRight className="w-4 h-4 text-zinc-600" />
+            <span className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">Execution OS (Outbox)</span>
             <ChevronRight className="w-4 h-4 text-zinc-600" />
             <span className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Checkout Web3 / SPEI</span>
           </div>
@@ -214,6 +216,9 @@ export default function PandorasPlatformLandingPage() {
       {/* FINAL CTA */}
       <section className="py-24 px-6 border-t border-zinc-800/80 bg-gradient-to-b from-zinc-950 to-[#070709] text-center">
         <div className="max-w-4xl mx-auto">
+          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-4 py-1.5 rounded-full mb-8 font-mono">
+            Pandoras Growth OS — The Autonomous Enterprise Platform
+          </Badge>
           <h2 className="text-3xl md:text-5xl font-light text-white mb-8">
             Construye la infraestructura inteligente que tu empresa necesita.
           </h2>
@@ -222,7 +227,7 @@ export default function PandorasPlatformLandingPage() {
             size="lg"
             className="bg-amber-500 hover:bg-amber-400 text-black font-medium text-base px-10 py-5 rounded-2xl shadow-xl shadow-amber-500/20 transition-all"
           >
-            Solicitar Acceso a Pandora's Platform
+            Solicitar Acceso a Pandoras Platform
           </Button>
         </div>
       </section>

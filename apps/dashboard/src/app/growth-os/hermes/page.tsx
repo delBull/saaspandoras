@@ -84,13 +84,13 @@ const INDUSTRIES = [
     id: 'web3_education',
     label: '🌐 Web3 & Soberanía Digital',
     color: 'emerald',
-    agentName: 'OscarBot (Educador Web3 & Soberanía)',
+    agentName: 'Hermes Sovereign (Educador Web3 & Soberanía)',
     pack: 'web3-sovereign-education',
     channels: ['Telegram', 'Web Widget', 'WhatsApp'],
     capabilities: ['AI Agents', 'CRM', 'Knowledge Engine', 'Scheduling'],
     conversation: [
-      { role: 'user', text: 'Hola Oscar, me interesa aprender sobre soberanía digital y custodia Web3' },
-      { role: 'agent', text: '¡Bienvenido! La soberanía digital comienza por entender la auto-custodia de tus activos y la identidad descentralizada. ¿Buscas educación inicial en Bitcoin/Web3 o arquitectura de nodos y privacidad avanzada?' },
+      { role: 'user', text: 'Hola, me interesa aprender sobre soberanía digital y auto-custodia Web3' },
+      { role: 'agent', text: '¡Bienvenido! La soberanía digital comienza por entender la auto-custodia de tus activos y la identidad descentralizada. ¿Buscas educación inicial en Web3 o arquitectura de nodos y privacidad avanzada?' },
       { role: 'user', text: 'Busco educación inicial y cómo proteger mi patrimonio' },
       { role: 'agent', text: 'Excelente decisión. Contamos con el **Web3 Sovereign Academy Playbook**. Te puedo agendar un workshop de introducción o enviarte la guía de auto-custodia. ¿Cuál prefieres?' },
     ]
@@ -397,13 +397,13 @@ export default function HermesEnterpriseLandingPage() {
         </p>
 
         <p className="text-sm md:text-base text-zinc-400 font-light max-w-2xl mx-auto mb-10 leading-relaxed">
-          Pandoras permite a empresas como S'Narai y clínicas como Oscar operar con <strong>Referral Trust Journeys sin FOMO</strong>, calificar prospectos en tiempo real y ejecutar cierres SPEI 24/7.
+          Pandoras permite a desarrollos patrimoniales, protocolos y empresas de servicios operar con <strong>Referral Trust Journeys sin FOMO</strong>, calificar prospectos en tiempo real y ejecutar cierres SPEI y Web3 24/7.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-zinc-400 font-mono mb-12">
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Journey Engine & Playbooks Activos</span>
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Objective Engine con Cierre SPEI</span>
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Referral Trust Journeys Institucionales</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Intent Engine & Goal Recognizer</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Human-in-the-Loop Governance Queue</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Capability Registry & Outbox Execution OS</span>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -442,8 +442,8 @@ export default function HermesEnterpriseLandingPage() {
             <div className="border border-zinc-800/60 rounded-2xl bg-zinc-900/40 p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-xs font-medium text-white">S'Narai Concierge (Etapa Cero)</h4>
-                  <p className="text-[11px] text-amber-400 font-mono">Journey: family_referral_journey</p>
+                  <h4 className="text-xs font-medium text-white">Hermes Real Estate Concierge</h4>
+                  <p className="text-[11px] text-amber-400 font-mono">Journey: patrimonial_investor_journey</p>
                 </div>
                 <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[9px]">ONLINE</Badge>
               </div>
@@ -458,7 +458,7 @@ export default function HermesEnterpriseLandingPage() {
             <div className="border border-zinc-800/60 rounded-2xl bg-zinc-900/40 p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-xs font-medium text-white">Oscar (Educador Web3 & Soberanía)</h4>
+                  <h4 className="text-xs font-medium text-white">Hermes Sovereign (Educador Web3)</h4>
                   <p className="text-[11px] text-blue-400 font-mono">Journey: web3_sovereign_education</p>
                 </div>
                 <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px]">ONLINE</Badge>
@@ -474,14 +474,14 @@ export default function HermesEnterpriseLandingPage() {
             <div className="border border-zinc-800/60 rounded-2xl bg-zinc-900/40 p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-xs font-medium text-white">Sofía Media Journal</h4>
+                  <h4 className="text-xs font-medium text-white">Hermes Media Co (Atracción de Audiencia)</h4>
                   <p className="text-[11px] text-purple-400 font-mono">Journey: editorial_authority_journey</p>
                 </div>
                 <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-[9px]">ONLINE</Badge>
               </div>
-              <p className="text-[11px] text-zinc-400 mb-3">Captación editorial y educación de comunidad.</p>
+              <p className="text-[11px] text-zinc-400 mb-3">Captación editorial, distribución de contenidos y atribución de conversión.</p>
               <div className="text-[10px] font-mono text-zinc-500 border-t border-zinc-800/60 pt-2 flex justify-between">
-                <span>Playbook: editorial_v1</span>
+                <span>Playbook: media_co_v1</span>
                 <span className="text-emerald-400">Objective: Subscribe</span>
               </div>
             </div>
@@ -531,10 +531,10 @@ export default function HermesEnterpriseLandingPage() {
       {/* WHAT IS HERMES */}
       <section id="ecosystem" className="py-24 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-3 py-1 font-mono mb-4">Pandora's Control Plane v4.1</Badge>
+          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-3 py-1 font-mono mb-4">Pandora's Growth OS — Hermes Runtime v7</Badge>
           <h2 className="text-3xl md:text-4xl font-light text-white mb-4">¿Qué es Hermes Runtime?</h2>
           <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto font-light">
-            Hermes es el <strong>Runtime de Ejecución de Inteligencia Autónoma</strong> de Pandora's Platform OS. Un motor empresarial multi-tenant diseñado para crear, aprovisionar y operar agentes inteligentes mediante un <strong>Centro de Operaciones Guiado en 7 Studios</strong>.
+            Hermes es el <strong>Runtime de Ejecución de Inteligencia Autónoma</strong> de Pandoras Growth OS. Un motor empresarial multi-tenant diseñado para crear, aprovisionar y operar agentes mediante un <strong>Command Center en 7 Studios</strong>, con un <strong>Execution OS basado en Outbox</strong>, <strong>Capability Registry</strong>, <strong>Intent Engine</strong> y <strong>Human-in-the-Loop Governance Queue</strong>.
           </p>
         </div>
 
@@ -577,9 +577,10 @@ export default function HermesEnterpriseLandingPage() {
       <section id="packs" className="py-24 px-6 border-t border-zinc-800/80 bg-zinc-950/40">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-light text-white mb-4">Domain Packs</h2>
+            <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-3 py-1 font-mono mb-4">Capability Registry — Domain Packs</Badge>
+            <h2 className="text-3xl md:text-4xl font-light text-white mb-4">Domain Packs & Capabilities</h2>
             <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto font-light">
-              Cada industria puede tener su propio ecosistema especializado. Instala capacidades listas para usar:
+              Cada industria instala su propio ecosistema de capacidades desde el Capability Registry. Activa canales, playbooks y lógica de cierre en un clic:
             </p>
           </div>
 
@@ -698,24 +699,33 @@ export default function HermesEnterpriseLandingPage() {
       <section className="py-24 px-6 border-t border-zinc-800/80 bg-gradient-to-b from-zinc-950 to-[#070709] text-center">
         <div className="max-w-4xl mx-auto">
           <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs px-4 py-1.5 rounded-full mb-8 font-mono">
-            Pandoras Growth OS Platform
+            Pandoras Growth OS — Hermes Runtime v7
           </Badge>
 
           <h2 className="text-3xl md:text-5xl font-light text-white mb-8">
-            Para empresas que quieren operar diferente.
+            Instala inteligencia operativa autónoma bajo tu marca.
           </h2>
 
           <p className="text-base md:text-lg text-zinc-400 font-light mb-12 max-w-2xl mx-auto">
-            La próxima generación de compañías no solamente tendrá software. Tendrá inteligencia operativa autónoma. Hermes permite instalar esa inteligencia. Bajo tu marca. Con tus procesos. Con tu ecosistema.
+            La próxima generación de compañías no tendrá herramientas desconectadas. Tendrá un sistema nervioso autónomo: agentes coordinados, Command Center operativo y Execution OS siempre activo. Hermes es esa infraestructura. Bajo tu marca. Con tus procesos.
           </p>
 
-          <Button
-            onClick={() => handleOpenCTA('hermes_final_cta')}
-            size="lg"
-            className="bg-amber-500 hover:bg-amber-400 text-black font-medium text-base px-10 py-5 rounded-2xl shadow-xl shadow-amber-500/20 transition-all"
-          >
-            Solicitar Acceso a Hermes Growth OS
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button
+              onClick={() => handleOpenCTA('hermes_final_cta')}
+              size="lg"
+              className="bg-amber-500 hover:bg-amber-400 text-black font-medium text-base px-10 py-5 rounded-2xl shadow-xl shadow-amber-500/20 transition-all"
+            >
+              Solicitar Acceso a Hermes Runtime
+            </Button>
+            <Link
+              href="/growth-os/hermes/sandbox"
+              className="px-10 py-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-base font-light transition-all flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Probar Demo Sandbox
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -415,8 +415,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                     eq(purchasesSchema.projectId, project.id),
                     finalUserId 
                         ? eq(purchasesSchema.userId, finalUserId) 
-                        : eq(purchasesSchema.userId, normalizedWallet),
-                    sql`${purchasesSchema.status} = 'completed'`
+                        : eq(purchasesSchema.userId, normalizedWallet)
                 ),
                 orderBy: desc(purchasesSchema.createdAt)
             }).catch(() => []);
@@ -424,20 +423,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             if (allPurchases.length > 0) {
                 const origin = req.headers.get("origin") || "";
                 certificates = allPurchases.map(p => {
-                    const isVerifiable = !!p.agreementHash || slug === 'snarai';
                     const tokenPrice = Number(project.tokenPriceUsd || 50);
                     const units = Math.floor(Number(p.amount) / (tokenPrice > 0 ? tokenPrice : 50));
                     const apiBase = apiKey.startsWith('pk_live_') ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
-                    const isCertified = (p.agreementHash || slug === 'snarai') && p.status === 'completed';
+                    const isCertified = p.status === 'completed' && (!!p.agreementHash || slug === 'snarai');
+                    const isVerifiable = isCertified;
 
                     return {
                         isVerifiable,
                         agreementId: p.agreementId || p.id,
-                        agreementHash: p.agreementHash || (slug === 'snarai' ? `PENDING-${p.id.slice(0, 8)}` : null),
-                        // Legal certificate URL is only exposed once the purchase is confirmed on-chain,
-                        // otherwise the certificate page would be reachable before payment confirmation.
+                        agreementHash: p.agreementHash || (isCertified ? `PENDING-${p.id.slice(0, 8)}` : null),
+                        // Legal certificate URL is only exposed once the purchase is confirmed on-chain / completed
                         legalPortalUrl: isCertified ? (p.legalPortalUrl || `${apiBase}/legal/certificate/${p.agreementId || p.id}?project=${slug}&units=${units}&origin=${encodeURIComponent(origin)}`) : null,
-                        status: isCertified ? "certified" : "pending",
+                        status: isCertified ? "certified" : (p.status === 'on_hold' || p.status === 'processing' ? "on_hold" : "pending"),
                         units: units || 1, 
                         amount: Number(p.amount) || 0, 
                         date: p.createdAt

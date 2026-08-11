@@ -42,24 +42,48 @@ async function handler(req: Request) {
         return NextResponse.json({ error: 'Cuenta digital requerida. Conecta tu cuenta antes de registrarte.' }, { status: 400 });
     }
 
-    // 1. Check if email already exists
+    // 1. Resolve project by ID or slug
+    let resolvedProjectId: number | null = null;
+    let projectSlug = '';
+    if (projectId) {
+        let projectData;
+        if (typeof projectId === 'number' || !isNaN(Number(projectId))) {
+            projectData = await db.query.projects.findFirst({
+                where: eq(projects.id, Number(projectId))
+            });
+        } else {
+            projectData = await db.query.projects.findFirst({
+                where: eq(projects.slug, String(projectId))
+            });
+        }
+        if (projectData) {
+            resolvedProjectId = projectData.id;
+            projectSlug = projectData.slug || '';
+        }
+    }
+
+    // 2. Check if email or wallet address already exists
     const existing = await db.query.ambassadors.findFirst({
         where: eq(ambassadors.email, emailLower)
     });
 
     if (existing) {
-        return NextResponse.json({ error: 'Este correo ya está registrado como Gestor Patrimonial/Ambassador' }, { status: 409 });
-    }
+        // Update existing ambassador with new project & wallet if needed
+        await db.update(ambassadors).set({
+            projectId: resolvedProjectId || existing.projectId,
+            walletAddress: walletAddress ? walletAddress.toLowerCase() : existing.walletAddress,
+            fullName: sanitizedName || existing.fullName,
+            phone: sanitizedPhone || existing.phone,
+            updatedAt: new Date()
+        }).where(eq(ambassadors.id, existing.id));
 
-    // 2. Load project for slug-based referral code prefix
-    let projectSlug = '';
-    if (projectId) {
-        const projectData = await db.query.projects.findFirst({
-            where: eq(projects.id, Number(projectId))
+        return NextResponse.json({
+            success: true,
+            message: 'Registro actualizado correctamente como Gestor Patrimonial.',
+            ambassadorId: existing.id,
+            referralCode: existing.referralCode,
+            email: existing.email
         });
-        if (projectData) {
-            projectSlug = projectData.slug || '';
-        }
     }
 
     // 3. Generate unique referral code with project prefix (e.g., SNARAI-MARIO-1234)
@@ -99,7 +123,7 @@ async function handler(req: Request) {
         walletAddress: walletAddress.toLowerCase(),
         referralCode,
         origin: origin as any,
-        projectId: projectId ? Number(projectId) : null,
+        projectId: resolvedProjectId || (projectId ? Number(projectId) : null),
         status: 'APPLIED',
         emailVerified: false,
         verificationToken: otp,

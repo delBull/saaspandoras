@@ -78,7 +78,7 @@ export default function PandorasMediaCoLandingPage() {
         </h1>
 
         <p className="text-lg md:text-xl text-zinc-300 font-light max-w-3xl mx-auto mb-10 leading-relaxed">
-          Pandora's Media Co impulsa la prospección masiva distribuida, conectando contenidos de alta atracción con Hermes AI Agent OS para calificar y convertir clientes potenciales de forma autónoma.
+          Pandora's Media Co impulsa la prospección masiva distribuida, conectando contenidos de alta atracción con Hermes AI Agent OS para calificar y convertir clientes potenciales de forma autónoma, sin importar la industria o canal.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -132,13 +132,14 @@ export default function PandorasMediaCoLandingPage() {
         </div>
       </section>
 
+
       {/* TRIDIRECTIONAL HUB SECTION */}
       <section id="tri-hub" className="py-20 px-6 border-t border-zinc-800/80 bg-zinc-950/40">
         <div className="max-w-6xl mx-auto text-center">
           <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-xs px-3 py-1 font-mono mb-4">Tri-Hub Communication Protocol</Badge>
           <h2 className="text-3xl font-light text-white mb-6">Comunicación Tridireccional Autónoma</h2>
           <p className="text-sm text-zinc-400 max-w-2xl mx-auto mb-16 font-light">
-            Media Co no trabaja de forma aislada; establece una sincronía fluida entre la producción de medios, el proyecto empresarial y el motor de agentes Hermes.
+            Media Co no trabaja de forma aislada; establece una sintonía fluida entre la producción de medios, cualquier empresa o proyecto activo en Pandoras, y el motor de agentes Hermes.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
@@ -151,13 +152,13 @@ export default function PandorasMediaCoLandingPage() {
             <div className="border border-indigo-500/30 rounded-2xl bg-indigo-500/5 p-6 relative">
               <Zap className="w-8 h-8 text-purple-400 mb-4" />
               <h3 className="text-base font-medium text-white mb-2">2. Hermes Agent Engine</h3>
-              <p className="text-xs text-zinc-400 font-light">Recibe el lead de forma instantánea, califica el perfil, resuelve objeciones y entrega dossiers.</p>
+              <p className="text-xs text-zinc-400 font-light">Recibe el lead de forma instantánea, califica el perfil, resuelve objeciones y entrega dossiers y propuestas.</p>
             </div>
 
             <div className="border border-zinc-800 rounded-2xl bg-zinc-950 p-6">
               <Building2 className="w-8 h-8 text-emerald-400 mb-4" />
-              <h3 className="text-base font-medium text-white mb-2">3. Empresa / Proyecto (S'Narai)</h3>
-              <p className="text-xs text-zinc-400 font-light">Recibe compradores calificados listos para reserva SPEI Fast Lane o firma de contratos.</p>
+              <h3 className="text-base font-medium text-white mb-2">3. Tu Proyecto / Empresa</h3>
+              <p className="text-xs text-zinc-400 font-light">Recibe compradores calificados listos para reserva SPEI Fast Lane, Checkout Web3 o firma de contratos institucionales.</p>
             </div>
           </div>
         </div>
@@ -166,8 +167,11 @@ export default function PandorasMediaCoLandingPage() {
       {/* FINAL CTA */}
       <section className="py-24 px-6 border-t border-zinc-800/80 bg-gradient-to-b from-zinc-950 to-[#070709] text-center">
         <div className="max-w-4xl mx-auto">
+          <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-xs px-4 py-1.5 rounded-full mb-8 font-mono">
+            Pandoras Growth OS — Demand Generation Engine
+          </Badge>
           <h2 className="text-3xl md:text-5xl font-light text-white mb-8">
-            Impulsa tus ventas con la infraestructura de demanda de Pandora's.
+            Activa la máquina de demanda de Pandoras para tu proyecto.
           </h2>
           <Button
             onClick={() => handleOpenCTA('media_co_final_cta')}
