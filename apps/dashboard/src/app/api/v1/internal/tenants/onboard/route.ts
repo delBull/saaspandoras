@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { requireInternalAuth } from '@/lib/security/internal-auth';
 
 /**
  * POST /api/v1/internal/tenants/onboard
@@ -10,6 +11,9 @@ import { eq } from 'drizzle-orm';
  * This is the API endpoint representing the first step of Zero-Code Customer Onboarding.
  */
 export async function POST(req: Request) {
+  const authError = requireInternalAuth(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { name, slug, identity, policies, runtimeConfig } = body;

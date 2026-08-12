@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { knowledgeChunks } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { requireInternalAuth } from '@/lib/security/internal-auth';
 
 /**
  * POST /api/v1/internal/tenants/knowledge
@@ -10,6 +11,9 @@ import { eq, and } from 'drizzle-orm';
  * Demonstrates the Knowledge Lifecycle (upload -> mutate -> retrieve).
  */
 export async function POST(req: Request) {
+  const authError = requireInternalAuth(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { tenantId, sourceType, sourceId, content, metadata } = body;
