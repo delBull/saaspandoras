@@ -15,7 +15,7 @@ export async function getHermesConfig(projectSlug: string) {
   }
 
   const config = (projectRecord.tenantRuntimeConfig as Record<string, any>) || {};
-  return config.knowledgePack || null;
+  return config.domainPack || config.knowledgePack || null;
 }
 
 export async function saveHermesConfig(projectSlug: string, formData: any) {
@@ -29,24 +29,34 @@ export async function saveHermesConfig(projectSlug: string, formData: any) {
 
   const currentConfig = (projectRecord.tenantRuntimeConfig as Record<string, any>) || {};
   
+  // Create or update the domain pack
+  const currentDomainPack = currentConfig.domainPack || {};
+  
+  const updatedDomainPack = {
+    ...currentDomainPack,
+    id: `${projectSlug}_domain_pack`,
+    name: `${formData.companyName} Domain Pack`,
+    version: currentDomainPack.version || '1.0.0',
+    soul: {
+      ...(currentDomainPack.soul || {}),
+      agentName: formData.agentName || 'Hermes',
+      proactivity: {
+        ...(currentDomainPack.soul?.proactivity || {})
+      }
+    },
+    knowledgeDef: {
+      ...(currentDomainPack.knowledgeDef || {}),
+      companyName: formData.companyName,
+      industry: formData.industry,
+      systemInstructions: formData.systemInstructions, // Add to manifest for easy access
+      salesPitch: formData.salesPitch
+    },
+    evidenceLayer: formData.evidenceLayer || currentDomainPack.evidenceLayer || []
+  };
+
   const updatedConfig = {
     ...currentConfig,
-    knowledgePack: {
-      ...(currentConfig.knowledgePack || {}),
-      id: `${projectSlug}_pack_v1`,
-      name: `${formData.companyName} Knowledge Pack`,
-      version: '1.0.0',
-      industry: formData.industry,
-      systemInstructions: formData.systemInstructions,
-      salesPitch: formData.salesPitch,
-      publicKnowledge: {
-        title: formData.companyName,
-        summary: formData.salesPitch,
-        pricingDetails: {},
-        faqs: []
-      },
-      objectionRules: []
-    }
+    domainPack: updatedDomainPack
   };
 
   await db.update(projects)

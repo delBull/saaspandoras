@@ -120,9 +120,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Evaluate Hermes OS v7 Journey & Playbook Engine
-    const { HermesJourneyEngine } = await import('@/lib/hermes/journey-engine');
+    const { BUILTIN_JOURNEYS, BUILTIN_PLAYBOOKS } = await import('@/lib/hermes/journey-engine');
     const selectedJourneyId = referralContext ? 'family_referral_journey' : (effectiveIndustry.includes('Web3') ? 'web3_sovereign_education' : 'family_referral_journey');
-    const { journey, playbook, objectiveState } = HermesJourneyEngine.evaluateJourney(selectedJourneyId);
+    const journey = BUILTIN_JOURNEYS[selectedJourneyId]!;
+    const playbook = BUILTIN_PLAYBOOKS[journey.playbookId]!;
+    const objectiveState = {
+      journeyId: journey.id,
+      currentStageId: playbook.stages[0]?.id || '',
+      goal: journey.goal,
+      completedObjectives: [],
+      missingObjectives: playbook.stages[0]?.requiredData || [],
+      recommendedAction: playbook.stages[0]?.suggestedAction || 'Avanzar conversación'
+    };
 
     const journeyPromptInjection = `\n\nHERMES OS V7 JOURNEY & OBJECTIVE ENGINE:
 - Journey Activo: ${journey.name} (Persona: ${journey.persona})

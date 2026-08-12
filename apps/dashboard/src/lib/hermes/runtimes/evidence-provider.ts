@@ -35,7 +35,7 @@ export class EvidenceProvider implements IDecisionProvider {
 
     // Find first relevant claim that is NOT verified
     const unverifiedClaim = evidenceLayer.find((claim: any) => 
-      detectedClassifications.includes(claim.classification) && !claim.isVerified
+      detectedClassifications.includes(claim.classification) && claim.verificationStatus !== 'VERIFIED'
     );
 
     if (unverifiedClaim) {

@@ -75,46 +75,60 @@ export const SNARAI_DOMAIN_PACK: DomainPackManifest = {
 
   evidenceLayer: [
     {
-      claim: "Certificado = Acción SAPI",
+      id: "ev_1",
+      statement: "Certificado = Acción SAPI",
       classification: "LEGAL_CLAIM",
-      isVerified: false,
+      verificationStatus: "PENDING",
+      source: "Draft Contracts",
       allowedResponse: "La naturaleza del certificado está definida en los contratos. Consulta el Data Room."
     },
     {
-      claim: "Certificado = Derecho Fiduciario",
+      id: "ev_2",
+      statement: "Certificado = Derecho Fiduciario",
       classification: "LEGAL_CLAIM",
-      isVerified: false,
+      verificationStatus: "PENDING",
+      source: "Draft Contracts",
       allowedResponse: "Consulta el Data Room para validar el vehículo de inversión."
     },
     {
-      claim: "Devolución de Capital (Fondeo)",
+      id: "ev_3",
+      statement: "Devolución de Capital (Fondeo)",
       classification: "FINANCIAL_CLAIM",
-      isVerified: false,
+      verificationStatus: "PENDING",
+      source: "Funding Terms",
       allowedResponse: "El mecanismo de devolución está sujeto a contrato. Revisa la documentación."
     },
     {
-      claim: "Liquidez Inmediata",
+      id: "ev_4",
+      statement: "Liquidez Inmediata",
       classification: "LIQUIDITY_CLAIM",
-      isVerified: false,
+      verificationStatus: "PENDING",
+      source: "Secondary Market Policy",
       allowedResponse: "S'Narai provee mecanismos de transferencia, pero no garantiza liquidez inmediata."
     },
     {
-      claim: "Rendimientos Garantizados",
+      id: "ev_5",
+      statement: "Rendimientos garantizados",
       classification: "PERFORMANCE_CLAIM",
-      isVerified: false,
-      allowedResponse: "Toda inversión inmobiliaria conlleva riesgo. No hay rendimientos fijos garantizados."
+      verificationStatus: "REJECTED",
+      source: "Marketing Guidelines",
+      allowedResponse: "Las inversiones en bienes raíces conllevan riesgo. S'Narai no garantiza rendimientos fijos."
     },
     {
-      claim: "Existe un Inmueble en Bucerías",
+      id: "ev_6",
+      statement: "Existe un Inmueble en Bucerías",
       classification: "PUBLIC_FACT",
-      isVerified: true,
+      verificationStatus: "VERIFIED",
+      source: "Public Registry",
       allowedResponse: "El desarrollo se encuentra en la Zona Dorada de Bucerías."
     },
     {
-      claim: "Gobernanza / Derechos de Voto",
-      classification: "LEGAL_CLAIM",
-      isVerified: false,
-      allowedResponse: "Tus derechos de voto dependen de tu membresía y están documentados institucionalmente."
+      id: "ev_7",
+      statement: "Rentabilidad histórica de Airbnb en la zona es del 15%",
+      classification: "FINANCIAL_CLAIM",
+      verificationStatus: "PENDING",
+      source: "Market Study 2025",
+      allowedResponse: "Estudios de mercado sugieren proyecciones atractivas, consulta el prospecto para el caso base conservador."
     }
   ]
 };

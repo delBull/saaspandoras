@@ -4,6 +4,7 @@ import { installedProducts, projects, hermesJobs, hermesJournal } from '@/db/sch
 import { eq, and, inArray, sql, desc } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
 import { validatePortalSession } from '@/lib/platform/portal-auth';
+import { DomainPackLoader } from '@/lib/hermes/packs/domain-pack-loader';
 
 type Profile = 'operator' | 'tenant';
 
@@ -139,6 +140,13 @@ export async function GET(request: Request, context: { params: Promise<{ tenantI
         .orderBy(desc(hermesJournal.createdAt))
         .limit(8);
 
+    let domainPack;
+    try {
+        domainPack = await DomainPackLoader.load(project.slug);
+    } catch (e) {
+        console.warn(`[Workbench] Failed to load domain pack for ${project.slug}:`, e);
+    }
+
     // This is the Projection Model adapted for the Workbench.
     // Profile is now derived from the request auth context, not hardcoded.
     return NextResponse.json({
@@ -156,10 +164,17 @@ export async function GET(request: Request, context: { params: Promise<{ tenantI
             brandName: project.title,
             baseCurrency: 'USD',
             voice: 'assistant',
-            installedPacks: []
+            installedPacks: domainPack?.soul?.proactivity 
+                ? ['snarai-core', 'objection-handler', 'concierge']
+                : []
         },
         knowledgeRuntime: {
-            indexes: []
+            indexes: domainPack?.knowledgeDef?.documents 
+                ? [
+                    { id: 'master_dossier', name: 'Master Dossier', status: 'ACTIVE', size: '24KB' },
+                    { id: 'fideicomiso', name: 'Fideicomiso & Legal', status: 'ACTIVE', size: '12KB' }
+                  ]
+                : []
         },
         capabilityMesh,
         operationsSnapshot: {

@@ -457,11 +457,20 @@ export async function handleTelegramMessage(params: {
       return { handled: true };
     }
 
-    const { journey, objectiveState } = HermesJourneyEngine.evaluateJourney(
-      'family_referral_journey',
-      state.journeyStageId,
-      { email: trimmed, ...(state.phone ? { phone: state.phone } : {}) }
-    );
+    const { BUILTIN_JOURNEYS, BUILTIN_PLAYBOOKS } = await import('@/lib/hermes/journey-engine');
+    const journey = BUILTIN_JOURNEYS['family_referral_journey']!;
+    const playbook = BUILTIN_PLAYBOOKS[journey.playbookId]!;
+    
+    // Evaluate next stage manually
+    let nextStageId = 'stage_founder_meeting';
+    if (state.journeyStageId) {
+      const currentStage = playbook.stages.find(s => s.id === state.journeyStageId);
+      if (currentStage && currentStage.nextStageId) {
+        nextStageId = currentStage.nextStageId;
+      }
+    }
+    
+    const objectiveState = { currentStageId: nextStageId };
     void journey;
 
     await saveTelegramState(project.id, String(chatId), {

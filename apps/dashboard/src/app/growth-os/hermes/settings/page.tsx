@@ -18,14 +18,15 @@ import {
   Cpu,
   Layers,
   ShieldCheck,
-  Building2
+  Building2,
+  XCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { saveHermesConfig, getHermesConfig } from './actions';
 
 export default function HermesAgentStudioPage() {
-  const [activeTab, setActiveTab] = useState<'identity' | 'knowledge' | 'journeys' | 'policies' | 'channels'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'knowledge' | 'journeys' | 'policies' | 'evidence' | 'channels'>('identity');
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -41,6 +42,7 @@ export default function HermesAgentStudioPage() {
   const [salesPitch, setSalesPitch] = useState(
     `Ofrecemos soluciones de alto valor con infraestructura Web3 y automatización de crecimiento.`
   );
+  const [evidenceLayer, setEvidenceLayer] = useState<any[]>([]);
   
   // Custom LLM Provider State
   const [providerType, setProviderType] = useState<'platform' | 'custom_ollama' | 'openai' | 'groq'>('platform');
@@ -58,10 +60,11 @@ export default function HermesAgentStudioPage() {
     // Load config on mount if slug exists (using hardcoded 'snarai' for now in dashboard context, or get from params)
     getHermesConfig('snarai').then((config) => {
       if (config) {
-        setCompanyName(config.publicKnowledge?.title || '');
-        setIndustry(config.industry || 'real_estate');
-        setSystemInstructions(config.systemInstructions || '');
-        setSalesPitch(config.salesPitch || '');
+        setCompanyName(config.knowledgeDef?.companyName || config.publicKnowledge?.title || '');
+        setIndustry(config.knowledgeDef?.industry || config.industry || 'real_estate');
+        setSystemInstructions(config.knowledgeDef?.systemInstructions || config.systemInstructions || '');
+        setSalesPitch(config.knowledgeDef?.salesPitch || config.salesPitch || '');
+        if (config.evidenceLayer) setEvidenceLayer(config.evidenceLayer);
       }
     }).catch(console.error);
   }, []);
@@ -72,16 +75,48 @@ export default function HermesAgentStudioPage() {
     setTimeout(() => setCopiedWebhook(false), 2000);
   };
 
+  const addEvidenceClaim = () => {
+    setEvidenceLayer([
+      ...evidenceLayer,
+      {
+        id: `ev_${Date.now()}`,
+        statement: '',
+        classification: 'PUBLIC_FACT',
+        verificationStatus: 'PENDING',
+        source: '',
+        sourceReference: '',
+        evidenceType: 'DOCUMENT',
+        allowedResponse: '',
+        restrictions: '',
+        createdBy: 'current_user',
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  };
+
+  const updateEvidenceClaim = (id: string, field: string, value: any) => {
+    setEvidenceLayer(evidenceLayer.map(claim => 
+      claim.id === id ? { ...claim, [field]: value, updatedBy: 'current_user', updatedAt: new Date().toISOString() } : claim
+    ));
+  };
+
+  const removeEvidenceClaim = (id: string) => {
+    setEvidenceLayer(evidenceLayer.filter(claim => claim.id !== id));
+  };
+
   const handleSaveSettings = async () => {
     setIsSaving(true);
     setSavedSuccess(false);
     try {
-      await saveHermesConfig('snarai', {
+      const formData = {
         companyName,
         industry,
         systemInstructions,
-        salesPitch
-      });
+        salesPitch,
+        agentName,
+        evidenceLayer
+      };
+      await saveHermesConfig('snarai', formData);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (error) {
@@ -182,7 +217,18 @@ export default function HermesAgentStudioPage() {
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            4. Policies (Safety/Governance)
+            4. Policies
+          </button>
+          <button
+            onClick={() => setActiveTab('evidence')}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap ${
+              activeTab === 'evidence' 
+                ? 'border-amber-400 text-amber-400 bg-amber-500/5' 
+                : 'border-transparent text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            5. Evidence Layer
           </button>
           <button
             onClick={() => setActiveTab('channels')}
@@ -364,7 +410,137 @@ export default function HermesAgentStudioPage() {
           </div>
         )}
 
-        {/* Tab 4: Canales Omnicanal & Webhooks */}
+        {/* Tab 5: Evidence Layer */}
+        {activeTab === 'evidence' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl">
+              <div>
+                <h3 className="text-lg font-light text-amber-400">Evidence-Backed Claims</h3>
+                <p className="text-xs text-zinc-400 mt-1">Configura las afirmaciones que Hermes puede usar, respaldadas por tu Data Room.</p>
+              </div>
+              <Button 
+                onClick={addEvidenceClaim}
+                className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-4 py-2 rounded-xl flex items-center gap-2"
+              >
+                + Add Claim
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {evidenceLayer.map((claim) => (
+                <div key={claim.id} className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl relative">
+                  <button 
+                    onClick={() => removeEvidenceClaim(claim.id)}
+                    className="absolute top-4 right-4 text-red-400 hover:text-red-300 p-1"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Afirmación (Statement)</label>
+                      <input 
+                        type="text"
+                        value={claim.statement}
+                        onChange={(e) => updateEvidenceClaim(claim.id, 'statement', e.target.value)}
+                        placeholder="Ej. El certificado es una acción SAPI"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Clasificación</label>
+                      <select 
+                        value={claim.classification}
+                        onChange={(e) => updateEvidenceClaim(claim.id, 'classification', e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-amber-500/50"
+                      >
+                        <option value="PUBLIC_FACT">Dato Público</option>
+                        <option value="DOCUMENTED_CLAIM">Afirmación Documentada</option>
+                        <option value="LEGAL_CLAIM">Legal</option>
+                        <option value="FINANCIAL_CLAIM">Financiero</option>
+                        <option value="LIQUIDITY_CLAIM">Liquidez</option>
+                        <option value="PERFORMANCE_CLAIM">Rendimiento</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Documento Fuente</label>
+                      <input 
+                        type="text"
+                        value={claim.source}
+                        onChange={(e) => updateEvidenceClaim(claim.id, 'source', e.target.value)}
+                        placeholder="Ej. Contrato Fideicomiso / Data Room URL"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Referencia / Sección</label>
+                      <input 
+                        type="text"
+                        value={claim.sourceReference || ''}
+                        onChange={(e) => updateEvidenceClaim(claim.id, 'sourceReference', e.target.value)}
+                        placeholder="Ej. Página 4, Cláusula 2"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Estado de Verificación</label>
+                      <select 
+                        value={claim.verificationStatus}
+                        onChange={(e) => updateEvidenceClaim(claim.id, 'verificationStatus', e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-amber-500/50"
+                      >
+                        <option value="PENDING">Pendiente (Draft)</option>
+                        <option value="VERIFIED">Verificado (Activo)</option>
+                        <option value="REJECTED">Rechazado</option>
+                        <option value="EXPIRED">Expirado</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Respuesta Permitida</label>
+                      <textarea 
+                        value={claim.allowedResponse}
+                        onChange={(e) => updateEvidenceClaim(claim.id, 'allowedResponse', e.target.value)}
+                        placeholder="La respuesta exacta o lineamiento que Hermes debe usar si se pregunta sobre esto."
+                        rows={2}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-mono uppercase text-zinc-400 mb-2">Restricciones Adicionales</label>
+                      <input 
+                        type="text"
+                        value={claim.restrictions || ''}
+                        onChange={(e) => updateEvidenceClaim(claim.id, 'restrictions', e.target.value)}
+                        placeholder="Ej. No prometer retorno de inversión"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex gap-4 text-[10px] font-mono text-zinc-500">
+                    <span>ID: {claim.id}</span>
+                    <span>Actualizado por: {claim.updatedBy || claim.createdBy}</span>
+                  </div>
+                </div>
+              ))}
+              {evidenceLayer.length === 0 && (
+                <div className="text-center py-12 bg-zinc-900/20 border border-dashed border-zinc-800 rounded-3xl text-zinc-500">
+                  <CheckCircle2 className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                  <p>No hay afirmaciones registradas.</p>
+                  <p className="text-xs mt-1">Añade Claims para dotar a Hermes de conocimiento verificable.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 6: Canales Omnicanal & Webhooks */}
         {activeTab === 'channels' && (
           <div className="space-y-6 bg-zinc-900/40 border border-zinc-800 p-6 md:p-8 rounded-3xl">
             <div>

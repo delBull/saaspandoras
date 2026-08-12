@@ -97,8 +97,19 @@ function ClientPortalContent() {
 
   if (!tenantId) return null;
 
+  const handleLogout = () => {
+    localStorage.removeItem('pandoras_portal_session');
+    window.location.href = '/growth-os/hermes/portal/login';
+  };
+
   return (
-    <div className="min-h-screen bg-[#08080C] text-white p-4 md:p-8 flex justify-center">
+    <div className="min-h-screen bg-[#08080C] text-white p-4 md:p-8 flex justify-center relative">
+      <button 
+        onClick={handleLogout}
+        className="absolute top-4 right-4 md:top-8 md:right-8 z-50 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-zinc-300 transition-colors"
+      >
+        Cerrar Sesión
+      </button>
       <HermesWorkbench tenantId={tenantId} />
     </div>
   );

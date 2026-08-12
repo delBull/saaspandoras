@@ -27,9 +27,11 @@ describe('Hermes Agent OS - Certification Test (Nivel A)', () => {
       const mockDomainPack = {
         evidenceLayer: [
           {
-            claim: 'Certificado = Acción SAPI',
+            id: 'ev_1',
+            statement: 'Certificado = Acción SAPI',
             classification: 'LEGAL_CLAIM',
-            isVerified: false,
+            verificationStatus: 'PENDING',
+            source: 'Mock Contract',
             allowedResponse: 'La naturaleza del certificado está definida en los contratos. Consulta el Data Room.'
           }
         ]

@@ -49,11 +49,22 @@ export interface GovernancePolicy {
 export type ClaimClassification = 'PUBLIC_FACT' | 'DOCUMENTED_CLAIM' | 'LEGAL_CLAIM' | 'FINANCIAL_CLAIM' | 'LIQUIDITY_CLAIM' | 'PERFORMANCE_CLAIM' | 'UNKNOWN';
 
 export interface EvidenceClaim {
-  claim: string;
+  id: string;
+  statement: string;
   classification: ClaimClassification;
-  sourceDocument?: string;
-  isVerified: boolean;
+  verificationStatus: 'VERIFIED' | 'PENDING' | 'REJECTED' | 'EXPIRED';
+  source: string;
+  sourceReference?: string;
+  evidenceType?: string;
+  verifiedAt?: string;
+  expiresAt?: string;
   allowedResponse: string;
+  restrictions?: string;
+  // Audit Trail
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DomainPackManifest extends PackManifest {

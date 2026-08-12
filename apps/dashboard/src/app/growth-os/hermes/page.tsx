@@ -360,7 +360,7 @@ export default function HermesEnterpriseLandingPage() {
             </div>
             <div>
               <span className="text-lg font-light tracking-tight text-white">HERMES</span>
-              <span className="text-xs text-amber-400 font-mono ml-2">AI Agent Infrastructure</span>
+              <span className="text-xs text-amber-400 font-mono ml-2 hidden sm:inline">AI Agent Infrastructure</span>
             </div>
           </div>
 
@@ -374,9 +374,10 @@ export default function HermesEnterpriseLandingPage() {
 
           <Button 
             onClick={() => handleOpenCTA('hermes_nav_cta')}
-            className="bg-amber-500 hover:bg-amber-400 text-black text-xs font-medium px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-500/10"
+            className="bg-amber-500 hover:bg-amber-400 text-black text-xs font-medium px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all shadow-lg shadow-amber-500/10"
           >
-            Solicitar Enterprise Assessment
+            <span className="hidden sm:inline">Solicitar Enterprise Assessment</span>
+            <span className="sm:hidden">Assessment</span>
           </Button>
         </div>
       </header>

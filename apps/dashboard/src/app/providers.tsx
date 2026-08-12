@@ -15,6 +15,8 @@ import React, { useState, useEffect } from "react";
 
 import { SWRConfig } from "swr";
 
+import { usePathname } from 'next/navigation';
+
 function ConnectedProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
@@ -32,6 +34,7 @@ export function Providers({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [autoConnectDisabled, setAutoConnectDisabled] = useState(false);
   
   useEffect(() => {
@@ -56,7 +59,7 @@ export function Providers({
         enableSystem={false}
       >
         <ThirdwebProvider>
-          {!autoConnectDisabled && (
+          {!autoConnectDisabled && !pathname?.startsWith('/growth-os') && pathname !== '/' && (
             <AutoConnect
               client={client}
               wallets={wallets}

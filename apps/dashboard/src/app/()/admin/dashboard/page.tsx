@@ -88,6 +88,7 @@ export default function AdminDashboardPage() {
 
   // Status filter type - simplified to avoid redundant union
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [productFilter, setProductFilter] = useState<string[]>([]);
 
   // Function to refresh all data
   const refreshData = async () => {
@@ -392,6 +393,14 @@ export default function AdminDashboardPage() {
       );
     }
 
+    // Apply product filter
+    if (productFilter.length > 0) {
+      filtered = filtered.filter(project => {
+        const products = project.installedProducts || [];
+        return productFilter.some(filterItem => products.includes(filterItem));
+      });
+    }
+
     // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
       let aValue: string | number = a.title;
@@ -426,7 +435,7 @@ export default function AdminDashboardPage() {
     });
 
     return sorted;
-  }, [enhancedProjects, statusFilter, searchQuery, sortBy, sortOrder]);
+  }, [enhancedProjects, statusFilter, productFilter, searchQuery, sortBy, sortOrder]);
 
   // Paginated slice of protocols
   const paginatedProjects = useMemo(() => {
@@ -631,6 +640,40 @@ export default function AdminDashboardPage() {
                             </button>
                           )
                         ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filtros por Capabilities (Installed Products) */}
+                  <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-200 mb-2 sm:mb-0">Installed Products</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {['HERMES', 'TOKENIZATION', 'RWA', 'SPV', 'GROWTH_OS'].map((product) => (
+                          <button
+                            key={product}
+                            onClick={() => setProductFilter(prev => 
+                              prev.includes(product) ? prev.filter(p => p !== product) : [...prev, product]
+                            )}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 border ${
+                              productFilter.includes(product)
+                                ? 'bg-amber-500 text-black border-amber-500 shadow-lg'
+                                : 'bg-zinc-800/50 text-gray-400 border-zinc-600 hover:bg-zinc-700 hover:text-gray-200'
+                            }`}
+                          >
+                            {product === 'GROWTH_OS' ? 'Growth OS' : product}
+                          </button>
+                        ))}
+                        {productFilter.length > 0 && (
+                          <button
+                            onClick={() => setProductFilter([])}
+                            className="px-2 py-1 text-xs text-red-400 hover:text-red-300 ml-2"
+                          >
+                            Limpiar Filtros
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

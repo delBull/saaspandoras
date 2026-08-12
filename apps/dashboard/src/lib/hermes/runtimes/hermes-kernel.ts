@@ -50,9 +50,11 @@ export class HermesKernel {
         navigate: navigate?.payload?.path
           ? { path: navigate.payload.path, reason: navigate.payload.reason }
           : undefined,
-        messages: decisions
-          .filter(d => d.type === 'communicate')
-          .map(d => `[${d.source}] ${d.payload?.task || 'respond'}`),
+        messages: blockingDecision
+          ? [blockingDecision.payload?.task || blockingDecision.payload?.reason || 'Access denied']
+          : decisions
+              .filter(d => d.type === 'communicate')
+              .map(d => d.payload?.task || 'respond'),
       },
     };
 

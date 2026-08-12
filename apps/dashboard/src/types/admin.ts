@@ -69,6 +69,7 @@ export interface Project {
   legalConfig?: any;
   ambassadorCommissionRate?: string;
   managerCommissionRate?: string;
+  installedProducts?: string[];
 }
 
 export interface AdminData {
