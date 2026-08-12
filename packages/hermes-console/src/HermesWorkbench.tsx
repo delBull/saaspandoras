@@ -29,9 +29,11 @@ import {
 
 interface HermesWorkbenchProps {
     tenantId: string | number;
+    renderKnowledge?: React.ReactNode;
+    renderSettings?: React.ReactNode;
 }
 
-export function HermesWorkbench({ tenantId }: HermesWorkbenchProps) {
+export function HermesWorkbench({ tenantId, renderKnowledge, renderSettings }: HermesWorkbenchProps) {
     const [activeDomain, setActiveDomain] = useState('home');
     const [projection, setProjection] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -246,8 +248,8 @@ export function HermesWorkbench({ tenantId }: HermesWorkbenchProps) {
                         {activeDomain === 'identity' && <IdentityView projection={projection} setInspectorData={setInspectorData} />}
                         {activeDomain === 'mesh' && <CapabilityMeshView projection={projection} setInspectorData={setInspectorData} />}
                         {activeDomain === 'trace' && <ExecutionTraceGraphView projection={projection} setInspectorData={setInspectorData} />}
-                        {activeDomain === 'knowledge' && <KnowledgeView setInspectorData={setInspectorData} />}
-                        {activeDomain === 'settings' && <SettingsView setInspectorData={setInspectorData} />}
+                        {activeDomain === 'knowledge' && (renderKnowledge || <KnowledgeView setInspectorData={setInspectorData} />)}
+                        {activeDomain === 'settings' && (renderSettings || <SettingsView setInspectorData={setInspectorData} />)}
                         {['workflows', 'explorer'].includes(activeDomain) && (
                             <div className="h-full flex flex-col items-center justify-center text-zinc-500 border border-dashed border-white/10 rounded-2xl p-12 bg-white/[0.01]">
                                 <SparklesIcon className="w-10 h-10 text-purple-400 mb-3 animate-pulse" />

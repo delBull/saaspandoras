@@ -3,6 +3,8 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { HermesWorkbench } from '@pandoras/hermes-console';
+import { PortalEvidenceLayer } from './PortalEvidenceLayer';
+import { PortalSettingsLayer } from './PortalSettingsLayer';
 
 export default function ClientPortalPage() {
   return (
@@ -110,7 +112,11 @@ function ClientPortalContent() {
       >
         Cerrar Sesión
       </button>
-      <HermesWorkbench tenantId={tenantId} />
+      <HermesWorkbench 
+        tenantId={tenantId} 
+        renderKnowledge={<PortalEvidenceLayer tenantId={tenantId} />} 
+        renderSettings={<PortalSettingsLayer tenantId={tenantId} />} 
+      />
     </div>
   );
 }
