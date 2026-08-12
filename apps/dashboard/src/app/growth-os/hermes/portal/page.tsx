@@ -106,7 +106,7 @@ function ClientPortalContent() {
     <div className="min-h-screen bg-[#08080C] text-white p-4 md:p-8 flex justify-center relative">
       <button 
         onClick={handleLogout}
-        className="absolute top-4 right-4 md:top-8 md:right-8 z-50 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-zinc-300 transition-colors"
+        className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-50 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-semibold text-red-400 transition-colors shadow-lg"
       >
         Cerrar Sesión
       </button>

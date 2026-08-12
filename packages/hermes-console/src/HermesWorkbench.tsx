@@ -246,7 +246,9 @@ export function HermesWorkbench({ tenantId }: HermesWorkbenchProps) {
                         {activeDomain === 'identity' && <IdentityView projection={projection} setInspectorData={setInspectorData} />}
                         {activeDomain === 'mesh' && <CapabilityMeshView projection={projection} setInspectorData={setInspectorData} />}
                         {activeDomain === 'trace' && <ExecutionTraceGraphView projection={projection} setInspectorData={setInspectorData} />}
-                        {['knowledge', 'workflows', 'explorer', 'settings'].includes(activeDomain) && (
+                        {activeDomain === 'knowledge' && <KnowledgeView setInspectorData={setInspectorData} />}
+                        {activeDomain === 'settings' && <SettingsView setInspectorData={setInspectorData} />}
+                        {['workflows', 'explorer'].includes(activeDomain) && (
                             <div className="h-full flex flex-col items-center justify-center text-zinc-500 border border-dashed border-white/10 rounded-2xl p-12 bg-white/[0.01]">
                                 <SparklesIcon className="w-10 h-10 text-purple-400 mb-3 animate-pulse" />
                                 <h4 className="text-base font-bold text-zinc-300 capitalize">{activeDomain} Domain Active</h4>
@@ -701,6 +703,115 @@ function ExecutionTraceGraphView({ projection, setInspectorData }: any) {
                         ))}
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// NEW: KnowledgeView Component
+// ==========================================
+function KnowledgeView({ setInspectorData }: { setInspectorData: (data: any) => void }) {
+    return (
+        <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-500 p-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <ShareIcon className="w-6 h-6 text-purple-400" />
+                        Knowledge Base
+                    </h2>
+                    <p className="text-sm text-zinc-400 mt-1">Cerebro central y directrices cognitivas</p>
+                </div>
+                <button className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-semibold transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]">
+                    + Add Context
+                </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div 
+                    onClick={() => setInspectorData({ type: 'knowledge_item', title: 'System Prompt', details: { context: 'Core instruction set for agent persona' } })}
+                    className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04]"
+                >
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                            <DocumentTextIcon className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-zinc-200">System Prompt</h3>
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+                        Define la personalidad base del agente, sus limitaciones y su tono de voz principal.
+                    </p>
+                    <div className="flex gap-2">
+                        <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">ACTIVE</span>
+                        <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">v1.2.0</span>
+                    </div>
+                </div>
+
+                <div 
+                    onClick={() => setInspectorData({ type: 'knowledge_item', title: 'Objection Handling', details: { context: 'Vectorized objection responses' } })}
+                    className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04]"
+                >
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg">
+                            <ShieldCheckIcon className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-zinc-200">Vector Embeddings</h3>
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+                        Base de datos de contexto semántico. Contiene información del producto y objeciones de ventas.
+                    </p>
+                    <div className="flex gap-2">
+                        <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">142 CHUNKS</span>
+                        <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">PINECONE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// NEW: SettingsView Component
+// ==========================================
+function SettingsView({ setInspectorData }: { setInspectorData: (data: any) => void }) {
+    return (
+        <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-500 p-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <AdjustmentsHorizontalIcon className="w-6 h-6 text-purple-400" />
+                        Workspace Settings
+                    </h2>
+                    <p className="text-sm text-zinc-400 mt-1">Configuración global del entorno operativo</p>
+                </div>
+                <button className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-semibold transition-all">
+                    Save Changes
+                </button>
+            </div>
+            
+            <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-bold text-zinc-200">Agent Autonomy Level</h3>
+                        <p className="text-sm text-zinc-400 mt-1">Determina cuánta libertad tiene el agente para tomar decisiones sin validación humana.</p>
+                    </div>
+                    <select className="bg-black/50 border border-white/10 text-sm text-zinc-200 px-4 py-2 rounded-xl outline-none focus:border-purple-500/50">
+                        <option>Level 1 (Human-in-the-loop)</option>
+                        <option>Level 2 (Co-pilot)</option>
+                        <option>Level 3 (Autonomous)</option>
+                    </select>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-bold text-zinc-200">Model Selection</h3>
+                        <p className="text-sm text-zinc-400 mt-1">LLM utilizado para razonamiento de alto nivel.</p>
+                    </div>
+                    <select className="bg-black/50 border border-white/10 text-sm text-zinc-200 px-4 py-2 rounded-xl outline-none focus:border-purple-500/50">
+                        <option>GPT-4o (Reasoning)</option>
+                        <option>Claude 3.5 Sonnet (Fast)</option>
+                    </select>
+                </div>
             </div>
         </div>
     );
