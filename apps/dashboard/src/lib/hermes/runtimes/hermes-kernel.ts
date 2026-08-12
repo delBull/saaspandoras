@@ -18,7 +18,9 @@ export interface KernelExperience {
     navigate?: { path: string; reason?: string };
     messages: string[];
   };
+  fallbackTriggered?: 'technical' | 'knowledge';
 }
+
 
 export class HermesKernel {
   async processInput(context: KernelContext): Promise<KernelExperience> {
@@ -53,6 +55,18 @@ export class HermesKernel {
           .map(d => `[${d.source}] ${d.payload?.task || 'respond'}`),
       },
     };
+
+    // 1. Technical Fallback: No decisions were made (likely provider failure)
+    if (decisions.length === 0) {
+      experience.fallbackTriggered = 'technical';
+      experience.actions.messages = ["[System] Experimento dificultades técnicas. Un asesor se pondrá en contacto pronto."];
+      // Here we would dispatch an AUDIT EVENT for Human Escalation
+    } 
+    // 2. Knowledge Fallback: Provider explicitly indicated lack of knowledge
+    else if (decisions.some(d => d.confidence < 0.2 && d.type === 'communicate')) {
+      experience.fallbackTriggered = 'knowledge';
+      experience.actions.messages = ["No tengo esa información confirmada en este momento, pero puedo tomar tus datos para que un especialista te contacte."];
+    }
 
     return experience;
   }

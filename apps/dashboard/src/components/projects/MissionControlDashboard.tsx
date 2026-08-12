@@ -150,6 +150,10 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                             <Link href={`/projects/${project.slug || project.id}`} target="_blank" className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors">
                                 <EyeIcon className="w-4 h-4" /> Ver Página Pública
                             </Link>
+                            
+                            <Link href="/growth-os/hermes/settings" className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors ml-auto md:ml-4">
+                                <Cog6ToothIcon className="w-4 h-4" /> Hermes Studio
+                            </Link>
                         </div>
                     </div>
                 </div>

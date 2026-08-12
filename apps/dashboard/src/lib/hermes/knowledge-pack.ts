@@ -1,11 +1,14 @@
 import { KnowledgePack } from './types';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 /**
  * Knowledge Pack Manager
- * Loads and provides modular knowledge packs for projects (e.g., S'Narai).
+ * Loads and provides modular knowledge packs for projects.
  *
- * DATA SOURCE: Narai/apps/web/src/knowledge/snarai.ts  (single source of truth)
- * Soul (identity, voice, language/claims/escalation policies) → hermes/soul/snarai-soul.ts
+ * DATA SOURCE: Database (projects.config.knowledgePack)
+ * Fallback: Static Snarai pack / Dynamic Domain pack
  */
 
 export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
@@ -154,10 +157,23 @@ export class KnowledgePackLoader {
     ['snarai', SNARAI_KNOWLEDGE_PACK]
   ]);
 
-  static getPack(projectSlug: string, customConfig?: any): KnowledgePack {
+  static async getPack(projectSlug: string, customConfig?: any): Promise<KnowledgePack> {
     const slug = projectSlug.toLowerCase();
     
-    // Always return S'Narai pack for snarai
+    // Check DB first
+    try {
+      const projectRecord = await db.query.projects.findFirst({
+        where: eq(projects.slug, slug)
+      });
+      const dbConfig = projectRecord?.tenantRuntimeConfig as any;
+      if (dbConfig?.knowledgePack) {
+        return dbConfig.knowledgePack as KnowledgePack;
+      }
+    } catch (e) {
+      console.error('[KnowledgePackLoader] Error fetching from DB:', e);
+    }
+
+    // Always return S'Narai pack for snarai if not in DB
     if (slug === 'snarai') {
       return SNARAI_KNOWLEDGE_PACK;
     }

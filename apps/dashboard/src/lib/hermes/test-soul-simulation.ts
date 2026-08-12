@@ -20,12 +20,13 @@ async function runSoulAudit() {
     console.log(`Pregunta: "${tc.query}"`);
     console.log(`--------------------------------------------------`);
     try {
-      const response = await generateBotResponse({
+      const responseObj = await generateBotResponse({
         projectName: 'S\'Narai Riviera Nayarit',
         userMessage: tc.query,
         projectSlug: 'snarai'
       });
-      console.log(`Respuesta Hermes:\n${response}\n`);
+      const reply = responseObj.replyText || '';
+      console.log(`Respuesta Hermes:\n${reply}\n`);
     } catch (e: any) {
       console.error(`Error en test #${tc.id}:`, e.message);
     }

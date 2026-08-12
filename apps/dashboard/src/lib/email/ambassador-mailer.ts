@@ -50,6 +50,12 @@ export async function sendAmbassadorWelcomeEmail({
                         <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 30px;">
                             Comparte tu código con tus clientes y prospectos para que puedan registrarse en la plataforma.
                         </p>
+
+                        ${origin === 'snarai' ? `
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <a href="https://snarai.aztecaz.xyz/gestores/portal" style="background-color: #10b981; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Acceder al Hub Comercial (Gestores)</a>
+                        </div>
+                        ` : ''}
                         
                         <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; text-align: center;">
                             <p style="font-size: 14px; color: #64748b; margin: 0;">

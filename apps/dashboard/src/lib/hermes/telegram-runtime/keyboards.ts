@@ -18,8 +18,8 @@ const MAIN_MENU_KB: TelegramKeyboard = {
     [{ text: '🏛️ Tesis del Proyecto', callback_data: 'action_thesis' }],
     [{ text: '📊 Fases & Precios', callback_data: 'action_phases' }],
     [{ text: '📑 Data Room', callback_data: 'action_dataroom' }],
-    [{ text: '💳 Adquirir Certificado', callback_data: 'action_buy' }],
-    [{ text: '🤝 Reunión con Fundadores', callback_data: 'action_reunion' }],
+    [{ text: '💳 Adquirir Títulos', callback_data: 'action_buy' }],
+    [{ text: '🤝 Sesión Patrimonial', callback_data: 'action_reunion' }],
     [{ text: '👤 Mi Posición', callback_data: 'action_position' }]
   ]
 };
@@ -93,7 +93,8 @@ export const REUNION_CALENDAR_URL = 'https://dash.pandoras.finance/events/snarai
 
 export const reunionKeyboard = (): TelegramKeyboard => ({
   inline_keyboard: [
-    [{ text: '📅 Seleccionar Fecha y Hora (Agenda)', url: REUNION_CALENDAR_URL }],
+    [{ text: '📅 Agendar Sesión (Agenda Oficial)', url: REUNION_CALENDAR_URL }],
+    [{ text: '💬 Hablar con un Asesor Ahora', callback_data: 'action_advisor_now' }],
     BACK_ROW
   ]
 });

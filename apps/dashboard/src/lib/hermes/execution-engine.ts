@@ -130,7 +130,7 @@ ${orgMem.faqs.map(f => `  * Q: ${f.question}\n    A: ${f.answer}`).join('\n')}
     const customSystemPrompt = (installed.config as any)?.prompt || `Eres Hermes, el Agente Autónomo de ${orgContext.name}. Atiende a los clientes con amabilidad y precisión.`;
     const fullSystemPrompt = `${customSystemPrompt}\n\nINTENCIÓN DETECTADA: ${routeResult.intent}${actionSummary}\n\n${knowledgeText}\n\nREGLAS DE PLATAFORMA:\n${memory.platformMemory.playbookRules.join('\n')}`;
 
-    const botReply = await generateBotResponse({
+    const botReplyObj = await generateBotResponse({
       userMessage,
       chatId,
       projectSlug: orgContext.slug,
@@ -143,7 +143,7 @@ ${orgMem.faqs.map(f => `  * Q: ${f.question}\n    A: ${f.answer}`).join('\n')}
     });
 
     return {
-      reply: botReply,
+      reply: botReplyObj.replyText || "Lo siento, no pude procesar tu solicitud.",
       intent: routeResult.intent,
       requiresHuman: false,
       actionExecuted,

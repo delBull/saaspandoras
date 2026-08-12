@@ -23,7 +23,7 @@ export async function generateBotResponse(context: {
   const { HermesSoulRegistry } = await import('@/lib/hermes/soul/snarai-soul');
   
   const projectSlug = context.projectSlug || projectContext?.slug || projectName || 'snarai';
-  const pack = KnowledgePackLoader.getPack(projectSlug, projectContext);
+  const pack = await KnowledgePackLoader.getPack(projectSlug, projectContext);
 
   // Resolve Soul for this project (identity, language policy, canonical URLs)
   const soul = HermesSoulRegistry.getSoul(projectSlug);
@@ -52,7 +52,7 @@ export async function generateBotResponse(context: {
     documentsSent: []
   };
 
-  const { mission, recommendedAction } = HermesDecisionEngine.evaluateNextMission(
+  const { mission, recommendedAction } = await HermesDecisionEngine.evaluateNextMission(
     projectSlug,
     customerMemory,
     'ENGAGED',
@@ -86,7 +86,15 @@ PITCH DEL PROYECTO (PACK: ${pack.name}):
 ${pack.salesPitch}
 
 INSTRUCCIONES ADICIONALES DEL PROYECTO:
-${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para adquirir posiciones.'}`;
+${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para adquirir posiciones.'}
+
+**MUY IMPORTANTE**: DEBES responder EXCLUSIVAMENTE en formato JSON. Tu respuesta debe ser un objeto JSON válido con la siguiente estructura:
+{
+  "action": "ANSWER" | "QUALIFY" | "OFFER_DOCUMENT" | "OFFER_CALL" | "SEND_CHECKOUT" | "HANDOFF_HUMAN",
+  "rationale": "Breve explicación de por qué tomas esta acción",
+  "replyText": "El texto que le dirás al usuario (este es el mensaje final)",
+  "payload": "Opcional: link o información extra si aplica"
+}`;
 
   let history: { role: 'user' | 'assistant', content: string }[] = context.history || [];
   const redisKey = chatId ? `telegram_bot_context:${projectName}:${chatId}` : null;
@@ -173,6 +181,7 @@ ${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para a
           model: aiModel,
           messages: messages,
           stream: false,
+          format: 'json',
           options: {
             temperature: 0.3
           }
@@ -197,9 +206,24 @@ ${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para a
         messages: messages,
         temperature: 0.3,
         max_tokens: 350,
+        response_format: { type: "json_object" }
       });
 
       botResponseText = response.choices[0]?.message?.content || botResponseText;
+    }
+
+    let structuredResponse = {
+      action: 'ANSWER',
+      rationale: '',
+      replyText: botResponseText,
+      payload: ''
+    };
+
+    try {
+      structuredResponse = JSON.parse(botResponseText);
+    } catch (parseError) {
+      console.warn("[BotEngine] LLM did not return valid JSON:", botResponseText);
+      structuredResponse.replyText = botResponseText;
     }
 
     // Save updated conversational memory back to Redis
@@ -208,22 +232,26 @@ ${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para a
         const newHistory = [
           ...history,
           { role: 'user', content: userMessage },
-          { role: 'assistant', content: botResponseText }
+          { role: 'assistant', content: structuredResponse.replyText }
         ];
         
-        // Keep only the last 6 messages (3 interactions) to save context length and cost
         const trimmedHistory = newHistory.slice(-6);
-        
-        // Save to Redis and set expiration to 24 hours (86400 seconds)
         await redis.set(redisKey, JSON.stringify(trimmedHistory), 'EX', 86400);
       } catch (err) {
         console.warn("[BotEngine] Failed to save memory to Redis", err);
       }
     }
 
-    return botResponseText;
+    // Backwards compatibility for callers expecting string
+    // Return the string object that has properties, or explicitly change the signature
+    // Actually, we'll return the object. We will update the callers immediately.
+    return structuredResponse;
   } catch (error: any) {
     console.error("[BotEngine] Error generating response:", error);
-    return `Error técnico (Temporal para Debug): ${error?.message || error}. Por favor avisa a soporte.`;
+    return {
+      action: 'ANSWER',
+      rationale: 'Error fallback',
+      replyText: `Error técnico (Temporal para Debug): ${error?.message || error}. Por favor avisa a soporte.`
+    };
   }
 }

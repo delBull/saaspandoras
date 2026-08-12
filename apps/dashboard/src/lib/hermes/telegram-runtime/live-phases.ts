@@ -5,6 +5,8 @@ export interface LivePhase {
   name: string;
   tokenPrice: number;
   tokenAllocation: number;
+  /** Approximate remaining tokens based on phase progress. */
+  remainingTokens: number;
   status: PhaseStatus;
 }
 
@@ -34,11 +36,15 @@ export async function getLivePhaseData(project: any): Promise<LivePhaseData> {
   let accumulatedTokens = 0;
   const phases: LivePhase[] = rawPhases.map((phase: any) => {
     const status = calculatePhaseStatus(phase, currentSupply, accumulatedTokens);
-    accumulatedTokens += Number(phase.tokenAllocation || phase.limit || 0);
+    const allocation = Number(phase.tokenAllocation || phase.limit || 0);
+    const sold = Math.round(allocation * (status.percent / 100));
+    const remaining = Math.max(0, allocation - sold);
+    accumulatedTokens += allocation;
     return {
       name: String(phase.name || 'Fase'),
       tokenPrice: Number(phase.tokenPrice || phase.price || 0),
-      tokenAllocation: Number(phase.tokenAllocation || phase.limit || 0),
+      tokenAllocation: allocation,
+      remainingTokens: remaining,
       status
     };
   });

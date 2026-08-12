@@ -17,12 +17,36 @@ export class CompatibilityProvider {
     const { handleTelegramMessage, handleTelegramCallback, escapeMarkdown, sendTelegramMessage } = require('../telegram-runtime/router');
     const { generateBotResponse } = require('@/lib/marketing/bot-engine');
     const { getLivePhaseData } = require('../telegram-runtime/live-phases');
-    const { mainMenuKeyboard } = require('../telegram-runtime/keyboards');
+    const { mainMenuKeyboard, reunionKeyboard, buySelectorKeyboard } = require('../telegram-runtime/keyboards');
 
     let reply = 'La acción solicitada no está implementada en el Compatibility Provider.';
     
     try {
       const mappedCtx = this.mapContext(context);
+
+      // Phase 1 Certification: Route S'Narai explicitly to native HermesKernel v1.1
+      if (mappedCtx.project?.slug === 'snarai' || mappedCtx.projectId === 'snarai' || context.tenantId === '2') {
+        console.log(`[CompatibilityProvider] 🚀 Intercepting S'Narai execution and routing to native HermesKernel v1.1`);
+        
+        const { HermesKernel } = require('../runtimes/hermes-kernel');
+        const { DomainPackLoader } = require('../packs/domain-pack-loader');
+        
+        const kernel = new HermesKernel();
+        // Load the pack explicitly to prove it reaches runtime (Throws DomainPackNotFound if invalid)
+        const domainPack = await DomainPackLoader.load(mappedCtx.project?.slug || 'snarai');
+        
+        const experience = await kernel.processInput({
+          tenantId: mappedCtx.project?.id || 2,
+          sessionId: chatId.toString(),
+          input: userMessage,
+          artifacts: {
+            domainPack // Injected for JourneyEngine and LLM Providers
+          },
+          state: {}
+        });
+        
+        return this.success(experience.actions.messages.join('\n') || '');
+      }
 
       // 1. Handle Callback Queries (Inline Buttons)
       if (raw?.callback_query) {
@@ -68,13 +92,20 @@ export class CompatibilityProvider {
       };
 
       const botInstructions = mappedCtx.metadata?.aiKnowledgeBase || mappedCtx.metadata?.botConfig?.instructions;
-      reply = await generateBotResponse({
-        projectName: mappedCtx.project.title || 'S\'Narai',
+      const replyObj = await generateBotResponse({
         userMessage: userMessage,
-        projectContext: liveContext,
-        botInstructions,
-        chatId: chatId.toString()
+        chatId: chatId.toString(),
+        projectSlug: projectId,
       });
+      reply = replyObj.replyText || '';
+
+      if (replyObj.action === 'OFFER_CALL') {
+        await sendTelegramMessage(botToken, mappedCtx.chatId, reply, reunionKeyboard());
+        return this.success('');
+      } else if (replyObj.action === 'SEND_CHECKOUT') {
+        await sendTelegramMessage(botToken, mappedCtx.chatId, reply, buySelectorKeyboard());
+        return this.success('');
+      }
 
     } catch (e: any) {
       console.error('[CompatibilityProvider] Error executing legacy logic:', e);

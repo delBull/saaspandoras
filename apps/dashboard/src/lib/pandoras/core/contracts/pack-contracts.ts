@@ -11,11 +11,57 @@ export interface PackIdentity {
   tone: string; // ej: 'premium advisory'
 }
 
-export interface PackKnowledgeDefinition {
-  sources: {
-    type: 'document_repository' | 'vector_store' | 'api' | 'database';
-    id: string; // Referencia lógica a la fuente, no la data directa.
-  }[];
+export interface SoulProfile {
+  agentName: string;
+  role: string;
+  persona: string;
+  tone: {
+    warmth: 'high' | 'medium' | 'low';
+    formality: 'formal' | 'neutral' | 'casual';
+    emojiPolicy: 'none' | 'sparse' | 'liberal';
+  };
+  proactivity: {
+    suggestsNextSteps: boolean;
+    registersFollowUps: boolean;
+    escalatesToHuman: boolean;
+    legalDisclaimerMode?: string;
+  };
+  forbiddenClaims: string[];
+}
+
+export interface KnowledgeDefinition {
+  companyName: string;
+  industry: string;
+  products: any[];
+  pricing: any;
+  faqs: { question: string; answer: string }[];
+  objections: { trigger: string; responseStrategy: string }[];
+  documents: { title: string; url: string }[];
+}
+
+export interface GovernancePolicy {
+  financialAdvice: 'forbidden' | 'allowed' | 'disclaimer_required';
+  promises: 'forbidden' | 'allowed';
+  dataCollection: 'gdpr_strict' | 'standard';
+  escalationThreshold: 'low' | 'medium' | 'high'; // low = escalates quickly
+}
+
+export type ClaimClassification = 'PUBLIC_FACT' | 'DOCUMENTED_CLAIM' | 'LEGAL_CLAIM' | 'FINANCIAL_CLAIM' | 'LIQUIDITY_CLAIM' | 'PERFORMANCE_CLAIM' | 'UNKNOWN';
+
+export interface EvidenceClaim {
+  claim: string;
+  classification: ClaimClassification;
+  sourceDocument?: string;
+  isVerified: boolean;
+  allowedResponse: string;
+}
+
+export interface DomainPackManifest extends PackManifest {
+  soul: SoulProfile;
+  knowledgeDef: KnowledgeDefinition;
+  journeys: any[]; // references JourneyDefinition
+  policies: GovernancePolicy;
+  evidenceLayer?: EvidenceClaim[];
 }
 
 export interface PackActionDefinition {
@@ -57,7 +103,7 @@ export interface PackManifest {
   provides: string[]; // Qué roles/servicios provee
   
   identity?: PackIdentity;
-  knowledge?: PackKnowledgeDefinition;
+  knowledge?: KnowledgeDefinition;
   
   goals: PackGoalTemplate[];
   missions: PackMissionTemplate[];

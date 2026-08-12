@@ -97,6 +97,26 @@ export const INITIAL_TASKS: TaskItem[] = [
     dueDate: '2026-08-07',
     detail: 'Presentación de la solicitud oficial a nombre directo de MXHUB Ecosistema Blockchain S.A. de C.V. Uso del distintivo PANDORAS™.'
   },
+  {
+    id: 'TSK-W1-05',
+    week: 'Semana 1',
+    title: 'Firma de Founders Agreement (Strategic Partner)',
+    category: 'Legal & Corporate',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-08-15',
+    detail: 'Negociación final de la matriz de porcentajes, definición de roles y firma On-Chain / DocuSign del Framework v1.0.'
+  },
+  {
+    id: 'TSK-W1-06',
+    week: 'Semana 1',
+    title: 'Constitución de Pandoras US Operations LLC',
+    category: 'Legal & Corporate',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-08-16',
+    detail: 'Registro oficial de la LLC en USA con Iván como Organizer y Managing Member temporal.'
+  },
 
   // SEMANA 2: CORPORATE RESOLUTION & OWNERSHIP AUDIT
   {
@@ -127,7 +147,37 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'MEDIUM',
     completed: false,
     dueDate: '2026-08-14',
-    detail: 'Registro institucional de contratos inteligentes desplegados (red, address, deployer wallet y licencias de uso).'
+    detail: 'Inventario de smart contracts, wallets operativas y documentación de seguridad (Security Whitepaper).'
+  },
+  {
+    id: 'TSK-W2-04',
+    week: 'Semana 2',
+    title: 'Firma de Operating Agreement Interno (Ingreso Founder)',
+    category: 'Legal & Corporate',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-08-18',
+    detail: 'Actualización de Cap Table On-Chain y entrada oficial del Founder con 90-95% del equity en la LLC.'
+  },
+  {
+    id: 'TSK-W2-05',
+    week: 'Semana 2',
+    title: 'Apertura de Cuenta Bancaria US (Mercury)',
+    category: 'Finanzas',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-08-20',
+    detail: 'Registro del Treasury Address corporativo en plataformas financieras para operación intercompany.'
+  },
+  {
+    id: 'TSK-W2-06',
+    week: 'Semana 2',
+    title: 'Master Services Agreement (MXHub ↔ Pandoras LLC)',
+    category: 'Legal & Corporate',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-08-22',
+    detail: 'Firma On-Chain del contrato intercompany donde MXHub presta servicios tecnológicos a la LLC de USA.'
   },
 
   // SEMANA 3: LICENSING & INVESTOR DATA ROOM

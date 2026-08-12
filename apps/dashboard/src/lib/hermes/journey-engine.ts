@@ -1,6 +1,7 @@
 /**
  * 🏛️ HERMES OS V7 — JOURNEY & PLAYBOOK ENGINE DOMAIN TYPES & EXECUTOR
  */
+import { ChannelContext, EventContext, ContactContext, MemoryContext } from '../pandoras/core/contracts/execution-contracts';
 
 export interface PlaybookStage {
   id: string;
@@ -172,20 +173,33 @@ export const BUILTIN_JOURNEYS: Record<string, JourneyDefinition> = {
 export class HermesJourneyEngine {
   /**
    * Resolves active Journey, Playbook, and missing Objective data for a conversation
+   * using the multidimensional execution context.
    */
-  static evaluateJourney(
-    journeyId: string = 'family_referral_journey',
-    currentStageId?: string,
-    customerData: Record<string, any> = {}
-  ): { journey: JourneyDefinition; playbook: PlaybookDefinition; objectiveState: ObjectiveState } {
-    const journey = BUILTIN_JOURNEYS[journeyId] || BUILTIN_JOURNEYS['family_referral_journey']!;
-    const playbook = BUILTIN_PLAYBOOKS[journey.playbookId] || BUILTIN_PLAYBOOKS['snarai_investor_playbook']!;
+  static evaluate(
+    journeyDefinition: JourneyDefinition,
+    contactContext: ContactContext,
+    intent: string,
+    memory: MemoryContext,
+    channelContext: ChannelContext,
+    eventContext?: EventContext
+  ): { nextBestAction: string; objectiveState: ObjectiveState } {
+    
+    // 1. Resolve Playbook from Definition
+    const playbook = BUILTIN_PLAYBOOKS[journeyDefinition.playbookId];
+    if (!playbook) {
+      throw new Error(`DomainPackNotFound: Playbook ${journeyDefinition.playbookId} no encontrado para el tenant actual.`);
+    }
 
-    const activeStageId = currentStageId || playbook.stages[0]?.id || 'stage_welcome_thesis';
+    // 2. Determine current stage based on memory/contact state or fallback to first
+    // (A real implementation would map contactContext.status to stage, or use memory)
+    const activeStageId = playbook.stages[0]?.id || 'stage_welcome_thesis';
     const activeStage = playbook.stages.find(s => s.id === activeStageId) || playbook.stages[0]!;
 
     const missingObjectives: string[] = [];
     const completedObjectives: string[] = [];
+
+    // Mock customer data derived from contexts (in reality, read from DB/Memory)
+    const customerData: Record<string, any> = {}; 
 
     if (activeStage.requiredData) {
       for (const field of activeStage.requiredData) {
@@ -194,15 +208,28 @@ export class HermesJourneyEngine {
       }
     }
 
+    // 3. Compute NBA based on Event, Intent, and Channel Constraints
+    let nextBestAction = activeStage.suggestedAction || 'Avanzar conversación';
+    
+    if (intent === 'OBJECTION' && contactContext.status !== 'NEW') {
+      nextBestAction = 'Abordar objeción y registrar follow-up';
+    } else if (eventContext && eventContext.eventType === 'MEETING_BOOKED') {
+      nextBestAction = 'Agradecer y avanzar a QUALIFIED';
+    }
+
+    if (!channelContext.capabilities.supportsButtons && nextBestAction.includes('calendar')) {
+      nextBestAction += ' (Proveer URL plana, sin botones)';
+    }
+
     const objectiveState: ObjectiveState = {
-      journeyId: journey.id,
+      journeyId: journeyDefinition.id,
       currentStageId: activeStage.id,
-      goal: journey.goal,
+      goal: journeyDefinition.goal,
       completedObjectives,
       missingObjectives,
       recommendedAction: activeStage.suggestedAction || 'Avanzar conversación'
     };
 
-    return { journey, playbook, objectiveState };
+    return { nextBestAction, objectiveState };
   }
 }

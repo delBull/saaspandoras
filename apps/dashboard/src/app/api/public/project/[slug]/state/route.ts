@@ -240,6 +240,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     // 4.5 Fetch User DB State (Leads, Whitelist, etc.)
     let isWhitelisted = false;
     let dbUserStatus = "visitor";
+    let isGestor = false;
+    let gestorStatus = "none";
     if (wallet && wallet.startsWith("0x")) {
         const lead = await db.query.marketingLeads.findFirst({
             where: and(
@@ -250,6 +252,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         if (lead) {
             isWhitelisted = lead.status === "whitelisted" || lead.status === "active";
             dbUserStatus = lead.status || "active";
+        }
+        
+        // Check for Ambassador / Gestor status
+        const ambassadorData = await db.query.ambassadors.findFirst({
+            where: and(
+                eq(ambassadors.projectId, project.id),
+                ilike(ambassadors.walletAddress, wallet)
+            )
+        });
+        if (ambassadorData) {
+            isGestor = true;
+            gestorStatus = ambassadorData.status; // 'APPLIED', 'FOUNDER', etc.
         }
     }
 
@@ -633,6 +647,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       userVotingPower,
       userRewards,
       userRewardsValue,
+      isWhitelisted,
+      dbUserStatus,
+      isGestor,
+      gestorStatus,
       canClaim: userRewardsValue > 0,
       activities: activities.map(a => ({
         id: a.id,

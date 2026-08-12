@@ -7,13 +7,13 @@ import { SalesStateMachineEngine } from './state-machine';
  * Evaluates customer memory, active knowledge pack and executes autonomous missions
  */
 export class HermesDecisionEngine {
-  static evaluateNextMission(
+  static async evaluateNextMission(
     projectSlug: string,
     memory: CustomerMemory,
     currentState: SalesState,
     latestUserMessage?: string
-  ): { mission: HermesMission; recommendedAction: string } {
-    const pack = KnowledgePackLoader.getPack(projectSlug);
+  ): Promise<{ mission: HermesMission; recommendedAction: string }> {
+    const pack = await KnowledgePackLoader.getPack(projectSlug);
     let targetState = currentState;
 
     // Detect objection trigger pattern

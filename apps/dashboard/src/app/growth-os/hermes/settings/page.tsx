@@ -22,9 +22,10 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { saveHermesConfig, getHermesConfig } from './actions';
 
 export default function HermesAgentStudioPage() {
-  const [activeTab, setActiveTab] = useState<'prompt' | 'knowledge' | 'llm' | 'channels'>('prompt');
+  const [activeTab, setActiveTab] = useState<'identity' | 'knowledge' | 'journeys' | 'policies' | 'channels'>('identity');
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -53,20 +54,41 @@ export default function HermesAgentStudioPage() {
 
   const webhookUrl = `https://dash.pandoras.finance/api/v1/projects/${projectSlug || 'mi-empresa'}/bot/webhook`;
 
+  React.useEffect(() => {
+    // Load config on mount if slug exists (using hardcoded 'snarai' for now in dashboard context, or get from params)
+    getHermesConfig('snarai').then((config) => {
+      if (config) {
+        setCompanyName(config.publicKnowledge?.title || '');
+        setIndustry(config.industry || 'real_estate');
+        setSystemInstructions(config.systemInstructions || '');
+        setSalesPitch(config.salesPitch || '');
+      }
+    }).catch(console.error);
+  }, []);
+
   const handleCopyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopiedWebhook(true);
     setTimeout(() => setCopiedWebhook(false), 2000);
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     setIsSaving(true);
     setSavedSuccess(false);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await saveHermesConfig('snarai', {
+        companyName,
+        industry,
+        systemInstructions,
+        salesPitch
+      });
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
-    }, 800);
+    } catch (error) {
+      console.error('Error saving config:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -119,15 +141,15 @@ export default function HermesAgentStudioPage() {
         {/* Studio Navigation Tabs */}
         <div className="flex border-b border-zinc-800 mb-8 overflow-x-auto scrollbar-hide">
           <button
-            onClick={() => setActiveTab('prompt')}
+            onClick={() => setActiveTab('identity')}
             className={`flex items-center gap-2 px-5 py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap ${
-              activeTab === 'prompt' 
+              activeTab === 'identity' 
                 ? 'border-amber-400 text-amber-400 bg-amber-500/5' 
                 : 'border-transparent text-zinc-400 hover:text-zinc-200'
             }`}
           >
             <Sliders className="w-4 h-4" />
-            1. Prompt & Personalidad
+            1. Identity & Soul
           </button>
           <button
             onClick={() => setActiveTab('knowledge')}
@@ -138,18 +160,29 @@ export default function HermesAgentStudioPage() {
             }`}
           >
             <Database className="w-4 h-4" />
-            2. Knowledge Pack RAG
+            2. Knowledge (Docs/FAQs)
           </button>
           <button
-            onClick={() => setActiveTab('llm')}
+            onClick={() => setActiveTab('journeys')}
             className={`flex items-center gap-2 px-5 py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap ${
-              activeTab === 'llm' 
+              activeTab === 'journeys' 
                 ? 'border-amber-400 text-amber-400 bg-amber-500/5' 
                 : 'border-transparent text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            <Cpu className="w-4 h-4" />
-            3. Proveedor LLM & API Keys
+            <Layers className="w-4 h-4" />
+            3. Journeys
+          </button>
+          <button
+            onClick={() => setActiveTab('policies')}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap ${
+              activeTab === 'policies' 
+                ? 'border-amber-400 text-amber-400 bg-amber-500/5' 
+                : 'border-transparent text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            4. Policies (Safety/Governance)
           </button>
           <button
             onClick={() => setActiveTab('channels')}
@@ -160,12 +193,12 @@ export default function HermesAgentStudioPage() {
             }`}
           >
             <Webhook className="w-4 h-4" />
-            4. Canales Omnicanal & Webhooks
+            5. Canales Omnicanal
           </button>
         </div>
 
-        {/* Tab 1: Prompt & Personalidad */}
-        {activeTab === 'prompt' && (
+        {/* Tab 1: Identity & Soul */}
+        {activeTab === 'identity' && (
           <div className="space-y-6 bg-zinc-900/40 border border-zinc-800 p-6 md:p-8 rounded-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -264,11 +297,11 @@ export default function HermesAgentStudioPage() {
           </div>
         )}
 
-        {/* Tab 3: Proveedor LLM & API Keys */}
-        {activeTab === 'llm' && (
+        {/* Tab 3: Journeys & Motor de Viajes */}
+        {activeTab === 'journeys' && (
           <div className="space-y-6 bg-zinc-900/40 border border-zinc-800 p-6 md:p-8 rounded-3xl">
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-400 mb-3">Modalidad de Inteligencia Artificial</label>
+              <label className="block text-xs font-mono uppercase text-zinc-400 mb-3">Definición de Viaje</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div 
                   onClick={() => setProviderType('platform')}

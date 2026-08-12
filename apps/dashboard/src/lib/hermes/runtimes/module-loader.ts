@@ -29,3 +29,12 @@ class ModuleLoader implements IModuleLoader {
 }
 
 export const moduleLoader: IModuleLoader = new ModuleLoader();
+
+// Auto-register standard OS providers
+import { EvidenceProvider } from './evidence-provider';
+import { SecurityProvider } from './security-provider';
+import { OllamaDecisionProvider } from './ollama-provider';
+
+moduleLoader.load(new EvidenceProvider());
+moduleLoader.load(new SecurityProvider());
+moduleLoader.load(new OllamaDecisionProvider());

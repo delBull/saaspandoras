@@ -39,7 +39,7 @@ export async function POST(
     if (isVoiceCall) {
       const userMessage = bodyText || "El usuario ha llamado por teléfono para solicitar informes del proyecto.";
       
-      const botResponseText = await generateBotResponse({
+      const botResponseObj = await generateBotResponse({
         projectName: projectRecord.title,
         userMessage,
         projectContext: {
@@ -49,6 +49,8 @@ export async function POST(
         },
         chatId: `voice-${fromNumber.replace(/\+/g, '')}`
       });
+
+      const botResponseText = botResponseObj.replyText || '';
 
       const lamlXml = SignalWireService.generateLaMLVoiceResponse({
         text: botResponseText
@@ -61,7 +63,7 @@ export async function POST(
 
     // Case 2: Incoming SMS Message (SMS Channel)
     if (bodyText) {
-      const botResponseText = await generateBotResponse({
+      const botResponseObj = await generateBotResponse({
         projectName: projectRecord.title,
         userMessage: bodyText,
         projectContext: {
@@ -71,6 +73,7 @@ export async function POST(
         },
         chatId: `sms-${fromNumber.replace(/\+/g, '')}`
       });
+      const botResponseText = botResponseObj.replyText || '';
 
       // Reply back via SignalWire REST SMS
       await SignalWireService.sendSMS({

@@ -3,7 +3,7 @@ import { DefaultExecutionJournal } from '../src/lib/pandoras/core/execution/defa
 import { DefaultPolicyEngine } from '../src/lib/pandoras/core/execution/default-policy-engine';
 import { WorkflowDefinition } from '../src/lib/pandoras/core/execution/workflow-definition';
 import { ExecutionSnapshot } from '../src/lib/pandoras/core/execution/execution-snapshot';
-import { Identity } from '../src/lib/pandoras/core/contracts';
+import { Identity, ExecutionIdentitySnapshot } from '../src/lib/pandoras/core/contracts';
 
 async function runVerticalSlice() {
   console.log("==================================================");
@@ -15,6 +15,7 @@ async function runVerticalSlice() {
   const runtime = new DefaultExecutionRuntime(policyEngine, journal);
 
   // 1. Definir un Workflow declarativo
+  // NOTE: WorkflowDefinition is passed directly to start() — no registerWorkflow() needed.
   const campaignWorkflow: WorkflowDefinition<any, string> = {
     id: 'campaign.snarai.v1',
     version: '1.0.0',
@@ -25,13 +26,17 @@ async function runVerticalSlice() {
     inputType: 'CampaignPayload'
   };
 
-  runtime.registerWorkflow(campaignWorkflow);
+  const adminActor: Identity = { id: 'usr_marco', type: 'USER' };
+  // Wrap identity as ExecutionIdentitySnapshot as expected by start()
+  const adminIdentity: ExecutionIdentitySnapshot = {
+    actor: { userId: adminActor.id, roles: adminActor.roles ?? [] }
+  };
 
-  const adminIdentity: Identity = { id: 'usr_marco', type: 'USER' };
   const payload = { targetAudience: 'Web3 Investors', objective: 'Presale' };
 
   console.log("🚀 STARTING EXECUTION...");
-  const instance = await runtime.start('campaign.snarai.v1', payload, adminIdentity);
+  // start() accepts the WorkflowDefinition object, not a string ID
+  const instance = await runtime.start(campaignWorkflow, payload, adminIdentity);
   
   console.log(`\n⏸️  INSTANCE PAUSED: Status is ${instance.status}, current stage is ${instance.currentStage}`);
   console.log(`Pending actions:`, instance.pendingActions.map(p => p.type));
@@ -40,7 +45,8 @@ async function runVerticalSlice() {
   await new Promise(resolve => setTimeout(resolve, 1000)); // sleep 1 sec
 
   // 2. Humano inyecta decisión
-  await runtime.resume(instance.id, { type: 'APPROVED', actor: adminIdentity }, adminIdentity);
+  // resume() requires: (workflow, instanceId, decision, identity)
+  await runtime.resume(campaignWorkflow, instance.id, { type: 'APPROVED', actor: adminActor }, adminActor);
 
   console.log(`\n✅ EXECUTION FINISHED: Status is ${instance.status}, current stage is ${instance.currentStage}`);
 

@@ -4,7 +4,7 @@
 
 export type AuthorityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'SYSTEM';
 export type DecisionType = 'navigate' | 'communicate' | 'block' | 'update_workflow' | 'render_ui' | 'queue_media';
-export type Capability = 'language.generate' | 'vision.describe' | 'routing.navigate' | 'security.authorize' | 'workflow.advance';
+export type Capability = 'language.generate' | 'vision.describe' | 'routing.navigate' | 'security.authorize' | 'workflow.advance' | 'knowledge.query';
 
 export interface Decision {
   source: string;
@@ -40,6 +40,7 @@ export interface KernelContext {
     discovery?: any;
     configGraph?: any;
     meshGraph?: any;
+    domainPack?: any;
   };
   state: Record<string, any>;
 }

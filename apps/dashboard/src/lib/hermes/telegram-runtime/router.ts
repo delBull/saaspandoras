@@ -31,6 +31,7 @@ import {
   buyWeb3Message,
   buySpeiMessage,
   reunionMessage,
+  advisorNowMessage,
   reunionAskEmailMessage,
   reunionRegisteredMessage,
   positionMessage
@@ -74,12 +75,13 @@ export async function sendTelegramMessage(
   chatId: number,
   text: string,
   replyMarkup?: { inline_keyboard: unknown[][] },
-  parseMode: 'Markdown' | 'MarkdownV2' | 'HTML' | undefined = 'Markdown'
+  parseMode: 'Markdown' | 'MarkdownV2' | 'HTML' | undefined = 'HTML'
 ) {
   return tgPost(token, 'sendMessage', {
     chat_id: chatId,
     text,
     parse_mode: parseMode,
+    disable_web_page_preview: true,
     ...(replyMarkup ? { reply_markup: replyMarkup } : {})
   });
 }
@@ -135,7 +137,7 @@ async function sendMainMenu(ctx: BaseContext, firstName?: string) {
 }
 
 async function handleBuy(ctx: BaseContext, state: TelegramLeadState) {
-  const pack = KnowledgePackLoader.getPack(ctx.projectId, ctx.metadata);
+  const pack = await KnowledgePackLoader.getPack(ctx.projectId, ctx.metadata);
   const reply = buySelectorMessage(pack);
   await sendTelegramMessage(ctx.botToken, ctx.chatId, reply, buySelectorKeyboard());
 
@@ -151,7 +153,7 @@ async function handleBuy(ctx: BaseContext, state: TelegramLeadState) {
 }
 
 async function handleObjection(ctx: BaseContext, state: TelegramLeadState, text: string) {
-  const pack = KnowledgePackLoader.getPack(ctx.projectId, ctx.metadata);
+  const pack = await KnowledgePackLoader.getPack(ctx.projectId, ctx.metadata);
   const matched = pack.objectionRules.find((rule) => {
     try {
       return new RegExp(rule.triggerPattern, 'i').test(text);
@@ -205,6 +207,7 @@ type BotAction =
   | 'action_reunion'
   | 'action_reunion_start'
   | 'action_reunion_email'
+  | 'action_advisor_now'
   | 'action_position';
 
 const SLASH_ACTION_MAP: Record<string, BotAction> = {
@@ -224,7 +227,7 @@ const SLASH_ACTION_MAP: Record<string, BotAction> = {
  */
 export async function runAction(action: BotAction, ctx: BaseContext, state: TelegramLeadState): Promise<string | undefined> {
   const { projectId, project, metadata, botToken, chatId } = ctx;
-  const pack = KnowledgePackLoader.getPack(projectId, metadata);
+  const pack = await KnowledgePackLoader.getPack(projectId, metadata);
   const price = pack.publicKnowledge.pricingDetails?.tokenPriceUsd ?? 50;
   let replyText: string | undefined;
 
@@ -277,7 +280,10 @@ export async function runAction(action: BotAction, ctx: BaseContext, state: Tele
     }
 
     case 'action_dataroom_dossier': {
-      replyText = dataroomDossierMessage(pack);
+      // Pass live remaining units for accurate availability display
+      const liveForDossier = await getLivePhaseData(project);
+      const liveUnits = liveForDossier.activePhase?.remainingTokens ?? undefined;
+      replyText = dataroomDossierMessage(pack, liveUnits);
       await sendTelegramMessage(botToken, chatId, replyText, dataroomFullKeyboard());
       recordEvent(projectId, 'DOWNLOADED_DOSSIER');
       await saveTelegramState(project.id, String(chatId), {
@@ -287,8 +293,13 @@ export async function runAction(action: BotAction, ctx: BaseContext, state: Tele
     }
 
     case 'action_dataroom_full': {
-      replyText =
-        '🏛️ *Data Room Institucional*\n\nAquí encontrarás la documentación completa y auditada del proyecto: estructura legal, tokenización, estados financieros y gobernanza.';
+      replyText = [
+        `🏛️ <b>Data Room Institucional · S'Narai</b>`,
+        '',
+        'Aquí encontrarás la documentación completa y auditada del proyecto: estructura legal, Inversión Fraccionada, estados financieros y gobernanza.',
+        '',
+        '<i>Toca el botón para abrir el Data Room en el navegador.</i>'
+      ].join('\n');
       await sendTelegramMessage(botToken, chatId, replyText, dataroomFullKeyboard());
       await saveTelegramState(project.id, String(chatId), {
         lastAction: 'dataroom'
@@ -343,6 +354,23 @@ export async function runAction(action: BotAction, ctx: BaseContext, state: Tele
       } else {
         replyText = await handleAppointment(ctx);
       }
+      break;
+    }
+
+    case 'action_advisor_now': {
+      // Immediately notify the S'Narai team on Discord and put Hermes in handoff mode
+      await HumanHandoffProtocol.triggerHandoff({
+        projectId: project.id,
+        chatId: String(chatId),
+        reason: 'CLIENT_REQUESTED_LIVE_ADVISOR',
+        lastUserMessage: 'Usuario solicitó hablar con un asesor ahora mismo'
+      });
+      replyText = advisorNowMessage();
+      await sendTelegramMessage(botToken, chatId, replyText);
+      await saveTelegramState(project.id, String(chatId), {
+        salesState: advanceSalesState(state.salesState, 'QUALIFIED'),
+        lastAction: 'advisor_now'
+      });
       break;
     }
 
@@ -501,6 +529,27 @@ export async function handleTelegramCallback(params: {
 }): Promise<TelegramBotResult> {
   const { projectId, project, metadata, botToken, callbackQueryId, chatId, data } = params;
   const ctx: BaseContext = { projectId, project, metadata, botToken, chatId };
+
+  // Idempotency: reject duplicate callback fires within 5 seconds
+  const redis = (await import('ioredis').then((m) => m.default))
+    ? null
+    : null; // lazy import guard
+  const idempotencyKey = `hermes:cb:${callbackQueryId}`;
+  let isDuplicate = false;
+  try {
+    const { Redis } = await import('ioredis');
+    const rc = new Redis(process.env.REDIS_URL!);
+    const set = await rc.set(idempotencyKey, '1', 'EX', 5, 'NX');
+    isDuplicate = set === null;
+    rc.disconnect();
+  } catch {
+    // Redis unavailable — proceed without lock (best effort)
+  }
+
+  if (isDuplicate) {
+    await answerCallbackQuery(botToken, callbackQueryId);
+    return { handled: true };
+  }
 
   await answerCallbackQuery(botToken, callbackQueryId, 'Un momento…');
 
