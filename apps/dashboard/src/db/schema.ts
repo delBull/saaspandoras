@@ -382,6 +382,8 @@ export const projects = pgTable("projects", {
   legalConfig: jsonb("legal_config").default({}).notNull(), // V3: Legal agreement templates & NOM-151 config
   extraConfig: jsonb("extra_config").default({}).notNull(), // V4: Resource Hub, Sovereign Calendar, Event Engine config
   tenantRuntimeConfig: jsonb("tenant_runtime_config"), // V4.2: Hermes Runtime Manifest overrides
+  identityPack: jsonb("identity_pack"), // Phase 5: Dynamic Tenant Identity (Soul/Brand)
+  policyPack: jsonb("policy_pack"), // Phase 5: Dynamic Tenant Policies
 
   // Commission Config
   ambassadorCommissionRate: decimal("ambassador_commission_rate", { precision: 5, scale: 2 }).default("4.00"), // % Gestor
@@ -390,6 +392,23 @@ export const projects = pgTable("projects", {
   slugIndex: index("project_slug_index").on(table.slug),
   isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
 }));
+
+// --- PHASE 5: DYNAMIC TENANT KNOWLEDGE ---
+export const knowledgeChunks = pgTable("knowledge_chunks", {
+  id: serial("id").primaryKey(),
+  tenantId: varchar("tenant_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  sourceType: varchar("source_type", { length: 50 }).notNull(), // 'faq', 'document', 'url'
+  sourceId: varchar("source_id", { length: 256 }).notNull(), // To allow invalidation of specific sources
+  content: text("content").notNull(),
+  embedding: jsonb("embedding"), // Store vector array. Using JSONB to avoid pgvector extension requirement during slice
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (table) => ({
+  tenantIndex: index("knowledge_tenant_idx").on(table.tenantId),
+  sourceIndex: index("knowledge_source_idx").on(table.tenantId, table.sourceId),
+}));
+
 
 // Gamification Enums
 export const eventTypeEnum = pgEnum("event_type", [
@@ -2031,6 +2050,7 @@ export const marketingIdentities = pgTable("marketing_identities", {
   fingerprint: varchar("fingerprint", { length: 255 }), // Anonymous device ID
   walletAddress: varchar("wallet_address", { length: 42 }), // Web3 ID
   email: varchar("email", { length: 255 }), // Web2 ID
+  phone: varchar("phone", { length: 255 }), // WhatsApp/SMS ID
   telegramId: varchar("telegram_id", { length: 255 }), // Social ID
   
   metadata: jsonb("metadata").default({}).notNull(),
@@ -2040,6 +2060,7 @@ export const marketingIdentities = pgTable("marketing_identities", {
   fingerprintIdx: uniqueIndex("identities_fingerprint_idx").on(t.fingerprint),
   walletIdx: index("identities_wallet_idx").on(t.walletAddress),
   emailIdx: index("identities_email_idx").on(t.email),
+  phoneIdx: index("identities_phone_idx").on(t.phone),
   telegramIdx: index("identities_telegram_idx").on(t.telegramId),
 }));
 
@@ -3274,3 +3295,61 @@ export const nexusDealAuditEventsRelations = relations(nexusDealAuditEvents, ({ 
 export const nexusDealSignersRelations = relations(nexusDealSigners, ({ one }) => ({
   room: one(nexusDealRooms, { fields: [nexusDealSigners.roomId], references: [nexusDealRooms.id] }),
 }));
+
+// --- EVENT SPINE (Integration Contract v1.2) ---
+
+export const platformEvents = pgTable("platform_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventId: text("event_id").notNull().unique(), 
+  eventType: text("event_type").notNull(),      
+  
+  identityId: text("identity_id"),              
+  correlationId: text("correlation_id").notNull(),
+  causationId: text("causation_id"),
+  
+  sourceSystem: text("source_system").notNull(),
+  sourceChannel: text("source_channel"),
+  organizationId: text("organization_id"),
+  projectId: text("project_id"),
+  
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  
+  identityContext: jsonb("identity_context"),
+  attribution: jsonb("attribution"),
+  payload: jsonb("payload").notNull().default({}),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const channelIdentityBindings = pgTable("channel_identity_bindings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  identityId: uuid("identity_id").notNull(), 
+  channel: varchar("channel", { length: 50 }).notNull(), // 'whatsapp', 'telegram', 'email'
+  externalUserId: varchar("external_user_id", { length: 255 }).notNull(), // wa_id, chatId, email
+  address: varchar("address", { length: 255 }).notNull(), // phone number, handle, email
+  status: varchar("status", { length: 50 }).default('ACTIVE').notNull(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  unqIdx: uniqueIndex("channel_external_user_unique").on(t.channel, t.externalUserId),
+  identityIdx: index("cib_identity_idx").on(t.identityId),
+}));
+
+export const channelOutbox = pgTable("channel_outbox", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull(),
+  status: varchar("status", { length: 50 }).default('PENDING').notNull(),
+  type: varchar("type", { length: 255 }).notNull(),
+  channel: varchar("channel", { length: 50 }).notNull(),
+  payload: jsonb("payload").notNull(),
+  correlationId: varchar("correlation_id", { length: 255 }).notNull(),
+  targetAddress: varchar("target_address", { length: 255 }),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+}, (t) => ({
+  idemIdx: uniqueIndex("channel_outbox_idempotency_unique").on(t.idempotencyKey),
+  statusIdx: index("channel_outbox_status_idx").on(t.status),
+}));
+

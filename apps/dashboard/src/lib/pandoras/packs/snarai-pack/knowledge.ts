@@ -1,14 +1,20 @@
-import { PackKnowledgeDefinition } from '../../core/contracts';
+import { KnowledgeDefinition } from '../../core/contracts/pack-contracts';
 
-export const SNARAI_KNOWLEDGE: PackKnowledgeDefinition = {
-  sources: [
+export const SNARAI_KNOWLEDGE: KnowledgeDefinition = {
+  companyName: "S'Narai",
+  industry: "Real Estate Tokenization",
+  products: [],
+  pricing: null,
+  faqs: [],
+  objections: [],
+  documents: [
     {
-      type: 'document_repository',
-      id: 'snarai-legal'
+      title: "Document Repository",
+      url: "snarai-legal"
     },
     {
-      type: 'vector_store',
-      id: 'snarai-faq'
+      title: "FAQ Vector Store",
+      url: "snarai-faq"
     }
   ]
 };

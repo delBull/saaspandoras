@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { XCircle, CheckCircle2 } from 'lucide-react';
+import { XCircle, CheckCircle2, FileText, ShieldCheck, Share2 } from 'lucide-react';
 import { getHermesConfig, saveHermesConfig } from '../settings/actions';
 
 // We need projectSlug for the actions. For now, since it's snarai, we hardcode or fetch.
@@ -65,7 +65,51 @@ export function PortalEvidenceLayer({ tenantId }: { tenantId: string | number })
 
   return (
     <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-500 p-6 overflow-y-auto">
-      <div className="flex justify-between items-center bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl shrink-0">
+      <div className="flex justify-between items-center pb-4 border-b border-white/10 shrink-0">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Share2 className="w-6 h-6 text-purple-400" />
+            Knowledge Base
+          </h2>
+          <p className="text-sm text-zinc-400 mt-1">Cerebro central y directrices cognitivas</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04]">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+              <FileText className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-zinc-200">System Prompt</h3>
+          </div>
+          <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+            Define la personalidad base del agente, sus limitaciones y su tono de voz principal.
+          </p>
+          <div className="flex gap-2">
+            <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">ACTIVE</span>
+            <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">v1.2.0</span>
+          </div>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04]">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-zinc-200">Vector Embeddings</h3>
+          </div>
+          <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+            Base de datos de contexto semántico. Contiene información del producto y objeciones de ventas.
+          </p>
+          <div className="flex gap-2">
+            <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">142 CHUNKS</span>
+            <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-mono text-zinc-400">PINECONE</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl shrink-0 mt-6">
         <div>
           <h3 className="text-lg font-light text-amber-400">Evidence-Backed Claims</h3>
           <p className="text-xs text-zinc-400 mt-1">Configura las afirmaciones que Hermes puede usar, respaldadas por tu Data Room.</p>

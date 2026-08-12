@@ -127,6 +127,31 @@ export function PortalSettingsLayer({ tenantId }: { tenantId: string | number })
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+            <div className="mb-4">
+              <h3 className="font-bold text-zinc-200">Agent Autonomy Level</h3>
+              <p className="text-sm text-zinc-400 mt-1">Determina cuánta libertad tiene el agente para tomar decisiones sin validación humana.</p>
+            </div>
+            <select className="bg-black/50 border border-white/10 text-sm text-zinc-200 px-4 py-2 rounded-xl outline-none focus:border-purple-500/50">
+              <option>Level 1 (Human-in-the-loop)</option>
+              <option>Level 2 (Co-pilot)</option>
+              <option>Level 3 (Autonomous)</option>
+            </select>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+            <div className="mb-4">
+              <h3 className="font-bold text-zinc-200">Model Selection</h3>
+              <p className="text-sm text-zinc-400 mt-1">LLM utilizado para razonamiento de alto nivel por defecto.</p>
+            </div>
+            <select className="bg-black/50 border border-white/10 text-sm text-zinc-200 px-4 py-2 rounded-xl outline-none focus:border-purple-500/50">
+              <option>GPT-4o (Reasoning)</option>
+              <option>Claude 3.5 Sonnet (Fast)</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ interface QuickStartBannerProps {
   hasProvider?: boolean;
   hasChannel?: boolean;
   onOpenGuide: () => void;
+  onLogout?: () => void;
 }
 
 export function PortalQuickStartBanner({
@@ -16,7 +17,8 @@ export function PortalQuickStartBanner({
   hasEvidence = false,
   hasProvider = true,
   hasChannel = false,
-  onOpenGuide
+  onOpenGuide,
+  onLogout
 }: QuickStartBannerProps) {
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -62,6 +64,14 @@ export function PortalQuickStartBanner({
             <HelpCircle className="w-3.5 h-3.5" />
             Guía
           </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="text-red-400 hover:text-red-300 flex items-center gap-1 font-semibold cursor-pointer ml-2"
+            >
+              Cerrar Sesión
+            </button>
+          )}
           <button
             onClick={toggleMinimize}
             className="text-zinc-400 hover:text-white flex items-center gap-1 font-mono text-[11px] cursor-pointer bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg"
@@ -117,6 +127,15 @@ export function PortalQuickStartBanner({
             <HelpCircle className="w-4 h-4" />
             Guía de Operador
           </button>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl transition-all cursor-pointer"
+            >
+              Cerrar Sesión
+            </button>
+          )}
 
           <button
             onClick={toggleMinimize}

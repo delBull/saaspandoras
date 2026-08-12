@@ -691,8 +691,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       globalCertificate,
       holdersCount,
       treasuryDisplay,
-      dbUserStatus,
-      isWhitelisted,
       isAmbassador: !!ambassador,
       referralCode: ambassador ? ambassador.referralCode : null,
       ambassadorStats: ambassador ? {

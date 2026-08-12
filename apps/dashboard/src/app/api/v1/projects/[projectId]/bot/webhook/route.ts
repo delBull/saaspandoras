@@ -39,12 +39,23 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       }
     }
 
-    // 2. Resolve token for execution context
-    const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
-    let botToken = metadata?.botConfig?.telegramToken || (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
+    // 2. Resolve token for execution context (B6: Dynamic Channel Bindings)
+    // The registration route saves it into w2eConfig.botConfig.telegramToken
+    let botToken = metadata?.botConfig?.telegramToken;
     
-    if (projectSlug === 'snarai') {
-      botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN || botToken;
+    // Fallback: Check if it's stored in tenantRuntimeConfig
+    if (!botToken && projectRecord.tenantRuntimeConfig) {
+      botToken = (projectRecord.tenantRuntimeConfig as any).telegramBotToken;
+    }
+    
+    // Legacy support for S'Narai
+    if (!botToken && projectSlug === 'snarai') {
+      botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN;
+    }
+
+    if (!botToken) {
+      console.warn(`[Telegram Bot] No bot token configured for tenant: ${projectSlug}`);
+      return NextResponse.json({ error: "Configuration Error" }, { status: 400 });
     }
 
     const body = await req.json();

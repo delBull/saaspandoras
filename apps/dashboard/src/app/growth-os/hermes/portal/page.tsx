@@ -112,6 +112,7 @@ function ClientPortalContent() {
       <div className="w-full max-w-7xl">
         <PortalQuickStartBanner 
           onOpenGuide={() => setIsGuideOpen(true)}
+          onLogout={handleLogout}
         />
         
         <HermesWorkbench 
@@ -120,13 +121,6 @@ function ClientPortalContent() {
           renderSettings={<PortalSettingsLayer tenantId={tenantId} />} 
         />
       </div>
-
-      <button 
-        onClick={handleLogout}
-        className="fixed bottom-6 right-6 z-40 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-semibold text-red-400 transition-colors shadow-lg"
-      >
-        Cerrar Sesión
-      </button>
 
       <PortalGuideModal 
         isOpen={isGuideOpen} 
