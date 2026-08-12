@@ -1,5 +1,5 @@
 /**
- * Portal Context Types — Phase 6.1
+ * Portal Context Types — Phase 6.1 & 6.2
  * 
  * Canonical types for the Customer Operating Console.
  * All portal server components and actions operate from PortalTenantContext.
@@ -51,20 +51,66 @@ export interface PortalContext {
  * Never invent status — prefer "UNKNOWN" over fake "OPERATIONAL".
  */
 export type SystemStatus =
+  | 'READY'
+  | 'ACTIVE'
+  | 'PROCESSING'
+  | 'WARNING'
+  | 'ERROR'
+  | 'NOT_CONFIGURED'
+  | 'OFFLINE'
   | 'OPERATIONAL'
   | 'DEGRADED'
-  | 'CONFIGURATION_REQUIRED'
-  | 'OFFLINE'
   | 'UNKNOWN';
 
 export interface HermesSystemStatus {
-  overall: SystemStatus;
   identity: SystemStatus;
   knowledge: SystemStatus;
   channels: SystemStatus;
   journeys: SystemStatus;
   governance: SystemStatus;
+  cognitive: SystemStatus;
+  execution: SystemStatus;
 }
+
+export interface ActivityEventView {
+  id: string;
+  timestamp: string | Date;
+  type: string;
+  description: string;
+  channel?: string;
+  journey?: string;
+  status?: string;
+}
+
+/** 
+ * Presentation-safe view model for Phase 6.2 Overview 
+ * The UI components only consume this contract, decoupling them from DB schema.
+ */
+export interface HermesOverviewView {
+  organization: {
+    id: string;
+    name: string;
+  };
+
+  system: HermesSystemStatus;
+
+  strategicActivity: {
+    active: boolean;
+    title?: string;
+    stage?: string;
+    progress?: number;
+  };
+
+  metrics: {
+    activeJourneys?: number;
+    activeConversations?: number;
+    pendingDecisions?: number;
+    connectedChannels?: number;
+  };
+
+  activity: ActivityEventView[];
+}
+
 
 /** Error types for context resolution failures */
 export type PortalContextError =

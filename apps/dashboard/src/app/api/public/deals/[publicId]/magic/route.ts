@@ -13,7 +13,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://dash.pandoras.finan
 const rateLimitMap = new Map<string, number>();
 const RATE_LIMIT_COOLDOWN_MS = 30000;
 
-export async function POST(request: Request, { params }: { params: { publicId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   try {
     const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
     const now = Date.now();
@@ -31,7 +31,7 @@ export async function POST(request: Request, { params }: { params: { publicId: s
       return NextResponse.json({ error: "Proporciona un correo válido." }, { status: 400 });
     }
 
-    const room = await getRoomByPublicId(params.publicId);
+    const room = await getRoomByPublicId((await params).publicId);
     if (!room) {
       // No revelar existencia
       return NextResponse.json({ ok: true });

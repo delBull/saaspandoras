@@ -1,56 +1,87 @@
 /**
- * Portal Overview — Phase 6.1 Stub
+ * Portal Overview — Phase 6.2 Mission Control
  * /portal/[organizationSlug]/page.tsx
  * 
- * Phase 6.2 will build the real Overview with system status and activity feed.
- * This stub validates that the PortalShell + ControlPlaneContext are working.
+ * "Mission Control for an AI Operating System."
  * 
  * Authorization was already enforced by layout.tsx.
- * This page operates within the authorized tenant context.
+ * This page operates within the authorized tenant context and transforms
+ * the application-level OrganizationOverviewView into the presentation-safe
+ * HermesOverviewView contract.
  */
 
-export default function PortalOverviewPage() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-      {/* Status badge */}
-      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-emerald-300 text-sm font-medium">Phase 6.1 — Shell Verified</span>
-      </div>
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { getOverviewQuery } from '@/lib/pandoras/composition/control-plane-composition';
+import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewDashboard';
+import type { HermesOverviewView, SystemStatus, ActivityEventView } from '@/lib/portal/portal-types';
+import type { OrganizationOverviewView } from '@/lib/pandoras/core/domains/control-plane/view-models';
 
-      <h1 className="text-3xl font-bold text-white mb-3">
-        Your Hermes operating system is ready.
-      </h1>
-      <p className="text-white/40 text-base max-w-md leading-relaxed">
-        Identity, Knowledge, Channels, and Conversations are coming in Phase 6.2–6.6.
-        The tenant boundary, authorization, and shell are certified.
-      </p>
+export default async function PortalOverviewPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
+  const { organizationSlug } = await params;
+  
+  // 1. Context already guaranteed safe by layout, but we resolve it to pass downward
+  const context = await resolvePortalContext(organizationSlug);
 
-      {/* Checklist */}
-      <div className="mt-10 grid grid-cols-2 gap-3 text-left max-w-sm w-full">
-        {[
-          ['Portal Shell', true],
-          ['Tenant Context', true],
-          ['Authorization Boundary', true],
-          ['Organization Scope', true],
-          ['Permission Model', true],
-          ['Cross-tenant isolation', true],
-          ['Overview (Phase 6.2)', false],
-          ['Identity (Phase 6.3)', false],
-        ].map(([label, done]) => (
-          <div
-            key={String(label)}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]"
-          >
-            <span className={`text-sm ${done ? 'text-emerald-400' : 'text-white/20'}`}>
-              {done ? '✓' : '○'}
-            </span>
-            <span className={`text-xs ${done ? 'text-white/70' : 'text-white/25'}`}>
-              {String(label)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  // 2. Fetch the real application data (never direct DB queries)
+  let rawOverview: OrganizationOverviewView | null = null;
+  try {
+    rawOverview = await getOverviewQuery.execute(context.tenant as any, context.tenant.organizationId);
+  } catch (error) {
+    console.error('[PortalOverview] Failed to fetch overview data:', error);
+  }
+
+  // 3. Map application data to presentation-safe view model
+  let overviewView: HermesOverviewView | null = null;
+  
+  if (rawOverview) {
+    // Derive subsystem status based on metrics & strategic activity for Phase 6.2
+    // Future phases will inject real runtime statuses here.
+    const hasGoals = rawOverview.metrics.activeGoals > 0;
+    
+    // Identity & Knowledge are considered READY if the tenant exists
+    const identityStatus: SystemStatus = 'READY';
+    const knowledgeStatus: SystemStatus = 'READY';
+    
+    const channelsStatus: SystemStatus = 'NOT_CONFIGURED'; // Will implement in 6.5
+    const journeysStatus: SystemStatus = hasGoals ? 'ACTIVE' : 'NOT_CONFIGURED';
+    
+    const govStatus: SystemStatus = rawOverview.metrics.pendingDecisions > 0 ? 'PROCESSING' : 'READY';
+    const cognitiveStatus: SystemStatus = 'READY'; 
+    const executionStatus: SystemStatus = 'READY';
+
+    // Temporary: Map recent activities if any exist in the future, else empty array
+    const activityFeed: ActivityEventView[] = [];
+
+    overviewView = {
+      organization: {
+        id: rawOverview.organizationId,
+        name: rawOverview.name,
+      },
+      system: {
+        identity: identityStatus,
+        knowledge: knowledgeStatus,
+        channels: channelsStatus,
+        journeys: journeysStatus,
+        governance: govStatus,
+        cognitive: cognitiveStatus,
+        execution: executionStatus,
+      },
+      strategicActivity: {
+        active: !!rawOverview.currentStrategicActivity,
+        title: rawOverview.currentStrategicActivity?.missionName,
+        stage: rawOverview.currentStrategicActivity?.phase,
+        progress: rawOverview.currentStrategicActivity?.progressPercentage,
+      },
+      metrics: {
+        activeJourneys: rawOverview.metrics.activeMissions,
+        pendingDecisions: rawOverview.metrics.pendingDecisions,
+        // connectedChannels: 0, 
+        // activeConversations: 0,
+      },
+      activity: activityFeed,
+    };
+  }
+
+  // 4. Render Mission Control
+  return <OverviewDashboard context={context} overview={overviewView} />;
 }

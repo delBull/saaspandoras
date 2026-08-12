@@ -10,12 +10,12 @@ export const dynamic = "force-dynamic";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://dash.pandoras.finance";
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
 
   try {
-    const room = await getRoom(params.id);
+    const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
     const body = await request.json();

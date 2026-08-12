@@ -9,11 +9,11 @@ import { client } from "@/lib/thirdweb-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request, { params }: { params: { publicId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   try {
     const { token, name, wallet, signature } = await request.json();
 
-    const room = await getRoomByPublicId(params.publicId);
+    const room = await getRoomByPublicId((await params).publicId);
     if (!room) return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
 
     const cleanName = String(name ?? "").trim();
@@ -76,7 +76,7 @@ export async function POST(request: Request, { params }: { params: { publicId: s
     }
 
     const payload = verifyDealToken(token);
-    if (!payload || payload.sub !== params.publicId) {
+    if (!payload || payload.sub !== (await params).publicId) {
       return NextResponse.json({ error: "Enlace inválido o expirado." }, { status: 401 });
     }
 

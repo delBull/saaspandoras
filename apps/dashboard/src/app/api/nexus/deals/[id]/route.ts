@@ -9,11 +9,11 @@ export const dynamic = "force-dynamic";
 
 const KINDS: DealKind[] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT", "CHARTER"];
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
   try {
-    const room = await getRoom(params.id);
+    const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
     return NextResponse.json({ room });
   } catch (e: any) {
@@ -21,28 +21,28 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
   const actor = session!.address;
 
   try {
-    const room = await getRoom(params.id);
+    const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
     const body = await request.json();
     let updated = room;
 
     if (body.sectionCode && typeof body.content === "string") {
-      const after = await updateSection(params.id, String(body.sectionCode), body.content, actor);
+      const after = await updateSection((await params).id, String(body.sectionCode), body.content, actor);
       if (!after) return NextResponse.json({ error: "Sección no encontrada" }, { status: 404 });
       updated = after;
     } else if (body.addSection === true) {
-      updated = (await addSection(params.id, actor))!;
+      updated = (await addSection((await params).id, actor))!;
     } else if (body.convertAgreement === true) {
-      updated = (await convertToAgreement(params.id, actor))!;
+      updated = (await convertToAgreement((await params).id, actor))!;
     } else {
-      const patch: Record<string, unknown> = { id: params.id, actor };
+      const patch: Record<string, unknown> = { id: (await params).id, actor };
       if (KINDS.includes(body.kind)) patch.kind = body.kind;
       if (typeof body.counterparty === "string") patch.counterparty = body.counterparty.trim();
       if (typeof body.relation === "string") patch.relation = body.relation.trim();
@@ -56,10 +56,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     if (Array.isArray(body.signers) && body.signers.length > 0) {
-      updated = (await addSigners(params.id, body.signers.map((s: any) => String(s.email ?? "")), actor))!;
+      updated = (await addSigners((await params).id, body.signers.map((s: any) => String(s.email ?? "")), actor))!;
     }
     if (typeof body.removeSignerId === "string") {
-      updated = (await removeSigner(params.id, body.removeSignerId, actor))!;
+      updated = (await removeSigner((await params).id, body.removeSignerId, actor))!;
     }
 
     return NextResponse.json({ room: updated });
@@ -69,15 +69,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
   const actor = session!.address;
 
   try {
-    const room = await getRoom(params.id);
+    const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
-    await deleteRoom(params.id, actor);
+    await deleteRoom((await params).id, actor);
     await sendDealRoomAlert({
       roomLabel: `${room.publicId} · ${room.counterparty}`,
       action: "Deal Room eliminado",

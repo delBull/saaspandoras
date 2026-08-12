@@ -4,9 +4,9 @@ import { getRoomByPublicId, publicRoomView } from "@/lib/nexus-deals/repo";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, { params }: { params: { publicId: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   try {
-    const room = await getRoomByPublicId(params.publicId);
+    const room = await getRoomByPublicId((await params).publicId);
     if (!room) {
       return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
     }
