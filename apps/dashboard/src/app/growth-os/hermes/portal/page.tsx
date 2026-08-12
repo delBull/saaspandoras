@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { HermesWorkbench } from '@pandoras/hermes-console';
 import { PortalEvidenceLayer } from './PortalEvidenceLayer';
 import { PortalSettingsLayer } from './PortalSettingsLayer';
+import { PortalQuickStartBanner } from './PortalQuickStartBanner';
+import { PortalGuideModal } from './PortalGuideModal';
 
 export default function ClientPortalPage() {
   return (
@@ -28,6 +30,7 @@ function ClientPortalContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tenantId, setTenantId] = useState<number | null>(null);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   useEffect(() => {
     async function loadPortal() {
@@ -105,17 +108,29 @@ function ClientPortalContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08080C] text-white p-4 md:p-8 flex justify-center relative">
+    <div className="min-h-screen bg-[#08080C] text-white p-4 md:p-8 flex flex-col items-center relative">
+      <div className="w-full max-w-7xl">
+        <PortalQuickStartBanner 
+          onOpenGuide={() => setIsGuideOpen(true)}
+        />
+        
+        <HermesWorkbench 
+          tenantId={tenantId} 
+          renderKnowledge={<PortalEvidenceLayer tenantId={tenantId} />} 
+          renderSettings={<PortalSettingsLayer tenantId={tenantId} />} 
+        />
+      </div>
+
       <button 
         onClick={handleLogout}
-        className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-50 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-semibold text-red-400 transition-colors shadow-lg"
+        className="fixed bottom-6 right-6 z-40 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-semibold text-red-400 transition-colors shadow-lg"
       >
         Cerrar Sesión
       </button>
-      <HermesWorkbench 
-        tenantId={tenantId} 
-        renderKnowledge={<PortalEvidenceLayer tenantId={tenantId} />} 
-        renderSettings={<PortalSettingsLayer tenantId={tenantId} />} 
+
+      <PortalGuideModal 
+        isOpen={isGuideOpen} 
+        onClose={() => setIsGuideOpen(false)} 
       />
     </div>
   );
