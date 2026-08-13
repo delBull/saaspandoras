@@ -59,3 +59,49 @@ export async function getExclusionRegisterAction(tenantId: string) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
   return await KnowledgeGovernanceService.getExclusionRegister(context.organizationId);
 }
+
+// --- Add-On Marketplace Actions ---
+
+import { AddOnRegistryService } from "@/lib/pandoras/core/domains/hermes/addons/registry";
+import { AddOnInstallationManager } from "@/lib/pandoras/core/domains/hermes/addons/installation-manager";
+import { AddOnGovernanceService } from "@/lib/pandoras/core/domains/hermes/addons/governance";
+
+export async function getMarketplaceAddOnsAction(tenantId: string) {
+  const context = await ControlPlaneContextFactory.fromSession(tenantId);
+  
+  const allAddOns = await AddOnRegistryService.getAvailableAddOns();
+  const marketplaceData = [];
+
+  for (const addon of allAddOns) {
+    const installation = await AddOnInstallationManager.getInstallation(context.organizationId, addon.id);
+    marketplaceData.push({
+      manifest: addon,
+      installation: installation || null
+    });
+  }
+
+  return marketplaceData;
+}
+
+export async function requestAddOnInstallationAction(tenantId: string, addonId: string) {
+  const context = await ControlPlaneContextFactory.fromSession(tenantId);
+  
+  // 1. Request Installation (creates INSTALLING status)
+  const installation = await AddOnGovernanceService.requestInstallation(addonId, context);
+  
+  // 2. Mock Configuration for MVP
+  await AddOnGovernanceService.configureAddOn(installation.id, {}, context);
+  
+  // 3. Submit for Approval (moves to PENDING_APPROVAL or ACTIVE if no human approval required)
+  return await AddOnGovernanceService.submitForApproval(installation.id, context);
+}
+
+export async function approveAddOnInstallationAction(tenantId: string, installationId: string) {
+  const context = await ControlPlaneContextFactory.fromSession(tenantId);
+  return await AddOnGovernanceService.approveInstallation(installationId, context);
+}
+
+export async function rejectAddOnInstallationAction(tenantId: string, installationId: string) {
+  const context = await ControlPlaneContextFactory.fromSession(tenantId);
+  return await AddOnGovernanceService.rejectInstallation(installationId, context);
+}

@@ -19,7 +19,11 @@ import {
   rejectKnowledgeAction,
   getKnowledgeByStatusAction,
   getAuditTrailAction,
-  getExclusionRegisterAction
+  getExclusionRegisterAction,
+  getMarketplaceAddOnsAction,
+  requestAddOnInstallationAction,
+  approveAddOnInstallationAction,
+  rejectAddOnInstallationAction
 } from '@/app/org/[tenantId]/actions';
 
 // ─── Tabs ────────────────────────────────────────────────────────
@@ -246,47 +250,159 @@ function KnowledgeTab({
 // 2. ADD-ONS TAB
 // ─────────────────────────────────────────────────────────────────────────────
 function AddOnsTab({ tenantId }: { tenantId: string }) {
-  // Static mockup for architectural test
+  const [marketplace, setMarketplace] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadMarketplace = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getMarketplaceAddOnsAction(tenantId);
+      setMarketplace(data);
+    } catch (e: any) {
+      alert("Error loading marketplace: " + e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+    loadMarketplace();
+  }, [loadMarketplace]);
+
+  const handleRequestInstall = async (addonId: string) => {
+    try {
+      await requestAddOnInstallationAction(tenantId, addonId);
+      await loadMarketplace();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleApproveInstall = async (installationId: string) => {
+    try {
+      await approveAddOnInstallationAction(tenantId, installationId);
+      await loadMarketplace();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+  
+  const handleRejectInstall = async (installationId: string) => {
+    try {
+      await rejectAddOnInstallationAction(tenantId, installationId);
+      await loadMarketplace();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-zinc-400 text-sm animate-pulse">Loading Marketplace...</div>;
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* Proactive Closer */}
-      <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-2xl p-5 space-y-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h4 className="text-sm font-bold text-white">Proactive Closer Engine</h4>
-            <p className="text-xs text-zinc-400 mt-0.5">Automated signal detection and follow-ups.</p>
-          </div>
-          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]">ACTIVE</Badge>
-        </div>
-        <div className="space-y-2">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Capabilities</p>
-          <ul className="text-xs text-zinc-300 space-y-1">
-            <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Signal Detection</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Proactive Contact</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Governance Gate</li>
-          </ul>
-        </div>
-      </div>
+      {marketplace.map(item => {
+        const manifest = item.manifest;
+        const installation = item.installation;
+        const status = installation?.status || 'AVAILABLE';
 
-      {/* VIP Family */}
-      <div className="border border-zinc-800 bg-zinc-900/30 rounded-2xl p-5 space-y-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h4 className="text-sm font-bold text-white">VIP Family Concierge</h4>
-            <p className="text-xs text-zinc-400 mt-0.5">Exclusive referral journeys and premium tone.</p>
+        return (
+          <div key={manifest.id} className={`border rounded-2xl p-5 space-y-4 ${
+            status === 'ACTIVE' 
+              ? 'border-emerald-500/30 bg-emerald-500/5' 
+              : status === 'PENDING_APPROVAL' 
+                ? 'border-amber-500/30 bg-amber-500/5'
+                : 'border-zinc-800 bg-zinc-900/30'
+          }`}>
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="text-sm font-bold text-white">{manifest.name}</h4>
+                <p className="text-xs text-zinc-400 mt-0.5">{manifest.description}</p>
+                <div className="text-[10px] text-zinc-500 mt-1 font-mono">v{manifest.version}</div>
+              </div>
+              <Badge className={
+                status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]' :
+                status === 'PENDING_APPROVAL' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px]' :
+                status === 'AVAILABLE' ? 'bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px]' :
+                'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-[10px]'
+              }>
+                {status}
+              </Badge>
+            </div>
+
+            <div className="space-y-4">
+              {/* Capabilities */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Capabilities</p>
+                <ul className="text-xs text-zinc-300 space-y-1">
+                  {manifest.capabilities?.map((cap: any) => (
+                    <li key={cap.id} className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> {cap.name}
+                    </li>
+                  ))}
+                  {(!manifest.capabilities || manifest.capabilities.length === 0) && (
+                    <li className="text-zinc-500 italic">No declared capabilities.</li>
+                  )}
+                </ul>
+              </div>
+
+              {/* Governance */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Governance Required</p>
+                <ul className="text-xs text-zinc-400 space-y-1">
+                  {manifest.governanceRequirements?.requiresHumanApproval && (
+                    <li className="flex items-center gap-2"><Lock className="w-3 h-3 text-amber-400" /> Human Approval</li>
+                  )}
+                  {manifest.governanceRequirements?.dataAccess && manifest.governanceRequirements.dataAccess.map((acc: any) => (
+                    <li key={acc.domain} className="flex items-center gap-2"><Database className="w-3 h-3 text-indigo-400" /> Access: {acc.domain} ({acc.level})</li>
+                  ))}
+                  {manifest.governanceRequirements?.requiredChannels && manifest.governanceRequirements.requiredChannels.map((ch: any) => (
+                    <li key={ch} className="flex items-center gap-2"><Network className="w-3 h-3 text-blue-400" /> Channel: {ch}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Meta */}
+              {installation && (
+                <div className="border-t border-zinc-800/50 pt-3 flex flex-col gap-1 text-[10px] text-zinc-500 font-mono">
+                  {installation.installedBy && <div>Installed By: {installation.installedBy}</div>}
+                  {installation.approvedBy && <div>Approved By: {installation.approvedBy}</div>}
+                  {installation.activatedAt && <div>Activated At: {new Date(installation.activatedAt).toLocaleString()}</div>}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="pt-2">
+              {status === 'AVAILABLE' && (
+                <button 
+                  onClick={() => handleRequestInstall(manifest.id)}
+                  className="w-full text-xs py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
+                >
+                  Request Installation
+                </button>
+              )}
+              {status === 'PENDING_APPROVAL' && (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleApproveInstall(installation.installationId)}
+                    className="flex-1 text-xs py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-colors"
+                  >
+                    Approve
+                  </button>
+                  <button 
+                    onClick={() => handleRejectInstall(installation.installationId)}
+                    className="flex-1 text-xs py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px]">AVAILABLE</Badge>
-        </div>
-        <div className="space-y-2">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Governance Required</p>
-          <ul className="text-xs text-zinc-400 space-y-1">
-            <li className="flex items-center gap-2"><Lock className="w-3 h-3 text-amber-400" /> Human Approval for Financial Claims</li>
-          </ul>
-        </div>
-        <button className="w-full text-xs py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors">
-          Install Add-On
-        </button>
-      </div>
+        );
+      })}
     </div>
   );
 }

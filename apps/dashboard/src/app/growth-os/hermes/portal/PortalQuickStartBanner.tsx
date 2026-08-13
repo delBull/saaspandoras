@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, CheckCircle2, Circle, HelpCircle, ChevronDown, ChevronUp, EyeOff } from 'lucide-react';
+import { Sparkles, CheckCircle2, Circle, HelpCircle, ChevronDown, ChevronUp, EyeOff, Terminal } from 'lucide-react';
 
 interface QuickStartBannerProps {
   hasIdentity?: boolean;
@@ -9,7 +9,6 @@ interface QuickStartBannerProps {
   hasProvider?: boolean;
   hasChannel?: boolean;
   onOpenGuide: () => void;
-  onLogout?: () => void;
   isDraft?: boolean;
   onboardingStage?: string | null;
 }
@@ -20,7 +19,6 @@ export function PortalQuickStartBanner({
   hasProvider = true,
   hasChannel = false,
   onOpenGuide,
-  onLogout,
   isDraft = false,
   onboardingStage = null
 }: QuickStartBannerProps) {
@@ -68,27 +66,19 @@ export function PortalQuickStartBanner({
       : 0;
 
     return (
-      <div className="w-full bg-indigo-900/40 border-2 border-indigo-500/50 rounded-xl p-6 mb-6 shadow-[0_0_30px_rgba(99,102,241,0.1)] transition-all">
+      <div className="w-full bg-[#0C0C10] border border-white/10 rounded-xl p-6 mb-6 shadow-xl transition-all">
         <div className="flex items-start justify-between mb-4">
           <div className="flex gap-4">
-            <div className="p-3 bg-indigo-500/20 rounded-lg h-fit">
-              <Sparkles className="w-6 h-6 text-indigo-400" />
+            <div className="p-3 bg-black/30 border border-white/5 rounded-lg h-fit">
+              <Terminal className="w-6 h-6 text-purple-400" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white mb-1">MISIÓN: Configuración Inicial</h3>
-              <p className="text-indigo-200/80 max-w-2xl text-sm">
-                Tu workspace inicial ha sido aprovisionado. Para activar el entorno de producción, Hermes debe completar esta misión contigo para construir tu perfil de Tenant.
+              <h3 className="text-sm font-mono text-zinc-400 uppercase tracking-widest mb-1">[ MISSION CONTROL: TENANT INITIALIZATION ]</h3>
+              <p className="text-zinc-500 max-w-2xl text-[11px] font-mono uppercase tracking-wider">
+                {'>'} Workspace provisioned. Hermes must complete this mission to construct the Tenant profile.
               </p>
             </div>
           </div>
-          {onLogout && (
-            <button
-              onClick={onLogout}
-              className="text-red-400 hover:text-red-300 font-semibold text-sm cursor-pointer whitespace-nowrap"
-            >
-              Cerrar Sesión
-            </button>
-          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
@@ -99,28 +89,28 @@ export function PortalQuickStartBanner({
             return (
               <div 
                 key={stage.id} 
-                className={`flex items-center gap-2 p-2 rounded-lg border text-sm font-medium transition-all ${
-                  isCompleted ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' :
-                  isCurrent ? 'bg-purple-500/30 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)] text-white animate-pulse' :
-                  'bg-white/5 border-white/5 text-zinc-500'
+                className={`flex items-center gap-2 p-2.5 rounded-lg border text-[11px] font-mono tracking-wider transition-all ${
+                  isCompleted ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' :
+                  isCurrent ? 'bg-white/5 border-white/20 text-white animate-pulse' :
+                  'bg-black/30 border-white/5 text-zinc-600'
                 }`}
               >
                 {isCompleted ? (
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
                 ) : isCurrent ? (
-                  <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                 ) : (
-                  <Circle className="w-4 h-4 text-zinc-600" />
+                  <Circle className="w-3.5 h-3.5 text-zinc-700" />
                 )}
-                {stage.label}
+                {stage.id}
               </div>
             );
           })}
         </div>
         
-        <div className="mt-6 flex justify-center">
-          <span className="text-xs text-indigo-300/60 font-mono tracking-widest uppercase">
-            ↓ Continúa la conversación abajo ↓
+        <div className="mt-8 flex justify-center border-t border-white/5 pt-4">
+          <span className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
+            ↓ Awaiting operator input in console ↓
           </span>
         </div>
       </div>
@@ -129,37 +119,29 @@ export function PortalQuickStartBanner({
 
   if (isMinimized) {
     return (
-      <div className="w-full bg-zinc-900/80 border border-purple-500/20 rounded-xl px-4 py-2 mb-4 flex items-center justify-between text-xs transition-all">
+      <div className="w-full bg-[#0C0C10] border border-white/10 rounded-xl px-4 py-2 mb-4 flex items-center justify-between text-xs transition-all">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-400" />
-          <span className="text-zinc-300 font-medium">Setup Hermes OS:</span>
-          <span className="font-mono text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 text-[10px]">
-            {progressPercent}% Completo
+          <Terminal className="w-4 h-4 text-purple-400" />
+          <span className="text-zinc-400 font-mono text-[11px] uppercase tracking-wider">Hermes OS Setup:</span>
+          <span className="font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 text-[10px]">
+            {progressPercent}%
           </span>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenGuide}
-            className="text-purple-400 hover:text-purple-300 flex items-center gap-1 font-semibold cursor-pointer"
+            className="text-purple-400 hover:text-purple-300 flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider cursor-pointer"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
-            Guía
+            <HelpCircle className="w-3 h-3" />
+            Guide
           </button>
-          {onLogout && (
-            <button
-              onClick={onLogout}
-              className="text-red-400 hover:text-red-300 flex items-center gap-1 font-semibold cursor-pointer ml-2"
-            >
-              Cerrar Sesión
-            </button>
-          )}
           <button
             onClick={toggleMinimize}
-            className="text-zinc-400 hover:text-white flex items-center gap-1 font-mono text-[11px] cursor-pointer bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg"
+            className="text-zinc-500 hover:text-zinc-300 flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider cursor-pointer bg-black/30 border border-white/5 hover:bg-white/5 px-2 py-1 rounded"
           >
-            <ChevronDown className="w-3.5 h-3.5" />
-            Expandir
+            <ChevronDown className="w-3 h-3" />
+            Expand
           </button>
         </div>
       </div>
@@ -167,34 +149,34 @@ export function PortalQuickStartBanner({
   }
 
   return (
-    <div className="w-full bg-gradient-to-r from-purple-950/40 via-zinc-900/60 to-purple-950/40 border border-purple-500/20 rounded-2xl p-4 mb-6 shadow-[0_0_25px_rgba(147,51,234,0.15)] flex flex-col md:flex-row items-center justify-between gap-4 relative transition-all">
+    <div className="w-full bg-[#0C0C10] border border-white/10 rounded-xl p-4 mb-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 relative transition-all">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-purple-500/20 text-purple-400 rounded-xl border border-purple-500/30">
-          <Sparkles className="w-5 h-5 animate-pulse" />
+        <div className="p-2.5 bg-black/30 text-purple-400 rounded-lg border border-white/5">
+          <Terminal className="w-5 h-5" />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold text-white">Configuración del Tenant Hermes OS</h4>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-              {progressPercent}% Completo
+            <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">Tenant Configuration</h4>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              {progressPercent}%
             </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Sigue estos pasos para gobernar al agente y conectar tus canales en tiempo real.
+          <p className="text-[10px] font-mono text-zinc-500 mt-0.5 uppercase tracking-wider">
+            {'>'} Initialize agent governance and channel connectivity
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider">
           {steps.map((step, idx) => (
-            <div key={idx} className="flex items-center gap-1.5 font-medium">
+            <div key={idx} className="flex items-center gap-1.5">
               {step.completed ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
               ) : (
-                <Circle className="w-4 h-4 text-zinc-600" />
+                <Circle className="w-3.5 h-3.5 text-zinc-700" />
               )}
-              <span className={step.completed ? 'text-zinc-200' : 'text-zinc-500'}>
+              <span className={step.completed ? 'text-zinc-400' : 'text-zinc-600'}>
                 {step.label}
               </span>
             </div>
@@ -204,25 +186,16 @@ export function PortalQuickStartBanner({
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenGuide}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] cursor-pointer"
+            className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded transition-all cursor-pointer"
           >
-            <HelpCircle className="w-4 h-4" />
-            Guía de Operador
+            <HelpCircle className="w-3.5 h-3.5" />
+            Manual
           </button>
-
-          {onLogout && (
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl transition-all cursor-pointer"
-            >
-              Cerrar Sesión
-            </button>
-          )}
 
           <button
             onClick={toggleMinimize}
-            title="Minimizar barra de setup"
-            className="p-1.5 text-zinc-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+            title="Minimize console"
+            className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded border border-white/5 bg-black/30 hover:bg-white/5 transition-colors cursor-pointer"
           >
             <ChevronUp className="w-4 h-4" />
           </button>

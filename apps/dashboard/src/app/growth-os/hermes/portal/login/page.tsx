@@ -103,124 +103,57 @@ function PortalLoginContent() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#08080C',
-      color: '#fff',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '16px',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div className="min-h-screen bg-[#08080C] text-white font-sans flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Glow */}
-      <div style={{
-        position: 'absolute',
-        width: '100%',
-        maxWidth: 500,
-        height: 500,
-        background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, rgba(0,0,0,0) 70%)',
-        top: '15%',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        pointerEvents: 'none'
-      }} />
+      <div 
+        className="absolute w-full max-w-[500px] h-[500px] top-[15%] left-1/2 -translate-x-1/2 pointer-events-none rounded-full blur-[100px]"
+        style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, rgba(0,0,0,0) 70%)' }}
+      />
 
-      <div style={{
-        maxWidth: 440,
-        width: '100%',
-        background: 'rgba(255,255,255,0.03)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 24,
-        padding: '28px 24px',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-        position: 'relative',
-        zIndex: 10
-      }}>
+      <div className="w-full max-w-[440px] bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative z-10">
+        
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'rgba(124,58,237,0.15)',
-            border: '1px solid rgba(124,58,237,0.4)',
-            color: '#c4b5fd',
-            fontSize: 12,
-            fontWeight: 700,
-            padding: '6px 14px',
-            borderRadius: 20,
-            marginBottom: 16,
-            letterSpacing: '0.04em'
-          }}>
-            <span>✨ HERMES OS PORTAL</span>
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg mx-auto mb-5 border border-white/10">
+            <span className="text-white text-lg font-bold">H</span>
           </div>
-
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+          <h1 className="text-2xl font-bold mb-2 tracking-tight">
             Acceso a tu Consola Hermes
           </h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: '1.5' }}>
+          <p className="text-sm text-white/60 leading-relaxed max-w-sm mx-auto">
             Ingresa el correo electrónico asociado a tu cuenta de Hermes para recibir tu enlace mágico de acceso directo.
           </p>
         </div>
 
         {/* Content Body */}
         {sentSuccess ? (
-          <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 16, padding: 20, textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>📩</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#10b981', marginBottom: 6 }}>
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 text-center">
+            <div className="text-3xl mb-2">📩</div>
+            <div className="text-base font-bold text-emerald-400 mb-1.5">
               ¡Enlace Mágico Enviado!
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 16, lineHeight: 1.5 }}>
-              Hemos procesado el acceso para <strong style={{ color: '#fff' }}>{email}</strong>.
+            <div className="text-sm text-white/80 mb-4 leading-relaxed">
+              Hemos procesado el acceso para <strong className="text-white font-bold">{email}</strong>.
             </div>
 
             {generatedLink ? (
-              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="mt-4 pt-4 border-t border-white/10">
                 <a
                   href={generatedLink}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    minHeight: 48,
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                    color: '#fff',
-                    textDecoration: 'none',
-                    fontWeight: 700,
-                    fontSize: 15,
-                    padding: '12px 16px',
-                    borderRadius: 14,
-                    textAlign: 'center',
-                    boxShadow: '0 4px 18px rgba(124,58,237,0.5)',
-                    boxSizing: 'border-box'
-                  }}
+                  className="flex items-center justify-center w-full min-h-[48px] bg-gradient-to-br from-violet-600 to-indigo-600 text-white font-bold text-sm px-4 rounded-xl shadow-[0_4px_18px_rgba(124,58,237,0.5)] hover:scale-[1.02] transition-transform"
                 >
                   🚀 Entrar al Portal Ahora (Dev Mode)
                 </a>
               </div>
             ) : (
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 12, lineHeight: 1.5 }}>
+              <p className="text-xs text-white/50 mt-3 leading-relaxed">
                 Por seguridad, abre el enlace que enviamos a tu correo para iniciar sesión de forma segura.
               </p>
             )}
 
             <button
               onClick={() => { setSentSuccess(false); setGeneratedLink(null); }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: 13,
-                marginTop: 18,
-                cursor: 'pointer',
-                textDecoration: 'underline'
-              }}
+              className="mt-5 text-sm text-white/50 hover:text-white underline transition-colors"
             >
               Usar otro correo
             </button>
@@ -228,114 +161,59 @@ function PortalLoginContent() {
         ) : (
           <form onSubmit={handleSubmit}>
             {error && (
-              <div style={{
-                background: 'rgba(239,68,68,0.12)',
-                border: '1px solid rgba(239,68,68,0.35)',
-                color: '#f87171',
-                fontSize: 13,
-                padding: '12px 16px',
-                borderRadius: 12,
-                marginBottom: 18
-              }}>
-                ⚠️ {error}
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm p-3 rounded-xl mb-4.5 flex items-start gap-2">
+                <span className="shrink-0">⚠️</span>
+                <span>{error}</span>
               </div>
             )}
 
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+            <div className="mb-5 relative" ref={wrapperRef}>
+              <label className="block text-sm font-semibold text-white/80 mb-2">
                 Correo Electrónico de Cliente
               </label>
-              <div ref={wrapperRef} style={{ position: 'relative' }}>
-                <input
-                  ref={inputRef}
-                  type="email"
-                  required
-                  placeholder="ejemplo@tuempresa.com"
-                  autoComplete="email"
-                  value={email}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  onChange={(e) => { setEmail(e.target.value); setShowSuggestions(true); }}
-                  style={{
-                    width: '100%',
-                    minHeight: 48,
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.16)',
-                    borderRadius: 12,
-                    padding: '12px 16px',
-                    color: '#fff',
-                    fontSize: 16, // 16px prevents iOS Safari auto-zoom!
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                {showSuggestions && suggestions.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 6px)',
-                    left: 0,
-                    right: 0,
-                    background: '#12121a',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    boxShadow: '0 12px 30px rgba(0,0,0,0.7)',
-                    zIndex: 20
-                  }}>
-                    <div style={{ padding: '8px 14px', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Usados recientemente
-                    </div>
-                    {suggestions.map((sug) => (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() => {
-                          setEmail(sug);
-                          setShowSuggestions(false);
-                          inputRef.current?.focus();
-                        }}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          textAlign: 'left',
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'rgba(255,255,255,0.9)',
-                          fontSize: 14,
-                          padding: '12px 14px',
-                          minHeight: 44,
-                          cursor: 'pointer'
-                        }}
-                        onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(124,58,237,0.15)'; }}
-                        onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'transparent'; }}
-                      >
-                        {sug}
-                      </button>
-                    ))}
+              <input
+                ref={inputRef}
+                type="email"
+                required
+                placeholder="ejemplo@tuempresa.com"
+                autoComplete="email"
+                value={email}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onChange={(e) => { setEmail(e.target.value); setShowSuggestions(true); }}
+                className="w-full min-h-[48px] bg-white/[0.05] border border-white/[0.16] rounded-xl px-4 text-white text-base outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all placeholder:text-white/30"
+              />
+              
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-[#0C0C12] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-20">
+                  <div className="px-3.5 py-2 text-[11px] font-bold text-white/40 uppercase tracking-wider">
+                    Usados recientemente
                   </div>
-                )}
-              </div>
+                  {suggestions.map((sug) => (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={() => {
+                        setEmail(sug);
+                        setShowSuggestions(false);
+                        inputRef.current?.focus();
+                      }}
+                      className="block w-full text-left bg-transparent text-white/90 text-sm px-3.5 py-3 min-h-[44px] hover:bg-violet-500/15 transition-colors"
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              style={{
-                width: '100%',
-                minHeight: 48,
-                background: loading ? 'rgba(124,58,237,0.5)' : 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 14,
-                padding: '14px',
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 18px rgba(124,58,237,0.45)',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+              className={`w-full min-h-[48px] rounded-xl text-sm font-bold flex items-center justify-center transition-all ${
+                loading 
+                  ? 'bg-violet-600/50 text-white cursor-not-allowed'
+                  : 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-[0_4px_18px_rgba(124,58,237,0.45)] hover:shadow-[0_4px_24px_rgba(124,58,237,0.6)]'
+              }`}
             >
               {loading ? 'Generando Enlace...' : '✨ Enviar Magic Link de Acceso'}
             </button>
@@ -343,8 +221,8 @@ function PortalLoginContent() {
         )}
 
         {/* Footer */}
-        <div style={{ marginTop: 24, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 16 }}>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+        <div className="mt-6 text-center border-t border-white/10 pt-4">
+          <span className="text-xs text-white/50 leading-relaxed">
             ¿Solo usas Hermes OS? Sin descargas ni registros complejos.
           </span>
         </div>

@@ -3,10 +3,11 @@
 import React from 'react';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { HermesIntelligencePanel } from './overview/HermesIntelligencePanel';
 
-export function PortalInspector({ children, title = 'Hermes Operating System', type = 'system', attributes = {} }: any) {
+export function PortalInspector({ children, title = 'Hermes Operating System', type = 'system', attributes = {}, organization }: any) {
   return (
-    <aside className="hidden xl:flex w-72 bg-[#09090C] border-l border-white/10 flex-col shrink-0 font-sans h-screen sticky top-0 overflow-y-auto">
+    <aside className="hidden xl:flex w-[400px] bg-[#09090C] border-l border-white/10 flex-col shrink-0 font-sans h-screen sticky top-0 overflow-hidden">
         <div className="h-12 px-4 border-b border-white/10 flex items-center justify-between bg-[#0C0C10] shrink-0">
             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                 <WrenchScrewdriverIcon className="w-3.5 h-3.5 text-purple-400" />
@@ -17,7 +18,7 @@ export function PortalInspector({ children, title = 'Hermes Operating System', t
             </span>
         </div>
 
-        <div className="p-4 flex-1 space-y-6">
+        <div className="p-4 flex-1 flex flex-col space-y-6 overflow-y-auto">
             <div>
                 <h3 className="text-sm font-bold text-zinc-100">{title}</h3>
                 <p className="text-xs text-zinc-500 font-mono mt-0.5">Context Inspector View</p>
@@ -37,7 +38,17 @@ export function PortalInspector({ children, title = 'Hermes Operating System', t
 
             {children}
 
-            <div className="p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl space-y-2 mt-auto">
+            {/* Chat / Intelligence Panel */}
+            {organization && (
+              <div className="mt-6 flex-1 flex flex-col">
+                <HermesIntelligencePanel 
+                  organizationSlug={organization.slug} 
+                  organizationName={organization.name} 
+                />
+              </div>
+            )}
+
+            <div className="p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl space-y-2 mt-auto shrink-0">
                 <span className="text-xs font-semibold text-purple-300 flex items-center gap-1.5">
                     <ShieldCheckIcon className="w-4 h-4 text-purple-400" />
                     ADR-001 Compliant

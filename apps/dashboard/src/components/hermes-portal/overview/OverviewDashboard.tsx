@@ -16,7 +16,6 @@ import { StrategicActivityCard } from './StrategicActivityCard';
 import { LiveActivityFeed } from './LiveActivityFeed';
 import { OperatingLayers } from './OperatingLayers';
 import { OverviewMetrics } from './OverviewMetrics';
-import { HermesIntelligencePanel } from './HermesIntelligencePanel';
 
 interface OverviewDashboardProps {
   context: PortalContext;
@@ -39,9 +38,9 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 pb-12 animate-in fade-in duration-500 max-w-7xl mx-auto items-stretch h-full">
+    <div className="flex flex-col lg:flex-row gap-8 pb-12 animate-in fade-in duration-500 w-full items-stretch h-full px-4 sm:px-6">
       {/* MISSION CONTROL COLUMN */}
-      <div className="flex-1 flex flex-col gap-8">
+      <div className="flex-1 flex flex-col gap-8 w-full max-w-full">
         {/* ZONE 1: HEADER (Handled by PortalHeader in Shell) */}
         
         {/* ZONE 2: SYSTEM CORE */}
@@ -71,11 +70,6 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
             <OverviewMetrics metrics={overview.metrics} />
           </section>
         )}
-      </div>
-
-      {/* HERMES INTELLIGENCE COLUMN */}
-      <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0 sticky top-6 h-[calc(100vh-2rem)]">
-        <HermesIntelligencePanel overview={overview} organizationSlug={context.organization.slug} />
       </div>
     </div>
   );

@@ -84,7 +84,7 @@ export function PortalShell({ context, children }: PortalShellProps) {
       </div>
 
       {/* Desktop Right Inspector */}
-      <PortalInspector />
+      <PortalInspector organization={context.organization} />
 
     </div>
   );

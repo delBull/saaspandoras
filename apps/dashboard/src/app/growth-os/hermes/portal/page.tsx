@@ -133,8 +133,8 @@ function ClientPortalContent() {
   const isDraft = projectStatus === 'draft' || onboardingStage !== null && onboardingStage !== 'COMPLETED';
 
   return (
-    <div className="min-h-screen bg-[#08080C] text-white p-4 md:p-8 flex flex-col items-center relative">
-      <div className="w-full max-w-7xl">
+    <div className="min-h-screen bg-[#08080C] text-white p-0 flex flex-col items-center relative">
+      <div className="w-full flex-1 flex flex-col">
         <PortalQuickStartBanner 
           onOpenGuide={() => setIsGuideOpen(true)}
           onLogout={handleLogout}

@@ -12,8 +12,8 @@ import { Send, Brain, Sparkles } from 'lucide-react';
 import type { HermesOverviewView } from '@/lib/portal/portal-types';
 
 interface HermesIntelligencePanelProps {
-  overview: HermesOverviewView;
   organizationSlug: string;
+  organizationName: string;
 }
 
 interface MessageItem {
@@ -23,7 +23,7 @@ interface MessageItem {
   chips?: string[];
 }
 
-export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIntelligencePanelProps) {
+export function HermesIntelligencePanel({ organizationSlug, organizationName }: HermesIntelligencePanelProps) {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeStage, setActiveStage] = useState<string>('BUSINESS_DISCOVERY');
@@ -31,7 +31,7 @@ export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIn
     {
       id: 'welcome-1',
       role: 'hermes',
-      content: `Hola. Todavía no conozco los detalles de ${overview.organization.name}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`,
+      content: `Hola. Todavía no conozco los detalles de ${organizationName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`,
       chips: [
         '🏠 Inmobiliaria & Desarrollo',
         '💼 Servicios B2B & Consultoría',
@@ -128,7 +128,7 @@ export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIn
   const activeChips = latestHermesMessage?.chips || [];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[650px] bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
+    <div className="flex flex-col flex-1 h-full min-h-[400px] bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
       {/* Header */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
         <div className="flex items-center gap-3">
