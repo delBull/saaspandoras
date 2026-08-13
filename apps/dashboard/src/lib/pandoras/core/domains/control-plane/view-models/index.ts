@@ -15,6 +15,8 @@ export interface OrganizationOverviewView {
     nextAction: string;
     status: 'Operational' | 'Awaiting Governance' | 'Blocked';
   };
+  systemStatus?: 'NOT_CONFIGURED' | 'READY' | 'ATTENTION_REQUIRED';
+  journeyStatus?: 'NOT_STARTED' | 'ACTIVE' | 'PAUSED' | 'BLOCKED' | 'COMPLETED';
 }
 
 export interface MissionControlView {

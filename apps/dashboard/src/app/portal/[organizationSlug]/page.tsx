@@ -57,6 +57,8 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
         id: rawOverview.organizationId,
         name: rawOverview.name,
       },
+      systemStatus: rawOverview.systemStatus || 'NOT_CONFIGURED',
+      journeyStatus: rawOverview.journeyStatus || 'NOT_STARTED',
       system: {
         identity: identityStatus,
         knowledge: knowledgeStatus,

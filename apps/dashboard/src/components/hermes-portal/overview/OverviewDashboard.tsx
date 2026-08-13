@@ -16,6 +16,7 @@ import { StrategicActivityCard } from './StrategicActivityCard';
 import { LiveActivityFeed } from './LiveActivityFeed';
 import { OperatingLayers } from './OperatingLayers';
 import { OverviewMetrics } from './OverviewMetrics';
+import { HermesIntelligencePanel } from './HermesIntelligencePanel';
 
 interface OverviewDashboardProps {
   context: PortalContext;
@@ -38,36 +39,44 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-12 animate-in fade-in duration-500 max-w-6xl mx-auto">
-      {/* ZONE 1: HEADER (Handled by PortalHeader in Shell) */}
-      
-      {/* ZONE 2: SYSTEM CORE */}
-      <section>
-        <SystemCore status={overview.system} organization={overview.organization} />
-      </section>
-
-      {/* ZONE 3: CURRENT MISSION & SYSTEM STATUS */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <StrategicActivityCard activity={overview.strategicActivity} />
-        <SystemStatusPanel status={overview.system} organizationSlug={context.organization.slug} />
-      </section>
-
-      {/* ZONE 4: LIVE ACTIVITY */}
-      <section>
-        <LiveActivityFeed activity={overview.activity} />
-      </section>
-
-      {/* ZONE 5: OPERATING LAYERS */}
-      <section>
-        <OperatingLayers status={overview.system} organizationSlug={context.organization.slug} />
-      </section>
-
-      {/* ZONE 6: METRICS (Secondary) */}
-      {Object.keys(overview.metrics).length > 0 && (
+    <div className="flex flex-col lg:flex-row gap-8 pb-12 animate-in fade-in duration-500 max-w-7xl mx-auto items-stretch h-full">
+      {/* MISSION CONTROL COLUMN */}
+      <div className="flex-1 flex flex-col gap-8">
+        {/* ZONE 1: HEADER (Handled by PortalHeader in Shell) */}
+        
+        {/* ZONE 2: SYSTEM CORE */}
         <section>
-          <OverviewMetrics metrics={overview.metrics} />
+          <SystemCore status={overview.system} organization={overview.organization} />
         </section>
-      )}
+
+        {/* ZONE 3: CURRENT MISSION & SYSTEM STATUS */}
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <StrategicActivityCard activity={overview.strategicActivity} />
+          <SystemStatusPanel status={overview.system} organizationSlug={context.organization.slug} />
+        </section>
+
+        {/* ZONE 4: OPERATING LAYERS */}
+        <section>
+          <OperatingLayers status={overview.system} organizationSlug={context.organization.slug} />
+        </section>
+
+        {/* ZONE 5: LIVE ACTIVITY */}
+        <section>
+          <LiveActivityFeed activity={overview.activity} />
+        </section>
+
+        {/* ZONE 6: METRICS (Secondary) */}
+        {Object.keys(overview.metrics).length > 0 && (
+          <section>
+            <OverviewMetrics metrics={overview.metrics} />
+          </section>
+        )}
+      </div>
+
+      {/* HERMES INTELLIGENCE COLUMN */}
+      <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0 sticky top-6 h-[calc(100vh-2rem)]">
+        <HermesIntelligencePanel overview={overview} organizationSlug={context.organization.slug} />
+      </div>
     </div>
   );
 }

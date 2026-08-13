@@ -92,6 +92,9 @@ export interface HermesOverviewView {
     name: string;
   };
 
+  systemStatus: 'NOT_CONFIGURED' | 'READY' | 'ATTENTION_REQUIRED';
+  journeyStatus: 'NOT_STARTED' | 'ACTIVE' | 'PAUSED' | 'BLOCKED' | 'COMPLETED';
+
   system: HermesSystemStatus;
 
   strategicActivity: {

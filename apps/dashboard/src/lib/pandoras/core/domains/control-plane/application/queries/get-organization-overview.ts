@@ -48,7 +48,9 @@ export class GetOrganizationOverviewQuery {
         progressPercentage: this.calculateMissionProgress(activeMission),
         nextAction: pendingIntents.length > 0 ? "Review Pending Proposal" : "Execute Strategy",
         status: pendingIntents.length > 0 ? "Awaiting Governance" : "Operational"
-      } : undefined
+      } : undefined,
+      systemStatus: packsCount > 0 ? 'READY' : 'NOT_CONFIGURED',
+      journeyStatus: activeMission ? 'ACTIVE' : 'NOT_STARTED',
     };
   }
 
