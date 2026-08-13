@@ -4,7 +4,15 @@ import { NormalizedInboundMessage } from '../../channels/normalized-message';
 // Core Enums & Types for the Cognitive Layering Model (6.6.0)
 // ---------------------------------------------------------
 
-export type KnowledgeScope = 'GLOBAL' | 'PLATFORM' | 'ORGANIZATION' | 'PROJECT';
+export interface KnowledgeScope {
+  organizationId: string;
+  projectId?: string;
+  visibility: "PUBLIC" | "INTERNAL" | "RESTRICTED";
+  authority: "CANONICAL" | "VERIFIED" | "INFERRED";
+  status: "ACTIVE" | "SUPERSEDED" | "ARCHIVED";
+  sourceId: string;
+  version: number;
+}
 export type MemoryProvenance = 'USER_STATED' | 'SYSTEM_INFERRED' | 'SYSTEM_KNOWN';
 export type AuthorityLevel = 'PROPOSAL' | 'MEDIUM' | 'HIGH' | 'MAXIMUM';
 
@@ -39,8 +47,6 @@ export interface KnowledgeSnapshot {
     scope: KnowledgeScope;
     relevanceScore: number;
     sourceDocument: string;
-    organizationId?: string; // Used for C5.25 Scope Validation
-    projectId?: string;      // Used for C5.25 Scope Validation
   }>;
 }
 

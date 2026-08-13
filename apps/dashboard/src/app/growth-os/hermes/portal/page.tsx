@@ -47,6 +47,8 @@ function ClientPortalContent() {
   const [error, setError] = useState<string | null>(null);
   const [tenantId, setTenantId] = useState<number | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [projectStatus, setProjectStatus] = useState<string | null>(null);
+  const [onboardingStage, setOnboardingStage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadPortal() {
@@ -81,7 +83,10 @@ function ClientPortalContent() {
           } else if (sessionToken) {
             setPortalSession(sessionToken);
           }
-          setTenantId(data.organization?.projectId ?? data.org?.projectId);
+          const org = data.organization ?? data.org;
+          setTenantId(org?.projectId);
+          setProjectStatus(org?.projectStatus || null);
+          setOnboardingStage(org?.onboardingStage || null);
         } else {
           clearPortalSession();
           window.location.href = '/growth-os/hermes/portal/login';
@@ -125,18 +130,22 @@ function ClientPortalContent() {
     window.location.href = '/growth-os/hermes/portal/login';
   };
 
+  const isDraft = projectStatus === 'draft' || onboardingStage !== null && onboardingStage !== 'COMPLETED';
+
   return (
     <div className="min-h-screen bg-[#08080C] text-white p-4 md:p-8 flex flex-col items-center relative">
       <div className="w-full max-w-7xl">
         <PortalQuickStartBanner 
           onOpenGuide={() => setIsGuideOpen(true)}
           onLogout={handleLogout}
+          isDraft={isDraft}
+          onboardingStage={onboardingStage}
         />
         
         <HermesWorkbench 
           tenantId={tenantId} 
-          renderKnowledge={<PortalEvidenceLayer tenantId={tenantId} />} 
-          renderSettings={<PortalSettingsLayer tenantId={tenantId} />} 
+          renderKnowledge={!isDraft ? <PortalEvidenceLayer tenantId={tenantId} /> : undefined} 
+          renderSettings={!isDraft ? <PortalSettingsLayer tenantId={tenantId} /> : undefined} 
         />
       </div>
 

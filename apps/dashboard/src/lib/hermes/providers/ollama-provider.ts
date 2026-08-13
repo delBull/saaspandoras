@@ -2,7 +2,8 @@ import { CognitiveProvider, CognitiveContext, CognitiveResponse } from "./cognit
 
 export class OllamaProvider implements CognitiveProvider {
   async generateResponse(context: CognitiveContext): Promise<CognitiveResponse> {
-    const model = process.env.HERMES_COGNITIVE_MODEL || "llama3.1"; // Default for local Ollama
+    const model = process.env.OLLAMA_MODEL || process.env.HERMES_COGNITIVE_MODEL || "llama3.1"; 
+    const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
     
     const { domainPack, memory, journeyContext, payload } = context;
     
@@ -54,7 +55,7 @@ Do not wrap it in markdown block. Just return raw JSON.`;
     }
 
     try {
-      const response = await fetch('http://localhost:11434/api/chat', {
+      const response = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

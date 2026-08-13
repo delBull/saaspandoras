@@ -173,7 +173,7 @@ export class KnowledgePackLoader {
       console.error('[KnowledgePackLoader] Error fetching from DB:', e);
     }
 
-    // Always return S'Narai pack for snarai if not in DB
+    // Always return S'Narai Reference Pack for snarai
     if (slug === 'snarai') {
       return SNARAI_KNOWLEDGE_PACK;
     }

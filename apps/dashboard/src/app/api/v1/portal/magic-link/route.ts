@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
     //    Priority: metadata on the approved request → lead record (email).
     const meta = (approvedRequest?.metadata ?? {}) as { projectId?: number; projectSlug?: string };
     let project: typeof projects.$inferSelect | undefined;
+    let installedId: string | undefined;
 
     if (meta.projectId) {
       [project] = await db.select().from(projects).where(eq(projects.id, Number(meta.projectId))).limit(1);
@@ -87,18 +88,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const activeProject = project;
-    if (!activeProject) {
-      return NextResponse.json({ error: 'No se encontró un proyecto activo asociado a esta cuenta. Usa el enlace de invitación que recibiste por correo.' }, { status: 404 });
+    let token = '';
+    let activeProjectId = project?.id;
+
+    if (activeProjectId && project) {
+      // User has an explicit project
+      const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);
+      const firstProduct = products && products.length > 0 ? products[0] : null;
+      installedId = firstProduct ? firstProduct.id : `inst_hermes_${activeProjectId}`;
+      token = generatePortalToken(installedId, activeProjectId, 'hermes');
+    } else {
+      // 3. O1 - First login provisioning & O2 - Concurrent provisioning handling
+      // User does NOT have an active commercial project. Let's auto-provision or load their bootstrap workspace.
+      const { ensureInitialWorkspace } = await import('@/lib/platform/workspace-bootstrap');
+      const bootstrap = await ensureInitialWorkspace(cleanEmail);
+      token = bootstrap.portalToken;
     }
 
-    // 3. Resolve installed product ID for Hermes
-    const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProject.id)).limit(1);
-    const firstProduct = products && products.length > 0 ? products[0] : null;
-    const installedId = firstProduct ? firstProduct.id : `inst_hermes_${activeProject.id}`;
-
-    // 4. Generate Magic Token (7 Days valid)
-    const token = generatePortalToken(installedId, activeProject.id, 'hermes');
+    // 4. Generate Magic Link
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
     const returnQuery = safeReturn ? `&return=${encodeURIComponent(safeReturn)}` : '';
     const magicLink = `${baseUrl}/growth-os/hermes/portal?token=${token}${returnQuery}`;

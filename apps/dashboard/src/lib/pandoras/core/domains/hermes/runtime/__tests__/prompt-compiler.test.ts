@@ -57,8 +57,14 @@ describe('Prompt Compilation Certification (P1-P10)', () => {
   it('P1 & P10 - Tenant Isolation & Scope Violation (Fails Closed)', () => {
     // Inject knowledge from another organization
     baseContext.knowledge.retrievedSnippets.push({
-      organizationId: 'org_oscar', // Different org!
-      scope: 'ORGANIZATION',
+      scope: {
+        organizationId: 'org_oscar', // Different org!
+        visibility: 'PUBLIC',
+        authority: 'CANONICAL',
+        status: 'ACTIVE',
+        sourceId: 'doc1',
+        version: 1
+      },
       content: 'Secret Oscar data',
       relevanceScore: 1,
       sourceDocument: 'doc1'
@@ -71,7 +77,14 @@ describe('Prompt Compilation Certification (P1-P10)', () => {
 
   it('P2 - Global Knowledge Visibility', () => {
     baseContext.knowledge.retrievedSnippets.push({
-      scope: 'GLOBAL',
+      scope: {
+        organizationId: 'hermes_global',
+        visibility: 'PUBLIC',
+        authority: 'CANONICAL',
+        status: 'ACTIVE',
+        sourceId: 'doc2',
+        version: 1
+      },
       content: 'Pandoras Platform Info',
       relevanceScore: 1,
       sourceDocument: 'doc2'
@@ -92,9 +105,15 @@ describe('Prompt Compilation Certification (P1-P10)', () => {
 
   it('P5 - Project Isolation (Strict Check)', () => {
     baseContext.knowledge.retrievedSnippets.push({
-      organizationId: 'org_snarai',
-      projectId: 'proj_beta', // Different project!
-      scope: 'PROJECT',
+      scope: {
+        organizationId: 'org_snarai',
+        projectId: 'proj_beta', // Different project!
+        visibility: 'PUBLIC',
+        authority: 'CANONICAL',
+        status: 'ACTIVE',
+        sourceId: 'doc3',
+        version: 1
+      },
       content: 'Beta project data',
       relevanceScore: 1,
       sourceDocument: 'doc3'

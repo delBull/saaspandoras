@@ -29,8 +29,12 @@ export async function generateBotResponse(context: {
   const soul = HermesSoulRegistry.getSoul(projectSlug);
   const soulPrompt = soul ? HermesSoulRegistry.buildSoulPrompt(soul) : '';
   
-  // Resolve real-time project state using Universal DataProvider
-  const resolvedState = await dataProviderSingleton.getProjectState(projectSlug);
+  // Resolve real-time project state using Universal DataProvider (skip if sandbox)
+  let resolvedState = null;
+  if (projectSlug !== 'sandbox') {
+    resolvedState = await dataProviderSingleton.getProjectState(projectSlug);
+  }
+  
   const liveContext = resolvedState ? {
     title: resolvedState.title,
     slug: resolvedState.slug,

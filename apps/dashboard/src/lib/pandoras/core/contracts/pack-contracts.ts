@@ -69,7 +69,7 @@ export interface EvidenceClaim {
 
 export interface DomainPackManifest extends PackManifest {
   soul: SoulProfile;
-  knowledgeDef: KnowledgeDefinition;
+  knowledgeDef?: KnowledgeDefinition;
   journeys: any[]; // references JourneyDefinition
   policies: GovernancePolicy;
   evidenceLayer?: EvidenceClaim[];

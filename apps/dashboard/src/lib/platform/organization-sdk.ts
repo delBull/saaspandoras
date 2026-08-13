@@ -45,6 +45,8 @@ export interface OrganizationContext {
   slug: string;
   name: string;
   logoUrl: string | null;
+  projectStatus: string;
+  onboardingStage: string | null;
 
   // All installed products for this org
   installedProducts: InstalledProductContext[];
@@ -79,11 +81,23 @@ export const OrganizationSDK = {
     // 1. Load project (= Organization)
     const project = await db.query.projects.findFirst({
       where: eq(projects.id, projectId),
-      columns: { id: true, slug: true, title: true, logoUrl: true },
+      columns: { id: true, slug: true, title: true, logoUrl: true, status: true },
     });
 
     if (!project) {
       throw new Error(`[OrganizationSDK] Project not found: ${projectId}`);
+    }
+
+    // 1.5 Load Onboarding Stage (if draft/onboarding)
+    let onboardingStage: string | null = null;
+    if (project.status === 'draft') {
+      const { portalOnboardingState } = await import('@/db/schema');
+      const state = await db.query.portalOnboardingState.findFirst({
+        where: eq(portalOnboardingState.tenantId, String(projectId))
+      });
+      if (state) {
+        onboardingStage = state.stage;
+      }
     }
 
     // 2. Load all installed products for this project
@@ -145,6 +159,8 @@ export const OrganizationSDK = {
       slug: project.slug,
       name: project.title,
       logoUrl: project.logoUrl ?? null,
+      projectStatus: (project as any).status || 'draft',
+      onboardingStage,
       installedProducts: enrichedProducts,
       activeProduct,
       // Convenience accessors

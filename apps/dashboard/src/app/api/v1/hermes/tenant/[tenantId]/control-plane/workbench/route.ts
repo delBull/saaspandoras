@@ -60,15 +60,17 @@ export async function GET(request: Request, context: { params: Promise<{ tenantI
         return NextResponse.json({ error: 'Tenant project not found' }, { status: 404 });
     }
 
-    const [hermes] = await db.select()
+    const [hermesDb] = await db.select()
         .from(installedProducts)
         .where(and(
             eq(installedProducts.projectId, tenantIdNum),
             eq(installedProducts.product, 'HERMES')
         ));
 
-    if (!hermes) {
-        return NextResponse.json({ error: 'Hermes Kernel not provisioned' }, { status: 404 });
+    let hermes: any = hermesDb;
+    if (!hermesDb) {
+        console.warn(`[Workbench] Hermes Kernel not provisioned in DB for tenant ${tenantIdNum}, using virtual provisioning fallback.`);
+        hermes = { product: 'HERMES', status: 'active', projectId: tenantIdNum };
     }
 
     const { profile } = await resolveProfile(request, tenantIdNum);

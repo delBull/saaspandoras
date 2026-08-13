@@ -100,21 +100,29 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
 
   // 2. Find installed product and check token matches & hasn't been used
   let installed: any = null;
-  try {
-    installed = await db.query.installedProducts.findFirst({
-      where: and(
-        eq(installedProducts.id, payload.sub),
-        eq(installedProducts.portalTokenUsed, false)
-      ),
-    });
+  
+  // Basic UUID regex to prevent Postgres crash on invalid input syntax
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.sub);
 
-    if (!installed) {
+  if (isUuid) {
+    try {
       installed = await db.query.installedProducts.findFirst({
-        where: eq(installedProducts.id, payload.sub)
+        where: and(
+          eq(installedProducts.id, payload.sub),
+          eq(installedProducts.portalTokenUsed, false)
+        ),
       });
+
+      if (!installed) {
+        installed = await db.query.installedProducts.findFirst({
+          where: eq(installedProducts.id, payload.sub)
+        });
+      }
+    } catch (dbErr) {
+      console.warn('[PortalAuth] installedProducts query failed, using payload fallback context:', dbErr);
     }
-  } catch (dbErr) {
-    console.warn('[PortalAuth] installedProducts query failed, using payload fallback context:', dbErr);
+  } else {
+    console.warn(`[PortalAuth] Skipping installedProducts query because sub (${payload.sub}) is not a valid UUID, falling back to payload context.`);
   }
 
   // If table does not exist or record not found, create a virtual session token using payload

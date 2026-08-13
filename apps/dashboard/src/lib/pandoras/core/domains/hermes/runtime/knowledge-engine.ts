@@ -38,8 +38,16 @@ export class KnowledgeEngine implements KnowledgeEnginePort {
         mockSnippets.push({
           content: "S'Narai es un proyecto eco-residencial ubicado en Tulum. Cuenta con cenotes privados y amenidades de lujo enfocado en sostenibilidad.",
           sourceDocument: "brochure_tulum.pdf",
-          relevanceScore: 0.95,
-          scope: 'PROJECT' as const
+          relevanceScore: 1.0,
+          scope: {
+            organizationId: organizationId,
+            projectId: 'snarai-tulum-001',
+            visibility: 'PUBLIC' as const,
+            authority: 'VERIFIED' as const,
+            status: 'ACTIVE' as const,
+            sourceId: 'mock-doc-2',
+            version: 1
+          }
         });
       }
 
@@ -48,7 +56,15 @@ export class KnowledgeEngine implements KnowledgeEnginePort {
           content: "Los lotes en S'Narai empiezan desde $50,000 USD con planes de financiamiento hasta a 36 meses sin intereses.",
           sourceDocument: "pricing_q3.pdf",
           relevanceScore: 0.88,
-          scope: 'PROJECT' as const
+          scope: {
+            organizationId: organizationId,
+            projectId: 'snarai-tulum-001',
+            visibility: 'PUBLIC' as const,
+            authority: 'VERIFIED' as const,
+            status: 'ACTIVE' as const,
+            sourceId: 'mock-doc-2',
+            version: 1
+          }
         });
       }
     } else {
@@ -57,8 +73,15 @@ export class KnowledgeEngine implements KnowledgeEnginePort {
         mockSnippets.push({
           content: `Este es un documento genérico para el tenant ${organizationId}. Describe los términos generales de servicio.`,
           sourceDocument: "company_overview.pdf",
-          relevanceScore: 0.90,
-          scope: 'ORGANIZATION' as const
+          relevanceScore: 1.0,
+          scope: {
+            organizationId: organizationId,
+            visibility: 'PUBLIC' as const,
+            authority: 'CANONICAL' as const,
+            status: 'ACTIVE' as const,
+            sourceId: 'mock-doc-3',
+            version: 1
+          }
         });
       }
     }
@@ -69,7 +92,14 @@ export class KnowledgeEngine implements KnowledgeEnginePort {
         content: `Pandoras Growth OS provee asistencia para la organización ${organizationId}. Todos los pagos se procesan de forma segura.`,
         sourceDocument: "general_faq.md",
         relevanceScore: 0.60,
-        scope: 'PLATFORM' as const
+        scope: {
+          organizationId: 'hermes_global',
+          visibility: 'PUBLIC' as const,
+          authority: 'CANONICAL' as const,
+          status: 'ACTIVE' as const,
+          sourceId: 'mock-doc-4',
+          version: 1
+        }
       });
     }
 

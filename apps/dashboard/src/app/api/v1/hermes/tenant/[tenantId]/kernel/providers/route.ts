@@ -5,16 +5,19 @@ import { eq, and } from 'drizzle-orm';
 
 export async function GET(request: Request, context: { params: Promise<{ tenantId: string }> }) {
     const { tenantId } = await context.params;
+    const tenantIdNum = Number(tenantId);
 
-    const [hermes] = await db.select()
+    const [hermesDb] = await db.select()
         .from(installedProducts)
         .where(and(
-            eq(installedProducts.projectId, Number(tenantId)),
+            eq(installedProducts.projectId, tenantIdNum),
             eq(installedProducts.product, 'HERMES')
         ));
 
-    if (!hermes) {
-        return NextResponse.json({ error: 'Hermes Kernel not provisioned' }, { status: 404 });
+    let hermes: any = hermesDb;
+    if (!hermesDb) {
+        console.warn(`[Providers API] Hermes Kernel not provisioned in DB for tenant ${tenantIdNum}, using virtual provisioning fallback.`);
+        hermes = { product: 'HERMES', status: 'active', projectId: tenantIdNum, connectors: {} };
     }
 
     const connectors = hermes.connectors as any || {};

@@ -8,7 +8,7 @@
 export interface ToolDefinition {
   id: string;
   name: string;
-  category: 'calendar' | 'payments' | 'crm' | 'communication' | 'tokenization';
+  category: 'calendar' | 'payments' | 'crm' | 'communication' | 'tokenization' | 'platform';
   inputSchema: Record<string, string>;
   permissionsRequired: string[];
   timeoutMs: number;
@@ -57,6 +57,17 @@ const TOOLS_LIST: [string, ToolDefinition][] = [
       inputSchema: { walletAddress: 'string' },
       permissionsRequired: ['tokenization:read'],
       timeoutMs: 4000,
+    },
+  ],
+  [
+    'platform.update_tenant_knowledge',
+    {
+      id: 'platform.update_tenant_knowledge',
+      name: 'Actualizar Conocimiento del Tenant',
+      category: 'platform',
+      inputSchema: { dimension: 'string', content: 'string' },
+      permissionsRequired: ['platform:knowledge:write'],
+      timeoutMs: 5000,
     },
   ],
 ];
