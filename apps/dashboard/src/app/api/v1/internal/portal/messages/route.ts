@@ -10,7 +10,11 @@ import { db } from '@/db';
 import { portalOnboardingState } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
+import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
+import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
+
 const eventBus = new DefaultPlatformEventBus();
+const omnichannelGateway = new DefaultOmnichannelGateway();
 
 export interface PortalChatMessage {
   id: string;
@@ -202,45 +206,48 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { organizationSlug, content } = body;
+    const { organizationSlug, content, clientMessageId } = body;
 
     if (!organizationSlug || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // LOCK 6.5.1-A & H3: Authenticate & resolve authorized ControlPlaneContext (NEVER trust payload body for tenantId)
     const context = await resolvePortalContext(organizationSlug);
     const tenantId = context.organization.slug;
     const orgName = context.organization.name || organizationSlug;
+
+    const cpCtx = new ControlPlaneContext(
+      context.tenant.sessionId,
+      context.tenant.actorId,
+      context.tenant.role as any,
+      context.tenant.permissions as any,
+      [{ organizationId: context.tenant.organizationId, role: context.tenant.role as any }]
+    );
+
+    // LOCK 6.5.1-A: Delegate Inbound transport through PortalAdapter & OmnichannelGateway
+    const normalizedInbound = await omnichannelGateway.receive({
+      channelType: 'portal',
+      externalId: clientMessageId || `msg_${Date.now()}`,
+      rawPayload: {
+        content,
+        clientMessageId
+      }
+    }, cpCtx);
 
     const state = await loadOrCreateState(tenantId, orgName);
     const currentStage = state.stage;
 
     // 1. Record User Message
     const userMsg: PortalChatMessage = {
-      id: `user_${Date.now()}`,
+      id: normalizedInbound.externalMessageId,
       role: 'user',
-      content: content.trim(),
-      timestamp: new Date().toISOString()
+      content: normalizedInbound.content,
+      timestamp: normalizedInbound.receivedAt.toISOString()
     };
     state.messages.push(userMsg);
 
-    // 2. Publish to Event Bus
-    const inboundEvent = {
-      id: crypto.randomUUID(),
-      type: 'PORTAL_MESSAGE_RECEIVED',
-      timestamp: new Date(),
-      instanceId: tenantId,
-      correlationId: context.tenant.sessionId,
-      payload: {
-        actorId: context.tenant.actorId,
-        content: content,
-        channel: 'PORTAL',
-        currentStage
-      }
-    };
-    eventBus.publish(inboundEvent as any);
-
-    // 3. Advance Onboarding State Machine (source of truth: HermesOnboardingWorkflow.transitions)
+    // 2. Advance Onboarding State Machine (source of truth: HermesOnboardingWorkflow.transitions)
     const workflowTransitions = HermesOnboardingWorkflow.transitions?.[currentStage] ?? [];
     const transitionTarget = workflowTransitions[0] ?? currentStage;
     const reply = STAGE_REPLIES[currentStage];
@@ -269,11 +276,11 @@ export async function POST(request: Request) {
       type: 'OPERATIONAL_INTENT_CREATED',
       timestamp: new Date(),
       instanceId: tenantId,
-      correlationId: context.tenant.sessionId,
+      correlationId: normalizedInbound.correlationId,
       payload: intent
     } as any);
 
-    // 4. Advance stage & build Hermes reply
+    // 3. Advance stage & build Hermes reply
     const replyText = reply.replyText.replace('{orgName}', orgName);
     const hermesMsg: PortalChatMessage = {
       id: `hermes_${Date.now()}`,
@@ -292,7 +299,8 @@ export async function POST(request: Request) {
       stage: state.stage,
       reply: replyText,
       chips: getStageChips(state.stage),
-      messages: state.messages
+      messages: state.messages,
+      correlationId: normalizedInbound.correlationId
     });
 
   } catch (error: any) {
