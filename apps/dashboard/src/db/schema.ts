@@ -445,6 +445,16 @@ export const knowledgeChunks = pgTable("knowledge_chunks", {
   sourceIndex: index("knowledge_source_idx").on(table.tenantId, table.sourceId),
 }));
 
+// Phase 6.4.2 — Persisted conversational onboarding state (per tenant).
+// Replaces the in-memory Map so reloads / re-logins resume the exact stage.
+export const portalOnboardingState = pgTable("portal_onboarding_state", {
+  tenantId: varchar("tenant_id", { length: 256 }).primaryKey().references(() => projects.slug, { onDelete: 'cascade' }),
+  stage: varchar("stage", { length: 50 }).notNull().default('BUSINESS_DISCOVERY'),
+  messages: jsonb("messages").notNull().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
 
 // Gamification Enums
 export const eventTypeEnum = pgEnum("event_type", [

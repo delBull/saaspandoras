@@ -7,22 +7,21 @@ import { addKnowledgeAction } from './actions';
 
 export function KnowledgePageClient({ 
   overview, 
-  organizationSlug 
+  organizationSlug,
+  organizationName = 'your organization'
 }: { 
   overview: KnowledgeOverviewView; 
-  organizationSlug: string 
+  organizationSlug: string;
+  organizationName?: string;
 }) {
-  const handleAddKnowledge = async (type: string) => {
-    // In a real app, this would open a form modal. 
-    // For Phase 6.4 MVP, we just create a dummy source of that type.
-    const title = `New ${type} Knowledge`;
-    const content = `This is mock content for a ${type} source to demonstrate the lifecycle.`;
-    await addKnowledgeAction(organizationSlug, type, content, title);
+  const handleAddKnowledge = async (payload: { type: string; title: string; content: string }) => {
+    await addKnowledgeAction(organizationSlug, payload.type, payload.content, payload.title);
   };
 
   return (
     <KnowledgeDashboard 
       overview={overview} 
+      organizationName={organizationName}
       onAddKnowledge={handleAddKnowledge}
     />
   );

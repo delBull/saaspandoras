@@ -1,12 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 
 const USED_EMAILS_KEY = 'hermes_used_emails';
 
 export default function PortalLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <PortalLoginContent />
+    </Suspense>
+  );
+}
+
+function PortalLoginContent() {
+  const searchParams = useSearchParams();
+  const returnPath = searchParams.get('return') || '';
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,10 +76,12 @@ export default function PortalLoginPage() {
     setError(null);
 
     try {
+      const returnTarget = returnPath.startsWith('/') ? returnPath : '';
+
       const res = await fetch('/api/v1/portal/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, return: returnTarget })
       });
 
       const data = await res.json();

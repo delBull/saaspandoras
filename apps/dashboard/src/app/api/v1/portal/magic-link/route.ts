@@ -14,11 +14,16 @@ const magicLinkIpBuckets = new Map<string, { date: string; count: number }>();
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const { email, return: returnPath } = await req.json();
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       return NextResponse.json({ error: 'Proporciona un correo electrónico válido.' }, { status: 400 });
     }
+
+    // Only allow internal portal redirects (anti open-redirect)
+    const safeReturn = typeof returnPath === 'string' && /^\/portal\/[a-zA-Z0-9-]+/.test(returnPath)
+      ? returnPath
+      : '';
 
     const cleanEmail = email.trim().toLowerCase();
 
@@ -95,7 +100,8 @@ export async function POST(req: NextRequest) {
     // 4. Generate Magic Token (7 Days valid)
     const token = generatePortalToken(installedId, activeProject.id, 'hermes');
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
-    const magicLink = `${baseUrl}/growth-os/hermes/portal?token=${token}`;
+    const returnQuery = safeReturn ? `&return=${encodeURIComponent(safeReturn)}` : '';
+    const magicLink = `${baseUrl}/growth-os/hermes/portal?token=${token}${returnQuery}`;
 
     console.info(`[MagicLink API] Magic Link generated for ${cleanEmail}: ${magicLink}`);
 
