@@ -16,7 +16,8 @@ export interface KnowledgeOverviewView {
 export class GetKnowledgeOverviewQuery {
   async execute(ctx: ControlPlaneContext, organizationId: string): Promise<KnowledgeOverviewView> {
     const scope = ctx.requireOrganizationScope(organizationId);
-    const records = await db.select().from(knowledgeSources).where(eq(knowledgeSources.tenantId, scope.organizationId));
+    const orgSlug = scope.organizationId.replace(/^org_/, '');
+    const records = await db.select().from(knowledgeSources).where(eq(knowledgeSources.tenantId, orgSlug));
     
     const totalSources = records.length;
     const readySources = records.filter(r => r.status === 'READY').length;

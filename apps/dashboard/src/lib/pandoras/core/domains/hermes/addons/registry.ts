@@ -1,97 +1,77 @@
-export type AddOnCategory = 'CAPABILITY' | 'STRATEGY' | 'JOURNEY' | 'INTEGRATION';
-
-export type AddOnDefinitionStatus = 'DRAFT' | 'ACTIVE' | 'DEPRECATED';
-
-export interface CapabilityDefinition {
-  id: string;
-  name: string;
-}
-
-export interface KnowledgeOverlayDefinition {
-  id: string;
-  source: string;
-  category: string;
-}
-
-export interface JourneyDefinition {
-  id: string;
-  source: string;
-}
-
-export interface StyleOverlayDefinition {
-  mode: string;
-  warmth: 'high' | 'medium' | 'low';
-  exclusivity: 'high' | 'medium' | 'low';
-  directness: 'high' | 'medium' | 'low';
-  pressure: 'high' | 'medium' | 'low';
-  personalization: 'high' | 'medium' | 'low';
-  informality?: 'constrained' | 'high' | 'low';
-}
-
-export interface ChannelRequirement {
-  channel: 'whatsapp' | 'telegram' | 'email';
-  isRequired: boolean;
-}
-
-export interface GovernanceRequirement {
-  rule: string;
-  description: string;
-}
-
-export interface CompatibilityContract {
-  minHermesVersion: string;
-}
-
-export interface HermesAddOnManifest {
-  id: string;
-  version: string;
-  name: string;
-  description: string;
-
-  category: AddOnCategory[];
-  status: AddOnDefinitionStatus;
-
-  capabilities?: CapabilityDefinition[];
-  knowledgeOverlays?: KnowledgeOverlayDefinition[];
-  journeys?: JourneyDefinition[];
-  styleOverlay?: StyleOverlayDefinition;
-  requiredChannels?: ChannelRequirement[];
-  governanceRequirements?: GovernanceRequirement[];
-  configurationSchema?: Record<string, any>;
-  compatibility?: CompatibilityContract;
-}
-
-export interface CompatibilityResult {
-  isCompatible: boolean;
-  errors: string[];
-}
+import { db } from '@/db';
+import { hermesAddons } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { HermesAddOnManifest } from './contracts';
 
 export class AddOnRegistryService {
-  private static addOns: Map<string, HermesAddOnManifest> = new Map();
+  
+  /**
+   * Registra o actualiza un Add-On en el catálogo maestro (Global)
+   * Usado durante el despliegue del sistema o por un System Admin.
+   */
+  static async register(manifest: HermesAddOnManifest): Promise<void> {
+    const addonId = manifest.id;
+    const version = manifest.version;
 
-  /** Registra un Add-On en el catálogo maestro */
-  static register(manifest: HermesAddOnManifest): void {
-    const key = `${manifest.id}@${manifest.version}`;
-    this.addOns.set(key, manifest);
-    console.log(`[AddOnRegistry] Registered Add-On: ${key}`);
+    await db.insert(hermesAddons)
+      .values({
+        id: addonId,
+        name: manifest.name,
+        version: version,
+        type: manifest.type,
+        description: manifest.description,
+        manifest: manifest,
+        status: manifest.status,
+      })
+      .onConflictDoUpdate({
+        target: [hermesAddons.id],
+        set: {
+          name: manifest.name,
+          version: version,
+          type: manifest.type,
+          description: manifest.description,
+          manifest: manifest,
+          status: manifest.status,
+          updatedAt: new Date(),
+        }
+      });
+      
+    console.log(`[AddOnRegistry] Registered Add-On: ${addonId}@${version}`);
   }
 
-  /** Obtiene todos los Add-Ons disponibles en el ecosistema */
-  static getAvailableAddOns(): HermesAddOnManifest[] {
-    return Array.from(this.addOns.values());
+  /** Obtiene todos los Add-Ons disponibles y activos en el ecosistema */
+  static async getAvailableAddOns(): Promise<HermesAddOnManifest[]> {
+    const addons = await db.select()
+      .from(hermesAddons)
+      .where(eq(hermesAddons.status, 'AVAILABLE'));
+
+    return addons.map(a => a.manifest as unknown as HermesAddOnManifest);
   }
 
-  /** Obtiene un Add-On específico por su ID y Versión */
-  static getAddOn(id: string, version: string): HermesAddOnManifest | undefined {
-    return this.addOns.get(`${id}@${version}`);
+  /** Obtiene un Add-On específico por su ID global */
+  static async getAddOn(addonId: string): Promise<HermesAddOnManifest | undefined> {
+    const results = await db.select()
+      .from(hermesAddons)
+      .where(eq(hermesAddons.id, addonId))
+      .limit(1);
+
+    const record = results[0];
+    if (!record) return undefined;
+    return record.manifest as unknown as HermesAddOnManifest;
   }
 
-  /** Verifica compatibilidad entre dos Add-Ons o con el Core */
-  static validateCompatibility(addonIds: string[]): CompatibilityResult {
-    // Basic stub for architectural representation
-    return {
-      isCompatible: true,
-      errors: []
-    };
+  /** Valida si el addon existe y está AVAILABLE */
+  static async validateAddOnAvailability(addonId: string, version?: string): Promise<HermesAddOnManifest> {
+    const addon = await this.getAddOn(addonId);
+    if (!addon) {
+      throw new Error(`AddOn ${addonId} not found in the Registry.`);
+    }
+    if (addon.status !== 'AVAILABLE') {
+      throw new Error(`AddOn ${addonId} is DEPRECATED and cannot be installed.`);
+    }
+    if (version && addon.version !== version) {
+      throw new Error(`AddOn ${addonId} version mismatch. Expected ${version}, but registry has ${addon.version}.`);
+    }
+    return addon;
   }
 }

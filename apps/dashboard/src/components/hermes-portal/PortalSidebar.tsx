@@ -135,110 +135,119 @@ export function PortalSidebar({
   };
 
   return (
-    <aside
-      className="h-screen bg-[#0C0C12] border-r border-white/[0.08] flex flex-col z-30 transition-all duration-300 w-[260px] md:w-auto"
-      style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '260px' : (collapsed ? '72px' : '260px') }}
-    >
-      {/* Logo / Brand */}
-      <div className="flex items-center h-16 px-4 border-b border-white/[0.06] shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shrink-0 shadow-lg">
-          <span className="text-white text-xs font-bold">H</span>
-        </div>
-        {(!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
+    <>
+      {/* MOBILE SIDEBAR (Drawer) */}
+      <aside
+        className="md:hidden h-screen bg-[#0C0C12] border-r border-white/[0.08] flex flex-col z-30 w-[260px]"
+      >
+        <div className="flex items-center h-16 px-4 border-b border-white/[0.06] shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shrink-0 shadow-lg">
+            <span className="text-white text-xs font-bold">H</span>
+          </div>
           <div className="ml-3 overflow-hidden">
             <p className="text-white font-semibold text-sm leading-tight truncate">Hermes</p>
             <p className="text-white/40 text-xs truncate">{organization.name}</p>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2">
-        {/* Primary items */}
-        <ul className="space-y-1">
-          {primaryItems.map(item => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={`${basePath}${item.href}`}
-                  onClick={() => onNavClick?.()}
-                  className={`
-                    flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px]
-                    ${active
-                      ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm'
-                      : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
-                    }
-                  `}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon
-                    size={18}
-                    className={active ? 'text-violet-400 shrink-0' : 'shrink-0'}
-                  />
-                  {(!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
+        <nav className="flex-1 overflow-y-auto py-4 px-2">
+          <ul className="space-y-1">
+            {primaryItems.map(item => {
+              const active = isActive(item.href);
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={`${basePath}${item.href}`}
+                    onClick={() => onNavClick?.()}
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px] ${
+                      active ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <Icon size={18} className={active ? 'text-violet-400 shrink-0' : 'shrink-0'} />
                     <span className="truncate font-medium">{item.label}</span>
-                  )}
-                  {active && (!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
-                    <span className="ml-auto w-2 h-2 rounded-full bg-violet-400 shrink-0" />
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* Separator */}
-        {secondaryItems.length > 0 && (
-          <div className="my-3 mx-3 border-t border-white/[0.06]" />
-        )}
-
-        {/* Secondary items */}
-        <ul className="space-y-1">
-          {secondaryItems.map(item => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={`${basePath}${item.href}`}
-                  onClick={() => onNavClick?.()}
-                  className={`
-                    flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px]
-                    ${active
-                      ? 'bg-white/[0.08] text-white font-medium'
-                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
-                    }
-                  `}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon size={18} className="shrink-0" />
-                  {(!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
+                    {active && <span className="ml-auto w-2 h-2 rounded-full bg-violet-400 shrink-0" />}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          {secondaryItems.length > 0 && <div className="my-3 mx-3 border-t border-white/[0.06]" />}
+          <ul className="space-y-1">
+            {secondaryItems.map(item => {
+              const active = isActive(item.href);
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={`${basePath}${item.href}`}
+                    onClick={() => onNavClick?.()}
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px] ${
+                      active ? 'bg-white/[0.08] text-white font-medium' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <Icon size={18} className="shrink-0" />
                     <span className="truncate">{item.label}</span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      </aside>
 
-      {/* Collapse toggle */}
-      <div className="hidden md:block p-2 border-t border-white/[0.06] shrink-0">
-        <button
-          onClick={onToggle}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/[0.04] transition-all text-xs font-medium min-h-[40px]"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <ChevronRight size={16} /> : (
-            <>
-              <ChevronLeft size={16} />
-              <span>Colapsar</span>
-            </>
-          )}
-        </button>
-      </div>
-    </aside>
+      {/* DESKTOP SIDEBAR (HermesWorkbench Icon Style) */}
+      <aside className="hidden md:flex flex-col items-center py-3 h-screen w-16 bg-[#09090C] border-r border-white/10 shrink-0 z-30 select-none">
+        <div className="mb-4">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-lg text-purple-400">
+                <span className="text-xs font-bold font-mono">H</span>
+            </div>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center gap-0.5 w-full">
+            {primaryItems.map((item) => {
+                const active = isActive(item.href);
+                const Icon = item.icon;
+                return (
+                    <Link
+                        key={item.href}
+                        href={`${basePath}${item.href}`}
+                        className={`relative flex flex-col items-center justify-center p-3 w-14 h-14 rounded-xl transition-all group ${
+                            active 
+                                ? 'text-purple-400 bg-purple-500/10 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' 
+                                : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                        }`}
+                        title={item.label}
+                    >
+                        <Icon className="w-5 h-5" />
+                        <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                    </Link>
+                );
+            })}
+            
+            {secondaryItems.length > 0 && <div className="w-8 h-px bg-white/10 my-2" />}
+            
+            {secondaryItems.map((item) => {
+                const active = isActive(item.href);
+                const Icon = item.icon;
+                return (
+                    <Link
+                        key={item.href}
+                        href={`${basePath}${item.href}`}
+                        className={`relative flex flex-col items-center justify-center p-3 w-14 h-14 rounded-xl transition-all group ${
+                            active 
+                                ? 'text-purple-400 bg-purple-500/10 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' 
+                                : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                        }`}
+                        title={item.label}
+                    >
+                        <Icon className="w-5 h-5" />
+                        <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                    </Link>
+                );
+            })}
+        </div>
+      </aside>
+    </>
   );
 }

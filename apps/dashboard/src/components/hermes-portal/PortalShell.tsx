@@ -12,6 +12,7 @@ import React, { useState } from 'react';
 import type { PortalContext } from '@/lib/portal/portal-types';
 import { PortalSidebar } from '@/components/hermes-portal/PortalSidebar';
 import { PortalHeader } from '@/components/hermes-portal/PortalHeader';
+import { PortalInspector } from '@/components/hermes-portal/PortalInspector';
 import { Menu, X } from 'lucide-react';
 
 interface PortalShellProps {
@@ -20,13 +21,13 @@ interface PortalShellProps {
 }
 
 export function PortalShell({ context, children }: PortalShellProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#07070B] text-white font-sans flex flex-col md:flex-row relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#08080A] text-white font-sans flex relative overflow-x-hidden">
+      
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex items-center justify-between px-4 h-14 bg-[#0C0C12] border-b border-white/[0.08] sticky top-0 z-40 backdrop-blur-md">
+      <div className="md:hidden flex items-center justify-between px-4 h-14 bg-[#0C0C12] border-b border-white/[0.08] fixed top-0 w-full z-40 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-md">
             <span className="text-white text-xs font-bold">H</span>
@@ -52,25 +53,23 @@ export function PortalShell({ context, children }: PortalShellProps) {
 
       {/* Desktop Sidebar & Mobile Slide-Over Drawer */}
       <div className={`
-        fixed top-0 bottom-0 left-0 z-50 transition-transform duration-300 md:translate-x-0
+        fixed top-0 bottom-0 left-0 z-50 transition-transform duration-300 md:relative md:translate-x-0
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <PortalSidebar
           organization={context.organization}
           permissions={context.tenant.permissions}
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(c => !c)}
+          collapsed={false}
+          onToggle={() => {}}
           organizationSlug={context.organization.slug}
           onNavClick={() => setMobileMenuOpen(false)}
         />
       </div>
 
       {/* Main content area */}
-      <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300 w-full"
-        style={{ marginLeft: 0 }}
-      >
-        <div className="hidden md:block" style={{ marginLeft: sidebarCollapsed ? '72px' : '260px' }}>
+      <div className="flex-1 flex flex-col min-h-screen w-full relative pt-14 md:pt-0">
+        
+        <div className="hidden md:block">
           <PortalHeader
             organization={context.organization}
             role={context.tenant.role}
@@ -79,31 +78,14 @@ export function PortalShell({ context, children }: PortalShellProps) {
         </div>
 
         {/* Page content */}
-        <main
-          className="flex-1 p-3 sm:p-6 lg:p-8 transition-all duration-300"
-          style={{ marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 ? (sidebarCollapsed ? '72px' : '260px') : '0px' }}
-        >
-          <div className="md:hidden mb-4">
-            <PortalHeader
-              organization={context.organization}
-              role={context.tenant.role}
-              organizationSlug={context.organization.slug}
-            />
-          </div>
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
 
-      {/* Background ambient gradient */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div
-          className="absolute top-0 left-0 w-[450px] md:w-[600px] h-[450px] md:h-[600px] rounded-full opacity-5"
-          style={{
-            background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)',
-            transform: 'translate(-30%, -30%)',
-          }}
-        />
-      </div>
+      {/* Desktop Right Inspector */}
+      <PortalInspector />
+
     </div>
   );
 }

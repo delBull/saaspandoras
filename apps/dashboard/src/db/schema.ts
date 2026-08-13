@@ -3439,3 +3439,66 @@ export const hermesGovernanceAudit = pgTable("hermes_governance_audit", {
   tenantAuditIdx: index("hermes_audit_tenant_idx").on(t.organizationId),
   knowledgeAuditIdx: index("hermes_audit_knowledge_idx").on(t.knowledgeId),
 }));
+
+// --- PHASE 6.9: ADD-ON REGISTRY & INSTALLATION GOVERNANCE ---
+
+export const hermesAddons = pgTable("hermes_addons", {
+  id: varchar("id", { length: 256 }).primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  version: varchar("version", { length: 50 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'CAPABILITY', 'COMPOSITE', etc.
+  description: text("description").notNull(),
+  manifest: jsonb("manifest").notNull(), // Full HermesAddOnManifest
+  status: varchar("status", { length: 50 }).default('AVAILABLE').notNull(), // 'AVAILABLE' | 'DEPRECATED'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+export const hermesAddonInstallations = pgTable("hermes_addon_installations", {
+  id: varchar("id", { length: 256 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  addonId: varchar("addon_id", { length: 256 }).notNull().references(() => hermesAddons.id),
+  version: varchar("version", { length: 50 }).notNull(),
+  
+  // 'AVAILABLE' | 'INSTALLING' | 'CONFIGURING' | 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATING' | 'DEACTIVATED' | 'FAILED' | 'REJECTED'
+  status: varchar("status", { length: 50 }).notNull(),
+  
+  configuration: jsonb("configuration").default({}).notNull(),
+  manifestSnapshot: jsonb("manifest_snapshot"), // Pinned manifest at approval time
+
+  
+  installedBy: varchar("installed_by", { length: 256 }).notNull(),
+  approvedBy: varchar("approved_by", { length: 256 }),
+  
+  installedAt: timestamp("installed_at").defaultNow().notNull(),
+  activatedAt: timestamp("activated_at"),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => ({
+  tenantInstallationIdx: index("hermes_addon_install_tenant_idx").on(t.organizationId),
+  tenantAddonUnique: uniqueIndex("hermes_addon_install_unique").on(t.organizationId, t.addonId).where(sql`${t.status} != 'DEACTIVATED'`),
+}));
+
+export const hermesAddonAudit = pgTable("hermes_addon_audit", {
+  id: varchar("id", { length: 256 }).primaryKey(), // evt_1234
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  addonId: varchar("addon_id", { length: 256 }).notNull(),
+  installationId: varchar("installation_id", { length: 256 }).notNull(),
+  
+  // 'INSTALL_REQUESTED', 'CONFIGURATION_UPDATED', 'SUBMITTED_FOR_APPROVAL', 'APPROVED', 'REJECTED', 'ACTIVATED', 'SUSPENDED', 'DEACTIVATED', 'VERSION_UPDATED'
+  eventType: varchar("event_type", { length: 50 }).notNull(),
+  
+  actorId: varchar("actor_id", { length: 256 }).notNull(),
+  actorType: varchar("actor_type", { length: 50 }).notNull(), // 'USER' | 'SYSTEM'
+  
+  oldStatus: varchar("old_status", { length: 50 }),
+  newStatus: varchar("new_status", { length: 50 }).notNull(),
+  
+  version: varchar("version", { length: 50 }).notNull(),
+  reason: text("reason"),
+  metadata: jsonb("metadata"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  tenantAddonAuditIdx: index("hermes_addon_audit_tenant_idx").on(t.organizationId),
+  installationAuditIdx: index("hermes_addon_audit_installation_idx").on(t.installationId),
+}));

@@ -1,5 +1,7 @@
-import { HermesAddOnManifest } from './registry';
-import { AddOnInstallationManager } from './installation-manager';
+import { HermesAddOnManifest } from './contracts';
+import { db } from '@/db';
+import { hermesAddonInstallations } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 export interface CoreSecurityContext {
   organizationId: string;
@@ -31,8 +33,21 @@ export class CognitiveContextBuilder {
     const coreContext = await this.buildCoreSecurityContext(tenantId);
     const tenantKnowledge = await this.getTenantKnowledge(tenantId);
     
-    // 1. Fetch ACTIVE Add-Ons for Tenant
-    const activeAddOns = await AddOnInstallationManager.getActiveAddOns(tenantId);
+    // 1. Fetch ACTIVE Add-Ons for Tenant from the DB
+    const records = await db
+      .select()
+      .from(hermesAddonInstallations)
+      .where(
+        and(
+          eq(hermesAddonInstallations.organizationId, tenantId),
+          eq(hermesAddonInstallations.status, 'ACTIVE')
+        )
+      );
+
+    // Filter to ensure manifestSnapshot exists
+    const activeAddOns = records
+      .filter(r => !!r.manifestSnapshot)
+      .map(r => r.manifestSnapshot as unknown as HermesAddOnManifest);
 
     // 2. Resolve Overlays
     const styleOverlay = this.resolveStyleConflicts(tenantKnowledge.soul, activeAddOns);
@@ -71,9 +86,6 @@ export class CognitiveContextBuilder {
 
   private static resolveStyleConflicts(tenantSoul: any, addOns: HermesAddOnManifest[]) {
     // Regla: Tenant Soul > Add-On Style
-    // We merge the addOn style into the tenant soul, but tenant soul takes precedence
-    // if there is a conflict. For this architectural mock, we'll just merge them
-    // and let the AddOn's exclusivity override if it's "high".
     let effectiveStyle = { ...tenantSoul };
     
     for (const addon of addOns) {
