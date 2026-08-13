@@ -23,7 +23,9 @@ import {
   getMarketplaceAddOnsAction,
   requestAddOnInstallationAction,
   approveAddOnInstallationAction,
-  rejectAddOnInstallationAction
+  rejectAddOnInstallationAction,
+  suspendAddOnAction,
+  getEffectiveContextAction
 } from '@/app/org/[tenantId]/actions';
 
 // ─── Tabs ────────────────────────────────────────────────────────
@@ -296,6 +298,15 @@ function AddOnsTab({ tenantId }: { tenantId: string }) {
     }
   };
 
+  const handleSuspendInstall = async (installationId: string) => {
+    try {
+      await suspendAddOnAction(tenantId, installationId);
+      await loadMarketplace();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-zinc-400 text-sm animate-pulse">Loading Marketplace...</div>;
   }
@@ -374,7 +385,7 @@ function AddOnsTab({ tenantId }: { tenantId: string }) {
             </div>
 
             {/* Actions */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               {status === 'AVAILABLE' && (
                 <button 
                   onClick={() => handleRequestInstall(manifest.id)}
@@ -386,18 +397,26 @@ function AddOnsTab({ tenantId }: { tenantId: string }) {
               {status === 'PENDING_APPROVAL' && (
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => handleApproveInstall(installation.installationId)}
+                    onClick={() => handleApproveInstall(installation.id)}
                     className="flex-1 text-xs py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-colors"
                   >
                     Approve
                   </button>
                   <button 
-                    onClick={() => handleRejectInstall(installation.installationId)}
+                    onClick={() => handleRejectInstall(installation.id)}
                     className="flex-1 text-xs py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium transition-colors"
                   >
                     Reject
                   </button>
                 </div>
+              )}
+              {status === 'ACTIVE' && (
+                <button 
+                  onClick={() => handleSuspendInstall(installation.id)}
+                  className="w-full text-xs py-2 rounded-xl border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 font-medium transition-colors"
+                >
+                  Suspend Add-On
+                </button>
               )}
             </div>
           </div>
@@ -457,25 +476,49 @@ function GovernanceTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 function EffectiveContextTab({ tenantId }: { tenantId: string }) {
   const [excluded, setExcluded] = useState<GovernedKnowledgeItem[]>([]);
+  const [effectiveCtx, setEffectiveCtx] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getExclusionRegisterAction(tenantId).then(setExcluded);
+    Promise.all([
+      getExclusionRegisterAction(tenantId).then(setExcluded),
+      getEffectiveContextAction(tenantId).then(setEffectiveCtx)
+    ]).finally(() => setIsLoading(false));
   }, [tenantId]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-4">
         <h4 className="text-sm font-bold text-white flex items-center gap-2">
-          <Eye className="w-4 h-4 text-emerald-400" /> Preview Effective Context
+          <Eye className="w-4 h-4 text-emerald-400" /> Live Effective Context
         </h4>
         <div className="border border-zinc-800 bg-zinc-900/50 rounded-2xl p-4 font-mono text-[10px] text-zinc-300 space-y-2">
-          <p className="text-emerald-400">{'// What Hermes actually sees at runtime'}</p>
-          <p>{'{'}</p>
-          <p className="pl-4">"identity": "S'Narai",</p>
-          <p className="pl-4">"soul": "Institutional Concierge",</p>
-          <p className="pl-4">"activeAddOns": ["Proactive Closer"],</p>
-          <p className="pl-4">"channel": "Telegram"</p>
-          <p>{'}'}</p>
+          {isLoading ? (
+            <p className="text-zinc-500 animate-pulse">// Loading runtime context...</p>
+          ) : effectiveCtx ? (
+            <>
+              <p className="text-emerald-400">{"// Effective context at runtime"}</p>
+              <p><span className="text-zinc-500">mode: </span><span className="text-purple-300">{effectiveCtx.style?.mode}</span></p>
+              <p><span className="text-zinc-500">exclusivity: </span><span className="text-purple-300">{effectiveCtx.style?.exclusivity}</span></p>
+              <p><span className="text-zinc-500">activeCapabilities: </span></p>
+              {effectiveCtx.activeCapabilities?.length > 0 
+                ? effectiveCtx.activeCapabilities.map((c: any) => (
+                    <p key={c.id} className="pl-4 text-emerald-400">✓ {c.id}</p>
+                  ))
+                : <p className="pl-4 text-zinc-500">// None</p>
+              }
+              {effectiveCtx.diagnostics?.excludedAddOns?.length > 0 && (
+                <>
+                  <p className="text-red-400 pt-1">{"// Excluded Add-Ons"}</p>
+                  {effectiveCtx.diagnostics.excludedAddOns.map((a: any) => (
+                    <p key={a.id} className="pl-4 text-red-400/70">✕ {a.id} ({a.status})</p>
+                  ))}
+                </>
+              )}
+            </>
+          ) : (
+            <p className="text-zinc-500">// No context available.</p>
+          )}
         </div>
       </div>
 

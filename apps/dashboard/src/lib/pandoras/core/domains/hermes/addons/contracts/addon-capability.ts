@@ -5,4 +5,5 @@ export interface AddOnCapability {
   id: string;
   category: AddOnCapabilityCategory;
   description: string;
+  suggestedActions?: string[];
 }

@@ -137,7 +137,6 @@ function ClientPortalContent() {
       <div className="w-full flex-1 flex flex-col">
         <PortalQuickStartBanner 
           onOpenGuide={() => setIsGuideOpen(true)}
-          onLogout={handleLogout}
           isDraft={isDraft}
           onboardingStage={onboardingStage}
         />

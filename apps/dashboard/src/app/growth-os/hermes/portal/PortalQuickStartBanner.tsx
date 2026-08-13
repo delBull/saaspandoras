@@ -1,23 +1,28 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, CheckCircle2, Circle, HelpCircle, ChevronDown, ChevronUp, EyeOff, Terminal } from 'lucide-react';
+import { CheckCircle2, Circle, HelpCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
+
+// Ordered Onboarding stages — aligned with HermesOnboardingWorkflow
+const MISSION_STAGES = [
+  { id: 'BUSINESS_DISCOVERY',    label: 'Negocio' },
+  { id: 'IDENTITY_CONFIGURATION', label: 'Identidad' },
+  { id: 'KNOWLEDGE_GATHERING',    label: 'Knowledge' },
+  { id: 'POLICY_DEFINITION',      label: 'Policies' },
+  { id: 'CHANNEL_SETUP',          label: 'Channels' },
+  { id: 'ACTIVATION',             label: 'Activation' },
+] as const;
+
+
+
 
 interface QuickStartBannerProps {
-  hasIdentity?: boolean;
-  hasEvidence?: boolean;
-  hasProvider?: boolean;
-  hasChannel?: boolean;
   onOpenGuide: () => void;
   isDraft?: boolean;
   onboardingStage?: string | null;
 }
 
 export function PortalQuickStartBanner({
-  hasIdentity = true,
-  hasEvidence = false,
-  hasProvider = true,
-  hasChannel = false,
   onOpenGuide,
   isDraft = false,
   onboardingStage = null
@@ -26,9 +31,7 @@ export function PortalQuickStartBanner({
 
   useEffect(() => {
     const savedState = localStorage.getItem('pandoras_quickstart_minimized');
-    if (savedState === 'true') {
-      setIsMinimized(true);
-    }
+    if (savedState === 'true') setIsMinimized(true);
   }, []);
 
   const toggleMinimize = () => {
@@ -37,33 +40,17 @@ export function PortalQuickStartBanner({
     localStorage.setItem('pandoras_quickstart_minimized', String(newState));
   };
 
-  const steps = [
-    { label: 'Identidad y Alma', completed: hasIdentity },
-    { label: 'Capa de Evidencias', completed: hasEvidence },
-    { label: 'Motor IA (LLM)', completed: hasProvider },
-    { label: 'Canal (Telegram)', completed: hasChannel },
-  ];
+  // Derive progress from the current onboarding stage (single source of truth)
+  const currentStageIndex = Math.max(0, MISSION_STAGES.findIndex(s => s.id === onboardingStage));
+  const isActivated = onboardingStage === 'ACTIVATION';
+  
+  // For the "activated" state, all stages are complete
+  const completedCount = isActivated ? MISSION_STAGES.length : currentStageIndex;
+  const progressPercent = Math.round((completedCount / MISSION_STAGES.length) * 100);
 
-  const completedCount = steps.filter(s => s.completed).length;
-  const progressPercent = Math.round((completedCount / steps.length) * 100);
-
-  // Onboarding Mission Stages mapped to their UI labels
-  const MISSION_STAGES = [
-    { id: 'BUSINESS_DISCOVERY', label: 'Negocio' },
-    { id: 'IDENTITY_CONFIGURATION', label: 'Organización' },
-    { id: 'OBJECTIVES_ALIGNMENT', label: 'Objetivos' },
-    { id: 'PROJECTS_MAPPING', label: 'Proyectos' },
-    { id: 'AGENT_PERSONA', label: 'Agent' },
-    { id: 'KNOWLEDGE_INGESTION', label: 'Knowledge' },
-    { id: 'CHANNELS_SETUP', label: 'Channels' },
-    { id: 'GOVERNANCE_RULES', label: 'Governance' }
-  ];
 
   // If this is an onboarding workspace, enforce a mandatory UI layout here
   if (isDraft) {
-    const currentStageIndex = MISSION_STAGES.findIndex(s => s.id === onboardingStage) !== -1 
-      ? MISSION_STAGES.findIndex(s => s.id === onboardingStage) 
-      : 0;
 
     return (
       <div className="w-full bg-[#0C0C10] border border-white/10 rounded-xl p-6 mb-6 shadow-xl transition-all">
@@ -169,15 +156,15 @@ export function PortalQuickStartBanner({
 
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider">
-          {steps.map((step, idx) => (
+          {MISSION_STAGES.map((stage, idx) => (
             <div key={idx} className="flex items-center gap-1.5">
-              {step.completed ? (
+              {idx < currentStageIndex || isActivated ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
               ) : (
                 <Circle className="w-3.5 h-3.5 text-zinc-700" />
               )}
-              <span className={step.completed ? 'text-zinc-400' : 'text-zinc-600'}>
-                {step.label}
+              <span className={(idx < currentStageIndex || isActivated) ? 'text-zinc-400' : 'text-zinc-600'}>
+                {stage.label}
               </span>
             </div>
           ))}

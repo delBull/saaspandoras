@@ -26,6 +26,10 @@ export interface ConversationContext {
   knowledge: any[];
   style: any;
   activeCapabilities: any[];
+  diagnostics?: {
+    activeAddOns: string[];
+    excludedAddOns: { id: string; status: string }[];
+  };
 }
 
 export class CognitiveContextBuilder {
@@ -33,19 +37,17 @@ export class CognitiveContextBuilder {
     const coreContext = await this.buildCoreSecurityContext(tenantId);
     const tenantKnowledge = await this.getTenantKnowledge(tenantId);
     
-    // 1. Fetch ACTIVE Add-Ons for Tenant from the DB
+    // 1. Fetch ALL Add-Ons for Tenant from the DB (to determine ACTIVE vs EXCLUDED)
     const records = await db
       .select()
       .from(hermesAddonInstallations)
-      .where(
-        and(
-          eq(hermesAddonInstallations.organizationId, tenantId),
-          eq(hermesAddonInstallations.status, 'ACTIVE')
-        )
-      );
+      .where(eq(hermesAddonInstallations.organizationId, tenantId));
+
+    const activeRecords = records.filter(r => r.status === 'ACTIVE');
+    const excludedRecords = records.filter(r => r.status !== 'ACTIVE');
 
     // Filter to ensure manifestSnapshot exists
-    const activeAddOns = records
+    const activeAddOns = activeRecords
       .filter(r => !!r.manifestSnapshot)
       .map(r => r.manifestSnapshot as unknown as HermesAddOnManifest);
 
@@ -58,7 +60,11 @@ export class CognitiveContextBuilder {
       core: coreContext,
       knowledge: [...tenantKnowledge.activePacks, ...knowledgeOverlay],
       style: styleOverlay,
-      activeCapabilities: activeAddOns.flatMap(a => a.capabilities || [])
+      activeCapabilities: activeAddOns.flatMap(a => a.capabilities || []),
+      diagnostics: {
+        activeAddOns: activeRecords.map(r => r.addonId),
+        excludedAddOns: excludedRecords.map(r => ({ id: r.addonId, status: r.status }))
+      }
     };
   }
 

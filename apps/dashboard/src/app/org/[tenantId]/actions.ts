@@ -105,3 +105,17 @@ export async function rejectAddOnInstallationAction(tenantId: string, installati
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
   return await AddOnGovernanceService.rejectInstallation(installationId, context);
 }
+
+export async function suspendAddOnAction(tenantId: string, installationId: string) {
+  const context = await ControlPlaneContextFactory.fromSession(tenantId);
+  return await AddOnGovernanceService.suspendAddOn(installationId, context);
+}
+
+// --- Runtime Context Probe Action ---
+
+import { CognitiveContextBuilder } from "@/lib/pandoras/core/domains/hermes/addons/context-merger";
+
+export async function getEffectiveContextAction(tenantId: string) {
+  const context = await ControlPlaneContextFactory.fromSession(tenantId);
+  return await CognitiveContextBuilder.buildEffectiveContext(context.organizationId, 'console');
+}

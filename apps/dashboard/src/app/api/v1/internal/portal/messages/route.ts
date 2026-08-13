@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { CognitiveContextBuilder } from '@/lib/pandoras/core/domains/hermes/addons/context-merger';
 import { DefaultPlatformEventBus } from '@/lib/pandoras/core/platform/events/default-event-bus';
 import { OperationalIntent } from '@/lib/pandoras/core/contracts/governance-contracts';
 import {
@@ -281,13 +282,37 @@ export async function POST(request: Request) {
     } as any);
 
     // 3. Advance stage & build Hermes reply
-    const replyText = reply.replyText.replace('{orgName}', orgName);
+    let replyText = reply.replyText.replace('{orgName}', orgName);
+    let stageChips = getStageChips(nextStage);
+
+    if (nextStage === 'ACTIVATION') {
+      const effectiveCtx = await CognitiveContextBuilder.buildEffectiveContext(tenantId, 'portal_user');
+      
+      const activeCapsStr = effectiveCtx.activeCapabilities.length > 0 
+        ? effectiveCtx.activeCapabilities.map(c => `* \`${c.id}\``).join('\n')
+        : '*(None)*';
+      
+      const activeAddOnsStr = effectiveCtx.diagnostics?.activeAddOns.length 
+        ? effectiveCtx.diagnostics.activeAddOns.map(a => `* \`${a}\``).join('\n')
+        : '*(None)*';
+        
+      const excludedAddOnsStr = effectiveCtx.diagnostics?.excludedAddOns.length
+        ? effectiveCtx.diagnostics.excludedAddOns.map(a => `✕ \`${a.id}\`\n  reason: ${a.status}`).join('\n')
+        : '*(None)*';
+
+      replyText = `**[SYSTEM DIAGNOSTIC] Hermes Runtime Context**\n\nMode: \`${effectiveCtx.style.mode}\`\n\nActive capabilities:\n${activeCapsStr}\n\nAdd-Ons contributing to context:\n${activeAddOnsStr}\n\nEXCLUDED ADD-ONS\n${excludedAddOnsStr}`;
+      
+      // Derive chips from active capabilities
+      const derivedChips = effectiveCtx.activeCapabilities.flatMap(c => c.suggestedActions || []);
+      stageChips = derivedChips.length > 0 ? derivedChips : ['📊 Refresh Diagnostic', '🧠 View Knowledge'];
+    }
+
     const hermesMsg: PortalChatMessage = {
       id: `hermes_${Date.now()}`,
       role: 'hermes',
       content: replyText,
       timestamp: new Date().toISOString(),
-      chips: getStageChips(nextStage)
+      chips: stageChips
     };
     state.messages.push(hermesMsg);
     state.stage = nextStage;
