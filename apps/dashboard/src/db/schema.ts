@@ -15,7 +15,7 @@ import {
   bigint,
   doublePrecision
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 export const projectStatusEnum = pgEnum("project_status", [
   "draft",        // Borrador: Proyecto incompleto guardado por el solicitante
@@ -3398,4 +3398,44 @@ export const channelOutbox = pgTable("channel_outbox", {
   idemIdx: uniqueIndex("channel_outbox_idempotency_unique").on(t.idempotencyKey),
   statusIdx: index("channel_outbox_status_idx").on(t.status),
 }));
+// --- PHASE 6.8: HERMES KNOWLEDGE GOVERNANCE ---
 
+export const hermesKnowledge = pgTable("hermes_knowledge", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  dimension: varchar("dimension", { length: 50 }).notNull(), // e.g. 'identity', 'business'
+  key: varchar("key", { length: 255 }).notNull(),            // logical unit of knowledge
+  content: text("content").notNull(),
+  status: varchar("status", { length: 50 }).notNull(),       // 'DISCOVERED', 'PENDING_REVIEW', 'ACTIVE', 'REJECTED', 'SUPERSEDED'
+  visibility: varchar("visibility", { length: 50 }).notNull(),
+  authority: varchar("authority", { length: 50 }).notNull(),
+  version: integer("version").notNull(),
+  source: varchar("source", { length: 50 }).notNull(),
+  sourceReference: text("source_reference"),
+  createdBy: varchar("created_by", { length: 255 }).notNull(),
+  supersedesId: varchar("supersedes_id", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantDimensionStatusIdx: index("hermes_knowledge_tds_idx").on(t.organizationId, t.dimension, t.status),
+  // Prevent two ACTIVE versions for the same logical knowledge unit (key)
+  uniqueActiveKnowledge: uniqueIndex("hermes_knowledge_unique_active").on(t.organizationId, t.dimension, t.key).where(sql`${t.status} = 'ACTIVE'`),
+}));
+
+export const hermesGovernanceAudit = pgTable("hermes_governance_audit", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  knowledgeId: varchar("knowledge_id", { length: 255 }).notNull(),
+  version: integer("version").notNull(),
+  eventType: varchar("event_type", { length: 50 }).notNull(), // CREATE, APPROVE, REJECT, SUPERSEDE
+  actorId: varchar("actor_id", { length: 255 }).notNull(),
+  actorType: varchar("actor_type", { length: 50 }).notNull(), // USER, SYSTEM
+  oldStatus: varchar("old_status", { length: 50 }),
+  newStatus: varchar("new_status", { length: 50 }).notNull(),
+  reason: text("reason"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantAuditIdx: index("hermes_audit_tenant_idx").on(t.organizationId),
+  knowledgeAuditIdx: index("hermes_audit_knowledge_idx").on(t.knowledgeId),
+}));

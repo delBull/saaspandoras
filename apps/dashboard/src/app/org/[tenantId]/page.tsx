@@ -4,6 +4,7 @@ import { Globe, Users, Zap, Shield, Database, LayoutDashboard, Settings, CreditC
 import Link from 'next/link';
 import ConnectivityStudio from '@/components/admin/ConnectivityStudio';
 import BillingStudio from '@/components/admin/BillingStudio';
+import KnowledgeStudio from '@/components/admin/KnowledgeStudio';
 
 export const metadata: Metadata = {
   title: 'Organization Portal | Pandora\'s OS',
@@ -14,7 +15,7 @@ const STUDIOS = [
   { id: 'identity', label: 'Identity Studio', icon: <Shield className="w-4 h-4" /> },
   { id: 'ai', label: 'AI Studio', icon: <Database className="w-4 h-4" /> },
   { id: 'connectivity', label: 'Connectivity Studio', icon: <Globe className="w-4 h-4 text-indigo-400" /> },
-  { id: 'knowledge', label: 'Knowledge Studio', icon: <Settings className="w-4 h-4" /> },
+  { id: 'knowledge', label: 'Knowledge Studio', icon: <Settings className="w-4 h-4 text-indigo-400" /> },
   { id: 'automation', label: 'Automation Studio', icon: <Zap className="w-4 h-4" /> },
   { id: 'billing', label: 'Billing Studio', icon: <CreditCard className="w-4 h-4 text-emerald-400" /> },
   { id: 'team', label: 'Team Studio', icon: <Users className="w-4 h-4" /> },
@@ -85,9 +86,10 @@ export default async function OrganizationPortalPage({
           <div className="max-w-5xl mx-auto">
             {activeStudio === 'connectivity' && <ConnectivityStudio tenantId={tenantId} />}
             {activeStudio === 'billing' && <BillingStudio tenantId={tenantId} tier="PROFESSIONAL" />}
+            {activeStudio === 'knowledge' && <KnowledgeStudio tenantId={tenantId} />}
             
             {/* Placeholders for other studios */}
-            {!['connectivity', 'billing'].includes(activeStudio) && (
+            {!['connectivity', 'billing', 'knowledge'].includes(activeStudio) && (
               <div className="flex flex-col items-center justify-center h-96 border border-zinc-800/60 rounded-3xl bg-zinc-900/30 text-center p-8">
                 <Settings className="w-12 h-12 text-zinc-700 mb-4" />
                 <h2 className="text-xl font-bold text-white mb-2">
