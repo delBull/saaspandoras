@@ -3369,7 +3369,7 @@ export const platformEvents = pgTable("platform_events", {
 
 export const channelIdentityBindings = pgTable("channel_identity_bindings", {
   id: uuid("id").defaultRandom().primaryKey(),
-  identityId: uuid("identity_id").notNull(), 
+  identityId: varchar("identity_id", { length: 256 }).notNull(), 
   channel: varchar("channel", { length: 50 }).notNull(), // 'whatsapp', 'telegram', 'email'
   externalUserId: varchar("external_user_id", { length: 255 }).notNull(), // wa_id, chatId, email
   address: varchar("address", { length: 255 }).notNull(), // phone number, handle, email

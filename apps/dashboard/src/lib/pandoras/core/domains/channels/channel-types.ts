@@ -1,4 +1,4 @@
-export type ChannelType = 'portal' | 'telegram';
+export type ChannelType = 'portal' | 'telegram' | 'whatsapp';
 
 export interface ChannelInboundMessage {
   channelType: ChannelType;
@@ -19,4 +19,12 @@ export interface ChannelDeliveryResult {
   success: boolean;
   messageId?: string;
   error?: string;
+}
+
+export interface ExecutionContext {
+  organizationId: string;
+  conversationId: string;
+  channelBindingId: string;
+  correlationId: string;
+  idempotencyKey: string;
 }

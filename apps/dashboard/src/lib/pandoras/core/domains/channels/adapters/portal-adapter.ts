@@ -41,12 +41,23 @@ export class PortalAdapter implements ChannelAdapter {
 
     return {
       organizationId,
-      channel: 'portal',
-      conversationId,
-      identityId: actorId,
-      messageId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      externalMessageId,
-      content: payload.content.trim(),
+      channel: {
+        type: 'portal',
+        bindingId: `portal_${organizationId}`,
+        externalConversationId: conversationId
+      },
+      actor: {
+        identityId: actorId,
+        externalActorId: actorId
+      },
+      conversation: {
+        conversationId
+      },
+      message: {
+        messageId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        externalMessageId,
+        content: payload.content.trim()
+      },
       correlationId,
       idempotencyKey,
       receivedAt: new Date()

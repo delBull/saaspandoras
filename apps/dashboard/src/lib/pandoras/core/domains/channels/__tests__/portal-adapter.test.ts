@@ -28,12 +28,12 @@ describe('PortalAdapter', () => {
       mockContext
     );
 
-    expect(normalized.channel).toBe('portal');
-    expect(normalized.content).toBe('Hola Hermes desde el Portal');
+    expect(normalized.channel.type).toBe('portal');
+    expect(normalized.message.content).toBe('Hola Hermes desde el Portal');
     expect(normalized.organizationId).toBe('org_eld');
-    expect(normalized.identityId).toBe('user_oscar');
-    expect(normalized.conversationId).toBe('conv_portal_org_eld');
-    expect(normalized.externalMessageId).toBe('client-msg-001');
+    expect(normalized.actor.identityId).toBe('user_oscar');
+    expect(normalized.conversation.conversationId).toBe('conv_portal_org_eld');
+    expect(normalized.message.externalMessageId).toBe('client-msg-001');
     expect(normalized.idempotencyKey).toBe('org_eld:portal:client-msg-001');
     expect(normalized.correlationId).toBe('session_123');
   });

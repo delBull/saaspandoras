@@ -7,8 +7,9 @@ import { KnowledgePageClient } from './KnowledgePageClient';
 
 import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
 
-export default async function KnowledgePage({ params }: { params: { organizationSlug: string } }) {
-  const portalCtx = await resolvePortalContext(params.organizationSlug);
+export default async function KnowledgePage({ params }: { params: Promise<{ organizationSlug: string }> }) {
+  const { organizationSlug } = await params;
+  const portalCtx = await resolvePortalContext(organizationSlug);
   
   if (!portalCtx) {
     notFound();
@@ -27,7 +28,7 @@ export default async function KnowledgePage({ params }: { params: { organization
 
   return (
     <div className="min-h-screen bg-black">
-      <KnowledgePageClient overview={overview} organizationSlug={params.organizationSlug} />
+      <KnowledgePageClient overview={overview} organizationSlug={organizationSlug} />
     </div>
   );
 }

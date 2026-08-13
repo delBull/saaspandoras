@@ -47,10 +47,9 @@ export async function POST(req: Request) {
     // B2: Inject new knowledge
     const newChunk = await db.insert(knowledgeChunks).values({
       tenantId,
-      sourceType,
       sourceId,
       content,
-      metadata: metadata || {}
+      metadata: { ...(metadata || {}), sourceType }
     }).returning();
 
     return NextResponse.json({ 

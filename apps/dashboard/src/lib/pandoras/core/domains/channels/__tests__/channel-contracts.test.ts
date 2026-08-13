@@ -20,12 +20,23 @@ describe('Channel Domain Contracts', () => {
 
     const normalized: NormalizedInboundMessage = {
       organizationId: 'org_snarai',
-      channel: 'portal',
-      conversationId: 'conv_portal_snarai',
-      identityId: 'actor_123',
-      messageId: 'msg_001',
-      externalMessageId: 'ext-123',
-      content: 'Test message',
+      channel: {
+        type: 'portal',
+        bindingId: 'portal_org_snarai',
+        externalConversationId: 'conv_portal_snarai'
+      },
+      actor: {
+        identityId: 'actor_123',
+        externalActorId: 'actor_123'
+      },
+      conversation: {
+        conversationId: 'conv_portal_snarai'
+      },
+      message: {
+        messageId: 'msg_001',
+        externalMessageId: 'ext-123',
+        content: 'Test message'
+      },
       correlationId: 'corr_456',
       idempotencyKey: 'org_snarai:portal:ext-123',
       receivedAt: new Date()

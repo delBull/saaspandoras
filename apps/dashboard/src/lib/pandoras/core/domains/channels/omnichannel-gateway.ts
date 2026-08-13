@@ -2,6 +2,8 @@ import { ChannelInboundMessage } from './channel-types';
 import { NormalizedInboundMessage } from './normalized-message';
 import { ChannelAdapterRegistry, DefaultChannelAdapterRegistry } from './adapter-registry';
 import { PortalAdapter } from './adapters/portal-adapter';
+import { TelegramAdapter } from './adapters/telegram-adapter';
+import { WhatsAppAdapter } from './adapters/whatsapp-adapter';
 import { DuplicateMessageError } from './channel-errors';
 import { ControlPlaneContext } from '../control-plane/application/context';
 import { DefaultPlatformEventBus } from '../../platform/events/default-event-bus';
@@ -24,6 +26,8 @@ export class DefaultOmnichannelGateway implements OmnichannelGateway {
     } else {
       const defaultReg = new DefaultChannelAdapterRegistry();
       defaultReg.register(new PortalAdapter());
+      defaultReg.register(new TelegramAdapter());
+      defaultReg.register(new WhatsAppAdapter());
       this.registry = defaultReg;
     }
   }
@@ -38,7 +42,7 @@ export class DefaultOmnichannelGateway implements OmnichannelGateway {
     // 2. Process and normalize inbound message via adapter
     const normalized = await adapter.receive(input, context);
 
-    // 3. Idempotency Check (C5.8 & H5)
+    // 3. Idempotency Check (C5.8 & C5.17)
     if (this.processedIdempotencyKeys.has(normalized.idempotencyKey)) {
       throw new DuplicateMessageError(`Message with idempotency key '${normalized.idempotencyKey}' already processed`);
     }
@@ -46,17 +50,17 @@ export class DefaultOmnichannelGateway implements OmnichannelGateway {
 
     // 4. Publish Normalized Event to Event Spine (C5.7)
     this.eventBus.publish({
-      id: normalized.messageId,
+      id: normalized.message.messageId,
       type: 'PORTAL_MESSAGE_RECEIVED',
       timestamp: normalized.receivedAt,
       instanceId: normalized.organizationId,
       correlationId: normalized.correlationId,
       payload: {
-        actorId: normalized.identityId,
-        content: normalized.content,
+        actorId: normalized.actor.identityId,
+        content: normalized.message.content,
         channel: normalized.channel,
-        conversationId: normalized.conversationId,
-        externalMessageId: normalized.externalMessageId
+        conversationId: normalized.conversation.conversationId,
+        externalMessageId: normalized.message.externalMessageId
       }
     } as any);
 

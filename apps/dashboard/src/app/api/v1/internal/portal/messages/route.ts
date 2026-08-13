@@ -240,9 +240,9 @@ export async function POST(request: Request) {
 
     // 1. Record User Message
     const userMsg: PortalChatMessage = {
-      id: normalizedInbound.externalMessageId,
+      id: normalizedInbound.message.externalMessageId,
       role: 'user',
-      content: normalizedInbound.content,
+      content: normalizedInbound.message.content,
       timestamp: normalizedInbound.receivedAt.toISOString()
     };
     state.messages.push(userMsg);

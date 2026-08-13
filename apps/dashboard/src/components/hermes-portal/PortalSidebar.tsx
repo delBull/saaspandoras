@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * PortalSidebar — Phase 6.1
+ * PortalSidebar — Phase 6.1 & 6.5.2.2 Mobile Polish
  * 
  * Navigation for the Hermes Customer Operating Console.
  * Item visibility depends on permissions (UX only — server still enforces).
@@ -108,6 +108,7 @@ interface PortalSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
   organizationSlug: string;
+  onNavClick?: () => void;
 }
 
 export function PortalSidebar({
@@ -116,6 +117,7 @@ export function PortalSidebar({
   collapsed,
   onToggle,
   organizationSlug,
+  onNavClick,
 }: PortalSidebarProps) {
   const pathname = usePathname();
   const basePath = `/portal/${organizationSlug}`;
@@ -134,15 +136,15 @@ export function PortalSidebar({
 
   return (
     <aside
-      className="fixed top-0 left-0 h-screen bg-[#0C0C12] border-r border-white/[0.06] flex flex-col z-20 transition-all duration-300"
-      style={{ width: collapsed ? '72px' : '260px' }}
+      className="h-screen bg-[#0C0C12] border-r border-white/[0.08] flex flex-col z-30 transition-all duration-300 w-[260px] md:w-auto"
+      style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '260px' : (collapsed ? '72px' : '260px') }}
     >
       {/* Logo / Brand */}
       <div className="flex items-center h-16 px-4 border-b border-white/[0.06] shrink-0">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shrink-0 shadow-lg">
           <span className="text-white text-xs font-bold">H</span>
         </div>
-        {!collapsed && (
+        {(!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
           <div className="ml-3 overflow-hidden">
             <p className="text-white font-semibold text-sm leading-tight truncate">Hermes</p>
             <p className="text-white/40 text-xs truncate">{organization.name}</p>
@@ -153,7 +155,7 @@ export function PortalSidebar({
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
         {/* Primary items */}
-        <ul className="space-y-0.5">
+        <ul className="space-y-1">
           {primaryItems.map(item => {
             const active = isActive(item.href);
             const Icon = item.icon;
@@ -161,24 +163,25 @@ export function PortalSidebar({
               <li key={item.href}>
                 <Link
                   href={`${basePath}${item.href}`}
+                  onClick={() => onNavClick?.()}
                   className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150
+                    flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px]
                     ${active
-                      ? 'bg-violet-600/20 text-violet-300 border border-violet-500/20'
-                      : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                      ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm'
+                      : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
                     }
                   `}
                   title={collapsed ? item.label : undefined}
                 >
                   <Icon
-                    size={16}
+                    size={18}
                     className={active ? 'text-violet-400 shrink-0' : 'shrink-0'}
                   />
-                  {!collapsed && (
+                  {(!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
                     <span className="truncate font-medium">{item.label}</span>
                   )}
-                  {active && !collapsed && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+                  {active && (!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
+                    <span className="ml-auto w-2 h-2 rounded-full bg-violet-400 shrink-0" />
                   )}
                 </Link>
               </li>
@@ -192,7 +195,7 @@ export function PortalSidebar({
         )}
 
         {/* Secondary items */}
-        <ul className="space-y-0.5">
+        <ul className="space-y-1">
           {secondaryItems.map(item => {
             const active = isActive(item.href);
             const Icon = item.icon;
@@ -200,17 +203,18 @@ export function PortalSidebar({
               <li key={item.href}>
                 <Link
                   href={`${basePath}${item.href}`}
+                  onClick={() => onNavClick?.()}
                   className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150
+                    flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px]
                     ${active
-                      ? 'bg-white/[0.08] text-white/90'
-                      : 'text-white/35 hover:text-white/60 hover:bg-white/[0.03]'
+                      ? 'bg-white/[0.08] text-white font-medium'
+                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
                     }
                   `}
                   title={collapsed ? item.label : undefined}
                 >
-                  <Icon size={16} className="shrink-0" />
-                  {!collapsed && (
+                  <Icon size={18} className="shrink-0" />
+                  {(!collapsed || typeof window !== 'undefined' && window.innerWidth < 768) && (
                     <span className="truncate">{item.label}</span>
                   )}
                 </Link>
@@ -221,16 +225,16 @@ export function PortalSidebar({
       </nav>
 
       {/* Collapse toggle */}
-      <div className="p-2 border-t border-white/[0.06] shrink-0">
+      <div className="hidden md:block p-2 border-t border-white/[0.06] shrink-0">
         <button
           onClick={onToggle}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all text-xs"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/[0.04] transition-all text-xs font-medium min-h-[40px]"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight size={16} /> : (
             <>
               <ChevronLeft size={16} />
-              <span>Collapse</span>
+              <span>Colapsar</span>
             </>
           )}
         </button>

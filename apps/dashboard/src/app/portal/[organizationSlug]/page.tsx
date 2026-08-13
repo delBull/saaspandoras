@@ -28,8 +28,6 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
   let rawOverview: OrganizationOverviewView | null = null;
   let knowledgeHealth: SystemStatus = 'READY';
   try {
-    rawOverview = await getOverviewQuery.execute(context.tenant as any, context.tenant.organizationId);
-    
     const cpCtx = new ControlPlaneContext(
       context.tenant.sessionId,
       context.tenant.actorId,
@@ -37,6 +35,8 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
       context.tenant.permissions as any,
       [{ organizationId: context.tenant.organizationId, role: context.tenant.role as any }]
     );
+    
+    rawOverview = await getOverviewQuery.execute(cpCtx, context.tenant.organizationId);
     
     const knowledgeQuery = new GetKnowledgeOverviewQuery();
     const kOverview = await knowledgeQuery.execute(cpCtx, context.tenant.organizationId);

@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { sql } from "@/lib/database";
+import { sql } from "../lib/database";
 import * as schema from "./schema";
 
 // Lazy initialization for Drizzle to prevent early DB connection

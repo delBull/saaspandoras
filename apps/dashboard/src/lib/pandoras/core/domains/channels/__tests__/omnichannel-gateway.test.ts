@@ -38,7 +38,7 @@ describe('OmnichannelGateway', () => {
 
     expect(normalized.organizationId).toBe('org_eld');
     expect(normalized.correlationId).toBe('sess_oscar');
-    expect(normalized.channel).toBe('portal');
+    expect(normalized.channel.type).toBe('portal');
   });
 
   it('C5.8 & H5 — Enforces idempotency per client message ID', async () => {
@@ -66,10 +66,10 @@ describe('OmnichannelGateway', () => {
     ]);
 
     expect(resOscar.organizationId).toBe('org_eld');
-    expect(resOscar.identityId).toBe('user_oscar');
+    expect(resOscar.actor.identityId).toBe('user_oscar');
 
     expect(resAlexia.organizationId).toBe('org_snarai');
-    expect(resAlexia.identityId).toBe('user_alexia');
+    expect(resAlexia.actor.identityId).toBe('user_alexia');
 
     expect(resOscar.organizationId).not.toBe(resAlexia.organizationId);
   });

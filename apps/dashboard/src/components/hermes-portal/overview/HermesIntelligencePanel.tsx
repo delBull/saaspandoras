@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * HermesIntelligencePanel — Phase 6.4.2
+ * HermesIntelligencePanel — Phase 6.4.2 & 6.5.2.2 Mobile Polish
  * 
  * Persistent conversational context panel with stage-driven quick-action chips.
- * "Portal conversation uses the same Hermes Runtime as external channels."
+ * Mobile-first responsive touch interface with horizontal snap suggestion chips.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -128,16 +128,16 @@ export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIn
   const activeChips = latestHermesMessage?.chips || [];
 
   return (
-    <div className="flex flex-col h-full bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
+    <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[650px] bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.04] bg-[#0C0C12]">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+          <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0">
             <Brain size={16} className="text-indigo-400" />
           </div>
           <div>
             <h3 className="text-white font-medium text-sm tracking-wide">Hermes Intelligence</h3>
-            <p className="text-indigo-400/60 text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1.5">
+            <p className="text-indigo-400/70 text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
               {activeStage.replace(/_/g, ' ')}
             </p>
@@ -146,13 +146,13 @@ export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIn
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         {messages.map(msg => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+            <div className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-4 py-3 text-sm sm:text-base leading-relaxed ${
               msg.role === 'user' 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                : 'bg-white/[0.04] border border-white/[0.08] text-white/90'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 font-medium' 
+                : 'bg-white/[0.05] border border-white/[0.08] text-white/90 font-normal'
             }`}>
               {msg.content}
             </div>
@@ -161,7 +161,7 @@ export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIn
 
         {isSubmitting && (
           <div className="flex justify-start">
-            <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-1.5">
+            <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -172,40 +172,43 @@ export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIn
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Stage-driven Quick Action Chips */}
+      {/* Stage-driven Quick Action Chips — Mobile Horizontally Scrollable Snap Row */}
       {activeChips.length > 0 && !isSubmitting && (
-        <div className="px-4 py-2 bg-[#0A0A10] border-t border-white/[0.04] flex flex-wrap gap-2">
-          <div className="w-full text-[10px] font-mono uppercase tracking-wider text-indigo-400/60 flex items-center gap-1 mb-1">
-            <Sparkles size={11} /> Sugerencias de Respuesta
+        <div className="px-3 py-2 bg-[#0A0A10] border-t border-white/[0.04] shrink-0">
+          <div className="w-full text-[10px] font-mono uppercase tracking-wider text-indigo-400/70 flex items-center gap-1 mb-2 px-1">
+            <Sparkles size={11} /> Sugerencias Rápidas
           </div>
-          {activeChips.map((chip, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => sendMessage(chip)}
-              className="text-xs bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 hover:border-indigo-500/50 text-indigo-200 px-3 py-1.5 rounded-lg transition-all text-left"
-            >
-              {chip}
-            </button>
-          ))}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none snap-x snap-mandatory py-1 px-1">
+            {activeChips.map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => sendMessage(chip)}
+                className="shrink-0 snap-start text-xs bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 px-3.5 py-2 rounded-xl transition-all text-left whitespace-nowrap min-h-[44px] flex items-center shadow-sm"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="p-4 bg-[#0C0C12] border-t border-white/[0.04]">
+      {/* Input Area — Sticky Bottom Bar with 16px Font (no iOS Safari auto-zoom) */}
+      <div className="p-3 sm:p-4 bg-[#0C0C12] border-t border-white/[0.06] shrink-0">
         <form onSubmit={handleSubmit} className="relative flex items-center">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Responde a Hermes o selecciona una opción..."
-            className="w-full bg-[#12121A] border border-white/[0.1] rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 transition-colors"
+            className="w-full bg-[#12121A] border border-white/[0.12] rounded-xl pl-4 pr-12 py-3 text-base text-white placeholder-white/35 focus:outline-none focus:border-indigo-500/60 transition-colors min-h-[48px]"
             disabled={isSubmitting}
           />
           <button 
             type="submit"
             disabled={!input.trim() || isSubmitting}
-            className="absolute right-2 p-2 rounded-lg text-white/50 hover:text-indigo-400 hover:bg-white/[0.05] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors"
+            className="absolute right-2 p-2.5 rounded-lg text-white/70 hover:text-indigo-300 bg-indigo-600/30 hover:bg-indigo-600/50 disabled:opacity-30 disabled:bg-transparent disabled:hover:text-white/50 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+            aria-label="Enviar Mensaje"
           >
             <Send size={16} />
           </button>
