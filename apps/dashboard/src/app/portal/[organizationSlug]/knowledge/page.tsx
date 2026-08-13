@@ -1,14 +1,33 @@
-/**
- * Portal placeholder — inherits PortalShell + ControlPlaneContext from layout.tsx.
- */
-export default function PortalSectionPage() {
+import React from 'react';
+import { notFound } from 'next/navigation';
+import { KnowledgeDashboard } from '@/components/hermes-portal/knowledge/KnowledgeDashboard';
+import { GetKnowledgeOverviewQuery } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { KnowledgePageClient } from './KnowledgePageClient';
+
+import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
+
+export default async function KnowledgePage({ params }: { params: { organizationSlug: string } }) {
+  const portalCtx = await resolvePortalContext(params.organizationSlug);
+  
+  if (!portalCtx) {
+    notFound();
+  }
+
+  const cpCtx = new ControlPlaneContext(
+    portalCtx.tenant.sessionId,
+    portalCtx.tenant.actorId,
+    portalCtx.tenant.role as any,
+    portalCtx.tenant.permissions as any,
+    [{ organizationId: portalCtx.tenant.organizationId, role: portalCtx.tenant.role as any }]
+  );
+
+  const query = new GetKnowledgeOverviewQuery();
+  const overview = await query.execute(cpCtx, portalCtx.tenant.organizationId);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-      <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6">
-        <span className="text-white/20 text-xl">○</span>
-      </div>
-      <h2 className="text-white/60 text-lg font-semibold mb-2">Coming soon</h2>
-      <p className="text-white/25 text-sm">This module is being built in Phase 6.x.</p>
+    <div className="min-h-screen bg-black">
+      <KnowledgePageClient overview={overview} organizationSlug={params.organizationSlug} />
     </div>
   );
 }

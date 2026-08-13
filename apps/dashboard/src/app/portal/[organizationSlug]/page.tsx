@@ -11,7 +11,9 @@
  */
 
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
 import { getOverviewQuery } from '@/lib/pandoras/composition/control-plane-composition';
+import { GetKnowledgeOverviewQuery } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
 import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewDashboard';
 import type { HermesOverviewView, SystemStatus, ActivityEventView } from '@/lib/portal/portal-types';
 import type { OrganizationOverviewView } from '@/lib/pandoras/core/domains/control-plane/view-models';
@@ -24,8 +26,21 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
 
   // 2. Fetch the real application data (never direct DB queries)
   let rawOverview: OrganizationOverviewView | null = null;
+  let knowledgeHealth: SystemStatus = 'READY';
   try {
     rawOverview = await getOverviewQuery.execute(context.tenant as any, context.tenant.organizationId);
+    
+    const cpCtx = new ControlPlaneContext(
+      context.tenant.sessionId,
+      context.tenant.actorId,
+      context.tenant.role as any,
+      context.tenant.permissions as any,
+      [{ organizationId: context.tenant.organizationId, role: context.tenant.role as any }]
+    );
+    
+    const knowledgeQuery = new GetKnowledgeOverviewQuery();
+    const kOverview = await knowledgeQuery.execute(cpCtx, context.tenant.organizationId);
+    knowledgeHealth = kOverview.knowledgeHealth === 'EMPTY' ? 'NOT_CONFIGURED' : kOverview.knowledgeHealth as SystemStatus;
   } catch (error) {
     console.error('[PortalOverview] Failed to fetch overview data:', error);
   }
@@ -38,9 +53,9 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
     // Future phases will inject real runtime statuses here.
     const hasGoals = rawOverview.metrics.activeGoals > 0;
     
-    // Identity & Knowledge are considered READY if the tenant exists
+    // Identity is considered READY if the tenant exists
     const identityStatus: SystemStatus = 'READY';
-    const knowledgeStatus: SystemStatus = 'READY';
+    const knowledgeStatus: SystemStatus = knowledgeHealth;
     
     const channelsStatus: SystemStatus = 'NOT_CONFIGURED'; // Will implement in 6.5
     const journeysStatus: SystemStatus = hasGoals ? 'ACTIVE' : 'NOT_CONFIGURED';

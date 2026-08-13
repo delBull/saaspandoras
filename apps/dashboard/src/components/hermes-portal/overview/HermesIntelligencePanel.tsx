@@ -24,8 +24,8 @@ export function HermesIntelligencePanel({ overview, organizationSlug }: HermesIn
       id: 'welcome-1',
       role: 'hermes',
       content: overview.systemStatus === 'NOT_CONFIGURED' 
-        ? 'Hermes todavía no conoce tu negocio. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?'
-        : 'Good afternoon. I am monitoring your runtime operations. How can I assist you today?',
+        ? `Hola. Todavía no conozco los detalles de ${overview.organization.name}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`
+        : `Hola. Estoy monitoreando las operaciones de ${overview.organization.name}. ¿En qué te puedo ayudar hoy?`,
     }
   ]);
 

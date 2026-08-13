@@ -74,3 +74,15 @@ export interface ActivityAuditView {
   missionId?: string;
   timeline: ActivityAuditItemView[];
 }
+
+export interface KnowledgeSourceView {
+  id: string;
+  title: string;
+  type: 'DOCUMENT' | 'URL' | 'FAQ' | 'BUSINESS_INFO' | 'BUSINESS_RULE';
+  status: 'CREATED' | 'PROCESSING' | 'READY' | 'FAILED';
+  version: number;
+  lastUpdated: Date;
+  lastProcessedAt: Date | null;
+  chunkCount?: number;
+  canRetry: boolean;
+}

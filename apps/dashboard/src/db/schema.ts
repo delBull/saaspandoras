@@ -394,11 +394,47 @@ export const projects = pgTable("projects", {
 }));
 
 // --- PHASE 5: DYNAMIC TENANT KNOWLEDGE ---
+export const knowledgeSources = pgTable("knowledge_sources", {
+  id: varchar("id", { length: 256 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 256 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'DOCUMENT', 'URL', 'FAQ', 'BUSINESS_INFO', 'BUSINESS_RULE'
+  status: varchar("status", { length: 50 }).notNull(), // 'CREATED', 'PROCESSING', 'READY', 'FAILED'
+  activeVersionId: varchar("active_version_id", { length: 256 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+  lastProcessedAt: timestamp("last_processed_at"),
+  errorCode: varchar("error_code", { length: 100 }),
+  errorMessage: text("error_message")
+}, (table) => ({
+  tenantIndex: index("knowledge_source_tenant_idx").on(table.tenantId),
+}));
+
+export const knowledgeSourceVersions = pgTable("knowledge_source_versions", {
+  id: varchar("id", { length: 256 }).primaryKey(),
+  sourceId: varchar("source_id", { length: 256 }).notNull().references(() => knowledgeSources.id, { onDelete: 'cascade' }),
+  tenantId: varchar("tenant_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  version: integer("version").notNull(),
+  content: text("content").notNull(),
+  status: varchar("status", { length: 50 }).notNull(), // 'CREATED', 'PROCESSING', 'INDEXED', 'READY', 'FAILED'
+  chunkCount: integer("chunk_count").default(0).notNull(),
+  createdBy: varchar("created_by", { length: 256 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
+  errorCode: varchar("error_code", { length: 100 }),
+  errorMessage: text("error_message")
+}, (table) => ({
+  sourceIndex: index("knowledge_version_source_idx").on(table.sourceId),
+  tenantIndex: index("knowledge_version_tenant_idx").on(table.tenantId),
+  sourceVersionUnique: uniqueIndex("knowledge_version_unique_idx").on(table.sourceId, table.version),
+}));
+
 export const knowledgeChunks = pgTable("knowledge_chunks", {
   id: serial("id").primaryKey(),
   tenantId: varchar("tenant_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
-  sourceType: varchar("source_type", { length: 50 }).notNull(), // 'faq', 'document', 'url'
-  sourceId: varchar("source_id", { length: 256 }).notNull(), // To allow invalidation of specific sources
+  sourceId: varchar("source_id", { length: 256 }).notNull(),
+  sourceVersionId: varchar("source_version_id", { length: 256 }),
+
   content: text("content").notNull(),
   embedding: jsonb("embedding"), // Store vector array. Using JSONB to avoid pgvector extension requirement during slice
   metadata: jsonb("metadata").default({}),
