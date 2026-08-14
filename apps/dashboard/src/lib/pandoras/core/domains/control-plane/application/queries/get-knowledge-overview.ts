@@ -17,7 +17,13 @@ export class GetKnowledgeOverviewQuery {
   async execute(ctx: ControlPlaneContext, organizationId: string): Promise<KnowledgeOverviewView> {
     const scope = ctx.requireOrganizationScope(organizationId);
     const orgSlug = scope.organizationId.replace(/^org_/, '');
-    const records = await db.select().from(knowledgeSources).where(eq(knowledgeSources.tenantId, orgSlug));
+    let records: any[] = [];
+    try {
+      records = await db.select().from(knowledgeSources).where(eq(knowledgeSources.tenantId, orgSlug));
+    } catch (error) {
+      console.warn('[GetKnowledgeOverviewQuery] Error querying knowledge sources (table might be missing):', error);
+      // Return empty array to prevent 500 error on the UI
+    }
     
     const totalSources = records.length;
     const readySources = records.filter(r => r.status === 'READY').length;

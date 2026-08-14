@@ -38,15 +38,7 @@ export function PortalInspector({ children, title = 'Hermes Operating System', t
 
             {children}
 
-            {/* Chat / Intelligence Panel */}
-            {organization && (
-              <div className="mt-6 flex-1 flex flex-col">
-                <HermesIntelligencePanel 
-                  organizationSlug={organization.slug} 
-                  organizationName={organization.name} 
-                />
-              </div>
-            )}
+
 
             <div className="p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl space-y-2 mt-auto shrink-0">
                 <span className="text-xs font-semibold text-purple-300 flex items-center gap-1.5">

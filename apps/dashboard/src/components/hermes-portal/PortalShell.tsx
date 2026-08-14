@@ -24,6 +24,7 @@ interface PortalShellProps {
 
 export function PortalShell({ context, children }: PortalShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(true);
   const pathname = usePathname();
   
   // Inspector is hidden on the Overview page so the Hermes Intelligence Chat can take its place
@@ -65,8 +66,8 @@ export function PortalShell({ context, children }: PortalShellProps) {
         <PortalSidebar
           organization={context.organization}
           permissions={context.tenant.permissions}
-          collapsed={false}
-          onToggle={() => {}}
+          collapsed={desktopCollapsed}
+          onToggle={() => setDesktopCollapsed(!desktopCollapsed)}
           organizationSlug={context.organization.slug}
           onNavClick={() => setMobileMenuOpen(false)}
         />
@@ -93,7 +94,7 @@ export function PortalShell({ context, children }: PortalShellProps) {
       {!isOverview && <PortalInspector organization={context.organization} />}
 
       {/* Global Terminal Bar sticky at bottom */}
-      <HermesTerminalBar />
+      <HermesTerminalBar sidebarCollapsed={desktopCollapsed} />
 
     </div>
   );

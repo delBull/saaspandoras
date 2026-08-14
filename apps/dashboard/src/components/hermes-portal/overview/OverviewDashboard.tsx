@@ -39,22 +39,32 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 pb-12 animate-in fade-in duration-500 w-full items-stretch h-full px-4 sm:px-6">
-      {/* MISSION CONTROL COLUMN */}
-      <div className="flex-1 flex flex-col gap-8 w-full max-w-full">
-        {/* ZONE 1: HEADER (Handled by PortalHeader in Shell) */}
-        
-        {/* ZONE 2: SYSTEM CORE */}
-        <section>
-          <SystemCore status={overview.system} organization={overview.organization} />
-        </section>
+    <div className="flex flex-col gap-8 pb-12 animate-in fade-in duration-500 w-full px-4 sm:px-6">
+      
+      {/* TOP ROW: Core, Status, and Hermes Chat */}
+      <div className="flex flex-col lg:flex-row gap-8 items-stretch w-full">
+        {/* Left Column (Core, Status) */}
+        <div className="flex-1 flex flex-col gap-8 w-full">
+          {/* ZONE 2: SYSTEM CORE */}
+          <section>
+            <SystemCore status={overview.system} organization={overview.organization} />
+          </section>
 
-        {/* ZONE 3: CURRENT MISSION & SYSTEM STATUS */}
-        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <StrategicActivityCard activity={overview.strategicActivity} />
-          <SystemStatusPanel status={overview.system} organizationSlug={context.organization.slug} />
-        </section>
+          {/* ZONE 3: CURRENT MISSION & SYSTEM STATUS */}
+          <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <StrategicActivityCard activity={overview.strategicActivity} />
+            <SystemStatusPanel status={overview.system} organizationSlug={context.organization.slug} />
+          </section>
+        </div>
 
+        {/* Right Column (Chat) */}
+        <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0 sticky top-6 z-10">
+          <HermesIntelligencePanel organizationSlug={context.organization.slug} organizationName={overview.organization.name} />
+        </div>
+      </div>
+
+      {/* BOTTOM SECTIONS: Full Width */}
+      <div className="flex flex-col gap-8 w-full max-w-full">
         {/* ZONE 4: OPERATING LAYERS */}
         <section>
           <OperatingLayers status={overview.system} organizationSlug={context.organization.slug} />
@@ -71,11 +81,6 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
             <OverviewMetrics metrics={overview.metrics} />
           </section>
         )}
-      </div>
-
-      {/* HERMES INTELLIGENCE COLUMN */}
-      <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0 sticky top-6 h-[calc(100vh-2rem)]">
-        <HermesIntelligencePanel organizationSlug={context.organization.slug} organizationName={overview.organization.name} />
       </div>
     </div>
   );

@@ -205,14 +205,20 @@ export function PortalSidebar({
       </aside>
 
       {/* DESKTOP SIDEBAR (HermesWorkbench Icon Style) */}
-      <aside className="hidden md:flex flex-col items-center py-3 h-screen w-16 bg-[#09090C] border-r border-white/10 shrink-0 z-30 select-none">
-        <div className="mb-4">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-lg text-purple-400">
+      <aside className={`hidden md:flex flex-col items-center py-3 h-screen bg-[#09090C] border-r border-white/10 shrink-0 z-30 select-none transition-all duration-300 ${collapsed ? 'w-16' : 'w-64 items-start px-3'}`}>
+        <div className={`mb-4 ${collapsed ? '' : 'flex items-center gap-3 px-2 w-full mt-2'}`}>
+            <div className="w-8 h-8 shrink-0 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-lg text-purple-400">
                 <span className="text-xs font-bold font-mono">H</span>
             </div>
+            {!collapsed && (
+              <div className="flex-1 overflow-hidden">
+                <div className="text-sm font-semibold text-white truncate">Hermes</div>
+                <div className="text-[10px] text-zinc-500 font-mono truncate">{organization.name}</div>
+              </div>
+            )}
         </div>
         
-        <div className="flex-1 flex flex-col items-center gap-0.5 w-full">
+        <div className={`flex-1 flex flex-col gap-0.5 w-full ${collapsed ? 'items-center' : 'px-1'}`}>
             {primaryItems.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
@@ -220,20 +226,24 @@ export function PortalSidebar({
                     <Link
                         key={item.href}
                         href={`${basePath}${item.href}`}
-                        className={`relative flex flex-col items-center justify-center p-3 w-14 h-14 rounded-xl transition-all group ${
+                        className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-11 gap-3'} rounded-xl transition-all group ${
                             active 
                                 ? 'text-purple-400 bg-purple-500/10 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' 
                                 : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
                         }`}
-                        title={item.label}
+                        title={collapsed ? item.label : undefined}
                     >
-                        <Icon className="w-5 h-5" />
-                        <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                        <Icon className="w-5 h-5 shrink-0" />
+                        {collapsed ? (
+                           <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                        ) : (
+                           <span className="text-sm font-medium tracking-wide opacity-90">{item.label}</span>
+                        )}
                     </Link>
                 );
             })}
             
-            {secondaryItems.length > 0 && <div className="w-8 h-px bg-white/10 my-2" />}
+            {secondaryItems.length > 0 && <div className={`w-8 h-px bg-white/10 my-2 ${!collapsed && 'w-full'}`} />}
             
             {secondaryItems.map((item) => {
                 const active = isActive(item.href);
@@ -242,21 +252,25 @@ export function PortalSidebar({
                     <Link
                         key={item.href}
                         href={`${basePath}${item.href}`}
-                        className={`relative flex flex-col items-center justify-center p-3 w-14 h-14 rounded-xl transition-all group ${
+                        className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-11 gap-3'} rounded-xl transition-all group ${
                             active 
                                 ? 'text-purple-400 bg-purple-500/10 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' 
                                 : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
                         }`}
-                        title={item.label}
+                        title={collapsed ? item.label : undefined}
                     >
-                        <Icon className="w-5 h-5" />
-                        <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                        <Icon className="w-5 h-5 shrink-0" />
+                        {collapsed ? (
+                           <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                        ) : (
+                           <span className="text-sm font-medium tracking-wide opacity-90">{item.label}</span>
+                        )}
                     </Link>
                 );
             })}
         </div>
         
-        <div className="mt-auto mb-4 border-t border-white/10 pt-4 w-full flex justify-center">
+        <div className={`mt-auto mb-4 border-t border-white/10 pt-4 w-full flex ${collapsed ? 'justify-center' : 'justify-end px-4'}`}>
             <button 
                 onClick={onToggle}
                 className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-white/5"
