@@ -6,6 +6,7 @@ async function runTests() {
   console.log("🚀 Starting Phase 6.9.3/6.9.4 Destructive Matrix Certification...");
   
   const tenantA: ControlPlaneContext = { actorId: 'actor_a', organizationId: 'tenant_A', role: 'ADMIN', permissions: [] };
+  const tenantA_Admin2: ControlPlaneContext = { actorId: 'actor_admin', organizationId: 'tenant_A', role: 'ADMIN', permissions: [] };
   const tenantB: ControlPlaneContext = { actorId: 'actor_b', organizationId: 'tenant_B', role: 'ADMIN', permissions: [] };
   const systemActor: ControlPlaneContext = { actorId: 'sys_1', organizationId: 'tenant_A', role: 'SYSTEM', permissions: [] };
   
@@ -72,11 +73,12 @@ async function runTests() {
       () => AddOnGovernanceService.approveInstallation(instA.id, systemActor));
       
     // Concurrent approval check (A26 logic simulation via transactions)
-    // Drizzle's for('update') will handle A26 in real execution, we just approve normally here
-    await assertSuccess("A08 - Admin approves installation", () => AddOnGovernanceService.approveInstallation(instA.id, tenantA));
+    // Drizzle's for('update') will handle A26 in real execution, we just approve normally here.
+    // A08 uses a DIFFERENT admin than the installer (actor_a) to preserve A11 separation of duties.
+    await assertSuccess("A08 - Admin approves installation", () => AddOnGovernanceService.approveInstallation(instA.id, tenantA_Admin2));
     
     await assertThrows("A10 - Cannot approve again", "Invalid transition",
-      () => AddOnGovernanceService.approveInstallation(instA.id, tenantA));
+      () => AddOnGovernanceService.approveInstallation(instA.id, tenantA_Admin2));
   }
 
   console.log(`\n🏁 Tests completed. PASS: ${passCount} | FAIL: ${failCount}`);

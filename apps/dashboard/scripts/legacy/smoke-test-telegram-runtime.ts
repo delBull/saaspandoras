@@ -1,8 +1,8 @@
-import { DefaultOmnichannelGateway } from '../src/lib/pandoras/core/domains/channels/omnichannel-gateway';
-import { DatabaseBindingResolver } from '../src/lib/pandoras/core/domains/channels/binding-resolver';
-import { EnvironmentSecretResolver } from '../src/lib/pandoras/core/domains/channels/secret-resolver';
-import { TelegramAdapter } from '../src/lib/pandoras/core/domains/channels/adapters/telegram-adapter';
-import { DuplicateMessageError } from '../src/lib/pandoras/core/domains/channels/channel-errors';
+import { DefaultOmnichannelGateway } from '../../src/lib/pandoras/core/domains/channels/omnichannel-gateway';
+import { DatabaseBindingResolver } from '../../src/lib/pandoras/core/domains/channels/binding-resolver';
+import { EnvironmentSecretResolver } from '../../src/lib/pandoras/core/domains/channels/secret-resolver';
+import { TelegramAdapter } from '../../src/lib/pandoras/core/domains/channels/adapters/telegram-adapter';
+import { DuplicateMessageError } from '../../src/lib/pandoras/core/domains/channels/channel-errors';
 
 async function runTelegramSmokeTests() {
   console.log('--------------------------------------------------');

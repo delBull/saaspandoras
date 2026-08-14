@@ -10,15 +10,15 @@
 //   → MockProvider receives ONLY what governance allows.
 // ──────────────────────────────────────────────────────────────────────────────
 
-import { HermesRuntime } from '../src/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { MockReasoningProvider } from '../src/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
-import { KnowledgeGovernanceService } from '../src/lib/pandoras/core/domains/hermes/knowledge/service';
-import { HermesKnowledgeAcquisition } from '../src/lib/pandoras/core/domains/hermes/knowledge/acquisition';
-import { CognitiveContextBuilder } from '../src/lib/pandoras/core/domains/hermes/addons/context-merger';
-import { CognitiveContextAdapter } from '../src/lib/pandoras/core/domains/hermes/runtime/context-adapter';
-import { ControlPlaneContext } from '../src/lib/pandoras/core/domains/hermes/knowledge/types';
-import { db } from '../src/db';
-import { hermesKnowledge } from '../src/db/schema';
+import { HermesRuntime } from '../../src/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
+import { MockReasoningProvider } from '../../src/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
+import { KnowledgeGovernanceService } from '../../src/lib/pandoras/core/domains/hermes/knowledge/service';
+import { HermesKnowledgeAcquisition } from '../../src/lib/pandoras/core/domains/hermes/knowledge/acquisition';
+import { CognitiveContextBuilder } from '../../src/lib/pandoras/core/domains/hermes/addons/context-merger';
+import { CognitiveContextAdapter } from '../../src/lib/pandoras/core/domains/hermes/runtime/context-adapter';
+import { ControlPlaneContext } from '../../src/lib/pandoras/core/domains/hermes/knowledge/types';
+import { db } from '../../src/db';
+import { hermesKnowledge } from '../../src/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 // ─── Test harness ─────────────────────────────────────────────────────────────

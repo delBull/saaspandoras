@@ -1,5 +1,8 @@
 import { NormalizedInboundMessage } from '../../channels/normalized-message';
 import { JourneySnapshot } from './conversation-context';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export interface JourneyEnginePort {
   retrieveContext(normalized: NormalizedInboundMessage): Promise<JourneySnapshot>;
@@ -15,21 +18,31 @@ export class JourneyEngine implements JourneyEnginePort {
     const actorId = normalized.actor.externalActorId;
     const organizationId = normalized.organizationId;
     
-    // In later phases (Phase 6.6.x+), this will query the DB:
-    // SELECT * FROM active_journeys WHERE actor_id = $1 AND organization_id = $2
-    
-    // For now, we mock the retrieval. We explicitly handle the FREE_TRIAL logic
-    // (3 days base, expandable by 3 days) as requested by the user, ensuring
-    // that trials can proceed without blocking the user.
-    return this.mockJourneyRetrieval(organizationId, actorId);
+    // Resolve the journey from the tenant's DB profile instead of a hardcoded
+    // slug. A project that is live gets the sales/prospect journey; everything
+    // else (unknown or non-live tenants) gets the onboarding trial journey.
+    const isLiveTenant = await this.isLiveProject(organizationId);
+    return this.buildJourney(organizationId, actorId, isLiveTenant);
   }
 
-  private mockJourneyRetrieval(organizationId: string, actorId: string): JourneySnapshot {
+  private async isLiveProject(organizationId: string): Promise<boolean> {
+    try {
+      const project = await db.query.projects.findFirst({
+        where: eq(projects.slug, organizationId),
+        columns: { status: true }
+      });
+      return project?.status === 'live';
+    } catch (err) {
+      // K12-A45 fail-safe: never break the pipeline on DB unavailability.
+      console.warn(`[JourneyEngine] DB lookup failed for org ${organizationId}, defaulting to trial journey.`, err);
+      return false;
+    }
+  }
+
+  private buildJourney(organizationId: string, actorId: string, isLiveTenant: boolean): JourneySnapshot {
     console.log(`[JourneyEngine] Retrieving active journey for org ${organizationId}, actor ${actorId}`);
     
-    // Check if there is a specific trial logic for the organization.
-    // If the organization is setting up, they might be in a FREE_TRIAL journey.
-    if (organizationId !== 'snarai') {
+    if (!isLiveTenant) {
       return {
         journeyId: 'jny_onboarding_trial_01',
         currentStage: 'FREE_TRIAL_DAY_1',
@@ -42,9 +55,9 @@ export class JourneyEngine implements JourneyEnginePort {
       };
     }
 
-    // Default mock journey for end-users interacting with a mature tenant (like S'Narai)
+    // Sales prospect journey for mature (live) tenants
     return {
-      journeyId: 'jny_sales_prospect_01',
+      journeyId: `jny_sales_prospect_${organizationId}`,
       currentStage: 'LEAD_QUALIFICATION',
       objectives: [
         'Understand user investment budget',

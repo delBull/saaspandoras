@@ -84,14 +84,6 @@ export class DatabaseBindingResolver implements BindingResolver {
       console.warn('[BindingResolver] DB lookup fallback:', err?.message || err);
     }
 
-    // 3. Fallback for Dev (default to active binding for test users)
-    return {
-      id: `bind_${channelType === 'whatsapp' ? 'wa' : 'tg'}_${externalUserId}`,
-      organizationId: 'pandoras-corporate', // Customer Zero default org
-      channelType: channelType as 'telegram' | 'whatsapp',
-      channelIdentity: channelType === 'whatsapp' ? externalUserId : `@user_${externalUserId}`,
-      credentialsRef: `vault:${channelType}:bind_${channelType === 'whatsapp' ? 'wa' : 'tg'}_${externalUserId}`,
-      status: 'ACTIVE'
-    };
+    throw new ChannelBindingNotFoundError(`No active binding found for external user: ${externalUserId}`);
   }
 }

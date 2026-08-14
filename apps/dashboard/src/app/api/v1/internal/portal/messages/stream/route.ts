@@ -99,7 +99,7 @@ export async function POST(request: Request) {
                 emitEvent('response.delta', { streamId: 'stream', delta: event.content });
                 break;
               case 'COMPLETE':
-                emitEvent('response.completed', { streamId: event.responseId, responseId: event.responseId, traceId: event.trace?.id ?? 'trace_missing' });
+                emitEvent('response.completed', { streamId: event.responseId, responseId: event.responseId, traceId: (event.trace as any)?.traceId ?? 'trace_missing' });
                 break;
               case 'BLOCKED':
                 emitEvent('response.blocked', { streamId: 'stream', code: event.policyViolations?.[0]?.code ?? 'BLOCKED' });

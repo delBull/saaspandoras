@@ -48,9 +48,10 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       botToken = (projectRecord.tenantRuntimeConfig as any).telegramBotToken;
     }
     
-    // Legacy support for S'Narai
-    if (!botToken && projectSlug === 'snarai') {
-      botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN;
+    // Per-slug env override (TELEGRAM_<SLUG>_BOT_TOKEN) for token rotation
+    // without touching the DB.
+    if (!botToken) {
+      botToken = process.env[`TELEGRAM_${projectSlug.toUpperCase().replace(/-/g, '_')}_BOT_TOKEN`];
     }
 
     if (!botToken) {

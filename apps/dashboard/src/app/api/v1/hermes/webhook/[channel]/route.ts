@@ -24,9 +24,12 @@ export async function POST(
 
     let projectId: number | null = projectIdStr ? parseInt(projectIdStr, 10) : null;
 
-    const targetSlug = slug || 'snarai';
+    const targetSlug = slug;
 
     if (!projectId) {
+      if (!targetSlug) {
+        return NextResponse.json({ error: 'Project or slug parameter is required' }, { status: 400 });
+      }
       const proj = await db.query.projects.findFirst({
         where: eq(projects.slug, targetSlug),
         columns: { id: true }
@@ -65,12 +68,12 @@ export async function POST(
       const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
       let botToken = metadata?.botConfig?.telegramToken || (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
 
-      // Env override parity with the legacy route (bot/webhook/route.ts): the
-      // S'Narai bot token is managed via Railway env (TELEGRAM_SNARAI_BOT_TOKEN)
-      // so it can be rotated without touching the DB.
-      if (projectRecord.slug === 'snarai') {
-        botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN || botToken;
-      }
+      // Env override parity with the legacy route (bot/webhook/route.ts): any
+      // project's Telegram bot token can be managed via a per-slug Railway env
+      // var (TELEGRAM_<SLUG>_BOT_TOKEN) so it can be rotated without touching
+      // the DB.
+      const envTokenKey = `TELEGRAM_${projectRecord.slug.toUpperCase().replace(/-/g, '_')}_BOT_TOKEN`;
+      botToken = process.env[envTokenKey] || botToken;
 
       body.botToken = botToken;
       body.projectRecord = projectRecord;

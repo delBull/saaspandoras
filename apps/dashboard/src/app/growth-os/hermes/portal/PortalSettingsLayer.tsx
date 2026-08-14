@@ -8,7 +8,7 @@ import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 export function PortalSettingsLayer({ tenantId }: { tenantId: string | number }) {
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [slug, setSlug] = useState('snarai'); // HARDCODED FOR DEMO
+  const [slug, setSlug] = useState(tenantId.toString());
 
   // Custom LLM Provider State
   const [providerType, setProviderType] = useState<'platform' | 'custom_ollama' | 'openai' | 'groq'>('platform');
@@ -17,7 +17,7 @@ export function PortalSettingsLayer({ tenantId }: { tenantId: string | number })
   const [customModel, setCustomModel] = useState('gpt-oss:20b');
 
   useEffect(() => {
-    getHermesConfig('snarai').then((config) => {
+    getHermesConfig(slug).then((config) => {
       if (config && config.customLLM) {
         setProviderType(config.customLLM.providerType || 'platform');
         setCustomBaseUrl(config.customLLM.baseUrl || '');

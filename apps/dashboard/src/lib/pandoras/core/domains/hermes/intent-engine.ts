@@ -30,10 +30,9 @@ export class MockIntentEngine implements IIntentEngine {
     }
 
     if (text.includes('lanzar') || text.includes('crear') || text.includes('generar')) {
-      // Intentamos extraer parámetros simples para el demo
+      // Intentamos extraer parámetros simples para el demo (tenant-agnostic)
       const payload: any = {};
       if (text.includes('50k') || text.includes('50 mil')) payload.budget = 50000;
-      if (text.includes("s'narai") || text.includes('snarai')) payload.product = "S'Narai";
 
       return {
         type: 'START_WORKFLOW',

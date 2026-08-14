@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   Bot, 
   Sliders, 
@@ -26,6 +27,8 @@ import { Badge } from "@/components/ui/badge";
 import { saveHermesConfig, getHermesConfig } from './actions';
 
 export default function HermesAgentStudioPage() {
+  const searchParams = useSearchParams();
+  const slugParam = searchParams.get('slug') || 'sandbox';
   const [activeTab, setActiveTab] = useState<'identity' | 'knowledge' | 'journeys' | 'policies' | 'evidence' | 'channels'>('identity');
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +36,7 @@ export default function HermesAgentStudioPage() {
 
   // Form State
   const [companyName, setCompanyName] = useState('Mi Empresa SaaS');
-  const [projectSlug, setProjectSlug] = useState('mi-empresa');
+  const [projectSlug, setProjectSlug] = useState(slugParam);
   const [agentName, setAgentName] = useState('Hermes Concierge');
   const [industry, setIndustry] = useState('real_estate');
   const [systemInstructions, setSystemInstructions] = useState(
@@ -54,11 +57,11 @@ export default function HermesAgentStudioPage() {
   const [telegramToken, setTelegramToken] = useState('');
   const [whatsappPhoneId, setWhatsappPhoneId] = useState('');
 
-  const webhookUrl = `https://dash.pandoras.finance/api/v1/projects/${projectSlug || 'mi-empresa'}/bot/webhook`;
+  const webhookUrl = `https://dash.pandoras.finance/api/v1/projects/${projectSlug}/bot/webhook`;
 
   React.useEffect(() => {
-    // Load config on mount if slug exists (using hardcoded 'snarai' for now in dashboard context, or get from params)
-    getHermesConfig('snarai').then((config) => {
+    // Load config on mount for the project slug from the URL (default: sandbox)
+    getHermesConfig(projectSlug).then((config) => {
       if (config) {
         setCompanyName(config.knowledgeDef?.companyName || config.publicKnowledge?.title || '');
         setIndustry(config.knowledgeDef?.industry || config.industry || 'real_estate');
@@ -67,7 +70,7 @@ export default function HermesAgentStudioPage() {
         if (config.evidenceLayer) setEvidenceLayer(config.evidenceLayer);
       }
     }).catch(console.error);
-  }, []);
+  }, [projectSlug]);
 
   const handleCopyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
@@ -116,7 +119,7 @@ export default function HermesAgentStudioPage() {
         agentName,
         evidenceLayer
       };
-      await saveHermesConfig('snarai', formData);
+      await saveHermesConfig(projectSlug, formData);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (error) {

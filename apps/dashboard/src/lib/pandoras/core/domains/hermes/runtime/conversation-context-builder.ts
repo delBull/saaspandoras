@@ -3,6 +3,12 @@ import { ConversationContext } from './conversation-context';
 import { MemoryEngine } from './memory-engine';
 import { KnowledgeEngine } from './knowledge-engine';
 import { JourneyEngine } from './journey-engine';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+
+const FALLBACK_ORG_NAME = 'Pandoras';
+const FALLBACK_BRAND_NAME = 'Pandoras';
 
 export class ConversationContextBuilder {
   private memoryEngine: MemoryEngine;
@@ -21,6 +27,11 @@ export class ConversationContextBuilder {
    */
   async buildContext(normalized: NormalizedInboundMessage): Promise<ConversationContext> {
     
+    // 0. Resolve tenant identity from the DB (slug -> projects.title). Falls
+    // back to a generic brand so the runtime stays tenant-agnostic and never
+    // fails the pipeline when the project is unknown or DB is unavailable.
+    await this.resolveOrganizationIdentity(normalized.organizationId);
+
     // 1. Resolve Identity, Soul, Policy (Layers 0 to 3)
     // In later phases (6.6.7, etc), this will hit the DB or Redis config store
     // based on normalized.organizationId and normalized.projectId.
@@ -64,12 +75,13 @@ export class ConversationContextBuilder {
   }
 
   private resolveIdentity(normalized: NormalizedInboundMessage) {
-    // Basic mock for 6.6.2
+    // Basic mock for 6.6.2. The org name is resolved lazily from the DB by
+    // buildContext so no tenant identity is hardcoded.
     return {
       agentName: 'Hermes',
-      organizationName: normalized.organizationId === 'snarai' ? "S'Narai" : 'Pandoras Default',
+      organizationName: this.orgName,
       brand: {
-        name: normalized.organizationId === 'snarai' ? "S'Narai" : 'Pandoras',
+        name: this.brandName,
         tone: 'professional',
         language: 'es-MX'
       }
@@ -85,6 +97,27 @@ export class ConversationContextBuilder {
       escalationRules: ['Transferir a humano cuando solicite precio no listado']
     };
   }
+
+  private async resolveOrganizationIdentity(organizationId: string) {
+    this.orgName = FALLBACK_ORG_NAME;
+    this.brandName = FALLBACK_BRAND_NAME;
+    try {
+      const project = await db.query.projects.findFirst({
+        where: eq(projects.slug, organizationId),
+        columns: { title: true }
+      });
+      if (project?.title) {
+        this.orgName = project.title;
+        this.brandName = project.title;
+      }
+    } catch (err) {
+      // Never break the cognitive pipeline on DB unavailability (K12-A45 fail-safe).
+      console.warn(`[ConversationContextBuilder] Fallback org identity for ${organizationId}:`, err);
+    }
+  }
+
+  private orgName = FALLBACK_ORG_NAME;
+  private brandName = FALLBACK_BRAND_NAME;
 
   private resolvePolicy(normalized: NormalizedInboundMessage) {
     return {

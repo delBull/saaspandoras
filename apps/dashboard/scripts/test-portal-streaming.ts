@@ -84,7 +84,7 @@ async function consumeSSE(response: Response) {
       const eventMatch = chunk.match(/^event: (.*)$/m);
       const dataMatch = chunk.match(/^data: (.*)$/m);
       
-      if (eventMatch && dataMatch) {
+      if (eventMatch && dataMatch && eventMatch[1] && dataMatch[1]) {
         events.push({
           event: eventMatch[1].trim(),
           data: JSON.parse(dataMatch[1].trim())

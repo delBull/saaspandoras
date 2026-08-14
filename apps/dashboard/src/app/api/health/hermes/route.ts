@@ -74,7 +74,7 @@ async function checkOllama(): Promise<SubsystemStatus> {
 
     const data = await response.json();
     const models: string[] = (data.models ?? []).map((m: any) => m.name as string);
-    const modelLoaded = models.some((m) => m.startsWith(model.split(':')[0]));
+    const modelLoaded = models.some((m) => m.startsWith(model.split(':')[0] || ''));
 
     return {
       status: modelLoaded ? 'online' : 'degraded',

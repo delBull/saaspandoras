@@ -29,61 +29,26 @@ export class KnowledgeEngine implements KnowledgeEnginePort {
     // TODO (Phase 6.6.x): Query `knowledge_chunks` or unified vector store via pgvector.
     // For now, we mock a retrieval response to satisfy the architecture snapshot.
     
-    // If the user says something related to "proyecto", "inversión", return a mock snippet.
+    // Mock fallback until Phase 6.6.x wires pgvector over `knowledge_chunks`.
+    // Tenants resolve their knowledge dynamically from the DB, so this mock is
+    // intentionally generic — no tenant-specific content is hardcoded here.
     const lowerQuery = query.toLowerCase();
     const mockSnippets = [];
 
-    if (organizationId === 'snarai') {
-      if (lowerQuery.includes('proyecto') || lowerQuery.includes('narai') || lowerQuery.includes('cenote')) {
-        mockSnippets.push({
-          content: "S'Narai es un proyecto eco-residencial ubicado en Tulum. Cuenta con cenotes privados y amenidades de lujo enfocado en sostenibilidad.",
-          sourceDocument: "brochure_tulum.pdf",
-          relevanceScore: 1.0,
-          scope: {
-            organizationId: organizationId,
-            projectId: 'snarai-tulum-001',
-            visibility: 'PUBLIC' as const,
-            authority: 'VERIFIED' as const,
-            status: 'ACTIVE' as const,
-            sourceId: 'mock-doc-2',
-            version: 1
-          }
-        });
-      }
-
-      if (lowerQuery.includes('precio') || lowerQuery.includes('inversión')) {
-        mockSnippets.push({
-          content: "Los lotes en S'Narai empiezan desde $50,000 USD con planes de financiamiento hasta a 36 meses sin intereses.",
-          sourceDocument: "pricing_q3.pdf",
-          relevanceScore: 0.88,
-          scope: {
-            organizationId: organizationId,
-            projectId: 'snarai-tulum-001',
-            visibility: 'PUBLIC' as const,
-            authority: 'VERIFIED' as const,
-            status: 'ACTIVE' as const,
-            sourceId: 'mock-doc-2',
-            version: 1
-          }
-        });
-      }
-    } else {
-      // Mocking for generic tenants or other specific tenants
-      if (lowerQuery.includes('proyecto') || lowerQuery.includes('información')) {
-        mockSnippets.push({
-          content: `Este es un documento genérico para el tenant ${organizationId}. Describe los términos generales de servicio.`,
-          sourceDocument: "company_overview.pdf",
-          relevanceScore: 1.0,
-          scope: {
-            organizationId: organizationId,
-            visibility: 'PUBLIC' as const,
-            authority: 'CANONICAL' as const,
-            status: 'ACTIVE' as const,
-            sourceId: 'mock-doc-3',
-            version: 1
-          }
-        });
-      }
+    if (lowerQuery.includes('proyecto') || lowerQuery.includes('información')) {
+      mockSnippets.push({
+        content: `Este es un documento genérico para el tenant ${organizationId}. Describe los términos generales de servicio.`,
+        sourceDocument: "company_overview.pdf",
+        relevanceScore: 1.0,
+        scope: {
+          organizationId: organizationId,
+          visibility: 'PUBLIC' as const,
+          authority: 'CANONICAL' as const,
+          status: 'ACTIVE' as const,
+          sourceId: 'mock-doc-3',
+          version: 1
+        }
+      });
     }
 
     // Default fallback if no keywords hit

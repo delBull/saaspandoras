@@ -5,13 +5,13 @@ import {
   RuntimeTraceMetadata,
   TraceVisibility,
   RuntimeTraceEvent,
-} from '../src/lib/pandoras/core/domains/hermes/runtime/contracts';
+} from '../../src/lib/pandoras/core/domains/hermes/runtime/contracts';
 import {
   DefaultRuntimeTraceRecorder,
   InMemoryRuntimeTraceStore,
   FailSafeRuntimeTraceRecorder,
-} from '../src/lib/pandoras/core/domains/hermes/runtime/trace/trace-recorder';
-import { HermesRuntime, getDefaultRuntime, getDefaultTraceStore } from '../src/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
+} from '../../src/lib/pandoras/core/domains/hermes/runtime/trace/trace-recorder';
+import { HermesRuntime, getDefaultRuntime, getDefaultTraceStore } from '../../src/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 
 describe('Phase 6.12.7 — Hermes Runtime Trace & Observability Certification', () => {
   let store: InMemoryRuntimeTraceStore;

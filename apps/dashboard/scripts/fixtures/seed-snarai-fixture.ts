@@ -1,5 +1,5 @@
 import { db } from '../../src/db';
-import { hermesKnowledge, hermesAddonInstallations } from '../../src/db/schema';
+import { hermesKnowledge, hermesAddonInstallations, hermesAddons } from '../../src/db/schema';
 import { eq } from 'drizzle-orm';
 import * as crypto from 'crypto';
 
@@ -80,7 +80,32 @@ async function main() {
     }
   ]).onConflictDoNothing();
 
-  // 3. Addons / Capabilities
+  // 3. Addon Definitions
+  console.log('Registering Core Addons...');
+  await db.insert(hermesAddons).values([
+    {
+      id: 'hermes.channel.portal',
+      name: 'Portal Channel',
+      description: 'Enables chat through the tenant portal.',
+      type: 'CHANNEL',
+      version: '1.0.0',
+      manifest: {},
+      status: 'ACTIVE',
+      createdBy: 'system',
+    },
+    {
+      id: 'hermes.capability.investment_guide',
+      name: 'Investment Guide',
+      description: 'Guides users through investment flows.',
+      type: 'CAPABILITY',
+      version: '1.0.0',
+      manifest: {},
+      status: 'ACTIVE',
+      createdBy: 'system',
+    }
+  ] as any[]).onConflictDoNothing();
+
+  // 4. Addon Installations
   console.log('Inserting Portal Channel Addon & Core Governance...');
   await db.insert(hermesAddonInstallations).values([
     {

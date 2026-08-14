@@ -28,7 +28,7 @@ import {
   RuntimeTraceQuery,
   RuntimeTraceMetadata,
   TraceVisibility,
-} from './contracts';
+} from '../contracts';
 
 // ─── Secret / sensitive field patterns to strip from metadata (K12-A48) ───────
 

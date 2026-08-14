@@ -195,6 +195,10 @@ async function saveState(tenantId: string, state: OrganizationOnboardingState): 
 
 export async function GET(request: Request) {
   try {
+    if (process.env.HERMES_ENABLED === 'false') {
+      return NextResponse.json({ error: 'Hermes is currently disabled' }, { status: 503 });
+    }
+
     const { searchParams } = new URL(request.url);
     const organizationSlug = searchParams.get('organizationSlug');
 
@@ -222,6 +226,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (process.env.HERMES_ENABLED === 'false') {
+      return NextResponse.json({ error: 'Hermes is currently disabled' }, { status: 503 });
+    }
+
     const body = await request.json();
     const { organizationSlug, content, clientMessageId } = body;
 

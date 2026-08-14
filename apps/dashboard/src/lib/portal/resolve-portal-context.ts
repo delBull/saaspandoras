@@ -89,14 +89,14 @@ export async function resolvePortalContext(
   const tenant: PortalTenantContext = {
     actorId: `session_${session.installedProductId}`,
     sessionId: sessionToken,
-    organizationId: `org_${organization.slug}`,
+    organizationId: organization.slug,
     organizationSlug: organization.slug,
     role,
     permissions,
   };
 
   const portalOrg: PortalOrganization = {
-    id: `org_${organization.slug}`,
+    id: organization.slug,
     slug: organization.slug,
     name: organization.name,
     logoUrl: organization.logoUrl ?? null,

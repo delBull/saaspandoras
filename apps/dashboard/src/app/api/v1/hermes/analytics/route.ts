@@ -10,8 +10,11 @@ import { count } from 'drizzle-orm';
  */
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const productionSlug = searchParams.get('productionProject') || 'sandbox';
+
     const sandboxSummary = HermesIntelligenceEngine.getProjectAnalyticsSummary('sandbox');
-    const snaraiSummary = HermesIntelligenceEngine.getProjectAnalyticsSummary('snarai');
+    const productionSummary = HermesIntelligenceEngine.getProjectAnalyticsSummary(productionSlug);
 
     // Total Projects in Growth OS
     const projectsCount = await db.select({ value: count() }).from(projects);
@@ -31,7 +34,7 @@ export async function GET(req: NextRequest) {
           status: 'ACTIVE_RATE_LIMITED'
         },
         production: {
-          snarai: snaraiSummary,
+          [productionSlug]: productionSummary,
           status: 'ACTIVE_OMNICHANNEL'
         }
       }

@@ -5,17 +5,15 @@ import { Button } from "@/components/ui/button";
 import { XCircle, CheckCircle2, FileText, ShieldCheck, Share2 } from 'lucide-react';
 import { getHermesConfig, saveHermesConfig } from '../settings/actions';
 
-// We need projectSlug for the actions. For now, since it's snarai, we hardcode or fetch.
-// Ideally, the portal would know its slug, but we'll use 'snarai' as fallback just like settings does.
+// The portal resolves its project slug dynamically from tenantId.
 export function PortalEvidenceLayer({ tenantId }: { tenantId: string | number }) {
   const [evidenceLayer, setEvidenceLayer] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [slug, setSlug] = useState('snarai'); // HARDCODED FOR DEMO
+  const [slug, setSlug] = useState(tenantId.toString());
 
   useEffect(() => {
-    // In a real scenario we fetch slug by tenantId. 
-    getHermesConfig('snarai').then((config) => {
+    getHermesConfig(slug).then((config) => {
       if (config && config.evidenceLayer) {
         setEvidenceLayer(config.evidenceLayer);
       }
