@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { 
@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { saveHermesConfig, getHermesConfig } from './actions';
 
-export default function HermesAgentStudioPage() {
+function HermesAgentStudioContent() {
   const searchParams = useSearchParams();
   const slugParam = searchParams.get('slug') || 'sandbox';
   const [activeTab, setActiveTab] = useState<'identity' | 'knowledge' | 'journeys' | 'policies' | 'evidence' | 'channels'>('identity');
@@ -597,5 +597,13 @@ export default function HermesAgentStudioPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function HermesAgentStudioPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black text-white p-6 md:p-12">Cargando estudio...</div>}>
+      <HermesAgentStudioContent />
+    </Suspense>
   );
 }
