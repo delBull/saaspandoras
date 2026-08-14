@@ -16,6 +16,7 @@ import { StrategicActivityCard } from './StrategicActivityCard';
 import { LiveActivityFeed } from './LiveActivityFeed';
 import { OperatingLayers } from './OperatingLayers';
 import { OverviewMetrics } from './OverviewMetrics';
+import { HermesIntelligencePanel } from './HermesIntelligencePanel';
 
 interface OverviewDashboardProps {
   context: PortalContext;
@@ -70,6 +71,11 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
             <OverviewMetrics metrics={overview.metrics} />
           </section>
         )}
+      </div>
+
+      {/* HERMES INTELLIGENCE COLUMN */}
+      <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0 sticky top-6 h-[calc(100vh-2rem)]">
+        <HermesIntelligencePanel organizationSlug={context.organization.slug} organizationName={overview.organization.name} />
       </div>
     </div>
   );

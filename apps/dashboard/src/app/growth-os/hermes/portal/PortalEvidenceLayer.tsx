@@ -74,7 +74,10 @@ export function PortalEvidenceLayer({ tenantId }: { tenantId: string | number })
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04]">
+        <div 
+          onClick={() => alert('Abriendo configuración del System Prompt...')}
+          className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04] active:scale-[0.98]"
+        >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
               <FileText className="w-5 h-5" />
@@ -90,7 +93,10 @@ export function PortalEvidenceLayer({ tenantId }: { tenantId: string | number })
           </div>
         </div>
 
-        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04]">
+        <div 
+          onClick={() => alert('Abriendo explorador de Vector Embeddings...')}
+          className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all hover:bg-white/[0.04] active:scale-[0.98]"
+        >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg">
               <ShieldCheck className="w-5 h-5" />
@@ -229,10 +235,17 @@ export function PortalEvidenceLayer({ tenantId }: { tenantId: string | number })
           </div>
         ))}
         {evidenceLayer.length === 0 && (
-          <div className="text-center py-12 bg-zinc-900/20 border border-dashed border-zinc-800 rounded-3xl text-zinc-500">
-            <CheckCircle2 className="w-8 h-8 mx-auto mb-3 opacity-20" />
-            <p>No hay afirmaciones registradas.</p>
-            <p className="text-xs mt-1">Añade Claims para dotar a Hermes de conocimiento verificable.</p>
+          <div className="text-center py-16 bg-[#08080A]/50 border border-white/5 rounded-3xl text-zinc-500 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#8b5cf610_1px,transparent_1px),linear-gradient(to_bottom,#8b5cf610_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30" />
+            <div className="relative z-10 flex flex-col items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-purple-500/5 flex items-center justify-center mb-4 border border-purple-500/20 group-hover:bg-purple-500/10 transition-colors animate-pulse">
+                    <ShieldCheck className="w-6 h-6 text-purple-400/50" />
+                </div>
+                <h4 className="text-sm font-semibold text-zinc-300 mb-1 tracking-wide">Esperando ingesta de memoria</h4>
+                <p className="text-xs text-zinc-500 max-w-sm">
+                    No hay claims verificados activos. Añade afirmaciones para dotar a Hermes de conocimiento exacto, auditable y listo para inyección en RAG.
+                </p>
+            </div>
           </div>
         )}
       </div>

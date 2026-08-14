@@ -3286,6 +3286,7 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   autoShare: boolean("auto_share").notNull().default(true),
   openSign: boolean("open_sign").notNull().default(false),
   taskRef: text("task_ref"),
+  nextRoomId: uuid("next_room_id"),
   enteredIntoForceAt: timestamp("entered_into_force_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

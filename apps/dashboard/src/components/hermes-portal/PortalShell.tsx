@@ -13,7 +13,9 @@ import type { PortalContext } from '@/lib/portal/portal-types';
 import { PortalSidebar } from '@/components/hermes-portal/PortalSidebar';
 import { PortalHeader } from '@/components/hermes-portal/PortalHeader';
 import { PortalInspector } from '@/components/hermes-portal/PortalInspector';
+import { HermesTerminalBar } from '@/components/hermes-portal/HermesTerminalBar';
 import { Menu, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 interface PortalShellProps {
   context: PortalContext;
@@ -22,6 +24,10 @@ interface PortalShellProps {
 
 export function PortalShell({ context, children }: PortalShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  
+  // Inspector is hidden on the Overview page so the Hermes Intelligence Chat can take its place
+  const isOverview = pathname === `/portal/${context.organization.slug}`;
 
   return (
     <div className="min-h-screen bg-[#08080A] text-white font-sans flex relative overflow-x-hidden">
@@ -78,13 +84,16 @@ export function PortalShell({ context, children }: PortalShellProps) {
         </div>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-10">
           {children}
         </main>
       </div>
 
-      {/* Desktop Right Inspector */}
-      <PortalInspector organization={context.organization} />
+      {/* Desktop Right Inspector - Hidden on Overview */}
+      {!isOverview && <PortalInspector organization={context.organization} />}
+
+      {/* Global Terminal Bar sticky at bottom */}
+      <HermesTerminalBar />
 
     </div>
   );

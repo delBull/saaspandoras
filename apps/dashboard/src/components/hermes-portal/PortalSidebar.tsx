@@ -26,6 +26,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Boxes,
 } from 'lucide-react';
 
 interface NavItem {
@@ -98,6 +99,13 @@ const NAV_ITEMS: NavItem[] = [
     href: '/settings',
     icon: Settings,
     requiredPermission: 'settings.read',
+    section: 'secondary',
+  },
+  {
+    label: 'Add-ons',
+    href: '/addons',
+    icon: Boxes,
+    requiredPermission: 'organization.read', // Allow everyone to at least see the marketplace
     section: 'secondary',
   },
 ];

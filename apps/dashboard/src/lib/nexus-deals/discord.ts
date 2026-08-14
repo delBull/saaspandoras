@@ -126,3 +126,49 @@ export async function sendSignatureAlert(input: {
     },
   ]);
 }
+
+/**
+ * Notificación de que se ha liberado automáticamente un documento encadenado.
+ */
+export async function sendDealRoomChainedReleaseAlert(input: {
+  roomLabel: string;
+  previousRoomLabel: string;
+}) {
+  const { roomLabel, previousRoomLabel } = input;
+  return postDiscord("", [
+    {
+      title: `📬 Documento Encadenado Liberado — ${roomLabel}`,
+      description: `El documento fue liberado automáticamente tras la firma completa de: **${previousRoomLabel}**. Se ha notificado por correo a los firmantes.`,
+      color: COLORS.GREEN,
+      fields: [
+        { name: "Documento Previo", value: previousRoomLabel, inline: false },
+        { name: "Nuevo Documento (Liberado)", value: roomLabel, inline: false },
+      ],
+      footer: { text: "Pandora's Nexus · Deal Room Chaining" },
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+}
+
+/**
+ * Notificación de que un Deal Room entró en vigor pero no hay documento de seguimiento.
+ */
+export async function sendDealRoomActionRequiredAlert(input: {
+  roomLabel: string;
+}) {
+  const { roomLabel } = input;
+  return postDiscord("", [
+    {
+      title: `⚠️ Acción Requerida — ${roomLabel}`,
+      description: `El Deal Room ha sido firmado por todas las partes, pero **no hay documento de seguimiento configurado**.`,
+      color: COLORS.RED,
+      fields: [
+        { name: "Deal Room", value: roomLabel, inline: true },
+        { name: "Estado", value: "SIGNED / EXECUTED", inline: true },
+        { name: "Acción", value: "Revisar y continuar el proceso", inline: false },
+      ],
+      footer: { text: "Pandora's Nexus · Workflows" },
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+}

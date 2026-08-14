@@ -7,6 +7,8 @@ import {
 } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { newRoomId, generatePublicId, defaultSections, SignerInput, DealKind } from "./types";
+import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
+import { sendDealRoomReleaseEmail } from "@/lib/email/nexus-mailer";
 
 export interface CreateRoomInput {
   kind: DealKind;
@@ -229,12 +231,18 @@ export async function removeSigner(roomId: string, signerId: string, actor: stri
 // La acción se registra como "AutoSigned" (evento del sistema, no de una persona).
 async function syncRoomSignStatus(roomId: string) {
   const signers = await db
-    .select({ status: nexusDealSigners.status })
+    .select({ status: nexusDealSigners.status, email: nexusDealSigners.email })
     .from(nexusDealSigners)
     .where(eq(nexusDealSigners.roomId, roomId));
 
   const [room] = await db
-    .select({ status: nexusDealRooms.status, enteredIntoForceAt: nexusDealRooms.enteredIntoForceAt })
+    .select({ 
+      publicId: nexusDealRooms.publicId,
+      counterparty: nexusDealRooms.counterparty,
+      status: nexusDealRooms.status, 
+      enteredIntoForceAt: nexusDealRooms.enteredIntoForceAt,
+      nextRoomId: nexusDealRooms.nextRoomId
+    })
     .from(nexusDealRooms)
     .where(eq(nexusDealRooms.id, roomId))
     .limit(1);
@@ -254,6 +262,50 @@ async function syncRoomSignStatus(roomId: string) {
       "AutoSigned",
       "Todos los signers firmaron · estado SIGNED · acuerdo legítimo en vigor"
     );
+
+    // --- DEAL ROOM CHAINING LOGIC ---
+    if (room.nextRoomId) {
+      const nextRoom = await getRoom(room.nextRoomId);
+      if (nextRoom) {
+        // Transferir firmantes si no existen en el siguiente room
+        const existingNextSigners = new Set(nextRoom.signers.map(s => s.email));
+        const newSigners = signers.filter(s => !existingNextSigners.has(s.email));
+        if (newSigners.length > 0) {
+          await db.insert(nexusDealSigners).values(
+            newSigners.map(s => ({ roomId: nextRoom.id, email: s.email, status: "PENDING" as const }))
+          );
+        }
+
+        // Actualizar el estado del siguiente room para liberarlo
+        await db
+          .update(nexusDealRooms)
+          .set({ status: "PROPOSAL_SENT", updatedAt: now })
+          .where(eq(nexusDealRooms.id, nextRoom.id));
+        
+        await appendAudit(nextRoom.id, "Nexus Ops", "Document Released", `Liberado automáticamente tras la firma del documento previo (${room.publicId})`);
+
+        // Enviar correos a todos los firmantes
+        const allNextSigners = [...existingNextSigners, ...newSigners.map(s => s.email)];
+        for (const email of allNextSigners) {
+           await sendDealRoomReleaseEmail({
+              email,
+              roomLabel: nextRoom.publicId,
+              publicId: nextRoom.publicId,
+              company: nextRoom.company,
+              counterparty: nextRoom.counterparty,
+           });
+        }
+
+        // Alerta de Discord
+        await sendDealRoomChainedReleaseAlert({
+          roomLabel: nextRoom.publicId,
+          previousRoomLabel: room.publicId,
+        });
+      }
+    } else {
+      // Si no hay siguiente documento, notificar alerta de acción requerida
+      await sendDealRoomActionRequiredAlert({ roomLabel: `${room.publicId} · ${room.counterparty}` });
+    }
   } else if (!allSigned && room.status === "SIGNED") {
     await db
       .update(nexusDealRooms)
@@ -312,11 +364,24 @@ export async function signRoom(
     `${email} firmó on-chain${opts.wallet ? ` (${opts.wallet})` : ""}${opts.signature ? ` · sig ${opts.signature.slice(0, 12)}…` : ""}`
   );
 
+  const roomBefore = await getRoom(roomId);
+  
   // Estado del room se recalcula según el conjunto actual de firmantes:
   // todos firmaron → SIGNED; queda alguien pendiente → se reabre.
   await syncRoomSignStatus(roomId);
+  
+  const roomAfter = await getRoom(roomId);
+  
+  await sendSignatureAlert({
+      roomLabel: `${roomAfter?.publicId} · ${roomAfter?.counterparty}`,
+      signerName: name,
+      email,
+      kind: roomAfter?.kind,
+      online: false,
+      enteredIntoForce: roomBefore?.status !== "SIGNED" && roomAfter?.status === "SIGNED"
+  });
 
-  return getRoom(roomId);
+  return roomAfter;
 }
 
 // Firma "online": el firmante abre el link público de un room con openSign,
@@ -367,11 +432,24 @@ export async function signRoomOnline(
     `Firma online (openSign) · ${opts.wallet} · sig ${opts.signature.slice(0, 12)}…`
   );
 
+  const roomBefore = await getRoom(roomId);
+  
   // Estado del room se recalcula según el conjunto actual de firmantes:
   // todos firmaron → SIGNED; queda alguien pendiente → se reabre.
   await syncRoomSignStatus(roomId);
+  
+  const roomAfter = await getRoom(roomId);
 
-  return getRoom(roomId);
+  await sendSignatureAlert({
+      roomLabel: `${roomAfter?.publicId} · ${roomAfter?.counterparty}`,
+      signerName: name,
+      email,
+      kind: roomAfter?.kind,
+      online: true,
+      enteredIntoForce: roomBefore?.status !== "SIGNED" && roomAfter?.status === "SIGNED"
+  });
+
+  return roomAfter;
 }
 
 export async function deleteRoom(id: string, actor: string) {

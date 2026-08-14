@@ -1,14 +1,21 @@
-/**
- * Portal placeholder — inherits PortalShell + ControlPlaneContext from layout.tsx.
- */
-export default function PortalSectionPage() {
+'use client';
+
+import React from 'react';
+import { HermesModulePlaceholder } from '@/components/hermes-portal/HermesModulePlaceholder';
+import { Shield } from 'lucide-react';
+
+export default function PoliciesPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-      <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6">
-        <span className="text-white/20 text-xl">○</span>
-      </div>
-      <h2 className="text-white/60 text-lg font-semibold mb-2">Coming soon</h2>
-      <p className="text-white/25 text-sm">This module is being built in Phase 6.x.</p>
-    </div>
+    <HermesModulePlaceholder 
+      title="Cognitive Policies"
+      description="El motor de reglas y gobernanza de Hermes. Aquí defines las barreras de protección, el tono de voz y los límites operativos del agente."
+      icon={Shield}
+      features={[
+        "Filtros de contenido y lenguaje",
+        "Reglas de escalamiento a humanos",
+        "Límites transaccionales y de ejecución",
+        "Alineación con la marca y compliance"
+      ]}
+    />
   );
 }

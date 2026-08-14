@@ -1,14 +1,21 @@
-/**
- * Portal placeholder — inherits PortalShell + ControlPlaneContext from layout.tsx.
- */
-export default function PortalSectionPage() {
+'use client';
+
+import React from 'react';
+import { HermesModulePlaceholder } from '@/components/hermes-portal/HermesModulePlaceholder';
+import { Activity } from 'lucide-react';
+
+export default function ActivityPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-      <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6">
-        <span className="text-white/20 text-xl">○</span>
-      </div>
-      <h2 className="text-white/60 text-lg font-semibold mb-2">Coming soon</h2>
-      <p className="text-white/25 text-sm">This module is being built in Phase 6.x.</p>
-    </div>
+    <HermesModulePlaceholder 
+      title="Event Spine & Activity"
+      description="El libro mayor inmutable de Hermes. Todo lo que hace el agente, las decisiones que toma y las acciones que ejecuta se registran aquí para total transparencia."
+      icon={Activity}
+      features={[
+        "Registro inmutable de decisiones",
+        "Trazabilidad cognitiva en tiempo real",
+        "Métricas operativas y latencias",
+        "Exportación de logs de cumplimiento"
+      ]}
+    />
   );
 }

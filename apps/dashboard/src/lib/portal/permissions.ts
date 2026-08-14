@@ -85,6 +85,7 @@ export const PORTAL_ROLE_PERMISSIONS: Record<PortalRole, PortalPermission[]> = {
     'channels.read',
     'conversations.read',
     'activity.read',
+    'policies.read',
     'journeys.read',
     'settings.read',
   ],
@@ -95,6 +96,7 @@ export const PORTAL_ROLE_PERMISSIONS: Record<PortalRole, PortalPermission[]> = {
     'channels.read',
     'conversations.read',
     'activity.read',
+    'policies.read',
     'journeys.read',
   ],
 };
