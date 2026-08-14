@@ -73,10 +73,11 @@ export function PortalShell({ context, children }: PortalShellProps) {
         />
       </div>
 
-      {/* Main content area */}
+      {/* Main content area (including Header and Inspector) */}
       <div className="flex-1 flex flex-col min-h-screen w-full relative pt-14 md:pt-0">
         
-        <div className="hidden md:block">
+        {/* Global Top Bar (Spans full width above Inspector) */}
+        <div className="hidden md:block z-20 sticky top-0">
           <PortalHeader
             organization={context.organization}
             role={context.tenant.role}
@@ -84,14 +85,16 @@ export function PortalShell({ context, children }: PortalShellProps) {
           />
         </div>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-10">
-          {children}
-        </main>
-      </div>
+        {/* Content Row: Main Page + Optional Inspector */}
+        <div className="flex-1 flex flex-row overflow-hidden relative">
+          <main className="flex-1 overflow-y-auto pb-10 h-[calc(100vh-3rem)]">
+            {children}
+          </main>
 
-      {/* Desktop Right Inspector - Hidden on Overview */}
-      {!isOverview && <PortalInspector organization={context.organization} />}
+          {/* Desktop Right Inspector - Hidden on Overview */}
+          {!isOverview && <PortalInspector organization={context.organization} />}
+        </div>
+      </div>
 
       {/* Global Terminal Bar sticky at bottom */}
       <HermesTerminalBar sidebarCollapsed={desktopCollapsed} />

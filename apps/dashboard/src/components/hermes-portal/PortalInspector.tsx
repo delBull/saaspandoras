@@ -7,7 +7,7 @@ import { HermesIntelligencePanel } from './overview/HermesIntelligencePanel';
 
 export function PortalInspector({ children, title = 'Hermes Operating System', type = 'system', attributes = {}, organization }: any) {
   return (
-    <aside className="hidden xl:flex w-[400px] bg-[#09090C] border-l border-white/10 flex-col shrink-0 font-sans h-screen sticky top-0 overflow-hidden">
+    <aside className="hidden xl:flex w-[400px] bg-[#09090C] border-l border-white/10 flex-col shrink-0 font-sans h-full overflow-hidden">
         <div className="h-12 px-4 border-b border-white/10 flex items-center justify-between bg-[#0C0C10] shrink-0">
             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                 <WrenchScrewdriverIcon className="w-3.5 h-3.5 text-purple-400" />
