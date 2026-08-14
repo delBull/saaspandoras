@@ -3502,3 +3502,29 @@ export const hermesAddonAudit = pgTable("hermes_addon_audit", {
   tenantAddonAuditIdx: index("hermes_addon_audit_tenant_idx").on(t.organizationId),
   installationAuditIdx: index("hermes_addon_audit_installation_idx").on(t.installationId),
 }));
+
+export const hermesConversations = pgTable("hermes_conversations", {
+  id: varchar("id", { length: 256 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  conversationId: varchar("conversation_id", { length: 256 }).notNull(),
+  version: integer("version").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => ({
+  orgConversationUnique: uniqueIndex("hermes_conv_unique").on(t.organizationId, t.conversationId),
+}));
+
+export const hermesConversationMessages = pgTable("hermes_conversation_messages", {
+  id: varchar("id", { length: 256 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  conversationId: varchar("conversation_id", { length: 256 }).notNull(),
+  role: varchar("role", { length: 50 }).notNull(), // 'USER' | 'ASSISTANT' | 'SYSTEM'
+  content: text("content").notNull(),
+  sequence: integer("sequence").notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 256 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  orgConversationIdx: index("hermes_conv_msg_org_conv_idx").on(t.organizationId, t.conversationId),
+  orgConversationSeqIdx: uniqueIndex("hermes_conv_msg_seq_idx").on(t.organizationId, t.conversationId, t.sequence),
+  orgIdempotencyUnique: uniqueIndex("hermes_conv_msg_idem_idx").on(t.organizationId, t.idempotencyKey),
+}));

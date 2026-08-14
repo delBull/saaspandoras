@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { CognitiveContextBuilder } from '@/lib/pandoras/core/domains/hermes/addons/context-merger';
 import { DefaultPlatformEventBus } from '@/lib/pandoras/core/platform/events/default-event-bus';
 import { OperationalIntent } from '@/lib/pandoras/core/contracts/governance-contracts';
 import {
@@ -13,6 +12,8 @@ import { eq } from 'drizzle-orm';
 
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
 import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
+import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
+import { RuntimeMessage } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
 
 const eventBus = new DefaultPlatformEventBus();
 const omnichannelGateway = new DefaultOmnichannelGateway();
@@ -116,6 +117,21 @@ function getStageChips(stage: OnboardingStage): string[] {
         '📊 Ver Estado del Sistema'
       ];
   }
+}
+
+// ---------------------------------------------------------------------------
+// K12-A07: Conversation ≠ Knowledge ≠ Authority
+// This mapper converts Portal chat history to RuntimeMessages.
+// The resulting array is passed as conversationHistory — ephemeral context only.
+// It NEVER grants authority, creates ACTIVE knowledge, or overrides governance.
+// ---------------------------------------------------------------------------
+function toRuntimeMessages(msgs: PortalChatMessage[]): RuntimeMessage[] {
+  return msgs.map(m => ({
+    id: m.id,
+    role: m.role === 'hermes' ? 'ASSISTANT' as const : 'USER' as const,
+    content: m.content,
+    createdAt: new Date(m.timestamp),
+  }));
 }
 
 function getInitialState(orgName: string): OrganizationOnboardingState {
@@ -285,26 +301,51 @@ export async function POST(request: Request) {
     let replyText = reply.replyText.replace('{orgName}', orgName);
     let stageChips = getStageChips(nextStage);
 
-    if (nextStage === 'ACTIVATION') {
-      const effectiveCtx = await CognitiveContextBuilder.buildEffectiveContext(tenantId, 'portal_user');
-      
-      const activeCapsStr = effectiveCtx.activeCapabilities.length > 0 
-        ? effectiveCtx.activeCapabilities.map(c => `* \`${c.id}\``).join('\n')
-        : '*(None)*';
-      
-      const activeAddOnsStr = effectiveCtx.diagnostics?.activeAddOns.length 
-        ? effectiveCtx.diagnostics.activeAddOns.map(a => `* \`${a}\``).join('\n')
-        : '*(None)*';
-        
-      const excludedAddOnsStr = effectiveCtx.diagnostics?.excludedAddOns.length
-        ? effectiveCtx.diagnostics.excludedAddOns.map(a => `✕ \`${a.id}\`\n  reason: ${a.status}`).join('\n')
-        : '*(None)*';
+    if (currentStage === 'ACTIVATION') {
+      // -------------------------------------------------------------------------
+      // K12-A04 — Runtime Entry Boundary
+      // In ACTIVATION stage, all cognitive responses must pass through HermesRuntime.
+      // The HTTP handler does NOT reason, does NOT build prompts, does NOT call
+      // CognitiveContextBuilder directly.
+      //
+      // K12-A07 — Conversation ≠ Knowledge
+      // The conversation history is passed as ephemeral context only.
+      // It does NOT grant authority or modify ACTIVE knowledge.
+      //
+      // K12-A08 — suggestedActions from Runtime (never fabricated by UI)
+      // -------------------------------------------------------------------------
+      const runtime = getDefaultRuntime();
 
-      replyText = `**[SYSTEM DIAGNOSTIC] Hermes Runtime Context**\n\nMode: \`${effectiveCtx.style.mode}\`\n\nActive capabilities:\n${activeCapsStr}\n\nAdd-Ons contributing to context:\n${activeAddOnsStr}\n\nEXCLUDED ADD-ONS\n${excludedAddOnsStr}`;
+      const currentMsg: RuntimeMessage = {
+        id: userMsg.id,
+        role: 'USER',
+        content: userMsg.content,
+        createdAt: new Date(userMsg.timestamp),
+      };
+
+      // K12-A07: history as input, never as authority
+      // (Migrated to HermesRuntime memory provider in 6.12.5)
       
-      // Derive chips from active capabilities
-      const derivedChips = effectiveCtx.activeCapabilities.flatMap(c => c.suggestedActions || []);
-      stageChips = derivedChips.length > 0 ? derivedChips : ['📊 Refresh Diagnostic', '🧠 View Knowledge'];
+      const runtimeResponse = await runtime.respond({
+        organizationId: tenantId,
+        conversationId: `portal_${tenantId}`,
+        message: currentMsg,
+        // K12-A05: tenantId derived from resolvePortalContext — never trusted from client payload.
+        // Bridge to the ControlPlaneContext interface expected by HermesRuntime (knowledge/types.ts).
+        controlPlaneContext: {
+          actorId: context.tenant.actorId,
+          organizationId: context.tenant.organizationId,
+          role: context.tenant.role as any,
+          permissions: context.tenant.permissions as any,
+          sessionId: context.tenant.sessionId,
+        }
+      });
+
+      replyText = runtimeResponse.content;
+      // K12-A08: chips come from the Runtime, never fabricated by the Portal
+      stageChips = runtimeResponse.suggestedActions.length > 0
+        ? runtimeResponse.suggestedActions
+        : getStageChips('ACTIVATION');
     }
 
     const hermesMsg: PortalChatMessage = {

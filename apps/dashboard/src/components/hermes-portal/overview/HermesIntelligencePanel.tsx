@@ -72,8 +72,24 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
     loadChatHistory();
   }, [organizationSlug]);
 
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const sendMessage = async (contentToSend: string) => {
     if (!contentToSend.trim() || isSubmitting) return;
+
+    // Abort previous stream if active
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     const userMsgText = contentToSend.trim();
     setInput('');
@@ -83,9 +99,10 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
     setMessages(prev => [...prev, { id: tempUserMsgId, role: 'user', content: userMsgText }]);
 
     try {
-      const response = await fetch(`/api/v1/internal/portal/messages`, {
+      const response = await fetch(`/api/v1/internal/portal/messages/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           organizationSlug,
           content: userMsgText,
@@ -93,20 +110,59 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        throw new Error('Failed to start stream');
       }
 
-      const data = await response.json();
-      if (data.stage) {
-        setActiveStage(data.stage);
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let buffer = '';
+
+      const hermesMsgId = `hermes_${Date.now()}`;
+      setMessages(prev => [...prev, { id: hermesMsgId, role: 'hermes', content: '' }]);
+
+      let accumulatedContent = '';
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || '';
+
+          for (const eventStr of events) {
+            const lines = eventStr.split('\n');
+            let eventType = '';
+            let dataStr = '';
+            
+            for (const line of lines) {
+              if (line.startsWith('event: ')) eventType = line.substring(7).trim();
+              else if (line.startsWith('data: ')) dataStr = line.substring(6).trim();
+            }
+
+            if (eventType && dataStr) {
+              try {
+                const dataObj = JSON.parse(dataStr);
+                if (eventType === 'response.delta') {
+                  accumulatedContent += dataObj.delta;
+                  setMessages(prev => prev.map(m => m.id === hermesMsgId ? { ...m, content: accumulatedContent } : m));
+                } else if (eventType === 'response.blocked') {
+                  accumulatedContent += `\n\n[Bloqueado por política: ${dataObj.reason}]`;
+                  setMessages(prev => prev.map(m => m.id === hermesMsgId ? { ...m, content: accumulatedContent } : m));
+                } else if (eventType === 'stream.error') {
+                  accumulatedContent += `\n\n[Error de conexión: ${dataObj.error}]`;
+                  setMessages(prev => prev.map(m => m.id === hermesMsgId ? { ...m, content: accumulatedContent } : m));
+                }
+              } catch (e) {
+                console.error('[HermesIntelligencePanel] Error parsing SSE data:', e);
+              }
+            }
+          }
+        }
       }
-      
-      setMessages(prev => [...prev, { 
-        id: `hermes_${Date.now()}`, 
-        role: 'hermes', 
-        content: data.reply || 'He registrado tu respuesta.',
-        chips: data.chips
-      }]);
     } catch (error) {
       console.error('[HermesIntelligencePanel] Send error:', error);
       setMessages(prev => [...prev, { 

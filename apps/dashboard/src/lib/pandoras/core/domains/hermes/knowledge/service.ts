@@ -29,6 +29,7 @@ export class KnowledgeGovernanceService {
       visibility: KnowledgeVisibility;
       source: KnowledgeSource;
       sourceReference?: string;
+      status?: KnowledgeStatus;
     }
   ): Promise<GovernedKnowledgeItem> {
     if (!['OWNER', 'ADMIN', 'SYSTEM'].includes(context.role)) {
@@ -39,6 +40,7 @@ export class KnowledgeGovernanceService {
 
     return await db.transaction(async (tx) => {
       const createdAt = new Date();
+      const initialStatus = payload.status || 'DISCOVERED';
       
       await tx.insert(hermesKnowledge).values({
         id,
@@ -46,7 +48,7 @@ export class KnowledgeGovernanceService {
         dimension: payload.dimension,
         key: payload.key,
         content: payload.content,
-        status: 'DISCOVERED',
+        status: initialStatus,
         visibility: payload.visibility,
         authority: 'DISCOVERED',
         version: 1,
@@ -66,7 +68,8 @@ export class KnowledgeGovernanceService {
         actorId: context.actorId,
         actorType: context.role === 'SYSTEM' ? 'SYSTEM' : 'USER',
         timestamp: createdAt,
-        newStatus: 'DISCOVERED'
+        newStatus: initialStatus,
+        reason: initialStatus === 'ACTIVE' ? 'Auto-approved by policy' : undefined
       });
 
       return await this.getKnowledgeByIdTx(tx, id);

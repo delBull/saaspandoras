@@ -20,12 +20,14 @@ interface QuickStartBannerProps {
   onOpenGuide: () => void;
   isDraft?: boolean;
   onboardingStage?: string | null;
+  intelligenceScores?: any[];
 }
 
 export function PortalQuickStartBanner({
   onOpenGuide,
   isDraft = false,
-  onboardingStage = null
+  onboardingStage = null,
+  intelligenceScores = []
 }: QuickStartBannerProps) {
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -40,65 +42,85 @@ export function PortalQuickStartBanner({
     localStorage.setItem('pandoras_quickstart_minimized', String(newState));
   };
 
-  // Derive progress from the current onboarding stage (single source of truth)
+  // Derive progress from the current onboarding stage
   const currentStageIndex = Math.max(0, MISSION_STAGES.findIndex(s => s.id === onboardingStage));
   const isActivated = onboardingStage === 'ACTIVATION';
   
-  // For the "activated" state, all stages are complete
-  const completedCount = isActivated ? MISSION_STAGES.length : currentStageIndex;
-  const progressPercent = Math.round((completedCount / MISSION_STAGES.length) * 100);
+  // Calculate aggregate intelligence coverage
+  const totalExpected = intelligenceScores.reduce((acc, score) => acc + (score.activeClaims > 0 || score.pendingClaims > 0 ? 1 : score.completenessPercent === 100 ? 1 : 0), 0); // Simplified calculation
+  const totalPossible = Math.max(1, intelligenceScores.length);
+  const intelligenceCoverage = intelligenceScores.length > 0 ? Math.round(
+    (intelligenceScores.reduce((acc, score) => acc + score.completenessPercent, 0) / (intelligenceScores.length * 100)) * 100
+  ) : 0;
 
+  // Filter main dimensions for display
+  const displayScores = intelligenceScores.filter(s => ['identity', 'project', 'market', 'founder', 'product'].includes(s.dimension));
 
-  // If this is an onboarding workspace, enforce a mandatory UI layout here
   if (isDraft) {
-
     return (
       <div className="w-full bg-[#0C0C10] border border-white/10 rounded-xl p-6 mb-6 shadow-xl transition-all">
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-6">
           <div className="flex gap-4">
             <div className="p-3 bg-black/30 border border-white/5 rounded-lg h-fit">
               <Terminal className="w-6 h-6 text-purple-400" />
             </div>
             <div>
-              <h3 className="text-sm font-mono text-zinc-400 uppercase tracking-widest mb-1">[ MISSION CONTROL: TENANT INITIALIZATION ]</h3>
-              <p className="text-zinc-500 max-w-2xl text-[11px] font-mono uppercase tracking-wider">
-                {'>'} Workspace provisioned. Hermes must complete this mission to construct the Tenant profile.
+              <h3 className="text-sm font-mono text-zinc-400 uppercase tracking-widest mb-1">Construyamos tu proyecto</h3>
+              <p className="text-zinc-500 max-w-2xl text-[11px] font-mono tracking-wider">
+                Hermes está empezando a conocerte.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-          {MISSION_STAGES.map((stage, index) => {
-            const isCompleted = index < currentStageIndex;
-            const isCurrent = index === currentStageIndex;
-            
-            return (
-              <div 
-                key={stage.id} 
-                className={`flex items-center gap-2 p-2.5 rounded-lg border text-[11px] font-mono tracking-wider transition-all ${
-                  isCompleted ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' :
-                  isCurrent ? 'bg-white/5 border-white/20 text-white animate-pulse' :
-                  'bg-black/30 border-white/5 text-zinc-600'
-                }`}
-              >
-                {isCompleted ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
-                ) : isCurrent ? (
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                ) : (
-                  <Circle className="w-3.5 h-3.5 text-zinc-700" />
-                )}
-                {stage.id}
+        <div className="mt-4 border-t border-white/5 pt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-[11px] font-mono text-white uppercase tracking-widest">PROJECT INTELLIGENCE</h4>
+            <span className="text-[11px] font-mono text-purple-400">{intelligenceCoverage}% Coverage</span>
+          </div>
+          
+          <div className="w-full bg-black/50 rounded-full h-1.5 mb-6 border border-white/5">
+            <div 
+              className="bg-purple-500 h-1.5 rounded-full transition-all duration-1000"
+              style={{ width: `${intelligenceCoverage}%` }}
+            />
+          </div>
+
+          <div className="space-y-3 mb-6">
+            {displayScores.map(score => (
+              <div key={score.dimension} className="flex items-center justify-between text-[11px] font-mono">
+                <span className="w-24 text-zinc-400 capitalize">{score.title}</span>
+                <div className="flex-1 mx-4 flex items-center h-2 bg-black/30 border border-white/5 rounded-sm overflow-hidden">
+                   <div 
+                      className="bg-zinc-300 h-full transition-all" 
+                      style={{ width: `${score.completenessPercent}%` }} 
+                   />
+                </div>
+                <span className="w-10 text-right text-zinc-500">{score.completenessPercent}%</span>
               </div>
-            );
-          })}
+            ))}
+          </div>
+          
+          <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-white/5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+            {displayScores.map(score => {
+              if (score.completenessPercent === 100 && score.pendingClaims === 0) {
+                return <div key={score.dimension} className="flex items-center gap-2 text-zinc-400"><CheckCircle2 className="w-3 h-3 text-purple-400" /> {score.title} recognized</div>;
+              } else if (score.pendingClaims > 0) {
+                return <div key={score.dimension} className="flex items-center gap-2 text-yellow-500/70"><Circle className="w-3 h-3 text-yellow-500/50" /> {score.title} requires governance review</div>;
+              } else if (score.completenessPercent > 0) {
+                return <div key={score.dimension} className="flex items-center gap-2 text-zinc-400"><CheckCircle2 className="w-3 h-3 text-purple-400/50" /> {score.title} partially identified</div>;
+              } else {
+                return <div key={score.dimension} className="flex items-center gap-2 text-zinc-600"><Circle className="w-3 h-3" /> {score.title} not yet discovered</div>;
+              }
+            })}
+          </div>
+
         </div>
         
-        <div className="mt-8 flex justify-center border-t border-white/5 pt-4">
-          <span className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
-            ↓ Awaiting operator input in console ↓
-          </span>
+        <div className="mt-8 flex justify-center pt-4">
+           <button className="text-[11px] text-purple-400 font-mono tracking-widest uppercase hover:text-purple-300 transition-colors">
+            [ Continue → ]
+          </button>
         </div>
       </div>
     );
@@ -111,7 +133,7 @@ export function PortalQuickStartBanner({
           <Terminal className="w-4 h-4 text-purple-400" />
           <span className="text-zinc-400 font-mono text-[11px] uppercase tracking-wider">Hermes OS Setup:</span>
           <span className="font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 text-[10px]">
-            {progressPercent}%
+            {intelligenceCoverage}%
           </span>
         </div>
 
@@ -145,7 +167,7 @@ export function PortalQuickStartBanner({
           <div className="flex items-center gap-2">
             <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">Tenant Configuration</h4>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              {progressPercent}%
+              {intelligenceCoverage}%
             </span>
           </div>
           <p className="text-[10px] font-mono text-zinc-500 mt-0.5 uppercase tracking-wider">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { validatePortalSession } from '@/lib/platform/portal-auth';
 import { OrganizationSDK } from '@/lib/platform/organization-sdk';
+import { CognitiveContextBuilder } from '@/lib/pandoras/core/domains/hermes/addons/context-merger';
 
 export async function GET(request: Request) {
   try {
@@ -19,8 +20,9 @@ export async function GET(request: Request) {
     }
 
     const organization = await OrganizationSDK.resolve(session.projectId, session.product as any);
+    const intelligenceScores = await CognitiveContextBuilder.getIntelligenceScores(session.projectId.toString());
 
-    return NextResponse.json({ organization });
+    return NextResponse.json({ organization, intelligenceScores });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Failed to fetch session' }, { status: 500 });
   }

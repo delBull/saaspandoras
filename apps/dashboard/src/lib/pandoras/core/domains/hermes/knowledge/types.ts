@@ -1,14 +1,42 @@
 export type KnowledgeDimension = 
   | 'identity'
-  | 'business'
-  | 'brand'
-  | 'agent_soul'
-  | 'projects'
-  | 'products'
+  | 'project'
+  | 'product'
   | 'market'
-  | 'operations'
-  | 'governance'
-  | 'public';
+  | 'founder'
+  | 'business_model'
+  | 'traction'
+  | 'evidence'
+  | 'offer'
+  | 'governance';
+
+export type KnowledgeConfidence = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface KnowledgeCandidate {
+  id: string;
+  organizationId: string;
+  dimension: KnowledgeDimension;
+  claim: {
+    key: string;
+    content: string;
+    rawInput?: string;
+    structuredValue?: unknown;
+  };
+  provenance: {
+    source: KnowledgeSource;
+    sourceReference: string;
+    conversationId?: string;
+    messageId?: string;
+    confidence: KnowledgeConfidence;
+    extractedAt: Date;
+  };
+  governance: {
+    requiresHumanApproval: boolean;
+    visibility: KnowledgeVisibility;
+    authority: KnowledgeAuthority;
+    autoApproveReason?: string;
+  };
+}
 
 export type KnowledgeStatus = 
   | 'DISCOVERED'

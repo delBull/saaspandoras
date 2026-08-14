@@ -49,6 +49,7 @@ function ClientPortalContent() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [projectStatus, setProjectStatus] = useState<string | null>(null);
   const [onboardingStage, setOnboardingStage] = useState<string | null>(null);
+  const [intelligenceScores, setIntelligenceScores] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadPortal() {
@@ -87,6 +88,7 @@ function ClientPortalContent() {
           setTenantId(org?.projectId);
           setProjectStatus(org?.projectStatus || null);
           setOnboardingStage(org?.onboardingStage || null);
+          setIntelligenceScores(data.intelligenceScores || []);
         } else {
           clearPortalSession();
           window.location.href = '/growth-os/hermes/portal/login';
@@ -139,6 +141,7 @@ function ClientPortalContent() {
           onOpenGuide={() => setIsGuideOpen(true)}
           isDraft={isDraft}
           onboardingStage={onboardingStage}
+          intelligenceScores={intelligenceScores}
         />
         
         <HermesWorkbench 
