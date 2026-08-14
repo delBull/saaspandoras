@@ -255,6 +255,16 @@ export function PortalSidebar({
                 );
             })}
         </div>
+        
+        <div className="mt-auto mb-4 border-t border-white/10 pt-4 w-full flex justify-center">
+            <button 
+                onClick={onToggle}
+                className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-white/5"
+                title={collapsed ? "Expandir Menú" : "Colapsar Menú"}
+            >
+                {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            </button>
+        </div>
       </aside>
     </>
   );

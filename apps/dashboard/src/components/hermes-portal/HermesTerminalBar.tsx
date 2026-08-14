@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
+import { ChevronUp } from 'lucide-react';
 
 export function HermesTerminalBar() {
   return (
     <div className="h-10 border-t border-white/10 bg-[#08080A] flex items-center justify-between px-4 fixed bottom-0 left-0 right-0 z-40 text-[11px] font-mono text-zinc-500">
         <div className="flex items-center gap-6 h-full">
             <button className="flex items-center hover:text-zinc-300 transition-colors h-full px-2 border-b-2 border-transparent hover:border-zinc-500">
-                <span className="mr-2">^</span>
+                <ChevronUp className="w-4 h-4 mr-1" />
             </button>
             <button className="flex items-center text-purple-400 border-b-2 border-purple-500/50 h-full px-2">
                 EVENTS (25)

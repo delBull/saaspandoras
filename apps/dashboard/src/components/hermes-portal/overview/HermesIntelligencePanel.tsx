@@ -27,17 +27,22 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeStage, setActiveStage] = useState<string>('BUSINESS_DISCOVERY');
+  const isKnownOrg = organizationSlug === 'snarai' || organizationName.toLowerCase().includes('narai');
+  
+  const initialMessage = isKnownOrg 
+    ? `Hola. Conozco perfectamente los detalles de ${organizationName} y su modelo de Fractional Real Estate. ¿En qué puedo ayudarte hoy para optimizar la conversión de S'Narai?`
+    : `Hola. Todavía no conozco los detalles de ${organizationName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`;
+
+  const initialChips = isKnownOrg
+    ? ['📊 Resumen de Rendimiento', '🤖 Configurar Nuevo Journey', '🔧 Ajustar Políticas']
+    : ['🏠 Inmobiliaria & Desarrollo', '💼 Servicios B2B & Consultoría', '💰 Fondo de Inversión', '🛍 Comercio & E-Commerce'];
+
   const [messages, setMessages] = useState<MessageItem[]>([
     {
       id: 'welcome-1',
       role: 'hermes',
-      content: `Hola. Todavía no conozco los detalles de ${organizationName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`,
-      chips: [
-        '🏠 Inmobiliaria & Desarrollo',
-        '💼 Servicios B2B & Consultoría',
-        '💰 Fondo de Inversión',
-        '🛍 Comercio & E-Commerce'
-      ]
+      content: initialMessage,
+      chips: initialChips
     }
   ]);
 
