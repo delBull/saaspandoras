@@ -11,6 +11,8 @@ import {
   projects, 
   hermesKnowledge,
   knowledgeSources,
+  hermesConversationMessages,
+  hermesConversations
 } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
@@ -38,6 +40,11 @@ async function withRetry<T>(operation: () => Promise<T>, maxRetries = 20): Promi
 
 // Mock DB Insertions to setup tenants using slug for orgId
 async function setupTenant(slug: string, name: string) {
+  // Clear previous data for this tenant
+  await db.delete(hermesConversationMessages).where(eq(hermesConversationMessages.organizationId, slug));
+  await db.delete(hermesConversations).where(eq(hermesConversations.organizationId, slug));
+  await db.delete(hermesKnowledge).where(eq(hermesKnowledge.organizationId, slug));
+  
   await withRetry(() => db.insert(projects).values({
     slug,
     name,
@@ -56,9 +63,6 @@ async function runCert01() {
   console.log(`\n--- 🚀 RUNNING CERT-01: Knowledge Governance (Policy Blocks Response) ---`);
   const tenant = await setupTenant('cert01-client', 'Tenant A');
 
-  // Clear previous data for this tenant
-  await db.delete(hermesKnowledge).where(eq(hermesKnowledge.organizationId, tenant));
-
   // 1. Insert Policy
   await withRetry(() => db.insert(hermesKnowledge).values({
     id: `pol_${nanoid(8)}`,
@@ -75,13 +79,14 @@ async function runCert01() {
   }));
 
   const runtime = new HermesRuntime(new MockReasoningProvider());
+  const convId = `test-conv-01-${nanoid(4)}`;
   
   // Test 1: Mismatch org ID testing tenant isolation enforcement
   try {
     await runtime.respond({
       organizationId: tenant,
-      conversationId: 'test-conv-01',
-      message: { id: 'm1', role: 'USER', content: 'What is the exact pricing?', createdAt: new Date() },
+      conversationId: convId,
+      message: { id: `m1-${nanoid(6)}`, role: 'USER', content: 'Cuál es el rendimiento?', createdAt: new Date() },
       controlPlaneContext: { actorId: 'cert-user', organizationId: 'fake-tenant', role: 'ADMIN', permissions: [] }
     });
     throw new Error('CERT-01 FAILED: Tenant isolation bypass! Allowed org mismatch.');
@@ -95,8 +100,8 @@ async function runCert01() {
   // Test 2: Actually process message and block it via policy
   const response = await runtime.respond({
     organizationId: tenant,
-    conversationId: 'test-conv-01',
-    message: { id: 'm2', role: 'USER', content: 'What is the exact pricing?', createdAt: new Date() },
+    conversationId: convId,
+    message: { id: `m2-${nanoid(6)}`, role: 'USER', content: 'Cuál es el rendimiento?', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenant, role: 'ADMIN', permissions: [] }
   });
 
@@ -133,8 +138,8 @@ async function runCert02() {
   const runtime = new HermesRuntime(new MockReasoningProvider());
   const response = await runtime.respond({
     organizationId: tenantB,
-    conversationId: 'test-conv-02',
-    message: { id: 'm1', role: 'USER', content: 'Tell me about materials', createdAt: new Date() },
+    conversationId: `test-conv-02-${nanoid(4)}`,
+    message: { id: `m1-${nanoid(6)}`, role: 'USER', content: 'Tell me about materials', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenantB, role: 'ADMIN', permissions: [] }
   });
 
@@ -166,12 +171,13 @@ async function runCert03() {
   }));
 
   const runtime = new HermesRuntime(new MockReasoningProvider());
+  const convId = `test-conv-03-${nanoid(4)}`;
   
   // CERT-03A: PENDING_REVIEW should NOT be seen
   const responsePending = await runtime.respond({
     organizationId: tenant,
-    conversationId: 'test-conv-03',
-    message: { id: 'm1', role: 'USER', content: 'When was it founded?', createdAt: new Date() },
+    conversationId: convId,
+    message: { id: `m1-${nanoid(6)}`, role: 'USER', content: 'When was it founded?', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenant, role: 'ADMIN', permissions: [] }
   });
 
@@ -186,8 +192,8 @@ async function runCert03() {
   // CERT-03B: ACTIVE should be seen
   const responseActive = await runtime.respond({
     organizationId: tenant,
-    conversationId: 'test-conv-03',
-    message: { id: 'm2', role: 'USER', content: 'When was it founded?', createdAt: new Date() },
+    conversationId: convId,
+    message: { id: `m2-${nanoid(6)}`, role: 'USER', content: 'When was it founded?', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenant, role: 'ADMIN', permissions: [] }
   });
 
@@ -203,18 +209,19 @@ async function runCert04() {
   const tenant = await setupTenant('cert04-memory', 'Memory Tenant');
   
   const runtime = new HermesRuntime(new MockReasoningProvider());
+  const convId = `test-conv-04-${nanoid(4)}`;
   
   await runtime.respond({
     organizationId: tenant,
-    conversationId: 'test-conv-04',
-    message: { id: 'm1', role: 'USER', content: 'My favorite color is Blue', createdAt: new Date() },
+    conversationId: convId,
+    message: { id: `m1-${nanoid(6)}`, role: 'USER', content: 'My favorite color is Blue', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenant, role: 'ADMIN', permissions: [] }
   });
   
   const response2 = await runtime.respond({
     organizationId: tenant,
-    conversationId: 'test-conv-04',
-    message: { id: 'm2', role: 'USER', content: 'What is my favorite color?', createdAt: new Date() },
+    conversationId: convId,
+    message: { id: `m2-${nanoid(6)}`, role: 'USER', content: 'What is my favorite color?', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenant, role: 'ADMIN', permissions: [] }
   });
   
@@ -232,8 +239,8 @@ async function runCert05() {
   const runtime = new HermesRuntime(new MockStreamingProvider());
   const stream = await runtime.stream({
     organizationId: tenant,
-    conversationId: 'test-conv-05',
-    message: { id: 'm1', role: 'USER', content: 'Hello stream', createdAt: new Date() },
+    conversationId: `test-conv-05-${nanoid(4)}`,
+    message: { id: `m1-${nanoid(6)}`, role: 'USER', content: 'Hello stream', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenant, role: 'ADMIN', permissions: [] }
   });
 
@@ -279,7 +286,7 @@ async function runCert06() {
   const stream = await runtime.stream({
     organizationId: tenant,
     conversationId: 'test-conv-06',
-    message: { id: 'm1', role: 'USER', content: 'What is the exact pricing?', createdAt: new Date() },
+    message: { id: `m1-${nanoid(6)}`, role: 'USER', content: 'Cuál es el rendimiento?', createdAt: new Date() },
     controlPlaneContext: { actorId: 'cert-user', organizationId: tenant, role: 'ADMIN', permissions: [] }
   });
 
