@@ -135,11 +135,15 @@ function toRuntimeMessages(msgs: PortalChatMessage[]): RuntimeMessage[] {
 }
 
 function getInitialState(orgName: string, orgSlug: string): OrganizationOnboardingState {
-  const initialStage: OnboardingStage = 'BUSINESS_DISCOVERY';
+  const isKnownOrg = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
+  
+  const initialStage: OnboardingStage = isKnownOrg ? 'ACTIVATION' : 'BUSINESS_DISCOVERY';
   
   const initialChips = getStageChips(initialStage);
     
-  const initialContent = `Hola. Todavía no conozco los detalles de ${orgName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`;
+  const initialContent = isKnownOrg 
+    ? `Hola. Conozco perfectamente los detalles de ${orgName} y su modelo de Fractional Real Estate. ¿En qué puedo ayudarte hoy para optimizar la conversión de S'Narai?`
+    : `Hola. Todavía no conozco los detalles de ${orgName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`;
 
   return {
     stage: initialStage,

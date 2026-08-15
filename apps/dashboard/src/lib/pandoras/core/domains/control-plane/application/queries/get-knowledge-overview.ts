@@ -46,7 +46,7 @@ export class GetKnowledgeOverviewQuery {
     const failedSources = records.filter(r => r.status === 'FAILED').length;
     
     let knowledgeHealth: KnowledgeOverviewView['knowledgeHealth'] = 'READY';
-    if (totalSources === 0) knowledgeHealth = 'EMPTY';
+    if (totalSources === 0 && knowledgeRecords.length === 0) knowledgeHealth = 'EMPTY';
     else if (failedSources > 0) knowledgeHealth = 'ATTENTION_REQUIRED';
     else if (processingSources > 0) knowledgeHealth = 'PROCESSING';
     
