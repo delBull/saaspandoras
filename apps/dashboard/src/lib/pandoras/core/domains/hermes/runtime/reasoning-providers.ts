@@ -151,7 +151,8 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`[OllamaReasoningProvider] Request failed: ${response.status} ${response.statusText}`);
+      const errText = await response.text().catch(() => '');
+      throw new Error(`[OllamaReasoningProvider] Request failed: ${response.status} ${response.statusText} - ${errText}`);
     }
 
     const data = await response.json();
@@ -289,7 +290,8 @@ export class OllamaStreamingProvider implements StreamingReasoningProvider {
     });
 
     if (!response.ok || !response.body) {
-      throw new Error(`[OllamaStreamingProvider] Request failed: ${response.status} ${response.statusText}`);
+      const errText = await response.text().catch(() => '');
+      throw new Error(`[OllamaStreamingProvider] Request failed: ${response.status} ${response.statusText} - ${errText}`);
     }
 
     const reader = response.body.getReader();
