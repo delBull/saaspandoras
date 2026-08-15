@@ -124,7 +124,8 @@
     "postcss": "8.4.34",
     "prettier": "3.2.5",
     "tailwindcss": "3.4.1",
-    "typescript": "5.4.5"
+    "typescript": "5.4.5",
+    "vitest": "^4.1.10"
   },
   "eslintConfig": {
     "root": true,

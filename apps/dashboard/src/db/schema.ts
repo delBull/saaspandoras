@@ -3529,3 +3529,62 @@ export const hermesConversationMessages = pgTable("hermes_conversation_messages"
   orgConversationSeqIdx: uniqueIndex("hermes_conv_msg_seq_idx").on(t.organizationId, t.conversationId, t.sequence),
   orgIdempotencyUnique: uniqueIndex("hermes_conv_msg_idem_idx").on(t.organizationId, t.idempotencyKey),
 }));
+
+// --- PHASE 7: HERMES JOURNEYS (DYNAMIC GOAL ENGINE) ---
+
+export const hermesJourneys = pgTable("hermes_journeys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  version: integer("version").notNull().default(1),
+  status: varchar("status", { length: 50 }).notNull().default('ACTIVE'), // 'ACTIVE', 'INACTIVE'
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => ({
+  orgIdx: index("hermes_journeys_org_idx").on(t.organizationId),
+}));
+
+export const hermesJourneyStages = pgTable("hermes_journey_stages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  journeyId: uuid("journey_id").notNull().references(() => hermesJourneys.id, { onDelete: 'cascade' }),
+  name: varchar("name", { length: 256 }).notNull(),
+  orderIndex: integer("order_index").notNull(),
+  objectives: jsonb("objectives").notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => ({
+  journeyIdx: index("hermes_journey_stages_journey_idx").on(t.journeyId),
+}));
+
+export const hermesJourneyTransitions = pgTable("hermes_journey_transitions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  journeyId: uuid("journey_id").notNull().references(() => hermesJourneys.id, { onDelete: 'cascade' }),
+  fromStageId: varchar("from_stage_id", { length: 256 }).notNull(), // can be 'ANY' or an actual stage UUID
+  toStageId: varchar("to_stage_id", { length: 256 }).notNull(),     // can be 'COMPLETE', 'ABORT', or stage UUID
+  trigger: varchar("trigger", { length: 256 }),
+  condition: text("condition"),
+  priority: integer("priority").notNull().default(0),
+  status: varchar("status", { length: 50 }).notNull().default('ACTIVE'),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => ({
+  journeyIdx: index("hermes_journey_transitions_journey_idx").on(t.journeyId),
+}));
+
+export const hermesActorJourneys = pgTable("hermes_actor_journeys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  actorId: varchar("actor_id", { length: 256 }).notNull(),
+  journeyId: uuid("journey_id").notNull().references(() => hermesJourneys.id),
+  journeyVersion: integer("journey_version").notNull(),
+  currentStageId: varchar("current_stage_id", { length: 256 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default('IN_PROGRESS'), // 'IN_PROGRESS', 'COMPLETED', 'ABORTED'
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  lastAdvancedAt: timestamp("last_advanced_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, (t) => ({
+  orgActorIdx: uniqueIndex("hermes_actor_journeys_org_actor_idx").on(t.organizationId, t.actorId).where(sql`${t.status} = 'IN_PROGRESS'`),
+  journeyIdx: index("hermes_actor_journeys_journey_idx").on(t.journeyId),
+}));

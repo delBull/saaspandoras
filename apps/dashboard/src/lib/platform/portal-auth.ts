@@ -125,8 +125,9 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
     console.warn(`[PortalAuth] Skipping installedProducts query because sub (${payload.sub}) is not a valid UUID, falling back to payload context.`);
   }
 
-  // If table does not exist or record not found, create a virtual session token using payload
-  const sessionToken = `ps_${randomUUID().replace(/-/g, '')}`;
+  const actualProjectId = installed?.projectId || payload.projectId || 9;
+  // Embed the projectId in the session token so validatePortalSession can recover it if it's virtual
+  const sessionToken = `ps_v_${actualProjectId}_${randomUUID().replace(/-/g, '')}`;
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + PORTAL_SESSION_DURATION_DAYS);
 
@@ -181,9 +182,17 @@ export async function validatePortalSession(sessionToken: string): Promise<{
   }
 
   // Virtual session fallback for active portal session
+  let fallbackProjectId = 9;
+  if (sessionToken.startsWith('ps_v_')) {
+    const parts = sessionToken.split('_');
+    if (parts.length >= 3 && !isNaN(Number(parts[2]))) {
+      fallbackProjectId = Number(parts[2]);
+    }
+  }
+
   return {
     installedProductId: 'virtual_hermes_pro',
-    projectId: 9,
+    projectId: fallbackProjectId,
     product: 'HERMES',
   };
 }
