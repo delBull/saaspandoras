@@ -7,8 +7,19 @@ export default function PortalRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/v1/portal/session')
-      .then(res => res.json())
+    const sessionToken = localStorage.getItem('pandoras_portal_session');
+    if (!sessionToken) {
+      router.push('/portal/login');
+      return;
+    }
+
+    fetch('/api/v1/portal/session', {
+      headers: { 'Authorization': `Bearer ${sessionToken}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Invalid session');
+        return res.json();
+      })
       .then(data => {
         const org = data.organization ?? data.org;
         if (org && org.slug) {
