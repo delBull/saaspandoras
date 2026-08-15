@@ -84,6 +84,32 @@ export class DatabaseBindingResolver implements BindingResolver {
       console.warn('[BindingResolver] DB lookup fallback:', err?.message || err);
     }
 
+    // --- LAUNCH MODE: Auto-provision binding for S'Narai ---
+    console.log(`[BindingResolver] Auto-provisioning new user ${externalUserId} to S'Narai`);
+    try {
+      const newBindingId = crypto.randomUUID();
+      await db.insert(channelIdentityBindings).values({
+        id: newBindingId,
+        identityId: 'snarai',
+        channel: channelType,
+        externalUserId: externalUserId,
+        address: `@${channelType}_${externalUserId}`,
+        status: 'ACTIVE'
+      });
+      
+      return {
+        id: newBindingId,
+        organizationId: 'snarai',
+        channelType: channelType as 'telegram' | 'whatsapp',
+        channelIdentity: `@${channelType}_${externalUserId}`,
+        credentialsRef: `vault:${channelType}:${newBindingId}`,
+        status: 'ACTIVE'
+      };
+    } catch (insertErr) {
+      console.error('[BindingResolver] Failed to auto-provision S\'Narai binding:', insertErr);
+    }
+    // --------------------------------------------------------
+
     throw new ChannelBindingNotFoundError(`No active binding found for external user: ${externalUserId}`);
   }
 }

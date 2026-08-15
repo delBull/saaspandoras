@@ -2,7 +2,7 @@ import { ChannelAdapter } from '../channel-adapter';
 import { ChannelType, ChannelInboundMessage, ChannelOutboundMessage, ChannelDeliveryResult } from '../channel-types';
 import { NormalizedInboundMessage } from '../normalized-message';
 import { InvalidChannelPayloadError } from '../channel-errors';
-import { SecretResolver, EnvironmentSecretResolver } from '../secret-resolver';
+import { SecretResolver, EnvironmentSecretResolver, DatabaseSecretResolver } from '../secret-resolver';
 import { BindingResolver, DatabaseBindingResolver, WhatsAppIdentity } from '../binding-resolver';
 
 export interface HermesWhatsAppEnvelope {
@@ -29,7 +29,7 @@ export class WhatsAppAdapter implements ChannelAdapter {
   private bindingResolver: BindingResolver;
 
   constructor(secretResolver?: SecretResolver, bindingResolver?: BindingResolver) {
-    this.secretResolver = secretResolver || new EnvironmentSecretResolver();
+    this.secretResolver = secretResolver || new DatabaseSecretResolver();
     this.bindingResolver = bindingResolver || new DatabaseBindingResolver();
   }
 

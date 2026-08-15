@@ -1,21 +1,18 @@
 'use client';
 
 import React from 'react';
-import { HermesModulePlaceholder } from '@/components/hermes-portal/HermesModulePlaceholder';
-import { Plug } from 'lucide-react';
+import ChannelsDashboard from './ChannelsDashboard';
 
-export default function ChannelsPage() {
+interface ChannelsPageProps {
+  params: {
+    organizationSlug: string;
+  };
+}
+
+export default function ChannelsPage({ params }: ChannelsPageProps) {
   return (
-    <HermesModulePlaceholder 
-      title="Omnichannel Mesh"
-      description="Conecta a Hermes con el mundo exterior. Configura en qué canales escucha y responde tu agente operativo."
-      icon={Plug}
-      features={[
-        "Integración con Telegram TMA & Bots",
-        "Webhooks y APIs custom",
-        "Discord y plataformas sociales",
-        "Widgets de soporte integrados en web"
-      ]}
-    />
+    <div className="flex-1 w-full p-4 lg:p-8 max-w-7xl mx-auto overflow-y-auto">
+      <ChannelsDashboard organizationSlug={params.organizationSlug} />
+    </div>
   );
 }

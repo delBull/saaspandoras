@@ -9,6 +9,8 @@ import {
 import { db } from '@/db';
 import { portalOnboardingState } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { KnowledgeGovernanceService } from '@/lib/pandoras/core/domains/hermes/knowledge/service';
+import { KnowledgeDimension, KnowledgeStatus } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
 
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
 import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
@@ -279,6 +281,44 @@ export async function POST(request: Request) {
       timestamp: normalizedInbound.receivedAt.toISOString()
     };
     state.messages.push(userMsg);
+
+    // KNOWLEDGE WIRING: Map onboarding responses to Knowledge Dimensions
+    let dimension: KnowledgeDimension | undefined;
+    let status: KnowledgeStatus = 'ACTIVE'; // Most structural knowledge is active by default
+    
+    switch (currentStage) {
+      case 'BUSINESS_DISCOVERY':
+        dimension = 'business_model';
+        break;
+      case 'IDENTITY_CONFIGURATION':
+        dimension = 'identity';
+        break;
+      case 'KNOWLEDGE_GATHERING':
+        dimension = 'project';
+        break;
+      case 'POLICY_DEFINITION':
+        dimension = 'governance';
+        status = 'PENDING_REVIEW'; // Policies and rules must be reviewed
+        break;
+    }
+
+    if (dimension && content.trim()) {
+      await KnowledgeGovernanceService.discover({
+        actorId: context.tenant.actorId,
+        organizationId: tenantId,
+        role: context.tenant.role as any,
+        permissions: context.tenant.permissions as any,
+        sessionId: context.tenant.sessionId
+      }, {
+        dimension,
+        key: `${dimension}_onboarding_${Date.now()}`,
+        content: content.trim(),
+        visibility: 'INTERNAL',
+        source: 'ONBOARDING_CONVERSATION',
+        sourceReference: normalizedInbound.message.messageId,
+        status
+      });
+    }
 
     // 2. Advance Onboarding State Machine (source of truth: HermesOnboardingWorkflow.transitions)
     const workflowTransitions = HermesOnboardingWorkflow.transitions?.[currentStage] ?? [];
