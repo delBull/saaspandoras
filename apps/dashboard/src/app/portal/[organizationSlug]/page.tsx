@@ -17,6 +17,9 @@ import { GetKnowledgeOverviewQuery } from '@/lib/pandoras/core/domains/control-p
 import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewDashboard';
 import type { HermesOverviewView, SystemStatus, ActivityEventView } from '@/lib/portal/portal-types';
 import type { OrganizationOverviewView } from '@/lib/pandoras/core/domains/control-plane/view-models';
+import { db } from '@/db';
+import { projects, hermesJourneys } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function PortalOverviewPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
@@ -24,9 +27,12 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
   // 1. Context already guaranteed safe by layout, but we resolve it to pass downward
   const context = await resolvePortalContext(organizationSlug);
 
-  // 2. Fetch the real application data (never direct DB queries)
+  // 2. Fetch the real application data
   let rawOverview: OrganizationOverviewView | null = null;
   let knowledgeHealth: SystemStatus = 'READY';
+  let dynamicChannelsStatus: SystemStatus = 'NOT_CONFIGURED';
+  let dynamicJourneysStatus: SystemStatus = 'NOT_CONFIGURED';
+
   try {
     const cpCtx = new ControlPlaneContext(
       context.tenant.sessionId,
@@ -41,6 +47,22 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
     const knowledgeQuery = new GetKnowledgeOverviewQuery();
     const kOverview = await knowledgeQuery.execute(cpCtx, context.tenant.organizationId);
     knowledgeHealth = kOverview.knowledgeHealth === 'EMPTY' ? 'NOT_CONFIGURED' : kOverview.knowledgeHealth as SystemStatus;
+
+    // Check Channels
+    const [project] = await db.select().from(projects).where(eq(projects.slug, organizationSlug)).limit(1);
+    const config = project?.tenantRuntimeConfig as any;
+    if (config?.secrets?.telegramBotToken || config?.secrets?.whatsappToken) {
+      dynamicChannelsStatus = 'READY';
+    }
+
+    // Check Journeys
+    const journeyRows = await db.select().from(hermesJourneys).where(eq(hermesJourneys.organizationId, organizationSlug)).limit(1);
+    if (journeyRows.length > 0) {
+      dynamicJourneysStatus = 'READY';
+    } else if (rawOverview.metrics.activeGoals > 0) {
+      dynamicJourneysStatus = 'ACTIVE';
+    }
+
   } catch (error) {
     console.error('[PortalOverview] Failed to fetch overview data:', error);
   }
@@ -57,8 +79,8 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
     const identityStatus: SystemStatus = 'READY';
     const knowledgeStatus: SystemStatus = knowledgeHealth;
     
-    const channelsStatus: SystemStatus = 'NOT_CONFIGURED'; // Will implement in 6.5
-    const journeysStatus: SystemStatus = hasGoals ? 'ACTIVE' : 'NOT_CONFIGURED';
+    const channelsStatus: SystemStatus = dynamicChannelsStatus;
+    const journeysStatus: SystemStatus = dynamicJourneysStatus;
     
     const govStatus: SystemStatus = rawOverview.metrics.pendingDecisions > 0 ? 'PROCESSING' : 'READY';
     const cognitiveStatus: SystemStatus = 'READY'; 
