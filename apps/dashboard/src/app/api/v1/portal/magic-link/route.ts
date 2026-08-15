@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     // 4. Generate Magic Link
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
     const returnQuery = safeReturn ? `&return=${encodeURIComponent(safeReturn)}` : '';
-    const magicLink = `${baseUrl}/growth-os/hermes/portal?token=${token}${returnQuery}`;
+    const magicLink = `${baseUrl}/portal/login?token=${token}${returnQuery}`;
 
     console.info(`[MagicLink API] Magic Link generated for ${cleanEmail}: ${magicLink}`);
 
