@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shield, ShieldAlert, SlidersHorizontal, Lock, CheckCircle2, AlertTriangle, Save, AlertCircle } from 'lucide-react';
+import { Shield, ShieldAlert, SlidersHorizontal, Lock, CheckCircle2, AlertTriangle, Save, AlertCircle, Maximize2, X } from 'lucide-react';
 
 export interface PolicyView {
   id: string;
@@ -20,6 +20,7 @@ interface PoliciesDashboardProps {
 export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: PoliciesDashboardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [editingPolicy, setEditingPolicy] = useState<{ key: string, title: string, value: string } | null>(null);
 
   const getPolicyContent = (key: string, defaultValue: string) => {
     const policy = policies.find(p => p.key === key);
@@ -51,6 +52,37 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
       setIsSaving(false);
     }
   };
+
+  const handleSaveModal = () => {
+    if (!editingPolicy) return;
+    if (editingPolicy.key === 'tone_of_voice') setToneOfVoice(editingPolicy.value);
+    if (editingPolicy.key === 'banned_topics') setBannedTopics(editingPolicy.value);
+    if (editingPolicy.key === 'escalation_rules') setEscalationRules(editingPolicy.value);
+    setEditingPolicy(null);
+  };
+
+  const renderPolicyCard = (title: string, desc: string, icon: React.ReactNode, key: string, value: string) => (
+    <section className="bg-[#0C0C12] border border-white/[0.06] rounded-2xl p-6 relative group hover:border-white/[0.12] transition-colors">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-1">
+            {icon}
+            {title}
+          </h2>
+          <p className="text-xs text-white/40">{desc}</p>
+        </div>
+        <button 
+          onClick={() => setEditingPolicy({ key, title, value })}
+          className="p-2 text-white/40 hover:text-white bg-white/[0.02] hover:bg-white/[0.08] rounded-xl transition-all"
+        >
+          <Maximize2 size={16} />
+        </button>
+      </div>
+      <div className="bg-[#12121A] border border-white/5 rounded-xl p-4 text-sm text-white/70 line-clamp-2 h-[60px]">
+        {value || <span className="text-white/20 italic">No policy defined...</span>}
+      </div>
+    </section>
+  );
 
   return (
     <div className="p-6 lg:p-10 max-w-6xl mx-auto space-y-10">
@@ -92,53 +124,29 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
         {/* Left Column: Rules & Guardrails */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Tone of Voice */}
-          <section className="bg-[#0C0C12] border border-white/[0.06] rounded-2xl p-6">
-            <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-1">
-              <SlidersHorizontal className="w-5 h-5 text-indigo-400" />
-              Tone of Voice
-            </h2>
-            <p className="text-xs text-white/40 mb-4">Instructions on how Hermes should express itself.</p>
-            <textarea 
-              value={toneOfVoice}
-              onChange={(e) => setToneOfVoice(e.target.value)}
-              rows={3}
-              placeholder="e.g., Be extremely polite and formal..."
-              className="w-full bg-[#12121A] border border-white/10 rounded-xl p-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 transition-colors"
-            />
-          </section>
+          {renderPolicyCard(
+            "Tone of Voice",
+            "Instructions on how Hermes should express itself.",
+            <SlidersHorizontal className="w-5 h-5 text-indigo-400" />,
+            "tone_of_voice",
+            toneOfVoice
+          )}
 
-          {/* Banned Topics */}
-          <section className="bg-[#0C0C12] border border-white/[0.06] rounded-2xl p-6">
-            <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-1">
-              <Lock className="w-5 h-5 text-rose-400" />
-              Banned Topics (Negative Constraints)
-            </h2>
-            <p className="text-xs text-white/40 mb-4">Subjects Hermes must outright refuse to discuss.</p>
-            <textarea 
-              value={bannedTopics}
-              onChange={(e) => setBannedTopics(e.target.value)}
-              rows={3}
-              placeholder="e.g., Do not discuss pricing, do not mention competitors..."
-              className="w-full bg-[#12121A] border border-white/10 rounded-xl p-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 transition-colors"
-            />
-          </section>
+          {renderPolicyCard(
+            "Banned Topics (Negative Constraints)",
+            "Subjects Hermes must outright refuse to discuss.",
+            <Lock className="w-5 h-5 text-rose-400" />,
+            "banned_topics",
+            bannedTopics
+          )}
 
-          {/* Escalation Rules */}
-          <section className="bg-[#0C0C12] border border-white/[0.06] rounded-2xl p-6">
-            <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-1">
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
-              Human Escalation Rules
-            </h2>
-            <p className="text-xs text-white/40 mb-4">When should Hermes trigger a hand-off to a human operator?</p>
-            <textarea 
-              value={escalationRules}
-              onChange={(e) => setEscalationRules(e.target.value)}
-              rows={3}
-              placeholder="e.g., Escalate immediately if the user is frustrated..."
-              className="w-full bg-[#12121A] border border-white/10 rounded-xl p-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 transition-colors"
-            />
-          </section>
+          {renderPolicyCard(
+            "Human Escalation Rules",
+            "When should Hermes trigger a hand-off to a human operator?",
+            <AlertTriangle className="w-5 h-5 text-amber-400" />,
+            "escalation_rules",
+            escalationRules
+          )}
         </div>
 
         {/* Right Column: Settings & Safety */}
@@ -191,6 +199,45 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
           </div>
         </div>
       </div>
+
+      {/* Editing Modal */}
+      {editingPolicy && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 lg:p-10">
+          <div className="bg-[#12121A] border border-white/10 rounded-2xl w-full max-w-4xl flex flex-col shadow-2xl h-[80vh]">
+            <div className="flex items-center justify-between p-6 border-b border-white/[0.06]">
+              <h3 className="text-lg font-medium text-white">{editingPolicy.title}</h3>
+              <button 
+                onClick={() => setEditingPolicy(null)}
+                className="text-white/40 hover:text-white p-2 rounded-xl hover:bg-white/5 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex-1 flex flex-col min-h-0">
+              <textarea 
+                value={editingPolicy.value}
+                onChange={(e) => setEditingPolicy(prev => prev ? { ...prev, value: e.target.value } : null)}
+                className="w-full h-full bg-[#0C0C12] border border-white/10 rounded-xl p-6 text-sm text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 transition-colors resize-none font-mono"
+                placeholder="Enter policy details here..."
+              />
+            </div>
+            <div className="p-6 border-t border-white/[0.06] flex justify-end gap-3 bg-[#0C0C12]/50 rounded-b-2xl">
+              <button 
+                onClick={() => setEditingPolicy(null)}
+                className="px-5 py-2.5 rounded-xl font-medium text-white/60 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveModal}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-rose-900/20"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

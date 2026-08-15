@@ -1,7 +1,7 @@
 import React from 'react';
 import { db } from '@/db';
 import { integrationClients, projects, marketingLeads } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, and } from 'drizzle-orm';
 import { IdentityDashboard } from '@/components/hermes-portal/identity/IdentityDashboard';
 import { generateApiKey, revokeApiKey, inviteTeamMember } from './actions';
 
@@ -28,7 +28,13 @@ export default async function IdentityPage({ params }: IdentityPageProps) {
         .select()
         .from(marketingLeads)
         .where(
-          eq(marketingLeads.projectId, project[0]!.id)
+          and(
+            eq(marketingLeads.projectId, project[0]!.id),
+            or(
+              eq(marketingLeads.leadType, 'team_member'),
+              eq(marketingLeads.ownerContext, 'tenant')
+            )
+          )
         );
     }
   } catch (error) {

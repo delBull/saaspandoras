@@ -105,7 +105,11 @@ export async function POST(request: Request) {
                 emitEvent('response.blocked', { streamId: 'stream', code: event.policyViolations?.[0]?.code ?? 'BLOCKED' });
                 break;
               case 'ERROR':
-                emitEvent('stream.error', { streamId: 'stream', code: event.error?.code ?? 'INTERNAL_ERROR' });
+                emitEvent('stream.error', { 
+                  streamId: 'stream', 
+                  code: event.error?.code ?? 'INTERNAL_ERROR',
+                  error: event.error?.message ?? 'Unknown provider error'
+                });
                 break;
             }
           }
@@ -114,7 +118,11 @@ export async function POST(request: Request) {
             emitEvent('stream.cancelled', { streamId: 'stream' });
           } else {
             console.error('[Portal Streaming POST] Stream Error:', error);
-            emitEvent('stream.error', { streamId: 'stream', code: 'INTERNAL_ERROR' });
+            emitEvent('stream.error', { 
+              streamId: 'stream', 
+              code: 'INTERNAL_ERROR',
+              error: error.message || String(error)
+            });
           }
         } finally {
           controller.close();

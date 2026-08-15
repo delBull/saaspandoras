@@ -25,7 +25,20 @@ interface PortalShellProps {
 export function PortalShell({ context, children }: PortalShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(true);
+  const [inspectorExpanded, setInspectorExpanded] = useState(true);
   const pathname = usePathname();
+
+  const toggleSidebar = () => {
+    const newCollapsed = !desktopCollapsed;
+    setDesktopCollapsed(newCollapsed);
+    if (!newCollapsed) setInspectorExpanded(false);
+  };
+
+  const toggleInspector = () => {
+    const newExpanded = !inspectorExpanded;
+    setInspectorExpanded(newExpanded);
+    if (newExpanded) setDesktopCollapsed(true);
+  };
   
   // Inspector is hidden on the Overview page so the Hermes Intelligence Chat can take its place
   const isOverview = pathname === `/portal/${context.organization.slug}`;
@@ -67,7 +80,7 @@ export function PortalShell({ context, children }: PortalShellProps) {
           organization={context.organization}
           permissions={context.tenant.permissions}
           collapsed={desktopCollapsed}
-          onToggle={() => setDesktopCollapsed(!desktopCollapsed)}
+          onToggle={toggleSidebar}
           organizationSlug={context.organization.slug}
           onNavClick={() => setMobileMenuOpen(false)}
         />
@@ -93,8 +106,12 @@ export function PortalShell({ context, children }: PortalShellProps) {
 
           {/* Desktop Right Inspector - Hidden on Overview */}
           {!isOverview && (
-            <div className="hidden xl:block w-[400px] shrink-0 pr-6 pl-2 pt-6 pb-20">
-              <PortalInspector organization={context.organization} />
+            <div className={`hidden xl:block shrink-0 pr-6 pl-2 pt-6 pb-20 transition-all duration-300 ${inspectorExpanded ? 'w-[400px]' : 'w-[80px]'}`}>
+              <PortalInspector 
+                organization={context.organization} 
+                expanded={inspectorExpanded}
+                onToggle={toggleInspector}
+              />
             </div>
           )}
         </div>

@@ -13,12 +13,12 @@ export function KnowledgeHealthPanel({ overview }: { overview: KnowledgeOverview
         <div>
           <div className="flex justify-between items-end mb-2">
             <span className="text-white/70">Index</span>
-            <span className="text-white/90 font-medium">{overview.totalSources > 0 ? '100%' : '0%'}</span>
+            <span className="text-white/90 font-medium">{(overview.totalSources > 0 || overview.facts.length > 0) ? '100%' : '0%'}</span>
           </div>
           <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
             <div 
               className="bg-emerald-400 h-full rounded-full" 
-              style={{ width: overview.totalSources > 0 ? '100%' : '0%' }} 
+              style={{ width: (overview.totalSources > 0 || overview.facts.length > 0) ? '100%' : '0%' }} 
             />
           </div>
         </div>
@@ -26,12 +26,12 @@ export function KnowledgeHealthPanel({ overview }: { overview: KnowledgeOverview
         <div>
           <div className="flex justify-between items-end mb-2">
             <span className="text-white/70">Freshness</span>
-            <span className="text-white/90 font-medium">{overview.totalSources > 0 ? '98%' : '0%'}</span>
+            <span className="text-white/90 font-medium">{(overview.totalSources > 0 || overview.facts.length > 0) ? '98%' : '0%'}</span>
           </div>
           <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
             <div 
               className="bg-emerald-400 h-full rounded-full" 
-              style={{ width: overview.totalSources > 0 ? '98%' : '0%' }} 
+              style={{ width: (overview.totalSources > 0 || overview.facts.length > 0) ? '98%' : '0%' }} 
             />
           </div>
         </div>

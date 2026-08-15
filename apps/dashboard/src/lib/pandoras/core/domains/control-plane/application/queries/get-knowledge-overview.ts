@@ -62,7 +62,7 @@ export class GetKnowledgeOverviewQuery {
     }));
 
     const facts: KnowledgeFactView[] = knowledgeRecords
-      .filter(r => ['knowledge', 'business_info'].includes(r.dimension))
+      .filter(r => ['knowledge', 'business_info', 'DOMAIN', 'IDENTITY', 'policy'].includes(r.dimension))
       .map(r => ({
         id: r.id,
         dimension: r.dimension,

@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
-import { ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { WrenchScrewdriverIcon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { HermesIntelligencePanel } from './overview/HermesIntelligencePanel';
 
-export function PortalInspector({ children, title = 'Hermes Operating System', type = 'system', attributes = {}, organization }: any) {
+export function PortalInspector({ children, title = 'Hermes Operating System', type = 'system', attributes = {}, organization, expanded = true, onToggle }: any) {
   const pathname = usePathname() || '';
   
   let dynamicTitle = title;
@@ -78,15 +77,54 @@ export function PortalInspector({ children, title = 'Hermes Operating System', t
           'Telemetry': 'Real-time',
           'Audit Log': 'Immutable'
       };
+  } else if (pathname.includes('/settings')) {
+    dynamicTitle = 'Workspace Settings';
+    dynamicType = 'System.Config';
+    dynamicAttributes = {
+      'Environment': 'Production',
+      'API Version': 'v2.1',
+      'Sync': 'Active'
+    };
+  } else if (pathname.includes('/add-ons')) {
+    dynamicTitle = 'Integration Add-ons';
+    dynamicType = 'Ecosystem.Plugins';
+    dynamicAttributes = {
+      'Store Status': 'Connected',
+      'Webhooks': 'Enabled',
+      'Modules': 'Loaded'
+    };
+  }
+
+  if (!expanded) {
+    return (
+      <aside className="flex w-12 bg-[#12121A] border border-white/[0.08] rounded-2xl flex-col shrink-0 font-sans h-full overflow-hidden shadow-2xl relative items-center py-4 cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={onToggle}>
+        <div className="w-8 h-8 rounded-xl bg-white/[0.05] flex items-center justify-center text-white/50 hover:text-white transition-colors mb-4">
+          <ChevronLeftIcon className="w-5 h-5" />
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-start gap-4">
+          <WrenchScrewdriverIcon className="w-5 h-5 text-purple-400" />
+          <div className="writing-vertical-rl rotate-180 text-xs font-bold text-zinc-500 uppercase tracking-widest mt-4">
+            Inspector
+          </div>
+        </div>
+      </aside>
+    );
   }
 
   return (
     <aside className="flex w-full bg-[#12121A] border border-white/[0.08] rounded-2xl flex-col shrink-0 font-sans h-full overflow-hidden shadow-2xl relative">
         <div className="h-12 px-4 border-b border-white/[0.06] flex items-center justify-between bg-[#0C0C12] shrink-0">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                <WrenchScrewdriverIcon className="w-3.5 h-3.5 text-purple-400" />
-                Inspector
-            </span>
+            <div className="flex items-center gap-2">
+                {onToggle && (
+                  <button onClick={onToggle} className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+                    <ChevronRightIcon className="w-4 h-4" />
+                  </button>
+                )}
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                    <WrenchScrewdriverIcon className="w-3.5 h-3.5 text-purple-400" />
+                    Inspector
+                </span>
+            </div>
             <span className="text-[10px] font-mono bg-white/5 text-zinc-500 px-1.5 py-0.5 rounded">
                 {dynamicType}
             </span>
