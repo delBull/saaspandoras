@@ -60,9 +60,18 @@ export class TelegramAdapter implements ChannelAdapter {
     const userId = msg.from?.id ? String(msg.from.id) : undefined;
     const chatId = String(msg.chat.id);
 
+    let targetTenant: string | undefined = (raw as any).targetTenant;
+    
+    if (!targetTenant) {
+      const textLower = msg.text.trim().toLowerCase();
+      if (textLower.startsWith('/start ')) {
+        targetTenant = textLower.split(' ')[1]?.trim();
+      }
+    }
+
     const identity: TelegramIdentity = userId
-      ? { kind: 'USER', userId, chatId }
-      : { kind: 'CHAT', chatId };
+      ? { kind: 'USER', userId, chatId, targetTenant }
+      : { kind: 'CHAT', chatId, targetTenant };
 
     // C5.11: Resolve organizationId strictly via BindingResolver (ignore raw.organizationId)
     const binding = await this.bindingResolver.resolveBinding(identity);

@@ -5,12 +5,13 @@ import { channelIdentityBindings } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export type TelegramIdentity =
-  | { kind: 'USER'; userId: string; chatId?: string }
-  | { kind: 'CHAT'; chatId: string; userId?: string };
+  | { kind: 'USER'; userId: string; chatId?: string; targetTenant?: string }
+  | { kind: 'CHAT'; chatId: string; userId?: string; targetTenant?: string };
 
 export type WhatsAppIdentity = {
   kind: 'PHONE';
   phone: string; // Canonicalized without 'whatsapp:' or spaces
+  targetTenant?: string;
 };
 
 export type ChannelIdentity = TelegramIdentity | WhatsAppIdentity;
@@ -84,13 +85,14 @@ export class DatabaseBindingResolver implements BindingResolver {
       console.warn('[BindingResolver] DB lookup fallback:', err?.message || err);
     }
 
-    // --- LAUNCH MODE: Auto-provision binding for S'Narai ---
-    console.log(`[BindingResolver] Auto-provisioning new user ${externalUserId} to S'Narai`);
+    // --- LAUNCH MODE: Auto-provision binding dynamically ---
+    const targetTenant = identity.targetTenant || 'hermes';
+    console.log(`[BindingResolver] Auto-provisioning new user ${externalUserId} to ${targetTenant}`);
     try {
       const newBindingId = crypto.randomUUID();
       await db.insert(channelIdentityBindings).values({
         id: newBindingId,
-        identityId: 'snarai',
+        identityId: targetTenant,
         channel: channelType,
         externalUserId: externalUserId,
         address: `@${channelType}_${externalUserId}`,
@@ -99,14 +101,14 @@ export class DatabaseBindingResolver implements BindingResolver {
       
       return {
         id: newBindingId,
-        organizationId: 'snarai',
+        organizationId: targetTenant,
         channelType: channelType as 'telegram' | 'whatsapp',
         channelIdentity: `@${channelType}_${externalUserId}`,
         credentialsRef: `vault:${channelType}:${newBindingId}`,
         status: 'ACTIVE'
       };
     } catch (insertErr) {
-      console.error('[BindingResolver] Failed to auto-provision S\'Narai binding:', insertErr);
+      console.error(`[BindingResolver] Failed to auto-provision ${targetTenant} binding:`, insertErr);
     }
     // --------------------------------------------------------
 

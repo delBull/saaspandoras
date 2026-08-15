@@ -56,7 +56,16 @@ export class WhatsAppAdapter implements ChannelAdapter {
       throw new InvalidChannelPayloadError('WhatsApp identity could not be canonicalized');
     }
 
-    const identity: WhatsAppIdentity = { kind: 'PHONE', phone };
+    let targetTenant: string | undefined = (raw as any).targetTenant;
+    
+    if (!targetTenant) {
+      const textLower = bodyText.trim().toLowerCase();
+      if (textLower.startsWith('start ')) {
+        targetTenant = textLower.split(' ')[1]?.trim();
+      }
+    }
+
+    const identity: WhatsAppIdentity = { kind: 'PHONE', phone, targetTenant };
 
     // C5.11: Resolve organizationId strictly via BindingResolver.
     // We explicitly ignore raw.context.tenantId from the edge.

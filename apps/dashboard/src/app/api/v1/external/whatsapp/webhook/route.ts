@@ -24,6 +24,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const targetTenant = searchParams.get('tenant') || searchParams.get('organizationId');
+
     const bodyText = await request.text();
     let body;
     try {
@@ -77,8 +80,13 @@ export async function POST(request: Request) {
         },
         context: {
           tenantId: 'ignored' // Handled by BindingResolver
-        }
+        },
+        targetTenant
       };
+    }
+    
+    if (!isNativeMeta) {
+      rawPayload.targetTenant = targetTenant;
     }
 
     // LOCK C5.18: Thin webhook boundary. Delegate directly to OmnichannelGateway.

@@ -18,8 +18,8 @@ import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewD
 import type { HermesOverviewView, SystemStatus, ActivityEventView } from '@/lib/portal/portal-types';
 import type { OrganizationOverviewView } from '@/lib/pandoras/core/domains/control-plane/view-models';
 import { db } from '@/db';
-import { projects, hermesJourneys } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { projects, hermesJourneys, hermesConversationMessages } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export default async function PortalOverviewPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
@@ -67,6 +67,26 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
     console.error('[PortalOverview] Failed to fetch overview data:', error);
   }
 
+  // Fetch recent messages for Live Activity Feed
+  let recentActivities: ActivityEventView[] = [];
+  try {
+    const messages = await db.select()
+      .from(hermesConversationMessages)
+      .where(eq(hermesConversationMessages.organizationId, organizationSlug))
+      .orderBy(desc(hermesConversationMessages.createdAt))
+      .limit(5);
+
+    recentActivities = messages.map(msg => ({
+      id: msg.id,
+      type: msg.role === 'USER' ? 'MESSAGE_RECEIVED' : 'MESSAGE_SENT',
+      description: msg.content.length > 60 ? msg.content.substring(0, 60) + '...' : msg.content,
+      timestamp: msg.createdAt,
+      channel: 'Web',
+    }));
+  } catch (error) {
+    console.error('[PortalOverview] Failed to fetch recent messages:', error);
+  }
+
   // 3. Map application data to presentation-safe view model
   let overviewView: HermesOverviewView | null = null;
   
@@ -85,9 +105,6 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
     const govStatus: SystemStatus = rawOverview.metrics.pendingDecisions > 0 ? 'PROCESSING' : 'READY';
     const cognitiveStatus: SystemStatus = 'READY'; 
     const executionStatus: SystemStatus = 'READY';
-
-    // Temporary: Map recent activities if any exist in the future, else empty array
-    const activityFeed: ActivityEventView[] = [];
 
     overviewView = {
       organization: {
@@ -117,7 +134,7 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
         // connectedChannels: 0, 
         // activeConversations: 0,
       },
-      activity: activityFeed,
+      activity: recentActivities,
     };
   }
 

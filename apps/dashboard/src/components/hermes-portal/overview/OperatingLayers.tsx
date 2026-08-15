@@ -33,8 +33,8 @@ export function OperatingLayers({ status, organizationSlug }: OperatingLayersPro
     { id: 'channels', label: 'CHANNELS', state: status.channels, icon: Plug, href: `/portal/${organizationSlug}/channels` },
     { id: 'journeys', label: 'JOURNEYS', state: status.journeys, icon: GitBranch, href: `/portal/${organizationSlug}/journeys` },
     { id: 'governance', label: 'GOVERNANCE', state: status.governance, icon: Shield, href: `/portal/${organizationSlug}/policies` },
-    { id: 'cognitive', label: 'COGNITIVE', state: status.cognitive, icon: Brain, href: '' },
-    { id: 'execution', label: 'EXECUTION', state: status.execution, icon: Cpu, href: '' },
+    { id: 'cognitive', label: 'COGNITIVE', state: status.cognitive, icon: Brain, href: `/portal/${organizationSlug}/conversations` },
+    { id: 'execution', label: 'EXECUTION', state: status.execution, icon: Cpu, href: `/portal/${organizationSlug}/activity` },
   ];
 
   return (

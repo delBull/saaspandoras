@@ -48,3 +48,27 @@ export async function revokeApiKey(organizationSlug: string, id: string) {
 
   revalidatePath(`/portal/${organizationSlug}/identity`);
 }
+
+export async function inviteTeamMember(organizationSlug: string, email: string, name: string) {
+  const ctx = await resolvePortalContext(organizationSlug);
+  
+  const project = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, organizationSlug)).limit(1);
+  if (!project.length) throw new Error("Project not found");
+
+  const { marketingLeads } = await import('@/db/schema');
+  
+  // Create a record so this email can login to this project
+  await db.insert(marketingLeads).values({
+    projectId: project[0]!.id,
+    email: email.toLowerCase().trim(),
+    name,
+    leadType: 'team_member',
+    origin: 'portal_invite',
+    ownerContext: 'tenant'
+  });
+
+  revalidatePath(`/portal/${organizationSlug}/identity`);
+
+  // Optionally, we could trigger the Magic Link email here,
+  // but just adding them to marketingLeads allows them to login via the portal.
+}

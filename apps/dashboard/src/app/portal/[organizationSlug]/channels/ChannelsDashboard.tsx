@@ -60,6 +60,17 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            
+            <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-white mb-2">Instrucciones de configuración:</h4>
+              <ol className="text-xs text-neutral-300 space-y-2 list-decimal list-inside">
+                <li>Abre Telegram y busca a <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@BotFather</a>.</li>
+                <li>Envía el comando <code className="text-blue-300 font-mono">/newbot</code> y sigue las instrucciones para crear tu bot.</li>
+                <li>Copia el <strong>HTTP API Token</strong> que te proporcione BotFather y pégalo aquí abajo.</li>
+                <li>Una vez guardado, Hermes configurará automáticamente el Webhook para escuchar los mensajes de tu bot.</li>
+              </ol>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-neutral-300">Bot Token</Label>
               <Input 
@@ -106,6 +117,18 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+
+            <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-white mb-2">Instrucciones de configuración:</h4>
+              <ol className="text-xs text-neutral-300 space-y-2 list-decimal list-inside">
+                <li>Ve a <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">Meta for Developers</a> y crea una App tipo "Negocios".</li>
+                <li>Añade el producto <strong>WhatsApp</strong> a tu App.</li>
+                <li>En la configuración de la API, genera un <strong>Access Token permanente</strong> asociado a un usuario del sistema.</li>
+                <li>Copia el <strong>Phone Number ID</strong> (Identificador del número de teléfono) de la sección "Empezar".</li>
+                <li>Guarda las credenciales aquí. Luego, configura el Webhook en Meta Developers con la URL que aparecerá abajo. Asegúrate de suscribirte al evento <code className="text-green-300 font-mono">messages</code>.</li>
+              </ol>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-neutral-300">Access Token (Permanente)</Label>
               <Input 

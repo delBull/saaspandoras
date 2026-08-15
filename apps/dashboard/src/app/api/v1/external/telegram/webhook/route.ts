@@ -8,6 +8,9 @@ const channelDispatcher = new DefaultCognitiveChannelDispatcher();
 
 export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const targetTenant = searchParams.get('tenant') || searchParams.get('organizationId');
+
     const body = await request.json();
 
     if (!body || typeof body !== 'object') {
@@ -20,7 +23,10 @@ export async function POST(request: Request) {
     const normalized = await omnichannelGateway.receive({
       channelType: 'telegram',
       externalId: String(updateId),
-      rawPayload: body
+      rawPayload: {
+        ...body,
+        targetTenant
+      }
     });
 
     // 6.5.2.1: Asynchronously dispatch cognitive response back to Telegram in background

@@ -21,14 +21,16 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Find or default policies
-  const getPolicyContent = (key: string, defaultContent: string) => {
-    return policies.find(p => p.key === key)?.content || defaultContent;
+  const getPolicyContent = (key: string, defaultValue: string) => {
+    const policy = policies.find(p => p.key === key);
+    return policy?.content || defaultValue;
   };
 
-  const [toneOfVoice, setToneOfVoice] = useState(getPolicyContent('tone_of_voice', 'Professional and helpful, concise.'));
-  const [bannedTopics, setBannedTopics] = useState(getPolicyContent('banned_topics', 'Politics, competitor pricing, exact launch dates unless verified.'));
-  const [escalationRules, setEscalationRules] = useState(getPolicyContent('escalation_rules', 'Escalate to human if user asks for specific financial advice or gets angry.'));
+  const isSnarai = organizationSlug === 'snarai';
+
+  const [toneOfVoice, setToneOfVoice] = useState(getPolicyContent('tone_of_voice', isSnarai ? "Be extremely polite, formal, and professional. Always refer to the user with respect. Do not use slang or overly casual language." : "Be professional, concise, and helpful. Maintain a neutral and objective tone."));
+  const [bannedTopics, setBannedTopics] = useState(getPolicyContent('banned_topics', isSnarai ? "Do not discuss token price speculation, guarantee ROI, or mention other crypto projects. Do not give financial advice." : "Do not discuss politics, religion, or explicit content. Do not offer financial or legal advice."));
+  const [escalationRules, setEscalationRules] = useState(getPolicyContent('escalation_rules', isSnarai ? "Escalate to human if the user asks for specific financial advice, expresses frustration, or requests to buy tokens via OTC." : "Escalate to human if user asks for specific financial advice or gets angry."));
   const [safetyLevel, setSafetyLevel] = useState(getPolicyContent('safety_level', 'STRICT'));
 
   const handleSaveAll = async () => {

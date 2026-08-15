@@ -37,9 +37,30 @@ export class EnvironmentSecretResolver implements SecretResolver {
 
     // 3. Fallback placeholder for dev/staging when ref format is vault:telegram:<bindingId>
     if (credentialsRef.startsWith('vault:telegram:')) {
-      const devToken = process.env.TELEGRAM_BOT_TOKEN;
+      const orgId = credentialsRef.substring('vault:telegram:'.length).toUpperCase();
+      const tenantToken = process.env[`TELEGRAM_${orgId}_BOT_TOKEN`] || process.env[`${orgId}_TELEGRAM_BOT_TOKEN`];
+      if (tenantToken) {
+        return tenantToken;
+      }
+      
+      const devToken = process.env.HERMES_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
       if (devToken) {
         return devToken;
+      }
+    }
+
+    if (credentialsRef.startsWith('vault:channel:')) {
+      const orgId = credentialsRef.substring('vault:channel:'.length).toUpperCase();
+      const tenantToken = process.env[`META_WHATSAPP_TOKEN_${orgId}`] || process.env[`${orgId}_WHATSAPP_TOKEN`];
+      const tenantPhoneId = process.env[`META_PHONE_NUMBER_ID_${orgId}`] || process.env[`${orgId}_WHATSAPP_PHONE_NUMBER`];
+      if (tenantToken && tenantPhoneId) {
+        return `${tenantToken}|${tenantPhoneId}`;
+      }
+      
+      const devToken = process.env.HERMES_WHATSAPP_TOKEN || process.env.META_WHATSAPP_TOKEN;
+      const devPhoneId = process.env.HERMES_WHATSAPP_PHONE_NUMBER || process.env.META_PHONE_NUMBER_ID;
+      if (devToken && devPhoneId) {
+        return `${devToken}|${devPhoneId}`;
       }
     }
 
