@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { projects, installedProducts, users, accessRequests, marketingLeads } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { generatePortalToken } from '@/lib/platform/portal-auth';
 import { sendEmail } from '@/lib/email/client';
 
@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
         .select({ projectId: marketingLeads.projectId })
         .from(marketingLeads)
         .where(eq(marketingLeads.email, cleanEmail))
+        .orderBy(desc(marketingLeads.createdAt))
         .limit(1);
       if (lead?.projectId) {
         [project] = await db.select().from(projects).where(eq(projects.id, lead.projectId)).limit(1);
