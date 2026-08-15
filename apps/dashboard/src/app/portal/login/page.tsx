@@ -37,6 +37,7 @@ function PortalLoginContent() {
       }
     } catch {
       // ignore corrupted storage
+    }
   }, []);
 
   // Token consumption logic

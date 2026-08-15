@@ -39,7 +39,7 @@ const COMMON_FOOTER = `
       <p style="margin: 0;">
         <a href="https://dash.pandoras.finance/privacy" style="color: #A855F7; text-decoration: none;">Privacidad</a> | 
         <a href="https://dash.pandoras.finance/terms" style="color: #A855F7; text-decoration: none;">Términos</a> | 
-        <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="color: #A855F7; text-decoration: none;">Mi Portal Hermes</a>
+        <a href="https://dash.pandoras.finance/portal/login" style="color: #A855F7; text-decoration: none;">Mi Portal Hermes</a>
       </p>
     </div>
   </div>
@@ -73,7 +73,7 @@ export const LEAD_SEQUENCE: EmailTemplate[] = [
         </div>
 
         <p style="text-align: center; margin-top: 28px;">
-          <a href="${magicLinkUrl || 'https://dash.pandoras.finance/growth-os/hermes/portal/login'}" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 0 15px rgba(147,51,234,0.4);">Acceder a Mi Portal de Prueba →</a>
+          <a href="${magicLinkUrl || 'https://dash.pandoras.finance/portal/login'}" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 0 15px rgba(147,51,234,0.4);">Acceder a Mi Portal de Prueba →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -97,7 +97,7 @@ export const LEAD_SEQUENCE: EmailTemplate[] = [
         </div>
 
         <p style="text-align: center; margin-top: 24px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: rgba(255,255,255,0.1); color: #FFFFFF; font-weight: 600; padding: 10px 24px; border-radius: 10px; text-decoration: none; display: inline-block;">Ver la Capa de Evidencias en mi Portal →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: rgba(255,255,255,0.1); color: #FFFFFF; font-weight: 600; padding: 10px 24px; border-radius: 10px; text-decoration: none; display: inline-block;">Ver la Capa de Evidencias en mi Portal →</a>
         </p>
       ${COMMON_HEADER}
     `
@@ -141,7 +141,7 @@ export const LEAD_SEQUENCE: EmailTemplate[] = [
         </table>
 
         <p style="text-align: center; margin-top: 24px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Activar Hermes para Mi Negocio →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Activar Hermes para Mi Negocio →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -164,7 +164,7 @@ export const LEAD_SEQUENCE: EmailTemplate[] = [
         </ol>
 
         <p style="text-align: center; margin-top: 24px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Probar Integración en Vivo →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Probar Integración en Vivo →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -187,7 +187,7 @@ export const LEAD_SEQUENCE: EmailTemplate[] = [
         </ul>
 
         <p style="text-align: center; margin-top: 28px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 0 20px rgba(147,51,234,0.5);">Activar Mi Cuenta de Producción →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 0 20px rgba(147,51,234,0.5);">Activar Mi Cuenta de Producción →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -221,7 +221,7 @@ export const CLIENT_SEQUENCE: EmailTemplate[] = [
         </div>
 
         <p style="text-align: center; margin-top: 28px;">
-          <a href="${magicLinkUrl || 'https://dash.pandoras.finance/growth-os/hermes/portal/login'}" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block;">Ingresar a Mi Portal de Operaciones →</a>
+          <a href="${magicLinkUrl || 'https://dash.pandoras.finance/portal/login'}" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block;">Ingresar a Mi Portal de Operaciones →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -246,7 +246,7 @@ export const CLIENT_SEQUENCE: EmailTemplate[] = [
         </ul>
 
         <p style="text-align: center; margin-top: 24px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Ir a la Pestaña Know (Evidencias) →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Ir a la Pestaña Know (Evidencias) →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -269,7 +269,7 @@ export const CLIENT_SEQUENCE: EmailTemplate[] = [
         </div>
 
         <p style="text-align: center; margin-top: 24px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Ajustar Configuración de Autonomía →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Ajustar Configuración de Autonomía →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -288,7 +288,7 @@ export const CLIENT_SEQUENCE: EmailTemplate[] = [
         <p>Solo ve a la pestaña <strong>Sett &gt; Motor IA (BYOK)</strong>, selecciona <em>"Tu Propia IA"</em> e ingresa tu Base URL y API Key.</p>
 
         <p style="text-align: center; margin-top: 24px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Configurar Mi Propio LLM →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 12px 28px; border-radius: 12px; text-decoration: none; display: inline-block;">Configurar Mi Propio LLM →</a>
         </p>
       ${COMMON_FOOTER}
     `
@@ -307,7 +307,7 @@ export const CLIENT_SEQUENCE: EmailTemplate[] = [
         <p>Ingresa a tu portal para revisar el <strong>Live Feed & Telemetría</strong> y optimizar el rendimiento de tu embudo.</p>
 
         <p style="text-align: center; margin-top: 28px;">
-          <a href="https://dash.pandoras.finance/growth-os/hermes/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 0 20px rgba(147,51,234,0.5);">Ver Analíticas en Mi Portal →</a>
+          <a href="https://dash.pandoras.finance/portal/login" style="background-color: #9333EA; color: #FFFFFF; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 0 20px rgba(147,51,234,0.5);">Ver Analíticas en Mi Portal →</a>
         </p>
       ${COMMON_FOOTER}
     `

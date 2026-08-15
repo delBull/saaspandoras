@@ -24,7 +24,7 @@ export function PortalHeader({ organization, role, organizationSlug }: PortalHea
   const handleLogout = () => {
     // Clear portal session cookie
     document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
-    window.location.href = `/growth-os/hermes/portal/login`;
+    window.location.href = `/portal/login`;
   };
 
   return (

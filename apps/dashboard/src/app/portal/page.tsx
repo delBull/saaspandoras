@@ -17,12 +17,12 @@ export default function PortalRedirect() {
           router.push(`/portal/${org.projectId}`);
         } else {
           // Fallback si no hay org clara
-          router.push('/portal/snarai');
+          router.push('/portal/login');
         }
       })
       .catch(() => {
         // Fallback en caso de error de sesión o local development
-        router.push('/portal/snarai');
+        router.push('/portal/login');
       });
   }, [router]);
 

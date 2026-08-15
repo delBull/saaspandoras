@@ -34,7 +34,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
     if (err instanceof PortalAuthorizationError) {
       if (err.code === 'NO_SESSION' || err.code === 'INVALID_SESSION') {
         // No session → redirect to magic link login
-        redirect(`/growth-os/hermes/portal/login?return=/portal/${organizationSlug}`);
+        redirect(`/portal/login?return=/portal/${organizationSlug}`);
       }
       // Access denied (cross-tenant attack or non-existent org) → show 403
       redirect(`/portal/unauthorized?reason=${err.code}`);
