@@ -122,23 +122,23 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
 
             <h3 className="text-lg font-medium text-white mb-6">Milestones (Goal Funnel)</h3>
             
-            <div className="space-y-0 relative before:absolute before:inset-0 before:ml-[1.4rem] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
+            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-6 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-white/10 before:to-transparent mt-4">
               {activeJourney.milestones.map((milestone, idx) => (
-                <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-4">
+                <div key={idx} className="relative flex items-start gap-6 group">
                   
                   {/* Icon */}
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full border-4 border-[#0C0C12] bg-indigo-500/20 text-indigo-400 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 relative z-10">
-                    <CheckCircle2 size={20} />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full border-4 border-[#0C0C12] bg-[#12121A] group-hover:bg-indigo-500/20 text-white/30 group-hover:text-indigo-400 transition-colors shrink-0 relative z-10">
+                    <CheckCircle2 size={20} className={idx === 0 ? "text-indigo-400" : ""} />
                   </div>
                   
                   {/* Card */}
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] p-4 rounded-2xl bg-[#12121A] border border-white/5 group-hover:border-indigo-500/30 transition-all shadow-sm">
-                    <div className="flex items-center justify-between mb-1">
+                  <div className="flex-1 p-5 rounded-2xl bg-[#12121A] border border-white/5 group-hover:border-indigo-500/30 transition-all shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="text-[10px] font-bold text-indigo-400 tracking-widest uppercase">
                         Step {idx + 1}
                       </div>
                     </div>
-                    <div className="text-sm font-medium text-white/90">
+                    <div className="text-[15px] font-medium text-white/90 leading-relaxed">
                       {milestone}
                     </div>
                   </div>

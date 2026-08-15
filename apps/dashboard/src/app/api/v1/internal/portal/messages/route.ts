@@ -134,16 +134,25 @@ function toRuntimeMessages(msgs: PortalChatMessage[]): RuntimeMessage[] {
   }));
 }
 
-function getInitialState(orgName: string): OrganizationOnboardingState {
-  const initialStage: OnboardingStage = 'BUSINESS_DISCOVERY';
-  const initialChips = getStageChips(initialStage);
+function getInitialState(orgName: string, orgSlug: string): OrganizationOnboardingState {
+  const isKnownOrg = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
+  const initialStage: OnboardingStage = isKnownOrg ? 'ACTIVATION' : 'BUSINESS_DISCOVERY';
+  
+  const initialChips = isKnownOrg
+    ? ['📊 Resumen de Rendimiento', '🤖 Configurar Nuevo Journey', '🔧 Ajustar Políticas']
+    : getStageChips(initialStage);
+    
+  const initialContent = isKnownOrg 
+    ? `Hola. Conozco perfectamente los detalles de ${orgName} y su modelo de Fractional Real Estate. ¿En qué puedo ayudarte hoy para optimizar la conversión de S'Narai?`
+    : `Hola. Todavía no conozco los detalles de ${orgName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`;
+
   return {
     stage: initialStage,
     messages: [
       {
         id: 'welcome-1',
         role: 'hermes',
-        content: `Hola. Todavía no conozco los detalles de ${orgName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`,
+        content: initialContent,
         timestamp: new Date().toISOString(),
         chips: initialChips
       }
@@ -151,7 +160,7 @@ function getInitialState(orgName: string): OrganizationOnboardingState {
   };
 }
 
-async function loadOrCreateState(tenantId: string, orgName: string): Promise<OrganizationOnboardingState> {
+async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: string): Promise<OrganizationOnboardingState> {
   const rows = await db
     .select()
     .from(portalOnboardingState)
@@ -166,7 +175,7 @@ async function loadOrCreateState(tenantId: string, orgName: string): Promise<Org
     };
   }
 
-  const initialState = getInitialState(orgName);
+  const initialState = getInitialState(orgName, orgSlug);
   await db.insert(portalOnboardingState).values({
     tenantId,
     stage: initialState.stage,
@@ -210,7 +219,7 @@ export async function GET(request: Request) {
     const tenantId = context.organization.slug;
     const orgName = context.organization.name || organizationSlug;
 
-    const state = await loadOrCreateState(tenantId, orgName);
+    const state = await loadOrCreateState(tenantId, orgName, organizationSlug);
 
     return NextResponse.json({
       success: true,
@@ -260,7 +269,7 @@ export async function POST(request: Request) {
       }
     }, cpCtx);
 
-    const state = await loadOrCreateState(tenantId, orgName);
+    const state = await loadOrCreateState(tenantId, orgName, organizationSlug);
     const currentStage = state.stage;
 
     // 1. Record User Message

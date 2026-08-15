@@ -20,21 +20,21 @@ export function KnowledgeAdvancedPanel({ overview }: { overview: KnowledgeOvervi
       {isOpen && (
         <div className="p-6 pt-0 border-t border-white/5">
           <div className="space-y-4 pt-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-white/40">Embedding Provider</span>
-              <span className="text-white/70 font-mono">MockEmbeddingProvider</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4 text-sm">
+              <span className="text-white/40 shrink-0">Embedding Provider</span>
+              <span className="text-white/70 font-mono break-all text-left sm:text-right">MockEmbeddingProvider</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-white/40">Index Engine</span>
-              <span className="text-white/70 font-mono">PostgresKnowledgeIndex</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4 text-sm">
+              <span className="text-white/40 shrink-0">Index Engine</span>
+              <span className="text-white/70 font-mono break-all text-left sm:text-right">PostgresKnowledgeIndex</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-white/40">Runtime Version</span>
-              <span className="text-white/70 font-mono">KnowledgeRuntime v1</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4 text-sm">
+              <span className="text-white/40 shrink-0">Runtime Version</span>
+              <span className="text-white/70 font-mono break-all text-left sm:text-right">KnowledgeRuntime v1</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-white/40">Total Chunks Indexed</span>
-              <span className="text-white/70 font-mono">~142</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4 text-sm">
+              <span className="text-white/40 shrink-0">Total Chunks Indexed</span>
+              <span className="text-white/70 font-mono break-all text-left sm:text-right">~142</span>
             </div>
           </div>
         </div>
