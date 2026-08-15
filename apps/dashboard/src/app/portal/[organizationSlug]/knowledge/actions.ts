@@ -23,3 +23,43 @@ export async function addKnowledgeAction(organizationSlug: string, type: any, co
 
   revalidatePath(`/portal/${organizationSlug}/knowledge`);
 }
+
+export async function approveKnowledgeFact(organizationSlug: string, factId: string) {
+  const portalCtx = await resolvePortalContext(organizationSlug);
+  if (!portalCtx) throw new Error("Unauthorized");
+
+  const { db } = await import('@/db');
+  const { hermesKnowledge } = await import('@/db/schema');
+  const { eq, and } = await import('drizzle-orm');
+
+  await db.update(hermesKnowledge)
+    .set({ status: 'ACTIVE' })
+    .where(
+      and(
+        eq(hermesKnowledge.id, factId),
+        eq(hermesKnowledge.organizationId, portalCtx.tenant.organizationId)
+      )
+    );
+
+  revalidatePath(`/portal/${organizationSlug}/knowledge`);
+}
+
+export async function rejectKnowledgeFact(organizationSlug: string, factId: string) {
+  const portalCtx = await resolvePortalContext(organizationSlug);
+  if (!portalCtx) throw new Error("Unauthorized");
+
+  const { db } = await import('@/db');
+  const { hermesKnowledge } = await import('@/db/schema');
+  const { eq, and } = await import('drizzle-orm');
+
+  await db.update(hermesKnowledge)
+    .set({ status: 'REJECTED' })
+    .where(
+      and(
+        eq(hermesKnowledge.id, factId),
+        eq(hermesKnowledge.organizationId, portalCtx.tenant.organizationId)
+      )
+    );
+
+  revalidatePath(`/portal/${organizationSlug}/knowledge`);
+}

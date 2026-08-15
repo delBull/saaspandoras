@@ -8,6 +8,8 @@ import type {
 } from './knowledge-types';
 import { MockEmbeddingProvider } from './knowledge-types';
 import { nanoid } from 'nanoid';
+import { hermesKnowledge } from '@/db/schema';
+import crypto from 'crypto';
 
 /**
  * PostgreSQL implementation of Knowledge Index.
@@ -77,6 +79,10 @@ export class KnowledgeRuntime {
       await db.update(knowledgeSources).set({ status: 'READY', activeVersionId: versionId, lastProcessedAt: new Date() }).where(eq(knowledgeSources.id, sourceId));
       await db.update(knowledgeSourceVersions).set({ status: 'READY', processedAt: new Date() }).where(eq(knowledgeSourceVersions.id, versionId));
       
+      // Note: In Phase 6.4 MVP we do NOT automatically extract facts and insert them into hermesKnowledge here.
+      // The Real Knowledge Extraction Provider (e.g. LLM chunking & fact extraction) will be implemented
+      // in a future phase. For E2E testing, test fixtures will explicitly insert data.
+
       console.log(`[KnowledgeRuntime] Successfully completed lifecycle for Source: ${sourceId}`);
     } catch (err: any) {
       console.error(`[KnowledgeRuntime] Failed processing Source: ${sourceId}`, err);

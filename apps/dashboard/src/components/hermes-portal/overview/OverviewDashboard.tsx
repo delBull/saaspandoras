@@ -39,7 +39,7 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-12 animate-in fade-in duration-500 w-full px-4 sm:px-6">
+    <div className="flex flex-col gap-8 pt-8 pb-12 animate-in fade-in duration-500 w-full px-4 sm:px-6">
       
       {/* TOP ROW: Core, Status, and Hermes Chat */}
       <div className="flex flex-col lg:flex-row gap-8 items-stretch w-full">

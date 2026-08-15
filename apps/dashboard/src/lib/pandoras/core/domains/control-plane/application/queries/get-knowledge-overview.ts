@@ -1,8 +1,17 @@
 import { db } from '@/db';
-import { knowledgeSources } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { knowledgeSources, hermesKnowledge } from '@/db/schema';
+import { eq, inArray } from 'drizzle-orm';
 import type { ControlPlaneContext } from '../context';
 import type { KnowledgeSourceView } from '../../view-models';
+
+export interface KnowledgeFactView {
+  id: string;
+  dimension: string;
+  key: string;
+  content: string;
+  status: 'ACTIVE' | 'PENDING_REVIEW' | 'REJECTED' | 'SUPERSEDED';
+  source: string;
+}
 
 export interface KnowledgeOverviewView {
   totalSources: number;
@@ -11,6 +20,7 @@ export interface KnowledgeOverviewView {
   failedSources: number;
   knowledgeHealth: 'READY' | 'PROCESSING' | 'ATTENTION_REQUIRED' | 'EMPTY';
   sources: KnowledgeSourceView[];
+  facts: KnowledgeFactView[];
 }
 
 export class GetKnowledgeOverviewQuery {
@@ -18,8 +28,13 @@ export class GetKnowledgeOverviewQuery {
     const scope = ctx.requireOrganizationScope(organizationId);
     const orgSlug = scope.organizationId.replace(/^org_/, '');
     let records: any[] = [];
+    let knowledgeRecords: any[] = [];
     try {
       records = await db.select().from(knowledgeSources).where(eq(knowledgeSources.tenantId, orgSlug));
+      knowledgeRecords = await db.select().from(hermesKnowledge)
+        .where(
+          eq(hermesKnowledge.organizationId, orgSlug)
+        );
     } catch (error) {
       console.warn('[GetKnowledgeOverviewQuery] Error querying knowledge sources (table might be missing):', error);
       // Return empty array to prevent 500 error on the UI
@@ -46,13 +61,25 @@ export class GetKnowledgeOverviewQuery {
       canRetry: r.status === 'FAILED'
     }));
 
+    const facts: KnowledgeFactView[] = knowledgeRecords
+      .filter(r => ['knowledge', 'business_info'].includes(r.dimension))
+      .map(r => ({
+        id: r.id,
+        dimension: r.dimension,
+        key: r.key,
+        content: r.content,
+        status: r.status as any,
+        source: r.sourceReference || r.source || 'Unknown'
+      }));
+
     return {
       totalSources,
       readySources,
       processingSources,
       failedSources,
       knowledgeHealth,
-      sources
+      sources,
+      facts
     };
   }
 }

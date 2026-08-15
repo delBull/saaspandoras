@@ -19,9 +19,11 @@ interface KnowledgeDashboardProps {
   organizationName?: string;
   onAddKnowledge?: (payload: { type: KnowledgeSourceView['type']; title: string; content: string }) => void;
   onViewSource?: (sourceId: string) => void;
+  onApproveFact?: (factId: string) => void;
+  onRejectFact?: (factId: string) => void;
 }
 
-export function KnowledgeDashboard({ overview, organizationName = 'your organization', onAddKnowledge, onViewSource }: KnowledgeDashboardProps) {
+export function KnowledgeDashboard({ overview, organizationName = 'your organization', onAddKnowledge, onViewSource, onApproveFact, onRejectFact }: KnowledgeDashboardProps) {
   const [showTeachModal, setShowTeachModal] = useState(false);
 
   return (
@@ -44,8 +46,12 @@ export function KnowledgeDashboard({ overview, organizationName = 'your organiza
             onViewSource={onViewSource} 
             onTeachClick={() => setShowTeachModal(true)}
           />
+          <VerifiedKnowledgePanel 
+            facts={overview.facts} 
+            onApprove={onApproveFact} 
+            onReject={onRejectFact} 
+          />
           <BusinessContextPanel />
-          <VerifiedKnowledgePanel />
         </div>
 
         {/* Right Column (Health & Advanced) */}

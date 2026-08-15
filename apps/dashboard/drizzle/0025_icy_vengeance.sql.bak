@@ -1,0 +1,162 @@
+CREATE TABLE "hermes_addon_audit" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"organization_id" varchar(256) NOT NULL,
+	"addon_id" varchar(256) NOT NULL,
+	"installation_id" varchar(256) NOT NULL,
+	"event_type" varchar(50) NOT NULL,
+	"actor_id" varchar(256) NOT NULL,
+	"actor_type" varchar(50) NOT NULL,
+	"old_status" varchar(50),
+	"new_status" varchar(50) NOT NULL,
+	"version" varchar(50) NOT NULL,
+	"reason" text,
+	"metadata" jsonb,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "hermes_addon_installations" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"organization_id" varchar(256) NOT NULL,
+	"addon_id" varchar(256) NOT NULL,
+	"version" varchar(50) NOT NULL,
+	"status" varchar(50) NOT NULL,
+	"configuration" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"manifest_snapshot" jsonb,
+	"installed_by" varchar(256) NOT NULL,
+	"approved_by" varchar(256),
+	"installed_at" timestamp DEFAULT now() NOT NULL,
+	"activated_at" timestamp,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "hermes_addons" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"version" varchar(50) NOT NULL,
+	"type" varchar(50) NOT NULL,
+	"description" text NOT NULL,
+	"manifest" jsonb NOT NULL,
+	"status" varchar(50) DEFAULT 'AVAILABLE' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "hermes_conversation_messages" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"organization_id" varchar(256) NOT NULL,
+	"conversation_id" varchar(256) NOT NULL,
+	"role" varchar(50) NOT NULL,
+	"content" text NOT NULL,
+	"sequence" integer NOT NULL,
+	"idempotency_key" varchar(256) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "hermes_conversations" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"organization_id" varchar(256) NOT NULL,
+	"conversation_id" varchar(256) NOT NULL,
+	"version" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "hermes_governance_audit" (
+	"id" varchar(255) PRIMARY KEY NOT NULL,
+	"organization_id" varchar(255) NOT NULL,
+	"knowledge_id" varchar(255) NOT NULL,
+	"version" integer NOT NULL,
+	"event_type" varchar(50) NOT NULL,
+	"actor_id" varchar(255) NOT NULL,
+	"actor_type" varchar(50) NOT NULL,
+	"old_status" varchar(50),
+	"new_status" varchar(50) NOT NULL,
+	"reason" text,
+	"metadata" jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "hermes_knowledge" (
+	"id" varchar(255) PRIMARY KEY NOT NULL,
+	"organization_id" varchar(255) NOT NULL,
+	"dimension" varchar(50) NOT NULL,
+	"key" varchar(255) NOT NULL,
+	"content" text NOT NULL,
+	"status" varchar(50) NOT NULL,
+	"visibility" varchar(50) NOT NULL,
+	"authority" varchar(50) NOT NULL,
+	"version" integer NOT NULL,
+	"source" varchar(50) NOT NULL,
+	"source_reference" text,
+	"created_by" varchar(255) NOT NULL,
+	"supersedes_id" varchar(255),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "knowledge_source_versions" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"source_id" varchar(256) NOT NULL,
+	"tenant_id" varchar(256) NOT NULL,
+	"version" integer NOT NULL,
+	"content" text NOT NULL,
+	"status" varchar(50) NOT NULL,
+	"chunk_count" integer DEFAULT 0 NOT NULL,
+	"created_by" varchar(256) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"processed_at" timestamp,
+	"error_code" varchar(100),
+	"error_message" text
+);
+--> statement-breakpoint
+CREATE TABLE "knowledge_sources" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"tenant_id" varchar(256) NOT NULL,
+	"title" varchar(256) NOT NULL,
+	"type" varchar(50) NOT NULL,
+	"status" varchar(50) NOT NULL,
+	"active_version_id" varchar(256),
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"last_processed_at" timestamp,
+	"error_code" varchar(100),
+	"error_message" text
+);
+--> statement-breakpoint
+CREATE TABLE "portal_onboarding_state" (
+	"tenant_id" varchar(256) PRIMARY KEY NOT NULL,
+	"stage" varchar(50) DEFAULT 'BUSINESS_DISCOVERY' NOT NULL,
+	"messages" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "channel_identity_bindings" ALTER COLUMN "identity_id" SET DATA TYPE varchar(256);--> statement-breakpoint
+ALTER TABLE "knowledge_chunks" ADD COLUMN "source_version_id" varchar(256);--> statement-breakpoint
+ALTER TABLE "nexus_deal_rooms" ADD COLUMN "next_room_id" uuid;--> statement-breakpoint
+ALTER TABLE "hermes_addon_audit" ADD CONSTRAINT "hermes_addon_audit_organization_id_projects_slug_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."projects"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "hermes_addon_installations" ADD CONSTRAINT "hermes_addon_installations_organization_id_projects_slug_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."projects"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "hermes_addon_installations" ADD CONSTRAINT "hermes_addon_installations_addon_id_hermes_addons_id_fk" FOREIGN KEY ("addon_id") REFERENCES "public"."hermes_addons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "hermes_conversation_messages" ADD CONSTRAINT "hermes_conversation_messages_organization_id_projects_slug_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."projects"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "hermes_conversations" ADD CONSTRAINT "hermes_conversations_organization_id_projects_slug_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."projects"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "knowledge_source_versions" ADD CONSTRAINT "knowledge_source_versions_source_id_knowledge_sources_id_fk" FOREIGN KEY ("source_id") REFERENCES "public"."knowledge_sources"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "knowledge_source_versions" ADD CONSTRAINT "knowledge_source_versions_tenant_id_projects_slug_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."projects"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "knowledge_sources" ADD CONSTRAINT "knowledge_sources_tenant_id_projects_slug_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."projects"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "portal_onboarding_state" ADD CONSTRAINT "portal_onboarding_state_tenant_id_projects_slug_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."projects"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "hermes_addon_audit_tenant_idx" ON "hermes_addon_audit" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX "hermes_addon_audit_installation_idx" ON "hermes_addon_audit" USING btree ("installation_id");--> statement-breakpoint
+CREATE INDEX "hermes_addon_install_tenant_idx" ON "hermes_addon_installations" USING btree ("organization_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "hermes_addon_install_unique" ON "hermes_addon_installations" USING btree ("organization_id","addon_id") WHERE "hermes_addon_installations"."status" != 'DEACTIVATED';--> statement-breakpoint
+CREATE INDEX "hermes_conv_msg_org_conv_idx" ON "hermes_conversation_messages" USING btree ("organization_id","conversation_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "hermes_conv_msg_seq_idx" ON "hermes_conversation_messages" USING btree ("organization_id","conversation_id","sequence");--> statement-breakpoint
+CREATE UNIQUE INDEX "hermes_conv_msg_idem_idx" ON "hermes_conversation_messages" USING btree ("organization_id","idempotency_key");--> statement-breakpoint
+CREATE UNIQUE INDEX "hermes_conv_unique" ON "hermes_conversations" USING btree ("organization_id","conversation_id");--> statement-breakpoint
+CREATE INDEX "hermes_audit_tenant_idx" ON "hermes_governance_audit" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX "hermes_audit_knowledge_idx" ON "hermes_governance_audit" USING btree ("knowledge_id");--> statement-breakpoint
+CREATE INDEX "hermes_knowledge_tds_idx" ON "hermes_knowledge" USING btree ("organization_id","dimension","status");--> statement-breakpoint
+CREATE UNIQUE INDEX "hermes_knowledge_unique_active" ON "hermes_knowledge" USING btree ("organization_id","dimension","key") WHERE "hermes_knowledge"."status" = 'ACTIVE';--> statement-breakpoint
+CREATE INDEX "knowledge_version_source_idx" ON "knowledge_source_versions" USING btree ("source_id");--> statement-breakpoint
+CREATE INDEX "knowledge_version_tenant_idx" ON "knowledge_source_versions" USING btree ("tenant_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "knowledge_version_unique_idx" ON "knowledge_source_versions" USING btree ("source_id","version");--> statement-breakpoint
+CREATE INDEX "knowledge_source_tenant_idx" ON "knowledge_sources" USING btree ("tenant_id");--> statement-breakpoint
+ALTER TABLE "knowledge_chunks" DROP COLUMN "source_type";

@@ -87,12 +87,16 @@ export function PortalShell({ context, children }: PortalShellProps) {
 
         {/* Content Row: Main Page + Optional Inspector */}
         <div className="flex-1 flex flex-row overflow-hidden relative">
-          <main className="flex-1 overflow-y-auto pb-10 h-[calc(100vh-3rem)]">
+          <main className="flex-1 overflow-y-auto pb-20 h-[calc(100vh-3rem)]">
             {children}
           </main>
 
           {/* Desktop Right Inspector - Hidden on Overview */}
-          {!isOverview && <PortalInspector organization={context.organization} />}
+          {!isOverview && (
+            <div className="hidden xl:block w-[400px] shrink-0 pr-6 pt-6 pb-20">
+              <PortalInspector organization={context.organization} />
+            </div>
+          )}
         </div>
       </div>
 
