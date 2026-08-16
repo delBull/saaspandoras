@@ -18,6 +18,7 @@ import { redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { PortalShell } from '@/components/hermes-portal/PortalShell';
+import { TourEngine } from '@/components/onboarding/TourEngine';
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -44,8 +45,10 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
   }
 
   return (
-    <PortalShell context={context}>
-      {children}
-    </PortalShell>
+    <TourEngine>
+      <PortalShell context={context}>
+        {children}
+      </PortalShell>
+    </TourEngine>
   );
 }

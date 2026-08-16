@@ -8,6 +8,7 @@ import "driver.js/dist/driver.css";
 import "./tour.css";
 import { useActiveAccount } from 'thirdweb/react';
 import { useRealGamification } from '@/hooks/useRealGamification';
+import { MobileTourOverlay } from './MobileTourOverlay';
 
 // --- CONFIGURATION ---
 
@@ -94,6 +95,14 @@ export function TourEngine({ children }: { children: ReactNode }) {
     // Ref to track current index accurately inside closures (driver.js callbacks)
     const currentIndexRef = useRef(0);
     const driverRef = useRef<any>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Initial Check
     useEffect(() => {
@@ -101,10 +110,11 @@ export function TourEngine({ children }: { children: ReactNode }) {
         // Only start on home page paths
         const isHomePage = window.location.pathname === '/' || 
                            window.location.pathname === '/admin/dashboard' || 
-                           window.location.pathname === '/dashboard';
+                           window.location.pathname === '/dashboard' ||
+                           window.location.pathname.startsWith('/portal');
 
         if (!hasCompleted && isHomePage) {
-            // DISABLED: setTimeout(() => startTour(), 1500);
+            setTimeout(() => startTour(), 1500);
         }
     }, []);
 
@@ -131,7 +141,9 @@ export function TourEngine({ children }: { children: ReactNode }) {
         setIsOpen(true);
         setCurrentStepIndex(0);
         currentIndexRef.current = 0;
-        showStep(0);
+        if (window.innerWidth >= 768) {
+            showStep(0);
+        }
     };
 
     const finishTour = () => {
@@ -169,6 +181,8 @@ export function TourEngine({ children }: { children: ReactNode }) {
     };
 
     const showStep = async (index: number) => {
+        if (window.innerWidth < 768) return; // Prevent driver.js on mobile
+        
         const step = TOUR_STEPS[index];
         if (!step) return;
 
@@ -268,6 +282,16 @@ export function TourEngine({ children }: { children: ReactNode }) {
     return (
         <TourContext.Provider value={{ startTour, currentStepIndex, isOpen }}>
             {children}
+            {isMobile && (
+                <MobileTourOverlay
+                    isOpen={isOpen}
+                    steps={TOUR_STEPS}
+                    currentStepIndex={currentStepIndex}
+                    onNext={handleNext}
+                    onPrev={handlePrev}
+                    onFinish={finishTour}
+                />
+            )}
         </TourContext.Provider>
     );
 }
