@@ -134,14 +134,36 @@ export class OllamaReasoningProvider implements ReasoningProvider {
 
   async generate(input: ReasoningInput): Promise<ReasoningOutput> {
     const start = Date.now();
-    const baseUrl = this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1';
+    const isSnarai = input.reasoningContext.tenantIdentity.organizationName.toLowerCase().includes('snarai');
+    const dynamicLlm = (input.reasoningContext as any).core?.llmConfig;
+
+    const baseUrl = isSnarai && process.env.OLLAMA_SNARAI_BASE_URL 
+      ? process.env.OLLAMA_SNARAI_BASE_URL 
+      : (!isSnarai && dynamicLlm?.baseUrl 
+          ? dynamicLlm.baseUrl 
+          : (this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1'));
+
     const prompt = HermesPromptBuilder.build(input);
-    const model = prompt.hints.model || this.config.model || process.env.OLLAMA_MODEL || 'llama3';
+    const model = isSnarai && process.env.OLLAMA_SNARAI_MODEL
+      ? process.env.OLLAMA_SNARAI_MODEL
+      : (!isSnarai && dynamicLlm?.model
+          ? dynamicLlm.model
+          : (prompt.hints.model || this.config.model || process.env.OLLAMA_MODEL || 'llama3'));
+
+    const apiKey = isSnarai && process.env.OLLAMA_SNARAI_API_KEY
+      ? process.env.OLLAMA_SNARAI_API_KEY
+      : (!isSnarai && dynamicLlm?.apiKey
+          ? dynamicLlm.apiKey
+          : process.env.OLLAMA_API_KEY);
+
     const temperature = prompt.hints.temperature ?? this.config.defaultTemperature ?? 0.15;
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         model,
         messages: prompt.messages,
@@ -273,13 +295,34 @@ export class OllamaStreamingProvider implements StreamingReasoningProvider {
 
   async stream(input: ReasoningInput, signal?: AbortSignal): Promise<ReasoningStream> {
     const start = Date.now();
-    const baseUrl = this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    const isSnarai = input.reasoningContext.tenantIdentity.organizationName.toLowerCase().includes('snarai');
+    const dynamicLlm = (input.reasoningContext as any).core?.llmConfig;
+
+    const baseUrl = isSnarai && process.env.OLLAMA_SNARAI_BASE_URL 
+      ? process.env.OLLAMA_SNARAI_BASE_URL 
+      : (!isSnarai && dynamicLlm?.baseUrl 
+          ? dynamicLlm.baseUrl 
+          : (this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434'));
+
     const prompt = HermesPromptBuilder.build(input);
-    const model = prompt.hints.model || this.config.model || process.env.OLLAMA_MODEL || 'llama3';
+    const model = isSnarai && process.env.OLLAMA_SNARAI_MODEL
+      ? process.env.OLLAMA_SNARAI_MODEL
+      : (!isSnarai && dynamicLlm?.model
+          ? dynamicLlm.model
+          : (prompt.hints.model || this.config.model || process.env.OLLAMA_MODEL || 'llama3'));
+
+    const apiKey = isSnarai && process.env.OLLAMA_SNARAI_API_KEY
+      ? process.env.OLLAMA_SNARAI_API_KEY
+      : (!isSnarai && dynamicLlm?.apiKey
+          ? dynamicLlm.apiKey
+          : process.env.OLLAMA_API_KEY);
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
     const response = await fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       signal,
       body: JSON.stringify({
         model,

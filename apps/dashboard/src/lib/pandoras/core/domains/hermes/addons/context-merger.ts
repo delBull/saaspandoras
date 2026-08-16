@@ -1,6 +1,6 @@
 import { HermesAddOnManifest } from './contracts';
 import { db } from '@/db';
-import { hermesAddonInstallations, hermesKnowledge } from '@/db/schema';
+import { hermesAddonInstallations, hermesKnowledge, projects, installedProducts } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { KnowledgeDimensionDefinitionRegistry } from '../knowledge/registry';
 import { KnowledgeDimension, GovernedKnowledgeItem } from '../knowledge/types';
@@ -10,6 +10,11 @@ export interface CoreSecurityContext {
   tenantId: string;
   projectId: string;
   authorizedChannels: string[];
+  llmConfig?: {
+    baseUrl?: string;
+    model?: string;
+    apiKey?: string;
+  };
 }
 
 export interface TenantKnowledge {
@@ -128,11 +133,36 @@ export class CognitiveContextBuilder {
   }
 
   private static async buildCoreSecurityContext(tenantId: string): Promise<CoreSecurityContext> {
+    const projectRecords = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.slug, tenantId))
+      .limit(1);
+
+    const project = projectRecords[0];
+    let llmConfig: any = undefined;
+
+    if (project) {
+      const productRecords = await db
+        .select()
+        .from(installedProducts)
+        .where(and(
+           eq(installedProducts.projectId, project.id),
+           eq(installedProducts.product, 'HERMES')
+        ))
+        .limit(1);
+      const firstProduct = productRecords[0];
+      if (firstProduct && firstProduct.config) {
+         llmConfig = (firstProduct.config as any).llm;
+      }
+    }
+
     return {
       organizationId: 'pandoras',
       tenantId,
-      projectId: 'project_1',
-      authorizedChannels: ['telegram'] // Baseline tenant channel
+      projectId: project?.id?.toString() || 'project_1',
+      authorizedChannels: ['telegram'], // Baseline tenant channel
+      llmConfig
     };
   }
 
