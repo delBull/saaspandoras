@@ -4,6 +4,7 @@ import { channelIdentityBindings, projects, users, daoMembers, installedProducts
 import { eq, sql } from 'drizzle-orm';
 import { WhatsAppAdapter } from '@/lib/pandoras/core/domains/channels/adapters/whatsapp-adapter';
 import { TelegramAdapter } from '@/lib/pandoras/core/domains/channels/adapters/telegram-adapter';
+import { SubscriptionEngine } from '@/lib/platform/subscription-engine';
 
 // Interfaz para la deduplicación de canales
 interface GroupedBindings {
@@ -19,6 +20,9 @@ export async function GET(request: Request) {
     if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Ejecutar lógica de Suscripciones (Vencimientos y Periodos de Gracia)
+    await SubscriptionEngine.checkAndProcessExpirations();
 
     const activeBindings = await db.select().from(channelIdentityBindings).where(
       eq(channelIdentityBindings.status, 'ACTIVE')

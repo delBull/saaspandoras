@@ -104,7 +104,7 @@ export async function getPaymentsDashboardStats() {
             type: p.paymentMethod || 'SPEI_FASTLANE',
             processedAt: p.createdAt,
             clientId: p.userId,
-            linkTitle: `Reserva ${p.paymentMethod === 'SPEI_FASTLANE' ? 'SPEI' : 'Thirdweb'} (${p.purchaseId})`
+            linkTitle: `Reserva ${['SPEI_FASTLANE', 'bank_transfer', 'fastlane'].includes(p.paymentMethod) ? 'SPEI' : 'Thirdweb'} (${p.purchaseId})`
           }))
         ];
 

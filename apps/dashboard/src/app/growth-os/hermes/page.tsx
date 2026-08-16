@@ -13,9 +13,12 @@ import {
   Lock, 
   ChevronRight, 
   Sparkles, 
-  FileText, 
-  CheckCircle2, 
+  BrainCircuit,
+  CheckCircle,
+  CheckCircle2,
+  ChevronDown,
   ArrowUpRight,
+  FileText, 
   Database,
   Layers,
   Cpu,
@@ -31,14 +34,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GrowthOSLeadModal } from "@/components/marketing/GrowthOSLeadModal";
-
-
+import { HermesLegalModals } from "@/components/growth/HermesLegalModals";
 
 // ─────────────────── HERMES CORE FEATURES & VALUE MATRIX ───────────────────
 
 export default function HermesEnterpriseLandingPage() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [modalSource, setModalSource] = useState('hermes_enterprise_landing');
+  const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | null>(null);
 
   const handleOpenCTA = (source: string) => {
     setModalSource(source);
@@ -392,6 +395,101 @@ export default function HermesEnterpriseLandingPage() {
         </div>
       </section>
 
+      {/* PRICING SECTION */}
+      <section id="pricing" className="py-24 px-6 max-w-7xl mx-auto border-t border-zinc-800/80">
+        <div className="text-center mb-16">
+          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs px-3 py-1 font-mono mb-4">Pricing Estratégico</Badge>
+          <h2 className="text-3xl md:text-5xl font-light text-white mb-6">
+            Menos software. Más resultados.
+          </h2>
+          <p className="text-base md:text-lg text-zinc-400 font-light max-w-3xl mx-auto">
+            Un Analista de Datos Jr. ($2,500/mes) + un Administrador CRM ($1,500/mes) + Software de Automatización ($500/mes) cuestan más de <span className="text-white font-medium">$4,500 USD al mes</span>. 
+            Hermes reemplaza este ecosistema obsoleto por una fracción del costo, operando 24/7 sin errores ni descansos.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          {/* Monthly Plan */}
+          <div className="border border-zinc-800 rounded-3xl bg-zinc-900/40 p-8 md:p-12 flex flex-col relative overflow-hidden group hover:border-zinc-700 transition-colors">
+            <h3 className="text-xl font-bold text-white mb-2">Licencia Mensual</h3>
+            <p className="text-sm text-zinc-400 mb-8 font-light">Flexibilidad total para probar la infraestructura operativa sin compromisos a largo plazo.</p>
+            
+            <div className="mb-8">
+              <span className="text-4xl md:text-5xl font-black text-white">$499</span>
+              <span className="text-zinc-500 font-mono text-sm"> / mes</span>
+            </div>
+
+            <ul className="space-y-4 mb-10 flex-1">
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                Command Center Operativo
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                Automatización Omnicanal (WhatsApp, TG)
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                Reportes Analíticos Diarios
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                Soporte y Actualizaciones de Motor
+              </li>
+            </ul>
+
+            <Button
+              onClick={() => handleOpenCTA('hermes_pricing_monthly')}
+              className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-6 rounded-xl transition-colors"
+            >
+              Comenzar Mensual
+            </Button>
+          </div>
+
+          {/* Annual Plan */}
+          <div className="border border-purple-500/30 rounded-3xl bg-gradient-to-b from-purple-500/10 to-zinc-950 p-8 md:p-12 flex flex-col relative overflow-hidden transform md:-translate-y-4 shadow-2xl shadow-purple-500/10">
+            <div className="absolute top-0 right-0 bg-purple-500 text-black text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-bl-2xl">
+              2 Meses Gratis
+            </div>
+            
+            <h3 className="text-xl font-bold text-white mb-2">Licencia Anual (Pro)</h3>
+            <p className="text-sm text-purple-200/70 mb-8 font-light">Para empresas comprometidas con escalar sus ventas operando sobre infraestructura autónoma.</p>
+            
+            <div className="mb-8">
+              <span className="text-4xl md:text-5xl font-black text-white">$4,990</span>
+              <span className="text-zinc-500 font-mono text-sm"> / año</span>
+              <div className="text-xs font-mono text-emerald-400 mt-2">Ahorro de $998 USD vs Plan Mensual</div>
+            </div>
+
+            <ul className="space-y-4 mb-10 flex-1">
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-purple-400 shrink-0" />
+                <span className="text-white font-medium">Todo lo del Plan Mensual, más:</span>
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-purple-400 shrink-0" />
+                Setup Arquitectónico Prioritario
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-purple-400 shrink-0" />
+                Integración Avanzada a CRMs (HubSpot/Salesforce)
+              </li>
+              <li className="flex items-center gap-3 text-sm text-zinc-300 font-light">
+                <CheckCircle className="w-5 h-5 text-purple-400 shrink-0" />
+                Consultoría Trimestral de Growth
+              </li>
+            </ul>
+
+            <Button
+              onClick={() => handleOpenCTA('hermes_pricing_annual')}
+              className="w-full bg-purple-500 hover:bg-purple-400 text-black font-bold py-6 rounded-xl shadow-lg shadow-purple-500/20 transition-all"
+            >
+              Comenzar Anual
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* FINAL CTA SECTION */}
       <section className="py-24 px-6 border-t border-zinc-800/80 bg-gradient-to-b from-zinc-950 to-[#070709] text-center">
         <div className="max-w-4xl mx-auto">
@@ -419,12 +517,37 @@ export default function HermesEnterpriseLandingPage() {
         </div>
       </section>
 
-      {/* Lead Capture Modal */}
+      {/* GLOBAL FOOTER */}
+      <footer className="border-t border-zinc-800/50 bg-zinc-950 py-12 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="text-white font-bold text-lg tracking-widest flex items-center gap-2">
+              <Zap className="w-5 h-5 text-purple-500" />
+              Hermes Growth OS
+            </div>
+            <p className="text-xs text-zinc-500 font-mono">
+              Engineered by <span className="text-white">Pandoras Finance S.A.</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-6 text-sm text-zinc-400">
+            <button onClick={() => setLegalModalType('terms')} className="hover:text-white transition-colors">Términos y Condiciones</button>
+            <button onClick={() => setLegalModalType('privacy')} className="hover:text-white transition-colors">Aviso de Privacidad</button>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modals */}
       <GrowthOSLeadModal
         isOpen={isLeadModalOpen}
         onClose={() => setIsLeadModalOpen(false)}
         tierName="Hermes Enterprise AI Infrastructure"
         source={modalSource}
+      />
+      <HermesLegalModals 
+        isOpen={!!legalModalType} 
+        onClose={() => setLegalModalType(null)} 
+        type={legalModalType} 
       />
     </div>
   );

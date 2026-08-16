@@ -262,29 +262,13 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthO
                   </p>
 
                   <div className="space-y-3 mb-6">
-                    {responseData?.automaticCheckoutUrl && (
+                    {responseData?.id && (
                       <a
-                        href={responseData.automaticCheckoutUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                        href={`/growth-os/hermes/checkout?leadId=${responseData.id}&plan=${source?.includes('annual') ? 'annual' : 'monthly'}`}
                         className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
                       >
-                        ⚡ Reserva Directa Digital ($500 USD)
+                        ⚡ Reserva Directa Digital ({source?.includes('annual') ? '$4,990 USD' : '$499 USD'})
                       </a>
-                    )}
-
-                    {responseData?.sandboxTrial?.url && (
-                      <div className="space-y-2">
-                        <a
-                          href={responseData.sandboxTrial.url}
-                          className="w-full py-3.5 bg-gradient-to-r from-purple-600/30 to-amber-600/30 hover:from-purple-600/40 hover:to-amber-600/40 border border-amber-500/30 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/10"
-                        >
-                          🧪 Iniciar Sandbox de Evaluación (Acceso Inmediato)
-                        </a>
-                        <p className="text-[10px] text-amber-400/90 font-mono font-medium flex items-center justify-center gap-1 bg-amber-500/10 py-1.5 px-3 rounded-lg border border-amber-500/20">
-                          ⏱️ PRUEBA LIMITADA: Tu sesión expira estrictamente en 15 minutos (Máx. 10 consultas). ¡Aprovecha tu tiempo!
-                        </p>
-                      </div>
                     )}
                   </div>
 

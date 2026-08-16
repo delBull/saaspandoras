@@ -155,8 +155,50 @@ async function handler(
                         }
                     });
 
-                    // Step 3: Compute commissions if ambassador exists
-                    if (ambassador) {
+                    // Step 3: Compute commissions and subscriptions
+                    const meta = purchase.metadata as any;
+
+                    if (meta?.tier === 'Hermes Growth Monthly' || meta?.tier === 'Hermes Growth Annual') {
+                        const isAnnual = meta?.tier === 'Hermes Growth Annual';
+                        const grantDays = isAnnual ? 365 : 30;
+                        const refRewardDays = isAnnual ? 30 : 14;
+                        const refRewardPoints = isAnnual ? 30 : 14;
+
+                        // Hermes Subscription Logic
+                        // 1. Grant Days to the Buyer's project
+                        const { SubscriptionEngine } = await import('@/lib/platform/subscription-engine');
+                        await SubscriptionEngine.grantFreeDays(projectIdNum, grantDays);
+                        console.log(`✅ Project ${projectIdNum}: +${grantDays} Days granted to buyer (${meta.tier})`);
+
+                        // 2. Hermes Referral Logic
+                        if (ambassador && ambassador.projectId) {
+                            const { sendReferralPaid } = await import('@/lib/email/hermes-mailer');
+                            const { HermesOperationalAlerts } = await import('@/lib/pandoras/core/domains/hermes/alerts');
+                            
+                            await SubscriptionEngine.grantFreeDays(ambassador.projectId, refRewardDays);
+                            
+                            // Insert Reputation Event
+                            await tx.insert(partnerReputationEvents).values({
+                                ambassadorId: ambassador.id,
+                                event: `HERMES_REFERRAL_${projectIdNum}`,
+                                points: refRewardPoints
+                            });
+
+                            const user = await db.query.users.findFirst({ where: eq(users.email, ambassador.email) });
+                            const ambProject = await db.query.projects.findFirst({ where: eq(projects.id, ambassador.projectId) });
+                            
+                            if (user && ambProject) {
+                                // Notifications (Omnichannel)
+                                await sendReferralPaid(user.email || ambassador.email, user.name || 'Gestor', refRewardDays, refRewardPoints);
+                                await HermesOperationalAlerts.sendAlert(
+                                    ambProject.slug,
+                                    `🏆 *Hermes Growth*\n\n¡Felicidades! Un invitado tuyo ha adquirido el plan operativo ${isAnnual ? 'Anual' : 'Mensual'}. Has sido recompensado con +${refRewardDays} Días Gratis y +${refRewardPoints} Reputation Points.`
+                                );
+                                console.log(`✅ Project ${projectIdNum}: +${refRewardDays} Days and +${refRewardPoints} RP granted to Hermes Ambassador ${ambassador.referralCode}`);
+                            }
+                        }
+                    } else if (ambassador) {
+                        // Standard DAO/Commission Logic (S'Narai)
                         const tokenPriceUsd = project.tokenPriceUsd ? parseFloat(project.tokenPriceUsd as string) : 50;
                         const totalAmountUsdc = units * tokenPriceUsd;
                         

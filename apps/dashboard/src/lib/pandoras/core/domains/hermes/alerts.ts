@@ -5,7 +5,7 @@ import { WhatsAppAdapter } from '../channels/adapters/whatsapp-adapter';
 import { TelegramAdapter } from '../channels/adapters/telegram-adapter';
 
 export class HermesOperationalAlerts {
-  private static async sendAlert(tenantId: string, message: string) {
+  public static async sendAlert(tenantId: string, message: string) {
     try {
       const activeBindings = await db.select().from(channelIdentityBindings).where(
         eq(channelIdentityBindings.identityId, tenantId)

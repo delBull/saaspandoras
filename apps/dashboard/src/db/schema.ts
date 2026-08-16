@@ -3601,3 +3601,32 @@ export const hermesActorJourneys = pgTable("hermes_actor_journeys", {
   orgActorIdx: uniqueIndex("hermes_actor_journeys_org_actor_idx").on(t.organizationId, t.actorId).where(sql`${t.status} = 'IN_PROGRESS'`),
   journeyIdx: index("hermes_actor_journeys_journey_idx").on(t.journeyId),
 }));
+
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "active",
+  "grace_period",
+  "suspended",
+  "canceled",
+  "trialing"
+]);
+
+export const hermesSubscriptions = pgTable("hermes_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  status: subscriptionStatusEnum("status").default('active').notNull(),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }).notNull(),
+  gracePeriodEnd: timestamp("grace_period_end", { withTimezone: true }),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => ({
+  projectIdx: index("hermes_subscriptions_project_idx").on(t.projectId),
+}));
+
+export const hermesSubscriptionsRelations = relations(hermesSubscriptions, ({ one }) => ({
+  project: one(projects, {
+    fields: [hermesSubscriptions.projectId],
+    references: [projects.id],
+  }),
+}));
+
