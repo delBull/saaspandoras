@@ -75,6 +75,27 @@ export function MobileTourOverlay({
             dangerouslySetInnerHTML={{ __html: step.content }}
           />
 
+          {step.id === 'omnichannel_connection' && (
+            <div className="flex flex-col gap-3 mb-8">
+              <a 
+                href={`https://t.me/${process.env.NEXT_PUBLIC_HERMES_TELEGRAM_BOT_USERNAME || "HermesOSBot"}?start=portal_auth`}
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full flex items-center justify-center py-3.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-xl font-semibold active:scale-[0.98] transition-all"
+              >
+                Conectar vía Telegram
+              </a>
+              <a 
+                href={`https://wa.me/${process.env.NEXT_PUBLIC_HERMES_WHATSAPP_PHONE_NUMBER || "1234567890"}?text=Hola+Hermes`}
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full flex items-center justify-center py-3.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl font-semibold active:scale-[0.98] transition-all"
+              >
+                Conectar vía WhatsApp
+              </a>
+            </div>
+          )}
+
           {/* Controls */}
           <div className="flex items-center justify-between gap-4">
             {!isAction && (

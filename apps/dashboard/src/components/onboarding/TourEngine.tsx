@@ -63,6 +63,28 @@ const TOUR_STEPS: TourStep[] = [
         type: 'INFO'
     },
     {
+        id: 'omnichannel_connection',
+        title: 'Asistente Hermes (Opcional)',
+        content: `
+            <div class="flex flex-col gap-4 mt-2">
+                <p>Mantente sincronizado con tu portal. Recibe notificaciones y ejecuta comandos desde tu celular.</p>
+                <div class="hidden md:flex flex-col gap-2 mt-2">
+                   <p class="text-xs text-white/50">Escanea o haz clic para conectar:</p>
+                   <div class="flex gap-4">
+                       <a href="https://t.me/${process.env.NEXT_PUBLIC_HERMES_TELEGRAM_BOT_USERNAME || 'HermesOSBot'}?start=portal_auth" target="_blank" class="flex-1 p-2 bg-blue-500/20 border border-blue-500/50 rounded-lg text-center hover:bg-blue-500/30 transition-colors text-blue-400 text-sm font-medium">Telegram</a>
+                       <a href="https://wa.me/${process.env.NEXT_PUBLIC_HERMES_WHATSAPP_PHONE_NUMBER || '1234567890'}?text=Hola+Hermes" target="_blank" class="flex-1 p-2 bg-green-500/20 border border-green-500/50 rounded-lg text-center hover:bg-green-500/30 transition-colors text-green-400 text-sm font-medium">WhatsApp</a>
+                   </div>
+                </div>
+                <div class="md:hidden flex flex-col gap-2 mt-2">
+                   <p class="text-xs text-white/50 mb-1">Toca para abrir tu app:</p>
+                   <!-- Injection target for React buttons in MobileTourOverlay -->
+                   <div id="mobile-omni-buttons-injection"></div>
+                </div>
+            </div>
+        `,
+        type: 'INFO'
+    },
+    {
         id: 'assets_vault',
         target: '#tour-assets',
         title: 'Tu Bóveda',
