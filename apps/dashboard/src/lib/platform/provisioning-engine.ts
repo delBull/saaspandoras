@@ -58,7 +58,7 @@ export interface ProvisioningInput {
   leadId: string;           // marketing_leads.id (UUID)
   product: ProductKey;
   plan?: PlanKey;           // defaults to 'sandbox' for trial
-  trialDays?: number;       // defaults to 14
+  trialDays?: number;       // defaults to 3
   // Override project (if client already has a project)
   existingProjectId?: number;
 }
@@ -78,7 +78,7 @@ export interface ProvisioningResult {
 export const ProvisioningEngine = {
 
   async provision(input: ProvisioningInput): Promise<ProvisioningResult> {
-    const { leadId, product, plan = 'sandbox', trialDays = 14, existingProjectId } = input;
+    const { leadId, product, plan = 'sandbox', trialDays = 3, existingProjectId } = input;
 
     const productDef = PRODUCT_REGISTRY[product];
     if (!productDef) {
