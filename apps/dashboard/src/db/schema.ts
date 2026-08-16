@@ -3325,10 +3325,19 @@ export const nexusDealSigners = pgTable("nexus_deal_signers", {
   roomEmailIdx: uniqueIndex("nexus_signers_room_email_idx").on(table.roomId, table.email),
 }));
 
+export const nexusDealComments = pgTable("nexus_deal_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  roomId: uuid("room_id").notNull().references(() => nexusDealRooms.id, { onDelete: "cascade" }),
+  author: text("author").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const nexusDealRoomsRelations = relations(nexusDealRooms, ({ many }) => ({
   sections: many(nexusDealSections),
   audit: many(nexusDealAuditEvents),
   signers: many(nexusDealSigners),
+  comments: many(nexusDealComments),
 }));
 
 export const nexusDealSectionsRelations = relations(nexusDealSections, ({ one }) => ({
@@ -3341,6 +3350,10 @@ export const nexusDealAuditEventsRelations = relations(nexusDealAuditEvents, ({ 
 
 export const nexusDealSignersRelations = relations(nexusDealSigners, ({ one }) => ({
   room: one(nexusDealRooms, { fields: [nexusDealSigners.roomId], references: [nexusDealRooms.id] }),
+}));
+
+export const nexusDealCommentsRelations = relations(nexusDealComments, ({ one }) => ({
+  room: one(nexusDealRooms, { fields: [nexusDealComments.roomId], references: [nexusDealRooms.id] }),
 }));
 
 // --- EVENT SPINE (Integration Contract v1.2) ---
