@@ -71,13 +71,21 @@ export default function HermesEnterpriseLandingPage() {
             <Link href="/media" className="hover:text-white transition-colors">Media Co</Link>
           </div>
 
-          <Button 
-            onClick={() => handleOpenCTA('hermes_nav_cta')}
-            className="bg-purple-500 hover:bg-purple-400 text-black text-xs font-medium px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all shadow-lg shadow-purple-500/10"
-          >
-            <span className="hidden sm:inline">Solicitar Enterprise Assessment</span>
-            <span className="sm:hidden">Assessment</span>
-          </Button>
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/portal"
+              className="text-xs text-zinc-400 hover:text-white font-light transition-colors"
+            >
+              Accede
+            </Link>
+            <Button 
+              onClick={() => handleOpenCTA('hermes_nav_cta')}
+              className="border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all"
+            >
+              <span className="hidden sm:inline">Solicitar Enterprise Assessment</span>
+              <span className="sm:hidden">Assessment</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -110,19 +118,11 @@ export default function HermesEnterpriseLandingPage() {
           <Button
             onClick={() => handleOpenCTA('hermes_hero_cta')}
             size="lg"
-            className="w-full sm:w-auto bg-purple-500 hover:bg-purple-400 text-black font-medium text-sm px-8 py-4 rounded-2xl shadow-xl shadow-purple-500/20 transition-all flex items-center justify-center gap-2"
-          >
-            <span>Solicitar Enterprise Assessment (30 min)</span>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-
-          <Link
-            href="/portal"
             className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-sm font-light transition-all flex items-center justify-center gap-2"
           >
-            <Building2 className="w-4 h-4 text-purple-400" />
-            <span>Ingresar a Mi Portal de Gestor →</span>
-          </Link>
+            <span>Solicitar Enterprise Assessment (30 min)</span>
+            <ChevronRight className="w-4 h-4 text-purple-400" />
+          </Button>
         </div>
 
         {/* ENTERPRISE DASHBOARD & MULTI-AGENT VISUALIZATION */}
