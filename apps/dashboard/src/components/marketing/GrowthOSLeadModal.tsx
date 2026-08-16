@@ -62,7 +62,7 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthO
           phoneNumber: form.phone || undefined,
           intent,
           consent: true,
-          projectId: "pandoras_access",
+          projectId: source?.includes('hermes') ? "hermes" : "pandoras_access",
           origin: typeof window !== "undefined" ? window.location.href : "/growth-os",
           scope: "b2b",
           metadata: {

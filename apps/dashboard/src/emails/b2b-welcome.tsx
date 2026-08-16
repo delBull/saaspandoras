@@ -34,9 +34,27 @@ export const B2BWelcomeEmail = ({
 }: B2BWelcomeEmailProps) => {
     
     // Customize content based on source/intent
-    const isAudit = source.includes('growth-os');
-    const title = isAudit ? "Tu Auditoría de Infraestructura" : "Siguientes Pasos: Lanzamiento";
+    const isHermes = source.includes('hermes');
+    const isAudit = source.includes('growth-os') && !isHermes;
     
+    let title = "Siguientes Pasos: Lanzamiento";
+    if (isHermes) title = "Tu Infraestructura de IA está en Proceso";
+    else if (isAudit) title = "Tu Auditoría de Infraestructura";
+
+    if (isHermes) {
+        projectName = "Hermes Growth OS";
+    }
+
+    const whatsNextText = isAudit 
+        ? "Nuestro equipo técnico está analizando tu ecosistema para identificar cuellos de botella en tu monetización y retención."
+        : isHermes
+        ? "Estamos provisionando el entorno y evaluando la viabilidad operativa de Hermes para tu modelo de negocio."
+        : "Estamos revisando tu modelo de negocio para asegurar que el motor de Pandora's pueda escalar tu visión con la velocidad necesaria.";
+
+    const bottomLinkUrl = isHermes ? "https://dash.pandoras.finance/growth-os/hermes" : "https://dash.pandoras.finance/growth-os";
+    const bottomLinkText = isHermes ? "🔗 Ver Arquitectura de Hermes OS" : "🔗 Ver Ecosistema de Monetización";
+    const masterPlanText = isHermes ? "las capacidades de cierre automatizado" : "nuestro Master Monetization Plan";
+
     return (
         <Html>
             <Head />
@@ -68,10 +86,7 @@ export const B2BWelcomeEmail = ({
                                 🔎 ¿Qué sucede ahora?
                             </Heading>
                             <Text className="text-zinc-600 text-sm leading-relaxed mb-4">
-                                {isAudit 
-                                    ? "Nuestro equipo técnico está analizando tu ecosistema para identificar cuellos de botella en tu monetización y retención."
-                                    : "Estamos revisando tu modelo de negocio para asegurar que el motor de Pandora's pueda escalar tu visión con la velocidad necesaria."
-                                }
+                                {whatsNextText}
                             </Text>
                             <Text className="text-zinc-600 text-sm leading-relaxed mb-6 font-bold">
                                 El siguiente paso es una sesión 1-a-1 para presentarte el roadmap de ejecución:
@@ -89,9 +104,9 @@ export const B2BWelcomeEmail = ({
 
                         <Text className="text-zinc-700 text-sm leading-relaxed mb-6">
                             <strong>Mientras tanto:</strong><br />
-                            Te recomiendo revisar nuestro <strong>Master Monetization Plan</strong> para entender cómo transformamos interacción en activos financieros:<br />
-                            <Link href="https://dash.pandoras.finance/growth-os" className="text-[#3b82f6] no-underline font-bold mt-2 inline-block">
-                                🔗 Ver Ecosistema de Monetización
+                            Te recomiendo revisar <strong>{masterPlanText}</strong> para entender cómo transformamos interacción en activos financieros:<br />
+                            <Link href={bottomLinkUrl} className="text-[#3b82f6] no-underline font-bold mt-2 inline-block">
+                                {bottomLinkText}
                             </Link>
                         </Text>
 

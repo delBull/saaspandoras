@@ -27,9 +27,16 @@ export async function POST(req: Request) {
         // 🧬 Step 0: Resolve Protocol Context (if provided)
         let project: any = null;
         if (projectId) {
-            project = await db.query.projects.findFirst({
-                where: (projects, { eq }) => eq(projects.id, Number(projectId))
-            });
+            const parsedId = Number(projectId);
+            if (!Number.isNaN(parsedId)) {
+                project = await db.query.projects.findFirst({
+                    where: (projects, { eq }) => eq(projects.id, parsedId)
+                });
+            } else if (typeof projectId === 'string') {
+                project = await db.query.projects.findFirst({
+                    where: (projects, { eq }) => eq(projects.slug, projectId)
+                });
+            }
         }
 
         // ── 1. GLOBAL ACCESS: PANDORA'S KEY ───────────────────────────────────────
