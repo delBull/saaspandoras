@@ -51,6 +51,7 @@ interface FormattedProject {
   artifacts?: any[];
   chainId?: number | null;
   protocolVersion?: number | null;
+  hasHermes: boolean;
 }
 
 export async function GET() {
@@ -81,7 +82,12 @@ export async function GET() {
           "w2e_config" as "w2eConfig",
           "artifacts" as "artifacts",
           "chain_id" as "chainId",
-          "protocol_version" as "protocolVersion"
+          "protocol_version" as "protocolVersion",
+          (SELECT EXISTS(
+            SELECT 1 FROM "installed_products" "ip"
+            WHERE "ip"."project_id" = "projects"."id"
+              AND "ip"."product" = 'HERMES'
+          )) as "hasHermes"
         FROM "projects"
         WHERE "business_category" != 'infrastructure'
           AND "is_deleted" = false
@@ -113,7 +119,8 @@ export async function GET() {
           w2eConfig: project.w2eConfig ?? {},
           artifacts: Array.isArray(project.artifacts) ? project.artifacts : [],
           chainId: project.chainId ? Number(project.chainId) : null,
-          protocolVersion: project.protocolVersion ? Number(project.protocolVersion) : 1
+          protocolVersion: project.protocolVersion ? Number(project.protocolVersion) : 1,
+          hasHermes: Boolean((project as any).hasHermes)
         }));
 
         console.log('📊 Basic API: Returning real projects from database');

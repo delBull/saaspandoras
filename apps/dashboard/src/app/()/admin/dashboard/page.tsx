@@ -374,8 +374,9 @@ export default function AdminDashboardPage() {
 
     // Exclude Hermes OS tenants from the traditional "Protocolos" tab
     // (they live in the dedicated Hermes Tenants tab)
+    // Source of truth: hermesBinding from installed_products table
     filtered = filtered.filter(project =>
-      !(project.slug?.includes('hermes') || project.w2eConfig?.isHermes)
+      !project.hermesBinding
     );
 
     // Apply status filter

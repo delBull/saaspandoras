@@ -23,6 +23,7 @@ export interface Project {
   artifacts?: any[];
   chainId?: number | null;
   protocolVersion?: number | null;
+  hasHermes?: boolean;
 }
 
 export interface ApplicantsData {
@@ -59,6 +60,7 @@ export function useApplicantsDataBasic(): ApplicantsData {
       const data = await response.json() as Project[];
       
       // 🛡️ FILTER: Exclude internal 'Pandoras Access' AND Hermes projects from applicants view
+      // Source of truth: hasHermes flag from installed_products table (not slug heuristic)
       const filteredData = data.filter(p => {
         const pSlug = (p.slug || '').toLowerCase();
         const pTitle = (p.title || '').toLowerCase();
@@ -67,8 +69,8 @@ export function useApplicantsDataBasic(): ApplicantsData {
         const isAccessSlug = pSlug === 'pandoras-access' || pSlug === 'pandora-access' || pSlug === 'pandoras-protocol';
         const isAccessTitle = pTitle.includes("pandora's access") || pTitle === "pandora's access";
         
-        // 🛡️ Exclude Hermes OS projects (they have their own dedicated view)
-        const isHermes = pSlug.includes('hermes') || (p as any).w2eConfig?.isHermes === true;
+        // 🛡️ Exclude Hermes OS projects (installed_products table = source of truth)
+        const isHermes = p.hasHermes === true;
         
         return !isAccessSlug && !isAccessTitle && !isHermes;
       });
