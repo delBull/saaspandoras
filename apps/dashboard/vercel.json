@@ -1,7 +1,6 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "nodeVersion": "24.x",
   "buildCommand": "turbo run build --filter=@saasfly/dashboard...",
   "installCommand": "bun install --frozen-lockfile"
 }
