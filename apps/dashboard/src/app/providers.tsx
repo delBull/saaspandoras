@@ -59,7 +59,7 @@ export function Providers({
         enableSystem={false}
       >
         <ThirdwebProvider>
-          {!autoConnectDisabled && !pathname?.startsWith('/growth-os') && (
+          {!autoConnectDisabled && !pathname?.startsWith('/growth-os') && pathname !== '/' && (
             <AutoConnect
               client={client}
               wallets={wallets}
