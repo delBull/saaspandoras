@@ -126,18 +126,11 @@ export function TourEngine({ children }: { children: ReactNode }) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Initial Check
+    // Initial Check — DISABLED: Tour has been deactivated. Set flag immediately.
     useEffect(() => {
-        const hasCompleted = localStorage.getItem('pandoras_tour_completed');
-        // Only start on home page paths
-        const isHomePage = window.location.pathname === '/' || 
-                           window.location.pathname === '/admin/dashboard' || 
-                           window.location.pathname === '/dashboard' ||
-                           window.location.pathname.startsWith('/portal');
-
-        if (!hasCompleted && isHomePage) {
-            setTimeout(() => startTour(), 1500);
-        }
+        // 🚫 Tour desactivado. El recorrido virtual fue removido del flujo de onboarding.
+        // Para reactivarlo en el futuro, elimina la línea siguiente:
+        localStorage.setItem('pandoras_tour_completed', 'true');
     }, []);
 
     // Watch for conditions (Auto Advance)

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 
 /**
  * /accessv2 — Unified Access Entry (Production)
@@ -153,6 +153,7 @@ function AccessV2Inner() {
   const searchParams = useSearchParams();
 
   const [mounted, setMounted] = useState(false);
+  const isRedirectingRef = React.useRef(false);
 
   // Context from landing page
   const projectSlug = searchParams?.get('project') || null;
@@ -200,15 +201,22 @@ function AccessV2Inner() {
   }, [state, mounted, user?.address, isReturning]);
 
   const handleEnterSystem = () => {
+    // 🛡️ LOOP GUARD: Only allow one redirect per mount to prevent accessv2 ↔ root loop
+    if (isRedirectingRef.current) return;
+
     if (hasAccess || isAdmin || authStatus === 'has_access') {
+      isRedirectingRef.current = true;
+
       const walletAddress = user?.address || account?.address;
       if (typeof window !== 'undefined' && walletAddress) {
         const addressKey = walletAddress.toLowerCase();
         localStorage.setItem(`pbox_ritual_seen_${addressKey}`, 'true');
+        // Mark redirect in sessionStorage so root page doesn't bounce back for 10s
+        sessionStorage.setItem('pd_entered_system', Date.now().toString());
         fetch('/api/v1/user/initiate', { method: 'POST' }).catch(console.error);
       }
       
-      // TRIGGER HANDSHAKE: Ensure background minting for both keys
+      // TRIGGER HANDSHAKE (fire-and-forget, non-blocking)
       if (account?.address) {
         fetch("/api/v1/external-commerce/ensure-pandora-key", {
             method: "POST",

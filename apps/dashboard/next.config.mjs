@@ -14,6 +14,8 @@ const nextConfig = {
     memoryBasedWorkersCount: true,
     // Enable webpack build worker to prevent main thread memory leaks
     webpackBuildWorker: true,
+    // Enable instrumentation.ts hook (ECONNRESET + ws unmask suppressors)
+    instrumentationHook: true,
   },
   images: {
     remotePatterns: [
@@ -37,7 +39,13 @@ const nextConfig = {
         tls: false,
         crypto: false,
         perf_hooks: false,
+        bufferutil: false,
+        'utf-8-validate': false,
       };
+    }
+    // Server-side: mark ws native addons as external to prevent unmask errors
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'bufferutil', 'utf-8-validate'];
     }
     return config;
   },

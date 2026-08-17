@@ -16,7 +16,17 @@ import { eq } from "drizzle-orm";
  */
 export async function POST(req: Request) {
     try {
-        const { wallet, projectId } = await req.json();
+        // Defensive parse — empty body or GET probe should not crash the process
+        let body: { wallet?: string; projectId?: string } = {};
+        try {
+            const text = await req.text();
+            if (text && text.trim().length > 0) {
+                body = JSON.parse(text);
+            }
+        } catch (_) {
+            return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+        const { wallet, projectId } = body;
 
         if (!wallet) {
             return NextResponse.json({ error: 'Missing wallet address' }, { status: 400 });

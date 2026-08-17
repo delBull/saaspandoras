@@ -342,8 +342,6 @@ export default function DashboardPage() {
     ];
     
     // 🛡️ CRITICAL FIX: DO NOT redirect on hard error, even if bypass=ritual is present.
-    // Redirecting while in an error state aborts all concurrent in-flight fetch requests 
-    // (/api/profile, /api/prices, etc.), causing ERR_NETWORK_CHANGED (canceled) errors.
     if (accessState === AccessState.ERROR) {
       return;
     }
@@ -355,22 +353,31 @@ export default function DashboardPage() {
       const isAccessPage = typeof window !== 'undefined' && (window.location.pathname.includes('/access') || window.location.pathname.includes('/accessv2'));
       if (isAccessPage) return;
 
-      // 🛡️ SECURITY: Stability Guard - If we just came from access, wait for Thirdweb to settle
-      const lastAccessRedirect = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pd_last_access_redirect') : null;
-      if (lastAccessRedirect && (Date.now() - Number(lastAccessRedirect) < 5000)) {
-        console.log("🛡️ [DashboardRoot] Stability guard active, skipping redirect...");
-        // After 5 seconds, clear the guard and allow redirect again
+      // 🛡️ LOOP BREAKER: If accessv2 just redirected us here (<15s ago), do NOT
+      // bounce back to accessv2. Thirdweb needs time to auto-reconnect the wallet.
+      const enteredSystem = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pd_entered_system') : null;
+      if (enteredSystem && (Date.now() - Number(enteredSystem) < 15000)) {
+        // Still within the grace window — wait for Thirdweb to settle, then clear and re-evaluate
         const retryTimer = setTimeout(() => {
-          sessionStorage.removeItem('pd_last_access_redirect');
-          if (typeof window !== 'undefined') window.location.reload();
-        }, 5000);
+          sessionStorage.removeItem('pd_entered_system');
+          // ⚠️ DO NOT clear pd_last_access_redirect here — it has its own 8s stability guard below.
+          // Clearing both created a race condition where Thirdweb (8-15s reconnect) lost protection.
+        }, 15000);
         return () => clearTimeout(retryTimer);
       }
 
-      // 🛡️ SECURITY: High-tolerance transitional check
+      // 🛡️ SECURITY: Stability Guard - If we just came from access, wait for Thirdweb to settle
+      const lastAccessRedirect = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pd_last_access_redirect') : null;
+      if (lastAccessRedirect && (Date.now() - Number(lastAccessRedirect) < 8000)) {
+        console.log("🛡️ [DashboardRoot] Stability guard active, skipping redirect...");
+        // Do NOT reload here — just wait quietly. Reload causes the loop.
+        return;
+      }
+
+      // 🛡️ SECURITY: Transitional states (isAutoConnecting/isManualConnecting already guarded above)
       const IS_TRANSITIONAL = status === "booting" || status === "checking_session" || status === "checking_access" || status === "idle";
       
-      if (isAutoConnecting || isManualConnecting || IS_TRANSITIONAL) {
+      if (IS_TRANSITIONAL) {
         return;
       }
       
@@ -381,11 +388,12 @@ export default function DashboardPage() {
           sessionStorage.setItem('pd_last_access_redirect', Date.now().toString());
         }
         router.push(`/accessv2${currentSearchParams}`);
-      }, 1500); // Increased grace period
+      }, 2500); // Extended grace period for Thirdweb auto-reconnect
 
       return () => clearTimeout(timer);
     }
   }, [accessState, router, isAutoConnecting, isManualConnecting, status]);
+
 
   // 🟢 CASE 1: LOADING STATE OR WIDGET INTERCEPT
   const isWidgetBypass = typeof window !== 'undefined' && window.location.search.includes('bypass=ritual');
