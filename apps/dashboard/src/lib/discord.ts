@@ -58,20 +58,45 @@ const COLORS = {
  */
 export async function notifyNewLead(projectTitle: string, userEmail: string, score: number, packageType: string, summary: string) {
     const adminClientsUrl = 'https://dash.pandoras.finance/admin/dashboard?tab=clients';
+    
+    // Determine the source system based on packageType or projectTitle
+    const sourceString = (packageType + ' ' + projectTitle).toLowerCase();
+    const isHermes = sourceString.includes('hermes');
+    const isWhatsApp = sourceString.includes('whatsapp');
+    
+    let title = `🚀 Nuevo Lead Registrado: ${projectTitle}`;
+    let footerText = "Pandora's Lead System — Direct Action Enabled";
+    let color = COLORS.SUCCESS;
+
     const fields: DiscordField[] = [
-        { name: 'Package', value: packageType, inline: true },
         { name: 'Score', value: score.toString(), inline: true },
-        { name: 'Email', value: userEmail, inline: true },
-        { name: 'Summary', value: summary.substring(0, 512) },
-        { name: '⚡ Acción Rápida Admin', value: `[👉 Ir a Clientes en Admin Dashboard para Aprovisionar](${adminClientsUrl})`, inline: false }
+        { name: 'Email', value: userEmail, inline: true }
     ];
 
+    if (isHermes) {
+        title = `🧠 Hermes AI: Nuevo Lead Capturado (${projectTitle})`;
+        footerText = "Hermes Cognitive System — Automating Growth";
+        color = COLORS.INFO; // Blue color for Hermes
+        fields.unshift({ name: 'Fuente', value: 'Hermes Agent', inline: true });
+    } else if (isWhatsApp) {
+        title = `📱 WhatsApp Bot: Nuevo Lead (${projectTitle})`;
+        footerText = "Pandora's WhatsApp Flow";
+        color = COLORS.WARNING; // Yellow color for WhatsApp
+        fields.unshift({ name: 'Fuente', value: 'WhatsApp', inline: true });
+    } else {
+        // Standard Web Lead
+        fields.unshift({ name: 'Package / Source', value: packageType, inline: true });
+    }
+
+    fields.push({ name: 'Summary', value: summary.substring(0, 512) });
+    fields.push({ name: '⚡ Acción Rápida Admin', value: `[👉 Ir a Clientes en Admin Dashboard para Aprovisionar](${adminClientsUrl})`, inline: false });
+
     const embed: DiscordEmbed = {
-        title: `🚀 Nuevo Lead Registrado: ${projectTitle}`,
-        color: COLORS.SUCCESS,
+        title,
+        color,
         fields,
         timestamp: new Date().toISOString(),
-        footer: { text: "Pandora's Lead System — Direct Action Enabled" }
+        footer: { text: footerText }
     };
 
     await sendDiscordNotification(DISCORD_WEBHOOK_LEADS, '', [embed]);
