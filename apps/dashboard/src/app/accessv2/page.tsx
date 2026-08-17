@@ -190,15 +190,14 @@ function AccessV2Inner() {
     if (
       (state === AccessState.HAS_ACCESS || state === AccessState.ADMIN) &&
       mounted &&
-      user?.address &&
-      account?.address
+      user?.address
     ) {
       const addressKey = user.address.toLowerCase();
       const bypassRitual = localStorage.getItem(`pbox_ritual_seen_${addressKey}`);
       
       handleEnterSystem();
     }
-  }, [state, mounted, user?.address, account?.address, isReturning]);
+  }, [state, mounted, user?.address, isReturning]);
 
   const handleEnterSystem = () => {
     if (hasAccess || isAdmin || authStatus === 'has_access') {

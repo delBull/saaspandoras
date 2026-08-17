@@ -133,6 +133,7 @@ export function usePersistedAccount() {
   }, [account?.address]);
 
   // Force Disconnect Check (Only if NOT actively connecting)
+  /*
   useEffect(() => {
     if (typeof window !== "undefined" && account?.address && activeWallet && !isConnecting) {
       if (localStorage.getItem("wallet-logged-out") === "true") {
@@ -141,6 +142,7 @@ export function usePersistedAccount() {
       }
     }
   }, [account, activeWallet, disconnect, isConnecting]);
+  */
 
   // Guardar sesión para social logins (cuando hay account pero no activeWallet)
   useEffect(() => {
