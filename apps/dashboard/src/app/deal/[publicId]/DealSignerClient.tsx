@@ -8,6 +8,7 @@ import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
 import { buildCombinedSignMessage } from "@/lib/nexus-deals/nda-content";
+import { NDAModal } from "@/components/modals/NDAModal";
 
 interface PublicSection {
   code: string;
@@ -95,6 +96,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [ndaError, setNdaError] = useState<string | null>(null);
   const [ndaBypassed, setNdaBypassed] = useState(false);    // bypass info
   const [ndaBypassedAt, setNdaBypassedAt] = useState<string | null>(null);
+  const [ndaModalOpen, setNdaModalOpen] = useState(false);  // open full document modal
 
   const account = useActiveAccount();
   const isProposal = room.kind === "PROPOSAL";
@@ -342,6 +344,11 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               ))}
             </div>
           </div>
+          <NDAModal 
+            isOpen={ndaModalOpen} 
+            onClose={() => setNdaModalOpen(false)} 
+            version={ndaVersion} 
+          />
         </div>
 
         {/* Side action panel */}
@@ -432,7 +439,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       {ndaExpanded && (
                         <div className="px-4 pb-4 space-y-3 border-t border-white/[0.06]">
                           <p className="text-[11px] text-zinc-400 leading-relaxed pt-3">
-                            <strong className="text-zinc-200">Pandoras Ecosystem — Acuerdo de Confidencialidad, No Uso y Protección de Información Confidencial ({ndaVersion})</strong>
+                            <strong className="text-zinc-200">Pandoras Ecosystem — Resumen del Acuerdo de Confidencialidad ({ndaVersion})</strong>
                           </p>
                           <div className="max-h-48 overflow-y-auto pr-1 space-y-1.5 text-[10px] text-zinc-500 leading-relaxed font-mono scrollbar-thin scrollbar-thumb-white/10">
                             <p>• Confidencialidad estricta: toda la Información Confidencial compartida en este Deal Room es estrictamente confidencial y está protegida.</p>
@@ -442,6 +449,19 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             <p>• Devolución o destrucción: al término de la relación o a solicitud del Emisor, el Receptor destruirá o devolverá toda la Información Confidencial.</p>
                             <p>• Duración: 5 años desde la firma on-chain o mientras subsista la relación comercial, lo que ocurra después.</p>
                             <p>• Legislación aplicable: Leyes de los Estados Unidos Mexicanos.</p>
+                          </div>
+                          
+                          <div className="pt-2">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setNdaModalOpen(true);
+                              }}
+                              className="w-full flex items-center justify-center gap-2 py-2 px-3 border border-white/10 rounded-lg text-[10px] text-white hover:bg-white/5 transition-colors uppercase tracking-widest font-bold"
+                            >
+                              <FileSignature className="w-3.5 h-3.5" />
+                              Leer Documento Completo
+                            </button>
                           </div>
                         </div>
                       )}

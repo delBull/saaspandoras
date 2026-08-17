@@ -179,15 +179,27 @@ export const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): s
       if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
       else crypto.createPublicKey(pkcs8);
       return pkcs8; 
-  } catch {
+  } catch (err8: any) {
       const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
       try {
           if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
           else crypto.createPublicKey(pkcs1);
           return pkcs1; 
-      } catch (e: any) {
-          console.error(`❌ [AuthUtils] FATAL: RSA format rejected for ${type}. Core: ${base64Core.substring(0,10)}...`);
-          return keyString;
+      } catch (err1: any) {
+          // ELITE FIX: Bypass PEM completely and use raw DER buffer if PEM wrapping fails
+          try {
+              const rawDer = Buffer.from(base64Core, 'base64');
+              if (type === 'PRIVATE') {
+                  const keyObj = crypto.createPrivateKey({ key: rawDer, format: 'der', type: 'pkcs8' });
+                  return keyObj.export({ type: 'pkcs8', format: 'pem' }).toString();
+              } else {
+                  const keyObj = crypto.createPublicKey({ key: rawDer, format: 'der', type: 'spki' });
+                  return keyObj.export({ type: 'spki', format: 'pem' }).toString();
+              }
+          } catch (derErr: any) {
+              console.error(`❌ [AuthUtils] FATAL: RSA format rejected for ${type}. Error: ${derErr.message}. Core: ${base64Core.substring(0,10)}...`);
+              return keyString;
+          }
       }
   }
 };
