@@ -58,15 +58,19 @@ export function useApplicantsDataBasic(): ApplicantsData {
       }
       const data = await response.json() as Project[];
       
-      // 🛡️ FILTER: Exclude internal 'Pandoras Access' from the applicants view
+      // 🛡️ FILTER: Exclude internal 'Pandoras Access' AND Hermes projects from applicants view
       const filteredData = data.filter(p => {
         const pSlug = (p.slug || '').toLowerCase();
         const pTitle = (p.title || '').toLowerCase();
         
+        // Exclude internal Pandoras Access projects
         const isAccessSlug = pSlug === 'pandoras-access' || pSlug === 'pandora-access' || pSlug === 'pandoras-protocol';
         const isAccessTitle = pTitle.includes("pandora's access") || pTitle === "pandora's access";
         
-        return !isAccessSlug && !isAccessTitle;
+        // 🛡️ Exclude Hermes OS projects (they have their own dedicated view)
+        const isHermes = pSlug.includes('hermes') || (p as any).w2eConfig?.isHermes === true;
+        
+        return !isAccessSlug && !isAccessTitle && !isHermes;
       });
 
       console.log('✅ Basic Hook: Projects loaded and filtered:', filteredData.length);

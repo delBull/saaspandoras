@@ -124,6 +124,13 @@ export function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), display-capture=(), fullscreen=(self), geolocation=(), microphone=(), payment=(), usb=()');
 
+  // 🛡️ Anti-cache for HTML pages: Prevent stale JS causing login redirect loops
+  if (!pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+  }
+
   // CSP Report-Only: no bloquea nada, solo reporta violaciones
   // para armar la política final sin romper funcionalidad
   const isProduction = process.env.VERCEL_ENV === 'production'

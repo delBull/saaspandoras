@@ -15,6 +15,8 @@ interface ProjectQueryResult {
   createdAt: string | Date;
   businessCategory?: string;
   coverPhotoUrl?: string | null;
+  imageUrl?: string | null;
+  logoUrl?: string | null;
   targetAmount?: string | number | null;
   raisedAmount?: string | number | null;
   contractAddress?: string | null;
@@ -37,6 +39,8 @@ interface FormattedProject {
   businessCategory: string;
   createdAt: string | Date;
   coverPhotoUrl: string;
+  imageUrl: string | null;
+  logoUrl: string | null;
   targetAmount: string | null;
   raisedAmount: string;
   contractAddress?: string;
@@ -66,6 +70,7 @@ export async function GET() {
           "created_at" as "createdAt",
           "cover_photo_url" as "coverPhotoUrl",
           "image_url" as "imageUrl",
+          "logo_url" as "logoUrl",
           "target_amount" as "targetAmount",
           "raised_amount" as "raisedAmount",
           "business_category" as "businessCategory",
@@ -97,6 +102,8 @@ export async function GET() {
           businessCategory: project.businessCategory ?? 'other',
           createdAt: project.createdAt,
           coverPhotoUrl: project.coverPhotoUrl || project.imageUrl || '/images/default-project.jpg',
+          imageUrl: project.imageUrl || null,
+          logoUrl: (project as any).logoUrl || null,
           targetAmount: project.targetAmount ? String(project.targetAmount) : null,
           raisedAmount: project.raisedAmount ? String(project.raisedAmount) : '0',
           contractAddress: project.contractAddress ? String(project.contractAddress) : undefined,

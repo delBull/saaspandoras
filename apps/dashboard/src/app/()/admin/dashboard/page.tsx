@@ -618,7 +618,7 @@ export default function AdminDashboardPage() {
                             : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
                             }`}
                         >
-                          Todos ({projects.length})
+                          Todos ({filteredProjects.length})
                         </button>
                         {Object.entries(statusCounts).map(([status, count]) => (
                           count > 0 && (
@@ -684,7 +684,7 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-400">Total Proyectos</p>
-                          <p className="text-2xl font-bold text-white">{projects.length}</p>
+                          <p className="text-2xl font-bold text-white">{filteredProjects.length}</p>
                         </div>
                         <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">
                           📊
@@ -697,7 +697,7 @@ export default function AdminDashboardPage() {
                         <div>
                           <p className="text-sm font-medium text-gray-400">Monto Total Meta</p>
                           <p className="text-2xl font-bold text-lime-400">
-                            ${(projects.reduce((total, p) => total + Number(p.targetAmount || 0), 0)).toLocaleString()}
+                            ${(filteredProjects.reduce((total, p) => total + Number(p.targetAmount || 0), 0)).toLocaleString()}
                           </p>
                         </div>
                         <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">

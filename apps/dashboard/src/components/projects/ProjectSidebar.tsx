@@ -407,8 +407,19 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
           {/* Project Creator Card (Compact Redesign) */}
           <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex-shrink-0 flex items-center justify-center border border-white/10">
-              <span className="text-white font-bold text-xs">IMG</span>
+            <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex-shrink-0 flex items-center justify-center border border-white/10 overflow-hidden">
+              {(project as any).logoUrl || (project as any).imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={(project as any).logoUrl || (project as any).imageUrl}
+                  alt={project.applicant_name || "Creator"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-bold text-xs">
+                  {(project.applicant_name || "C").charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-xs text-zinc-500 uppercase tracking-wide mb-0.5">Creación Por</p>
