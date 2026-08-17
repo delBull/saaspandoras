@@ -175,8 +175,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
     }
   };
 
-  const handleSign = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSign = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     const name = signName.trim();
     if (!name || !account?.address) return;
     if (!isOpenSign && !rawToken) return;
@@ -187,7 +187,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       const ts = new Date().toISOString();
 
       // Use combined message when NDA is required and already satisfied (signed or bypassed)
-      const usesCombined = room.ndaEnabled && isOpenSign && (ndaStep === "signed" || ndaStep === "bypassed");
+      const usesCombined = room.ndaEnabled && (ndaStep === "signed" || ndaStep === "bypassed");
       const message = usesCombined
         ? buildCombinedSignMessage({
             email: emailId,
@@ -355,83 +355,30 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   Tu aceptación quedó registrada en el audit trail del Deal Room. Gracias por tu confianza.
                 </p>
               </motion.div>
-            ) : initialEmail && rawToken ? (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
-                    <Mail className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">Identidad verificada</p>
-                    <p className="text-[10px] text-zinc-400 truncate">{initialEmail}</p>
-                  </div>
-                </div>
-
-                <h3 className="text-sm font-semibold text-white mb-1">
-                  {isProposal ? "Aceptar y confirmar" : "Firmar documento"}
-                </h3>
-                <p className="text-[11px] text-zinc-500 mb-4 leading-relaxed">
-                  {isProposal
-                    ? "Confirma que has leído la propuesta y estás de acuerdo con su contenido para continuar la colaboración."
-                    : "Ingresa tu nombre y conecta tu cuenta para firmar este documento."}
-                </p>
-
-                <form onSubmit={handleSign} className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Nombre completo (obligatorio)"
-                    value={signName}
-                    onChange={(e) => setSignName(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-                  />
-
-                  {account?.address ? (
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/[0.06]">
-                      <Wallet className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Cuenta conectada</p>
-                        <p className="text-[10px] font-mono text-zinc-300 truncate">{account.address}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-white/10 bg-black/40 p-3">
-                      <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet (MetaMask, Coinbase, Rabby...) o tu cuenta social para firmar (gratis · sin gas):</p>
-                      <ConnectButton
-                        client={client}
-                        wallets={signerWallets}
-                        connectButton={{ label: "Conectar y firmar" }}
-                        connectModal={{ size: "compact", title: "Verificar identidad", showThirdwebBranding: false }}
-                        theme={darkTheme({ colors: { primaryButtonBg: "#10b981", primaryButtonText: "#000" } })}
-                      />
-                    </div>
-                  )}
-
-                  {signError && <p className="text-[11px] text-rose-400">{signError}</p>}
-                  <button
-                    type="submit"
-                    disabled={signing || !signName.trim() || !account?.address}
-                    className={SIGN_BUTTON_STYLE}
-                  >
-                    {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
-                    {signing ? "FIRMANDO..." : isProposal ? "ACEPTAR PROPUESTA" : "FIRMAR DOCUMENTO"}
-                  </button>
-                </form>
-                <p className="text-[9px] text-zinc-600 mt-3 text-center leading-relaxed">
-                  Firma on-chain verificada (EIP-191) · gratis, sin gas · audit trail inmutable
-                </p>
-              </motion.div>
-            ) : isOpenSign ? (
+            ) : (initialEmail && rawToken) || isOpenSign ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 {/* Step header */}
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300">
-                    <FileSignature className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Firma online habilitada</p>
-                    <p className="text-[10px] text-zinc-400">No se requiere correo · firma on-chain verificada</p>
+                {(initialEmail && rawToken) ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                      <Mail className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">Identidad verificada</p>
+                      <p className="text-[10px] text-zinc-400 truncate">{initialEmail}</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                      <FileSignature className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Firma online habilitada</p>
+                      <p className="text-[10px] text-zinc-400">No se requiere correo · firma on-chain verificada</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* ── NDA BLOCK ─────────────────────────────────────────── */}
                 {room.ndaEnabled && ndaStep === "loading" && (
@@ -557,11 +504,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         : (isProposal ? "Aceptar y confirmar" : "Firmar documento")}
                     </h3>
                     <p className="text-[11px] text-zinc-500 leading-relaxed">
-                      Ingresa tu nombre completo y conecta tu cuenta para firmar este documento. Tu identidad queda registrada
-                      por tu wallet y la firma es verificada on-chain.
+                      {isProposal
+                        ? "Confirma que has leído la propuesta y estás de acuerdo con su contenido para continuar la colaboración. Tu identidad queda registrada por tu wallet y la firma es verificada on-chain."
+                        : "Ingresa tu nombre y conecta tu cuenta para firmar este documento. Tu identidad queda registrada por tu wallet y la firma es verificada on-chain."}
                     </p>
 
-                    <form onSubmit={handleSign} className="space-y-3">
+                    <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
                       <input
                         type="text"
                         placeholder="Nombre completo (obligatorio)"
@@ -593,7 +541,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
                       {signError && <p className="text-[11px] text-rose-400">{signError}</p>}
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={handleSign}
                         disabled={signing || !signName.trim() || !account?.address}
                         className={SIGN_BUTTON_STYLE}
                       >
