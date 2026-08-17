@@ -144,38 +144,8 @@ export function usePersistedAccount() {
   }, [account, activeWallet, disconnect, isConnecting]);
   */
 
-  // Guardar sesión para social logins (cuando hay account pero no activeWallet)
-  useEffect(() => {
-    const isLoggedOut = typeof window !== "undefined" && localStorage.getItem("wallet-logged-out") === "true";
-    if (isLoggedOut && account?.address) return;
-
-    if (account?.address && !activeWallet && typeof window !== "undefined") {
-      // Si hay cuenta conectada pero no activeWallet, asumimos que es social login
-      // Intentamos detectar el tipo basado en posibles datos o usamos 'inApp' como fallback
-      const walletType: WalletId = 'inApp'; // Fallback para social buttons
-
-      const data: SavedSession = {
-        address: account.address,
-        walletType,
-        // Social logins ahora SÍ se reconectan automáticamente usando sesión del servidor
-        shouldReconnect: true,
-        isSocial: true,
-      };
-
-      // Save to localStorage
-      localStorage.setItem("wallet-session", JSON.stringify(data));
-
-      // Also save wallet address to cookies for server-side access
-      document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
-      document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
-
-      setSession(data);
-      if (process.env.NODE_ENV === 'development') {
-        console.log("💾 Guardada sesión social login:", data.walletType);
-        console.log("🍪 Wallet address set in cookies for server access");
-      }
-    }
-  }, [account?.address, activeWallet]);
+  // Do not persist an account without its active wallet provider. That state is
+  // transient in Thirdweb and restoring it causes the auto-connect race.
 
   // Logout - Limpia completamente la sesión
   const logout = useCallback(() => {
