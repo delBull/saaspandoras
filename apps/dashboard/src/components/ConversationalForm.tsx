@@ -191,6 +191,7 @@ export default function ConversationalForm() {
       title: safeData.title ?? 'Proyecto sin título',
       description: safeData.description ?? 'Descripción pendiente',
       businessCategory: safeData.businessCategory ?? 'other',
+      applicantWalletAddress: safeData.applicantWalletAddress ?? account?.address ?? null,
       tokenDistribution: JSON.stringify(finalDistribution),
       status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
       featured: false, // ✅ Featured debe ser manual, nunca automático

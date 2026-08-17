@@ -372,12 +372,17 @@ export default function AdminDashboardPage() {
   const filteredProjects = useMemo(() => {
     let filtered = enhancedProjects;
 
-    // Exclude Hermes OS tenants from the traditional "Protocolos" tab
-    // (they live in the dedicated Hermes Tenants tab)
-    // Source of truth: hermesBinding from installed_products table
-    filtered = filtered.filter(project =>
-      !project.hermesBinding
-    );
+    // Exclude Hermes-only tenants, but keep hybrid Pandoras projects such as S'Narai.
+    // A hybrid project has Hermes plus at least one tokenization contract.
+    filtered = filtered.filter(project => {
+      const hasTokenization = Boolean(
+        project.licenseContractAddress ||
+        project.utilityContractAddress ||
+        project.loomContractAddress ||
+        project.governorContractAddress
+      );
+      return !(project.hermesBinding && !hasTokenization);
+    });
 
     // Apply status filter
     if (statusFilter !== 'all') {

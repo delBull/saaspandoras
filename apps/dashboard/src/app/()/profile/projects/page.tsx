@@ -189,6 +189,20 @@ export default function ProfileProjectsPage() {
     );
   }
 
+  if (!isSuperAdmin && userProjects.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6">
+        <div className="max-w-xl w-full bg-white/[0.02] border border-white/10 rounded-3xl p-10 text-center backdrop-blur-md">
+          <h2 className="text-2xl font-black text-white mb-3">Tu aplicación está en proceso</h2>
+          <p className="text-zinc-400">
+            Aquí aparecerá tu portal de proyecto una vez que tu aplicación sea aprobada.
+            Te notificaremos cuando haya una actualización.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Pass active projects to dashboard (or all if super admin, though we might want to filter drafts out of the Mission Control for admins too if they clutter? Actually, for super admins, we pass all so they can approve/reject them if there's a feature for that, or we just pass activeProjects so Mission Control doesn't break).
   // Mission Control can break if it assumes live data, so let's pass all projects for super admin, but only active for users if they somehow have both.
   const projectsToDisplay = isSuperAdmin ? userProjects : (activeProjects.length > 0 ? activeProjects : userProjects);

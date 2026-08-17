@@ -6,6 +6,10 @@ import { eq, and } from 'drizzle-orm';
 import { withRetry } from '@/lib/database';
 import crypto from 'crypto';
 import { processGrowthEvent } from '@/lib/marketing/growth-engine/engine-service';
+import { headers } from 'next/headers';
+import { getAuth } from '@/lib/auth';
+import { WebhookService } from '@/lib/integrations/webhook-service';
+import { integrationClients } from '@/db/schema';
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
@@ -20,6 +24,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const requestHeaders = await headers();
+    const { session } = await getAuth(requestHeaders);
+    const authenticatedWallet = session?.address ?? null;
     if (!isProd) {
       console.log('📦 Request body keys:', Object.keys(body));
     }
@@ -51,7 +58,8 @@ export async function POST(request: NextRequest) {
       title: body.title,
       slug: baseSlug, 
       description: body.description,
-      businessCategory: body.businessCategory,
+      // Infrastructure is reserved for internal records, never public applications.
+      businessCategory: body.businessCategory === 'infrastructure' ? 'other' : body.businessCategory,
       tagline: body.tagline || null,
       logoUrl: body.logoUrl || null,
       coverPhotoUrl: body.coverPhotoUrl || null,
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest) {
       applicantPosition: body.applicantPosition || null,
       applicantEmail: body.applicantEmail || null,
       applicantPhone: body.applicantPhone || null,
-      applicantWalletAddress: body.applicantWalletAddress || null,
+      applicantWalletAddress: body.applicantWalletAddress || authenticatedWallet,
       verificationAgreement: body.verificationAgreement === true || body.verificationAgreement === 'true',
       protoclMecanism: body.protoclMecanism || null,
       artefactUtility: body.artefactUtility || null,
@@ -242,10 +250,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. GAMIFICATION: FIRE & FORGET (NON-BLOCKING)
-    if (body.applicantWalletAddress) {
+    if (body.applicantWalletAddress || authenticatedWallet) {
       import('@/lib/gamification/service').then(({ trackGamificationEvent }) => {
         trackGamificationEvent(
-          body.applicantWalletAddress,
+          body.applicantWalletAddress || authenticatedWallet,
           'project_application_submitted',
           {
             projectId: newProject.id.toString(),
@@ -255,6 +263,33 @@ export async function POST(request: NextRequest) {
           }
         ).catch(gErr => console.warn('⚠️ Gamification Fire&Forget failed:', gErr.message));
       }).catch(impErr => console.warn('⚠️ Failed to import gamification service:', impErr));
+    }
+
+    // Notify integrations and Discord for the same public application flow.
+    try {
+      const host = requestHeaders.get('host') || '';
+      const isProduction = host === 'dash.pandoras.finance' || host === 'www.dash.pandoras.finance';
+      const environment = isProduction ? 'production' : 'staging';
+      const clients = await db.query.integrationClients.findMany({
+        where: eq(integrationClients.environment, environment),
+      });
+
+      await Promise.all(clients.map((client) =>
+        WebhookService.queueEvent(client.id, 'project.application_submitted', {
+          projectId: newProject.id.toString(),
+          title: newProject.title,
+          category: newProject.businessCategory || 'other',
+          applicantWallet: newProject.applicantWalletAddress || 'unknown',
+          targetAmount: newProject.targetAmount,
+          isSandbox: environment === 'staging',
+        })
+      ));
+
+      const { notifyNewApplication, ensureNotificationServiceConfigured } = await import('@/lib/notifications');
+      ensureNotificationServiceConfigured();
+      await notifyNewApplication(newProject);
+    } catch (notificationError) {
+      console.warn('⚠️ Application notification failed:', notificationError);
     }
 
     return NextResponse.json({
