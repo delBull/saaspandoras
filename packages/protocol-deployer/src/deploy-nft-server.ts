@@ -25,8 +25,13 @@ export async function deployNFTPassServer(
     }
 
     // 2. Load Env Vars
-    const privateKey = process.env.DEPLOYER_PRIVATE_KEY || process.env.PRIVATE_KEY;
-    if (!privateKey) throw new Error("DEPLOYER_PRIVATE_KEY or PRIVATE_KEY missing");
+    // Prefer the funded protocol-admin signer in staging. Keep the dedicated
+    // deployer key as a fallback for environments that do not expose it.
+    const privateKey = process.env.PROTOCOL_ADMIN_PRIVATE_KEY ||
+        process.env.DEPLOYER_PRIVATE_KEY ||
+        process.env.PANDORA_ORACLE_PRIVATE_KEY ||
+        process.env.PRIVATE_KEY;
+    if (!privateKey) throw new Error("PROTOCOL_ADMIN_PRIVATE_KEY or DEPLOYER_PRIVATE_KEY missing");
 
     const ALCHEMY_FALLBACK = "https://eth-sepolia.g.alchemy.com/v2/demo";
     const SEPOLIA_RPCS = [

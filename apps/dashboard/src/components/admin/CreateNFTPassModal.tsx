@@ -67,6 +67,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     const [isMinting, setIsMinting] = useState(false);
 
     const [nftType, setNftType] = useState<'access' | 'identity' | 'coupon' | 'qr'>('access');
+    const [qrCreationMode, setQrCreationMode] = useState<'qr-only' | 'qr-and-nft'>('qr-and-nft');
     const [creationStep, setCreationStep] = useState<0 | 1>(0); // 0: Type Selection, 1: Form Details
     const [generatedShortlink, setGeneratedShortlink] = useState<string | null>(null);
     const [isDynamic, setIsDynamic] = useState(true); // Default to dynamic for QR types as per improved UX
@@ -258,13 +259,15 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     const preGeneratedSlugRef = useRef<string | null>(null);
 
     const handleDeploy = async () => {
-        if (!account?.address) {
+        const isQrOnly = nftType === 'qr' && qrCreationMode === 'qr-only';
+
+        if (!account?.address && !isQrOnly) {
             toast({ title: "Error", description: "Conecta tu wallet primero", variant: "destructive" });
             return;
         }
 
-        if (!formData.name || !formData.symbol) {
-            toast({ title: "Error", description: "Nombre y Símbolo son obligatorios", variant: "destructive" });
+        if (!formData.name || (!isQrOnly && !formData.symbol)) {
+            toast({ title: "Error", description: isQrOnly ? "El nombre es obligatorio" : "Nombre y Símbolo son obligatorios", variant: "destructive" });
             return;
         }
 
@@ -385,6 +388,13 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 setGeneratedShortlink(normalizedTargetUrl);
             }
 
+            // A standalone QR does not need a contract, gas, or deployment service.
+            if (isQrOnly) {
+                clearInterval(stepInterval);
+                setDeploymentStatus('success');
+                return;
+            }
+
 
             const payload = {
                 name: formData.name,
@@ -392,8 +402,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 maxSupply: formData.maxSupply,
                 price: formData.price,
                 description: formData.description,
-                owner: account.address,
-                treasuryAddress: formData.treasuryAddress || account.address,
+                owner: account!.address,
+                treasuryAddress: formData.treasuryAddress || account!.address,
                 image: finalImage,
                 transferable: formData.transferable,
                 burnable: formData.burnable,
@@ -439,7 +449,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     transaction = prepareContractCall({
                         contract,
                         method: "adminMint",
-                        params: [account.address]
+                         params: [account!.address]
                     });
                 } else {
                     transaction = prepareContractCall({
@@ -478,6 +488,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     const reset = () => {
         setCreationStep(0);
         setNftType('access');
+        setQrCreationMode('qr-and-nft');
         setIsDynamic(true);
         setGeneratedShortlink(null);
         setDeploymentStatus('idle');
@@ -580,9 +591,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         <CheckCircleIcon className="w-10 h-10 text-black/80" />
                                     </motion.div>
                                     <h2 className="text-2xl font-bold text-white mb-2">
-                                        {nftType === 'access' ? 'Access Card Creada!' : 'Contrato Desplegado!'}
+                                         {nftType === 'qr' && qrCreationMode === 'qr-only' ? 'QR Creado!' : nftType === 'access' ? 'Access Card Creada!' : 'Contrato Desplegado!'}
                                     </h2>
-                                    <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 mb-6 flex items-center justify-between gap-2 group">
+                                    {deployedAddress && <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 mb-6 flex items-center justify-between gap-2 group">
                                         <code className="font-mono text-xs text-zinc-400 break-all">
                                             {deployedAddress}
                                         </code>
@@ -600,7 +611,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                                 <path fillRule="evenodd" d="M17.663 3.118c.225.015.45.032.673.05C19.876 3.298 21 4.604 21 6.109v9.642a3 3 0 0 1-3 3V16.5c0-5.922-4.576-10.775-10.384-12.193.371-.24.79-.444 1.229-.533 2.875-.589 5.86-1.026 8.818-.656ZM19.5 6.47a1.5 1.5 0 0 0-1.5-1.5H6.25c-.246 0-.482.029-.71.082l-.071.02c-1.347.331-2.47 1.46-2.47 2.928v9.916A1.5 1.5 0 0 0 4.5 19.416h10.5a1.5 1.5 0 0 0 1.5-1.5V6.47Z" clipRule="evenodd" />
                                             </svg>
                                         </button>
-                                    </div>
+                                    </div>}
 
                                     {deployedAddress && (
                                         <div className="mb-6 flex justify-center">
@@ -626,7 +637,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                                 <QRCode value={generatedShortlink} size={150} />
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <button
+                                     <button
                                                     onClick={() => {
                                                         const msg = `Mira mi nuevo NFT/QR Dinámico: ${generatedShortlink}`;
                                                         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
@@ -784,10 +795,30 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     </div>
 
                                     {/* QR Configuration */}
-                                    {nftType === 'qr' && (
-                                        <div className="pt-4 border-t border-zinc-700/50 mt-4 space-y-4">
+                                         {nftType === 'qr' && (
+                                         <div className="pt-4 border-t border-zinc-700/50 mt-4 space-y-4">
 
-                                            {/* Dynamic Toggle */}
+                                             {/* QR can be used independently of blockchain deployment. */}
+                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => setQrCreationMode('qr-only')}
+                                                     className={`rounded-lg border p-3 text-left transition-colors ${qrCreationMode === 'qr-only' ? 'border-lime-500 bg-lime-500/10' : 'border-zinc-700 bg-zinc-800/40 hover:border-zinc-500'}`}
+                                                 >
+                                                     <span className="block text-sm font-semibold text-white">Solo QR</span>
+                                                     <span className="block text-xs text-zinc-400 mt-1">Sin contrato, sin gas. Ideal para campañas y enlaces.</span>
+                                                 </button>
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => setQrCreationMode('qr-and-nft')}
+                                                     className={`rounded-lg border p-3 text-left transition-colors ${qrCreationMode === 'qr-and-nft' ? 'border-emerald-500 bg-emerald-500/10' : 'border-zinc-700 bg-zinc-800/40 hover:border-zinc-500'}`}
+                                                 >
+                                                     <span className="block text-sm font-semibold text-white">QR + NFT</span>
+                                                     <span className="block text-xs text-zinc-400 mt-1">Despliega el contrato y registra el Smart QR.</span>
+                                                 </button>
+                                             </div>
+
+                                             {/* Dynamic Toggle */}
                                             <div className="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-zinc-700">
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-semibold text-white flex items-center gap-2">
@@ -1188,13 +1219,15 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     }
 
                                     // Validar símbolo
-                                    if (!formData.symbol?.trim()) {
+                                    if (nftType !== 'qr' || qrCreationMode !== 'qr-only') {
+                                      if (!formData.symbol?.trim()) {
                                         toast({
                                             title: "Error de Validación",
                                             description: "El símbolo del NFT es obligatorio",
                                             variant: "destructive"
                                         });
                                         return;
+                                      }
                                     }
 
                                     // Validar URL para QR
@@ -1222,8 +1255,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 }}
                                 className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
                             >
-                                🚀 Desplegar {nftType === 'qr' ? 'QR & Contract' : 'Contrato'}
-                            </button>
+                                         {nftType === 'qr' && qrCreationMode === 'qr-only' ? 'Crear Solo QR' : nftType === 'qr' ? 'Desplegar QR + NFT' : 'Desplegar Contrato'}
+                                     </button>
                         )
                     }
                 </div>
