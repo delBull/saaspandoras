@@ -3288,6 +3288,10 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   taskRef: text("task_ref"),
   nextRoomId: uuid("next_room_id"),
   enteredIntoForceAt: timestamp("entered_into_force_at", { withTimezone: true }),
+  // NDA Engine (v1.0)
+  ndaEnabled: boolean("nda_enabled").notNull().default(false),
+  ndaPhase: varchar("nda_phase", { length: 32 }).notNull().default("after_proposal"), // 'before_proposal' | 'after_proposal'
+  ndaVersion: varchar("nda_version", { length: 32 }).notNull().default("v1.0"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -3354,6 +3358,29 @@ export const nexusDealSignersRelations = relations(nexusDealSigners, ({ one }) =
 
 export const nexusDealCommentsRelations = relations(nexusDealComments, ({ one }) => ({
   room: one(nexusDealRooms, { fields: [nexusDealComments.roomId], references: [nexusDealRooms.id] }),
+}));
+
+// ── NDA ACCEPTANCES (Global bypass registry) ──────────────────────────────────
+// One record per (email, nda_version). If present, user gets auto-bypass on
+// any future deal that requires the same NDA version.
+export const nexusNdaAcceptances = pgTable("nexus_nda_acceptances", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull(),
+  ndaVersion: varchar("nda_version", { length: 32 }).notNull().default("v1.0"),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }).defaultNow().notNull(),
+  wallet: text("wallet"),
+  signature: text("signature"),
+  signatureMessage: text("signature_message"),
+  // Room where NDA was first accepted (traceability)
+  firstRoomId: uuid("first_room_id").references(() => nexusDealRooms.id, { onDelete: "set null" }),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+}, (table) => ({
+  emailVersionIdx: uniqueIndex("nexus_nda_email_version_idx").on(table.email, table.ndaVersion),
+}));
+
+export const nexusNdaAcceptancesRelations = relations(nexusNdaAcceptances, ({ one }) => ({
+  firstRoom: one(nexusDealRooms, { fields: [nexusNdaAcceptances.firstRoomId], references: [nexusDealRooms.id] }),
 }));
 
 // --- EVENT SPINE (Integration Contract v1.2) ---

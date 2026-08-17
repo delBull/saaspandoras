@@ -32,7 +32,7 @@ export default async function IdentityPage({ params }: IdentityPageProps) {
             eq(marketingLeads.projectId, project[0]!.id),
             or(
               eq(marketingLeads.leadType, 'team_member'),
-              eq(marketingLeads.ownerContext, 'tenant')
+              eq(marketingLeads.ownerContext, 'client')
             )
           )
         );

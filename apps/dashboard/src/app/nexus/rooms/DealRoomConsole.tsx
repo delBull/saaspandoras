@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Eye,
   Scale,
+  ShieldCheck,
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 
@@ -64,6 +65,10 @@ interface Room {
   sections: Section[];
   audit: AuditEvent[];
   signers: Signer[];
+  // NDA Engine
+  ndaEnabled?: boolean | null;
+  ndaPhase?: string | null;
+  ndaVersion?: string | null;
 }
 
 const KINDS: Room["kind"][] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT", "CHARTER"];
@@ -635,6 +640,13 @@ export default function DealRoomConsole() {
                         <span className="text-zinc-600">· cualquiera con el link puede firmar (nombre + wallet)</span>
                       </p>
                     )}
+                    {selected.ndaEnabled && (
+                      <p className="flex items-center gap-1.5 mt-1 text-[9px] font-mono text-zinc-500">
+                        <ShieldCheck className="w-3 h-3 text-purple-300/70" />
+                        <span className="text-purple-300">NDA {selected.ndaVersion ?? "v1.0"} ACTIVO</span>
+                        <span className="text-zinc-600">· fase: {selected.ndaPhase ?? "after_proposal"} · bypass global por email</span>
+                      </p>
+                    )}
                     {lastSignEvent && (
                       <div className="mt-2 flex items-start gap-2 p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05]">
                         <Check className="w-3.5 h-3.5 text-emerald-300 shrink-0 mt-0.5" />
@@ -658,6 +670,17 @@ export default function DealRoomConsole() {
                       title="Habilitar/deshabilitar firma online (openSign)"
                     >
                       <FileSignature className="w-3 h-3" /> ONLINE
+                    </button>
+                    <button
+                      onClick={() => patch(selected.id, { ndaEnabled: !selected.ndaEnabled, ndaPhase: selected.ndaPhase ?? "after_proposal" }).then(() => flashMsg(selected.ndaEnabled ? "NDA desactivado" : "✓ NDA activado · firmantes deben aceptar NDA antes del deal"))}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-[10px] font-mono transition-colors ${
+                        selected.ndaEnabled
+                          ? "border-purple-500/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20"
+                          : "border-white/10 bg-black/40 text-zinc-500 hover:text-white hover:border-white/25"
+                      }`}
+                      title="Habilitar/deshabilitar NDA (Acuerdo de Confidencialidad)"
+                    >
+                      <ShieldCheck className="w-3 h-3" /> NDA
                     </button>
                     <button
                       onClick={copyPublicLink}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateDealRoomAccess } from "@/lib/admin-auth";
-import { getRoom, updateRoom, updateSection, deleteRoom, addSigners, removeSigner, addSection, convertToAgreement } from "@/lib/nexus-deals/repo";
+import { getRoom, updateRoom, updateSection, deleteRoom, addSigners, removeSigner, addSection, convertToAgreement, enableNdaForRoom } from "@/lib/nexus-deals/repo";
 import { DealKind } from "@/lib/nexus-deals/types";
 import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
 
@@ -41,6 +41,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       updated = (await addSection((await params).id, actor))!;
     } else if (body.convertAgreement === true) {
       updated = (await convertToAgreement((await params).id, actor))!;
+    } else if (typeof body.ndaEnabled === "boolean") {
+      // NDA toggle — handled separately from generic updateRoom
+      const phase: "before_proposal" | "after_proposal" =
+        body.ndaPhase === "before_proposal" ? "before_proposal" : "after_proposal";
+      await enableNdaForRoom((await params).id, body.ndaEnabled, phase, actor);
+      updated = (await getRoom((await params).id))!;
     } else {
       const patch: Record<string, unknown> = { id: (await params).id, actor };
       if (KINDS.includes(body.kind)) patch.kind = body.kind;

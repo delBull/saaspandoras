@@ -61,3 +61,76 @@ export async function sendDealMagicLink(input: {
 
   return resend.emails.send({ from: FROM, to, subject: `Pandora's — ${dealKindLabel} · ${counterparty}`, html });
 }
+
+/**
+ * Email de confirmación al firmante del NDA (Pandoras Ecosystem Confidentiality v1.0).
+ * Se envía inmediatamente tras la firma on-chain, con el registro de aceptación.
+ */
+export async function sendNdaConfirmationEmail(input: {
+  to: string;
+  firstName?: string;
+  ndaVersion?: string;
+  roomLabel: string;
+  wallet?: string;
+  acceptedAt?: string;
+}) {
+  const { to, firstName, ndaVersion = "v1.0", roomLabel, wallet, acceptedAt } = input;
+  const date = acceptedAt ? new Date(acceptedAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" }) : new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pandora's — NDA Firmado</title></head>
+<body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080C;">
+    <tr><td align="center" style="padding:40px 16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;margin:0 auto;background:#0F0F18;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#0a1a0a 0%,#0a0a1a 100%);padding:30px 32px 24px;text-align:center;">
+            <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(134,239,172,0.7);margin-bottom:12px;">PANDORA'S NEXUS · ACUERDO DE CONFIDENCIALIDAD</div>
+            <div style="font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;margin-bottom:6px;">🔐 NDA Firmado</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);">Pandoras Ecosystem Confidentiality & Non-Use Agreement ${ndaVersion}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.75);text-align:center;">
+              <span style="color:#ffffff;font-weight:600;">${firstName ? `Hola ${firstName}` : "Hola"}</span>,<br/><br/>
+              Tu firma del <strong style="color:#86efac;">Acuerdo de Confidencialidad Pandora's Ecosystem ${ndaVersion}</strong> ha sido registrada exitosamente.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+              <tr><td style="padding:16px 20px;">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(134,239,172,0.7);margin-bottom:12px;">Registro de Aceptación</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:2;">
+                  <strong style="color:rgba(255,255,255,0.85);">Deal Room:</strong> ${roomLabel}<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Versión NDA:</strong> ${ndaVersion}<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Fecha:</strong> ${date} (CDMX)<br/>
+                  ${wallet ? `<strong style="color:rgba(255,255,255,0.85);">Wallet:</strong> ${wallet}<br/>` : ""}
+                  <strong style="color:rgba(255,255,255,0.85);">Legislación:</strong> Leyes de los Estados Unidos Mexicanos
+                </div>
+              </td></tr>
+            </table>
+            <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.6;">
+              Este acuerdo tiene una vigencia de 5 años desde la fecha de firma.<br/>
+              Conserva este correo como evidencia de tu aceptación.<br/>
+              Para cualquier consulta: <a href="mailto:legal@pandoras.finance" style="color:rgba(134,239,172,0.7);">legal@pandoras.finance</a>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#080810;padding:14px 28px;border-top:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);text-align:center;">Pandora's Group · Confidential · NDA Engine · Nexus Deal Room</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  return resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Pandora's — NDA Firmado · ${ndaVersion} · ${roomLabel}`,
+    html,
+  });
+}

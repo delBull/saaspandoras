@@ -64,7 +64,7 @@ export async function inviteTeamMember(organizationSlug: string, email: string, 
     name,
     leadType: 'team_member',
     origin: 'portal_invite',
-    ownerContext: 'tenant'
+    ownerContext: 'client'
   });
 
   revalidatePath(`/portal/${organizationSlug}/identity`);

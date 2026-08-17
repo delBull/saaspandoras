@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { nexusDealComments, nexusDealRooms, nexusDealSigners } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { resend } from '@/lib/email/client'; // Assuming resend is exported from here
+import { resend } from '@/lib/resend';
 import NexusDealComment from '@/emails/NexusDealComment';
 
 export async function POST(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
     const { author, content } = await request.json();
 
     if (!author || !content) {
@@ -85,10 +85,10 @@ export async function POST(
 
 export async function GET(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
     
     const comments = await db.query.nexusDealComments.findMany({
       where: eq(nexusDealComments.roomId, roomId),

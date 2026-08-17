@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId, markViewed, signRoom, signRoomOnline } from "@/lib/nexus-deals/repo";
+import { getRoomByPublicId, markViewed, signRoom, signRoomOnline, hasEmailSignedNda, recordNdaAcceptance } from "@/lib/nexus-deals/repo";
 import { verifyDealToken } from "@/lib/nexus-deals/tokens";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
-import { sendSignatureAlert } from "@/lib/nexus-deals/discord";
+import { buildCombinedSignMessage } from "@/lib/nexus-deals/nda-content";
+import { sendSignatureAlert, sendNdaSignedAlert } from "@/lib/nexus-deals/discord";
+import { sendNdaConfirmationEmail } from "@/lib/nexus-deals/email";
 import { verifySignature } from "thirdweb/auth";
 import { client } from "@/lib/thirdweb-client";
+import { db } from "@/db";
+import { nexusDealAuditEvents } from "@/db/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   try {
-    const { token, name, wallet, signature } = await request.json();
+    const { token, name, wallet, signature, isCombined, ndaTimestamp } = await request.json();
 
     const room = await getRoomByPublicId((await params).publicId);
     if (!room) return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
@@ -30,16 +34,46 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       );
     }
 
+    // ── NDA GUARD ────────────────────────────────────────────────────────────
+    // If this room requires NDA and the user is NOT signing the combined message,
+    // check that they've already signed the NDA independently first.
+    if (room.ndaEnabled && !isCombined) {
+      const identifier = cleanWallet;
+      const ndaSigned = await hasEmailSignedNda(identifier, room.ndaVersion);
+      if (!ndaSigned) {
+        return NextResponse.json(
+          {
+            error: "Debes firmar el Acuerdo de Confidencialidad (NDA) antes de firmar este documento.",
+            requiresNda: true,
+            ndaVersion: room.ndaVersion,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // Modo "online": room con openSign permite firmar sin email pre-registrado.
     // La wallet actúa como identificador del firmante (determinista en el mensaje).
     if (room.openSign && (!token || typeof token !== "string")) {
-      const message = buildSignMessage({
-        publicId: room.publicId,
-        kind: room.kind,
-        counterparty: room.counterparty,
-        email: cleanWallet,
-        name: cleanName,
-      });
+      // Combined mode: NDA + Deal in one signature
+      const ts = String(ndaTimestamp ?? new Date().toISOString());
+      const message = isCombined && room.ndaEnabled
+        ? buildCombinedSignMessage({
+            email: cleanWallet,
+            wallet: cleanWallet,
+            publicId: room.publicId,
+            dealKind: room.kind,
+            dealCounterparty: room.counterparty,
+            ndaVersion: room.ndaVersion,
+            timestamp: ts,
+          })
+        : buildSignMessage({
+            publicId: room.publicId,
+            kind: room.kind,
+            counterparty: room.counterparty,
+            email: cleanWallet,
+            name: cleanName,
+          });
 
       const signatureValid = await verifySignature({
         client,
@@ -50,6 +84,48 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
       if (!signatureValid) {
         return NextResponse.json({ error: "Firma inválida. Verifica tu cuenta e intenta de nuevo." }, { status: 401 });
+      }
+
+      // If combined, record NDA acceptance atomically
+      if (isCombined && room.ndaEnabled) {
+        const ip = request.headers.get("x-forwarded-for") ?? undefined;
+        const ua = request.headers.get("user-agent") ?? undefined;
+        await recordNdaAcceptance({
+          email: cleanWallet,
+          ndaVersion: room.ndaVersion,
+          wallet: cleanWallet,
+          signature: cleanSig,
+          signatureMessage: message,
+          roomId: room.id,
+          ip,
+          userAgent: ua,
+        });
+        await db.insert(nexusDealAuditEvents).values({
+          roomId: room.id,
+          actor: cleanName,
+          action: "NDA signed (combined)",
+          detail: `NDA ${room.ndaVersion} registrado en firma combinada con deal · wallet ${cleanWallet}`,
+          at: new Date(),
+        });
+        // Fire NDA notifications in parallel (non-blocking)
+        Promise.allSettled([
+          sendNdaConfirmationEmail({
+            to: cleanWallet,
+            firstName: cleanName.split(" ")[0],
+            ndaVersion: room.ndaVersion,
+            roomLabel: `${room.publicId} · ${room.counterparty}`,
+            wallet: cleanWallet,
+            acceptedAt: ts,
+          }),
+          sendNdaSignedAlert({
+            roomLabel: `${room.publicId} · ${room.counterparty}`,
+            signerName: cleanName,
+            email: cleanWallet,
+            wallet: cleanWallet,
+            ndaVersion: room.ndaVersion,
+            bypassed: false,
+          }),
+        ]);
       }
 
       await markViewed(room.id, cleanWallet);
@@ -68,7 +144,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
         enteredIntoForce: updated?.status === "SIGNED",
       });
 
-      return NextResponse.json({ ok: true, status: updated?.status });
+      return NextResponse.json({ ok: true, status: updated?.status, ndaRecorded: isCombined && room.ndaEnabled });
     }
 
     if (!token || typeof token !== "string") {

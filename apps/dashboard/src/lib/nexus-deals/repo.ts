@@ -4,8 +4,9 @@ import {
   nexusDealSections,
   nexusDealAuditEvents,
   nexusDealSigners,
+  nexusNdaAcceptances,
 } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 import { newRoomId, generatePublicId, defaultSections, SignerInput, DealKind } from "./types";
 import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
 import { sendDealRoomReleaseEmail } from "@/lib/email/nexus-mailer";
@@ -468,6 +469,10 @@ export function publicRoomView(room: NonNullable<Awaited<ReturnType<typeof getRo
     summary: room.summary,
     openSign: room.openSign,
     enteredIntoForceAt: room.enteredIntoForceAt ? room.enteredIntoForceAt.toISOString() : null,
+    // NDA Engine
+    ndaEnabled: room.ndaEnabled,
+    ndaPhase: room.ndaPhase,
+    ndaVersion: room.ndaVersion,
     sections: room.sections,
   };
 }
@@ -584,4 +589,82 @@ export async function convertToAgreement(roomId: string, actor: string) {
     `Propuesta extendida y convertida en Acuerdo Legal · ${AGREEMENT_BOILERPLATE.length} cláusulas anexadas (editables) · estado REVIEW`
   );
   return getRoom(roomId);
+}
+
+// ── NDA ENGINE FUNCTIONS ────────────────────────────────────────────────────
+
+/**
+ * Check if an email has already signed the NDA (global bypass).
+ * Returns the acceptance record if found, null otherwise.
+ */
+export async function hasEmailSignedNda(
+  email: string,
+  ndaVersion: string = "v1.0"
+): Promise<{ acceptedAt: Date; wallet: string | null } | null> {
+  const row = await db.query.nexusNdaAcceptances.findFirst({
+    where: and(
+      eq(nexusNdaAcceptances.email, email.toLowerCase()),
+      eq(nexusNdaAcceptances.ndaVersion, ndaVersion)
+    ),
+    columns: { acceptedAt: true, wallet: true },
+  });
+  return row ?? null;
+}
+
+/**
+ * Record an NDA acceptance (used when someone signs for the first time).
+ * Silently skips duplicates due to the unique index on (email, nda_version).
+ */
+export async function recordNdaAcceptance(input: {
+  email: string;
+  ndaVersion?: string;
+  wallet?: string;
+  signature?: string;
+  signatureMessage?: string;
+  roomId?: string;
+  ip?: string;
+  userAgent?: string;
+}) {
+  const ndaVersion = input.ndaVersion ?? "v1.0";
+  const email = input.email.toLowerCase();
+  try {
+    await db
+      .insert(nexusNdaAcceptances)
+      .values({
+        email,
+        ndaVersion,
+        acceptedAt: new Date(),
+        wallet: input.wallet ?? null,
+        signature: input.signature ?? null,
+        signatureMessage: input.signatureMessage ?? null,
+        firstRoomId: input.roomId ?? null,
+        ip: input.ip ?? null,
+        userAgent: input.userAgent ?? null,
+      })
+      .onConflictDoNothing(); // If already signed, skip silently
+  } catch {
+    // Already exists — bypass is already in place, nothing to do
+  }
+}
+
+/**
+ * Enable or disable NDA for a specific room from the admin console.
+ */
+export async function enableNdaForRoom(
+  roomId: string,
+  enabled: boolean,
+  phase: "before_proposal" | "after_proposal",
+  actor: string
+) {
+  const now = new Date();
+  await db
+    .update(nexusDealRooms)
+    .set({ ndaEnabled: enabled, ndaPhase: phase, updatedAt: now })
+    .where(eq(nexusDealRooms.id, roomId));
+  await appendAudit(
+    roomId,
+    actor,
+    enabled ? "NDA enabled" : "NDA disabled",
+    `NDA ${enabled ? "habilitado" : "deshabilitado"} · fase: ${phase}`
+  );
 }

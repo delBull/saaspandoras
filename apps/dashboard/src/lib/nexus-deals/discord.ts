@@ -172,3 +172,40 @@ export async function sendDealRoomActionRequiredAlert(input: {
     },
   ]);
 }
+
+/**
+ * NDA firmado (o bypass automático) — alerta a Discord.
+ */
+export async function sendNdaSignedAlert(input: {
+  roomLabel: string;
+  signerName: string;
+  email: string;
+  wallet?: string;
+  ndaVersion?: string;
+  bypassed?: boolean; // true = already signed in another deal
+}) {
+  const { roomLabel, signerName, email, wallet, ndaVersion = "v1.0", bypassed } = input;
+  const title = bypassed
+    ? `⚡ NDA Auto-aprobado (Bypass) — ${roomLabel}`
+    : `🔐 NDA Firmado — ${roomLabel}`;
+  const description = bypassed
+    ? `${signerName} ya tenía el NDA ${ndaVersion} firmado en un deal anterior. Se aplicó bypass automático.`
+    : `${signerName} firmó el Acuerdo de Confidencialidad Pandora's Ecosystem ${ndaVersion} en el Deal Room.`;
+
+  return postDiscord("", [
+    {
+      title,
+      description,
+      color: bypassed ? COLORS.PURPLE : COLORS.GREEN,
+      fields: [
+        { name: "Room", value: roomLabel, inline: true },
+        { name: "Firmante", value: `${signerName} · ${email}`, inline: true },
+        ...(wallet ? [{ name: "Wallet", value: wallet, inline: false }] : []),
+        { name: "Versión NDA", value: ndaVersion, inline: true },
+        { name: "Modo", value: bypassed ? "Bypass Global" : "Firma On-Chain", inline: true },
+      ],
+      footer: { text: "Pandora's Nexus · NDA Engine · EIP-191" },
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+}
