@@ -117,7 +117,7 @@ export function HermesTenantsAdminView() {
                 </span>
                 
                 <a
-                  href={`/growth-os/hermes/portal?slug=${t.slug}`}
+                   href={`/growth-os/organizations/${t.slug}/hermes`}
                   target="_blank"
                   rel="noreferrer"
                   className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
