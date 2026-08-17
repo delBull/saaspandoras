@@ -28,6 +28,7 @@ import { RocketLaunchIcon, BeakerIcon, GlobeAltIcon } from "@heroicons/react/24/
 import { useRealGamification } from "@/hooks/useRealGamification";
 import { SandboxTransition } from "./SandboxTransition";
 import { resolveIpfsUrl } from "@/lib/utils";
+import { hasFullPlatformAccess } from "@/lib/roles";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -289,6 +290,10 @@ export function TopNavbar({
     setMounted(true);
   }, []);
 
+  const isVerifiedAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin);
+  const isFullAccess = isVerifiedAdmin || hasFullPlatformAccess(userProfile?.role);
+
+
   return (
     <div className={`absolute w-full z-[9999] md:block hidden pt-4 transition-opacity duration-700 pointer-events-none ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <SandboxTransition
@@ -432,42 +437,46 @@ export function TopNavbar({
               <div className="border-t border-zinc-700 my-2"></div>
 
               {/* Navigation Items - REMAINING PRIORITIES */}
-              <Link
-                href="/profile/dashboard"
-                onClick={() => setProfileDropdown(false)}
-                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-              >
-                <ChartBarIcon className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-white text-sm">Dashboard</div>
-                  <div className="text-gray-400 text-xs">Métricas y gestión</div>
-                </div>
-              </Link>
+              {isFullAccess && (
+                <>
+                  <Link
+                    href="/profile/dashboard"
+                    onClick={() => setProfileDropdown(false)}
+                    className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                  >
+                    <ChartBarIcon className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <div className="text-white text-sm">Dashboard</div>
+                      <div className="text-gray-400 text-xs">Métricas y gestión</div>
+                    </div>
+                  </Link>
 
-              <Link
-                href="/profile/achievements"
-                onClick={() => setProfileDropdown(false)}
-                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-              >
-                <TrophyIcon className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-white text-sm">Gamificación</div>
-                  <div className="text-gray-400 text-xs">Logros y objetivos</div>
-                </div>
-              </Link>
+                  <Link
+                    href="/profile/achievements"
+                    onClick={() => setProfileDropdown(false)}
+                    className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                  >
+                    <TrophyIcon className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <div className="text-white text-sm">Gamificación</div>
+                      <div className="text-gray-400 text-xs">Logros y objetivos</div>
+                    </div>
+                  </Link>
 
-              <Link
-                href="/education"
-                onClick={() => setProfileDropdown(false)}
-                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-              >
-                <BookOpenIcon className="w-5 h-5 text-lime-300" />
-                <div>
-                  <div className="text-white text-sm">Aprende y Gana</div>
-                  <div className="text-gray-400 text-xs">Cursos Web3 con rewards (+toknes)</div>
-                </div>
-              </Link>
-              {Boolean((adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp)) ||
+                  <Link
+                    href="/education"
+                    onClick={() => setProfileDropdown(false)}
+                    className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                  >
+                    <BookOpenIcon className="w-5 h-5 text-lime-300" />
+                    <div>
+                      <div className="text-white text-sm">Aprende y Gana</div>
+                      <div className="text-gray-400 text-xs">Cursos Web3 con rewards (+toknes)</div>
+                    </div>
+                  </Link>
+                </>
+              )}
+              {Boolean(isVerifiedAdmin ||
                 (userProfile?.projectCount && userProfile.projectCount > 0)) && (
                   <Link
                     href="/profile/projects"
@@ -485,7 +494,7 @@ export function TopNavbar({
                 )}
 
               {/* Mis Accesos (Participante) - Sólo mostrar si es admin por ahora, o si tiene accesos confirmados */}
-              {(adminStatus.isAdmin || adminStatus.isSuperAdmin) && (
+              {isVerifiedAdmin && (
                 <Link
                   href="/my-protocols"
                   onClick={() => setProfileDropdown(false)}

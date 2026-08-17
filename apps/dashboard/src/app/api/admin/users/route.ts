@@ -4,6 +4,7 @@ import { db } from "~/db";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { logger } from "@/lib/logger";
 import { getSuperAdminWallet } from "@/lib/constants";
+import { normalizePlatformRole } from "@/lib/roles";
 import type { UserData } from "@/types/admin";
 
 export const runtime = "nodejs";
@@ -45,7 +46,8 @@ export async function GET(request: Request) {
         u."name",
         u."email",
         u."image",
-        u."walletAddress",
+         u."walletAddress",
+         u."role",
         u."hasPandorasKey",
         u."connectionCount",
         u."lastConnectionAt",
@@ -94,7 +96,7 @@ export async function GET(request: Request) {
       } else if (Number(user.projectCount) > 0) {
         role = "applicant";
       } else {
-        role = "pandorian";
+        role = normalizePlatformRole(user.role);
       }
 
       return {

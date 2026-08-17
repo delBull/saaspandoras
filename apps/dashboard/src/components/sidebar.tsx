@@ -30,6 +30,7 @@ import { useRealGamification } from '@/hooks/useRealGamification';
 import { resolveIpfsUrl } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { hasFullPlatformAccess } from "@/lib/roles";
 
 interface SidebarProps {
   wallet?: string;
@@ -311,6 +312,8 @@ export function Sidebar({
 
   // Centralized profile dropdown menu items
   const getProfileDropdownItems = (isMobile = false) => {
+    const isFullAccess = isAdmin || hasFullPlatformAccess(userProfile?.role);
+    
     const baseItems = [
       {
         href: "/profile",
@@ -322,26 +325,28 @@ export function Sidebar({
           if (isMobile) setMobileOpen(false);
         }
       },
-      {
-        href: "/profile/dashboard",
-        icon: <ChartBarIcon className="w-5 h-5 text-gray-400" />,
-        label: "Dashboard",
-        description: "Métricas e inversiones",
-        onClick: () => {
-          setProfileDropdown(false);
-          if (isMobile) setMobileOpen(false);
+      ...(isFullAccess ? [
+        {
+          href: "/profile/dashboard",
+          icon: <ChartBarIcon className="w-5 h-5 text-gray-400" />,
+          label: "Dashboard",
+          description: "Métricas e inversiones",
+          onClick: () => {
+            setProfileDropdown(false);
+            if (isMobile) setMobileOpen(false);
+          }
+        },
+        {
+          href: "/education",
+          icon: <BookOpen className="w-5 h-5 text-gray-400" />,
+          label: "Educación",
+          description: "Cursos Web3 · XP & Credits",
+          onClick: () => {
+            setProfileDropdown(false);
+            if (isMobile) setMobileOpen(false);
+          }
         }
-      },
-      {
-        href: "/education",
-        icon: <BookOpen className="w-5 h-5 text-gray-400" />,
-        label: "Educación",
-        description: "Cursos Web3 · XP & Credits",
-        onClick: () => {
-          setProfileDropdown(false);
-          if (isMobile) setMobileOpen(false);
-        }
-      }
+      ] : [])
     ];
 
     // Projects link - only show for admins or applicants with projects
@@ -360,80 +365,89 @@ export function Sidebar({
   };
 
   const links = useMemo(
-    () => [
-      {
-        label: "Hub",
-        href: "/",
-        icon: <ViewfinderCircleIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        disabled: false,
-      },
-      {
-        label: "Protocolos",
-        href: "/applicants",
-        icon: (
-          <PackageCheckIcon className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        disabled: false,
-      },
-
-      {
-        label: "Wallet",
-        href: "/wallet-pro",
-        icon: (
-          <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        disabled: false,
-      },
-      {
-        label: "Gobernanza",
-        href: "/governance",
-        icon: (
-          <BuildingLibraryIcon className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        disabled: false,
-      },
-      {
-        label: "Agora Market",
-        href: "/agora",
-        icon: (
-          <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        disabled: false,
-      },
-      {
-        label: "Embajadores",
-        href: "/ambassadors/dashboard",
-        icon: (
-          <UserIcon className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        disabled: false,
-      },
-      {
-        label: "Feed",
-        type: "path",
-        href: "#",
-        icon: (
-          <Hash className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        comingSoon: true,
-        disabled: true,
-      },
-      // Enlace solo visible para admin (STRICT CHECK)
-      ...(isAdmin && account
-        ? [
+    () => {
+      const isFullAccess = isAdmin || hasFullPlatformAccess(userProfile?.role);
+      
+      const baseLinks = [
+        ...(isFullAccess ? [
           {
-            label: "Admin Dash",
-            href: "/admin/dashboard",
+            label: "Hub",
+            href: "/",
+            icon: <ViewfinderCircleIcon className="h-5 w-5 shrink-0 text-gray-400" />,
+            disabled: false,
+          },
+          {
+            label: "Protocolos",
+            href: "/applicants",
             icon: (
-              <ChartPieIcon className="h-5 w-5 shrink-0 text-lime-400" />
+              <PackageCheckIcon className="h-5 w-5 shrink-0 text-gray-400" />
             ),
             disabled: false,
-            admin: true,
-          },
-        ]
-        : []),
-    ],
-    [isAdmin, account]
+          }
+        ] : []),
+        {
+          label: "Wallet",
+          href: "/wallet-pro",
+          icon: (
+            <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          ),
+          disabled: false,
+        },
+        {
+          label: "Gobernanza",
+          href: "/governance",
+          icon: (
+            <BuildingLibraryIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          ),
+          disabled: false,
+        },
+        {
+          label: "Agora Market",
+          href: "/agora",
+          icon: (
+            <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          ),
+          disabled: false,
+        },
+        {
+          label: "Embajadores",
+          href: "/ambassadors/dashboard",
+          icon: (
+            <UserIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          ),
+          disabled: false,
+        },
+        ...(isFullAccess ? [
+          {
+            label: "Feed",
+            type: "path",
+            href: "#",
+            icon: (
+              <Hash className="h-5 w-5 shrink-0 text-gray-400" />
+            ),
+            comingSoon: true,
+            disabled: true,
+          }
+        ] : []),
+        // Enlace solo visible para admin (STRICT CHECK)
+        ...(isAdmin && account
+          ? [
+            {
+              label: "Admin Dash",
+              href: "/admin/dashboard",
+              icon: (
+                <ChartPieIcon className="h-5 w-5 shrink-0 text-lime-400" />
+              ),
+              disabled: false,
+              admin: true,
+            },
+          ]
+          : []),
+      ];
+      
+      return baseLinks;
+    },
+    [isAdmin, account, userProfile?.role]
 );
 
   const logoVariants = {

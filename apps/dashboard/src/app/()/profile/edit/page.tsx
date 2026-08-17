@@ -259,7 +259,7 @@ export default function ProfileEditPage() {
 
               <div>
                 <p className="text-sm font-medium text-gray-400">Rol</p>
-                <p className="text-white capitalize">{profile?.role ?? 'pandorian'}</p>
+                <p className="text-white capitalize">{profile?.role ?? 'applicant'}</p>
               </div>
             </div>
           </CardContent>

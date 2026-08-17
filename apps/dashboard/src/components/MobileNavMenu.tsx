@@ -10,6 +10,7 @@ import {
 import { PackageCheckIcon, Hash } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { useActiveAccount } from "thirdweb/react";
+import { hasFullPlatformAccess } from "@/lib/roles";
 
 interface NavItem {
   label: string;
@@ -21,6 +22,7 @@ interface NavItem {
 interface ProfileData {
   kycCompleted?: boolean;
   kycLevel?: string;
+  role?: string;
 }
 
 interface MobileNavMenuProps {
@@ -45,25 +47,29 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
     kycLevel: profile?.kycLevel
   });
 
-  const navItems: NavItem[] = [
-    {
-      label: 'Feed',
-      href: '/feed',
-      icon: <Hash className="w-6 h-6" />,
-      disabled: true,
-    },
-    {
-      label: 'Protocolos',
-      href: '/applicants',
-      icon: <PackageCheckIcon className="w-6 h-6" />,
-      disabled: false,
-    },
-    {
-      label: 'Hub',
-      href: '/', 
-      icon: <ViewfinderCircleIcon className="w-6 h-6" />,
-      disabled: false, 
-    },
+  const isFullAccess = hasFullPlatformAccess(profile?.role);
+
+  const baseNavItems: NavItem[] = [
+    ...(isFullAccess ? [
+      {
+        label: 'Feed',
+        href: '/feed',
+        icon: <Hash className="w-6 h-6" />,
+        disabled: true,
+      },
+      {
+        label: 'Protocolos',
+        href: '/applicants',
+        icon: <PackageCheckIcon className="w-6 h-6" />,
+        disabled: false,
+      },
+      {
+        label: 'Hub',
+        href: '/', 
+        icon: <ViewfinderCircleIcon className="w-6 h-6" />,
+        disabled: false, 
+      }
+    ] : []),
     {
       label: 'Wallet',
       href: '/wallet-pro', 
@@ -77,6 +83,8 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
       disabled: false,
     },
   ];
+
+  const navItems = baseNavItems;
 
   return (
     <>

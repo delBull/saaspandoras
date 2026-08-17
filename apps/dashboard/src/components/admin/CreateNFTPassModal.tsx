@@ -350,18 +350,26 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 }
             }
 
+            if (isQrOnly && !isDynamic) {
+                const timestamp = Date.now();
+                const nameSlug = formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 80);
+                shortlinkSlug = `qr-${nameSlug}-${timestamp}`.substring(0, 100);
+            }
+
             // 2. Register Shortlink in Database if Dynamic (Before or After deploy? Ideally before to secure slug)
             // But if deploy fails, we have an orphan shortlink. 
             // Better to do it in parallel or optimistic. Let's do it BEFORE to ensure we have the slug registered.
-            if (nftType === 'qr' && isDynamic && shortlinkSlug) {
+            if (nftType === 'qr' && shortlinkSlug) {
                 const shortlinkPayload: any = {
                     slug: shortlinkSlug,
                     destinationUrl: normalizedTargetUrl,
                     title: `QR: ${formData.name}`,
-                    description: `Smart QR for NFT (Pending Deploy)`
+                    description: isQrOnly
+                        ? `Standalone QR ${isDynamic ? 'Dynamic' : 'Static'}`
+                        : 'Smart QR for NFT (Pending Deploy)'
                 };
 
-                if (createLanding) {
+                if (createLanding && isDynamic) {
                     shortlinkPayload.type = 'landing';
                     shortlinkPayload.landingConfig = {
                         title: landingConfig.title || formData.name,
@@ -767,7 +775,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                                 className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
                                             />
                                         </div>
-                                        <div>
+                                        {!(nftType === 'qr' && qrCreationMode === 'qr-only') && <div>
                                             <label htmlFor="nft-pass-symbol" className="block text-xs font-medium text-gray-400 mb-1">Símbolo</label>
                                             <input
                                                 id="nft-pass-symbol"
@@ -778,7 +786,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                                 placeholder="Ej. VIP, QR01"
                                                 className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
                                             />
-                                        </div>
+                                        </div>}
                                     </div>
 
                                     <div>
@@ -998,6 +1006,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 </div>
                             </div>
 
+                            {!(nftType === 'qr' && qrCreationMode === 'qr-only') && <>
                             {/* Section 2: Economics */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
@@ -1176,6 +1185,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     </div>
                                 </div>
                             </div>
+                            </>}
                         </>
                     )}
                 </div>
@@ -1199,7 +1209,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     e.stopPropagation();
 
                                     // Validar wallet conectada
-                                    if (!account?.address) {
+                                    if (!account?.address && !(nftType === 'qr' && qrCreationMode === 'qr-only')) {
                                         toast({
                                             title: "Wallet No Conectada",
                                             description: "Por favor conecta tu wallet antes de desplegar",

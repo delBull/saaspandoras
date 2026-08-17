@@ -378,6 +378,20 @@ export function NFTManager() {
 
     // Filter passes to show only valid Access Passes (not QRs)
     const displayPasses = availablePasses.filter(p => p.contractAddress === config.applyPassNftAddress || (p as any).nftType !== 'qr');
+    const deployedQrSlugs = new Set(
+        availablePasses.map((pass: any) => pass.shortlinkSlug).filter(Boolean)
+    );
+    const standaloneQRs = shortlinks
+        .filter((link: any) => link.title?.startsWith('QR:') && !deployedQrSlugs.has(link.slug))
+        .map((link: any) => ({
+            ...link,
+            title: link.title.replace(/^QR:\s*/, ''),
+            symbol: 'QR',
+            isStandalone: true,
+            isStatic: link.description === 'Standalone QR Static',
+            targetUrl: link.destinationUrl,
+            shortlinkSlug: link.description === 'Standalone QR Static' ? null : link.slug,
+        }));
 
     return (
         <div className="space-y-6">
@@ -602,6 +616,51 @@ export function NFTManager() {
                 ))}
 
                 <TabsContent value="qr" className="space-y-8">
+                    <div>
+                        <h4 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">QR independientes</h4>
+                        {standaloneQRs.length === 0 ? (
+                            <div className="text-center py-6 text-zinc-500 text-sm italic border border-dashed border-zinc-800 rounded-lg">
+                                No hay QRs independientes creados.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {standaloneQRs.map((qr: any) => (
+                                    <div key={qr.id} className="bg-zinc-900/60 border border-lime-500/20 rounded-xl p-5">
+                                        <div className="flex items-start justify-between gap-3 mb-4">
+                                            <div>
+                                                <h4 className="font-bold text-white truncate">{qr.title}</h4>
+                                                <p className="text-[10px] text-lime-400 uppercase tracking-wider mt-1">
+                                                    {qr.isStatic ? 'QR estático' : 'QR dinámico'} · Sin contrato
+                                                </p>
+                                            </div>
+                                            <QrCodeIcon className="w-5 h-5 text-lime-400 shrink-0" />
+                                        </div>
+                                        <p className="text-xs text-zinc-500 truncate mb-4" title={qr.destinationUrl}>{qr.destinationUrl}</p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                onClick={() => handleViewQR(qr)}
+                                                className="flex-1 bg-lime-500/10 text-lime-400 border border-lime-500/30 hover:bg-lime-500/20 text-xs h-8 font-bold"
+                                            >
+                                                <QrCodeIcon className="w-3 h-3 mr-2" /> Ver QR
+                                            </Button>
+                                            <Button
+                                                onClick={() => {
+                                                    const value = qr.shortlinkSlug ? `${window.location.origin}/${qr.shortlinkSlug}` : qr.targetUrl;
+                                                    navigator.clipboard.writeText(value);
+                                                    toast({ title: 'Copiado', description: 'Enlace del QR copiado.' });
+                                                }}
+                                                className="bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 text-xs h-8 font-bold"
+                                                title="Copiar enlace del QR"
+                                            >
+                                                Copiar
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* QR Contracts (Assets) */}
                     <div>
                         <h4 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">Contratos Smart QR</h4>
@@ -935,6 +994,20 @@ export function NFTManager() {
                             <Download className="w-4 h-4 mr-2" />
                             Descargar PNG
                         </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                if (!viewingQR) return;
+                                const value = (viewingQR as any).shortlinkSlug
+                                    ? `${window.location.origin}/${(viewingQR as any).shortlinkSlug}`
+                                    : (viewingQR as any).targetUrl;
+                                navigator.clipboard.writeText(value);
+                                toast({ title: 'Copiado', description: 'Enlace del QR copiado.' });
+                            }}
+                            className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 font-bold"
+                        >
+                            Copiar enlace
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -1009,5 +1082,4 @@ function QRGenerator({ value }: { value: string }) {
     {/* eslint-disable-next-line @next/next/no-img-element */ }
     return <img src={src} alt="QR Code" className="w-64 h-64" />;
 }
-
 

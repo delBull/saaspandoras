@@ -46,6 +46,7 @@ export async function GET(_request: Request) {
                 AND "license_contract_address" IS NOT NULL
                 AND "utility_contract_address" IS NULL
                 AND "deployment_status" = 'deployed'
+                AND "is_deleted" = false
             ORDER BY "created_at" DESC
         `);
 

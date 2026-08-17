@@ -43,7 +43,7 @@ export function AccountStatus({
                 </div>
                 <div>
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Rol</span>
-                  <p className="text-white text-xs font-medium capitalize">{role ?? 'pandorian'}</p>
+                  <p className="text-white text-xs font-medium capitalize">{role ?? 'applicant'}</p>
                 </div>
               </div>
             </div>

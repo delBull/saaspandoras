@@ -3,6 +3,7 @@ import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { ensureUser } from "@/lib/user";
 import { sql } from "@/lib/database";
+import { normalizePlatformRole } from "@/lib/roles";
 
 // Test database connection at startup
 
@@ -21,12 +22,14 @@ export async function GET(request: Request) {
   // For now, we'll just log excessive requests
   console.log(`Profile API request from ${clientIP} at ${new Date().toISOString()}`);
   let authMethod: 'header' | 'body' | 'session' | 'none' = 'none';
+  let verifiedSession = false;
 
   const getWalletAddress = async (): Promise<string> => {
     // Try JWT session first (verified)
     const auth = await getAuth();
     if (auth.isVerified && auth.session?.address) {
       authMethod = 'session';
+      verifiedSession = true;
       return auth.session.address;
     }
     
@@ -50,7 +53,7 @@ export async function GET(request: Request) {
 
     // Get user data directly from users table - optimized query
     const usersResult = await sql`
-      SELECT "id", "name", "email", "image", "walletAddress",
+      SELECT "id", "name", "email", "image", "walletAddress", "role",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData", "hasPandorasKey",
               "telegram_id" AS "telegramId"
@@ -127,14 +130,11 @@ export async function GET(request: Request) {
     const isAdmin = Number(adminResults[0]?.count || 0) > 0;
     const isSuperAdmin = walletAddress.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
 
-    let role: "admin" | "applicant" | "pandorian";
-    if (isAdmin || isSuperAdmin) {
-      role = "admin";
-    } else if (projects?.length > 0) {
-      role = "applicant";
-    } else {
-      role = "pandorian";
-    }
+    // Unverified wallet headers may identify a profile, but cannot grant roles.
+    const rawRole = verifiedSession
+      ? ((isAdmin || isSuperAdmin) ? 'admin' : user?.role)
+      : 'applicant';
+    const role = normalizePlatformRole(rawRole);
 
     let systemProjectsManaged: number | undefined;
     if (isAdmin || isSuperAdmin) {

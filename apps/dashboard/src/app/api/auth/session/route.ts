@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { sql } from "@/lib/database";
+import { normalizePlatformRole } from "@/lib/roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export async function GET(_request: Request) {
     // Prefer JWT session
     const auth = await getAuth();
     let walletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
+    const verifiedSession = Boolean(walletAddress);
 
     if (!walletAddress) {
       const requestHeaders = await headers();
@@ -39,7 +41,7 @@ export async function GET(_request: Request) {
 
     // Check if user exists in database
     const users = await sql`
-      SELECT "id", "name", "email", "image", "walletAddress",
+      SELECT "id", "name", "email", "image", "walletAddress", "role",
              "connectionCount", "lastConnectionAt", "createdAt",
              "kycLevel", "kycCompleted", "kycData",
              "access_cohort" as "accessCohort", "benefits_tier" as "benefitsTier"
@@ -65,9 +67,11 @@ export async function GET(_request: Request) {
     const isAdmin = Number(adminResults[0]?.count || 0) > 0;
     const isSuperAdmin = walletAddress.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
 
-    let role: "admin" | "applicant" | "pandorian" = "pandorian";
-    if (isAdmin || isSuperAdmin) {
-      role = "admin";
+    let role = normalizePlatformRole('applicant');
+    if (verifiedSession && (isAdmin || isSuperAdmin)) {
+      role = normalizePlatformRole("admin");
+    } else if (verifiedSession && user.role) {
+      role = normalizePlatformRole(user.role);
     } else {
       // Check if user has projects
       const projects = await sql`
