@@ -74,7 +74,9 @@ export async function getAuth(headersData?: any, userAddress?: string) {
     // 1. Get Raw Cookies (Compatibility Layer)
     let rawCookieHeader = '';
     if (headersData) {
-      if (typeof (headersData as any).get === 'function') {
+      if (headersData.headers && typeof headersData.headers.get === 'function') {
+        rawCookieHeader = headersData.headers.get('cookie') || '';
+      } else if (typeof (headersData as any).get === 'function') {
         rawCookieHeader = (headersData as any).get('cookie') || '';
       } else {
         rawCookieHeader = (headersData as any).cookie || (headersData as any).Cookie || '';
