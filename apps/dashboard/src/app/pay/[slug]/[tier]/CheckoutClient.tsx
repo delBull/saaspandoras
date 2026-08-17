@@ -918,7 +918,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                     <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, agreement: !prev.agreement}))}>
                                                                         {legalChecks.agreement ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
                                                                     </div>
-                                                                    <p className="text-xs text-zinc-400 leading-relaxed">He leído y acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('agreement'); }} className="text-emerald-400 hover:underline">Acuerdo Marco de Participación</button>.</p>
+                                                                    <p className="text-xs text-zinc-400 leading-relaxed">He leído y acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('agreement'); }} className="text-emerald-400 hover:underline">Investor Participation & Digital Certificate Agreement v2.0</button>, y acepto que el certificado digital servirá como prueba de mi participación económica bajo este contrato.</p>
                                                                 </label>
 
                                                                 <label className="flex items-start gap-4 cursor-pointer group">
@@ -1057,7 +1057,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                                     <div className="mt-0.5" onClick={() => setLegalChecks(prev => ({...prev, agreement: !prev.agreement}))}>
                                                                         {legalChecks.agreement ? <CheckSquare className="w-4 h-4 text-emerald-500" /> : <Square className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />}
                                                                     </div>
-                                                                    <p className="text-[11px] text-zinc-400 leading-snug">He leído y acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('agreement'); }} className="text-emerald-400 hover:underline">Acuerdo Marco de Participación</button>.</p>
+                                                                    <p className="text-[11px] text-zinc-400 leading-snug">He leído y acepto el <button type="button" onClick={(e) => { e.preventDefault(); openLegalDoc('agreement'); }} className="text-emerald-400 hover:underline">Investor Participation & Digital Certificate Agreement v2.0</button>, y acepto que el certificado digital servirá como prueba de mi participación económica bajo este contrato.</p>
                                                                 </label>
 
                                                                 <label className="flex items-start gap-3 cursor-pointer group">
@@ -1236,7 +1236,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                                                             <h4 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-4">Documentación Legal Vinculada:</h4>
                                                             <ul className="space-y-3">
                                                                 <li className="flex items-center gap-3 text-xs text-emerald-400 font-bold"><CheckCircle className="w-4 h-4 text-emerald-500" /> Certificado de Participación Emitido</li>
-                                                                <li className="flex items-center gap-3 text-xs text-zinc-300 font-medium"><button onClick={() => openLegalDoc('agreement')} className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-4 h-4 text-zinc-500" /> Acuerdo Marco Firmado</button></li>
+                                                                <li className="flex items-center gap-3 text-xs text-zinc-300 font-medium"><button onClick={() => openLegalDoc('agreement')} className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-4 h-4 text-zinc-500" /> Acuerdo de Participación v2.0 (Aceptado)</button></li>
                                                                 <li className="flex items-center gap-3 text-xs text-zinc-300 font-medium"><button onClick={() => openLegalDoc('risk-disclosure')} className="hover:text-white transition-colors flex items-center gap-1.5"><FileText className="w-4 h-4 text-zinc-500" /> Aviso de Riesgos</button></li>
                                                             </ul>
                                                         </div>

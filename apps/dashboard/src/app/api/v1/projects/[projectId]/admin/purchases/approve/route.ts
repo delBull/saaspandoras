@@ -112,7 +112,7 @@ async function handler(
 
         if (action === 'approve') {
             // Generate integrity proof (Agreement Hash)
-            const agreementContent = `Agreement for Project ${project.title} - Purchase ${purchaseId} - User ${purchase.userId} - Units ${purchase.amount}`;
+            const agreementContent = `Investor Participation & Digital Certificate Agreement v2.0 - Project: ${project.title} - Purchase: ${purchaseId} - User: ${purchase.userId} - Units: ${purchase.amount}`;
             const agreementHash = crypto.createHash('sha256').update(agreementContent).digest('hex');
 
             // Ambassador Logic
