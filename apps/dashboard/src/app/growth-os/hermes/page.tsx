@@ -526,7 +526,7 @@ export default function HermesEnterpriseLandingPage() {
               Hermes Growth OS
             </div>
             <p className="text-xs text-zinc-500 font-mono">
-              Engineered by <span className="text-white">Pandoras Finance S.A.</span>
+              by <span className="text-white">MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.</span>
             </p>
           </div>
 

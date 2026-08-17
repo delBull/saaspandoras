@@ -51,8 +51,8 @@ export const B2BWelcomeEmail = ({
         ? "Estamos provisionando el entorno y evaluando la viabilidad operativa de Hermes para tu modelo de negocio."
         : "Estamos revisando tu modelo de negocio para asegurar que el motor de Pandora's pueda escalar tu visión con la velocidad necesaria.";
 
-    const bottomLinkUrl = isHermes ? "https://dash.pandoras.finance/growth-os/hermes" : "https://dash.pandoras.finance/growth-os";
-    const bottomLinkText = isHermes ? "🔗 Ver Arquitectura de Hermes OS" : "🔗 Ver Ecosistema de Monetización";
+    const bottomLinkUrl = isHermes ? "https://dash.pandoras.finance/growth-os/hermes/autonomous-closing" : "https://dash.pandoras.finance/growth-os";
+    const bottomLinkText = isHermes ? "🔗 Ver Arquitectura de Cierre Autónomo" : "🔗 Ver Ecosistema de Monetización";
     const masterPlanText = isHermes ? "las capacidades de cierre automatizado" : "nuestro Master Monetization Plan";
 
     return (
@@ -88,27 +88,42 @@ export const B2BWelcomeEmail = ({
                             <Text className="text-zinc-600 text-sm leading-relaxed mb-4">
                                 {whatsNextText}
                             </Text>
-                            <Text className="text-zinc-600 text-sm leading-relaxed mb-6 font-bold">
-                                El siguiente paso es una sesión 1-a-1 para presentarte el roadmap de ejecución:
-                            </Text>
+                            {!isHermes && (
+                                <>
+                                    <Text className="text-zinc-600 text-sm leading-relaxed mb-6 font-bold">
+                                        El siguiente paso es una sesión 1-a-1 para presentarte el roadmap de ejecución:
+                                    </Text>
+                                    
+                                    <Button 
+                                        className="bg-black text-white text-sm font-bold no-underline text-center px-10 py-4 rounded-lg w-full mb-3"
+                                        href={ctaUrl}
+                                    >
+                                        {ctaText}
+                                    </Button>
+                                </>
+                            )}
                             
-                            <Button 
-                                className="bg-black text-white text-sm font-bold no-underline text-center px-10 py-4 rounded-lg w-full mb-3"
-                                href={ctaUrl}
-                            >
-                                {ctaText}
-                            </Button>
+                            {isHermes && (
+                                <Button 
+                                    className="bg-[#9333EA] text-white text-sm font-bold no-underline text-center px-10 py-4 rounded-lg w-full mt-4 mb-3 shadow-lg"
+                                    href={bottomLinkUrl}
+                                >
+                                    Ver Detalles de Cierre Autónomo
+                                </Button>
+                            )}
                         </Section>
 
                         <Hr className="border-zinc-200 my-8" />
 
-                        <Text className="text-zinc-700 text-sm leading-relaxed mb-6">
-                            <strong>Mientras tanto:</strong><br />
-                            Te recomiendo revisar <strong>{masterPlanText}</strong> para entender cómo transformamos interacción en activos financieros:<br />
-                            <Link href={bottomLinkUrl} className="text-[#3b82f6] no-underline font-bold mt-2 inline-block">
-                                {bottomLinkText}
-                            </Link>
-                        </Text>
+                        {!isHermes && (
+                            <Text className="text-zinc-700 text-sm leading-relaxed mb-6">
+                                <strong>Mientras tanto:</strong><br />
+                                Te recomiendo revisar <strong>{masterPlanText}</strong> para entender cómo transformamos interacción en activos financieros:<br />
+                                <Link href={bottomLinkUrl} className="text-[#3b82f6] no-underline font-bold mt-2 inline-block">
+                                    {bottomLinkText}
+                                </Link>
+                            </Text>
+                        )}
 
                         <Text className="text-black text-base font-bold mt-8">
                             — Equipo de Estrategia, Pandora’s

@@ -62,6 +62,7 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthO
           phoneNumber: form.phone || undefined,
           intent,
           consent: true,
+          forceBypass: (e as any)?.nativeEvent?.submitter?.name === 'resend',
           projectId: source?.includes('hermes') ? "hermes" : "pandoras_access",
           origin: typeof window !== "undefined" ? window.location.href : "/growth-os",
           scope: "b2b",
@@ -254,14 +255,41 @@ export function GrowthOSLeadModal({ isOpen, onClose, tierName, source }: GrowthO
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
 
-                  <h3 className="text-2xl font-black uppercase italic tracking-tight text-white mb-3">
-                    ¡Solicitud Recibida!
-                  </h3>
-                  <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-                    Tu lugar ha sido reservado. Puedes proceder con la reserva directa o probar el Sandbox guiado de evaluación por 15 minutos:
-                  </p>
+                  {responseData?.alreadyRegistered ? (
+                    <>
+                      <h3 className="text-2xl font-black uppercase italic tracking-tight text-white mb-3">
+                        ¡Ya estabas en la lista!
+                      </h3>
+                      <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                        Tu acceso Genesis ya está asegurado. Si no has recibido tu email de bienvenida o de acceso al Sandbox, puedes solicitar que te lo enviemos de nuevo.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-2xl font-black uppercase italic tracking-tight text-white mb-3">
+                        ¡Solicitud Recibida!
+                      </h3>
+                      <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                        Tu lugar ha sido reservado. Puedes proceder con la reserva directa o probar el Sandbox guiado de evaluación por 15 minutos:
+                      </p>
+                    </>
+                  )}
 
                   <div className="space-y-3 mb-6">
+                    {responseData?.alreadyRegistered && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          // Mock an event object to indicate this is a resend
+                          const fakeEvent = { preventDefault: () => {}, nativeEvent: { submitter: { name: 'resend' } } } as any;
+                          handleSubmit(fakeEvent);
+                        }}
+                        disabled={isLoading}
+                        className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+                      >
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reenviar Email de Bienvenida"}
+                      </button>
+                    )}
                     {responseData?.id && (
                       <a
                         href={`/growth-os/hermes/checkout?leadId=${responseData.id}&plan=${source?.includes('annual') ? 'annual' : 'monthly'}`}

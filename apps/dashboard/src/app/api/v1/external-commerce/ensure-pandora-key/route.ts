@@ -123,6 +123,7 @@ export async function POST(req: Request) {
                         const origin = new URL(req.url).origin;
                         const events = [{
                             event: 'IDENTITY_VERIFIED',
+                            projectId: project?.id || 'pandoras',
                             walletAddress: walletLower,
                             userId: dbUserId || user?.id,
                             metadata: { source: 'external_handshake', hasPandorasKey: true }
@@ -267,6 +268,7 @@ export async function POST(req: Request) {
                 
                 events.push({
                     event: 'IDENTITY_VERIFIED',
+                    projectId: project?.id || 'pandoras',
                     walletAddress: walletLower,
                     userId: dbUserId,
                     metadata: { source: 'external_handshake', hasPandorasKey: true }
