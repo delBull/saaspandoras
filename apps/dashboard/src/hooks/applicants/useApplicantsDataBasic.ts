@@ -23,6 +23,7 @@ export interface Project {
   artifacts?: any[];
   chainId?: number | null;
   protocolVersion?: number | null;
+  hasHermes?: boolean;
 }
 
 export interface ApplicantsData {
@@ -58,9 +59,10 @@ export function useApplicantsDataBasic(): ApplicantsData {
       }
       const data = await response.json() as Project[];
       
-      // 🛡️ FILTER: Exclude internal 'Pandoras Access' from the applicants view
-      // NOTE: Hermes projects like S'Narai ARE shown here because they have public tokenization pages.
-      // Hermes-only exclusion is handled in admin dashboard's dedicated Hermes tab.
+      // 🛡️ FILTER: Only Pandoras projects with tokenization should appear in /applicants
+      // - Exclude internal "Pandoras Access" projects
+      // - Exclude Hermes-ONLY projects (no tokenization contracts)
+      // - Include hybrid projects like S'Narai (Hermes + Pandoras tokenization)
       const filteredData = data.filter(p => {
         const pSlug = (p.slug || '').toLowerCase();
         const pTitle = (p.title || '').toLowerCase();
@@ -69,7 +71,12 @@ export function useApplicantsDataBasic(): ApplicantsData {
         const isAccessSlug = pSlug === 'pandoras-access' || pSlug === 'pandora-access' || pSlug === 'pandoras-protocol';
         const isAccessTitle = pTitle.includes("pandora's access") || pTitle === "pandora's access";
         
-        return !isAccessSlug && !isAccessTitle;
+        // 🛡️ Exclude Hermes-ONLY projects (no tokenization contracts)
+        // A project is "Hermes-only" if it has Hermes installed BUT no license/utility/contract addresses
+        const hasTokenization = !!(p.contractAddress || p.licenseContractAddress || p.utilityContractAddress || p.governorContractAddress);
+        const isHermesOnly = p.hasHermes === true && !hasTokenization;
+        
+        return !isAccessSlug && !isAccessTitle && !isHermesOnly;
       });
 
       console.log('✅ Basic Hook: Projects loaded and filtered:', filteredData.length);
