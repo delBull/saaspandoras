@@ -16,7 +16,7 @@ export function HermesTenantsAdminView() {
       if (res.ok) {
         const data = await res.json();
         const hermesList = Array.isArray(data) 
-          ? data.filter((p: any) => p.slug?.includes('hermes') || (p.w2eConfig as any)?.isHermes)
+          ? data.filter((p: any) => p.hermesBinding != null)
           : [];
         setTenants(hermesList);
       }
