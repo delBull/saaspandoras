@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Shield } from 'lucide-react';
 import { Button } from '@saasfly/ui/button';
@@ -10,9 +11,15 @@ interface NDAModalProps {
 }
 
 export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <>
@@ -20,7 +27,7 @@ export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
@@ -28,7 +35,7 @@ export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 z-[101] h-[85vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-3xl sm:h-[80vh] sm:rounded-2xl sm:border flex flex-col shadow-2xl"
+            className="fixed inset-x-0 bottom-0 z-[10000] h-[85vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-3xl sm:h-[80vh] sm:rounded-2xl sm:border flex flex-col shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 bg-zinc-900/40">
@@ -207,4 +214,6 @@ export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 }

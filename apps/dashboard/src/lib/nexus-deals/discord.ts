@@ -106,8 +106,18 @@ export async function sendSignatureAlert(input: {
   enteredIntoForce?: boolean;
 }) {
   const { roomLabel, signerName, email, kind, online, enteredIntoForce } = input;
-  const actionText =
-    kind === "PROPOSAL" ? "aceptó la propuesta" : kind === "CHARTER" ? "firmó el documento fundacional" : "firmó el documento";
+  const getActionText = (k?: string) => {
+    switch (k) {
+      case "PROPOSAL": return "aceptó la propuesta";
+      case "CHARTER": return "firmó el documento fundacional";
+      case "NDA": return "firmó el NDA (Acuerdo de Confidencialidad)";
+      case "AGREEMENT": return "firmó el acuerdo";
+      case "CONTRACT": return "firmó el contrato";
+      case "SAFE": return "firmó el SAFE";
+      default: return "firmó el documento";
+    }
+  };
+  const actionText = getActionText(kind);
   const fields = [
     { name: "Room", value: roomLabel, inline: true },
     { name: "Firmante", value: `${signerName}${email ? ` · ${email}` : ""}`, inline: true },
