@@ -1,9 +1,9 @@
 /**
- * nda-content.ts — Pandoras Ecosystem Confidentiality & Non-Use Agreement v1.0
+ * nda-content.ts — Pandoras Ecosystem Confidentiality & Non-Use Agreement v2.1
  * Single source of truth for NDA text, sign message builders, and UI bullets.
  */
 
-export const NDA_VERSION = "v1.0";
+export const NDA_VERSION = "v2.1";
 
 export const NDA_TITLE =
   "Pandora's Ecosystem — Acuerdo de Confidencialidad, No Uso y Protección de Información Confidencial";
@@ -78,7 +78,7 @@ export function buildCombinedSignMessage(params: {
 
 export const NDA_FULL_TEXT = `ACUERDO DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE INFORMACIÓN CONFIDENCIAL
 PANDORA'S ECOSYSTEM — CONFIDENTIALITY & NON-USE AGREEMENT
-Versión: 1.0
+Versión: 2.1
 Fecha de vigencia: La fecha de aceptación electrónica registrada en el Deal Room de Nexus.
 
 1. PARTES
@@ -129,32 +129,32 @@ Cuando Pandora's revele información de clientes, partners o terceros, el Recept
 
 Toda Información Confidencial continuará siendo propiedad exclusiva de Pandora's. Nada en este Acuerdo constituye cesión, licencia o transferencia. El acceso únicamente concede un derecho limitado de uso para el Propósito Autorizado.
 
-14. NO CIRCUNVENCIÓN
+13. NO CIRCUNVENCIÓN
 
 Durante la vigencia y por 24 meses posteriores a la última revelación, el Receptor no podrá utilizar Información Confidencial para eludir o excluir deliberadamente a Pandora's respecto de clientes, partners, inversionistas, proyectos u oportunidades que conoció exclusivamente por su relación con Pandora's.
 
-15. NO SOLICITACIÓN
+14. NO SOLICITACIÓN
 
 Durante la vigencia y por 12 meses posteriores, el Receptor no utilizará Información Confidencial para inducir deliberadamente a empleados o colaboradores clave de Pandora's a abandonar su relación con la empresa.
 
-17. ACEPTACIÓN ELECTRÓNICA Y REGISTRO ON-CHAIN
+15. ACEPTACIÓN ELECTRÓNICA Y REGISTRO ON-CHAIN
 
 Las Partes acuerdan que este Acuerdo podrá ser aceptado mediante medios electrónicos dentro del Deal Room de Nexus, incluyendo wallet signature, timestamp, hash del documento y registro de auditoría. El Registro de Aceptación tendrá plena validez conforme al Código de Comercio mexicano.
 
-22. PROHIBICIÓN DE USO EN MODELOS DE IA
+16. PROHIBICIÓN DE USO EN MODELOS DE IA
 
 Salvo autorización expresa de Pandora's, el Receptor no podrá introducir Información Confidencial en modelos de inteligencia artificial, asistentes de IA, servicios de generación de código, plataformas de análisis automático, sistemas RAG, datasets, servicios de entrenamiento o fine-tuning.
 
-28. DURACIÓN
+17. DURACIÓN
 
 Las obligaciones de confidencialidad permanecerán vigentes durante cinco (5) años después de la última revelación de Información Confidencial. Respecto de información que constituya un secreto industrial, las obligaciones permanecerán vigentes mientras dicha información conserve legalmente tal carácter conforme a la Ley Federal de Protección a la Propiedad Industrial.
 
-30. LEGISLACIÓN APLICABLE
+18. LEGISLACIÓN APLICABLE
 
 Este Acuerdo se regirá conforme a las leyes de los Estados Unidos Mexicanos.
 
-40. ACEPTACIÓN
+19. ACEPTACIÓN
 
 EL RECEPTOR DECLARA QUE HA LEÍDO, ENTENDIDO Y ACEPTADO ESTE ACUERDO DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE INFORMACIÓN CONFIDENCIAL. La aceptación electrónica realizada dentro del Deal Room de Nexus constituirá la manifestación de consentimiento del Receptor. No será necesaria una firma manuscrita cuando la aceptación electrónica sea jurídicamente atribuible al Receptor conforme a la legislación aplicable.
 
-FIN DEL ACUERDO — PANDORA'S ECOSYSTEM · Versión 1.0`;
+FIN DEL ACUERDO — PANDORA'S ECOSYSTEM · Versión 2.1`;

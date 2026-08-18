@@ -3292,6 +3292,7 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   ndaEnabled: boolean("nda_enabled").notNull().default(false),
   ndaPhase: varchar("nda_phase", { length: 32 }).notNull().default("after_proposal"), // 'before_proposal' | 'after_proposal'
   ndaVersion: varchar("nda_version", { length: 32 }).notNull().default("v1.0"),
+  isDeleted: boolean("is_deleted").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

@@ -4,11 +4,15 @@ import { nexusDealComments, nexusDealRooms, nexusDealSigners } from '@/db/schema
 import { eq } from 'drizzle-orm';
 import { resend } from '@/lib/resend';
 import NexusDealComment from '@/emails/NexusDealComment';
+import { validateDealRoomAccess } from '@/lib/admin-auth';
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ roomId: string }> }
 ) {
+  const { session, errorResponse } = await validateDealRoomAccess(request);
+  if (errorResponse) return errorResponse;
+
   try {
     const { roomId } = await params;
     const { author, content } = await request.json();
@@ -87,6 +91,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ roomId: string }> }
 ) {
+  const { session, errorResponse } = await validateDealRoomAccess(request);
+  if (errorResponse) return errorResponse;
+
   try {
     const { roomId } = await params;
     

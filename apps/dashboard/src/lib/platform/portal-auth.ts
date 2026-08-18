@@ -85,16 +85,7 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
   }
 
   if (!payload) {
-    // Graceful fallback for magic link consumption: decode payload safely
-    try {
-      const decoded = jwt.decode(token) as PortalTokenPayload;
-      if (decoded && decoded.sub && (decoded.type === 'portal_access' || decoded.product === 'HERMES')) {
-        payload = decoded;
-      }
-    } catch {}
-  }
-
-  if (!payload) {
+    // FAIL CLOSED: Never decode without signature verification (EXP-014 compliance)
     throw new Error('[PortalAuth] JWT validation failed: invalid signature or expired');
   }
 
@@ -178,21 +169,10 @@ export async function validatePortalSession(sessionToken: string): Promise<{
       };
     }
   } catch (err) {
-    console.warn('[PortalAuth] validatePortalSession fallback:', err);
+    console.warn('[PortalAuth] validatePortalSession DB error:', err);
   }
 
-  // Virtual session fallback for active portal session
-  let fallbackProjectId = 9;
-  if (sessionToken.startsWith('ps_v_')) {
-    const parts = sessionToken.split('_');
-    if (parts.length >= 3 && !isNaN(Number(parts[2]))) {
-      fallbackProjectId = Number(parts[2]);
-    }
-  }
-
-  return {
-    installedProductId: 'virtual_hermes_pro',
-    projectId: fallbackProjectId,
-    product: 'HERMES',
-  };
+  // FAIL CLOSED: No virtual session fallback (EXP-014 compliance)
+  // If DB lookup fails, session is invalid.
+  return null;
 }

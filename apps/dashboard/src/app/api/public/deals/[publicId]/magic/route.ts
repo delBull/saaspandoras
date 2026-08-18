@@ -9,7 +9,10 @@ export const dynamic = "force-dynamic";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://dash.pandoras.finance";
 
-// Simple rate-limit en memoria (edge-friendly)
+// Simple rate-limit en memoria (edge-friendly).
+// NOTA: en serverless, el state se resetea por cold start y no se comparte
+// entre instancias. Para rate-limiting robusto se necesita Redis o similar.
+// Esto mitiga abuso básico pero no es bypass-able por un atacante persistente.
 const rateLimitMap = new Map<string, number>();
 const RATE_LIMIT_COOLDOWN_MS = 30000;
 

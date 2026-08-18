@@ -108,15 +108,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
           at: new Date(),
         });
         // Fire NDA notifications in parallel (non-blocking)
-        Promise.allSettled([
-          sendNdaConfirmationEmail({
-            to: cleanWallet,
-            firstName: cleanName.split(" ")[0],
-            ndaVersion: room.ndaVersion,
-            roomLabel: `${room.publicId} · ${room.counterparty}`,
-            wallet: cleanWallet,
-            acceptedAt: ts,
-          }),
+        // Only send email confirmation when we have a valid email (token-based mode).
+        // In openSign mode, cleanWallet is an Ethereum address — skip email.
+        const ndaNotifications: Promise<any>[] = [
           sendNdaSignedAlert({
             roomLabel: `${room.publicId} · ${room.counterparty}`,
             signerName: cleanName,
@@ -125,7 +119,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
             ndaVersion: room.ndaVersion,
             bypassed: false,
           }),
-        ]);
+        ];
+        if (cleanWallet.includes("@")) {
+          ndaNotifications.push(
+            sendNdaConfirmationEmail({
+              to: cleanWallet,
+              firstName: cleanName.split(" ")[0],
+              ndaVersion: room.ndaVersion,
+              roomLabel: `${room.publicId} · ${room.counterparty}`,
+              wallet: cleanWallet,
+              acceptedAt: ts,
+            })
+          );
+        }
+        Promise.allSettled(ndaNotifications);
       }
 
       await markViewed(room.id, cleanWallet);
@@ -161,13 +168,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       return NextResponse.json({ error: "Tu correo no está autorizado para este documento." }, { status: 403 });
     }
 
-    const message = buildSignMessage({
-      publicId: room.publicId,
-      kind: room.kind,
-      counterparty: room.counterparty,
-      email: payload.email,
-      name: cleanName,
-    });
+    const ts = String(ndaTimestamp ?? new Date().toISOString());
+    const message = isCombined && room.ndaEnabled
+      ? buildCombinedSignMessage({
+          email: payload.email,
+          wallet: cleanWallet,
+          publicId: room.publicId,
+          dealKind: room.kind,
+          dealCounterparty: room.counterparty,
+          ndaVersion: room.ndaVersion,
+          timestamp: ts,
+        })
+      : buildSignMessage({
+          publicId: room.publicId,
+          kind: room.kind,
+          counterparty: room.counterparty,
+          email: payload.email,
+          name: cleanName,
+        });
 
     const signatureValid = await verifySignature({
       client,

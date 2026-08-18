@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Shield } from 'lucide-react';
-import { Button } from '@saasfly/ui/button';
+import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Button } from "@/components/ui/button";
 
 interface NDAModalProps {
   isOpen: boolean;
   onClose: () => void;
-  version: string;
+  version?: string;
 }
 
-export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
-  const [mounted, setMounted] = useState(false);
-
+export function NDAModal({ isOpen, onClose, version = "v2.1" }: NDAModalProps) {
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
   const modalContent = (
     <AnimatePresence>
@@ -27,26 +30,24 @@ export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9998] bg-black/80 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, y: '100%' }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 z-[10000] h-[85vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-3xl sm:h-[80vh] sm:rounded-2xl sm:border flex flex-col shadow-2xl"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full max-w-4xl h-[90vh] md:h-[85vh] bg-[#0C0C10] border border-zinc-800/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 bg-zinc-900/40">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/10 rounded-lg">
-                  <Shield className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-white tracking-tight">Acuerdo Maestro de Confidencialidad</h2>
-                  <p className="text-[11px] text-zinc-500 font-mono tracking-wider uppercase">Versión {version}</p>
-                </div>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 bg-zinc-900/40 shrink-0">
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-100">
+                  Pandora's Ecosystem Master NDA
+                </h2>
+                <p className="text-sm text-zinc-500 font-mono mt-0.5">
+                  Versión: {version}
+                </p>
               </div>
               <button
                 onClick={onClose}
@@ -60,7 +61,7 @@ export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
             <div className="flex-1 overflow-y-auto px-6 py-8 md:px-10 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
               <div className="prose prose-invert prose-sm max-w-none text-zinc-400 marker:text-zinc-600 prose-headings:text-zinc-200 prose-headings:font-medium prose-strong:text-zinc-300">
                 <p className="lead text-zinc-300">
-                  <strong>ACUERDO MAESTRO DE CONFIDENCIALIDAD, NO USO, NO CIRCUNVENCIÓN Y PROTECCIÓN DE INFORMACIÓN</strong>
+                  <strong>PANDORA'S MASTER CONFIDENTIALITY, NON-USE, NON-CIRCUMVENTION & INTELLECTUAL PROPERTY PROTECTION AGREEMENT</strong>
                 </p>
                 
                 <div className="grid grid-cols-2 gap-4 my-6 p-4 bg-zinc-900/50 rounded-lg border border-zinc-800/50 text-xs">
@@ -70,136 +71,98 @@ export function NDAModal({ isOpen, onClose, version }: NDAModalProps) {
                   </div>
                   <div>
                     <span className="block text-zinc-500 mb-1">Naturaleza</span>
-                    <strong className="text-zinc-300">Acuerdo unilateral</strong>
+                    <strong className="text-zinc-300">Acuerdo unilateral maestro de protección</strong>
                   </div>
                 </div>
 
-                <h3>1. Objeto</h3>
-                <p>El presente Acuerdo establece las obligaciones aplicables al Receptor respecto de toda información que Pandora's Group Holdings, sus entidades relacionadas, colaboradores autorizados, socios, proyectos, clientes o representantes proporcionen al Receptor con motivo de una posible relación comercial, inversión, colaboración, prestación de servicios, asociación estratégica, desarrollo tecnológico, evaluación de oportunidades, due diligence o cualquier otra oportunidad de negocio.</p>
-                <p>El acceso al Deal Room, la consulta de documentación, la descarga de materiales, la utilización de información proporcionada o la aceptación electrónica del presente Acuerdo constituirá aceptación expresa de sus términos.</p>
-                <p>El presente Acuerdo podrá aplicarse independientemente de que posteriormente se celebre o no un contrato comercial definitivo entre las partes.</p>
-
-                <h3>2. Definiciones</h3>
-                <h4>2.1 Pandora's</h4>
-                <p>Para efectos de este Acuerdo, "Pandora's" comprende Pandora's Group Holdings y cualquier sociedad, subsidiaria, afiliada, vehículo, marca, producto, plataforma, proyecto, unidad de negocio o entidad relacionada que actualmente exista o que posteriormente sea creada o incorporada al ecosistema empresarial de Pandora's. La protección se extiende a la información perteneciente a cualquiera de dichas entidades.</p>
-
-                <h4>2.2 Información Confidencial</h4>
-                <p>Se considera Información Confidencial toda información no pública revelada directa o indirectamente al Receptor, independientemente de su formato, soporte, medio de transmisión o forma de identificación. La Información Confidencial comprende, entre otras:</p>
-                
-                <h5>a) Información corporativa y estratégica</h5>
-                <ul>
-                  <li>estructuras corporativas; estrategias empresariales; planes de expansión; modelos de negocio;</li>
-                  <li>roadmaps; planes de lanzamiento; estrategias de mercado; estrategias de crecimiento;</li>
-                  <li>oportunidades de negocio; negociaciones; alianzas; proveedores; socios; clientes; prospectos; inversionistas;</li>
-                  <li>estructuras comerciales; pricing; métricas; información financiera no pública.</li>
-                </ul>
-
-                <h5>b) Información tecnológica</h5>
-                <ul>
-                  <li>código fuente; código objeto; repositorios; arquitectura de software y sistemas; APIs; endpoints;</li>
-                  <li>bases de datos; modelos de datos; esquemas; infraestructura; configuraciones; pipelines;</li>
-                  <li>sistemas de autenticación y autorización; mecanismos de seguridad; documentación técnica; algoritmos;</li>
-                  <li>lógica de negocio; procesos internos; metodologías; know-how técnico.</li>
-                </ul>
-
-                <h5>c) Inteligencia Artificial y sistemas cognitivos</h5>
-                <ul>
-                  <li>Hermes; Hermes Runtime; Hermes OS; Growth OS; agentes; subagentes;</li>
-                  <li>prompts; system prompts; domain packs; knowledge packs; estrategias; workflows; journeys;</li>
-                  <li>motores de decisión; sistemas de memoria y conocimiento; RAG; políticas; reglas de gobernanza cognitiva;</li>
-                  <li>arquitecturas de agentes; herramientas; tool registries; modelos de contexto; metodologías;</li>
-                  <li>cualquier producto, módulo o componente relacionado con inteligencia artificial.</li>
-                </ul>
-
-                <h5>d) Propiedad intelectual y productos</h5>
-                <ul>
-                  <li>productos actuales y futuros; funcionalidades; prototipos; diseños; conceptos; interfaces; UX/UI;</li>
-                  <li>documentación; marcas; nombres comerciales; metodologías; procesos; diseños de arquitectura;</li>
-                  <li>conceptos aún no publicados.</li>
-                </ul>
-
-                <h5>e) Blockchain y Web3</h5>
-                <ul>
-                  <li>smart contracts y su código; direcciones y relaciones entre contratos no públicas; arquitecturas blockchain;</li>
-                  <li>estructuras de emisión; mecanismos de participación; modelos de tokenización; NFT utilities; mecanismos de gobernanza;</li>
-                  <li>wallets operativas; infraestructura; procesos de deployment; configuraciones; mecanismos off-chain;</li>
-                  <li>mecanismos de interoperabilidad; estrategias blockchain; modelos económicos; documentación de activos digitales.</li>
-                </ul>
-
-                <h5>f) Proyectos y clientes</h5>
-                <p>La información relativa a proyectos, clientes, protocolos, estructuras de inversión, participaciones, activos, vehículos jurídicos, modelos económicos, operaciones, contratos o productos desarrollados o gestionados por Pandora's. Esto incluye expresamente información relacionada con <strong>S'Narai</strong> y cualquier otro proyecto presente o futuro.</p>
-
-                <h5>g) Pandora's Media Co</h5>
-                <ul>
-                  <li>estrategias de marketing; campañas; creatividad; contenido; audiencias; métricas; analítica;</li>
-                  <li>automatizaciones; infraestructura de marketing; procesos; agentes; sistemas de distribución; estrategias de adquisición.</li>
-                </ul>
-
-                <h5>h) Deal Rooms</h5>
-                <p>Toda información contenida en el Deal Room, incluyendo documentos, archivos, conversaciones, presentaciones, datasets, contratos, análisis, anexos, materiales técnicos, información financiera, información de terceros y cualquier otra información accesible mediante el mismo.</p>
-
-                <h3>3. Información derivada</h3>
-                <p>La Información Confidencial comprende también cualquier análisis, resumen, evaluación, modelo, documento, diseño, conclusión, estrategia, arquitectura, propuesta o material elaborado por el Receptor que:</p>
+                <h3>1. Objeto y Arquitectura Contractual</h3>
+                <p>El presente Acuerdo Maestro establece las obligaciones aplicables al Receptor respecto de toda información que Pandora's Group Holdings, sus entidades relacionadas, colaboradores autorizados, socios, proyectos, clientes o representantes (en adelante, el "Emisor" o "Pandora's") proporcionen al Receptor. Este Acuerdo es el instrumento estándar y global de Pandora's utilizado para proteger su ecosistema, arquitectura, tecnología, modelos operativos y Deal Room.</p>
+                <p><strong>El acceso al ecosistema Pandora's es un privilegio condicionado, y el acceso a información confidencial de Pandora's no otorga ningún derecho sobre ella.</strong> La relación entre las partes se rige por la siguiente jerarquía documental explícita:</p>
                 <ol>
-                  <li>incorpore Información Confidencial;</li>
-                  <li>derive de Información Confidencial; o</li>
-                  <li>permita reconstruir razonablemente elementos sustanciales de Información Confidencial.</li>
+                  <li><strong>NDA Maestro:</strong> Protección general del ecosistema Pandora's (el presente Acuerdo).</li>
+                  <li><strong>Project / Deal Agreement:</strong> Relación concreta sobre un proyecto en particular.</li>
+                  <li><strong>Investment / Participation / Service / License Agreement:</strong> Derechos y obligaciones específicos, comerciales o financieros.</li>
                 </ol>
-                <p>El hecho de que dicha información haya sido modificada, resumida, traducida, reorganizada o combinada con información propia del Receptor no elimina su carácter confidencial.</p>
 
-                <h3>4. Obligación de confidencialidad</h3>
-                <p>El Receptor deberá mantener estrictamente confidencial toda Información Confidencial y deberá protegerla con un grado de cuidado no inferior al utilizado para proteger su propia información confidencial de mayor importancia.</p>
-                <p>El Receptor no podrá divulgar, publicar, distribuir, reproducir, transmitir, vender, licenciar, transferir ni poner a disposición de terceros Información Confidencial sin autorización previa y expresa de Pandora's.</p>
+                <h3>2. No reciprocidad automática e Información de Terceros</h3>
+                <p>El hecho de que el Receptor proporcione información propia a Pandora's (por ejemplo, en calidad de Applicant de un proyecto) no convierte automáticamente el presente Acuerdo en un acuerdo bilateral de confidencialidad, ni genera derechos recíprocos sobre la Información Confidencial de Pandora's.</p>
+                <p>No obstante, Pandora's reconoce que el Receptor puede proporcionar información corporativa, financiera o técnica de su propio proyecto. Pandora's se compromete a utilizar dicha información exclusivamente para evaluar la integración u oportunidad, aplicar medidas razonables de seguridad, no explotarla comercialmente fuera del marco del proyecto y no divulgarla fuera de las personas con necesidad legítima de conocerla. Esta disposición protege la información del Applicant sin alterar la naturaleza unilateral, finalidad ni estructura de protección del presente NDA Maestro.</p>
 
-                <h3>5. Uso limitado</h3>
-                <p>El Receptor utilizará la Información Confidencial exclusivamente para: evaluar la oportunidad de negocio; participar en conversaciones con Pandora's; realizar due diligence autorizada; ejecutar una relación comercial autorizada; o cualquier finalidad expresamente autorizada por Pandora's.</p>
-                <p>Queda prohibido utilizar la Información Confidencial para cualquier finalidad personal, comercial, competitiva, tecnológica, financiera o estratégica distinta de la autorizada.</p>
+                <h3>3. Definiciones</h3>
+                <h4>3.1 Pandora's (El Emisor)</h4>
+                <p>Comprende Pandora's Group Holdings y cualquier sociedad, subsidiaria, afiliada, vehículo, marca, producto, plataforma, proyecto, unidad de negocio o entidad relacionada que actualmente exista o sea posteriormente creada o incorporada al ecosistema.</p>
 
-                <h3>6. Prohibición de explotación competitiva</h3>
-                <p>El Receptor no podrá utilizar Información Confidencial para: desarrollar productos competidores; desarrollar servicios equivalentes; replicar modelos de negocio o arquitecturas; crear productos derivados; financiar proyectos competidores; asesorar a competidores; transferir conocimiento a competidores; o facilitar la creación de productos que sustituyan o compitan con productos de Pandora's.</p>
-                <p>Esta obligación se limita al uso de Información Confidencial y no constituye una prohibición general para que el Receptor participe en industrias lícitas utilizando conocimientos generales obtenidos independientemente.</p>
+                <h4>3.2 Información Confidencial</h4>
+                <p>Toda información no pública revelada directa o indirectamente al Receptor que razonablemente deba entenderse como confidencial por su naturaleza o por las circunstancias en que fue revelada, independientemente de que esté expresamente marcada como "Confidencial". Comprende, sin limitación:</p>
+                <ul>
+                  <li><strong>Información oral, visual y demostrada:</strong> documentos, código, interfaces, demostraciones, presentaciones, reuniones, conversaciones, pantallas, arquitecturas, prototipos, información visual y verbal obtenida mediante acceso al software o llamadas.</li>
+                  <li><strong>Información corporativa y estratégica:</strong> modelos de negocio, oportunidades, negociaciones, pricing, métricas, información financiera no pública, planes de expansión.</li>
+                  <li><strong>Información tecnológica:</strong> código fuente y objeto, repositorios, arquitectura, APIs, endpoints, bases de datos, lógica de negocio.</li>
+                  <li><strong>IA y sistemas cognitivos:</strong> Hermes, Hermes Runtime, Growth OS, agentes, prompts, system prompts, modelos de memoria y conocimiento, RAG, arquitecturas, motores de decisión.</li>
+                  <li><strong>Propiedad intelectual:</strong> productos actuales y futuros, funcionalidades, diseños, conceptos, marcas.</li>
+                  <li><strong>Proyectos, Media y Deal Rooms:</strong> S'Narai, Pandora's Media Co, estrategias de marketing, información de terceros en el Deal Room.</li>
+                </ul>
 
-                <h3>7. No ingeniería inversa y no extracción de know-how</h3>
-                <p>El Receptor no podrá utilizar la Información Confidencial para reconstruir, replicar, clonar o reproducir: software; arquitectura; protocolos; sistemas; agentes; workflows; modelos; metodologías; smart contracts; mecanismos de negocio; procesos; estructuras tecnológicas; sistemas de IA; productos o funcionalidades. Asimismo, no podrá utilizar la información para desarrollar una solución sustancialmente equivalente mediante ingeniería inversa, abstracción, descomposición o reconstrucción conceptual.</p>
+                <h3>4. Información Derivada y Contaminación</h3>
+                <p>Si el Receptor obtiene Información Confidencial de Pandora's y posteriormente la combina, resume, traduce o reorganiza con conocimientos, desarrollos, análisis o información propia, la parte o resultado que derive, incorpore o permita reconstruir sustancialmente dicha Información Confidencial seguirá estando plenamente protegida bajo este Acuerdo. El hecho de desarrollar material propio sobre la base de información de Pandora's no elimina su carácter confidencial.</p>
 
-                <h3>8. No circunvención</h3>
-                <p>El Receptor no podrá utilizar Información Confidencial para eludir, desplazar o circunvenir a Pandora's respecto de: clientes; inversionistas; socios; proveedores; desarrolladores; operadores; proyectos; oportunidades; activos; vehículos; o relaciones comerciales que haya conocido exclusivamente como consecuencia de su relación con Pandora's.</p>
+                <h3>5. Desarrollo Independiente (Independent Development)</h3>
+                <p>Lo dispuesto en este Acuerdo no restringe al Receptor de utilizar, desarrollar o comercializar información, productos o tecnologías que el Receptor pueda demostrar documentalmente que: (i) ya conocía legítimamente antes de recibirla de Pandora's; (ii) fueron desarrollados de manera completamente independiente por personal del Receptor sin acceso ni uso, directo o indirecto, de la Información Confidencial de Pandora's; o (iii) se volvieron de dominio público sin mediar incumplimiento del Receptor. Esta exclusión protege el desarrollo legítimo e independiente del Receptor, limitando las restricciones del Acuerdo exclusivamente a la protección de aquello que conoció a través de Pandora's.</p>
 
-                <h3>9. Acceso bajo necesidad de conocer</h3>
-                <p>El Receptor únicamente podrá compartir Información Confidencial con sus empleados, asesores o colaboradores que necesiten conocerla para la finalidad autorizada, estén sujetos a obligaciones de confidencialidad apropiadas y hayan sido informados del carácter confidencial. El Receptor será responsable por cualquier incumplimiento de estas personas.</p>
+                <h3>6. No Reconstrucción, Ingeniería Inversa ni Extracción (No Reconstruction)</h3>
+                <p>El Receptor no podrá utilizar la Información Confidencial para realizar ingeniería inversa, descompilar, analizar, replicar, modelar o inferir el código o funcionamiento de los sistemas. Asimismo, el Receptor <strong>no podrá reconstruir, replicar o implementar sustancialmente una arquitectura conceptual, sistema, metodología, modelo operativo o estructura comercial de Pandora's</strong> utilizando Información Confidencial, aunque el resultado final sea desarrollado mediante código, infraestructura o documentación diferente.</p>
 
-                <h3>10. Seguridad</h3>
-                <p>El Receptor deberá adoptar medidas razonables y apropiadas para impedir acceso no autorizado, pérdida, robo, copia no autorizada, extracción, publicación, transferencia, filtración, modificación o destrucción de la Información Confidencial, y notificará inmediatamente a Pandora's cualquier incidente.</p>
+                <h3>7. No Circunvención del Modelo de Negocio (No Circumvention)</h3>
+                <p>Durante la relación entre las partes y mientras la información conserve su protección, el Receptor no podrá utilizar la Información Confidencial para:</p>
+                <ul>
+                  <li>Desarrollar o participar en una iniciativa sustancialmente equivalente o competitiva contra Pandora's.</li>
+                  <li>Identificar cómo está estructurado el negocio de Pandora's para reproducir posteriormente dicha estructura fuera del ecosistema.</li>
+                  <li>Eludir, desplazar, puentear o contactar directamente a Pandora's respecto a clientes, inversionistas, socios, proveedores, desarrolladores, operadores, oportunidades, activos o vehículos cuya identidad o relación haya conocido exclusivamente mediante el acceso a la Información Confidencial o al Deal Room.</li>
+                </ul>
 
-                <h3>11. Credenciales y secretos técnicos</h3>
-                <p>Las credenciales, API keys, tokens, claves, secretos, configuraciones privadas, wallets operativas, accesos administrativos y mecanismos de autenticación proporcionados tendrán carácter estrictamente confidencial. El Receptor no podrá compartirlos, publicarlos, almacenarlos de manera insegura, incorporarlos a repositorios públicos ni utilizarlos fuera del propósito autorizado.</p>
+                <h3>8. No Solicitación (No Poaching)</h3>
+                <p>El Receptor no podrá utilizar información obtenida mediante Pandora's o el Deal Room para inducir a terceros a terminar sus relaciones con Pandora's, ni para contratar, intentar contratar, captar o llevarse a empleados, colaboradores, contractors, partners, clientes, inversionistas o proveedores cuya relación con Pandora's haya sido descubierta o conocida por virtud del presente Acuerdo.</p>
 
-                <h3>12. Blockchain y registros públicos</h3>
-                <p>El hecho de que determinada información pueda observarse públicamente en una blockchain no implica que toda la información relacionada deje de ser confidencial. Esto incluye conocimiento no público relativo a arquitectura, propósito, estrategia, integración, configuración, operación, gobernanza, procesos, mecanismos off-chain, modelos económicos y metodología de utilización.</p>
+                <h3>9. Prohibición de Entrenamiento de IA y Scraping</h3>
+                <p>El Receptor no podrá utilizar Información Confidencial para entrenar, ajustar, evaluar, enriquecer, fine-tunear, desarrollar prompts, datasets, embeddings, modelos o sistemas de inteligencia artificial propios o de terceros. Queda expresamente prohibido introducir Información Confidencial en servicios públicos de IA, modelos de terceros o herramientas SaaS cuyo tratamiento pueda implicar retención o entrenamiento.</p>
+                <p>Asimismo, queda estrictamente prohibido realizar scraping, crawling, extracción automatizada, bulk download, enumeración de endpoints o utilizar mecanismos destinados a extraer información fuera del acceso expresamente autorizado.</p>
 
-                <h3>13. Exclusiones</h3>
-                <p>No será considerada Información Confidencial aquella que el Receptor pueda demostrar documentalmente que: era legítimamente pública antes de ser revelada; se volvió pública sin incumplimiento de este Acuerdo; ya se encontraba legítimamente en posesión del Receptor sin obligación de confidencialidad; fue desarrollada independientemente; o fue recibida legítimamente de un tercero con derecho a revelarla.</p>
+                <h3>10. Protección de Infraestructura Blockchain y Web3</h3>
+                <p>Tendrán carácter estrictamente confidencial y protegido los elementos de la infraestructura Web3 de Pandora's, incluyendo: smart contracts, contract addresses y relaciones no públicas entre contratos, deployment architecture, wallets, multisigs, signing infrastructure, estructuras de tokenización, arquitectura NFT, estructuras de participación, on-chain registries, mecanismos de gobernanza, arquitectura de tesorería, procedimientos de deployment, modelos económicos y la relación entre componentes off-chain y on-chain.</p>
 
-                <h3>14. Revelación obligatoria por ley</h3>
-                <p>Si una autoridad competente exige revelar Información Confidencial, el Receptor deberá, cuando legalmente sea posible, notificar inmediatamente a Pandora's, cooperar razonablemente para obtener medidas de protección y revelar únicamente la información estrictamente requerida.</p>
+                <h3>11. Protección de Credenciales y Seguridad (No Wallet Access)</h3>
+                <p>El acceso mediante wallet, firma criptográfica, API key, credential, token, sesión o mecanismo equivalente <strong>no concede derecho alguno sobre activos, contratos, infraestructura o información de Pandora's</strong> más allá de la autorización específica de lectura o participación. El Receptor no podrá intentar obtener, derivar, reutilizar, transferir o acceder a credenciales, secretos técnicos, claves privadas, wallets operativas o mecanismos de autenticación de Pandora's.</p>
 
-                <h3>15 a 17. Propiedad intelectual y ausencia de licencia</h3>
-                <p>Toda Información Confidencial continuará siendo propiedad exclusiva de Pandora's. El acceso al Deal Room no constituye cesión, licencia, autorización de explotación ni transferencia de propiedad intelectual. Ninguna disposición otorgará licencia sobre software, marcas, patentes, smart contracts, algoritmos, metodologías, secretos comerciales o know-how. El acceso tampoco autoriza al Receptor a representar a Pandora's.</p>
+                <h3>12. Propiedad Intelectual y Ausencia de Licencia (No Grant)</h3>
+                <p>Toda Información Confidencial continuará siendo propiedad exclusiva de su respectivo titular. <strong>Ninguna revelación de información será interpretada como una licencia implícita, autorización de uso comercial, derecho de explotación, derecho de reproducción, derecho de sublicencia, derecho de fork, derecho de modificación o derecho de creación de obras derivadas.</strong></p>
 
-                <h3>18. Devolución y destrucción</h3>
-                <p>A solicitud de Pandora's, o cuando termine la relación, el Receptor deberá devolver o destruir la Información Confidencial bajo su control, incluyendo copias digitales y materiales derivados.</p>
+                <h3>13. No Conocimientos Residuales (No Residuals)</h3>
+                <p>El Receptor reconoce y acepta que no obtiene ningún derecho a utilizar conocimientos residuales, recuerdos no documentados o impresiones generales derivadas de su exposición a la Información Confidencial para desarrollar, optimizar, estructurar o diseñar productos, servicios, arquitecturas o modelos competitivos o equivalentes en el futuro.</p>
 
-                <h3>19. Duración y supervivencia</h3>
-                <p>El presente Acuerdo entrará en vigor desde su aceptación electrónica. <strong>Las obligaciones de confidencialidad, no uso y protección de secretos comerciales no estarán limitadas a un plazo fijo.</strong> Permanecerán vigentes mientras la Información Confidencial conserve su carácter confidencial o de secreto comercial conforme a la legislación aplicable.</p>
+                <h3>14. Uso Autorizado y Acceso Limitado</h3>
+                <p>El Receptor utilizará la Información Confidencial exclusivamente para evaluar, analizar, negociar, estructurar o ejecutar la oportunidad de negocio para la cual fue autorizado a acceder al Deal Room. Podrá proporcionar acceso estrictamente limitado a sus abogados o asesores profesionales directos, siempre que tengan necesidad legítima de conocer, estén sujetos a confidencialidad equivalente, y el Receptor asuma plena responsabilidad por cualquier incumplimiento de estos terceros.</p>
 
-                <h3>20 a 31. Disposiciones Generales</h3>
-                <p>El Receptor reconoce que el incumplimiento puede causar daños económicos y estratégicos. La Información Confidencial puede incluir datos de terceros o datos personales, los cuales deben ser tratados conforme a la ley aplicable. Este Acuerdo no crea sociedades o relaciones laborales, ni obliga a celebrar negocios. La información se proporciona "AS IS". El Receptor no podrá ceder sus obligaciones sin autorización.</p>
+                <h3>15. Seguridad y Obligación de Notificación</h3>
+                <p>El Receptor deberá adoptar medidas razonables para proteger la Información Confidencial. Cualquier acceso no autorizado, pérdida, filtración o sospecha de compromiso deberá ser comunicado al Emisor sin demora indebida. <strong>Si el Receptor detecta que cualquier tercero está utilizando o intentando obtener ilícitamente Información Confidencial de Pandora's, deberá notificarlo de inmediato.</strong></p>
 
-                <h3>32 y 33. Legislación aplicable y jurisdicción</h3>
-                <p>Este Acuerdo se regirá conforme a las leyes de los <strong>Estados Unidos Mexicanos</strong>. Las partes se someterán a los tribunales competentes conforme a la legislación mexicana y al domicilio que Pandora's determine legalmente aplicable, sin perjuicio del derecho de solicitar medidas cautelares ante cualquier autoridad.</p>
+                <h3>16. Devolución, Eliminación y Conservación Limitada</h3>
+                <p>A solicitud de Pandora's o al finalizar la relación, el Receptor cesará inmediatamente el uso de la Información Confidencial y procederá a su devolución o eliminación (incluyendo copias físicas, digitales y materiales derivados), sin perjuicio de las copias que deban conservarse por estricta obligación legal o regulatoria, las cuales permanecerán sujetas a este Acuerdo.</p>
 
-                <h3>34. Reconocimiento final y Aceptación Electrónica</h3>
-                <p>Al aceptar este Acuerdo, el Receptor reconoce que la información proporcionada tiene un valor comercial significativo y no podrá utilizarse fuera de la finalidad autorizada. La selección de "Aceptar", firma electrónica, aceptación mediante wallet o cualquier mecanismo de consentimiento implementado en el Deal Room constituye aceptación expresa del Acuerdo en su versión vigente.</p>
+                <h3>17. Duración y Supervivencia</h3>
+                <p>Las obligaciones aquí establecidas continuarán vigentes mientras la Información Confidencial conserve dicho carácter. En particular, <strong>los secretos comerciales, know-how, código, arquitectura, metodologías, estrategias, información técnica y financiera no pública no estarán sujetos a una fecha de expiración automática</strong> y su protección sobrevivirá indefinidamente. Para la Información Confidencial que no constituya secreto comercial, la protección perdurará mientras permanezca razonablemente protegida por el Emisor. La terminación de la relación comercial o el cierre del Deal Room no liberará al Receptor de estas obligaciones.</p>
+
+                <h3>18. Medidas Cautelares (Injunctive Relief) y Soluciones</h3>
+                <p>El Receptor reconoce que el incumplimiento de este Acuerdo puede causar daños económicos, estratégicos y operativos irreparables a Pandora's, para los cuales una compensación económica resultaría insuficiente. Por tanto, el Receptor acepta que Pandora's tendrá pleno derecho a solicitar y obtener de manera inmediata medidas cautelares, órdenes de restricción, injunctive relief y cumplimiento forzoso (specific performance) ante cualquier tribunal o autoridad competente, sin necesidad de prestar fianza, de forma adicional a cualquier otro remedio o compensación aplicable en derecho.</p>
+
+                <h3>19. Ausencia de Asociación o Compromiso (No Partnership / No Agency)</h3>
+                <p>El acceso al Deal Room y la aceptación del presente Acuerdo no crean ni constituyen de ninguna manera una sociedad (partnership), empresa conjunta (joint venture), agencia, representación, relación laboral, relación fiduciaria, ni una inversión. Asimismo, no generan obligación alguna para Pandora's de contratar, licenciar, financiar, integrar o aceptar el proyecto del Receptor. Pandora's se reserva el derecho de terminar las conversaciones o el acceso al Deal Room en cualquier momento, subsistiendo las obligaciones de confidencialidad del Receptor.</p>
+
+                <h3>20. Disposiciones Generales</h3>
+                <p>Este Acuerdo se regirá conforme a las leyes de los <strong>Estados Unidos Mexicanos</strong>. Las partes se someten a los tribunales competentes conforme a la legislación mexicana y al domicilio de Pandora's, sin perjuicio del derecho de solicitar medidas cautelares en cualquier jurisdicción. La información se proporciona "AS IS". El Receptor no podrá ceder sus obligaciones sin autorización previa.</p>
+
+                <h3>21. Reconocimiento final, Evidencia On-Chain y Aceptación Electrónica</h3>
+                <p>Al aceptar este Acuerdo, el Receptor reconoce que la información proporcionada tiene un valor comercial y estratégico significativo. La selección de "Aceptar", firma criptográfica mediante wallet, ingreso con token al Deal Room o cualquier mecanismo de consentimiento implementado en la plataforma constituye aceptación expresa, plena e incondicional de este Acuerdo Maestro.</p>
+                <p>El Receptor reconoce y consiente que Pandora's registre y conserve de manera inmutable como evidencia electrónica de la aceptación y elemento probatorio de la voluntad expresada por el Receptor, sujeto a la legislación aplicable, los siguientes elementos: <strong>hash criptográfico del documento exacto, versión del documento, timestamp, wallet utilizada, identificador de usuario, correo electrónico, ID del Deal Room y metadata de la sesión cuando legalmente corresponda.</strong> Dicho registro on-chain y/o en base de datos sustenta la voluntad del Receptor y su conformidad con los términos aquí descritos.</p>
               </div>
             </div>
 

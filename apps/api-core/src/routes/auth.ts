@@ -14,6 +14,66 @@ import { checkTenantAccess, getTenantId } from "../middleware/tenant-gate.js";
 
 const router = Router();
 
+// ── Telegram initData HMAC Validation ─────────────────────────────────────────
+// Based on: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+/**
+ * Validate Telegram Mini App initData using HMAC-SHA256.
+ * Returns the parsed user data if valid, null otherwise.
+ *
+ * Algorithm (from Telegram docs):
+ * 1. Sort data_check_string by key
+ * 2. Compute HMAC-SHA256(secret=sha256(bot_token), message=data_check_string)
+ * 3. Compare with hash from initData
+ */
+export function validateTelegramInitData(initData: string): {
+  user?: { id: number; first_name: string; username?: string; photo_url?: string };
+  referralId?: string;
+} | null {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.warn('[TelegramAuth] TELEGRAM_BOT_TOKEN not set — skipping HMAC validation');
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    if (!hash) return null;
+
+    // Remove hash from params for check string
+    params.delete('hash');
+
+    // Sort params and build check string
+    const dataCheckString = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
+
+    // Compute HMAC: secret = SHA256(bot_token), message = data_check_string
+    const secret = crypto.createHash('sha256').update(TELEGRAM_BOT_TOKEN).digest();
+    const hmac = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
+
+    if (hmac !== hash) {
+      console.warn('[TelegramAuth] HMAC mismatch — invalid initData');
+      return null;
+    }
+
+    // Parse user from initData
+    const userStr = params.get('user');
+    const user = userStr ? JSON.parse(userStr) : undefined;
+
+    // Extract referral from start_param
+    const referralId = params.get('start_param') || undefined;
+
+    return { user, referralId };
+  } catch (err) {
+    console.error('[TelegramAuth] initData validation error:', err);
+    return null;
+  }
+}
+
 // GET /auth/nonce - with rate limiting
 router.get("/nonce", nonceLimiter, async (req: Request, res: Response) => {
     try {
@@ -438,16 +498,18 @@ router.get("/me", async (req: Request, res: Response) => {
 });
 
 // POST /auth/tenant-access - Check tenant-specific access
+// Tenant ID is resolved ONLY from header/subdomain (EXP-014 compliance).
+// Address is read from body for the check, but tenant scope must NOT come from client.
 router.post("/tenant-access", async (req: Request, res: Response) => {
     try {
-        const { address, tenantId } = req.body;
+        const { address } = req.body;
 
         if (!address) {
             return res.status(400).json({ error: "Missing address" });
         }
 
-        // Get tenant ID from header or use default
-        const resolvedTenantId = tenantId || getTenantId(req);
+        // Tenant ID from header/subdomain ONLY — never from request body
+        const resolvedTenantId = getTenantId(req);
 
         console.log(`🏢 [TenantAccess] Checking access for ${address} on tenant ${resolvedTenantId}`);
 
@@ -463,8 +525,11 @@ router.post("/tenant-access", async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error("❌ [TenantAccess] Error:", error);
-        // Fail open - allow access on error
-        return res.status(200).json({ hasAccess: true });
+        // Fail closed - deny access on error (EXP-014 compliance)
+        return res.status(500).json({
+            hasAccess: false,
+            error: 'TENANT_CHECK_FAILED'
+        });
     }
 });
 
@@ -619,8 +684,15 @@ router.post("/recovery/request", async (req: Request, res: Response) => {
             });
             if (user) userId = user.id;
         } else if (initData) {
-            // TODO: Use shared telegram utility if possible in api-core
-            // For now, proof via previously linked Telegram would be validated here
+            // Validate Telegram initData via HMAC
+            const telegramData = validateTelegramInitData(initData);
+            if (telegramData?.user?.id) {
+                const telegramId = String(telegramData.user.id);
+                const user = await db.query.users.findFirst({
+                    where: eq(users.telegramId, telegramId)
+                });
+                if (user) userId = user.id;
+            }
         }
 
         if (!userId) {

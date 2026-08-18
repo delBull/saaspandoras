@@ -150,6 +150,7 @@ import webhookRoutes from "./routes/webhooks.js";
 import debugRoutes from "./routes/debug.js";
 import tenantRoutes from "./routes/tenants.js";
 import externalProxy from "./routes/external-proxy.js";
+import { tenantGate, requireTenantAccess } from "./middleware/tenant-gate.js";
 
 //...
 
@@ -159,7 +160,7 @@ app.use("/webhooks", webhookRoutes);
 if (process.env.NODE_ENV !== 'production') {
     app.use("/debug", debugRoutes); // DEBUG ONLY
 }
-app.use("/tenants", tenantRoutes);
+app.use("/tenants", tenantGate, requireTenantAccess, tenantRoutes);
 
 // 📡 External API Proxy (MUST cover /api/v1/external and /external)
 app.use("/", externalProxy);

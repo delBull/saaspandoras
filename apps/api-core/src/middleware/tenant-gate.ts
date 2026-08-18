@@ -11,6 +11,7 @@ const DEFAULT_TENANT_ID = 'pandoras-main';
 /**
  * Extract tenant ID from request
  * Priority: 1. Header X-Tenant-ID, 2. Subdomain, 3. Default
+ * NEVER reads from request body or query params (EXP-014 compliance).
  */
 export function getTenantId(req: Request): string {
     // Check header first
@@ -18,14 +19,14 @@ export function getTenantId(req: Request): string {
     if (headerTenantId) {
         return headerTenantId.toLowerCase();
     }
-    
+
     // Check subdomain (for future multi-domain support)
     const host = req.headers.host || '';
     const subdomain = host.split('.')[0];
     if (subdomain && subdomain !== 'staging' && subdomain !== 'www' && subdomain !== 'api') {
         return subdomain.toLowerCase();
     }
-    
+
     // Default to main tenant
     return DEFAULT_TENANT_ID;
 }
@@ -186,12 +187,14 @@ export async function checkTenantAccess(
 
 /**
  * Express middleware for tenant gating
+ * Only reads tenantId from header/subdomain. Never from body/query params.
+ * Address must come from authenticated session (req.user), not request body.
  */
 export function tenantGate(req: Request, res: Response, next: NextFunction) {
     const tenantId = getTenantId(req);
-    const address = (req as any).user?.address || req.body?.address || req.query?.address;
-    
-    // If no address, skip gate (let auth handle it)
+    const address = (req as any).user?.address;
+
+    // If no authenticated user, skip gate (let auth middleware handle it)
     if (!address) {
         return next();
     }

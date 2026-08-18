@@ -26,6 +26,7 @@ export interface CreateRoomInput {
 
 export async function listRooms() {
   return db.query.nexusDealRooms.findMany({
+    where: eq(nexusDealRooms.isDeleted, false),
     orderBy: [desc(nexusDealRooms.updatedAt)],
     with: {
       sections: { orderBy: (s, { asc }) => [asc(s.code)] },
@@ -37,7 +38,7 @@ export async function listRooms() {
 
 export async function getRoom(id: string) {
   return db.query.nexusDealRooms.findFirst({
-    where: eq(nexusDealRooms.id, id),
+    where: and(eq(nexusDealRooms.id, id), eq(nexusDealRooms.isDeleted, false)),
     with: {
       sections: { orderBy: (s, { asc }) => [asc(s.code)] },
       audit: { orderBy: (a, { desc }) => [desc(a.at)] },
@@ -48,7 +49,7 @@ export async function getRoom(id: string) {
 
 export async function getRoomByPublicId(publicId: string) {
   return db.query.nexusDealRooms.findFirst({
-    where: eq(nexusDealRooms.publicId, publicId),
+    where: and(eq(nexusDealRooms.publicId, publicId), eq(nexusDealRooms.isDeleted, false)),
     with: {
       sections: { orderBy: (s, { asc }) => [asc(s.code)] },
       audit: { orderBy: (a, { desc }) => [desc(a.at)] },
@@ -455,7 +456,7 @@ export async function signRoomOnline(
 
 export async function deleteRoom(id: string, actor: string) {
   await appendAudit(id, actor, "Room deleted", "Deal Room eliminado");
-  await db.delete(nexusDealRooms).where(eq(nexusDealRooms.id, id));
+  await db.update(nexusDealRooms).set({ isDeleted: true, updatedAt: new Date() }).where(eq(nexusDealRooms.id, id));
 }
 
 export function publicRoomView(room: NonNullable<Awaited<ReturnType<typeof getRoomByPublicId>>>) {
