@@ -38,14 +38,14 @@ export async function GET(request: Request) {
     const now = new Date();
     const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
-    for (const room of pendingRooms) {
-      if (room.signers.length === 0) continue;
+    const processingPromises = pendingRooms.map(async (room) => {
+      if (room.signers.length === 0) return 0;
 
       const reminderEvents = room.audit;
       const reminderCount = reminderEvents.length;
 
       // Limit max 3 reminders
-      if (reminderCount >= 3) continue;
+      if (reminderCount >= 3) return 0;
 
       const lastReminderDate = reminderCount > 0 && reminderEvents[0]?.at
         ? new Date(reminderEvents[0].at) 
@@ -55,13 +55,14 @@ export async function GET(request: Request) {
 
       // If more than 3 days have passed
       if (timeSinceLast >= THREE_DAYS_MS) {
-        // Send email to all pending signers
-        for (const signer of room.signers) {
-          if (signer.email) {
+        // Send email to all pending signers concurrently
+        const emailPromises = room.signers
+          .filter(signer => signer.email)
+          .map(signer => {
             const roomUrl = `https://dash.pandoras.finance/nexus/deals/${room.publicId}`;
-            await resend.emails.send({
+            return resend.emails.send({
               from: 'Pandoras Nexus <nexus@pandoras.finance>',
-              to: [signer.email],
+              to: [signer.email!],
               subject: `Recordatorio: Propuesta pendiente de revisión - ${room.company || room.counterparty}`,
               react: NexusDealReminder({
                 signerName: signer.signatureName || signer.email,
@@ -69,8 +70,9 @@ export async function GET(request: Request) {
                 roomUrl,
               }),
             });
-          }
-        }
+          });
+
+        await Promise.all(emailPromises);
 
         // Log audit event
         await db.insert(nexusDealAuditEvents).values({
@@ -80,9 +82,13 @@ export async function GET(request: Request) {
           detail: `Reminder ${reminderCount + 1}/3 sent to pending signers.`,
         });
 
-        remindersSent++;
+        return 1;
       }
-    }
+      return 0;
+    });
+
+    const results = await Promise.all(processingPromises);
+    remindersSent = results.reduce((acc, val) => acc + val, 0);
 
     return NextResponse.json({ success: true, remindersSent });
   } catch (error) {

@@ -50,17 +50,41 @@ export async function GET(
     const { withRetry } = await import("@/lib/database");
 
     return await withRetry(async () => {
-      // 🔍 1. Resolve User from Identifier (Wallet or UUID)
+      // 🔍 1. Resolve User & Fetch Global Data in Parallel
       console.log(`🔍 API: Querying users table for identifier ${walletAddress}`);
-      const userResult = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(
-          walletAddress.startsWith('0x')
-            ? ilike(users.walletAddress, walletAddress)
-            : eq(users.id, walletAddress)
-        )
-        .limit(1);
+      
+      const [userResult, allAchievements, leaderboardResult] = await Promise.all([
+        db
+          .select({ id: users.id })
+          .from(users)
+          .where(
+            walletAddress.startsWith('0x')
+              ? ilike(users.walletAddress, walletAddress)
+              : eq(users.id, walletAddress)
+          )
+          .limit(1),
+        db.select().from(achievements).orderBy(achievements.id),
+        db
+          .select({
+            id: gamificationProfiles.id,
+            userId: gamificationProfiles.userId,
+            totalPoints: gamificationProfiles.totalPoints,
+            walletAddress: gamificationProfiles.walletAddress,
+            currentLevel: gamificationProfiles.currentLevel,
+            projectsApplied: gamificationProfiles.projectsApplied,
+            projectsApproved: gamificationProfiles.projectsApproved,
+            totalInvested: gamificationProfiles.totalInvested,
+            communityRank: gamificationProfiles.communityRank,
+            lastActivityDate: gamificationProfiles.lastActivityDate,
+            createdAt: gamificationProfiles.createdAt,
+            name: users.name,
+            image: users.image,
+          })
+          .from(gamificationProfiles)
+          .leftJoin(users, eq(gamificationProfiles.userId, users.id))
+          .orderBy(desc(gamificationProfiles.totalPoints))
+          .limit(10)
+      ]);
 
       console.log(`🔍 API: User resolution result:`, userResult);
 
@@ -81,31 +105,14 @@ export async function GET(
 
       const userId = userResult[0]?.id;
       if (!userId) {
-        console.log(`❌ API: User ID is null for wallet ${walletAddress}`);
-        return NextResponse.json({
-          profile: null,
-          achievements: [],
-          rewards: [],
-          leaderboard: [],
-          totalPoints: 0,
-          currentLevel: 1,
-          levelProgress: 0,
-          success: true,
-          message: 'User ID not found'
-        });
+        return NextResponse.json({ profile: null, achievements: [], rewards: [], leaderboard: [], totalPoints: 0, currentLevel: 1, levelProgress: 0, success: true, message: 'User ID not found' });
       }
-      console.log(`🔍 API: Found user with ID ${userId} for wallet ${walletAddress}`);
 
-      // ===== DIAGNOSTIC: Check user in database directly =====
-      const userConfirm = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-      console.log(`🔍 API DIAGNOSTIC: User record in DB:`, userConfirm[0] ? 'EXISTS' : 'MISSING');
-
-      // 2. Get gamification profile
-      const profileResult = await db
-        .select()
-        .from(gamificationProfiles)
-        .where(eq(gamificationProfiles.userId, userId))
-        .limit(1);
+      // 2. Fetch User-Specific Data in Parallel
+      const [profileResult, userProgress] = await Promise.all([
+        db.select().from(gamificationProfiles).where(eq(gamificationProfiles.userId, userId)).limit(1),
+        db.select().from(userAchievements).where(eq(userAchievements.userId, userId))
+      ]);
 
       // ===== AUTO-INITIALIZATION FOR EXISTING USERS WITHOUT PROFILE =====
       let profile: UserGamificationProfile | null = null;
@@ -198,34 +205,21 @@ export async function GET(
         }
       }
 
-      // 3. Get ALL available achievements
-      const allAchievements = await db.select().from(achievements).orderBy(achievements.id);
-
-      // 4. Get specific user progress
-      const userProgress = await db
-        .select()
-        .from(userAchievements)
-        .where(eq(userAchievements.userId, userId));
-
       console.log(`🔍 API DIAGNOSTIC: Found ${allAchievements.length} total achievements and ${userProgress.length} user progress records.`);
 
-      // 5. Map achievements to user progress (Optimized with a Map for O(N+M) lookup)
+      // 5. Map achievements to user progress
       const progressMap = new Map(userProgress.map((p: any) => [p.achievementId, p]));
 
       const achievementsData: UserAchievement[] = allAchievements.map((item) => {
         const progressRecord = progressMap.get(item.id) as any;
 
-        // 🧠 Map semantics to satisfy BOTH legacy and new refactored expectations
         const rawType = item.type || 'community';
-
-        // Determine Rarity: first_steps | investor | community_builder | early_adopter | high_roller
         let rarity = 'first_steps';
         if (['high_roller', 'tokenization_expert', 'dao_pioneer'].includes(rawType)) rarity = 'high_roller';
         else if (['early_adopter', 'governor', 'yield_hunter'].includes(rawType)) rarity = 'early_adopter';
         else if (['community_builder', 'creator'].includes(rawType)) rarity = 'community_builder';
         else if (['investor', 'defi_starter'].includes(rawType)) rarity = 'investor';
 
-        // Determine Category: community | investor | creator | expert
         let category = 'community';
         if (['investor', 'defi_starter', 'yield_hunter'].includes(rawType)) category = 'investor';
         else if (['creator', 'protocol_deployed', 'artifact_collector'].includes(rawType)) category = 'creator';
@@ -244,7 +238,6 @@ export async function GET(
           icon: item.icon,
           points: item.pointsReward || 0,
           unlockedAt: progressRecord?.unlockedAt || undefined,
-          // 🔥 Refactored fields
           type: rawType,
           category: category,
           rarity: rarity,
@@ -252,33 +245,7 @@ export async function GET(
         };
       });
 
-      console.log(`🔍 API DIAGNOSTIC: Mapped achievementsData: ${achievementsData.length}`);
-
-      // 4. Get available rewards (for now, return empty array)
       const rewardsData: Reward[] = [];
-
-      // 5. Get leaderboard (JOIN with users to get name and image)
-      const leaderboardResult = await db
-        .select({
-          id: gamificationProfiles.id,
-          userId: gamificationProfiles.userId,
-          totalPoints: gamificationProfiles.totalPoints,
-          walletAddress: gamificationProfiles.walletAddress,
-          currentLevel: gamificationProfiles.currentLevel,
-          projectsApplied: gamificationProfiles.projectsApplied,
-          projectsApproved: gamificationProfiles.projectsApproved,
-          totalInvested: gamificationProfiles.totalInvested,
-          communityRank: gamificationProfiles.communityRank,
-          lastActivityDate: gamificationProfiles.lastActivityDate,
-          createdAt: gamificationProfiles.createdAt,
-          // Added user details
-          name: users.name,
-          image: users.image,
-        })
-        .from(gamificationProfiles)
-        .leftJoin(users, eq(gamificationProfiles.userId, users.id))
-        .orderBy(desc(gamificationProfiles.totalPoints))
-        .limit(10);
 
       const leaderboardData: LeaderboardEntry[] = leaderboardResult.map((item, index) => ({
         id: item.id.toString(),
@@ -287,21 +254,20 @@ export async function GET(
         totalPoints: item.totalPoints,
         currentLevel: item.currentLevel,
         walletAddress: item.walletAddress,
-        // Map user details - fallback to wallet abbreviation if no name
         username: item.name || `${item.walletAddress.slice(0, 6)}...${item.walletAddress.slice(-4)}`,
         avatarUrl: item.image || undefined,
         rank: index + 1,
         projectsApplied: item.projectsApplied,
         projectsApproved: item.projectsApproved,
         totalInvested: Number(item.totalInvested),
-        achievementsUnlocked: 0, // TODO: calculate from user achievements
+        achievementsUnlocked: 0, 
         communityRank: item.communityRank,
         lastActivity: new Date(item.lastActivityDate),
-        levelProgress: 0, // TODO: calculate based on points
-        currentStreak: 0, // TODO: add streak calculation
-        reputationScore: 0, // TODO: add reputation calculation
-        communityContributions: 0, // TODO: add community contrib calculation
-        referralsCount: 0, // TODO: add referrals count
+        levelProgress: 0, 
+        currentStreak: 0, 
+        reputationScore: 0, 
+        communityContributions: 0, 
+        referralsCount: 0, 
         joinedAt: new Date(item.createdAt)
       }));
 
