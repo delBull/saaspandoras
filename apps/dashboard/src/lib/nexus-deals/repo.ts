@@ -474,6 +474,10 @@ export function publicRoomView(room: NonNullable<Awaited<ReturnType<typeof getRo
     ndaPhase: room.ndaPhase,
     ndaVersion: room.ndaVersion,
     sections: room.sections,
+    // Room chaining
+    nextRoomPublicId: null as string | null,
+    nextRoomKind: null as string | null,
+    nextRoomKindLabel: null as string | null,
   };
 }
 

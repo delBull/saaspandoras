@@ -148,6 +148,7 @@ export async function sendDealSignedEmail(input: {
   counterparty: string;
   publicId: string;
   enteredIntoForce?: boolean;
+  baseUrl?: string;
   nextRoom?: {
     publicId: string;
     kind: string;
@@ -156,7 +157,8 @@ export async function sendDealSignedEmail(input: {
     company: string;
   };
 }) {
-  const { to, firstName, dealKindLabel, counterparty, publicId, enteredIntoForce, nextRoom } = input;
+  const { to, firstName, dealKindLabel, counterparty, publicId, enteredIntoForce, nextRoom, baseUrl } = input;
+  const base = baseUrl ?? "https://dash.pandoras.finance";
   const date = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
 
   const nextRoomSection = nextRoom ? `
@@ -173,6 +175,11 @@ export async function sendDealSignedEmail(input: {
                   Este documento ha sido desbloqueado automáticamente tras la firma de ${dealKindLabel}. 
                   Pendiente de revisión y firma.
                 </p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 0;">
+                  <tr><td>
+                    <a href="${base}/deal/${nextRoom.publicId}" style="display:inline-block;background:#86efac;color:#08080C;font-size:13px;font-weight:700;text-decoration:none;padding:10px 24px;border-radius:6px;">Abrir Documento</a>
+                  </td></tr>
+                </table>
               </td></tr>
             </table>` : "";
 
@@ -250,8 +257,11 @@ export async function sendDealAvailableEmail(input: {
   company: string;
   publicId: string;
   previousRoomPublicId: string;
+  baseUrl?: string;
 }) {
-  const { to, firstName, dealKindLabel, counterparty, company, publicId, previousRoomPublicId } = input;
+  const { to, firstName, dealKindLabel, counterparty, company, publicId, previousRoomPublicId, baseUrl } = input;
+  const base = baseUrl ?? "https://dash.pandoras.finance";
+  const dealUrl = `${base}/deal/${publicId}`;
   const date = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -284,6 +294,11 @@ export async function sendDealAvailableEmail(input: {
                   <strong style="color:rgba(255,255,255,0.85);">Desbloqueado por:</strong> Firma de ${previousRoomPublicId}<br/>
                   <strong style="color:rgba(255,255,255,0.85);">Fecha:</strong> ${date} (CDMX)
                 </div>
+              </td></tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+              <tr><td align="center">
+                <a href="${dealUrl}" style="display:inline-block;background:#86efac;color:#08080C;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:8px;letter-spacing:0.5px;">Abrir Documento</a>
               </td></tr>
             </table>
             <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.6;">

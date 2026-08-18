@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { getRoomByPublicId, publicRoomView } from "@/lib/nexus-deals/repo";
+import { getRoomByPublicId, getRoom, publicRoomView } from "@/lib/nexus-deals/repo";
 import { verifyDealToken } from "@/lib/nexus-deals/tokens";
+import { KIND_LABEL } from "@/lib/nexus-deals/types";
 import DealSignerClient from "./DealSignerClient";
 
 export const dynamic = "force-dynamic";
@@ -27,10 +28,22 @@ export default async function DealPublicPage({
     }
   }
 
+  const view = publicRoomView(room);
+
+  // Room chaining: resolve next room's publicId
+  if (room.nextRoomId) {
+    const nextRoom = await getRoom(room.nextRoomId);
+    if (nextRoom) {
+      view.nextRoomPublicId = nextRoom.publicId;
+      view.nextRoomKind = nextRoom.kind;
+      view.nextRoomKindLabel = KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind;
+    }
+  }
+
   return (
     <DealSignerClient
       publicId={publicId}
-      room={publicRoomView(room)}
+      room={view}
       initialEmail={signerEmail}
       rawToken={signerEmail ? token ?? null : null}
     />

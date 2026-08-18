@@ -32,6 +32,10 @@ interface PublicRoom {
   ndaPhase?: string;
   ndaVersion?: string;
   sections: PublicSection[];
+  // Room chaining
+  nextRoomPublicId?: string | null;
+  nextRoomKind?: string | null;
+  nextRoomKindLabel?: string | null;
 }
 
 const KIND_LABEL: Record<PublicRoom["kind"], string> = {
@@ -283,6 +287,25 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     </span>
                     . A partir de esta fecha constituye un acuerdo vigente según sus términos.
                   </p>
+                </div>
+              )}
+
+              {room.status === "SIGNED" && room.nextRoomPublicId && (
+                <div className="mt-4 p-4 rounded-xl border border-violet-500/25 bg-violet-500/[0.07]">
+                  <p className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-violet-300 mb-1">
+                    <FileSignature className="w-3.5 h-3.5" /> Siguiente Documento Disponible
+                  </p>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
+                    El <span className="text-violet-200 font-semibold">{room.nextRoomKindLabel}</span> ha sido desbloqueado como seguimiento de este acuerdo.
+                    Está listo para revisión y firma.
+                  </p>
+                  <a
+                    href={`/deal/${room.nextRoomPublicId}`}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 text-violet-200 text-[12px] font-semibold hover:bg-violet-500/30 transition-colors"
+                  >
+                    <FileSignature className="w-3.5 h-3.5" />
+                    Abrir {room.nextRoomKindLabel}
+                  </a>
                 </div>
               )}
 
