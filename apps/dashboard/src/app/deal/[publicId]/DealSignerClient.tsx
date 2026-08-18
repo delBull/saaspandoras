@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet, ShieldCheck, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet, ShieldCheck, ChevronDown, ChevronUp, AlertTriangle, Download } from "lucide-react";
 import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
@@ -343,6 +343,23 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 </div>
               ))}
             </div>
+
+            {signed && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
+                className="mt-6 p-5 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.04]"
+              >
+                <div className="flex items-start gap-3">
+                  <FileSignature className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-emerald-200">Aceptación Criptográfica Verificada</h3>
+                    <p className="text-[12px] text-zinc-400 mt-1 leading-relaxed">
+                      El presente documento ha sido aceptado electrónicamente y firmado on-chain por <strong>{signName || account?.address}</strong>. Esta firma constituye una declaración explícita de aceptación plena de todos los términos y condiciones estipulados en las cláusulas anteriores.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
           <NDAModal 
             isOpen={ndaModalOpen} 
@@ -361,6 +378,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">
                   Tu aceptación quedó registrada en el audit trail del Deal Room. Gracias por tu confianza.
                 </p>
+                <button
+                  onClick={() => window.print()}
+                  className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-200 text-[11px] font-mono hover:bg-emerald-500/30 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  GUARDAR COMO PDF
+                </button>
               </motion.div>
             ) : (initialEmail && rawToken) || isOpenSign ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
