@@ -367,46 +367,7 @@ export function ClientsManager() {
                                         </TableCell>
                                         <TableCell className="text-right py-2.5">
                                             <div className="flex justify-end gap-1.5 items-center">
-                                                {isHermesClient && (
-                                                    isProvisioned ? (
-                                                        <Badge variant="outline" className="h-6 text-[10px] border-green-500/40 text-green-400 bg-green-950/30 font-mono">
-                                                            ✅ Aprovisionado
-                                                        </Badge>
-                                                    ) : (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="h-6 px-2 text-[11px] border-amber-500/40 text-amber-300 hover:bg-amber-950/40 font-mono"
-                                                            onClick={async () => {
-                                                                 try {
-                                                                     toast.loading(`Aprovisionando Hermes OS para ${client.email}...`);
-                                                                     const res = await fetch('/api/v1/admin/provision', {
-                                                                         method: 'POST',
-                                                                         headers: { 'Content-Type': 'application/json' },
-                                                                         body: JSON.stringify({ leadId: client.id, product: 'HERMES', plan: 'starter' }),
-                                                                     });
-                                                                     const d = await res.json();
-                                                                     toast.dismiss();
-                                                                     if (d.success) {
-                                                                         toast.success(`🚀 ¡Hermes Aprovisionado! Magic URL generada.`);
-                                                                         if (d.portalUrl) {
-                                                                             window.open(d.portalUrl, '_blank');
-                                                                         }
-                                                                         loadClients();
-                                                                     } else {
-                                                                         toast.error(`Aprovisionamiento completado con fallback demo.`);
-                                                                         loadClients();
-                                                                     }
-                                                                 } catch (e: any) { 
-                                                                     toast.dismiss();
-                                                                     toast.error(`Error: ${e?.message || 'Falla de conexión'}`); 
-                                                                 }
-                                                             }}
-                                                        >
-                                                            🚀 Aprovisionar
-                                                        </Button>
-                                                    )
-                                                )}
+
                                                 <ProtocolActions
                                                     client={client}
                                                     onSuccess={loadClients}

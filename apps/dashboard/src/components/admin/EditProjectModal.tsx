@@ -176,12 +176,11 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="identity" className="w-full">
-            <TabsList className="grid grid-cols-5 bg-zinc-900 border border-zinc-800 p-1 mb-6">
+            <TabsList className="grid grid-cols-4 bg-zinc-900 border border-zinc-800 p-1 mb-6">
               <TabsTrigger value="identity" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Identidad</TabsTrigger>
               <TabsTrigger value="visuals" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Visuales</TabsTrigger>
               <TabsTrigger value="community" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Comunidad</TabsTrigger>
               <TabsTrigger value="mechanics" className="data-[state=active]:bg-lime-500 data-[state=active]:text-black">Mecánicas</TabsTrigger>
-              <TabsTrigger value="bots" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white font-semibold">🤖 Hermes Agent</TabsTrigger>
             </TabsList>
 
             {/* TAB: IDENTITY */}
@@ -468,106 +467,7 @@ export function EditProjectModal({ isOpen, onClose, project, onSuccess, walletAd
 
 
 
-            {/* TAB: HERMES AGENT — Status Adapter (V5.1 Architecture) */}
-            {/* 🔒 This tab is READ-ONLY for Pandora's Admin.            */}
-            {/*    All Hermes config lives in Hermes Console.             */}
-            <TabsContent value="bots" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="space-y-4">
 
-                {/* ── Header + SSO Button ──────────────────────────────── */}
-                <div className="bg-zinc-900 border border-purple-500/30 rounded-2xl p-5 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl">🤖</div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2 mb-0.5">
-                        Hermes OS
-                        {isExistingBinding ? (
-                          <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold tracking-wide">🛡️ EXISTING BINDING</span>
-                        ) : hasBinding ? (
-                          <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold tracking-wide">● PROVISIONED</span>
-                        ) : (
-                          <span className="text-[9px] bg-zinc-500/20 text-zinc-400 border border-zinc-500/30 px-2 py-0.5 rounded-full font-semibold tracking-wide">○ NOT BOUND</span>
-                        )}
-                      </h4>
-                      <p className="text-[11px] text-zinc-400">
-                        {isExistingBinding
-                          ? 'Golden Reference Tenant — configuración solo en Hermes Console'
-                          : hasBinding
-                            ? 'Binding Layer V5.1 — instancia activa'
-                            : 'Sin binding de Hermes — aprovisiona para activar'}
-                      </p>
-                    </div>
-                  </div>
-                  <a
-                    href={`/growth-os/hermes`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-purple-900/30 transition-all no-underline"
-                  >
-                    Abrir Hermes Console 🚀
-                  </a>
-                </div>
-
-                {/* ── Binding Status Card ──────────────────────────────── */}
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl divide-y divide-zinc-800/70">
-                  <div className="flex items-center justify-between px-4 py-3 text-xs">
-                    <span className="text-zinc-400">Instance ID</span>
-                    <code className="text-purple-300 font-mono text-[11px]">
-                      {binding?.hermesInstanceId ?? '—'}
-                    </code>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3 text-xs">
-                    <span className="text-zinc-400">Binding Mode</span>
-                    <span className={`font-semibold uppercase tracking-wider text-[10px] ${isExistingBinding ? 'text-amber-400' : hasBinding ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                      {isExistingBinding ? 'existing (read-only)' : hasBinding ? 'provisioned' : 'sin binding'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3 text-xs">
-                    <span className="text-zinc-400">Plan</span>
-                    <span className="text-zinc-200 font-medium">{binding?.plan ?? '—'}</span>
-                  </div>
-                </div>
-
-                {/* ── S'Narai read-only notice ─────────────────────────── */}
-                {isExistingBinding && (
-                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3">
-                    <p className="text-[11px] text-amber-300/80 leading-relaxed">
-                      <strong className="text-amber-400">🛡️ Protección activa:</strong> S&apos;Narai es el Golden Reference Tenant.
-                      Su configuración de agente, prompts, bot tokens y base de conocimientos se gestionan
-                      exclusivamente desde <strong>Hermes Console</strong>.
-                      Pandora&apos;s Admin solo puede ver el estado del binding.
-                    </p>
-                  </div>
-                )}
-
-                {/* ── Capabilities Grid (read-only) ────────────────────── */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-3">Capabilities Activas</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { key: 'identity', label: 'Identity', icon: '🪪' },
-                      { key: 'knowledge', label: 'Knowledge', icon: '🧠' },
-                      { key: 'runtime', label: 'Runtime', icon: '⚡' },
-                      { key: 'analytics', label: 'Analytics', icon: '📊' },
-                      { key: 'voice', label: 'Voice', icon: '🎙️' },
-                      { key: 'multiagent', label: 'Multi-Agent', icon: '🕸️' },
-                    ].map(cap => {
-                      const active = ['identity', 'knowledge', 'runtime', 'analytics'].includes(cap.key);
-                      return (
-                        <div key={cap.key} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] border ${active ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-600'}`}>
-                          <span>{cap.icon}</span>
-                          <span className="font-medium">{cap.label}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[10px] text-zinc-600 mt-3">
-                    Para habilitar o deshabilitar capabilities, abre Hermes Console → Plan & Capabilities.
-                  </p>
-                </div>
-
-              </div>
-            </TabsContent>
 
           </Tabs>
 

@@ -1,9 +1,9 @@
-'use client';
-
+import 'react';
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Cpu, Terminal, ExternalLink, RefreshCw } from 'lucide-react';
+import { Sparkles, Cpu, RefreshCw, Bot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export function HermesTenantsAdminView() {
   const [tenants, setTenants] = useState<any[]>([]);
@@ -16,7 +16,7 @@ export function HermesTenantsAdminView() {
       if (res.ok) {
         const data = await res.json();
         const hermesList = Array.isArray(data) 
-          ? data.filter((p: any) => p.hermesBinding != null)
+          ? data // Show all projects to allow provisioning
           : [];
         setTenants(hermesList);
       }
@@ -30,6 +30,29 @@ export function HermesTenantsAdminView() {
   useEffect(() => {
     fetchTenants();
   }, []);
+
+  const handleProvision = async (tenantId: string | number) => {
+    try {
+      toast.loading(`Aprovisionando Hermes OS para tenant #${tenantId}...`);
+      const res = await fetch('/api/v1/admin/provision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: tenantId, product: 'HERMES', plan: 'starter' }),
+      });
+      const d = await res.json();
+      toast.dismiss();
+      if (d.success) {
+          toast.success(`🚀 ¡Hermes Aprovisionado! Magic URL generada.`);
+          fetchTenants();
+      } else {
+          toast.error(`Aprovisionamiento completado con fallback demo.`);
+          fetchTenants();
+      }
+    } catch (e: any) { 
+        toast.dismiss();
+        toast.error(`Error: ${e?.message || 'Falla de conexión'}`); 
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
@@ -68,67 +91,82 @@ export function HermesTenantsAdminView() {
       ) : tenants.length === 0 ? (
         <div className="p-12 bg-zinc-900/40 border border-dashed border-zinc-800 rounded-3xl text-center space-y-3">
           <Cpu className="w-10 h-10 text-purple-400/50 mx-auto animate-pulse" />
-          <h4 className="text-white font-bold text-base">No hay tenants de Hermes registrados aún</h4>
+          <h4 className="text-white font-bold text-base">No hay proyectos disponibles</h4>
           <p className="text-zinc-500 text-xs max-w-sm mx-auto">
-            El proyecto S'Narai (ID 17) y los proyectos con indicador Hermes aparecerán aquí con su telemetría y consola aislada.
+            Los proyectos aparecerán aquí para ser aprovisionados con Hermes.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono">
-          {tenants.map((t) => (
-            <div 
-              key={t.id}
-              className="bg-zinc-900/60 border border-zinc-800/80 hover:border-purple-500/40 p-6 rounded-2xl space-y-4 transition-all duration-300 group shadow-lg"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
-                    <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
-                      {t.title || t.slug}
-                    </h3>
+          {tenants.map((t) => {
+            const isProvisioned = t.hermesBinding != null;
+            return (
+              <div 
+                key={t.id}
+                className={`bg-zinc-900/60 border ${isProvisioned ? 'border-purple-500/30 hover:border-purple-500/60' : 'border-zinc-800/80'} p-6 rounded-2xl space-y-4 transition-all duration-300 group shadow-lg`}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      {isProvisioned ? (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-zinc-600" />
+                      )}
+                      <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
+                        {t.title || t.slug}
+                      </h3>
+                    </div>
+                    <span className="text-[11px] text-zinc-500 font-mono">Slug: {t.slug} • Tenant ID: #{t.id}</span>
                   </div>
-                  <span className="text-[11px] text-zinc-500 font-mono">Slug: {t.slug} • Tenant ID: #{t.id}</span>
+
+                  <Badge variant="outline" className={`text-[10px] ${isProvisioned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                    {isProvisioned ? 'ONLINE' : 'UNPROVISIONED'}
+                  </Badge>
                 </div>
 
-                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
-                  ONLINE
-                </Badge>
-              </div>
+                <div className="grid grid-cols-3 gap-2 bg-black/40 p-3 rounded-xl border border-white/5 text-[11px]">
+                  <div>
+                    <span className="text-zinc-600 block uppercase text-[9px] font-bold">Kernel Version</span>
+                    <span className="text-zinc-300 font-bold">{isProvisioned ? 'v1.0-STABLE' : '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-600 block uppercase text-[9px] font-bold">Proveedores Mesh</span>
+                    <span className="text-zinc-300 font-bold">{isProvisioned ? '4 Activos' : '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-600 block uppercase text-[9px] font-bold">Routing Profile</span>
+                    <span className="text-purple-400 font-bold">{isProvisioned ? 'Operator' : 'None'}</span>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-3 gap-2 bg-black/40 p-3 rounded-xl border border-white/5 text-[11px]">
-                <div>
-                  <span className="text-zinc-600 block uppercase text-[9px] font-bold">Kernel Version</span>
-                  <span className="text-zinc-300 font-bold">v1.0-STABLE</span>
-                </div>
-                <div>
-                  <span className="text-zinc-600 block uppercase text-[9px] font-bold">Proveedores Mesh</span>
-                  <span className="text-zinc-300 font-bold">4 Activos</span>
-                </div>
-                <div>
-                  <span className="text-zinc-600 block uppercase text-[9px] font-bold">Routing Profile</span>
-                  <span className="text-purple-400 font-bold">Operator</span>
+                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                  <span className="text-[10px] text-zinc-500">
+                    DB ID: #{t.id} • {t.applicantEmail || 'System Tenant'}
+                  </span>
+                  
+                  {!isProvisioned ? (
+                    <Button
+                      size="sm"
+                      onClick={() => handleProvision(t.id)}
+                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white border border-purple-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                    >
+                      <Bot className="w-3.5 h-3.5" />
+                      Aprovisionar Hermes
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border border-zinc-800 rounded-xl text-xs font-bold transition-all cursor-default"
+                    >
+                      Instancia Gestionada (Vía API)
+                    </Button>
+                  )}
                 </div>
               </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                <span className="text-[10px] text-zinc-500">
-                  DB ID: #{t.id} • {t.applicantEmail || 'System Tenant'}
-                </span>
-                
-                <a
-                   href={`/growth-os/organizations/${t.slug}/hermes`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-                >
-                  <Terminal className="w-3.5 h-3.5" />
-                  Abrir Workbench
-                  <ExternalLink className="w-3 h-3 opacity-60" />
-                </a>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
