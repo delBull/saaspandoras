@@ -15,7 +15,6 @@ export interface DealTokenPayload {
  * Mismo patrón que lib/platform/portal-auth.ts (secret con fallbacks).
  */
 export function generateDealToken(roomId: string, publicId: string, email: string): string {
-  if (!DEAL_TOKEN_SECRET) throw new Error("NEXUS_DEAL_TOKEN_SECRET or PORTAL_JWT_SECRET env var is required");
   const payload: Omit<DealTokenPayload, "iat"> = {
     sub: publicId,
     type: "deal_access",
@@ -63,7 +62,6 @@ async function hmacSign(payload: string): Promise<string> {
 }
 
 export async function generateUnlockToken(email: string): Promise<string> {
-  if (!ADMIN_UNLOCK_SECRET) throw new Error("NEXUS_DEAL_UNLOCK_SECRET env var is required");
   const exp = Date.now() + UNLOCK_TTL_MS;
   const sig = await hmacSign(`${email}:nexus-deal-rooms:${exp}`);
   const raw = JSON.stringify({ email, scope: "nexus-deal-rooms", exp, sig });
