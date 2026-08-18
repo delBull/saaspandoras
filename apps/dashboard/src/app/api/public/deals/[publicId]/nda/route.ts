@@ -185,18 +185,11 @@ export async function POST(
     });
 
     // Fire email + Discord in parallel (non-blocking failures)
+    // Only send email confirmation when we have a valid email (not a wallet address).
     const nowIso = new Date().toISOString();
     const firstName = name.split(" ")[0];
 
-    await Promise.allSettled([
-      sendNdaConfirmationEmail({
-        to: email || wallet,
-        firstName,
-        ndaVersion,
-        roomLabel,
-        wallet,
-        acceptedAt: nowIso,
-      }),
+    const ndaNotifications: Promise<any>[] = [
       sendNdaSignedAlert({
         roomLabel,
         signerName: name,
@@ -205,7 +198,20 @@ export async function POST(
         ndaVersion,
         bypassed: false,
       }),
-    ]);
+    ];
+    if (email && email.includes("@")) {
+      ndaNotifications.push(
+        sendNdaConfirmationEmail({
+          to: email,
+          firstName,
+          ndaVersion,
+          roomLabel,
+          wallet,
+          acceptedAt: nowIso,
+        })
+      );
+    }
+    await Promise.allSettled(ndaNotifications);
 
     return NextResponse.json({
       ok: true,

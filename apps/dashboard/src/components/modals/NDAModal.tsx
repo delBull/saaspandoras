@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,12 @@ interface NDAModalProps {
 }
 
 export function NDAModal({ isOpen, onClose, version = "v2.1" }: NDAModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -178,5 +184,6 @@ export function NDAModal({ isOpen, onClose, version = "v2.1" }: NDAModalProps) {
     </AnimatePresence>
   );
 
+  if (!mounted || typeof document === "undefined") return null;
   return createPortal(modalContent, document.body);
 }

@@ -4,11 +4,12 @@ import { verifyDealToken } from "@/lib/nexus-deals/tokens";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
 import { buildCombinedSignMessage } from "@/lib/nexus-deals/nda-content";
 import { sendSignatureAlert, sendNdaSignedAlert } from "@/lib/nexus-deals/discord";
-import { sendNdaConfirmationEmail } from "@/lib/nexus-deals/email";
+import { sendNdaConfirmationEmail, sendDealSignedEmail } from "@/lib/nexus-deals/email";
 import { verifySignature } from "thirdweb/auth";
 import { client } from "@/lib/thirdweb-client";
 import { db } from "@/db";
 import { nexusDealAuditEvents } from "@/db/schema";
+import { KIND_LABEL } from "@/lib/nexus-deals/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -151,6 +152,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
         enteredIntoForce: updated?.status === "SIGNED",
       });
 
+      // Send follow-up email to signer (skip if wallet-only, no email)
+      if (cleanWallet.includes("@")) {
+        Promise.allSettled([
+          sendDealSignedEmail({
+            to: cleanWallet,
+            firstName: cleanName.split(" ")[0],
+            dealKindLabel: KIND_LABEL[room.kind],
+            counterparty: room.counterparty,
+            publicId: room.publicId,
+            enteredIntoForce: updated?.status === "SIGNED",
+          }),
+        ]);
+      }
+
       return NextResponse.json({ ok: true, status: updated?.status, ndaRecorded: isCombined && room.ndaEnabled });
     }
 
@@ -212,6 +227,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       kind: room.kind,
       enteredIntoForce: updated?.status === "SIGNED",
     });
+
+    // Send follow-up email to signer
+    if (payload.email && payload.email.includes("@")) {
+      Promise.allSettled([
+        sendDealSignedEmail({
+          to: payload.email,
+          firstName: cleanName.split(" ")[0],
+          dealKindLabel: KIND_LABEL[room.kind],
+          counterparty: room.counterparty,
+          publicId: room.publicId,
+          enteredIntoForce: updated?.status === "SIGNED",
+        }),
+      ]);
+    }
 
     return NextResponse.json({ ok: true, status: updated?.status });
   } catch (e: any) {
