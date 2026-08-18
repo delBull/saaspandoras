@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId, markViewed, signRoom, signRoomOnline, hasEmailSignedNda, recordNdaAcceptance } from "@/lib/nexus-deals/repo";
+import { getRoomByPublicId, getRoom, markViewed, signRoom, signRoomOnline, hasEmailSignedNda, recordNdaAcceptance } from "@/lib/nexus-deals/repo";
 import { verifyDealToken } from "@/lib/nexus-deals/tokens";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
 import { buildCombinedSignMessage } from "@/lib/nexus-deals/nda-content";
@@ -154,6 +154,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
       // Send follow-up email to signer (skip if wallet-only, no email)
       if (cleanWallet.includes("@")) {
+        const nextRoom = room.nextRoomId ? await getRoom(room.nextRoomId) : null;
         Promise.allSettled([
           sendDealSignedEmail({
             to: cleanWallet,
@@ -162,6 +163,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
             counterparty: room.counterparty,
             publicId: room.publicId,
             enteredIntoForce: updated?.status === "SIGNED",
+            nextRoom: nextRoom ? {
+              publicId: nextRoom.publicId,
+              kind: nextRoom.kind,
+              kindLabel: KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind,
+              counterparty: nextRoom.counterparty,
+              company: nextRoom.company,
+            } : undefined,
           }),
         ]);
       }
@@ -230,6 +238,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
     // Send follow-up email to signer
     if (payload.email && payload.email.includes("@")) {
+      const nextRoom = room.nextRoomId ? await getRoom(room.nextRoomId) : null;
       Promise.allSettled([
         sendDealSignedEmail({
           to: payload.email,
@@ -238,6 +247,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
           counterparty: room.counterparty,
           publicId: room.publicId,
           enteredIntoForce: updated?.status === "SIGNED",
+          nextRoom: nextRoom ? {
+            publicId: nextRoom.publicId,
+            kind: nextRoom.kind,
+            kindLabel: KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind,
+            counterparty: nextRoom.counterparty,
+            company: nextRoom.company,
+          } : undefined,
         }),
       ]);
     }

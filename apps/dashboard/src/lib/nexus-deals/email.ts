@@ -138,6 +138,8 @@ export async function sendNdaConfirmationEmail(input: {
 /**
  * Email de confirmación post-firma del documento.
  * Se envía al firmante después de completar la firma on-chain del deal.
+ * Si hay un siguiente documento (room chaining), se incluye la notificación
+ * en el mismo email para no ser redundante.
  */
 export async function sendDealSignedEmail(input: {
   to: string;
@@ -146,8 +148,34 @@ export async function sendDealSignedEmail(input: {
   counterparty: string;
   publicId: string;
   enteredIntoForce?: boolean;
+  nextRoom?: {
+    publicId: string;
+    kind: string;
+    kindLabel: string;
+    counterparty: string;
+    company: string;
+  };
 }) {
-  const { to, firstName, dealKindLabel, counterparty, publicId, enteredIntoForce } = input;
+  const { to, firstName, dealKindLabel, counterparty, publicId, enteredIntoForce, nextRoom } = input;
+  const date = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+
+  const nextRoomSection = nextRoom ? `
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:rgba(134,239,172,0.06);border:1px solid rgba(134,239,172,0.2);border-radius:10px;">
+              <tr><td style="padding:16px 20px;">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(134,239,172,0.7);margin-bottom:12px;">Siguiente Documento Disponible</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:2;">
+                  <strong style="color:rgba(255,255,255,0.85);">Documento:</strong> ${nextRoom.kindLabel}<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Deal Room:</strong> ${nextRoom.publicId}<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Contraparte:</strong> ${nextRoom.counterparty}<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Empresa:</strong> ${nextRoom.company}
+                </div>
+                <p style="margin:12px 0 0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">
+                  Este documento ha sido desbloqueado automáticamente tras la firma de ${dealKindLabel}. 
+                  Pendiente de revisión y firma.
+                </p>
+              </td></tr>
+            </table>` : "";
+
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pandora's — Documento Firmado</title></head>
@@ -170,6 +198,7 @@ export async function sendDealSignedEmail(input: {
               ${enteredIntoForce
                 ? `El documento ha entrado en vigor tras la firma de todas las partes.`
                 : `Tu aceptación quedó registrada en el audit trail del Deal Room.`}
+              ${nextRoom ? `<br/><br/><strong style="color:#86efac;">${nextRoom.kindLabel}</strong> ha sido desbloqueado y está listo para revisión.` : ""}
             </p>
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
               <tr><td style="padding:16px 20px;">
@@ -178,11 +207,12 @@ export async function sendDealSignedEmail(input: {
                   <strong style="color:rgba(255,255,255,0.85);">Deal Room:</strong> ${publicId}<br/>
                   <strong style="color:rgba(255,255,255,0.85);">Tipo:</strong> ${dealKindLabel}<br/>
                   <strong style="color:rgba(255,255,255,0.85);">Contraparte:</strong> ${counterparty}<br/>
-                  <strong style="color:rgba(255,255,255,0.85);">Fecha:</strong> ${new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" })} (CDMX)<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Fecha:</strong> ${date} (CDMX)<br/>
                   <strong style="color:rgba(255,255,255,0.85);">Legislación:</strong> Leyes de los Estados Unidos Mexicanos
                 </div>
               </td></tr>
             </table>
+            ${nextRoomSection}
             <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.6;">
               Conserva este correo como evidencia de tu aceptación.<br/>
               Para cualquier consulta: <a href="mailto:legal@pandoras.finance" style="color:rgba(134,239,172,0.7);">legal@pandoras.finance</a>
