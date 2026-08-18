@@ -1,7 +1,4 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
-
-neonConfig.webSocketConstructor = ws;
+import postgres from "postgres";
 
 // Connection pool configuration for better performance
 // This prevents "too many clients" errors by reusing connections
@@ -15,7 +12,7 @@ if (DATABASE_URL && !DATABASE_URL.includes("-pooler") && DATABASE_URL.includes("
 
 // Standard Next.js Postgres caching mechanism for Serverless
 const globalForPostgres = globalThis as unknown as {
-  sqlInstance: Pool | undefined;
+  sqlInstance: ReturnType<typeof postgres> | undefined;
 };
 
 // Detect if we're on localhost to disable SSL requirement
@@ -26,12 +23,12 @@ const isLocal = DATABASE_URL.includes("localhost") ||
                 process.env.DB_SSL === "false";
 
 // Use a more resilient configuration for serverless
-export const sqlInstance = globalForPostgres.sqlInstance || new Pool({
-  connectionString: DATABASE_URL,
+export const sqlInstance = globalForPostgres.sqlInstance || postgres(DATABASE_URL, {
   max: 10, // Recommended safe limit for serverless on Neon
-  idleTimeoutMillis: 20000, 
-  connectionTimeoutMillis: 5000,
-  ssl: isLocal ? false : true,
+  idle_timeout: 20, 
+  connect_timeout: 5,
+  prepare: false, 
+  ssl: isLocal ? false : { rejectUnauthorized: false },
 });
 
 // Shared singleton across ALL environments to prevent pool exhaustion
@@ -43,7 +40,7 @@ export { sqlInstance as sql };
 // Health check function
 export async function checkDatabaseHealth() {
   try {
-    await sqlInstance.query('SELECT 1');
+    await sqlInstance`SELECT 1`;
     return true;
   } catch (error) {
     console.error('Database health check failed:', error);
