@@ -611,10 +611,10 @@ export default function DealRoomConsole() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.counterparty}</span>
+                      <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.relation || room.counterparty}</span>
                       <ChevronRight className={`w-3 h-3 shrink-0 ${active ? "text-amber-300" : "text-zinc-600"}`} />
                     </div>
-                    <p className="text-[9px] font-mono text-zinc-500 truncate mt-0.5">{room.relation} · {room.publicId}</p>
+                    <p className="text-[9px] font-mono text-zinc-500 truncate mt-0.5">{room.counterparty} {room.company && `· ${room.company}`} · {room.publicId}</p>
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border ${KIND_BADGE[room.kind]}`}>
                         {room.kind}
@@ -665,13 +665,13 @@ export default function DealRoomConsole() {
                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border ${KIND_BADGE[selected.kind]}`}>
                         {KIND_LABEL[selected.kind]}
                       </span>
-                      <h4 className="text-sm font-semibold text-zinc-100 truncate">{selected.counterparty}</h4>
+                      <h4 className="text-sm font-semibold text-zinc-100 truncate">{selected.relation || selected.counterparty}</h4>
                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border ${STATUS_ACCENT[selected.status]}`}>
                         {STATUS_LABEL[selected.status]}
                       </span>
                     </div>
                     <p className="text-[10px] font-mono text-zinc-500 mt-1">
-                      {selected.relation} · {selected.company} · ROOM <span className="text-amber-300">{selected.publicId}</span>
+                      {selected.counterparty} {selected.company && `· ${selected.company}`} · ROOM <span className="text-amber-300">{selected.publicId}</span>
                       {selected.enteredIntoForceAt && (
                         <span className="text-emerald-400"> · EN VIGOR DESDE {shortAt(selected.enteredIntoForceAt)}</span>
                       )}

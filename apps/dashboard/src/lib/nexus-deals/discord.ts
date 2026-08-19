@@ -219,3 +219,55 @@ export async function sendNdaSignedAlert(input: {
     },
   ]);
 }
+
+/**
+ * Notificación de nuevo comentario por párrafo.
+ */
+export async function sendDealRoomCommentAlert(input: {
+  roomLabel: string;
+  sectionCode: string;
+  author: string;
+  content: string;
+}) {
+  const { roomLabel, sectionCode, author, content } = input;
+  return postDiscord("", [
+    {
+      title: `💬 Nuevo Comentario — ${roomLabel}`,
+      description: `Se ha dejado un comentario en la **Sección ${sectionCode}**.`,
+      color: COLORS.PURPLE,
+      fields: [
+        { name: "Autor", value: author, inline: true },
+        { name: "Sección", value: sectionCode, inline: true },
+        { name: "Comentario", value: content, inline: false },
+      ],
+      footer: { text: "Pandora's Nexus · Comentarios" },
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+}
+
+/**
+ * Notificación de nuevo anexo subido.
+ */
+export async function sendDealRoomAttachmentAlert(input: {
+  roomLabel: string;
+  filename: string;
+  uploadedBy: string;
+  url: string;
+}) {
+  const { roomLabel, filename, uploadedBy, url } = input;
+  return postDiscord("", [
+    {
+      title: `📎 Nuevo Anexo Subido — ${roomLabel}`,
+      description: `Se ha subido un nuevo documento anexo al Deal Room para revisión.`,
+      color: COLORS.AMBER,
+      fields: [
+        { name: "Archivo", value: `[${filename}](${url})`, inline: false },
+        { name: "Subido por", value: uploadedBy, inline: true },
+      ],
+      footer: { text: "Pandora's Nexus · Anexos" },
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+}
+

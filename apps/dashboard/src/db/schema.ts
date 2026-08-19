@@ -3334,8 +3334,18 @@ export const nexusDealSigners = pgTable("nexus_deal_signers", {
 export const nexusDealComments = pgTable("nexus_deal_comments", {
   id: uuid("id").defaultRandom().primaryKey(),
   roomId: uuid("room_id").notNull().references(() => nexusDealRooms.id, { onDelete: "cascade" }),
+  sectionCode: varchar("section_code", { length: 4 }).notNull(),
   author: text("author").notNull(),
   content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const nexusDealAttachments = pgTable("nexus_deal_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  roomId: uuid("room_id").notNull().references(() => nexusDealRooms.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  url: text("url").notNull(),
+  uploadedBy: text("uploaded_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -3344,6 +3354,7 @@ export const nexusDealRoomsRelations = relations(nexusDealRooms, ({ many }) => (
   audit: many(nexusDealAuditEvents),
   signers: many(nexusDealSigners),
   comments: many(nexusDealComments),
+  attachments: many(nexusDealAttachments),
 }));
 
 export const nexusDealSectionsRelations = relations(nexusDealSections, ({ one }) => ({
@@ -3360,6 +3371,10 @@ export const nexusDealSignersRelations = relations(nexusDealSigners, ({ one }) =
 
 export const nexusDealCommentsRelations = relations(nexusDealComments, ({ one }) => ({
   room: one(nexusDealRooms, { fields: [nexusDealComments.roomId], references: [nexusDealRooms.id] }),
+}));
+
+export const nexusDealAttachmentsRelations = relations(nexusDealAttachments, ({ one }) => ({
+  room: one(nexusDealRooms, { fields: [nexusDealAttachments.roomId], references: [nexusDealRooms.id] }),
 }));
 
 // ── NDA ACCEPTANCES (Global bypass registry) ──────────────────────────────────

@@ -41,7 +41,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     // ── NDA GUARD ────────────────────────────────────────────────────────────
     // If this room requires NDA and the user is NOT signing the combined message,
     // check that they've already signed the NDA independently first.
-    if (room.ndaEnabled && !isCombined) {
+    const effectiveNdaEnabled = room.ndaEnabled && room.kind === "PROPOSAL";
+    if (effectiveNdaEnabled && !isCombined) {
       const identifier = cleanWallet;
       const ndaSigned = await hasEmailSignedNda(identifier, room.ndaVersion);
       if (!ndaSigned) {
@@ -61,7 +62,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     if (room.openSign && (!token || typeof token !== "string")) {
       // Combined mode: NDA + Deal in one signature
       const ts = String(ndaTimestamp ?? new Date().toISOString());
-      const message = isCombined && room.ndaEnabled
+      const message = isCombined && effectiveNdaEnabled
         ? buildCombinedSignMessage({
             email: cleanWallet,
             name: cleanName,
@@ -94,7 +95,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       }
 
       // If combined, record NDA acceptance atomically
-      if (isCombined && room.ndaEnabled) {
+      if (isCombined && effectiveNdaEnabled) {
         const ip = request.headers.get("x-forwarded-for") ?? undefined;
         const ua = request.headers.get("user-agent") ?? undefined;
         await recordNdaAcceptance({
@@ -184,7 +185,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
         ]);
       }
 
-      return NextResponse.json({ ok: true, status: updated?.status, ndaRecorded: isCombined && room.ndaEnabled });
+      return NextResponse.json({ ok: true, status: updated?.status, ndaRecorded: isCombined && effectiveNdaEnabled });
     }
 
     if (!token || typeof token !== "string") {
@@ -202,7 +203,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     }
 
     const ts = String(ndaTimestamp ?? new Date().toISOString());
-    const message = isCombined && room.ndaEnabled
+    const message = isCombined && effectiveNdaEnabled
       ? buildCombinedSignMessage({
           email: payload.email,
           name: cleanName,

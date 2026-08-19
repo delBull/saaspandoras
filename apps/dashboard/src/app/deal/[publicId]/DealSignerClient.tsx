@@ -9,6 +9,8 @@ import { client } from "@/lib/thirdweb-client";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
 import { buildCombinedSignMessage } from "@/lib/nexus-deals/nda-content";
 import { NDAModal } from "@/components/modals/NDAModal";
+import { DealAttachments } from "./DealAttachments";
+import { DealComments } from "./DealComments";
 
 interface PublicSection {
   code: string;
@@ -104,13 +106,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const unlocked = Boolean(initialEmail && rawToken) || isOpenSign;
   const signerId = isOpenSign ? (account?.address?.toLowerCase() ?? "") : (initialEmail ?? "");
   const ndaVersion = room.ndaVersion ?? "v1.0";
+  const effectiveNdaEnabled = room.ndaEnabled && isProposal;
 
   // ── NDA CHECK ON MOUNT ───────────────────────────────────────────────────
   // Once we know the wallet/email, check if NDA is needed and if already signed.
   useEffect(() => {
-    if (!room.ndaEnabled) { setNdaStep("none"); return; }
+    if (!effectiveNdaEnabled) { setNdaStep("none"); return; }
     const identifier = isOpenSign ? account?.address?.toLowerCase() : initialEmail?.toLowerCase();
-    if (!identifier) { setNdaStep(room.ndaEnabled ? "required" : "none"); return; }
+    if (!identifier) { setNdaStep(effectiveNdaEnabled ? "required" : "none"); return; }
 
     fetch(`/api/public/deals/${publicId}/nda?${isOpenSign ? "wallet" : "email"}=${encodeURIComponent(identifier)}`)
       .then((r) => r.json())
@@ -123,7 +126,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
         }
       })
       .catch(() => setNdaStep("required"));
-  }, [room.ndaEnabled, account?.address, initialEmail, isOpenSign, publicId]);
+  }, [effectiveNdaEnabled, account?.address, initialEmail, isOpenSign, publicId]);
 
   // NDA is now part of the combined signing flow — no separate NDA step needed.
 
@@ -155,7 +158,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
     if (!isOpenSign && !rawToken) return;
 
     // Auto-detect combined: NDA required but not yet recorded → single on-chain signature
-    const needsNda = room.ndaEnabled && ndaStep === "required";
+    const needsNda = effectiveNdaEnabled && ndaStep === "required";
     if (needsNda && !ndaChecked) {
       setSignError("Debes aceptar el Acuerdo de Confidencialidad para continuar.");
       return;
@@ -168,7 +171,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       const ts = new Date().toISOString();
 
       // Combined when: NDA required+checked (first time), or NDA already signed/bypassed
-      const usesCombined = room.ndaEnabled && (needsNda || ndaStep === "signed" || ndaStep === "bypassed");
+      const usesCombined = effectiveNdaEnabled && (needsNda || ndaStep === "signed" || ndaStep === "bypassed");
       const companyVal = signCompany.trim() || undefined;
       const message = usesCombined
         ? buildCombinedSignMessage({
@@ -207,7 +210,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token: isOpenSign ? undefined : rawToken,
+          token: rawToken ?? undefined,
           name,
           company: companyVal,
           wallet: account.address,
@@ -263,9 +266,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 </span>
               </div>
               <h1 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
-                {room.counterparty}
+                {room.summary || KIND_LABEL[room.kind]}
               </h1>
-              <p className="text-[11px] font-mono text-zinc-500 mt-1">{room.company}</p>
+              <div className="mt-2 mb-4">
+                <p className="text-[14px] font-medium text-zinc-300">{room.counterparty}</p>
+                <p className="text-[11px] font-mono text-zinc-500">{room.company}</p>
+              </div>
 
               {isProposal && (
                 <div className="mt-4 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.06]">
@@ -341,6 +347,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                           {line}
                         </p>
                       ))}
+                      {unlocked && (
+                        <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
+                      )}
                     </div>
                   )}
                 </div>
@@ -415,14 +424,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 )}
 
                 {/* ── NDA BLOCK ─────────────────────────────────────────── */}
-                {room.ndaEnabled && ndaStep === "loading" && (
+                {effectiveNdaEnabled && ndaStep === "loading" && (
                   <div className="flex items-center gap-2 p-3 rounded-lg border border-white/10 bg-black/30">
                     <Loader2 className="w-3.5 h-3.5 text-zinc-500 animate-spin shrink-0" />
                     <p className="text-[11px] text-zinc-500">Verificando estado del NDA…</p>
                   </div>
                 )}
 
-                {room.ndaEnabled && ndaStep === "bypassed" && (
+                {effectiveNdaEnabled && ndaStep === "bypassed" && (
                   <div className="flex items-start gap-2 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06]">
                     <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0 mt-0.5" />
                     <div>
@@ -432,7 +441,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </div>
                 )}
 
-                {room.ndaEnabled && (ndaStep === "signed") && (
+                {effectiveNdaEnabled && (ndaStep === "signed") && (
                   <div className="flex items-start gap-2 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06]">
                     <Check className="w-4 h-4 text-emerald-300 shrink-0 mt-0.5" />
                     <div>
@@ -442,7 +451,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </div>
                 )}
 
-                {room.ndaEnabled && ndaStep === "required" && (
+                {effectiveNdaEnabled && ndaStep === "required" && (
                   <AnimatePresence>
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
@@ -512,10 +521,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
                 {/* ── SIGNING FORM ────────────────────────────────────────── */}
                 {/* Unified: NDA checkbox (if required) + name + wallet + single sign button */}
-                {(!room.ndaEnabled || ndaStep === "signed" || ndaStep === "bypassed" || ndaStep === "none" || (ndaStep === "required" && ndaChecked)) && (
+                {(!effectiveNdaEnabled || ndaStep === "signed" || ndaStep === "bypassed" || ndaStep === "none" || (ndaStep === "required" && ndaChecked)) && (
                   <>
                     <h3 className="text-sm font-semibold text-white">
-                      {room.ndaEnabled && (ndaStep === "signed" || ndaStep === "bypassed")
+                      {effectiveNdaEnabled && (ndaStep === "signed" || ndaStep === "bypassed")
                         ? (isProposal ? "Aceptar propuesta" : "Firmar documento")
                         : (isProposal ? "Aceptar y confirmar" : "Firmar documento")}
                     </h3>
@@ -523,7 +532,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       {isProposal
                         ? "Confirma que has leído la propuesta y estás de acuerdo con su contenido para continuar la colaboración. Tu identidad queda registrada por tu wallet y la firma es verificada on-chain."
                         : "Ingresa tu nombre y conecta tu cuenta para firmar este documento. Tu identidad queda registrada por tu wallet y la firma es verificada on-chain."}
-                      {room.ndaEnabled && (ndaStep === "signed" || ndaStep === "bypassed") && (
+                      {effectiveNdaEnabled && (ndaStep === "signed" || ndaStep === "bypassed") && (
                         <> El Acuerdo de Confidencialidad ({ndaVersion}) quedará registrado como aceptado globalmente.</>
                       )}
                     </p>
@@ -588,6 +597,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     </p>
                   </>
                 )}
+                
+                {/* ── ATTACHMENTS ────────────────────────────────────────── */}
+                <DealAttachments publicId={publicId} rawToken={rawToken} />
               </motion.div>
             ) : null}
           </div>

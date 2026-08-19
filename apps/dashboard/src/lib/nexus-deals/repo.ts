@@ -9,7 +9,9 @@ import {
 import { eq, and, desc, or } from "drizzle-orm";
 import { newRoomId, generatePublicId, defaultSections, SignerInput, DealKind } from "./types";
 import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
-import { sendDealRoomReleaseEmail } from "@/lib/email/nexus-mailer";
+import { sendDealAvailableEmail } from "./email";
+import { generateDealToken } from "./tokens";
+import { KIND_LABEL } from "./types";
 
 export interface CreateRoomInput {
   kind: DealKind;
@@ -288,13 +290,23 @@ async function syncRoomSignStatus(roomId: string) {
         // Enviar correos a todos los firmantes
         const allNextSigners = [...existingNextSigners, ...newSigners.map(s => s.email)];
         for (const email of allNextSigners) {
-           await sendDealRoomReleaseEmail({
-              email,
-              roomLabel: nextRoom.publicId,
-              publicId: nextRoom.publicId,
-              company: nextRoom.company,
+           const token = generateDealToken(nextRoom.id, nextRoom.publicId, email);
+           const magicUrl = `https://dash.pandoras.finance/deal/${nextRoom.publicId}?token=${encodeURIComponent(token)}`;
+           
+           await sendDealAvailableEmail({
+              to: email,
+              dealKindLabel: KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind,
               counterparty: nextRoom.counterparty,
+              company: nextRoom.company,
+              publicId: nextRoom.publicId,
+              previousRoomPublicId: room.publicId,
+              magicUrl,
            });
+           
+           // Si el usuario era un "nuevo firmante" en este documento, se marca como magic link enviado
+           if (newSigners.some(s => s.email === email)) {
+               await markMagicSent(nextRoom.id, email);
+           }
         }
 
         // Alerta de Discord

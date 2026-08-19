@@ -248,7 +248,6 @@ export async function sendDealSignedEmail(input: {
 /**
  * Email de notificación: un documento ha sido desbloqueado y está listo para revisión/firma.
  * Se envía cuando el room chaining libera un nuevo deal room tras la firma del previo.
- */
 export async function sendDealAvailableEmail(input: {
   to: string;
   firstName?: string;
@@ -258,10 +257,11 @@ export async function sendDealAvailableEmail(input: {
   publicId: string;
   previousRoomPublicId: string;
   baseUrl?: string;
+  magicUrl?: string;
 }) {
-  const { to, firstName, dealKindLabel, counterparty, company, publicId, previousRoomPublicId, baseUrl } = input;
+  const { to, firstName, dealKindLabel, counterparty, company, publicId, previousRoomPublicId, baseUrl, magicUrl } = input;
   const base = baseUrl ?? "https://dash.pandoras.finance";
-  const dealUrl = `${base}/deal/${publicId}`;
+  const dealUrl = magicUrl ?? `${base}/deal/${publicId}`;
   const date = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
   const html = `<!DOCTYPE html>
 <html lang="es">

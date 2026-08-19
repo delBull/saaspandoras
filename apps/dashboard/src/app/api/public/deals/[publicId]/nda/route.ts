@@ -32,8 +32,9 @@ export async function GET(
       return NextResponse.json({ error: "Deal no encontrado" }, { status: 404 });
     }
 
-    // If NDA is not enabled for this room, return quickly
-    if (!room.ndaEnabled) {
+    // If NDA is not enabled for this room, or it is not a PROPOSAL, return quickly
+    const effectiveNdaEnabled = room.ndaEnabled && room.kind === "PROPOSAL";
+    if (!effectiveNdaEnabled) {
       return NextResponse.json({
         ndaEnabled: false,
         ndaVersion: room.ndaVersion,
@@ -99,7 +100,8 @@ export async function POST(
     if (!room) {
       return NextResponse.json({ error: "Deal no encontrado" }, { status: 404 });
     }
-    if (!room.ndaEnabled) {
+    const effectiveNdaEnabled = room.ndaEnabled && room.kind === "PROPOSAL";
+    if (!effectiveNdaEnabled) {
       return NextResponse.json({ error: "Este deal no requiere NDA." }, { status: 400 });
     }
 
