@@ -740,13 +740,21 @@ export default function DealRoomConsole() {
                     >
                       <Copy className="w-3 h-3" /> LINK PÚBLICO
                     </button>
-                    {["SIGNED", "EXECUTING", "EXECUTED"].includes(selected.status) && (
+                    {["SIGNED", "EXECUTING", "EXECUTED"].includes(selected.status) ? (
                       <button
-                        onClick={() => window.open(`${window.location.origin}/deal/${selected.publicId}`, '_blank')}
+                        onClick={() => window.open(`${window.location.origin}/nexus/print/${selected.publicId}`, '_blank')}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-[9px] font-mono text-emerald-200 hover:bg-emerald-500/20 transition-colors"
-                        title="Abrir vista pública para descargar PDF"
+                        title="Generar y descargar PDF (Firmado)"
                       >
                         <Download className="w-3 h-3" /> DESCARGAR PDF
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => window.open(`${window.location.origin}/nexus/print/${selected.publicId}`, '_blank')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-[9px] font-mono text-amber-200 hover:bg-amber-500/20 transition-colors"
+                        title="Generar y descargar PDF (Borrador)"
+                      >
+                        <Download className="w-3 h-3" /> DESCARGAR BORRADOR
                       </button>
                     )}
                     <button
