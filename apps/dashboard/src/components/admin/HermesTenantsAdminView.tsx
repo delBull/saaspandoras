@@ -31,13 +31,19 @@ export function HermesTenantsAdminView() {
     fetchTenants();
   }, []);
 
-  const handleProvision = async (tenantId: string | number) => {
+  const handleProvision = async (tenant: any) => {
     try {
-      toast.loading(`Aprovisionando Hermes OS para tenant #${tenantId}...`);
+      toast.loading(`Aprovisionando Hermes OS para tenant #${tenant.id}...`);
+      const leadIdToUse = tenant.applicantEmail || `${tenant.slug}@pandoras.finance`; // Fallback email to trigger auto-creation
       const res = await fetch('/api/v1/admin/provision', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leadId: tenantId, product: 'HERMES', plan: 'starter' }),
+          body: JSON.stringify({ 
+            leadId: leadIdToUse, 
+            existingProjectId: tenant.id, 
+            product: 'HERMES', 
+            plan: 'starter' 
+          }),
       });
       const d = await res.json();
       toast.dismiss();
@@ -45,7 +51,7 @@ export function HermesTenantsAdminView() {
           toast.success(`🚀 ¡Hermes Aprovisionado! Magic URL generada.`);
           fetchTenants();
       } else {
-          toast.error(`Aprovisionamiento completado con fallback demo.`);
+          toast.error(`Error: ${d.error || 'Aprovisionamiento completado con fallback demo.'}`);
           fetchTenants();
       }
     } catch (e: any) { 
@@ -148,7 +154,7 @@ export function HermesTenantsAdminView() {
                   {!isProvisioned ? (
                     <Button
                       size="sm"
-                      onClick={() => handleProvision(t.id)}
+                      onClick={() => handleProvision(t)}
                       className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white border border-purple-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                     >
                       <Bot className="w-3.5 h-3.5" />
