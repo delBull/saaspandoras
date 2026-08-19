@@ -520,7 +520,7 @@ export default function DealRoomConsole() {
               />
               <input
                 type="text"
-                placeholder="Relación (ej. Strategic Partner)"
+                placeholder="Nombre del Trato / Acuerdo (ej. Inversión Serie A)"
                 value={nrRelation}
                 onChange={(e) => setNrRelation(e.target.value)}
                 className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
@@ -740,9 +740,28 @@ export default function DealRoomConsole() {
                     >
                       <Copy className="w-3 h-3" /> LINK PÚBLICO
                     </button>
+                    {selected.ndaEnabled && (
+                      <button
+                        onClick={() => {
+                          const url = new URL(`${window.location.origin}/nexus/print/${selected.publicId}/nda`);
+                          const unlock = new URLSearchParams(window.location.search).get('unlock');
+                          if (unlock) url.searchParams.set('unlock', unlock);
+                          window.open(url.toString(), '_blank');
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 text-[9px] font-mono text-purple-200 hover:bg-purple-500/20 transition-colors"
+                        title="Generar y descargar NDA (Firmado)"
+                      >
+                        <ShieldCheck className="w-3 h-3" /> DESCARGAR NDA
+                      </button>
+                    )}
                     {["SIGNED", "EXECUTING", "EXECUTED"].includes(selected.status) ? (
                       <button
-                        onClick={() => window.open(`${window.location.origin}/nexus/print/${selected.publicId}`, '_blank')}
+                        onClick={() => {
+                          const url = new URL(`${window.location.origin}/nexus/print/${selected.publicId}`);
+                          const unlock = new URLSearchParams(window.location.search).get('unlock');
+                          if (unlock) url.searchParams.set('unlock', unlock);
+                          window.open(url.toString(), '_blank');
+                        }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-[9px] font-mono text-emerald-200 hover:bg-emerald-500/20 transition-colors"
                         title="Generar y descargar PDF (Firmado)"
                       >
@@ -750,7 +769,12 @@ export default function DealRoomConsole() {
                       </button>
                     ) : (
                       <button
-                        onClick={() => window.open(`${window.location.origin}/nexus/print/${selected.publicId}`, '_blank')}
+                        onClick={() => {
+                          const url = new URL(`${window.location.origin}/nexus/print/${selected.publicId}`);
+                          const unlock = new URLSearchParams(window.location.search).get('unlock');
+                          if (unlock) url.searchParams.set('unlock', unlock);
+                          window.open(url.toString(), '_blank');
+                        }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-[9px] font-mono text-amber-200 hover:bg-amber-500/20 transition-colors"
                         title="Generar y descargar PDF (Borrador)"
                       >

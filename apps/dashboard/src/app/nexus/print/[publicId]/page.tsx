@@ -6,14 +6,27 @@ export const dynamic = "force-dynamic";
 
 export default async function PrintDealRoomPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ publicId: string }>;
+  searchParams: Promise<{ unlock?: string }>;
 }) {
   const { publicId } = await params;
+  const { unlock } = await searchParams;
   const { session, isVerified } = await getAuth();
   
-  // Basic admin check (could also check unlock token if needed, but this is admin print)
-  if (!isVerified || !session?.address || !(await isAdmin(session.address))) {
+  let authorized = false;
+  
+  if (isVerified && session?.address && (await isAdmin(session.address))) {
+    authorized = true;
+  }
+  
+  if (!authorized && typeof unlock === "string" && unlock) {
+    const { verifyUnlockToken } = await import("@/lib/nexus-deals/tokens");
+    authorized = await verifyUnlockToken(unlock);
+  }
+  
+  if (!authorized) {
     return <div className="p-8 text-red-500 font-mono">No autorizado</div>;
   }
 
