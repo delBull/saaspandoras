@@ -3325,6 +3325,8 @@ export const nexusDealSigners = pgTable("nexus_deal_signers", {
   wallet: text("wallet"),
   signature: text("signature"),
   signatureMessage: text("signature_message"),
+  signatureCompany: text("signature_company"),
+  signatureRole: text("signature_role"),
 }, (table) => ({
   roomEmailIdx: uniqueIndex("nexus_signers_room_email_idx").on(table.roomId, table.email),
 }));
@@ -3371,6 +3373,8 @@ export const nexusNdaAcceptances = pgTable("nexus_nda_acceptances", {
   wallet: text("wallet"),
   signature: text("signature"),
   signatureMessage: text("signature_message"),
+  signatureCompany: text("signature_company"),
+  signatureRole: text("signature_role"),
   // Room where NDA was first accepted (traceability)
   firstRoomId: uuid("first_room_id").references(() => nexusDealRooms.id, { onDelete: "set null" }),
   ip: text("ip"),

@@ -21,7 +21,7 @@ export function generateDealToken(roomId: string, publicId: string, email: strin
     email,
     roomId,
   };
-  return jwt.sign(payload, DEAL_TOKEN_SECRET, { expiresIn: DEAL_TOKEN_EXPIRY });
+  return jwt.sign(payload, DEAL_TOKEN_SECRET!, { expiresIn: DEAL_TOKEN_EXPIRY });
 }
 
 export function verifyDealToken(token: string): DealTokenPayload | null {

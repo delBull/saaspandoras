@@ -324,3 +324,55 @@ export async function sendDealAvailableEmail(input: {
     html,
   });
 }
+
+/**
+ * Email de notificación de trato cancelado.
+ */
+export async function sendDealCancelledEmail(input: {
+  to: string;
+  firstName?: string;
+  dealKindLabel: string;
+  counterparty: string;
+  publicId: string;
+}) {
+  const { to, firstName, dealKindLabel, counterparty, publicId } = input;
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pandora's — Trato Cancelado</title></head>
+<body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080C;">
+    <tr><td align="center" style="padding:40px 16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:540px;margin:0 auto;background:#0F0F18;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#330505 0%,#1a0a0a 100%);padding:30px 32px 24px;text-align:center;">
+            <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(239,68,68,0.7);margin-bottom:12px;">PANDORA'S NEXUS · TRANSACTION ROOMS</div>
+            <div style="font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;margin-bottom:6px;">Documento Cancelado</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);">${dealKindLabel} · ${counterparty}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 32px;">
+            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.75);text-align:center;">
+              <span style="color:#ffffff;font-weight:600;">${firstName ? `Hola ${firstName}` : "Hola"}</span>,<br/><br/>
+              Te notificamos que las negociaciones o el proceso de firma para <strong style="color:#ffffff;font-weight:600;">${dealKindLabel}</strong> (${publicId}) han sido formalmente <strong style="color:#ef4444;font-weight:600;">cancelados</strong> desde el Deal Room de Pandora's.<br/><br/>
+              Los enlaces mágicos previos han sido invalidados y el acceso al documento ha sido revocado.
+            </p>
+            <p style="margin:20px 0 0;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;">
+              Si consideras que esto es un error o tienes alguna duda, responde a este correo.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#080810;padding:14px 28px;border-top:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);text-align:center;">Pandora's Group · Confidential · Transaction Room</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  return resend.emails.send({ from: FROM, to, subject: `Pandora's — Negociación Cancelada · ${publicId}`, html });
+}
+

@@ -48,6 +48,8 @@ export function buildNdaSignMessage(params: {
 /** Combined sign message: NDA + Deal in one on-chain transaction */
 export function buildCombinedSignMessage(params: {
   email: string;
+  name: string;
+  company?: string;
   wallet: string;
   publicId: string;
   dealKind: string;
@@ -70,6 +72,7 @@ export function buildCombinedSignMessage(params: {
     `El ${params.dealKind} ${params.publicId} queda firmado por la presente.`,
     ``,
     `Identidad: ${params.email}`,
+    params.company ? `Nombre: ${params.name}, como representante legal de ${params.company}` : `Nombre: ${params.name}`,
     `Wallet: ${params.wallet}`,
     `Timestamp: ${params.timestamp}`,
     `NDA Version: ${version}`,

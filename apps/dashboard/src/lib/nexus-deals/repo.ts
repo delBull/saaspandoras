@@ -343,7 +343,7 @@ export async function signRoom(
   roomId: string,
   email: string,
   name: string,
-  opts: { wallet?: string; signature?: string; signatureMessage?: string } = {}
+  opts: { wallet?: string; signature?: string; signatureMessage?: string; company?: string; role?: string } = {}
 ) {
   const now = new Date();
   await db
@@ -355,6 +355,8 @@ export async function signRoom(
       wallet: opts.wallet ?? null,
       signature: opts.signature ?? null,
       signatureMessage: opts.signatureMessage ?? null,
+      signatureCompany: opts.company ?? null,
+      signatureRole: opts.role ?? null,
     })
     .where(and(eq(nexusDealSigners.roomId, roomId), eq(nexusDealSigners.email, email)));
 
@@ -390,7 +392,7 @@ export async function signRoom(
 export async function signRoomOnline(
   roomId: string,
   name: string,
-  opts: { wallet: string; signature: string; signatureMessage: string }
+  opts: { wallet: string; signature: string; signatureMessage: string; company?: string; role?: string }
 ) {
   const now = new Date();
   const email = opts.wallet.toLowerCase();
@@ -411,6 +413,8 @@ export async function signRoomOnline(
         wallet: opts.wallet,
         signature: opts.signature,
         signatureMessage: opts.signatureMessage,
+        signatureCompany: opts.company ?? null,
+        signatureRole: opts.role ?? null,
       })
       .where(eq(nexusDealSigners.id, existing[0].id));
   } else {
@@ -423,6 +427,8 @@ export async function signRoomOnline(
       wallet: opts.wallet,
       signature: opts.signature,
       signatureMessage: opts.signatureMessage,
+      signatureCompany: opts.company ?? null,
+      signatureRole: opts.role ?? null,
     });
   }
 
@@ -625,6 +631,8 @@ export async function recordNdaAcceptance(input: {
   wallet?: string;
   signature?: string;
   signatureMessage?: string;
+  signatureCompany?: string;
+  signatureRole?: string;
   roomId?: string;
   ip?: string;
   userAgent?: string;
@@ -641,6 +649,8 @@ export async function recordNdaAcceptance(input: {
         wallet: input.wallet ?? null,
         signature: input.signature ?? null,
         signatureMessage: input.signatureMessage ?? null,
+        signatureCompany: input.signatureCompany ?? null,
+        signatureRole: input.signatureRole ?? null,
         firstRoomId: input.roomId ?? null,
         ip: input.ip ?? null,
         userAgent: input.userAgent ?? null,

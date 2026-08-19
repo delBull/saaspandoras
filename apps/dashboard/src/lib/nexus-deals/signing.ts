@@ -4,6 +4,7 @@ export interface SignMessageInput {
   counterparty: string;
   email: string;
   name: string;
+  company?: string;
 }
 
 /**
@@ -17,6 +18,6 @@ export function buildSignMessage(input: SignMessageInput): string {
     `Documento: ${input.kind}`,
     `Parte: ${input.counterparty}`,
     `Firmante: ${input.email}`,
-    `Nombre: ${input.name}`,
+    input.company ? `Nombre: ${input.name}, como representante legal de ${input.company}` : `Nombre: ${input.name}`,
   ].join("\n");
 }

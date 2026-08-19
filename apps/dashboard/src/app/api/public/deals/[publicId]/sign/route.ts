@@ -16,12 +16,15 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   try {
-    const { token, name, wallet, signature, isCombined, ndaTimestamp } = await request.json();
+    const { token, name, company, wallet, signature, isCombined, ndaTimestamp } = await request.json();
 
     const room = await getRoomByPublicId((await params).publicId);
     if (!room) return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
 
     const cleanName = String(name ?? "").trim();
+    const cleanCompany = typeof company === "string" ? company.trim() : undefined;
+    const cleanRole = cleanCompany ? "Representante Legal" : undefined;
+
     if (!cleanName) {
       return NextResponse.json({ error: "Ingresa tu nombre para firmar." }, { status: 400 });
     }
@@ -61,6 +64,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       const message = isCombined && room.ndaEnabled
         ? buildCombinedSignMessage({
             email: cleanWallet,
+            name: cleanName,
+            company: cleanCompany,
             wallet: cleanWallet,
             publicId: room.publicId,
             dealKind: room.kind,
@@ -74,6 +79,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
             counterparty: room.counterparty,
             email: cleanWallet,
             name: cleanName,
+            company: cleanCompany,
           });
 
       const signatureValid = await verifySignature({
@@ -97,6 +103,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
           wallet: cleanWallet,
           signature: cleanSig,
           signatureMessage: message,
+          signatureCompany: cleanCompany,
+          signatureRole: cleanRole,
           roomId: room.id,
           ip,
           userAgent: ua,
@@ -141,6 +149,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
         wallet: cleanWallet,
         signature: cleanSig,
         signatureMessage: message,
+        company: cleanCompany,
+        role: cleanRole,
       });
 
       await sendSignatureAlert({
@@ -195,6 +205,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     const message = isCombined && room.ndaEnabled
       ? buildCombinedSignMessage({
           email: payload.email,
+          name: cleanName,
+          company: cleanCompany,
           wallet: cleanWallet,
           publicId: room.publicId,
           dealKind: room.kind,
@@ -208,6 +220,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
           counterparty: room.counterparty,
           email: payload.email,
           name: cleanName,
+          company: cleanCompany,
         });
 
     const signatureValid = await verifySignature({
@@ -226,6 +239,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       wallet: cleanWallet,
       signature: cleanSig,
       signatureMessage: message,
+      company: cleanCompany,
+      role: cleanRole,
     });
 
     await sendSignatureAlert({

@@ -88,7 +88,7 @@ export async function GET(request: Request) {
     });
 
     const results = await Promise.all(processingPromises);
-    remindersSent = results.reduce((acc, val) => acc + val, 0);
+    remindersSent = results.reduce((acc, val) => acc + val, 0 as number);
 
     return NextResponse.json({ success: true, remindersSent });
   } catch (error) {

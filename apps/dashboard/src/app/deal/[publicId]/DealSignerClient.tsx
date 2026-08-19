@@ -86,6 +86,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
   const [openSection, setOpenSection] = useState(room.sections[0]?.code ?? "01");
   const [signName, setSignName] = useState("");
+  const [signCompany, setSignCompany] = useState("");
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
@@ -168,9 +169,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
       // Combined when: NDA required+checked (first time), or NDA already signed/bypassed
       const usesCombined = room.ndaEnabled && (needsNda || ndaStep === "signed" || ndaStep === "bypassed");
+      const companyVal = signCompany.trim() || undefined;
       const message = usesCombined
         ? buildCombinedSignMessage({
             email: emailId,
+            name,
+            company: companyVal,
             wallet: account.address.toLowerCase(),
             publicId,
             dealKind: room.kind,
@@ -184,6 +188,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             counterparty: room.counterparty,
             email: emailId,
             name,
+            company: companyVal,
           });
 
       let signature = "";
@@ -204,6 +209,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
         body: JSON.stringify({
           token: isOpenSign ? undefined : rawToken,
           name,
+          company: companyVal,
           wallet: account.address,
           signature,
           // NDA combined flow fields
@@ -530,6 +536,20 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         onChange={(e) => setSignName(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                       />
+                      <input
+                        type="text"
+                        placeholder="Empresa a la que representas (opcional)"
+                        value={signCompany}
+                        onChange={(e) => setSignCompany(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                      />
+                      
+                      {signName && (
+                        <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] text-[11px] text-amber-200/80 italic">
+                          Firmarás como: <strong className="text-amber-300 not-italic">{signName}</strong>
+                          {signCompany ? <>, representante legal de <strong className="text-amber-300 not-italic">{signCompany}</strong></> : ""}
+                        </div>
+                      )}
 
                       {account?.address ? (
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/[0.06]">

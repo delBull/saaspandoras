@@ -20,6 +20,8 @@ import {
   Eye,
   Scale,
   ShieldCheck,
+  XCircle,
+  Ban,
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 
@@ -55,10 +57,11 @@ interface Room {
   counterparty: string;
   relation: string;
   company: string;
-  status: "DRAFT" | "PROPOSAL_SENT" | "REVIEW" | "ACCEPTED" | "SIGNED" | "EXECUTING" | "EXECUTED";
+  status: "DRAFT" | "PROPOSAL_SENT" | "REVIEW" | "ACCEPTED" | "SIGNED" | "EXECUTING" | "EXECUTED" | "CANCELLED";
   summary?: string | null;
   taskRef?: string | null;
   openSign?: boolean | null;
+  nextRoomId?: string | null;
   enteredIntoForceAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -94,6 +97,7 @@ const STATUS_LABEL: Record<Room["status"], string> = {
   SIGNED: "Firmada",
   EXECUTING: "En Ejecución",
   EXECUTED: "Ejecutada",
+  CANCELLED: "Cancelada",
 };
 const STATUS_ACCENT: Record<Room["status"], string> = {
   DRAFT: "border-zinc-500/20 bg-zinc-500/10 text-zinc-300",
@@ -103,8 +107,9 @@ const STATUS_ACCENT: Record<Room["status"], string> = {
   SIGNED: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
   EXECUTING: "border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
   EXECUTED: "border-amber-400/20 bg-amber-400/10 text-amber-200",
+  CANCELLED: "border-red-500/20 bg-red-500/10 text-red-300",
 };
-const STATUS_ORDER: Room["status"][] = ["DRAFT", "PROPOSAL_SENT", "REVIEW", "ACCEPTED", "SIGNED", "EXECUTING", "EXECUTED"];
+const STATUS_ORDER: Room["status"][] = ["DRAFT", "PROPOSAL_SENT", "REVIEW", "ACCEPTED", "SIGNED", "EXECUTING", "EXECUTED", "CANCELLED"];
 const SIGNER_LABEL: Record<Signer["status"], string> = {
   PENDING: "Pendiente",
   MAGIC_SENT: "Magic link enviado",
@@ -163,6 +168,7 @@ export default function DealRoomConsole() {
   const [signersInput, setSignersInput] = useState("");
   const [sharing, setSharing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const apiUrl = (path: string) => {
     const unlock = new URLSearchParams(window.location.search).get("unlock");
@@ -186,6 +192,34 @@ export default function DealRoomConsole() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const organizedRooms = useMemo(() => {
+    const rootRooms = rooms.filter(r => !rooms.some(parent => parent.nextRoomId === r.id));
+    const list: (Room & { depth: number })[] = [];
+    const visited = new Set<string>();
+
+    const addTree = (room: Room, depth: number) => {
+      if (visited.has(room.id)) return;
+      visited.add(room.id);
+      list.push({ ...room, depth });
+      const children = rooms.filter(r => r.id === room.nextRoomId);
+      for (const child of children) {
+        addTree(child, depth + 1);
+      }
+    };
+
+    for (const root of rootRooms) {
+      addTree(root, 0);
+    }
+
+    for (const room of rooms) {
+      if (!visited.has(room.id)) {
+        list.push({ ...room, depth: 0 });
+      }
+    }
+
+    return list;
+  }, [rooms]);
 
   const selected = useMemo(() => rooms.find((r) => r.id === selectedId) ?? null, [rooms, selectedId]);
   const activeSection = useMemo(
@@ -403,6 +437,17 @@ export default function DealRoomConsole() {
     }
   };
 
+  const cancelRoom = async (notify: boolean) => {
+    if (!selected) return;
+    setConfirmCancel(false);
+    try {
+      await patch(selected.id, { status: "CANCELLED", notifyCancel: notify });
+      flashMsg("✓ Trato cancelado" + (notify ? " · notificaciones enviadas" : ""));
+    } catch (e: any) {
+      flashMsg(`✗ ${e.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#08080A] flex items-center justify-center text-white font-sans">
@@ -541,42 +586,46 @@ export default function DealRoomConsole() {
           )}
 
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {rooms.length === 0 && (
+            {organizedRooms.length === 0 && (
               <p className="text-[10px] font-mono text-zinc-600 p-2">Sin Transaction Rooms. Crea la primera.</p>
             )}
-            {rooms.map((room) => {
+            {organizedRooms.map((room) => {
               const active = room.id === selectedId;
               const signed = room.signers.filter((s) => s.status === "SIGNED").length;
               return (
-                <button
-                  key={room.id}
-                  onClick={() => {
-                    setSelectedId(room.id);
-                    setSectionId("01");
-                    setView("sections");
-                    setEditingId(null);
-                  }}
-                  className={`w-full text-left p-3 rounded-xl border transition-all ${
-                    active ? "border-amber-500/40 bg-amber-500/[0.06]" : "border-white/10 bg-[#08080A] hover:border-white/25"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.counterparty}</span>
-                    <ChevronRight className={`w-3 h-3 shrink-0 ${active ? "text-amber-300" : "text-zinc-600"}`} />
-                  </div>
-                  <p className="text-[9px] font-mono text-zinc-500 truncate mt-0.5">{room.relation} · {room.publicId}</p>
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border ${KIND_BADGE[room.kind]}`}>
-                      {room.kind}
-                    </span>
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border ${STATUS_ACCENT[room.status]}`}>
-                      {STATUS_LABEL[room.status]}
-                    </span>
-                    {room.signers.length > 0 && (
-                      <span className="ml-auto text-[8px] font-mono text-zinc-600">{signed}/{room.signers.length} firmas</span>
-                    )}
-                  </div>
-                </button>
+                <div key={room.id} className="relative" style={{ marginLeft: `${room.depth * 1.5}rem` }}>
+                  {room.depth > 0 && (
+                    <div className="absolute -left-4 top-1/2 -mt-4 w-4 h-6 border-l border-b border-white/20 rounded-bl-xl" />
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedId(room.id);
+                      setSectionId("01");
+                      setView("sections");
+                      setEditingId(null);
+                    }}
+                    className={`w-full text-left p-3 rounded-xl border transition-all ${
+                      active ? "border-amber-500/40 bg-amber-500/[0.06]" : "border-white/10 bg-[#08080A] hover:border-white/25"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.counterparty}</span>
+                      <ChevronRight className={`w-3 h-3 shrink-0 ${active ? "text-amber-300" : "text-zinc-600"}`} />
+                    </div>
+                    <p className="text-[9px] font-mono text-zinc-500 truncate mt-0.5">{room.relation} · {room.publicId}</p>
+                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border ${KIND_BADGE[room.kind]}`}>
+                        {room.kind}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border ${STATUS_ACCENT[room.status]}`}>
+                        {STATUS_LABEL[room.status]}
+                      </span>
+                      {room.signers.length > 0 && (
+                        <span className="ml-auto text-[8px] font-mono text-zinc-600">{signed}/{room.signers.length} firmas</span>
+                      )}
+                    </div>
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -689,8 +738,16 @@ export default function DealRoomConsole() {
                       <Copy className="w-3 h-3" /> LINK PÚBLICO
                     </button>
                     <button
+                      onClick={() => setConfirmCancel(true)}
+                      className="p-2 text-zinc-500 hover:text-red-400 transition-colors rounded-md hover:bg-red-500/10"
+                      title="Cancelar Negociación"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                    </button>
+                    <button
                       onClick={() => setConfirmDelete(true)}
                       className="p-2 text-zinc-500 hover:text-rose-400 transition-colors rounded-md hover:bg-rose-500/10"
+                      title="Eliminar Trato"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -984,6 +1041,58 @@ export default function DealRoomConsole() {
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   SÍ, ELIMINAR
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {confirmCancel && selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md rounded-2xl border border-red-500/20 bg-[#0C0C10] overflow-hidden"
+          >
+            <div className="h-1 bg-gradient-to-r from-amber-500 to-red-500" />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="flex items-center justify-center w-10 h-10 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300">
+                  <Ban className="w-4 h-4" />
+                </span>
+                <div>
+                  <p className="text-[9px] font-mono uppercase tracking-widest text-amber-300">Pandora's Nexus · Transaction Room</p>
+                  <h3 className="text-base font-semibold text-white">¿Cancelar Documento?</h3>
+                </div>
+              </div>
+
+              <p className="text-[12px] text-zinc-300 leading-relaxed mb-4">
+                Se cancelará el documento de{' '}
+                <span className="text-white font-semibold">{selected.counterparty}</span> ({selected.publicId}).
+                Esto invalidará cualquier enlace mágico activo.
+              </p>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => cancelRoom(true)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 text-[11px] font-mono transition-colors"
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  CANCELAR Y NOTIFICAR FIRMANTES
+                </button>
+                <button
+                  onClick={() => cancelRoom(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-black/40 hover:bg-zinc-800/80 border border-white/10 text-zinc-400 hover:text-white text-[11px] font-mono transition-colors"
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  CANCELAR SILENCIOSAMENTE
+                </button>
+                <button
+                  onClick={() => setConfirmCancel(false)}
+                  className="mt-2 text-[11px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  VOLVER
                 </button>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { validateDealRoomAccess } from "@/lib/admin-auth";
 import { getRoom, updateRoom, updateSection, deleteRoom, addSigners, removeSigner, addSection, convertToAgreement, enableNdaForRoom } from "@/lib/nexus-deals/repo";
 import { DealKind } from "@/lib/nexus-deals/types";
 import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
+import { sendDealCancelledEmail } from "@/lib/nexus-deals/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,6 +60,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (typeof body.openSign === "boolean") patch.openSign = body.openSign;
       const after = await updateRoom(patch as any);
       updated = after!;
+
+      if (body.status === "CANCELLED" && body.notifyCancel) {
+        const KIND_LABEL: Record<string, string> = {
+          PROPOSAL: "Propuesta de Colaboración",
+          AGREEMENT: "Acuerdo",
+          CONTRACT: "Contrato",
+          AMENDMENT: "Enmienda",
+          CHARTER: "Documento Fundacional",
+        };
+        const label = KIND_LABEL[updated.kind] || "Documento";
+        for (const s of updated.signers) {
+          if (s.email && s.status !== "SIGNED") {
+            await sendDealCancelledEmail({
+              to: s.email,
+              dealKindLabel: label,
+              counterparty: updated.counterparty,
+              publicId: updated.publicId,
+            }).catch(e => console.error("Error sending cancel email to", s.email, e));
+          }
+        }
+      }
     }
 
     if (Array.isArray(body.signers) && body.signers.length > 0) {
