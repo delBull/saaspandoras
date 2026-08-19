@@ -208,6 +208,16 @@ export async function POST(req: NextRequest) {
       resolutionMethod = 'client_default';
     }
 
+    // HARDCODE HERMES:
+    // If the modal explicitly sent "hermes", we assign it to Pandora's Access (ID 15)
+    // to avoid creating a fake project in the DB, but we keep a flag to name it Hermes later.
+    let isHermesLead = false;
+    if (projectId === 'hermes' || targetProjectId === 51) {
+      targetProjectId = 15; // Pandora's Access DB ID
+      isHermesLead = true;
+      resolutionMethod = 'explicit_hermes_override';
+    }
+
     console.error(`[Growth OS] 🎯 Project Resolved: ID=${targetProjectId}, Method=${resolutionMethod}, Requested=${projectId}`);
 
     // ── TENANT SCOPE ENFORCEMENT ──────────────────────────────────────────────
@@ -539,8 +549,8 @@ export async function POST(req: NextRequest) {
           lead: { ...result, phoneNumber: resolvedPhone } as any,
           project: {
             id: targetProjectId,
-            slug: projectContext.slug,
-            name: projectContext?.title || 'Protocolo Ecosystem',
+            slug: isHermesLead ? 'hermes' : projectContext.slug,
+            name: isHermesLead ? 'Hermes AI' : (projectContext?.title || 'Protocolo Ecosystem'),
             businessCategory: projectContext?.businessCategory || 'other',
             differentiator: projectContext?.tagline || projectContext?.description || null,
             discordWebhookUrl: projectContext?.discordWebhookUrl || null,

@@ -86,7 +86,8 @@ export const ProvisioningEngine = {
     }
 
     // ── Step 1: Load lead or client (by ID or Email) ─────────────────────
-    const isEmail = leadId.includes('@');
+    const leadIdStr = String(leadId);
+    const isEmail = leadIdStr.includes('@');
 
     let lead = await db.query.marketingLeads.findFirst({
       where: isEmail ? eq(marketingLeads.email, leadId) : eq(marketingLeads.id, leadId),

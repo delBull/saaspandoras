@@ -493,7 +493,7 @@ export default function AdminDashboardPage() {
   // But we still need to gate the sensitive content
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="p-3 sm:p-4 md:p-6 pb-28 md:pb-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white">Admin Dashboard</h1>
