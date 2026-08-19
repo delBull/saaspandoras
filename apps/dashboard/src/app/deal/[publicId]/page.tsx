@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getRoomByPublicId, getRoom, publicRoomView } from "@/lib/nexus-deals/repo";
+import { getRoomByPublicId, getRoom, publicRoomView, hasEmailSignedNda } from "@/lib/nexus-deals/repo";
 import { verifyDealToken } from "@/lib/nexus-deals/tokens";
 import { KIND_LABEL } from "@/lib/nexus-deals/types";
 import DealSignerClient from "./DealSignerClient";
@@ -21,10 +21,22 @@ export default async function DealPublicPage({
 
   // Token mágico válido → identidad del firmante (solo se muestra a su dueño)
   let signerEmail: string | null = null;
+  let expectedWallet: string | null = null;
+
   if (typeof token === "string" && token) {
     const payload = verifyDealToken(token);
     if (payload && payload.sub === publicId && payload.type === "deal_access") {
       signerEmail = payload.email;
+      
+      const signer = room.signers.find((s) => s.email === signerEmail);
+      if (signer?.wallet) {
+        expectedWallet = signer.wallet;
+      } else {
+        const ndaRecord = await hasEmailSignedNda(signerEmail, room.ndaVersion || "v1.0");
+        if (ndaRecord?.wallet) {
+          expectedWallet = ndaRecord.wallet;
+        }
+      }
     }
   }
 
@@ -46,6 +58,7 @@ export default async function DealPublicPage({
       room={view}
       initialEmail={signerEmail}
       rawToken={signerEmail ? token ?? null : null}
+      expectedWallet={expectedWallet}
     />
   );
 }

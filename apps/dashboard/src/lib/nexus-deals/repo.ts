@@ -9,7 +9,7 @@ import {
 import { eq, and, desc, or } from "drizzle-orm";
 import { newRoomId, generatePublicId, defaultSections, SignerInput, DealKind } from "./types";
 import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
-import { sendDealAvailableEmail } from "./email";
+import { sendDealMagicLink } from "./email";
 import { generateDealToken } from "./tokens";
 import { KIND_LABEL } from "./types";
 
@@ -293,14 +293,11 @@ async function syncRoomSignStatus(roomId: string) {
            const token = generateDealToken(nextRoom.id, nextRoom.publicId, email);
            const magicUrl = `https://dash.pandoras.finance/deal/${nextRoom.publicId}?token=${encodeURIComponent(token)}`;
            
-           await sendDealAvailableEmail({
+           await sendDealMagicLink({
               to: email,
               dealKindLabel: KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind,
               counterparty: nextRoom.counterparty,
-              company: nextRoom.company,
-              publicId: nextRoom.publicId,
-              previousRoomPublicId: room.publicId,
-              magicUrl,
+              publicUrl: magicUrl,
            });
            
            // Si el usuario era un "nuevo firmante" en este documento, se marca como magic link enviado

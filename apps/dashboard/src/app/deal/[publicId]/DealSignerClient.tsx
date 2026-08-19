@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet, ShieldCheck, ChevronDown, ChevronUp, AlertTriangle, Download } from "lucide-react";
-import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
+import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet, ShieldCheck, ChevronDown, ChevronUp, AlertTriangle, Download, XCircle } from "lucide-react";
+import { useActiveAccount, useActiveWallet, ConnectButton, darkTheme, useDisconnect } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
@@ -44,8 +44,8 @@ const KIND_LABEL: Record<PublicRoom["kind"], string> = {
   PROPOSAL: "Propuesta de Colaboración",
   AGREEMENT: "Acuerdo",
   CONTRACT: "Contrato",
-  AMENDMENT: "Enmienda",
-  CHARTER: "Documento Fundacional",
+  AMENDMENT: "Adenda",
+  CHARTER: "Acta Constitutiva",
 };
 
 // Wallets disponibles para firmar: el in-app (social/email/passkey) se mantiene
@@ -78,9 +78,10 @@ interface Props {
   room: PublicRoom;
   initialEmail: string | null;
   rawToken: string | null;
+  expectedWallet?: string | null;
 }
 
-export default function DealSignerClient({ publicId, room, initialEmail, rawToken }: Props) {
+export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet }: Props) {
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [sendingMagic, setSendingMagic] = useState(false);
@@ -101,6 +102,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [ndaModalOpen, setNdaModalOpen] = useState(false);  // open full document modal
 
   const account = useActiveAccount();
+  const activeWallet = useActiveWallet();
+  const { disconnect } = useDisconnect();
+  
   const isProposal = room.kind === "PROPOSAL";
   const isOpenSign = Boolean(room.openSign);
   const unlocked = Boolean(initialEmail && rawToken) || isOpenSign;
@@ -231,8 +235,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   };
 
   return (
-    <main className="min-h-screen bg-[#08080A] text-zinc-100 font-sans flex flex-col">
-      <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] border-b border-white/10 font-mono">
+    <main className="min-h-screen bg-[#08080A] print:bg-white text-zinc-100 print:text-black font-sans flex flex-col">
+      <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] print:hidden border-b border-white/10 font-mono">
         <div className="flex items-center gap-3 min-w-0">
           <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 shrink-0">
             <Handshake className="w-4 h-4" />
@@ -252,25 +256,37 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       </header>
 
       {unlocked ? (
-        <div className="flex-1 flex flex-col md:flex-row min-h-0">
+        <div className="flex-1 flex flex-col md:flex-row min-h-0 print:block">
           {/* Document */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible">
           <div className="max-w-3xl mx-auto">
             <div className="mb-6">
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border border-amber-500/30 bg-amber-500/10 text-amber-300">
-                  {KIND_LABEL[room.kind]}
-                </span>
-                <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border border-white/10 bg-black/40 text-zinc-400">
-                  {room.relation}
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border border-amber-500/30 bg-amber-500/10 text-amber-300 print:border-black print:text-black print:bg-transparent">
+                    {KIND_LABEL[room.kind]}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border border-white/10 bg-black/40 text-zinc-400 print:border-black print:text-black print:bg-transparent">
+                    {room.relation}
+                  </span>
+                </div>
+                
+                {["SIGNED", "EXECUTING", "EXECUTED"].includes(room.status) && (
+                  <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-white/20 bg-white/5 hover:bg-white/10 text-[11px] font-mono text-zinc-300 transition-colors print:hidden"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    DESCARGAR PDF
+                  </button>
+                )}
               </div>
-              <h1 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
+              <h1 className="text-2xl md:text-3xl font-semibold text-white print:text-black tracking-tight">
                 {room.summary || KIND_LABEL[room.kind]}
               </h1>
               <div className="mt-2 mb-4">
-                <p className="text-[14px] font-medium text-zinc-300">{room.counterparty}</p>
-                <p className="text-[11px] font-mono text-zinc-500">{room.company}</p>
+                <p className="text-[14px] font-medium text-zinc-300 print:text-black">{room.counterparty}</p>
+                <p className="text-[11px] font-mono text-zinc-500 print:text-black">{room.company}</p>
               </div>
 
               {isProposal && (
@@ -322,7 +338,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               )}
 
               {room.summary && (
-                <p className="mt-4 text-[12px] text-zinc-400 leading-relaxed">{room.summary}</p>
+                <p className="mt-4 text-[12px] text-zinc-400 print:text-black leading-relaxed">{room.summary}</p>
               )}
             </div>
 
@@ -342,13 +358,15 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   {openSection === sec.code && (
                     <div className="px-4 pb-4 space-y-1.5">
                       {sec.content.split("\n").filter(Boolean).map((line, i) => (
-                        <p key={i} className="text-[12px] text-zinc-300 leading-relaxed">
-                          <span className="text-zinc-600 font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                        <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed">
+                          <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
                           {line}
                         </p>
                       ))}
                       {unlocked && (
-                        <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
+                        <div className="print:hidden">
+                          <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
+                        </div>
                       )}
                     </div>
                   )}
@@ -380,8 +398,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
           />
         </div>
 
-        {/* Side action panel */}
-        <aside className="shrink-0 w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-l border-white/10 bg-[#0C0C10] p-5">
+          {/* Sidebar / Sign Box */}
+          <div className="w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 bg-[#08080A] print:hidden flex flex-col">
           <div className="max-w-sm mx-auto md:mx-0">
             {signed ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] text-center">
@@ -561,13 +579,45 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       )}
 
                       {account?.address ? (
-                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/[0.06]">
-                          <Wallet className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Cuenta conectada</p>
-                            <p className="text-[10px] font-mono text-zinc-300 truncate">{account.address}</p>
+                        expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase() ? (
+                          <div className="flex flex-col gap-2 px-3 py-2.5 rounded-lg border border-rose-500/40 bg-rose-500/[0.06]">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-mono uppercase tracking-widest text-rose-400">Cuenta incorrecta</p>
+                                <p className="text-[10px] font-mono text-zinc-300 truncate">{account.address}</p>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-rose-300/80 leading-relaxed">
+                              Esta sesión está vinculada a otra cuenta (<span className="font-mono text-rose-200">{expectedWallet.slice(0,6)}...{expectedWallet.slice(-4)}</span>). No puedes proceder con una cuenta diferente.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => { if (activeWallet) disconnect(activeWallet); }}
+                              className="w-full mt-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-200 text-[11px] font-mono transition-colors"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              DESCONECTAR
+                            </button>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/[0.06]">
+                            <div className="flex items-center gap-2">
+                              <Wallet className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Cuenta conectada</p>
+                                <p className="text-[10px] font-mono text-zinc-300 truncate">{account.address}</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => { if (activeWallet) disconnect(activeWallet); }}
+                              className="text-[10px] font-mono text-emerald-400/70 hover:text-emerald-300 transition-colors underline decoration-emerald-400/30 underline-offset-2"
+                            >
+                              Salir
+                            </button>
+                          </div>
+                        )
                       ) : (
                         <div className="rounded-lg border border-white/10 bg-black/40 p-3">
                           <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet (MetaMask, Coinbase, Rabby...) o tu cuenta social para firmar (gratis · sin gas):</p>
@@ -585,7 +635,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <button
                         type="button"
                         onClick={handleSign}
-                        disabled={signing || !signName.trim() || !account?.address}
+                        disabled={signing || !signName.trim() || !account?.address || (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())}
                         className={SIGN_BUTTON_STYLE}
                       >
                         {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
@@ -603,8 +653,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </motion.div>
             ) : null}
           </div>
-        </aside>
         </div>
+      </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="w-full max-w-md mx-auto mt-8 md:mt-16">

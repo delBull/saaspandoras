@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   XCircle,
   Ban,
+  Download,
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 
@@ -735,10 +736,19 @@ export default function DealRoomConsole() {
                     </button>
                     <button
                       onClick={copyPublicLink}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] font-mono hover:bg-amber-500/20 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-[9px] font-mono text-amber-200 hover:bg-amber-500/20 transition-colors"
                     >
                       <Copy className="w-3 h-3" /> LINK PÚBLICO
                     </button>
+                    {["SIGNED", "EXECUTING", "EXECUTED"].includes(selected.status) && (
+                      <button
+                        onClick={() => window.open(`${window.location.origin}/deal/${selected.publicId}`, '_blank')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-[9px] font-mono text-emerald-200 hover:bg-emerald-500/20 transition-colors"
+                        title="Abrir vista pública para descargar PDF"
+                      >
+                        <Download className="w-3 h-3" /> DESCARGAR PDF
+                      </button>
+                    )}
                     <button
                       onClick={() => setConfirmCancel(true)}
                       className="p-2 text-zinc-500 hover:text-red-400 transition-colors rounded-md hover:bg-red-500/10"

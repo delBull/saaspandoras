@@ -15,7 +15,7 @@ export async function POST(
 
   try {
     const { roomId } = await params;
-    const { author, content } = await request.json();
+    const { author, content, sectionCode = "00" } = await request.json();
 
     if (!author || !content) {
       return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 });
@@ -24,6 +24,7 @@ export async function POST(
     // Insert comment
     const [comment] = await db.insert(nexusDealComments).values({
       roomId,
+      sectionCode,
       author,
       content,
     }).returning();
