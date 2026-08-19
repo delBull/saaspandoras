@@ -126,6 +126,8 @@ const shortAt = (iso: string) =>
   });
 
 function nextStep(room: Room): { label: string; status: Room["status"] } | null {
+  if (room.nextRoomId) return null; // If already chained/converted, hide next local step
+
   switch (room.status) {
     case "DRAFT":
       return { label: "Enviar Propuesta", status: "PROPOSAL_SENT" };
@@ -756,26 +758,38 @@ export default function DealRoomConsole() {
 
                 {/* Stepper */}
                 <div className="flex items-center gap-1 mt-3 overflow-x-auto pb-0.5">
-                  {STATUS_ORDER.map((s, i) => {
-                    const done = i <= progressIndex;
-                    return (
-                      <div key={s} className="flex items-center">
-                        <div
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[8px] font-mono uppercase tracking-wider whitespace-nowrap ${
-                            done
-                              ? i === progressIndex
-                                ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                                : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                              : "border-white/10 bg-black/40 text-zinc-600"
-                          }`}
-                        >
-                          {done && i < progressIndex && <Check className="w-2.5 h-2.5" />}
-                          {STATUS_LABEL[s]}
+                  {(() => {
+                    const steps = selected.nextRoomId 
+                      ? [...STATUS_ORDER.slice(0, STATUS_ORDER.indexOf("SIGNED") + 1), "CONTINUADO_EN_ACUERDO"]
+                      : STATUS_ORDER;
+
+                    return steps.map((s, i) => {
+                      const isSpecial = s === "CONTINUADO_EN_ACUERDO";
+                      const done = isSpecial ? true : i <= progressIndex;
+                      const label = isSpecial ? "CONTINUADO" : STATUS_LABEL[s as Room["status"]];
+                      
+                      return (
+                        <div key={s} className="flex items-center">
+                          <div
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[8px] font-mono uppercase tracking-wider whitespace-nowrap ${
+                              done
+                                ? isSpecial
+                                  ? "border-violet-500/40 bg-violet-500/10 text-violet-300"
+                                  : i === progressIndex
+                                    ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                                : "border-white/10 bg-black/40 text-zinc-600"
+                            }`}
+                          >
+                            {done && i < progressIndex && !isSpecial && <Check className="w-2.5 h-2.5" />}
+                            {isSpecial && <Scale className="w-2.5 h-2.5" />}
+                            {label}
+                          </div>
+                          {i < steps.length - 1 && <span className="w-2 h-px bg-white/10" />}
                         </div>
-                        {i < STATUS_ORDER.length - 1 && <span className="w-2 h-px bg-white/10" />}
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
@@ -809,7 +823,7 @@ export default function DealRoomConsole() {
                 </div>
                 {view === "sections" && (
                   <>
-                    {selected.kind === "PROPOSAL" && (
+                    {selected.kind === "PROPOSAL" && !selected.nextRoomId && (
                       <button
                         onClick={convertToAgreement}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 text-violet-200 text-[10px] font-mono tracking-wider transition-colors"
@@ -817,24 +831,31 @@ export default function DealRoomConsole() {
                         <Scale className="w-3 h-3" /> CONVERTIR EN ACUERDO LEGAL
                       </button>
                     )}
-                    <button
-                      onClick={addSection}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white text-[10px] font-mono tracking-wider transition-colors"
-                    >
-                      <Plus className="w-3 h-3" /> AGREGAR SECCIÓN
-                    </button>
-                    <button
-                      onClick={runAction}
-                      disabled={!nextStep(selected)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-colors ${
-                        nextStep(selected)
-                          ? "bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200"
-                          : "bg-white/5 border border-white/10 text-zinc-600 cursor-not-allowed"
-                      }`}
-                    >
-                      <Activity className="w-3 h-3" />
-                      {nextStep(selected) ? nextStep(selected)?.label : "COMPLETADA"}
-                    </button>
+                    {selected.kind === "PROPOSAL" && selected.nextRoomId && (
+                      <button
+                        disabled
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/40 border border-white/5 text-zinc-600 text-[10px] font-mono tracking-wider cursor-not-allowed"
+                      >
+                        <Scale className="w-3 h-3" /> CONVERTIDO A ACUERDO
+                      </button>
+                    )}
+                    {!selected.nextRoomId && (
+                      <button
+                        onClick={addSection}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white text-[10px] font-mono tracking-wider transition-colors"
+                      >
+                        <Plus className="w-3 h-3" /> AGREGAR SECCIÓN
+                      </button>
+                    )}
+                    {nextStep(selected) && (
+                      <button
+                        onClick={runAction}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-colors bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200"
+                      >
+                        <Activity className="w-3 h-3" />
+                        {nextStep(selected)!.label}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
