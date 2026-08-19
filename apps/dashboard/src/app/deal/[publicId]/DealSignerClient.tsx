@@ -601,8 +601,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/[0.06]">
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/[0.06]">
+                            <div className="flex items-center gap-2 min-w-0">
                               <Wallet className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Cuenta conectada</p>
@@ -612,7 +612,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             <button
                               type="button"
                               onClick={() => { if (activeWallet) disconnect(activeWallet); }}
-                              className="text-[10px] font-mono text-emerald-400/70 hover:text-emerald-300 transition-colors underline decoration-emerald-400/30 underline-offset-2"
+                              className="text-[10px] font-mono text-emerald-400/70 hover:text-emerald-300 transition-colors underline decoration-emerald-400/30 underline-offset-2 shrink-0"
                             >
                               Salir
                             </button>

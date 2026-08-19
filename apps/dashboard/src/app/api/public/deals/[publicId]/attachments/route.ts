@@ -5,8 +5,8 @@ import { db } from "@/db";
 import { nexusDealAttachments } from "@/db/schema";
 import { sendDealRoomAttachmentAlert } from "@/lib/nexus-deals/discord";
 import { eq, desc } from "drizzle-orm";
+import { put } from "@vercel/blob";
 import path from "path";
-import { mkdir, writeFile } from "fs/promises";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -74,17 +74,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Save locally
+    // Save to Vercel Blob
     const ext = path.extname(file.name);
     const uniqueSuffix = crypto.randomBytes(8).toString("hex");
-    const filename = `${room.publicId}_${uniqueSuffix}${ext}`;
+    const filename = `deal-rooms/${room.publicId}_${uniqueSuffix}${ext}`;
     
-    const uploadDir = path.join(process.cwd(), "public", "assets", "deal-rooms");
-    const filePath = path.join(uploadDir, filename);
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(filePath, buffer);
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      addRandomSuffix: false
+    });
     
-    const publicUrl = `/assets/deal-rooms/${filename}`;
+    const publicUrl = blob.url;
 
     const [attachment] = await db.insert(nexusDealAttachments).values({
       roomId: room.id,
