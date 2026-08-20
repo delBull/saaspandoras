@@ -157,6 +157,7 @@ export default function DealRoomConsole() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftContent, setDraftContent] = useState("");
   const [showNewRoom, setShowNewRoom] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [nrTitle, setNrTitle] = useState("");
   const [nrKind, setNrKind] = useState<Room["kind"]>("PROPOSAL");
@@ -198,7 +199,8 @@ export default function DealRoomConsole() {
   }, [load]);
 
   const organizedRooms = useMemo(() => {
-    const rootRooms = rooms.filter(r => !rooms.some(parent => parent.nextRoomId === r.id));
+    const filteredRooms = showArchived ? rooms : rooms.filter(r => r.status !== "CANCELLED");
+    const rootRooms = filteredRooms.filter(r => !filteredRooms.some(parent => parent.nextRoomId === r.id));
     const list: (Room & { depth: number })[] = [];
     const visited = new Set<string>();
 
@@ -206,7 +208,7 @@ export default function DealRoomConsole() {
       if (visited.has(room.id)) return;
       visited.add(room.id);
       list.push({ ...room, depth });
-      const children = rooms.filter(r => r.id === room.nextRoomId);
+      const children = filteredRooms.filter(r => r.id === room.nextRoomId);
       for (const child of children) {
         addTree(child, depth + 1);
       }
@@ -216,14 +218,14 @@ export default function DealRoomConsole() {
       addTree(root, 0);
     }
 
-    for (const room of rooms) {
+    for (const room of filteredRooms) {
       if (!visited.has(room.id)) {
         list.push({ ...room, depth: 0 });
       }
     }
 
     return list;
-  }, [rooms]);
+  }, [rooms, showArchived]);
 
   const selected = useMemo(() => rooms.find((r) => r.id === selectedId) ?? null, [rooms, selectedId]);
   const activeSection = useMemo(
@@ -503,7 +505,20 @@ export default function DealRoomConsole() {
         {/* Sidebar */}
         <aside className="hidden md:flex w-72 shrink-0 flex-col border-r border-white/10 bg-[#0C0C10]">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
-            <span className="text-[10px] font-mono tracking-widest text-zinc-400">ROOMS</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono tracking-widest text-zinc-400">ROOMS</span>
+              <button
+                onClick={() => setShowArchived(!showArchived)}
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+                  showArchived 
+                    ? "border-amber-500/40 bg-amber-500/10 text-amber-300" 
+                    : "border-white/10 text-zinc-500 hover:text-zinc-300"
+                }`}
+                title="Mostrar/Ocultar Archivados (Cancelados)"
+              >
+                {showArchived ? "OCULTAR ARCHIVO" : "VER ARCHIVO"}
+              </button>
+            </div>
             <button
               onClick={() => setShowNewRoom(true)}
               className="flex items-center gap-1 px-2 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[9px] font-mono hover:bg-amber-500/20 transition-colors"
