@@ -9,11 +9,16 @@ if (DATABASE_URL && !DATABASE_URL.includes("-pooler") && DATABASE_URL.includes("
 
 // Standard Next.js caching mechanism for Serverless
 const globalForNeon = globalThis as unknown as {
-  sqlInstance: ReturnType<typeof neon> | undefined;
+  sqlInstance: any | undefined;
 };
 
 // Use the highly resilient stateless HTTP driver for Vercel
-export const sqlInstance = globalForNeon.sqlInstance || neon(DATABASE_URL);
+const neonClient = neon(DATABASE_URL);
+
+// Type alias to satisfy typescript for legacy postgres-js calls
+export type LegacySql = ((strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>) & ReturnType<typeof neon>;
+
+export const sqlInstance = (globalForNeon.sqlInstance || neonClient) as LegacySql;
 
 // Shared singleton across ALL environments
 globalForNeon.sqlInstance = sqlInstance;
