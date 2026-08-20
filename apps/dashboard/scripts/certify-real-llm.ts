@@ -25,7 +25,7 @@ async function withRetry<T>(operation: () => Promise<T>, maxRetries = 20): Promi
       return await operation();
     } catch (e: any) {
       lastError = e;
-      if (e.code === 'ECONNRESET' || e.message.includes('ECONNRESET') || e.message.includes('socket disconnected') || e.message.includes('fetch failed')) {
+      if (e.code === 'ECONNRESET' || e.message.includes('ECONNRESET') || e.message.includes('socket disconnected') || e.message.includes('fetch failed') || e.cause?.code === 'ECONNRESET' || e.cause?.message?.includes('socket disconnected')) {
         console.warn(`[Retry ${i+1}/${maxRetries}] ECONNRESET/Network error, retrying in 5s...`);
         await new Promise(r => setTimeout(r, 5000));
         continue;

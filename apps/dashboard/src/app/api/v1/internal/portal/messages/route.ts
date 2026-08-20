@@ -9,8 +9,7 @@ import {
 import { db } from '@/db';
 import { portalOnboardingState } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { KnowledgeGovernanceService } from '@/lib/pandoras/core/domains/hermes/knowledge/service';
-import { KnowledgeDimension, KnowledgeStatus } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
+import { HermesOnboardingOrchestrator } from '@/lib/pandoras/core/domains/hermes/onboarding/orchestrator';
 
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
 import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
@@ -33,51 +32,7 @@ interface OrganizationOnboardingState {
   messages: PortalChatMessage[];
 }
 
-interface StageReply {
-  nextStage: OnboardingStage;
-  intentType: string;
-  objective: string;
-  replyText: string;
-}
-
-const STAGE_REPLIES: Record<OnboardingStage, StageReply> = {
-  BUSINESS_DISCOVERY: {
-    nextStage: 'IDENTITY_CONFIGURATION',
-    intentType: 'UPDATE_IDENTITY',
-    objective: 'Set business domain and focus',
-    replyText: 'Entendido. He registrado la actividad principal de {orgName}. Ahora configuremos la Identidad Operativa de Hermes: ¿Cuál es el tono de voz principal con el que debe dirigirse a tus clientes?'
-  },
-  IDENTITY_CONFIGURATION: {
-    nextStage: 'KNOWLEDGE_GATHERING',
-    intentType: 'UPDATE_IDENTITY',
-    objective: 'Set Hermes voice and tone profile',
-    replyText: 'Excelente, la identidad de voz está configurada. El siguiente paso es la Base de Conocimiento (KNOW). ¿Qué tipo de información o documentos principales usará Hermes para responder a tus clientes?'
-  },
-  KNOWLEDGE_GATHERING: {
-    nextStage: 'POLICY_DEFINITION',
-    intentType: 'CREATE_KNOWLEDGE_SOURCE',
-    objective: 'Register knowledge source requirements',
-    replyText: 'Perfecto, he tomado nota de la estructura de conocimiento. Ahora definamos las Políticas de Gobernanza: ¿Existe alguna regla o límite estricto para las respuestas de Hermes?'
-  },
-  POLICY_DEFINITION: {
-    nextStage: 'CHANNEL_SETUP',
-    intentType: 'UPDATE_POLICY_PACK',
-    objective: 'Enforce operational governance constraints',
-    replyText: 'Políticas de gobernanza registradas y activas. El paso final de la preparación es conectar el canal por donde Hermes atenderá clientes.'
-  },
-  CHANNEL_SETUP: {
-    nextStage: 'ACTIVATION',
-    intentType: 'CONFIGURE_CHANNEL_BINDING',
-    objective: 'Complete onboarding sequence',
-    replyText: '¡Excelente! Hermes ha completado la secuencia de onboarding inicial. Tu proyecto ya tiene estructura de Identidad, Conocimiento y Gobernanza activas.'
-  },
-  ACTIVATION: {
-    nextStage: 'ACTIVATION',
-    intentType: 'EXECUTE_QUERY',
-    objective: 'Ongoing customer operations',
-    replyText: 'He recibido tu mensaje. Estoy monitoreando las operaciones de {orgName}. ¿Hay alguna consulta o ajuste específico que quieras realizar?'
-  }
-};
+// Stage replies are now handled dynamically by HermesOnboardingOrchestrator.
 
 function getStageChips(stage: OnboardingStage): string[] {
   switch (stage) {
@@ -282,145 +237,45 @@ export async function POST(request: Request) {
     };
     state.messages.push(userMsg);
 
-    // KNOWLEDGE WIRING: Map onboarding responses to Knowledge Dimensions
-    let dimension: KnowledgeDimension | undefined;
-    let status: KnowledgeStatus = 'ACTIVE'; // Most structural knowledge is active by default
-    
-    switch (currentStage) {
-      case 'BUSINESS_DISCOVERY':
-        dimension = 'business_model';
-        break;
-      case 'IDENTITY_CONFIGURATION':
-        dimension = 'identity';
-        break;
-      case 'KNOWLEDGE_GATHERING':
-        dimension = 'project';
-        break;
-      case 'POLICY_DEFINITION':
-        dimension = 'governance';
-        status = 'PENDING_REVIEW'; // Policies and rules must be reviewed
-        break;
-    }
-
-    if (dimension && content.trim()) {
-      await KnowledgeGovernanceService.discover({
-        actorId: context.tenant.actorId,
-        organizationId: tenantId,
-        role: context.tenant.role as any,
-        permissions: context.tenant.permissions as any,
-        sessionId: context.tenant.sessionId
-      }, {
-        dimension,
-        key: `${dimension}_onboarding_${Date.now()}`,
-        content: content.trim(),
-        visibility: 'INTERNAL',
-        source: 'ONBOARDING_CONVERSATION',
-        sourceReference: normalizedInbound.message.messageId,
-        status
-      });
-    }
-
-    // 2. Advance Onboarding State Machine (source of truth: HermesOnboardingWorkflow.transitions)
-    const workflowTransitions = HermesOnboardingWorkflow.transitions?.[currentStage] ?? [];
-    const transitionTarget = workflowTransitions[0] ?? currentStage;
-    const reply = STAGE_REPLIES[currentStage];
-    const nextStage: OnboardingStage = transitionTarget as OnboardingStage;
-
-    const intent: OperationalIntent = {
-      id: `intent_${Date.now()}`,
-      organizationId: tenantId,
-      missionId: 'hermes.onboarding.v1',
-      packId: 'core',
-      packVersion: '1.0',
-      strategyDecisionId: `sd_${Date.now()}`,
-      objective: reply.objective,
-      intentType: reply.intentType,
-      rationale: `User provided context via Hermes onboarding during ${currentStage}`,
-      constraints: [],
-      approvalPolicy: { required: false },
-      approvals: [],
-      status: 'pending_approval',
-      createdAt: new Date(),
-      updatedAt: new Date()
+    // Delegate processing to HermesOnboardingOrchestrator
+    const orchestrator = new HermesOnboardingOrchestrator();
+    const currentMsg: RuntimeMessage = {
+      id: userMsg.id,
+      role: 'USER',
+      content: userMsg.content,
+      createdAt: new Date(userMsg.timestamp),
     };
 
-    eventBus.publish({
-      id: crypto.randomUUID(),
-      type: 'OPERATIONAL_INTENT_CREATED',
-      timestamp: new Date(),
-      instanceId: tenantId,
-      correlationId: normalizedInbound.correlationId,
-      payload: intent
-    } as any);
-
-    // 3. Advance stage & build Hermes reply
-    let replyText = reply.replyText.replace('{orgName}', orgName);
-    let stageChips = getStageChips(nextStage);
-
-    if (currentStage === 'ACTIVATION') {
-      // -------------------------------------------------------------------------
-      // K12-A04 — Runtime Entry Boundary
-      // In ACTIVATION stage, all cognitive responses must pass through HermesRuntime.
-      // The HTTP handler does NOT reason, does NOT build prompts, does NOT call
-      // CognitiveContextBuilder directly.
-      //
-      // K12-A07 — Conversation ≠ Knowledge
-      // The conversation history is passed as ephemeral context only.
-      // It does NOT grant authority or modify ACTIVE knowledge.
-      //
-      // K12-A08 — suggestedActions from Runtime (never fabricated by UI)
-      // -------------------------------------------------------------------------
-      const runtime = getDefaultRuntime();
-
-      const currentMsg: RuntimeMessage = {
-        id: userMsg.id,
-        role: 'USER',
-        content: userMsg.content,
-        createdAt: new Date(userMsg.timestamp),
-      };
-
-      // K12-A07: history as input, never as authority
-      // (Migrated to HermesRuntime memory provider in 6.12.5)
-      
-      const runtimeResponse = await runtime.respond({
-        organizationId: tenantId,
-        conversationId: `portal_${tenantId}`,
-        message: currentMsg,
-        // K12-A05: tenantId derived from resolvePortalContext — never trusted from client payload.
-        // Bridge to the ControlPlaneContext interface expected by HermesRuntime (knowledge/types.ts).
-        controlPlaneContext: {
-          actorId: context.tenant.actorId,
-          organizationId: context.tenant.organizationId,
-          role: context.tenant.role as any,
-          permissions: context.tenant.permissions as any,
-          sessionId: context.tenant.sessionId,
-        }
-      });
-
-      replyText = runtimeResponse.content;
-      // K12-A08: chips come from the Runtime, never fabricated by the Portal
-      stageChips = runtimeResponse.suggestedActions.length > 0
-        ? runtimeResponse.suggestedActions
-        : getStageChips('ACTIVATION');
-    }
+    const orchestratorResult = await orchestrator.processTurn(
+      tenantId,
+      currentStage,
+      currentMsg,
+      {
+        actorId: context.tenant.actorId,
+        organizationId: context.tenant.organizationId,
+        role: context.tenant.role as any,
+        permissions: context.tenant.permissions as any,
+        sessionId: context.tenant.sessionId,
+      }
+    );
 
     const hermesMsg: PortalChatMessage = {
       id: `hermes_${Date.now()}`,
       role: 'hermes',
-      content: replyText,
+      content: orchestratorResult.replyText,
       timestamp: new Date().toISOString(),
-      chips: stageChips
+      chips: orchestratorResult.chips
     };
     state.messages.push(hermesMsg);
-    state.stage = nextStage;
+    state.stage = orchestratorResult.nextStage;
 
     await saveState(tenantId, state);
 
     return NextResponse.json({
       success: true,
       stage: state.stage,
-      reply: replyText,
-      chips: getStageChips(state.stage),
+      reply: orchestratorResult.replyText,
+      chips: orchestratorResult.chips,
       messages: state.messages,
       correlationId: normalizedInbound.correlationId
     });
