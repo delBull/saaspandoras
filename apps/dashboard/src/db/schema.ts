@@ -3281,7 +3281,7 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   kind: nexusDealKindEnum("kind").notNull().default("PROPOSAL"),
   counterparty: text("counterparty").notNull(),
   relation: text("relation").notNull().default("Strategic Partner"),
-  company: text("company").notNull().default("Pandoras USA Operations LLC"),
+  company: text("company").notNull().default("MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V."),
   status: nexusDealStatusEnum("status").notNull().default("DRAFT"),
   summary: text("summary"),
   autoShare: boolean("auto_share").notNull().default(true),

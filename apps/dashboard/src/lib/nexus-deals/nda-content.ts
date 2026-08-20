@@ -3,7 +3,7 @@
  * Single source of truth for NDA text, sign message builders, and UI bullets.
  */
 
-export const NDA_VERSION = "v2.1";
+export const NDA_VERSION = "v2.2";
 
 export const NDA_TITLE =
   "Pandora's Ecosystem — Acuerdo de Confidencialidad, No Uso y Protección de Información Confidencial";
@@ -73,7 +73,7 @@ export function buildCombinedSignMessage(params: {
     `El ${params.dealKind} ${params.publicId} queda firmado por la presente.`,
     ``,
     `Identidad: ${params.email}`,
-    params.company ? `Nombre: ${params.name}, en representación de ${params.company} (${params.role || 'Representante Legal'})` : `Nombre: ${params.name}`,
+    params.company ? `Nombre: ${params.name}, en representación de ${params.company} (${params.role ?? 'Representante Legal'})` : `Nombre: ${params.name}`,
     `Wallet: ${params.wallet}`,
     `Timestamp: ${params.timestamp}`,
     `NDA Version: ${version}`,
@@ -82,12 +82,12 @@ export function buildCombinedSignMessage(params: {
 
 export const NDA_FULL_TEXT = `ACUERDO DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE INFORMACIÓN CONFIDENCIAL
 PANDORA'S ECOSYSTEM — CONFIDENTIALITY & NON-USE AGREEMENT
-Versión: 2.1
+Versión: 2.2
 Fecha de vigencia: La fecha de aceptación electrónica registrada en el Deal Room de Nexus.
 
 1. PARTES
 
-El presente Acuerdo (el "Acuerdo") se celebra entre PANDORA'S, incluyendo a la entidad jurídica que en cada momento sea titular, operadora, desarrolladora o administradora de los activos, productos, tecnologías, propiedad intelectual, infraestructura o negocios del ecosistema Pandora's (la "Parte Reveladora"); y la persona física o moral que acceda al presente Acuerdo mediante el Deal Room de Nexus, acepte electrónicamente sus términos o reciba acceso autorizado a Información Confidencial (el "Receptor").
+El presente Acuerdo (el "Acuerdo") constituye un instrumento legalmente vinculante emitido unilateralmente por MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. (titular y operadora de la marca Pandora's Finance y su ecosistema tecnológico), en lo sucesivo "Pandora's" o la "Parte Reveladora"; y la persona física o moral que acceda al presente Acuerdo mediante el Deal Room de Nexus, acepte electrónicamente sus términos o reciba acceso autorizado a Información Confidencial (el "Receptor").
 
 2. OBJETO
 
@@ -159,6 +159,6 @@ Este Acuerdo se regirá conforme a las leyes de los Estados Unidos Mexicanos.
 
 19. ACEPTACIÓN
 
-EL RECEPTOR DECLARA QUE HA LEÍDO, ENTENDIDO Y ACEPTADO ESTE ACUERDO DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE INFORMACIÓN CONFIDENCIAL. La aceptación electrónica realizada dentro del Deal Room de Nexus constituirá la manifestación de consentimiento del Receptor. No será necesaria una firma manuscrita cuando la aceptación electrónica sea jurídicamente atribuible al Receptor conforme a la legislación aplicable.
+EL RECEPTOR DECLARA QUE HA LEÍDO, ENTENDIDO Y ACEPTADO ESTE ACUERDO DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE INFORMACIÓN CONFIDENCIAL. La puesta a disposición de este documento a través de la plataforma constituye la voluntad formal de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. de obligarse en los términos aquí descritos. La firma o aceptación electrónica realizada dentro del Deal Room de Nexus constituirá la manifestación del consentimiento vinculante del Receptor para perfeccionar este Acuerdo, sin requerir firma adicional por parte de Pandora's.
 
-FIN DEL ACUERDO — PANDORA'S ECOSYSTEM · Versión 2.1`;
+FIN DEL ACUERDO — PANDORA'S ECOSYSTEM · Versión 2.2`;

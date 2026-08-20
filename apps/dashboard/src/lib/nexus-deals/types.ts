@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { nexusDealKindEnum, nexusDealStatusEnum } from "@/db/schema";
+import type { nexusDealKindEnum, nexusDealStatusEnum } from "@/db/schema";
 
 export type DealKind = (typeof nexusDealKindEnum.enumValues)[number];
 export type DealStatus = (typeof nexusDealStatusEnum.enumValues)[number];
@@ -68,7 +68,6 @@ const DEFAULT_COMP = [
 
 const DEFAULT_OVERVIEW = [
   "MXHUB Ecosistema Blockchain S.A. de C.V. (México) — matriz y titular de propiedad intelectual.",
-  "Pandoras USA Operations LLC (Delaware) — vehículo de operación y recepción de capital.",
   "Pandora's Nexus — Data Room institucional (Nivel 1) + Transaction Rooms (Nivel 2).",
   "Ecosistema: DeFi / RWA / credit intelligence · Hermes AI Platform · Growth OS.",
 ].join("\n");
@@ -95,21 +94,20 @@ const DEFAULT_DOCS = [
 ].join("\n");
 
 const DEFAULT_AGREEMENT = [
-  "Acuerdo de Sociedad Estratégica — v0.1.",
+  "Acuerdo de Sociedad Estratégica.",
   "Las enmiendas se registran con número secuencial y quedan firmadas en esta sección.",
-  "Términos económicos: ver Sección 03 (Compensation Framework).",
-  "El presente documento es un concepto; la firma electrónica se integra vía proveedor especializado (pending-esign).",
+  "Este documento constituye una oferta formal y vinculante por parte de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.",
 ].join("\n");
 
 const DEFAULT_SIGN = [
-  "Firma registrada como concepto (nombre + wallet) hasta integrar proveedor de firma electrónica certificada.",
-  "El registro de firma genera un evento inmutable en el audit trail.",
+  "La firma electrónica o aceptación mediante la plataforma por parte de la Contraparte perfecciona y da entrada en vigor al presente acuerdo, sin requerir firma adicional de nuestra parte.",
+  "El registro de firma genera un evento inmutable en el audit trail (nombre + wallet/email).",
   "Provider: pending-esign (DocuSign / HelloSign / equivalente).",
 ].join("\n");
 
 export function defaultSections(note?: string): DealSectionInput[] {
   return [
-    { code: "01", title: "Executive Proposal", subtitle: "Propuesta ejecutiva", content: note || "" },
+    { code: "01", title: "Executive Proposal", subtitle: "Propuesta ejecutiva", content: note ?? "" },
     { code: "02", title: "Role & Responsibilities", subtitle: "Rol y responsabilidades", content: DEFAULT_ROLE },
     { code: "03", title: "Compensation Framework", subtitle: "Marco de compensación", content: DEFAULT_COMP },
     { code: "04", title: "Company Overview", subtitle: "Panorama corporativo", content: DEFAULT_OVERVIEW },

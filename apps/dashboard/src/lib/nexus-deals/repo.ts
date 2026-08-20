@@ -6,8 +6,9 @@ import {
   nexusDealSigners,
   nexusNdaAcceptances,
 } from "@/db/schema";
-import { eq, and, desc, or } from "drizzle-orm";
-import { newRoomId, generatePublicId, defaultSections, SignerInput, DealKind } from "./types";
+import { eq, and, desc } from "drizzle-orm";
+import type { SignerInput, DealKind } from "./types";
+import { newRoomId, generatePublicId, defaultSections } from "./types";
 import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
 import { sendDealMagicLink } from "./email";
 import { generateDealToken } from "./tokens";
@@ -66,16 +67,16 @@ export async function createRoom(input: CreateRoomInput) {
   const actor = input.actor ?? "Nexus Ops";
   const now = new Date();
 
-  const [room] = await db
+  await db
     .insert(nexusDealRooms)
     .values({
       id,
       publicId,
-      title: input.title || "Acuerdo de Colaboración",
+      title: input.title ?? "Acuerdo de Colaboración",
       kind: input.kind,
       counterparty: input.counterparty,
       relation: input.relation ?? "Strategic Partner",
-      company: input.company ?? "Pandoras USA Operations LLC",
+      company: input.company ?? "MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.",
       status: "DRAFT",
       summary: input.summary ?? null,
       autoShare: true,
@@ -299,7 +300,7 @@ async function syncRoomSignStatus(roomId: string) {
            
            await sendDealMagicLink({
               to: email,
-              dealKindLabel: KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind,
+              dealKindLabel: KIND_LABEL[nextRoom.kind] ?? nextRoom.kind,
               counterparty: nextRoom.counterparty,
               publicUrl: magicUrl,
            });
@@ -622,7 +623,7 @@ export async function convertToAgreement(roomId: string, actor: string) {
  */
 export async function hasEmailSignedNda(
   email: string,
-  ndaVersion: string = "v1.0"
+  ndaVersion = "v1.0"
 ): Promise<{ acceptedAt: Date; wallet: string | null } | null> {
   const row = await db.query.nexusNdaAcceptances.findFirst({
     where: and(
