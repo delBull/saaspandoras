@@ -94,9 +94,23 @@ export async function POST(req: NextRequest) {
 
     if (activeProjectId && project) {
       // User has an explicit project
+      let installedId;
       const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);
-      const firstProduct = products && products.length > 0 ? products[0] : null;
-      installedId = firstProduct ? firstProduct.id : `inst_hermes_${activeProjectId}`;
+      
+      if (products && products.length > 0) {
+        installedId = products[0]!.id;
+      } else {
+        // Must insert the installedProduct to satisfy EXP-014 (no virtual sessions fallback)
+        const [newProduct] = await db.insert(installedProducts).values({
+          projectId: activeProjectId,
+          product: 'HERMES',
+          productFamily: 'GROWTH_OS',
+          plan: 'sandbox',
+          status: 'trial'
+        }).returning({ id: installedProducts.id });
+        installedId = newProduct!.id;
+      }
+      
       token = generatePortalToken(installedId, activeProjectId, 'hermes');
     } else {
       // 3. O1 - First login provisioning & O2 - Concurrent provisioning handling
