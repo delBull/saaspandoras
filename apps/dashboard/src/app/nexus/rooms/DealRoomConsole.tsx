@@ -647,7 +647,7 @@ export default function DealRoomConsole() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.title}</span>
+                      <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.relation || room.counterparty}</span>
                       <ChevronRight className={`w-3 h-3 shrink-0 ${active ? "text-amber-300" : "text-zinc-600"}`} />
                     </div>
                     <p className="text-[9px] font-mono text-zinc-500 truncate mt-0.5">{room.counterparty} {room.company && `· ${room.company}`} · {room.publicId}</p>
@@ -701,7 +701,7 @@ export default function DealRoomConsole() {
                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border ${KIND_BADGE[selected.kind]}`}>
                         {KIND_LABEL[selected.kind]}
                       </span>
-                      <h4 className="text-sm font-semibold text-zinc-100 truncate">{selected.title}</h4>
+                      <h4 className="text-sm font-semibold text-zinc-100 truncate">{selected.relation || selected.counterparty}</h4>
                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border ${STATUS_ACCENT[selected.status]}`}>
                         {STATUS_LABEL[selected.status]}
                       </span>
