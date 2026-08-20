@@ -243,7 +243,7 @@ export function ClientsManager() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="relative w-full max-w-sm">
                     <Input
                         placeholder="Buscar por email, nombre o wallet..."
@@ -252,24 +252,24 @@ export function ClientsManager() {
                         className="bg-zinc-900 border-zinc-800"
                     />
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setShowInfo(true)} className="text-zinc-500 hover:text-white">
+                <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                    <Button variant="ghost" size="icon" onClick={() => setShowInfo(true)} className="text-zinc-500 hover:text-white shrink-0">
                         <Info className="w-5 h-5" />
                     </Button>
-                    <Button variant="outline" onClick={() => window.open('/litepaper', '_blank')} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800">
+                    <Button variant="outline" onClick={() => window.open('/litepaper', '_blank')} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800 flex-1 md:flex-none">
                         <FileText className="w-4 h-4 mr-2" /> Ver Litepaper
                     </Button>
-                    <Button variant="outline" onClick={() => setShowTemplates(true)} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800">
+                    <Button variant="outline" onClick={() => setShowTemplates(true)} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800 flex-1 md:flex-none">
                         <FileText className="w-4 h-4 mr-2" /> Templates
                     </Button>
-                    <Button onClick={() => setShowNewClient(true)} className="bg-lime-500 text-black hover:bg-lime-400">
+                    <Button onClick={() => setShowNewClient(true)} className="bg-lime-500 text-black hover:bg-lime-400 w-full md:w-auto mt-2 md:mt-0">
                         <Plus className="w-4 h-4 mr-2" /> Nuevo Cliente
                     </Button>
                 </div>
             </div>
 
             {/* Product Family Filter Bar */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
                 <Badge
                     variant={selectedProductFilter === 'ALL' ? 'default' : 'outline'}
                     className={`cursor-pointer px-3 py-1 text-xs ${selectedProductFilter === 'ALL' ? 'bg-purple-600 hover:bg-purple-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}
@@ -302,19 +302,20 @@ export function ClientsManager() {
                     {loading ? (
                         <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-zinc-800 hover:bg-zinc-900">
-                                    <TableHead>Cliente</TableHead>
-                                    <TableHead>WhatsApp</TableHead>
-                                    <TableHead>Fuente / Producto</TableHead>
-                                    <TableHead>Activity</TableHead>
-                                    <TableHead>Stage</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredClients.map(client => {
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="border-zinc-800 hover:bg-zinc-900">
+                                        <TableHead>Cliente</TableHead>
+                                        <TableHead>WhatsApp</TableHead>
+                                        <TableHead>Fuente / Producto</TableHead>
+                                        <TableHead>Activity</TableHead>
+                                        <TableHead>Stage</TableHead>
+                                        <TableHead className="text-right">Acciones</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredClients.map(client => {
                                     const isHermesClient = client.source?.includes('hermes') || (client.metadata as any)?.product === 'HERMES';
                                     const isProvisioned = (client.metadata as any)?.provisioned === true || (client.metadata as any)?.installedProductId;
 
@@ -395,8 +396,9 @@ export function ClientsManager() {
                                     </TableRow>
                                     );
                                 })}
-                            </TableBody>
-                        </Table>
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>

@@ -68,9 +68,9 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
 
   return (
     <>
-      <div className="border-b border-zinc-700 mb-6">
-        <nav className="flex space-x-4">
-          <button onClick={() => setTab('projects')} className={`pb-2 font-semibold ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
+      <div className="border-b border-zinc-700 mb-6 overflow-x-auto scrollbar-hide pb-1">
+        <nav className="flex space-x-4 min-w-max">
+          <button onClick={() => setTab('projects')} className={`pb-2 font-semibold transition-colors ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Protocolos
           </button>
           <button onClick={() => setTab('users')} className={`pb-2 font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>

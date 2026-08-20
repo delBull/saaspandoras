@@ -62,7 +62,7 @@ export function HermesTenantsAdminView() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
-      <div className="flex justify-between items-center bg-zinc-900/60 p-6 rounded-2xl border border-purple-500/20 shadow-xl backdrop-blur-xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-900/60 p-6 rounded-2xl border border-purple-500/20 shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-2xl text-purple-400">
             <Sparkles className="w-8 h-8" />
@@ -83,7 +83,7 @@ export function HermesTenantsAdminView() {
         <Button 
           onClick={fetchTenants} 
           variant="outline"
-          className="border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white font-mono text-xs gap-2"
+          className="w-full md:w-auto border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white font-mono text-xs gap-2"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Sincronizar Runtimes
@@ -111,22 +111,22 @@ export function HermesTenantsAdminView() {
                 key={t.id}
                 className={`bg-zinc-900/60 border ${isProvisioned ? 'border-purple-500/30 hover:border-purple-500/60' : 'border-zinc-800/80'} p-6 rounded-2xl space-y-4 transition-all duration-300 group shadow-lg`}
               >
-                <div className="flex justify-between items-start">
-                  <div>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       {isProvisioned ? (
                         <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
                       ) : (
                         <span className="w-2 h-2 rounded-full bg-zinc-600" />
                       )}
-                      <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
+                      <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors truncate">
                         {t.title || t.slug}
                       </h3>
                     </div>
-                    <span className="text-[11px] text-zinc-500 font-mono">Slug: {t.slug} • Tenant ID: #{t.id}</span>
+                    <span className="text-[11px] text-zinc-500 font-mono block truncate">Slug: {t.slug} • Tenant ID: #{t.id}</span>
                   </div>
 
-                  <Badge variant="outline" className={`text-[10px] ${isProvisioned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                  <Badge variant="outline" className={`text-[10px] whitespace-nowrap ${isProvisioned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
                     {isProvisioned ? 'ONLINE' : 'UNPROVISIONED'}
                   </Badge>
                 </div>
@@ -146,8 +146,8 @@ export function HermesTenantsAdminView() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                  <span className="text-[10px] text-zinc-500">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 border-t border-white/5">
+                  <span className="text-[10px] text-zinc-500 break-all">
                     DB ID: #{t.id} • {t.applicantEmail || 'System Tenant'}
                   </span>
                   
@@ -155,7 +155,7 @@ export function HermesTenantsAdminView() {
                     <Button
                       size="sm"
                       onClick={() => handleProvision(t)}
-                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white border border-purple-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                      className="w-full sm:w-auto px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white border border-purple-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                     >
                       <Bot className="w-3.5 h-3.5" />
                       Aprovisionar Hermes

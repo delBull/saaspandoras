@@ -3277,6 +3277,7 @@ export const nexusSignerStatusEnum = pgEnum("nexus_signer_status", [
 export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   id: uuid("id").defaultRandom().primaryKey(),
   publicId: varchar("public_id", { length: 64 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull().default("Acuerdo de Colaboración"),
   kind: nexusDealKindEnum("kind").notNull().default("PROPOSAL"),
   counterparty: text("counterparty").notNull(),
   relation: text("relation").notNull().default("Strategic Partner"),

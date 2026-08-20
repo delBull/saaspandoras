@@ -75,9 +75,15 @@ export default async function PrintDealRoomPage({
             <div className="grid grid-cols-2 gap-8">
               {room.signers.map(s => (
                 <div key={s.id} className="border border-gray-300 p-4 rounded-lg">
-                  <p className="font-semibold text-lg">{s.signatureName || s.email}</p>
-                  <p className="text-sm text-gray-600 mb-4">{s.wallet || "Pendiente"}</p>
-                  
+                  {s.signatureCompany ? (
+                    <>
+                      <p className="font-bold text-lg uppercase">{s.signatureCompany}</p>
+                      <p className="text-sm text-gray-700 font-medium">Representante Legal: {s.signatureName} ({s.signatureRole || "Representante Legal"})</p>
+                    </>
+                  ) : (
+                    <p className="font-semibold text-lg">{s.signatureName || s.email}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mb-4 font-mono mt-1">Wallet: {s.wallet || "Pendiente"}</p>
                   {s.status === "SIGNED" ? (
                     <div className="text-sm text-green-700 font-mono">
                       <p>✓ FIRMADO ON-CHAIN</p>

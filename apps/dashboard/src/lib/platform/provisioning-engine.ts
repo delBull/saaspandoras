@@ -18,6 +18,7 @@
  *   9. Emit provision.complete event
  */
 
+import { CLIENT_SEQUENCE } from '@/lib/email/templates/hermes-email-sequences';
 import { db } from '@/db';
 import { projects, installedProducts, marketingLeads, clients } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -353,34 +354,26 @@ async function sendProvisioningEmail(opts: {
   portalUrl: string;
   trialEndsAt: Date;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey || !opts.to) return;
+  const template = CLIENT_SEQUENCE.find((s) => s.id === 'EMAIL_PAID_01');
+  if (!template) {
+    console.error('[ProvisioningEngine] EMAIL_PAID_01 template not found.');
+    return;
+  }
 
-  const trialEnd = opts.trialEndsAt.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' });
+  const html = template.html({
+    name: opts.name,
+    magicLinkUrl: opts.portalUrl,
+  });
 
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: `Pandora's Platform OS <hello@pandoras.finance>`,
-      to: [opts.to],
-      subject: `Tu acceso a ${opts.product} está listo`,
-      html: `<!DOCTYPE html><html><body style="background:#08080C;color:#fff;font-family:Helvetica,sans-serif;padding:40px;">
-        <div style="max-width:520px;margin:0 auto;background:#0F0F18;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:36px;">
-          <img src="https://dash.pandoras.finance/apple-touch-icon.png" width="40" style="margin-bottom:16px;border-radius:8px;"/>
-          <h2 style="margin:0 0 8px;font-size:22px;">Hola, ${opts.name}</h2>
-          <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.7;">
-            Tu acceso a <strong style="color:#a78bfa;">${opts.product}</strong> (Plan ${opts.plan}) ha sido activado.<br/>
-            Tu período de prueba finaliza el <strong>${trialEnd}</strong>.
-          </p>
-          <a href="${opts.portalUrl}" style="display:inline-block;margin-top:20px;padding:14px 32px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:15px;">
-            Acceder a tu Portal →
-          </a>
-          <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:24px;">
-            Este enlace es de un solo uso y expira en 7 días. Después de tu primer acceso, tu sesión se mantiene activa 30 días.
-          </p>
-        </div>
-      </body></html>`,
-    }),
-  }).catch(e => console.error('[ProvisioningEngine] Email send failed:', e));
+  try {
+    const { sendEmail } = await import('@/lib/email/client');
+    await sendEmail({
+      to: opts.to,
+      subject: template.subject,
+      html,
+    });
+    console.log(`[ProvisioningEngine] 📧 Day 0 Email sequence triggered for ${opts.to}`);
+  } catch (e) {
+    console.error('[ProvisioningEngine] Email sequence trigger failed:', e);
+  }
 }

@@ -90,6 +90,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [openSection, setOpenSection] = useState(room.sections[0]?.code ?? "01");
   const [signName, setSignName] = useState("");
   const [signCompany, setSignCompany] = useState("");
+  const [signRole, setSignRole] = useState("");
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
@@ -177,11 +178,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       // Combined when: NDA required+checked (first time), or NDA already signed/bypassed
       const usesCombined = effectiveNdaEnabled && (needsNda || ndaStep === "signed" || ndaStep === "bypassed");
       const companyVal = signCompany.trim() || undefined;
+      const roleVal = signRole.trim() || undefined;
       const message = usesCombined
         ? buildCombinedSignMessage({
             email: emailId,
             name,
             company: companyVal,
+            role: roleVal,
             wallet: account.address.toLowerCase(),
             publicId,
             dealKind: room.kind,
@@ -196,6 +199,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             email: emailId,
             name,
             company: companyVal,
+            role: roleVal,
           });
 
       let signature = "";
@@ -217,6 +221,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
           token: rawToken ?? undefined,
           name,
           company: companyVal,
+          role: roleVal,
           wallet: account.address,
           signature,
           // NDA combined flow fields
@@ -570,11 +575,26 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         onChange={(e) => setSignCompany(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                       />
+                      {signCompany && (
+                        <input
+                          type="text"
+                          placeholder="Cargo o rol legal en la empresa (Requerido)"
+                          value={signRole}
+                          onChange={(e) => setSignRole(e.target.value)}
+                          className="w-full bg-black/40 border border-amber-500/30 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500/60 transition-colors"
+                        />
+                      )}
                       
                       {signName && (
                         <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] text-[11px] text-amber-200/80 italic">
                           Firmarás como: <strong className="text-amber-300 not-italic">{signName}</strong>
-                          {signCompany ? <>, representante legal de <strong className="text-amber-300 not-italic">{signCompany}</strong></> : ""}
+                          {signCompany ? (
+                            <>
+                              , <strong className="text-amber-300 not-italic">{signRole || "Representante"}</strong> de <strong className="text-amber-300 not-italic">{signCompany}</strong>
+                            </>
+                          ) : (
+                            ""
+                          )}
                         </div>
                       )}
 
@@ -635,7 +655,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <button
                         type="button"
                         onClick={handleSign}
-                        disabled={signing || !signName.trim() || !account?.address || (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())}
+                        disabled={signing || !signName.trim() || (!!signCompany.trim() && !signRole.trim()) || !account?.address || (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())}
                         className={SIGN_BUTTON_STYLE}
                       >
                         {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}

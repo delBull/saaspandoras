@@ -54,6 +54,7 @@ interface Signer {
 interface Room {
   id: string;
   publicId: string;
+  title: string;
   kind: "PROPOSAL" | "AGREEMENT" | "CONTRACT" | "AMENDMENT" | "CHARTER";
   counterparty: string;
   relation: string;
@@ -157,7 +158,7 @@ export default function DealRoomConsole() {
   const [draftContent, setDraftContent] = useState("");
   const [showNewRoom, setShowNewRoom] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
-
+  const [nrTitle, setNrTitle] = useState("");
   const [nrKind, setNrKind] = useState<Room["kind"]>("PROPOSAL");
   const [nrCounterparty, setNrCounterparty] = useState("");
   const [nrRelation, setNrRelation] = useState("");
@@ -303,6 +304,17 @@ export default function DealRoomConsole() {
     }
   };
 
+  const deleteSection = async (secId: string) => {
+    if (!selected || !confirm("¿Eliminar sección permanentemente?")) return;
+    try {
+      await patch(selected.id, { deleteSection: secId });
+      setSectionId("01");
+      flashMsg("✓ Sección eliminada");
+    } catch (e: any) {
+      flashMsg(`✗ ${e.message}`);
+    }
+  };
+
   const convertToAgreement = async () => {
     if (!selected) return;
     try {
@@ -316,7 +328,7 @@ export default function DealRoomConsole() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nrCounterparty.trim()) return;
+    if (!nrTitle.trim() || !nrCounterparty.trim()) return;
     const signers = nrSigners
       .split(",")
       .map((s) => s.trim())
@@ -326,6 +338,7 @@ export default function DealRoomConsole() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          title: nrTitle,
           kind: nrKind,
           counterparty: nrCounterparty,
           relation: nrRelation,
@@ -521,6 +534,13 @@ export default function DealRoomConsole() {
               <input
                 type="text"
                 placeholder="Nombre del Trato / Acuerdo (ej. Inversión Serie A)"
+                value={nrTitle}
+                onChange={(e) => setNrTitle(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+              />
+              <input
+                type="text"
+                placeholder="Relación (ej. Strategic Partner)"
                 value={nrRelation}
                 onChange={(e) => setNrRelation(e.target.value)}
                 className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
@@ -612,7 +632,7 @@ export default function DealRoomConsole() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.relation || room.counterparty}</span>
+                      <span className="text-[11px] font-semibold text-zinc-100 truncate">{room.title}</span>
                       <ChevronRight className={`w-3 h-3 shrink-0 ${active ? "text-amber-300" : "text-zinc-600"}`} />
                     </div>
                     <p className="text-[9px] font-mono text-zinc-500 truncate mt-0.5">{room.counterparty} {room.company && `· ${room.company}`} · {room.publicId}</p>
@@ -666,7 +686,7 @@ export default function DealRoomConsole() {
                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border ${KIND_BADGE[selected.kind]}`}>
                         {KIND_LABEL[selected.kind]}
                       </span>
-                      <h4 className="text-sm font-semibold text-zinc-100 truncate">{selected.relation || selected.counterparty}</h4>
+                      <h4 className="text-sm font-semibold text-zinc-100 truncate">{selected.title}</h4>
                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider border ${STATUS_ACCENT[selected.status]}`}>
                         {STATUS_LABEL[selected.status]}
                       </span>

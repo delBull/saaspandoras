@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     }
 
     const room = await createRoom({
+      title: String(body.title ?? "").trim() || undefined,
       kind,
       counterparty,
       relation: String(body.relation ?? "").trim() || undefined,

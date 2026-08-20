@@ -14,6 +14,7 @@ import { generateDealToken } from "./tokens";
 import { KIND_LABEL } from "./types";
 
 export interface CreateRoomInput {
+  title?: string;
   kind: DealKind;
   counterparty: string;
   relation?: string;
@@ -70,6 +71,7 @@ export async function createRoom(input: CreateRoomInput) {
     .values({
       id,
       publicId,
+      title: input.title || "Acuerdo de Colaboración",
       kind: input.kind,
       counterparty: input.counterparty,
       relation: input.relation ?? "Strategic Partner",
@@ -118,6 +120,7 @@ export async function createRoom(input: CreateRoomInput) {
 
 export async function updateRoom(input: {
   id: string;
+  title?: string;
   kind?: DealKind;
   counterparty?: string;
   relation?: string;
@@ -130,6 +133,7 @@ export async function updateRoom(input: {
 }) {
   const { id, actor = "Nexus Ops", ...fields } = input;
   const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (fields.title !== undefined) patch.title = fields.title;
   if (fields.kind !== undefined) patch.kind = fields.kind;
   if (fields.counterparty !== undefined) patch.counterparty = fields.counterparty;
   if (fields.relation !== undefined) patch.relation = fields.relation;

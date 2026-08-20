@@ -87,8 +87,15 @@ export default async function PrintNdaPage({
             <div className="grid grid-cols-2 gap-8">
               {acceptances.map(acc => (
                 <div key={acc.id} className="border border-gray-300 p-4 rounded-lg">
-                  <p className="font-semibold text-lg">{acc.email}</p>
-                  <p className="text-xs text-gray-600 mb-2 font-mono break-all">{acc.wallet || "Wallet no registrada"}</p>
+                  {acc.signatureCompany ? (
+                    <>
+                      <p className="font-bold text-lg uppercase">{acc.signatureCompany}</p>
+                      <p className="text-sm text-gray-700 font-medium">Representante Legal: {acc.email} ({acc.signatureRole || "Representante Legal"})</p>
+                    </>
+                  ) : (
+                    <p className="font-semibold text-lg">{acc.email}</p>
+                  )}
+                  <p className="text-xs text-gray-600 mb-2 font-mono mt-1 break-all">Wallet: {acc.wallet || "Wallet no registrada"}</p>
                   <div className="text-xs text-green-700 font-mono space-y-1">
                     <p>✓ ACEPTADO ON-CHAIN / MAGIC LINK</p>
                     <p>Fecha: {new Date(acc.acceptedAt).toLocaleString('es-ES')}</p>

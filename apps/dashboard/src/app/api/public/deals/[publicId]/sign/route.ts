@@ -16,14 +16,14 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   try {
-    const { token, name, company, wallet, signature, isCombined, ndaTimestamp } = await request.json();
+    const { token, name, company, role, wallet, signature, isCombined, ndaTimestamp } = await request.json();
 
     const room = await getRoomByPublicId((await params).publicId);
     if (!room) return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
 
     const cleanName = String(name ?? "").trim();
     const cleanCompany = typeof company === "string" ? company.trim() : undefined;
-    const cleanRole = cleanCompany ? "Representante Legal" : undefined;
+    const cleanRole = typeof role === "string" ? role.trim() : undefined;
 
     if (!cleanName) {
       return NextResponse.json({ error: "Ingresa tu nombre para firmar." }, { status: 400 });
@@ -67,6 +67,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
             email: cleanWallet,
             name: cleanName,
             company: cleanCompany,
+            role: cleanRole,
             wallet: cleanWallet,
             publicId: room.publicId,
             dealKind: room.kind,
@@ -81,6 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
             email: cleanWallet,
             name: cleanName,
             company: cleanCompany,
+            role: cleanRole,
           });
 
       const signatureValid = await verifySignature({
@@ -208,6 +210,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
           email: payload.email,
           name: cleanName,
           company: cleanCompany,
+          role: cleanRole,
           wallet: cleanWallet,
           publicId: room.publicId,
           dealKind: room.kind,
@@ -222,6 +225,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
           email: payload.email,
           name: cleanName,
           company: cleanCompany,
+          role: cleanRole,
         });
 
     const signatureValid = await verifySignature({
@@ -233,6 +237,55 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
     if (!signatureValid) {
       return NextResponse.json({ error: "Firma inválida. Verifica tu cuenta e intenta de nuevo." }, { status: 401 });
+    }
+
+    // If combined, record NDA acceptance atomically
+    if (isCombined && effectiveNdaEnabled) {
+      const ip = request.headers.get("x-forwarded-for") ?? undefined;
+      const ua = request.headers.get("user-agent") ?? undefined;
+      await recordNdaAcceptance({
+        email: payload.email,
+        ndaVersion: room.ndaVersion,
+        wallet: cleanWallet,
+        signature: cleanSig,
+        signatureMessage: message,
+        signatureCompany: cleanCompany,
+        signatureRole: cleanRole,
+        roomId: room.id,
+        ip,
+        userAgent: ua,
+      });
+      await db.insert(nexusDealAuditEvents).values({
+        roomId: room.id,
+        actor: cleanName,
+        action: "NDA signed (combined)",
+        detail: `NDA ${room.ndaVersion} registrado en firma combinada con deal · wallet ${cleanWallet}`,
+        at: new Date(),
+      });
+      // Fire NDA notifications in parallel
+      const ndaNotifications: Promise<any>[] = [
+        sendNdaSignedAlert({
+          roomLabel: `${room.publicId} · ${room.counterparty}`,
+          signerName: cleanName,
+          email: payload.email,
+          wallet: cleanWallet,
+          ndaVersion: room.ndaVersion,
+          bypassed: false,
+        }),
+      ];
+      if (payload.email && payload.email.includes("@")) {
+        ndaNotifications.push(
+          sendNdaConfirmationEmail({
+            to: payload.email,
+            firstName: cleanName.split(" ")[0],
+            ndaVersion: room.ndaVersion,
+            roomLabel: `${room.publicId} · ${room.counterparty}`,
+            wallet: cleanWallet,
+            acceptedAt: ts,
+          })
+        );
+      }
+      Promise.allSettled(ndaNotifications);
     }
 
     await markViewed(room.id, payload.email);
