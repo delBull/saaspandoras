@@ -19,6 +19,9 @@ import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { PortalShell } from '@/components/hermes-portal/PortalShell';
 import { TourEngine } from '@/components/onboarding/TourEngine';
+import { db } from '@/db';
+import { portalOnboardingState } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -42,6 +45,21 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
     }
     // Unexpected error
     redirect('/portal/error');
+  }
+
+  // Enforce Onboarding Boundary
+  // If the portal onboarding stage is not ACTIVATION, they must go through Hermes Onboarding
+  // (We use context.tenant.organizationId which is the actual tenantId)
+  const [onboarding] = await db.select({ stage: portalOnboardingState.stage })
+    .from(portalOnboardingState)
+    .where(eq(portalOnboardingState.tenantId, context.tenant.organizationId))
+    .limit(1);
+
+  if (onboarding && onboarding.stage !== 'ACTIVATION') {
+    redirect(`/onboarding/${organizationSlug}`);
+  } else if (!onboarding && organizationSlug !== 'snarai') {
+    // If it doesn't exist yet, they definitely haven't completed it!
+    redirect(`/onboarding/${organizationSlug}`);
   }
 
   return (

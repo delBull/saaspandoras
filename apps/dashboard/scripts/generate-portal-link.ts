@@ -21,7 +21,7 @@ async function main() {
   const token = generatePortalToken(pack.id, project.id, pack.product);
   
   console.log(`\nMagic Link for ${project.title} (${slug}):`);
-  console.log(`http://localhost:3000/growth-os/hermes/portal/login?token=${token}\n`);
+  console.log(`http://localhost:3000/portal/login?token=${token}&return=/onboarding/${slug}\n`);
   process.exit(0);
 }
 

@@ -320,7 +320,10 @@ export class OllamaStreamingProvider implements StreamingReasoningProvider {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-    const response = await fetch(`${baseUrl}/api/chat`, {
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '').replace(/\/api$/, '');
+    const finalUrl = `${cleanBaseUrl}/api/chat`;
+
+    const response = await fetch(finalUrl, {
       method: 'POST',
       headers,
       signal,

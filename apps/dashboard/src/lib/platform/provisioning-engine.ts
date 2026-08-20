@@ -261,7 +261,7 @@ export const ProvisioningEngine = {
 
     // ── Step 8: Send invitation email ────────────────────────────────────
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
-    const portalUrl = `${baseUrl}/portal/login?token=${portalToken}`;
+    const portalUrl = `${baseUrl}/portal/login?token=${portalToken}&return=/onboarding/${projectSlug}`;
 
     await sendProvisioningEmail({
       to: lead.email || '',
