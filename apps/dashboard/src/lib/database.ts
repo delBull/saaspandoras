@@ -1,38 +1,22 @@
-import postgres from "postgres";
+import { neon } from "@neondatabase/serverless";
 
-// Connection pool configuration for better performance
-// This prevents "too many clients" errors by reusing connections
-// Lazy initialization to prevent global side effects during build/import
-// Standard Next.js Postgres caching mechanism
+// Connection configuration for Serverless (Neon HTTP Driver)
+// This strictly prevents TCP connection exhaustion in Vercel Edge functions.
 const DATABASE_URL = process.env.DATABASE_URL || "";
 if (DATABASE_URL && !DATABASE_URL.includes("-pooler") && DATABASE_URL.includes("neon.tech")) {
-  console.warn("⚠️ DATABASE_URL detected without '-pooler' suffix. This may cause connection exhaustion in serverless environments.");
-  console.warn("⚠️ Force Redeploy Triggered: If you updated your variables in Vercel, this commit will apply them.");
+  console.warn("⚠️ DATABASE_URL detected without '-pooler' suffix. Using Neon HTTP driver mitigates this, but pooler is still recommended for heavy backend tasks.");
 }
 
-// Standard Next.js Postgres caching mechanism for Serverless
-const globalForPostgres = globalThis as unknown as {
-  sqlInstance: ReturnType<typeof postgres> | undefined;
+// Standard Next.js caching mechanism for Serverless
+const globalForNeon = globalThis as unknown as {
+  sqlInstance: ReturnType<typeof neon> | undefined;
 };
 
-// Detect if we're on localhost to disable SSL requirement
-// Hardened to check for common local hostnames and allow explicit env override
-const isLocal = DATABASE_URL.includes("localhost") || 
-                DATABASE_URL.includes("127.0.0.1") || 
-                DATABASE_URL.includes("0.0.0.0") ||
-                process.env.DB_SSL === "false";
+// Use the highly resilient stateless HTTP driver for Vercel
+export const sqlInstance = globalForNeon.sqlInstance || neon(DATABASE_URL);
 
-// Use a more resilient configuration for serverless
-export const sqlInstance = globalForPostgres.sqlInstance || postgres(DATABASE_URL, {
-  max: 10, // Recommended safe limit for serverless on Neon
-  idle_timeout: 20, 
-  connect_timeout: 5,
-  prepare: false, 
-  ssl: isLocal ? false : { rejectUnauthorized: false },
-});
-
-// Shared singleton across ALL environments to prevent pool exhaustion
-globalForPostgres.sqlInstance = sqlInstance;
+// Shared singleton across ALL environments
+globalForNeon.sqlInstance = sqlInstance;
 
 export default sqlInstance;
 export { sqlInstance as sql };
