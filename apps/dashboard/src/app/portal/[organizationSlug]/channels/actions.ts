@@ -51,3 +51,36 @@ export async function saveWhatsAppConfig(organizationSlug: string, token: string
   revalidatePath(`/portal/${organizationSlug}/channels`);
   return { success: true };
 }
+
+export interface HandoffAlertConfig {
+  preferredChannel: 'email' | 'telegram' | 'whatsapp' | 'discord';
+  email?: string;
+  telegramChatId?: string;
+  whatsappPhone?: string;
+  discordWebhookUrl?: string;
+}
+
+export async function getHandoffAlertConfig(organizationSlug: string): Promise<HandoffAlertConfig> {
+  const context = await resolvePortalContext(organizationSlug);
+  const rows = await db.select().from(projects).where(eq(projects.slug, context.tenant.organizationId)).limit(1);
+  const project = rows[0];
+  if (!project) return { preferredChannel: 'email' };
+
+  const config = (project.tenantRuntimeConfig as any) || {};
+  return config.handoffAlertConfig || { preferredChannel: 'email' };
+}
+
+export async function saveHandoffAlertConfig(organizationSlug: string, alertConfig: HandoffAlertConfig) {
+  const context = await resolvePortalContext(organizationSlug);
+  const rows = await db.select().from(projects).where(eq(projects.slug, context.tenant.organizationId)).limit(1);
+  const project = rows[0];
+  if (!project) throw new Error('Project not found');
+
+  const config = (project.tenantRuntimeConfig as any) || {};
+  config.handoffAlertConfig = alertConfig;
+
+  await db.update(projects).set({ tenantRuntimeConfig: config }).where(eq(projects.slug, organizationSlug));
+
+  revalidatePath(`/portal/${organizationSlug}/channels`);
+  return { success: true };
+}
