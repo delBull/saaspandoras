@@ -143,8 +143,33 @@ export interface AcademyCertification {
   readinessScore: number;
   competencySummary: CrossCuttingCompetencyScores;
   status: CertificationStatus;
+  curriculumVersion: number;
+  rubricVersion: string;
+  fatalFailurePolicyVersion: string;
+  knowledgeSnapshotHash: string;
   certifiedAt: string;
   validUntil: string;
   issuer: string; // 'Pandora's Academy Core'
   certificateHash: string; // Cryptographic seal
+}
+
+// ─── 5. AUDIT TRAIL LAYER ──────────────────────────────────────────────────────
+
+export type AcademyAuditEventType =
+  | 'ACADEMY_ASSESSMENT_STARTED'
+  | 'ACADEMY_MODULE_COMPLETED'
+  | 'ACADEMY_FATAL_FAILURE_DETECTED'
+  | 'ACADEMY_ASSESSMENT_COMPLETED'
+  | 'ACADEMY_CERTIFICATION_ELIGIBLE'
+  | 'ACADEMY_CERTIFICATION_ISSUED'
+  | 'ACADEMY_CERTIFICATION_REVOKED';
+
+export interface AcademyAuditEvent {
+  eventId: string;
+  type: AcademyAuditEventType;
+  programId: string;
+  attemptId: string;
+  candidateId: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
 }
