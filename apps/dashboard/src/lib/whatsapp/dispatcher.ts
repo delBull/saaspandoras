@@ -49,6 +49,8 @@ export interface WhatsAppWebhookPayload {
   }>;
 }
 
+import { formatWhatsAppText } from './utils/formatter';
+
 export class WhatsAppDispatcher {
   /**
    * Resolves whether a phoneNumberId belongs to a provisioned Tenant
@@ -56,6 +58,19 @@ export class WhatsAppDispatcher {
   static async resolveTenantByPhoneNumberId(phoneNumberId?: string): Promise<{ id: number; slug: string; title: string; secrets?: any } | null> {
     if (!phoneNumberId) return null;
 
+    const masterPhoneId = (process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.META_PHONE_NUMBER_ID || '').trim();
+
+    // 1. If incoming message arrives on Pandora's Master WhatsApp Number, it represents Pandora's Core Hermes, NOT a specific tenant!
+    if (masterPhoneId && String(phoneNumberId).trim() === masterPhoneId) {
+      return {
+        id: 0,
+        slug: 'pandoras',
+        title: "Pandora's Growth OS",
+        secrets: {}
+      };
+    }
+
+    // 2. Check dedicated tenant phone numbers (must be distinct from master number)
     try {
       const allProjects = await db.select({
         id: projects.id,
@@ -70,7 +85,11 @@ export class WhatsAppDispatcher {
         const w2e = (p.w2eConfig as any) || {};
         const tenantPhoneId = runtimeConfig.secrets?.whatsappPhoneId || w2e.whatsappPhoneId;
         
-        if (tenantPhoneId && String(tenantPhoneId).trim() === String(phoneNumberId).trim()) {
+        if (
+          tenantPhoneId && 
+          String(tenantPhoneId).trim() === String(phoneNumberId).trim() && 
+          String(tenantPhoneId).trim() !== masterPhoneId
+        ) {
           return {
             id: p.id,
             slug: p.slug,
@@ -236,9 +255,11 @@ export class WhatsAppDispatcher {
     const token = secrets?.whatsappToken || process.env.WHATSAPP_TOKEN || process.env.META_WHATSAPP_TOKEN;
     const phoneId = secrets?.whatsappPhoneId || defaultPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.META_PHONE_NUMBER_ID;
 
+    const formattedText = formatWhatsAppText(text);
+
     if (!token || !phoneId) {
       // Fallback to client util
-      return sendWhatsAppMessage(to, text, replyToId);
+      return sendWhatsAppMessage(to, formattedText, replyToId);
     }
 
     try {
@@ -253,18 +274,18 @@ export class WhatsAppDispatcher {
           recipient_type: 'individual',
           to,
           type: 'text',
-          text: { body: text },
+          text: { body: formattedText },
           ...(replyToId ? { context: { message_id: replyToId } } : {}),
         }),
       });
 
       if (!res.ok) {
         console.warn(`[WhatsAppDispatcher] Direct Meta dispatch failed (${res.status}), fallback to default client`);
-        return sendWhatsAppMessage(to, text, replyToId);
+        return sendWhatsAppMessage(to, formattedText, replyToId);
       }
     } catch (err) {
       console.error('[WhatsAppDispatcher] sendReply error:', err);
-      return sendWhatsAppMessage(to, text, replyToId);
+      return sendWhatsAppMessage(to, formattedText, replyToId);
     }
   }
 }

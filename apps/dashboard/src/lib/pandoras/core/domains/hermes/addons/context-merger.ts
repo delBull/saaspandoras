@@ -133,6 +133,16 @@ export class CognitiveContextBuilder {
   }
 
   private static async buildCoreSecurityContext(tenantId: string): Promise<CoreSecurityContext> {
+    if (tenantId === 'pandoras' || tenantId === 'pandoras-core') {
+      return {
+        organizationId: 'pandoras',
+        tenantId: 'pandoras',
+        projectId: 'pandoras_core',
+        authorizedChannels: ['whatsapp', 'telegram', 'portal'],
+        llmConfig: undefined
+      };
+    }
+
     const projectRecords = await db
       .select()
       .from(projects)
@@ -161,22 +171,29 @@ export class CognitiveContextBuilder {
       organizationId: 'pandoras',
       tenantId,
       projectId: project?.id?.toString() || 'project_1',
-      authorizedChannels: ['telegram'], // Baseline tenant channel
+      authorizedChannels: ['telegram', 'whatsapp'],
       llmConfig
     };
   }
 
   private static async getTenantKnowledge(tenantId: string, activeKnowledge: any[]): Promise<TenantKnowledge> {
+    const isPandorasCore = tenantId === 'pandoras' || tenantId === 'pandoras-core';
+
     return {
       soul: {
-        mode: 'standard',
-        warmth: 'medium',
-        exclusivity: 'low',
+        mode: isPandorasCore ? 'institutional' : 'standard',
+        warmth: isPandorasCore ? 'high' : 'medium',
+        exclusivity: isPandorasCore ? 'high' : 'low',
         directness: 'high',
-        informality: 'high'
+        informality: isPandorasCore ? 'low' : 'high'
       },
       activePacks: [
-        { id: 'base_faq' }, 
+        { id: 'base_faq' },
+        ...(isPandorasCore ? [
+          { id: 'pandoras_core_identity', key: 'organization_name', content: "Pandora's Growth OS", status: 'ACTIVE', dimension: 'identity' },
+          { id: 'pandoras_core_agent', key: 'agent_name', content: "Hermes", status: 'ACTIVE', dimension: 'identity' },
+          { id: 'pandoras_core_mission', key: 'mission', content: "Pandora's es el Growth OS y ecosistema institucional de tokenización de activos del mundo real (RWA), inteligencia crediticia y plataforma de agentes cognitivos Hermes OS.", status: 'ACTIVE', dimension: 'identity' }
+        ] : []),
         ...activeKnowledge.map(k => ({
           id: k.id,
           type: k.dimension,

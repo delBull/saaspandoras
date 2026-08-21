@@ -1,4 +1,5 @@
 import { WHATSAPP, validateWhatsAppConfig } from '../config';
+import { formatWhatsAppText } from './formatter';
 
 /**
  * Enviar mensaje de texto a través de WhatsApp Cloud API
@@ -27,11 +28,13 @@ export async function sendWhatsAppMessage(
       };
     }
 
+    const formattedText = formatWhatsAppText(text);
+
     const requestBody: any = {
       messaging_product: "whatsapp",
       to,
       type: "text",
-      text: { body: text }
+      text: { body: formattedText }
     };
 
     // Si es respuesta a un mensaje específico
