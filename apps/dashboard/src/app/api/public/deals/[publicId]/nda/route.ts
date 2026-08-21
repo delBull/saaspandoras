@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRoomByPublicId } from "@/lib/nexus-deals/repo";
 import { hasEmailSignedNda, recordNdaAcceptance } from "@/lib/nexus-deals/repo";
-import { NDA_VERSION, NDA_FULL_TEXT, NDA_SUMMARY_BULLETS, buildNdaSignMessage } from "@/lib/nexus-deals/nda-content";
+import { NDA_VERSION, NDA_FULL_TEXT, NDA_SUMMARY_BULLETS, buildNdaSignMessage, getNdaConfig } from "@/lib/nexus-deals/nda-content";
 import { sendNdaSignedAlert } from "@/lib/nexus-deals/discord";
 import { sendNdaConfirmationEmail } from "@/lib/nexus-deals/email";
 import { verifySignature } from "thirdweb/auth";
@@ -44,17 +44,19 @@ export async function GET(
       });
     }
 
-    // Check bypass: use email first (more reliable), then wallet as fallback
     const identifier = email || wallet;
-    const existing = identifier ? await hasEmailSignedNda(identifier, room.ndaVersion) : null;
+    const cfg = getNdaConfig(room.ndaVersion);
+    const existing = identifier ? await hasEmailSignedNda(identifier, cfg.version) : null;
 
     return NextResponse.json({
       ndaEnabled: true,
-      ndaVersion: room.ndaVersion,
+      ndaVersion: cfg.version,
       ndaPhase: room.ndaPhase,
-      ndaTitle: "Pandora's Ecosystem — Acuerdo de Confidencialidad, No Uso y Protección de Información Confidencial",
-      ndaSummaryBullets: NDA_SUMMARY_BULLETS,
-      ndaFullText: NDA_FULL_TEXT,
+      ndaTitle: cfg.title,
+      ndaSummaryBullets: cfg.summaryBullets,
+      ndaFullText: cfg.fullText,
+      requiredSigners: cfg.requiredSigners,
+      isBilateral: cfg.isBilateral,
       alreadySigned: !!existing,
       bypassApplied: !!existing,
       previousAcceptance: existing

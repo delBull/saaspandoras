@@ -4,7 +4,7 @@ import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { nexusNdaAcceptances } from "@/db/schema";
 import { eq, inArray, and } from "drizzle-orm";
-import { NDA_FULL_TEXT, NDA_TITLE } from "@/lib/nexus-deals/nda-content";
+import { NDA_FULL_TEXT, NDA_TITLE, getNdaConfig } from "@/lib/nexus-deals/nda-content";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,8 @@ export default async function PrintNdaPage({
   const room = await getRoomByPublicId(publicId);
   if (!room || !room.ndaEnabled) notFound();
 
-  const ndaContent = NDA_FULL_TEXT;
+  const cfg = getNdaConfig(room.ndaVersion);
+  const ndaContent = cfg.fullText;
   const signerEmails = room.signers.map(s => s.email);
 
   let acceptances: typeof nexusNdaAcceptances.$inferSelect[] = [];
@@ -48,7 +49,7 @@ export default async function PrintNdaPage({
       .where(
         and(
           inArray(nexusNdaAcceptances.email, signerEmails),
-          eq(nexusNdaAcceptances.ndaVersion, room.ndaVersion ?? "v1.0")
+          eq(nexusNdaAcceptances.ndaVersion, cfg.version)
         )
       );
   }
@@ -62,7 +63,7 @@ export default async function PrintNdaPage({
     <div className="bg-white min-h-screen text-black font-sans p-8 print:p-0">
       <div className="max-w-4xl mx-auto">
         <header className="mb-12 border-b-2 border-black pb-6">
-          <h1 className="text-2xl font-bold uppercase tracking-wide mb-2">{NDA_TITLE}</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wide mb-2">{cfg.title}</h1>
           <div className="flex justify-between items-end">
             <div>
               <p className="text-sm text-gray-600">ID: {room.publicId}</p>
@@ -70,7 +71,7 @@ export default async function PrintNdaPage({
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">Fecha de impresión: {new Date().toLocaleDateString('es-ES')}</p>
-              <p className="text-sm font-semibold mt-1">Versión NDA: {room.ndaVersion ?? "v1.0"}</p>
+              <p className="text-sm font-semibold mt-1">Versión NDA: {cfg.version}</p>
             </div>
           </div>
         </header>

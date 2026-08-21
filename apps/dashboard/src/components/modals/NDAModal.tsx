@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { NDA_VERSION, NDA_TITLE, NDA_FULL_TEXT, NDA_SUMMARY_BULLETS } from "@/lib/nexus-deals/nda-content";
+import { NDA_VERSION, getNdaConfig } from "@/lib/nexus-deals/nda-content";
 
 interface NDAModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface NDAModalProps {
 
 export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalProps) {
   const [mounted, setMounted] = useState(false);
+  const cfg = getNdaConfig(version);
 
   useEffect(() => {
     setMounted(true);
@@ -50,10 +51,10 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalPro
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 bg-zinc-900/40 shrink-0">
               <div>
                 <h2 className="text-lg font-semibold text-zinc-100">
-                  {NDA_TITLE}
+                  {cfg.title}
                 </h2>
                 <p className="text-sm text-zinc-500 font-mono mt-0.5">
-                  Versión: {version}
+                  Versión: {cfg.version} {cfg.isBilateral ? "· Bilateral (Dual Signers)" : ""}
                 </p>
               </div>
               <button
@@ -70,10 +71,10 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalPro
                 {/* Summary Box */}
                 <div className="p-4 bg-amber-500/[0.04] rounded-xl border border-amber-500/20 text-xs">
                   <p className="font-semibold text-amber-300 uppercase tracking-wider mb-2 font-mono">
-                    Compromisos Clave de Confidencialidad
+                    Compromisos Clave de Confidencialidad & Protección
                   </p>
                   <ul className="space-y-1.5 text-zinc-300">
-                    {NDA_SUMMARY_BULLETS.map((bullet, i) => (
+                    {cfg.summaryBullets.map((bullet, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="text-amber-400 mt-0.5">•</span>
                         <span>{bullet}</span>
@@ -84,7 +85,7 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalPro
 
                 {/* Full NDA Text Single Source of Truth */}
                 <div className="p-6 bg-black/40 rounded-xl border border-white/10 font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap selection:bg-amber-500/30">
-                  {NDA_FULL_TEXT}
+                  {cfg.fullText}
                 </div>
               </div>
             </div>

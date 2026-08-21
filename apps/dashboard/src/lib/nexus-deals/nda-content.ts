@@ -1,7 +1,11 @@
 /**
- * nda-content.ts — Pandoras Ecosystem Confidentiality & Non-Use Agreement v2.1
- * Single source of truth for NDA text, sign message builders, and UI bullets.
+ * nda-content.ts — Pandoras Ecosystem Confidentiality & Non-Use Agreements
+ * Single source of truth for:
+ * 1. Master NDA (v2.2) — Unilateral institutional protection for all ecosystem participants.
+ * 2. ELD × Pandora's Hybrid NDA (v0.2-hybrid-eld) — Bilateral strategic protection with 2 active signers exclusively for Oscar / ELD deal flow.
  */
+
+// ─── 1. MASTER NDA (GLOBAL STANDARD v2.2) ────────────────────────────────────
 
 export const NDA_VERSION = "v2.2";
 
@@ -11,7 +15,7 @@ export const NDA_TITLE =
 export const NDA_SUBTITLE =
   "Pandora's Ecosystem Confidentiality & Non-Use Agreement";
 
-/** Key commitments shown in the UI before the full text */
+/** Key commitments shown in the UI before the full text for Master NDA */
 export const NDA_SUMMARY_BULLETS = [
   "Mantener estricta confidencialidad de toda información del ecosistema Pandora's",
   "No usar la información para desarrollar productos competidores o derivados",
@@ -21,64 +25,6 @@ export const NDA_SUMMARY_BULLETS = [
   "No circunvenir a Pandora's respecto de clientes, partners u oportunidades (24 meses)",
   "Obligaciones vigentes durante 5 años; secretos industriales: indefinidamente",
 ];
-
-/** Deterministic on-chain sign message for the NDA alone */
-export function buildNdaSignMessage(params: {
-  email: string;
-  wallet: string;
-  ndaVersion?: string;
-  timestamp: string;
-}): string {
-  const version = params.ndaVersion ?? NDA_VERSION;
-  return [
-    `Pandora's Ecosystem — Acuerdo de Confidencialidad (${version})`,
-    ``,
-    `Al firmar este mensaje reconozco que:`,
-    `1. He leído y entiendo el Acuerdo de Confidencialidad, No Uso y Protección de Información Confidencial de Pandora's Ecosystem versión ${version}.`,
-    `2. Acepto voluntariamente todas sus obligaciones y restricciones.`,
-    `3. Esta firma electrónica constituye mi consentimiento legalmente vinculante conforme al Código de Comercio mexicano.`,
-    ``,
-    `Identidad: ${params.email}`,
-    `Wallet: ${params.wallet}`,
-    `Timestamp: ${params.timestamp}`,
-    `Versión: ${version}`,
-  ].join("\n");
-}
-
-/** Combined sign message: NDA + Deal in one on-chain transaction */
-export function buildCombinedSignMessage(params: {
-  email: string;
-  name: string;
-  company?: string;
-  role?: string;
-  wallet: string;
-  publicId: string;
-  dealKind: string;
-  dealCounterparty: string;
-  ndaVersion?: string;
-  timestamp: string;
-}): string {
-  const version = params.ndaVersion ?? NDA_VERSION;
-  return [
-    `Pandora's Nexus — Firma Combinada`,
-    ``,
-    `Documento 1 — Acuerdo de Confidencialidad (NDA ${version})`,
-    `Pandora's Ecosystem Confidentiality & Non-Use Agreement`,
-    ``,
-    `Documento 2 — ${params.dealKind}: ${params.publicId}`,
-    `Contraparte: ${params.dealCounterparty}`,
-    ``,
-    `Al firmar este mensaje acepto on-chain ambos documentos de forma simultánea.`,
-    `El NDA Pandora's Ecosystem ${version} queda registrado como aceptado globalmente.`,
-    `El ${params.dealKind} ${params.publicId} queda firmado por la presente.`,
-    ``,
-    `Identidad: ${params.email}`,
-    params.company ? `Nombre: ${params.name}, en representación de ${params.company} (${params.role ?? 'Representante Legal'})` : `Nombre: ${params.name}`,
-    `Wallet: ${params.wallet}`,
-    `Timestamp: ${params.timestamp}`,
-    `NDA Version: ${version}`,
-  ].join("\n");
-}
 
 export const NDA_FULL_TEXT = `ACUERDO DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE INFORMACIÓN CONFIDENCIAL
 PANDORA'S ECOSYSTEM — CONFIDENTIALITY & NON-USE AGREEMENT
@@ -162,3 +108,169 @@ Este Acuerdo se regirá conforme a las leyes de los Estados Unidos Mexicanos.
 EL RECEPTOR DECLARA QUE HA LEÍDO, ENTENDIDO Y ACEPTADO ESTE ACUERDO DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE INFORMACIÓN CONFIDENCIAL. La puesta a disposición de este documento a través de la plataforma constituye la voluntad formal de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. de obligarse en los términos aquí descritos. La firma o aceptación electrónica realizada dentro del Deal Room de Nexus constituirá la manifestación del consentimiento vinculante del Receptor para perfeccionar este Acuerdo, sin requerir firma adicional por parte de Pandora's.
 
 FIN DEL ACUERDO — PANDORA'S ECOSYSTEM · Versión 2.2`;
+
+
+// ─── 2. ELD × PANDORA'S HYBRID NDA (BILATERAL v0.2 — EXCLUSIVO OSCAR / ELD) ──
+
+export const ELD_HYBRID_NDA_VERSION = "v0.2-hybrid-eld";
+
+export const ELD_HYBRID_NDA_TITLE =
+  "ELD × Pandora's — Acuerdo Bilateral de Confidencialidad, No Uso y Protección de Activos Estratégicos";
+
+export const ELD_HYBRID_NDA_SUBTITLE =
+  "ELD × Pandora's Bilateral Strategic Confidentiality & Asset Protection Agreement";
+
+export const ELD_HYBRID_NDA_SUMMARY_BULLETS = [
+  "Protección mutua y bilateral de información confidencial compartida entre ELD y Pandora's",
+  "Reconocimiento expreso de titularidad: cada parte mantiene la propiedad absoluta sobre sus activos, know-how y propiedad intelectual previa (Disclosure ≠ Transferencia de propiedad)",
+  "No restricción de experiencia profesional previa, conocimiento general ni desarrollo autónomo independiente",
+  "Prohibición de ingeniería inversa, clonación y extracción de código o modelos de IA",
+  "No circunvención delimitada exclusivamente a oportunidades o contactos conocidos mediante acceso directo a información confidencial de la otra parte (24 meses)",
+  "Separación documental estricta: compensación, revenue share o partnership económico se regulan exclusivamente en acuerdos específicos posteriores",
+  "Firma dual requerida: ambas partes (ELD y Pandora's) son firmantes activos del presente acuerdo",
+];
+
+export const ELD_HYBRID_NDA_FULL_TEXT = `ACUERDO BILATERAL DE CONFIDENCIALIDAD, NO USO Y PROTECCIÓN DE ACTIVOS ESTRATÉGICOS
+ELD × PANDORA'S ECOSYSTEM — BILATERAL STRATEGIC CONFIDENTIALITY AGREEMENT
+Versión: v0.2-hybrid-eld
+Fecha de vigencia: La fecha en que ambas Partes perfeccionen su firma electrónica dentro del Deal Room de Nexus.
+
+1. PARTES Y FIRMANTES ACTIVOS
+
+El presente Acuerdo Bilateral (el "Acuerdo") es celebrado por y entre:
+(A) MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. (titular y operadora de Pandora's Finance, Hermes OS y su ecosistema tecnológico), representada legalmente en este acto, en lo sucesivo "Pandora's"; y
+(B) ELD (Entidad de Liderazgo y Desarrollo / Representación de Oscar), en lo sucesivo "ELD";
+Ambas en conjunto denominadas las "Partes" e individualmente una "Parte", actuando recíprocamente como Parte Reveladora y Parte Receptora según corresponda.
+
+2. OBJETO Y ALINEACIÓN ESTRATÉGICA
+
+Establecer un marco bilateral y recíproco de confidencialidad, trazabilidad y protección de activos estratégicos, información confidencial, tecnología y procesos de colaboración, asegurando claridad absoluta respecto a los derechos y titularidades de ambas Partes.
+
+3. CLARIFICACIÓN DE ACTIVOS PREEXISTENTES Y PROPIEDAD INTELECTUAL (DISCLOSURE ≠ TRANSFERENCIA)
+
+Cada una de las Partes mantiene la titularidad y propiedad exclusiva sobre sus activos, metodologías, frameworks, investigación, documentación, know-how, materiales educativos y propiedad intelectual desarrollados previamente a esta relación.
+La revelación de información dentro del marco de este Acuerdo no constituye ni implicará cesión, transferencia de propiedad, licencia automática ni autorización de uso comercial fuera del propósito acordado.
+
+4. CONOCIMIENTO INDEPENDIENTE Y DESARROLLO AUTÓNOMO
+
+Las obligaciones de confidencialidad protegen la información confidencial legítimamente recibida de la otra Parte. Dichas obligaciones no limitan ni restringirán la experiencia profesional previa, el conocimiento general, las capacidades independientes, la investigación propia ni el desarrollo autónomo legítimo efectuado sin utilizar información confidencial de la contraparte.
+
+5. RELACIONES, CONTACTOS Y NO CIRCUNVENCIÓN
+
+(A) Las relaciones, clientes y contactos desarrollados previamente por cada Parte permanecen bajo el control exclusivo de la Parte que los originó.
+(B) Las oportunidades creadas conjuntamente se gestionarán conforme a acuerdos específicos posteriores.
+(C) La obligación de No Circunvención (24 meses) aplicará respecto de información, clientes o relaciones conocidos exclusivamente mediante acceso autorizado a Información Confidencial de la otra Parte.
+
+6. PROHIBICIÓN DE INGENIERÍA INVERSA Y EXTRACCIÓN DE MODELOS DE IA
+
+Ninguna de las Partes podrá descompilar, desmontar, realizar reverse engineering, reproducir, clonar, forkear, replicar ni reconstruir software, arquitecturas, agentes, modelos de IA, smart contracts o componentes propietarios de la otra Parte. Queda prohibido introducir Información Confidencial en modelos de IA públicos, datasets externos o sistemas RAG sin autorización documentada.
+
+7. SEPARACIÓN DOCUMENTAL ESTRICTA RESPECTO DE ACUERDOS COMERCIALES
+
+El presente Acuerdo regula exclusivamente la protección de información confidencial y activos. Este Acuerdo no establece ni prejuzga esquemas de compensación, revenue share, success fees, licensing, equity, territorios o partnership económico, los cuales deberán documentarse formalmente en acuerdos específicos posteriores dentro del Deal Room.
+
+8. CREDENCIALES, ACCESOS Y SECRETOS INDUSTRIALES
+
+Las credenciales criptográficas, API keys, private keys, wallets y accesos de infraestructura constituyen Información Confidencial de máxima sensibilidad. Las obligaciones de confidencialidad permanecerán vigentes durante cinco (5) años; tratándose de secretos industriales, subsistirán indefinidamente mientras conserven tal carácter conforme a la ley.
+
+9. JURISDICCIÓN Y VALIDEZ ELECTRÓNICA ON-CHAIN
+
+Este Acuerdo se regirá conforme a las leyes de los Estados Unidos Mexicanos. Las Partes convienen que el perfeccionamiento de este Acuerdo requerirá la firma electrónica EIP-191 o aceptación verificada de ambos firmantes activos (Pandora's y ELD) dentro del Deal Room de Nexus, teniendo plena validez jurídica conforme al Código de Comercio mexicano.
+
+FIN DEL ACUERDO — ELD × PANDORA'S · Versión Bilateral v0.2-hybrid-eld`;
+
+
+// ─── 3. CONFIGURATION RESOLVER ────────────────────────────────────────────────
+
+export interface NdaConfig {
+  version: string;
+  title: string;
+  subtitle: string;
+  summaryBullets: string[];
+  fullText: string;
+  requiredSigners: number;
+  isBilateral: boolean;
+}
+
+export function getNdaConfig(version?: string): NdaConfig {
+  if (version === ELD_HYBRID_NDA_VERSION || version === "v0.2-hybrid-eld" || version === "ELD-HYBRID-v0.2") {
+    return {
+      version: ELD_HYBRID_NDA_VERSION,
+      title: ELD_HYBRID_NDA_TITLE,
+      subtitle: ELD_HYBRID_NDA_SUBTITLE,
+      summaryBullets: ELD_HYBRID_NDA_SUMMARY_BULLETS,
+      fullText: ELD_HYBRID_NDA_FULL_TEXT,
+      requiredSigners: 2,
+      isBilateral: true,
+    };
+  }
+
+  // Default: Master NDA v2.2
+  return {
+    version: NDA_VERSION,
+    title: NDA_TITLE,
+    subtitle: NDA_SUBTITLE,
+    summaryBullets: NDA_SUMMARY_BULLETS,
+    fullText: NDA_FULL_TEXT,
+    requiredSigners: 1,
+    isBilateral: false,
+  };
+}
+
+// ─── 4. DETERMINISTIC ON-CHAIN SIGN MESSAGE BUILDERS ─────────────────────────
+
+export function buildNdaSignMessage(params: {
+  email: string;
+  wallet: string;
+  ndaVersion?: string;
+  timestamp: string;
+}): string {
+  const cfg = getNdaConfig(params.ndaVersion);
+  return [
+    `${cfg.title} (${cfg.version})`,
+    ``,
+    `Al firmar este mensaje reconozco que:`,
+    `1. He leído y entiendo el ${cfg.title} versión ${cfg.version}.`,
+    `2. Acepto voluntariamente todas sus obligaciones y restricciones.`,
+    `3. Esta firma electrónica constituye mi consentimiento legalmente vinculante conforme al Código de Comercio mexicano.`,
+    ``,
+    `Identidad: ${params.email}`,
+    `Wallet: ${params.wallet}`,
+    `Timestamp: ${params.timestamp}`,
+    `Versión: ${cfg.version}`,
+  ].join("\n");
+}
+
+export function buildCombinedSignMessage(params: {
+  email: string;
+  name: string;
+  company?: string;
+  role?: string;
+  wallet: string;
+  publicId: string;
+  dealKind: string;
+  dealCounterparty: string;
+  ndaVersion?: string;
+  timestamp: string;
+}): string {
+  const cfg = getNdaConfig(params.ndaVersion);
+  return [
+    `Pandora's Nexus — Firma Combinada`,
+    ``,
+    `Documento 1 — ${cfg.title} (${cfg.version})`,
+    `${cfg.subtitle}`,
+    ``,
+    `Documento 2 — ${params.dealKind}: ${params.publicId}`,
+    `Contraparte: ${params.dealCounterparty}`,
+    ``,
+    `Al firmar este mensaje acepto on-chain ambos documentos de forma simultánea.`,
+    `El ${cfg.title} (${cfg.version}) queda registrado como aceptado.`,
+    `El ${params.dealKind} ${params.publicId} queda firmado por la presente.`,
+    ``,
+    `Identidad: ${params.email}`,
+    params.company ? `Nombre: ${params.name}, en representación de ${params.company} (${params.role ?? 'Representante Legal'})` : `Nombre: ${params.name}`,
+    `Wallet: ${params.wallet}`,
+    `Timestamp: ${params.timestamp}`,
+    `NDA Version: ${cfg.version}`,
+  ].join("\n");
+}
