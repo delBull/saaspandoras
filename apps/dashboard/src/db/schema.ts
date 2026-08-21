@@ -3678,3 +3678,72 @@ export const hermesSubscriptionsRelations = relations(hermesSubscriptions, ({ on
   }),
 }));
 
+// ── PANDORA'S ACADEMY CONTROL PLANE PERSISTENCE ─────────────────────────────
+
+export const academyCandidates = pgTable("academy_candidates", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  email: varchar("email", { length: 256 }).notNull(),
+  phone: varchar("phone", { length: 64 }),
+  targetRole: varchar("target_role", { length: 64 }).notNull().default('COO'),
+  attendanceStatus: varchar("attendance_status", { length: 64 }).notNull().default('INVITED'), // 'INVITED', 'IN_PROGRESS', 'CERTIFIED', 'FAILED'
+  latestAttemptId: varchar("latest_attempt_id", { length: 128 }),
+  latestScore: integer("latest_score"),
+  latestCertificationId: varchar("latest_certification_id", { length: 128 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => ({
+  emailIdx: index("academy_candidates_email_idx").on(t.email),
+  statusIdx: index("academy_candidates_status_idx").on(t.attendanceStatus),
+}));
+
+export const academyInvitations = pgTable("academy_invitations", {
+  token: varchar("token", { length: 128 }).primaryKey(),
+  candidateId: varchar("candidate_id", { length: 128 }).notNull().references(() => academyCandidates.id, { onDelete: 'cascade' }),
+  status: varchar("status", { length: 64 }).notNull().default('PENDING'), // 'PENDING', 'USED', 'EXPIRED', 'REVOKED'
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  candidateIdx: index("academy_invitations_candidate_idx").on(t.candidateId),
+  statusIdx: index("academy_invitations_status_idx").on(t.status),
+}));
+
+export const academyAssessments = pgTable("academy_assessments", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  candidateId: varchar("candidate_id", { length: 128 }).notNull().references(() => academyCandidates.id, { onDelete: 'cascade' }),
+  programId: varchar("program_id", { length: 128 }).notNull(),
+  curriculumVersion: integer("curriculum_version").notNull().default(2),
+  knowledgeSnapshotHash: varchar("knowledge_snapshot_hash", { length: 128 }).notNull(),
+  status: varchar("status", { length: 64 }).notNull().default('IN_PROGRESS'), // 'IN_PROGRESS', 'COMPLETED', 'CERTIFIED', 'FAILED'
+  overallReadinessScore: integer("overall_readiness_score"),
+  answers: jsonb("answers").notNull().default([]),
+  evaluations: jsonb("evaluations").notNull().default([]),
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+}, (t) => ({
+  candidateIdx: index("academy_assessments_candidate_idx").on(t.candidateId),
+  statusIdx: index("academy_assessments_status_idx").on(t.status),
+}));
+
+export const academyCertifications = pgTable("academy_certifications", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  candidateId: varchar("candidate_id", { length: 128 }).notNull().references(() => academyCandidates.id, { onDelete: 'cascade' }),
+  candidateName: varchar("candidate_name", { length: 256 }).notNull(),
+  assessmentId: varchar("assessment_id", { length: 128 }).notNull().references(() => academyAssessments.id, { onDelete: 'cascade' }),
+  programId: varchar("program_id", { length: 128 }).notNull(),
+  readinessScore: integer("readiness_score").notNull(),
+  competencySummary: jsonb("competency_summary"),
+  knowledgeSnapshotHash: varchar("knowledge_snapshot_hash", { length: 128 }),
+  curriculumVersion: integer("curriculum_version").default(2),
+  certificateHash: varchar("certificate_hash", { length: 128 }).notNull(),
+  issuer: varchar("issuer", { length: 256 }).notNull(),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
+  validUntil: timestamp("valid_until", { withTimezone: true }),
+}, (t) => ({
+  candidateIdx: index("academy_certifications_candidate_idx").on(t.candidateId),
+  assessmentIdx: index("academy_certifications_assessment_idx").on(t.assessmentId),
+}));
+
+

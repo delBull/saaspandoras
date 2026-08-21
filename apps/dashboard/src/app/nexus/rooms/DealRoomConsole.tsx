@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import {
   Handshake,
   Plus,
@@ -23,6 +24,7 @@ import {
   XCircle,
   Ban,
   Download,
+  GraduationCap,
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 
@@ -493,7 +495,14 @@ export default function DealRoomConsole() {
             <p className="text-[10px] text-zinc-500 truncate">TRANSACTION ROOMS · ADMINISTRACIÓN</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          <Link
+            href="/admin/academy"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[11px] font-mono hover:bg-purple-500/20 transition-colors"
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            ACADEMY
+          </Link>
           <span className="hidden lg:flex items-center gap-1.5 text-[10px] text-zinc-500">
             <Activity className="w-3 h-3 text-amber-300" />
             {rooms.length} ROOM{rooms.length !== 1 ? "S" : ""}

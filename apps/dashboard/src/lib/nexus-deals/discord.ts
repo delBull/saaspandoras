@@ -66,6 +66,32 @@ export async function sendDealRoomUnlockEmbed(input: {
 }
 
 /**
+ * Desbloqueo de Pandora's Academy Control Plane:
+ * genera embed con el link único de acceso al canal privado de Discord.
+ */
+export async function sendAcademyUnlockEmbed(input: {
+  email: string;
+  link: string;
+  requestedAt: string;
+}) {
+  const { email, link, requestedAt } = input;
+  return postDiscord("", [
+    {
+      title: "🎓 Acceso a Pandora's Academy — Control Plane Desbloqueado",
+      description: "Se solicitó acceso administrativo al Panel de Certificación y Rúbricas de Pandora's Academy.",
+      color: COLORS.PURPLE,
+      fields: [
+        { name: "👤 Solicitante", value: email, inline: true },
+        { name: "⏱️ Validez", value: "2 Horas (HMAC SHA-256)", inline: true },
+        { name: "🔗 Enlace Único de Acceso", value: `[👉 Abrir Pandora's Academy](${link})` },
+      ],
+      footer: { text: "Pandora's Academy Core · Institutional Control Plane" },
+      timestamp: requestedAt,
+    },
+  ]);
+}
+
+/**
  * Alertas de auditoría del Deal Room a Discord.
  */
 export async function sendDealRoomAlert(input: {

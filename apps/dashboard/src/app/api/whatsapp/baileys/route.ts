@@ -3,19 +3,50 @@
  * GET  /api/whatsapp/baileys — Get full session health (status, phone, heartbeat)
  *
  * This route is the bridge between Connectivity Studio UI and the external
- * WhatsApp Gateway (WHATSAPP_GATEWAY_URL — could be Baileys, Evolution API, etc.)
- *
- * It never implements WhatsApp logic — it only controls the Gateway.
+ * WhatsApp Gateway. Protected by Admin Session / Internal Auth.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { BaileysWhatsAppProvider } from '@/lib/whatsapp/providers/baileys';
+import { getAuth, isAdmin } from '@/lib/auth';
+import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
+
+async function isAuthorizedRequest(req: NextRequest): Promise<boolean> {
+  // 1. Internal secret header check
+  const internalSecret = process.env.PANDORAS_INTERNAL_SECRET || process.env.CRON_SECRET || '';
+  const authHeader = req.headers.get('authorization');
+  if (internalSecret && authHeader === `Bearer ${internalSecret}`) {
+    return true;
+  }
+
+  // 2. Admin Web3 session check
+  try {
+    const { session, isVerified } = await getAuth(await headers());
+    if (isVerified && session?.address && (await isAdmin(session.address))) {
+      return true;
+    }
+  } catch {
+    // Continue
+  }
+
+  // 3. In development allow local testing
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  return false;
+}
 
 /** POST { action: 'init' | 'terminate', tenantId: string } */
 export async function POST(req: NextRequest) {
   try {
+    const authorized = await isAuthorizedRequest(req);
+    if (!authorized) {
+      return NextResponse.json({ error: 'Unauthorized access to Baileys gateway' }, { status: 401 });
+    }
+
     const body = (await req.json()) as { action: 'init' | 'terminate'; tenantId: string };
     const { action, tenantId } = body;
 
@@ -26,7 +57,6 @@ export async function POST(req: NextRequest) {
     const sessionId = `tenant_${tenantId}`;
 
     if (action === 'init') {
-      // Verify gateway is reachable first
       const gatewayOnline = await BaileysWhatsAppProvider.pingGateway();
       if (!gatewayOnline) {
         return NextResponse.json(
@@ -58,6 +88,11 @@ export async function POST(req: NextRequest) {
 
 /** GET ?tenantId=xxx — Poll session health for Connectivity Studio UI */
 export async function GET(req: NextRequest) {
+  const authorized = await isAuthorizedRequest(req);
+  if (!authorized) {
+    return NextResponse.json({ error: 'Unauthorized access to Baileys gateway' }, { status: 401 });
+  }
+
   const tenantId = req.nextUrl.searchParams.get('tenantId');
   if (!tenantId) {
     return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });

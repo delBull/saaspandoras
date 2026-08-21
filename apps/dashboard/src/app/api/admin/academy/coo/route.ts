@@ -2,19 +2,26 @@
  * 🎓 Internal Admin Academy API Route
  * apps/dashboard/src/app/api/admin/academy/coo/route.ts
  *
- * Internal Control Plane endpoint for Pandora's Academy:
- * - GET: Returns COO Program Curriculum, Modules, Rubrics and Knowledge Snapshot.
- * - POST: Evaluates single response or full exam attempt deterministically.
+ * Protected Internal Control Plane endpoint for Pandora's Academy.
+ * Requires Web3 Admin session, Discord HMAC unlock token, or internal secret.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { AssessmentEngine } from '@/lib/pandoras/core/domains/academy/assessment/assessment-engine';
 import { CANONICAL_KNOWLEDGE_DOCS } from '@/lib/pandoras/core/domains/academy/curriculum/knowledge-sources';
 import { KnowledgeSnapshotManager } from '@/lib/pandoras/core/domains/academy/snapshots/snapshot-manager';
+import { verifyAdminRequest } from '@/lib/pandoras/core/domains/academy/security/admin-auth';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: NextRequest) {
   try {
-    const program = AssessmentEngine.getProgram('COO_INTERNAL_V1');
+    const isAuthorized = await verifyAdminRequest(request);
+    if (!isAuthorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges or valid unlock token required.' }, { status: 401 });
+    }
+
+    const program = AssessmentEngine.getProgram('COO_EXECUTIVE_V2') || AssessmentEngine.getProgram('COO_INTERNAL_V1');
     const snapshot = KnowledgeSnapshotManager.createFullProgramSnapshot();
 
     return NextResponse.json({
@@ -33,8 +40,13 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const isAuthorized = await verifyAdminRequest(request);
+    if (!isAuthorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges or valid unlock token required.' }, { status: 401 });
+    }
+
     const body = await request.json();
     const action = body.action || 'evaluate_single';
 

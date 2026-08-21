@@ -4,6 +4,8 @@ import { hermesAddonInstallations, hermesKnowledge, projects, installedProducts 
 import { eq, and } from 'drizzle-orm';
 import { KnowledgeDimensionDefinitionRegistry } from '../knowledge/registry';
 import { KnowledgeDimension, GovernedKnowledgeItem } from '../knowledge/types';
+import { ExecutiveScopeValidator } from '@/lib/pandoras/core/domains/academy/security/scope-validator';
+import { RuntimeExecutionContext, ClassifiedKnowledgeDocument } from '@/lib/pandoras/core/domains/academy/security/types';
 
 export interface CoreSecurityContext {
   organizationId: string;
@@ -53,11 +55,37 @@ export class CognitiveContextBuilder {
   static async buildEffectiveContext(tenantId: string, contactId: string): Promise<ConversationContext> {
     const coreContext = await this.buildCoreSecurityContext(tenantId);
     
-    // 1. Fetch Tenant Knowledge (ACTIVE)
-    const knowledgeRecords = await db
+    // 1. Fetch Tenant Knowledge (ACTIVE) and enforce ExecutiveScopeValidator boundary
+    const rawRecords = await db
       .select()
       .from(hermesKnowledge)
       .where(eq(hermesKnowledge.organizationId, tenantId));
+
+    const execContext: RuntimeExecutionContext = {
+      organizationId: tenantId,
+      organizationType: tenantId === 'pandoras_internal' ? 'INTERNAL' : 'TENANT',
+      application: 'HERMES_PORTAL',
+      purpose: 'TENANT_CUSTOMER_SUPPORT',
+      actorId: contactId,
+      roleClearance: 'TIER_4_OPERATOR',
+      allowedClassifications: ['PUBLIC', 'TENANT_SCOPED']
+    };
+
+    const knowledgeRecords = rawRecords.filter(k => {
+      const doc: ClassifiedKnowledgeDocument = {
+        docId: k.id,
+        title: k.key,
+        version: String(k.version || 1),
+        contentHash: k.id,
+        classification: k.visibility === 'PUBLIC' ? 'PUBLIC' : 'TENANT_SCOPED',
+        minClearance: 'TIER_4_OPERATOR',
+        targetRoleScope: 'ALL',
+        ownerOrganizationId: k.organizationId,
+        summary: k.content.substring(0, 100),
+        fullContent: k.content
+      };
+      return ExecutiveScopeValidator.validateAccess(execContext, doc).isAuthorized;
+    });
       
     const activeKnowledge = knowledgeRecords.filter(k => k.status === 'ACTIVE');
     

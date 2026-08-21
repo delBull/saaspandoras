@@ -31,8 +31,8 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
       getChannelsConfig(organizationSlug),
       getHandoffAlertConfig(organizationSlug)
     ]).then(([config, alertConfig]) => {
-      if (config.telegramBotToken) setTelegramToken(config.telegramBotToken);
-      if (config.whatsappToken) setWhatsappToken(config.whatsappToken);
+      if (config.telegramBotTokenMasked) setTelegramToken(config.telegramBotTokenMasked);
+      if (config.whatsappTokenMasked) setWhatsappToken(config.whatsappTokenMasked);
       if (config.whatsappPhoneId) setWhatsappPhoneId(config.whatsappPhoneId);
 
       if (alertConfig) {
@@ -44,34 +44,52 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
       }
 
       setLoading(false);
+    }).catch(err => {
+      toast.error('Error al cargar configuración');
+      setLoading(false);
     });
   }, [organizationSlug]);
 
   const handleSaveTelegram = async () => {
     setSavingTg(true);
-    await saveTelegramConfig(organizationSlug, telegramToken);
-    setSavingTg(false);
-    toast.success('Configuración de Telegram guardada');
+    try {
+      await saveTelegramConfig(organizationSlug, telegramToken);
+      toast.success('Configuración de Telegram guardada');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al guardar Telegram');
+    } finally {
+      setSavingTg(false);
+    }
   };
 
   const handleSaveWhatsApp = async () => {
     setSavingWa(true);
-    await saveWhatsAppConfig(organizationSlug, whatsappToken, whatsappPhoneId);
-    setSavingWa(false);
-    toast.success('Configuración de WhatsApp guardada');
+    try {
+      await saveWhatsAppConfig(organizationSlug, whatsappToken, whatsappPhoneId);
+      toast.success('Configuración de WhatsApp guardada');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al guardar WhatsApp');
+    } finally {
+      setSavingWa(false);
+    }
   };
 
   const handleSaveHandoffAlert = async () => {
     setSavingAlert(true);
-    await saveHandoffAlertConfig(organizationSlug, {
-      preferredChannel: alertChannel,
-      email: alertEmail,
-      telegramChatId: alertTgChatId,
-      whatsappPhone: alertWaPhone,
-      discordWebhookUrl: alertDiscordUrl,
-    });
-    setSavingAlert(false);
-    toast.success('Canal de escalación humana guardado exitosamente');
+    try {
+      await saveHandoffAlertConfig(organizationSlug, {
+        preferredChannel: alertChannel,
+        email: alertEmail,
+        telegramChatId: alertTgChatId,
+        whatsappPhone: alertWaPhone,
+        discordWebhookUrl: alertDiscordUrl,
+      });
+      toast.success('Canal de escalación humana guardado exitosamente');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al guardar canal de escalación');
+    } finally {
+      setSavingAlert(false);
+    }
   };
 
   if (loading) return <div className="p-8 text-neutral-400">Cargando canales...</div>;
