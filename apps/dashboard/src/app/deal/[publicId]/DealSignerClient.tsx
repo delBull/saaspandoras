@@ -90,8 +90,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [openSection, setOpenSection] = useState(room.sections[0]?.code ?? "01");
   const [signName, setSignName] = useState("");
   const [signCompany, setSignCompany] = useState("");
-  const [signRole, setSignRole] = useState("");
+  const [signRole, setSignRole] = useState("Representante Legal");
   const [signing, setSigning] = useState(false);
+  const [signingNda, setSigningNda] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
 
@@ -101,6 +102,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [ndaChecked, setNdaChecked] = useState(false);      // user checked the checkbox
   const [ndaExpanded, setNdaExpanded] = useState(false);    // full text expanded
   const [ndaModalOpen, setNdaModalOpen] = useState(false);  // open full document modal
+  const [ndaSignatureHash, setNdaSignatureHash] = useState<string | null>(null);
 
   const account = useActiveAccount();
   const activeWallet = useActiveWallet();
@@ -110,8 +112,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const isOpenSign = Boolean(room.openSign);
   const unlocked = Boolean(initialEmail && rawToken) || isOpenSign;
   const signerId = isOpenSign ? (account?.address?.toLowerCase() ?? "") : (initialEmail ?? "");
-  const ndaVersion = room.ndaVersion ?? "v1.0";
-  const effectiveNdaEnabled = room.ndaEnabled && isProposal;
+  const ndaVersion = room.ndaVersion ?? "v2.2";
+  const effectiveNdaEnabled = Boolean(room.ndaEnabled);
 
   // ── NDA CHECK ON MOUNT ───────────────────────────────────────────────────
   // Once we know the wallet/email, check if NDA is needed and if already signed.
@@ -126,14 +128,15 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
         if (!data.ndaEnabled) { setNdaStep("none"); return; }
         if (data.alreadySigned) {
           setNdaStep("bypassed");
+          if (data.previousAcceptance?.wallet) {
+            setNdaSignatureHash(data.previousAcceptance.wallet);
+          }
         } else {
           setNdaStep("required");
         }
       })
       .catch(() => setNdaStep("required"));
   }, [effectiveNdaEnabled, account?.address, initialEmail, isOpenSign, publicId]);
-
-  // NDA is now part of the combined signing flow — no separate NDA step needed.
 
   const requestMagic = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +156,60 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       setMagicError(err.message ?? "Error al enviar. Intenta de nuevo.");
     } finally {
       setSendingMagic(false);
+    }
+  };
+
+  /**
+   * 🛡️ Firma Independiente del NDA On-Chain
+   * Registra en nexus_nda_acceptances, dispara alertas y desbloquea el acuerdo.
+   */
+  const handleSignNdaOnly = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!account?.address) return;
+    if (!ndaChecked) {
+      setSignError("Debes marcar la casilla para aceptar el Acuerdo de Confidencialidad.");
+      return;
+    }
+
+    setSigningNda(true);
+    setSignError(null);
+    try {
+      const emailId = isOpenSign ? account.address.toLowerCase() : initialEmail ?? account.address.toLowerCase();
+      const ts = new Date().toISOString();
+      const message = `Pandora's Ecosystem — Acuerdo de Confidencialidad (${ndaVersion})\n\nAl firmar este mensaje reconozco que:\n1. He leído y entiendo el Acuerdo de Confidencialidad, No Uso y Protección de Información Confidencial de Pandora's Ecosystem versión ${ndaVersion}.\n2. Acepto voluntariamente todas sus obligaciones y restricciones.\n3. Esta firma electrónica constituye mi consentimiento legalmente vinculante conforme al Código de Comercio mexicano.\n\nIdentidad: ${emailId}\nWallet: ${account.address.toLowerCase()}\nTimestamp: ${ts}\nVersión: ${ndaVersion}`;
+
+      let signature = "";
+      try {
+        signature = await account.signMessage({ message });
+      } catch (sigErr) {
+        setSignError("Firma de NDA cancelada. No se registró ningún cambio.");
+        return;
+      }
+      if (!signature) {
+        setSignError("No se pudo generar la firma del NDA. Intenta de nuevo.");
+        return;
+      }
+
+      const res = await fetch(`/api/public/deals/${publicId}/nda`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailId,
+          name: signName.trim() || room.counterparty || "Representante Autorizado",
+          wallet: account.address,
+          signature,
+          timestamp: ts,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al registrar el NDA");
+
+      setNdaSignatureHash(signature);
+      setNdaStep("signed");
+    } catch (err: any) {
+      setSignError(err.message ?? "Error al firmar el NDA. Intenta de nuevo.");
+    } finally {
+      setSigningNda(false);
     }
   };
 
@@ -177,8 +234,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
       // Combined when: NDA required+checked (first time), or NDA already signed/bypassed
       const usesCombined = effectiveNdaEnabled && (needsNda || ndaStep === "signed" || ndaStep === "bypassed");
-      const companyVal = signCompany.trim() || undefined;
-      const roleVal = signRole.trim() || undefined;
+      const companyVal = signCompany.trim() || room.company || undefined;
+      const roleVal = signRole.trim() || "Representante Legal";
       const message = usesCombined
         ? buildCombinedSignMessage({
             email: emailId,
@@ -188,14 +245,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             wallet: account.address.toLowerCase(),
             publicId,
             dealKind: room.kind,
-            dealCounterparty: room.counterparty,
+            dealCounterparty: companyVal || room.counterparty,
             ndaVersion,
             timestamp: ts,
           })
         : buildSignMessage({
             publicId,
             kind: room.kind,
-            counterparty: room.counterparty,
+            counterparty: companyVal || room.counterparty,
             email: emailId,
             name,
             company: companyVal,
@@ -289,10 +346,36 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               <h1 className="text-2xl md:text-3xl font-semibold text-white print:text-black tracking-tight">
                 {room.summary || KIND_LABEL[room.kind]}
               </h1>
-              <div className="mt-2 mb-4">
-                <p className="text-[14px] font-medium text-zinc-300 print:text-black">{room.counterparty}</p>
-                <p className="text-[11px] font-mono text-zinc-500 print:text-black">{room.company}</p>
+              <div className="mt-3 mb-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02]">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400">Contraparte B2B:</span>
+                  <p className="text-[14px] font-bold text-white print:text-black">{signCompany || room.company || room.counterparty}</p>
+                </div>
+                <p className="text-[11px] font-mono text-zinc-400 mt-1 print:text-black">
+                  Representante Legal: <span className="text-zinc-200">{signName || room.counterparty}</span> {signRole ? `(${signRole})` : ""}
+                </p>
               </div>
+
+              {/* ── ACTIVE NDA BADGE ──────────────────────────────────── */}
+              {effectiveNdaEnabled && (ndaStep === "signed" || ndaStep === "bypassed") && (
+                <div className="mb-4 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.05] flex items-center justify-between gap-3 print:hidden">
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
+                    <div>
+                      <p className="text-[11px] font-mono text-emerald-300 font-semibold">Acuerdo de Confidencialidad (NDA {ndaVersion}) Activo</p>
+                      <p className="text-[10px] text-zinc-400">Protección legal y evidencia criptográfica verificada on-chain.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNdaModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-[10px] font-mono hover:bg-emerald-500/20 transition-colors shrink-0"
+                  >
+                    <Download className="w-3 h-3" />
+                    DESCARGAR NDA (PDF)
+                  </button>
+                </div>
+              )}
 
               {isProposal && (
                 <div className="mt-4 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.06]">
@@ -347,37 +430,53 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               )}
             </div>
 
-            <div className="space-y-2">
-              {room.sections.map((sec) => (
-                <div key={sec.code} className="rounded-xl border border-white/10 bg-[#0C0C10] overflow-hidden">
-                  <button
-                    onClick={() => setOpenSection(openSection === sec.code ? "" : sec.code)}
-                    className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono text-amber-300/80">{sec.code}</span>
-                      <span className="text-[13px] text-zinc-100">{sec.title}</span>
-                    </span>
-                    <span className={`text-zinc-600 transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
-                  </button>
-                  {openSection === sec.code && (
-                    <div className="px-4 pb-4 space-y-1.5">
-                      {sec.content.split("\n").filter(Boolean).map((line, i) => (
-                        <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed">
-                          <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
-                          {line}
-                        </p>
-                      ))}
-                      {unlocked && (
-                        <div className="print:hidden">
-                          <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
-                        </div>
-                      )}
-                    </div>
-                  )}
+            {/* ── DOCUMENT CLAUSES OR NDA GATE ────────────────────────── */}
+            {effectiveNdaEnabled && ndaStep === "required" ? (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-8 text-center my-6">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-300">
+                  <Lock className="w-6 h-6" />
                 </div>
-              ))}
-            </div>
+                <h2 className="text-xl font-bold text-white mb-2">Documento Confidencial Protegido por NDA</h2>
+                <p className="text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed mb-6">
+                  Para acceder y revisar las cláusulas de este acuerdo B2B ({room.summary || KIND_LABEL[room.kind]}), es obligatorio firmar previamente el Acuerdo de Confidencialidad y No Uso (NDA) de Pandora's Ecosystem.
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/20 text-amber-200 border border-amber-500/30 text-xs font-mono">
+                  <ShieldCheck className="w-4 h-4" /> Firma el NDA en el panel lateral para desbloquear este documento
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {room.sections.map((sec) => (
+                  <div key={sec.code} className="rounded-xl border border-white/10 bg-[#0C0C10] overflow-hidden">
+                    <button
+                      onClick={() => setOpenSection(openSection === sec.code ? "" : sec.code)}
+                      className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="text-[10px] font-mono text-amber-300/80">{sec.code}</span>
+                        <span className="text-[13px] text-zinc-100">{sec.title}</span>
+                      </span>
+                      <span className={`text-zinc-600 transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
+                    </button>
+                    {openSection === sec.code && (
+                      <div className="px-4 pb-4 space-y-1.5">
+                        {sec.content.split("\n").filter(Boolean).map((line, i) => (
+                          <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed">
+                            <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                            {line}
+                          </p>
+                        ))}
+                        {unlocked && (
+                          <div className="print:hidden">
+                            <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {signed && (
               <motion.div 
@@ -387,9 +486,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 <div className="flex items-start gap-3">
                   <FileSignature className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="text-sm font-semibold text-emerald-200">Aceptación Criptográfica Verificada</h3>
+                    <h3 className="text-sm font-semibold text-emerald-200">Aceptación Criptográfica B2B Verificada</h3>
                     <p className="text-[12px] text-zinc-400 mt-1 leading-relaxed">
-                      El presente documento ha sido aceptado electrónicamente y firmado on-chain por <strong>{signName || account?.address}</strong>. Esta firma constituye una declaración explícita de aceptación plena de todos los términos y condiciones estipulados en las cláusulas anteriores.
+                      El presente documento ha sido aceptado electrónicamente y firmado on-chain en representación de <strong>{signCompany || room.company || room.counterparty}</strong> por <strong>{signName || account?.address}</strong> ({signRole || "Representante Legal"}).
                     </p>
                   </div>
                 </div>
@@ -409,7 +508,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             {signed ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] text-center">
                 <Check className="w-8 h-8 text-emerald-300 mx-auto mb-3" />
-                <h3 className="text-sm font-semibold text-emerald-200">¡Documento Firmado!</h3>
+                <h3 className="text-sm font-semibold text-emerald-200">¡Acuerdo B2B Firmado!</h3>
                 <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">
                   Tu aceptación quedó registrada en el audit trail del Deal Room. Gracias por tu confianza.
                 </p>
@@ -418,7 +517,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-200 text-[11px] font-mono hover:bg-emerald-500/30 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  GUARDAR COMO PDF
+                  DESCARGAR ACUERDO (PDF)
                 </button>
               </motion.div>
             ) : (initialEmail && rawToken) || isOpenSign ? (
@@ -446,7 +545,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </div>
                 )}
 
-                {/* ── NDA BLOCK ─────────────────────────────────────────── */}
+                {/* ── PASO 1: NDA REQUIREMENT & SIGNING ─────────────────── */}
                 {effectiveNdaEnabled && ndaStep === "loading" && (
                   <div className="flex items-center gap-2 p-3 rounded-lg border border-white/10 bg-black/30">
                     <Loader2 className="w-3.5 h-3.5 text-zinc-500 animate-spin shrink-0" />
@@ -454,147 +553,114 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </div>
                 )}
 
-                {effectiveNdaEnabled && ndaStep === "bypassed" && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06]">
-                    <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-300 mb-0.5">NDA Firmado</p>
-                      <p className="text-[11px] text-zinc-400 leading-relaxed">Acuerdo de Confidencialidad ya aceptado. Continúa con la firma del documento.</p>
-                    </div>
-                  </div>
-                )}
-
-                {effectiveNdaEnabled && (ndaStep === "signed") && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.06]">
-                    <Check className="w-4 h-4 text-emerald-300 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-300 mb-0.5">NDA Firmado</p>
-                      <p className="text-[11px] text-zinc-400">Acuerdo de Confidencialidad aceptado. Continúa con la firma del documento.</p>
-                    </div>
-                  </div>
-                )}
-
                 {effectiveNdaEnabled && ndaStep === "required" && (
-                  <AnimatePresence>
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      className="rounded-xl border border-amber-500/25 bg-amber-500/[0.04] overflow-hidden"
-                    >
-                      <button
-                        onClick={() => setNdaExpanded(!ndaExpanded)}
-                        className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
-                      >
-                        <span className="flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4 text-amber-300 shrink-0" />
-                          <span>
-                            <p className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Acuerdo de Confidencialidad</p>
-                            <p className="text-[10px] text-zinc-500">Requerido antes de firmar</p>
-                          </span>
-                        </span>
-                        {ndaExpanded ? <ChevronUp className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />}
-                      </button>
-
-                      {ndaExpanded && (
-                        <div className="px-4 pb-4 space-y-3 border-t border-white/[0.06]">
-                          <p className="text-[11px] text-zinc-400 leading-relaxed pt-3">
-                            <strong className="text-zinc-200">Acuerdo de Confidencialidad Pandora's Ecosystem ({ndaVersion})</strong>
-                          </p>
-                          <p className="text-[11px] text-zinc-500 leading-relaxed">
-                            Al firmar este acuerdo, usted acepta mantener estricta confidencialidad sobre toda la información compartida en este Deal Room,
-                            no usarla para fines no autorizados, y no compartirla con terceros sin consentimiento previo por escrito.
-                            El acuerdo tiene una vigencia de 5 años y se rige por las leyes de los Estados Unidos Mexicanos.
-                          </p>
-                          <p className="text-[10px] text-zinc-600 leading-relaxed">
-                            Esta aceptación es vinculante y queda registrada on-chain como evidencia criptográfica.
-                          </p>
-
-                          <div className="pt-2">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setNdaModalOpen(true);
-                              }}
-                              className="w-full flex items-center justify-center gap-2 py-2 px-3 border border-white/10 rounded-lg text-[10px] text-white hover:bg-white/5 transition-colors uppercase tracking-widest font-bold"
-                            >
-                              <FileSignature className="w-3.5 h-3.5" />
-                              Ver Master NDA Completo
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="px-4 pb-4">
-                        <label className="flex items-start gap-3 cursor-pointer group">
-                          <div
-                            onClick={() => setNdaChecked(!ndaChecked)}
-                            className={`mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors cursor-pointer
-                              ${ndaChecked ? "bg-amber-500 border-amber-500" : "border-white/20 bg-black/30 group-hover:border-amber-500/50"}`}
-                          >
-                            {ndaChecked && <Check className="w-2.5 h-2.5 text-black" />}
-                          </div>
-                          <p className="text-[11px] text-zinc-400 leading-relaxed">
-                            He leído y acepto el <strong className="text-amber-300">Acuerdo de Confidencialidad Pandora's Ecosystem {ndaVersion}</strong>. Entiendo que esta aceptación es vinculante y queda registrada on-chain.
-                          </p>
-                        </label>
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.04] p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-amber-300 shrink-0" />
+                      <div>
+                        <p className="text-[11px] font-mono uppercase tracking-widest text-amber-300 font-bold">Paso 1: Firma de NDA</p>
+                        <p className="text-[10px] text-zinc-400">Requerido antes de ver y firmar el acuerdo</p>
                       </div>
-                    </motion.div>
-                  </AnimatePresence>
+                    </div>
+
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      El <strong className="text-zinc-200">Acuerdo de Confidencialidad Pandora's ({ndaVersion})</strong> protege la información estratégica de ambas partes con vigencia de 5 años.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setNdaModalOpen(true)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 border border-white/10 rounded-lg text-[10px] text-zinc-300 hover:bg-white/5 transition-colors uppercase tracking-widest font-mono"
+                    >
+                      <FileSignature className="w-3 h-3" />
+                      Ver Master NDA Completo
+                    </button>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                      <div
+                        onClick={() => setNdaChecked(!ndaChecked)}
+                        className={`mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors cursor-pointer
+                          ${ndaChecked ? "bg-amber-500 border-amber-500" : "border-white/20 bg-black/30 hover:border-amber-500/50"}`}
+                      >
+                        {ndaChecked && <Check className="w-2.5 h-2.5 text-black" />}
+                      </div>
+                      <p className="text-[11px] text-zinc-300 leading-relaxed">
+                        He leído y acepto el <strong className="text-amber-300">Acuerdo de Confidencialidad {ndaVersion}</strong>.
+                      </p>
+                    </label>
+
+                    {account?.address ? (
+                      <button
+                        type="button"
+                        onClick={handleSignNdaOnly}
+                        disabled={signingNda || !ndaChecked}
+                        className={SIGN_BUTTON_STYLE}
+                      >
+                        {signingNda ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                        {signingNda ? "FIRMANDO NDA..." : "FIRMAR ACUERDO DE CONFIDENCIALIDAD (NDA)"}
+                      </button>
+                    ) : (
+                      <div className="rounded-lg border border-white/10 bg-black/40 p-3">
+                        <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet para firmar el NDA (gratis · sin gas):</p>
+                        <ConnectButton
+                          client={client}
+                          wallets={signerWallets}
+                          connectButton={{ label: "Conectar para firmar NDA" }}
+                          connectModal={{ size: "compact", title: "Verificar identidad", showThirdwebBranding: false }}
+                          theme={darkTheme({ colors: { primaryButtonBg: "#10b981", primaryButtonText: "#000" } })}
+                        />
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                {/* ── SIGNING FORM ────────────────────────────────────────── */}
-                {/* Unified: NDA checkbox (if required) + name + wallet + single sign button */}
-                {(!effectiveNdaEnabled || ndaStep === "signed" || ndaStep === "bypassed" || ndaStep === "none" || (ndaStep === "required" && ndaChecked)) && (
+                {/* ── PASO 2: AGREEMENT SIGNING FORM ───────────────────── */}
+                {(!effectiveNdaEnabled || ndaStep === "signed" || ndaStep === "bypassed" || ndaStep === "none") && (
                   <>
                     <h3 className="text-sm font-semibold text-white">
-                      {effectiveNdaEnabled && (ndaStep === "signed" || ndaStep === "bypassed")
-                        ? (isProposal ? "Aceptar propuesta" : "Firmar documento")
-                        : (isProposal ? "Aceptar y confirmar" : "Firmar documento")}
+                      {isProposal ? "Aceptar propuesta B2B" : "Firmar acuerdo B2B"}
                     </h3>
                     <p className="text-[11px] text-zinc-500 leading-relaxed">
-                      {isProposal
-                        ? "Confirma que has leído la propuesta y estás de acuerdo con su contenido para continuar la colaboración. Tu identidad queda registrada por tu wallet y la firma es verificada on-chain."
-                        : "Ingresa tu nombre y conecta tu cuenta para firmar este documento. Tu identidad queda registrada por tu wallet y la firma es verificada on-chain."}
-                      {effectiveNdaEnabled && (ndaStep === "signed" || ndaStep === "bypassed") && (
-                        <> El Acuerdo de Confidencialidad ({ndaVersion}) quedará registrado como aceptado globalmente.</>
-                      )}
+                      Ingresa los datos de tu empresa y representación legal para firmar on-chain este acuerdo.
                     </p>
 
                     <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Nombre completo (obligatorio)"
-                        value={signName}
-                        onChange={(e) => setSignName(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Empresa a la que representas (opcional)"
-                        value={signCompany}
-                        onChange={(e) => setSignCompany(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-                      />
-                      {signCompany && (
+                      <div>
+                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">Nombre del Representante Legal *</label>
                         <input
                           type="text"
-                          placeholder="Cargo o rol legal en la empresa (Requerido)"
+                          placeholder="Tu nombre completo"
+                          value={signName}
+                          onChange={(e) => setSignName(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">Empresa / Razón Social *</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: ESCUELA LIBRE DIGITAL"
+                          value={signCompany}
+                          onChange={(e) => setSignCompany(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">Cargo o Poder Legal *</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Representante Legal / Director"
                           value={signRole}
                           onChange={(e) => setSignRole(e.target.value)}
                           className="w-full bg-black/40 border border-amber-500/30 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500/60 transition-colors"
                         />
-                      )}
+                      </div>
                       
                       {signName && (
-                        <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] text-[11px] text-amber-200/80 italic">
-                          Firmarás como: <strong className="text-amber-300 not-italic">{signName}</strong>
-                          {signCompany ? (
-                            <>
-                              , <strong className="text-amber-300 not-italic">{signRole || "Representante"}</strong> de <strong className="text-amber-300 not-italic">{signCompany}</strong>
-                            </>
-                          ) : (
-                            ""
-                          )}
+                        <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] text-[11px] text-amber-200/80 leading-relaxed">
+                          Firmarás como: <strong className="text-amber-300 not-italic">{signName}</strong> ({signRole || "Representante"}) en representación de <strong className="text-amber-300 not-italic">{signCompany || room.company || room.counterparty}</strong>
                         </div>
                       )}
 
@@ -640,7 +706,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         )
                       ) : (
                         <div className="rounded-lg border border-white/10 bg-black/40 p-3">
-                          <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet (MetaMask, Coinbase, Rabby...) o tu cuenta social para firmar (gratis · sin gas):</p>
+                          <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet para firmar el acuerdo (gratis · sin gas):</p>
                           <ConnectButton
                             client={client}
                             wallets={signerWallets}
@@ -655,11 +721,11 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <button
                         type="button"
                         onClick={handleSign}
-                        disabled={signing || !signName.trim() || (!!signCompany.trim() && !signRole.trim()) || !account?.address || (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())}
+                        disabled={signing || !signName.trim() || !account?.address || (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())}
                         className={SIGN_BUTTON_STYLE}
                       >
                         {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
-                        {signing ? "FIRMANDO..." : isProposal ? "ACEPTAR PROPUESTA" : "FIRMAR DOCUMENTO"}
+                        {signing ? "FIRMANDO..." : isProposal ? "ACEPTAR PROPUESTA B2B" : "FIRMAR ACUERDO B2B"}
                       </button>
                     </form>
                     <p className="text-[9px] text-zinc-600 mt-1 text-center leading-relaxed">

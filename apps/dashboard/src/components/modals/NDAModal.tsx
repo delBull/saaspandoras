@@ -173,7 +173,14 @@ export function NDAModal({ isOpen, onClose, version = "v2.1" }: NDAModalProps) {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-zinc-800/60 bg-zinc-900/40 flex justify-end">
+            <div className="px-6 py-4 border-t border-zinc-800/60 bg-zinc-900/40 flex items-center justify-between">
+              <Button
+                onClick={() => window.print()}
+                variant="outline"
+                className="gap-2 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 text-xs font-mono"
+              >
+                Descargar / Imprimir NDA (PDF)
+              </Button>
               <Button onClick={onClose} variant="secondary">
                 Cerrar documento
               </Button>

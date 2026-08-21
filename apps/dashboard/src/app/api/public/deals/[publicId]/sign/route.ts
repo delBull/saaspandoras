@@ -41,7 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     // ── NDA GUARD ────────────────────────────────────────────────────────────
     // If this room requires NDA and the user is NOT signing the combined message,
     // check that they've already signed the NDA independently first.
-    const effectiveNdaEnabled = room.ndaEnabled && room.kind === "PROPOSAL";
+    const effectiveNdaEnabled = Boolean(room.ndaEnabled);
     if (effectiveNdaEnabled && !isCombined) {
       const identifier = cleanWallet;
       const ndaSigned = await hasEmailSignedNda(identifier, room.ndaVersion);

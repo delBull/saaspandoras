@@ -38,42 +38,40 @@ export class KnowledgeGovernanceService {
 
     const id = `k_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    return await db.transaction(async (tx) => {
-      const createdAt = new Date();
-      const initialStatus = payload.status || 'DISCOVERED';
-      
-      await tx.insert(hermesKnowledge).values({
-        id,
-        organizationId: context.organizationId,
-        dimension: payload.dimension,
-        key: payload.key,
-        content: payload.content,
-        status: initialStatus,
-        visibility: payload.visibility,
-        authority: 'DISCOVERED',
-        version: 1,
-        source: payload.source,
-        sourceReference: payload.sourceReference || null,
-        createdBy: context.actorId,
-        createdAt,
-        updatedAt: createdAt
-      });
-
-      await this.appendAuditTx(tx, {
-        eventId: `evt_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-        organizationId: context.organizationId,
-        knowledgeId: id,
-        version: 1,
-        action: 'DISCOVER',
-        actorId: context.actorId,
-        actorType: context.role === 'SYSTEM' ? 'SYSTEM' : 'USER',
-        timestamp: createdAt,
-        newStatus: initialStatus,
-        reason: initialStatus === 'ACTIVE' ? 'Auto-approved by policy' : undefined
-      });
-
-      return await this.getKnowledgeByIdTx(tx, id);
+    const createdAt = new Date();
+    const initialStatus = payload.status || 'DISCOVERED';
+    
+    await db.insert(hermesKnowledge).values({
+      id,
+      organizationId: context.organizationId,
+      dimension: payload.dimension,
+      key: payload.key,
+      content: payload.content,
+      status: initialStatus,
+      visibility: payload.visibility,
+      authority: 'DISCOVERED',
+      version: 1,
+      source: payload.source,
+      sourceReference: payload.sourceReference || null,
+      createdBy: context.actorId,
+      createdAt,
+      updatedAt: createdAt
     });
+
+    await this.appendAuditTx(db, {
+      eventId: `evt_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+      organizationId: context.organizationId,
+      knowledgeId: id,
+      version: 1,
+      action: 'DISCOVER',
+      actorId: context.actorId,
+      actorType: context.role === 'SYSTEM' ? 'SYSTEM' : 'USER',
+      timestamp: createdAt,
+      newStatus: initialStatus,
+      reason: initialStatus === 'ACTIVE' ? 'Auto-approved by policy' : undefined
+    });
+
+    return await this.getKnowledgeByIdTx(db, id);
   }
 
   /**
@@ -85,90 +83,88 @@ export class KnowledgeGovernanceService {
     knowledgeId: string,
     expectedVersion: number
   ): Promise<GovernedKnowledgeItem> {
-    return await db.transaction(async (tx) => {
-      const item = await this.getKnowledgeByIdTx(tx, knowledgeId);
-      
-      if (!item) throw new Error("KnowledgeItem not found");
+    const item = await this.getKnowledgeByIdTx(db, knowledgeId);
+    
+    if (!item) throw new Error("KnowledgeItem not found");
 
-      if (item.scope.organizationId !== context.organizationId) {
-        throw new Error("Cross-tenant attack detected! Access denied.");
-      }
+    if (item.scope.organizationId !== context.organizationId) {
+      throw new Error("Cross-tenant attack detected! Access denied.");
+    }
 
-      if (item.scope.dimension === 'governance' && context.role === 'SYSTEM') {
-        throw new Error("Governance knowledge cannot be self-approved by the system.");
-      }
-      
-      if (!['OWNER', 'ADMIN'].includes(context.role)) {
-        throw new Error("Unauthorized: Insufficient permissions to approve knowledge.");
-      }
+    if (item.scope.dimension === 'governance' && context.role === 'SYSTEM') {
+      throw new Error("Governance knowledge cannot be self-approved by the system.");
+    }
+    
+    if (!['OWNER', 'ADMIN'].includes(context.role)) {
+      throw new Error("Unauthorized: Insufficient permissions to approve knowledge.");
+    }
 
-      if (item.lifecycle.version !== expectedVersion) {
-        throw new Error(`Optimistic concurrency failure: expected version ${expectedVersion}, got ${item.lifecycle.version}`);
-      }
+    if (item.lifecycle.version !== expectedVersion) {
+      throw new Error(`Optimistic concurrency failure: expected version ${expectedVersion}, got ${item.lifecycle.version}`);
+    }
 
-      if (item.lifecycle.status === 'ACTIVE') {
-        throw new Error("Invalid transition: Item is already ACTIVE.");
-      }
-      if (item.lifecycle.status === 'REJECTED') {
-        throw new Error("Invalid transition: Cannot approve a REJECTED item directly.");
-      }
-      if (item.lifecycle.status === 'SUPERSEDED') {
-        throw new Error("Invalid transition: Cannot approve a SUPERSEDED item.");
-      }
+    if (item.lifecycle.status === 'ACTIVE') {
+      throw new Error("Invalid transition: Item is already ACTIVE.");
+    }
+    if (item.lifecycle.status === 'REJECTED') {
+      throw new Error("Invalid transition: Cannot approve a REJECTED item directly.");
+    }
+    if (item.lifecycle.status === 'SUPERSEDED') {
+      throw new Error("Invalid transition: Cannot approve a SUPERSEDED item.");
+    }
 
-      const oldStatus = item.lifecycle.status;
-      const timestamp = new Date();
+    const oldStatus = item.lifecycle.status;
+    const timestamp = new Date();
 
-      if (item.lifecycle.supersedesId) {
-        const oldItem = await this.getKnowledgeByIdTx(tx, item.lifecycle.supersedesId);
-        if (oldItem && oldItem.scope.organizationId === context.organizationId && oldItem.lifecycle.status === 'ACTIVE') {
-          const oldItemPreviousStatus = oldItem.lifecycle.status;
+    if (item.lifecycle.supersedesId) {
+      const oldItem = await this.getKnowledgeByIdTx(db, item.lifecycle.supersedesId);
+      if (oldItem && oldItem.scope.organizationId === context.organizationId && oldItem.lifecycle.status === 'ACTIVE') {
+        const oldItemPreviousStatus = oldItem.lifecycle.status;
+        
+        await db.update(hermesKnowledge)
+          .set({ status: 'SUPERSEDED', updatedAt: timestamp })
+          .where(eq(hermesKnowledge.id, oldItem.id));
           
-          await tx.update(hermesKnowledge)
-            .set({ status: 'SUPERSEDED', updatedAt: timestamp })
-            .where(eq(hermesKnowledge.id, oldItem.id));
-            
-          await this.appendAuditTx(tx, {
-            eventId: `evt_${Date.now()}_sup_${Math.random().toString(36).substring(7)}`,
-            organizationId: context.organizationId,
-            knowledgeId: oldItem.id,
-            version: oldItem.lifecycle.version,
-            action: 'SUPERSEDE',
-            actorId: context.actorId,
-            actorType: 'USER',
-            timestamp,
-            previousStatus: oldItemPreviousStatus,
-            newStatus: 'SUPERSEDED',
-            reason: `Superseded by ${item.id}`
-          });
-        }
+        await this.appendAuditTx(db, {
+          eventId: `evt_${Date.now()}_sup_${Math.random().toString(36).substring(7)}`,
+          organizationId: context.organizationId,
+          knowledgeId: oldItem.id,
+          version: oldItem.lifecycle.version,
+          action: 'SUPERSEDE',
+          actorId: context.actorId,
+          actorType: 'USER',
+          timestamp,
+          previousStatus: oldItemPreviousStatus,
+          newStatus: 'SUPERSEDED',
+          reason: `Superseded by ${item.id}`
+        });
       }
+    }
 
-      // 8. Mutation
-      await tx.update(hermesKnowledge)
-        .set({ 
-          status: 'ACTIVE', 
-          authority: 'CANONICAL', 
-          updatedAt: timestamp 
-        })
-        .where(eq(hermesKnowledge.id, item.id));
+    // 8. Mutation
+    await db.update(hermesKnowledge)
+      .set({ 
+        status: 'ACTIVE', 
+        authority: 'CANONICAL', 
+        updatedAt: timestamp 
+      })
+      .where(eq(hermesKnowledge.id, item.id));
 
-      // 9. Audit
-      await this.appendAuditTx(tx, {
-        eventId: `evt_${Date.now()}_app_${Math.random().toString(36).substring(7)}`,
-        organizationId: context.organizationId,
-        knowledgeId: item.id,
-        version: item.lifecycle.version,
-        action: 'APPROVE',
-        actorId: context.actorId,
-        actorType: 'USER',
-        timestamp,
-        previousStatus: oldStatus,
-        newStatus: 'ACTIVE'
-      });
-
-      return await this.getKnowledgeByIdTx(tx, item.id);
+    // 9. Audit
+    await this.appendAuditTx(db, {
+      eventId: `evt_${Date.now()}_app_${Math.random().toString(36).substring(7)}`,
+      organizationId: context.organizationId,
+      knowledgeId: item.id,
+      version: item.lifecycle.version,
+      action: 'APPROVE',
+      actorId: context.actorId,
+      actorType: 'USER',
+      timestamp,
+      previousStatus: oldStatus,
+      newStatus: 'ACTIVE'
     });
+
+    return await this.getKnowledgeByIdTx(db, item.id);
   }
 
   /**
@@ -179,43 +175,41 @@ export class KnowledgeGovernanceService {
     knowledgeId: string,
     reason: string
   ): Promise<GovernedKnowledgeItem> {
-    return await db.transaction(async (tx) => {
-      const item = await this.getKnowledgeByIdTx(tx, knowledgeId);
-      if (!item) throw new Error("KnowledgeItem not found");
-      if (item.scope.organizationId !== context.organizationId) {
-        throw new Error("Cross-tenant attack detected!");
-      }
-      if (!['OWNER', 'ADMIN'].includes(context.role)) {
-        throw new Error("Unauthorized.");
-      }
+    const item = await this.getKnowledgeByIdTx(db, knowledgeId);
+    if (!item) throw new Error("KnowledgeItem not found");
+    if (item.scope.organizationId !== context.organizationId) {
+      throw new Error("Cross-tenant attack detected!");
+    }
+    if (!['OWNER', 'ADMIN'].includes(context.role)) {
+      throw new Error("Unauthorized.");
+    }
 
-      if (item.lifecycle.status === 'ACTIVE' || item.lifecycle.status === 'SUPERSEDED') {
-        throw new Error("Invalid transition: Cannot reject ACTIVE or SUPERSEDED items.");
-      }
+    if (item.lifecycle.status === 'ACTIVE' || item.lifecycle.status === 'SUPERSEDED') {
+      throw new Error("Invalid transition: Cannot reject ACTIVE or SUPERSEDED items.");
+    }
 
-      const oldStatus = item.lifecycle.status;
-      const timestamp = new Date();
-      
-      await tx.update(hermesKnowledge)
-        .set({ status: 'REJECTED', updatedAt: timestamp })
-        .where(eq(hermesKnowledge.id, item.id));
+    const oldStatus = item.lifecycle.status;
+    const timestamp = new Date();
+    
+    await db.update(hermesKnowledge)
+      .set({ status: 'REJECTED', updatedAt: timestamp })
+      .where(eq(hermesKnowledge.id, item.id));
 
-      await this.appendAuditTx(tx, {
-        eventId: `evt_${Date.now()}_rej_${Math.random().toString(36).substring(7)}`,
-        organizationId: context.organizationId,
-        knowledgeId: item.id,
-        version: item.lifecycle.version,
-        action: 'REJECT',
-        actorId: context.actorId,
-        actorType: 'USER',
-        timestamp,
-        previousStatus: oldStatus,
-        newStatus: 'REJECTED',
-        reason
-      });
-
-      return await this.getKnowledgeByIdTx(tx, item.id);
+    await this.appendAuditTx(db, {
+      eventId: `evt_${Date.now()}_rej_${Math.random().toString(36).substring(7)}`,
+      organizationId: context.organizationId,
+      knowledgeId: item.id,
+      version: item.lifecycle.version,
+      action: 'REJECT',
+      actorId: context.actorId,
+      actorType: 'USER',
+      timestamp,
+      previousStatus: oldStatus,
+      newStatus: 'REJECTED',
+      reason
     });
+
+    return await this.getKnowledgeByIdTx(db, item.id);
   }
 
   /**
@@ -227,52 +221,50 @@ export class KnowledgeGovernanceService {
     activeKnowledgeId: string,
     newContent: string
   ): Promise<GovernedKnowledgeItem> {
-    return await db.transaction(async (tx) => {
-      const oldItem = await this.getKnowledgeByIdTx(tx, activeKnowledgeId);
-      if (!oldItem) throw new Error("KnowledgeItem not found");
-      if (oldItem.scope.organizationId !== context.organizationId) {
-        throw new Error("Cross-tenant attack detected!");
-      }
-      if (oldItem.lifecycle.status !== 'ACTIVE') {
-        throw new Error("Can only edit ACTIVE items.");
-      }
+    const oldItem = await this.getKnowledgeByIdTx(db, activeKnowledgeId);
+    if (!oldItem) throw new Error("KnowledgeItem not found");
+    if (oldItem.scope.organizationId !== context.organizationId) {
+      throw new Error("Cross-tenant attack detected!");
+    }
+    if (oldItem.lifecycle.status !== 'ACTIVE') {
+      throw new Error("Can only edit ACTIVE items.");
+    }
 
-      const id = `k_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      const timestamp = new Date();
+    const id = `k_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const timestamp = new Date();
 
-      await tx.insert(hermesKnowledge).values({
-        id,
-        organizationId: oldItem.scope.organizationId,
-        dimension: oldItem.scope.dimension,
-        key: oldItem.content.key,
-        content: newContent,
-        status: 'PENDING_REVIEW',
-        visibility: oldItem.governance.visibility,
-        authority: 'DISCOVERED',
-        version: oldItem.lifecycle.version + 1,
-        source: oldItem.governance.source,
-        sourceReference: oldItem.governance.sourceReference || null,
-        createdBy: context.actorId,
-        supersedesId: oldItem.id,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      });
-
-      await this.appendAuditTx(tx, {
-        eventId: `evt_${Date.now()}_edit_${Math.random().toString(36).substring(7)}`,
-        organizationId: context.organizationId,
-        knowledgeId: id,
-        version: oldItem.lifecycle.version + 1,
-        action: 'SUBMIT_FOR_REVIEW',
-        actorId: context.actorId,
-        actorType: 'USER',
-        timestamp,
-        newStatus: 'PENDING_REVIEW',
-        reason: `Edit of ${oldItem.id}`
-      });
-
-      return await this.getKnowledgeByIdTx(tx, id);
+    await db.insert(hermesKnowledge).values({
+      id,
+      organizationId: oldItem.scope.organizationId,
+      dimension: oldItem.scope.dimension,
+      key: oldItem.content.key,
+      content: newContent,
+      status: 'PENDING_REVIEW',
+      visibility: oldItem.governance.visibility,
+      authority: 'DISCOVERED',
+      version: oldItem.lifecycle.version + 1,
+      source: oldItem.governance.source,
+      sourceReference: oldItem.governance.sourceReference || null,
+      createdBy: context.actorId,
+      supersedesId: oldItem.id,
+      createdAt: timestamp,
+      updatedAt: timestamp
     });
+
+    await this.appendAuditTx(db, {
+      eventId: `evt_${Date.now()}_edit_${Math.random().toString(36).substring(7)}`,
+      organizationId: context.organizationId,
+      knowledgeId: id,
+      version: oldItem.lifecycle.version + 1,
+      action: 'SUBMIT_FOR_REVIEW',
+      actorId: context.actorId,
+      actorType: 'USER',
+      timestamp,
+      newStatus: 'PENDING_REVIEW',
+      reason: `Edit of ${oldItem.id}`
+    });
+
+    return await this.getKnowledgeByIdTx(db, id);
   }
 
   // --- QUERY METHODS ---

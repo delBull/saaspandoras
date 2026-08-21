@@ -73,116 +73,113 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     const orgId = input.organizationId;
     const convId = input.conversationId;
 
-    return await db.transaction(async (tx) => {
-      // Check idempotency first (K12-A17)
-      const existing = await tx.select().from(hermesConversationMessages)
-        .where(and(
-          eq(hermesConversationMessages.organizationId, orgId),
-          eq(hermesConversationMessages.idempotencyKey, `${input.idempotencyKey}_user`)
-        ))
-        .limit(1);
+    // Check idempotency first (K12-A17)
+    const existing = await db.select().from(hermesConversationMessages)
+      .where(and(
+        eq(hermesConversationMessages.organizationId, orgId),
+        eq(hermesConversationMessages.idempotencyKey, `${input.idempotencyKey}_user`)
+      ))
+      .limit(1);
 
-      if (existing.length > 0) {
-        // Return duplicate without creating
-        const conv = await tx.select().from(hermesConversations)
-          .where(and(
-            eq(hermesConversations.organizationId, orgId),
-            eq(hermesConversations.conversationId, convId)
-          ))
-          .limit(1);
-          
-        return {
-          persisted: false,
-          duplicate: true,
-          version: conv[0]?.version.toString() || '0',
-          persistedAt: new Date()
-        };
-      }
-
-      // Concurrency control & version generation
-      const convs = await tx.select().from(hermesConversations)
+    if (existing.length > 0) {
+      // Return duplicate without creating
+      const conv = await db.select().from(hermesConversations)
         .where(and(
           eq(hermesConversations.organizationId, orgId),
           eq(hermesConversations.conversationId, convId)
         ))
-        .for('update')
         .limit(1);
-
-      let currentVersion = 0;
-      let nextSequence = 1;
-
-      const conv = convs[0];
-      if (conv) {
-        currentVersion = conv.version;
-        // Optimistic concurrency check
-        if (input.expectedVersion !== undefined && currentVersion.toString() !== input.expectedVersion) {
-          throw new Error(`Concurrency Conflict: Expected version ${input.expectedVersion}, got ${currentVersion}`);
-        }
-      }
-
-      const nextVersion = currentVersion + 1;
-      
-      // Update or create conversation
-      if (conv) {
-        await tx.update(hermesConversations)
-          .set({ version: nextVersion, updatedAt: new Date() })
-          .where(eq(hermesConversations.id, conv.id));
-          
-        // Get max sequence
-        const maxSeq = await tx.select({ seq: hermesConversationMessages.sequence })
-          .from(hermesConversationMessages)
-          .where(and(
-            eq(hermesConversationMessages.organizationId, orgId),
-            eq(hermesConversationMessages.conversationId, convId)
-          ))
-          .orderBy(desc(hermesConversationMessages.sequence))
-          .limit(1);
-          
-        const maxSeqItem = maxSeq[0];
-        if (maxSeqItem) {
-          nextSequence = maxSeqItem.seq + 1;
-        }
-      } else {
-        await tx.insert(hermesConversations).values({
-          id: `conv_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-          organizationId: orgId,
-          conversationId: convId,
-          version: nextVersion,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      }
-
-      // Persist atomic turn (USER + ASSISTANT)
-      await tx.insert(hermesConversationMessages).values([
-        {
-          id: input.turn.userMessage.id,
-          organizationId: orgId,
-          conversationId: convId,
-          role: input.turn.userMessage.role,
-          content: input.turn.userMessage.content,
-          sequence: nextSequence,
-          idempotencyKey: `${input.idempotencyKey}_user`,
-          createdAt: input.turn.userMessage.createdAt
-        },
-        {
-          id: input.turn.assistantMessage.id,
-          organizationId: orgId,
-          conversationId: convId,
-          role: input.turn.assistantMessage.role,
-          content: input.turn.assistantMessage.content,
-          sequence: nextSequence + 1,
-          idempotencyKey: `${input.idempotencyKey}_assistant`,
-          createdAt: input.turn.assistantMessage.createdAt
-        }
-      ]);
-
+        
       return {
-        persisted: true,
-        duplicate: false,
-        version: nextVersion.toString(),
+        persisted: false,
+        duplicate: true,
+        version: conv[0]?.version.toString() || '0',
         persistedAt: new Date()
       };
-    });
+    }
+
+    // Concurrency control & version generation
+    const convs = await db.select().from(hermesConversations)
+      .where(and(
+        eq(hermesConversations.organizationId, orgId),
+        eq(hermesConversations.conversationId, convId)
+      ))
+      .limit(1);
+
+    let currentVersion = 0;
+    let nextSequence = 1;
+
+    const conv = convs[0];
+    if (conv) {
+      currentVersion = conv.version;
+      // Optimistic concurrency check
+      if (input.expectedVersion !== undefined && currentVersion.toString() !== input.expectedVersion) {
+        throw new Error(`Concurrency Conflict: Expected version ${input.expectedVersion}, got ${currentVersion}`);
+      }
+    }
+
+    const nextVersion = currentVersion + 1;
+    
+    // Update or create conversation
+    if (conv) {
+      await db.update(hermesConversations)
+        .set({ version: nextVersion, updatedAt: new Date() })
+        .where(eq(hermesConversations.id, conv.id));
+        
+      // Get max sequence
+      const maxSeq = await db.select({ seq: hermesConversationMessages.sequence })
+        .from(hermesConversationMessages)
+        .where(and(
+          eq(hermesConversationMessages.organizationId, orgId),
+          eq(hermesConversationMessages.conversationId, convId)
+        ))
+        .orderBy(desc(hermesConversationMessages.sequence))
+        .limit(1);
+        
+      const maxSeqItem = maxSeq[0];
+      if (maxSeqItem) {
+        nextSequence = maxSeqItem.seq + 1;
+      }
+    } else {
+      await db.insert(hermesConversations).values({
+        id: `conv_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        organizationId: orgId,
+        conversationId: convId,
+        version: nextVersion,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
+
+    // Persist atomic turn (USER + ASSISTANT)
+    await db.insert(hermesConversationMessages).values([
+      {
+        id: input.turn.userMessage.id,
+        organizationId: orgId,
+        conversationId: convId,
+        role: input.turn.userMessage.role,
+        content: input.turn.userMessage.content,
+        sequence: nextSequence,
+        idempotencyKey: `${input.idempotencyKey}_user`,
+        createdAt: input.turn.userMessage.createdAt
+      },
+      {
+        id: input.turn.assistantMessage.id,
+        organizationId: orgId,
+        conversationId: convId,
+        role: input.turn.assistantMessage.role,
+        content: input.turn.assistantMessage.content,
+        sequence: nextSequence + 1,
+        idempotencyKey: `${input.idempotencyKey}_assistant`,
+        createdAt: input.turn.assistantMessage.createdAt
+      }
+    ]);
+
+    return {
+      persisted: true,
+      duplicate: false,
+      version: nextVersion.toString(),
+      persistedAt: new Date()
+    };
   }
 }

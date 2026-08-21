@@ -51,6 +51,21 @@ export interface SignerInput {
   email: string;
 }
 
+/**
+ * 🛡️ ON-CHAIN KYC GATEWAY (Future Infrastructure)
+ * Consultar especificación y mini-roadmap en:
+ * file:///DOCUMENTACIÓN/DEALS_KYC_ROADMAP.md
+ */
+export type KycStatus = "NOT_REQUIRED" | "PENDING" | "VERIFIED" | "REJECTED";
+export type KycLevel = "TIER_1_LITE" | "TIER_2_PASSPORT" | "TIER_3_KYB_CORPORATE";
+
+export interface KycGateConfig {
+  kycRequired?: boolean;
+  kycLevel?: KycLevel;
+  kycStatus?: KycStatus;
+  attestationHash?: string | null;
+}
+
 // Secciones por defecto del Deal Room (Nivel 2)
 const DEFAULT_ROLE = [
   "Representación institucional y apertura de canales corporativos para el ecosistema Pandora's.",
