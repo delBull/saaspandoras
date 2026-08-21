@@ -14,6 +14,7 @@ import {
   TerminalSquare,
   Handshake,
   Landmark,
+  GraduationCap,
 } from "lucide-react";
 import { OperationsHubModal } from "./OperationsHubModal";
 import TasksPanel from "./TasksPanel";
@@ -77,6 +78,7 @@ const categories: Category[] = [
     },
     links: [
       { name: "Growth OS (Ecosystem Portal)", path: "https://dash.pandoras.finance/growth-os" },
+      { name: "Pandora's Academy (Certificaciones)", path: "https://dash.pandoras.finance/admin/academy" },
       { name: "Hermes AI Platform (AI-OS)", path: "https://dash.pandoras.finance/growth-os/hermes" },
       { name: "Pandora's Media Co (Demand Engine)", path: "https://dash.pandoras.finance/media" },
       { name: "Asset Capitalization", path: "https://dash.pandoras.finance/asset-capitalization" },
@@ -255,6 +257,15 @@ export default function NexusClient() {
               >
                 <Handshake className="w-3 h-3" />
                 DEAL ROOM
+              </a>
+              <a
+                href="https://dash.pandoras.finance/admin/academy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
+              >
+                <GraduationCap className="w-3 h-3" />
+                ACADEMY
               </a>
             </div>
           </div>
