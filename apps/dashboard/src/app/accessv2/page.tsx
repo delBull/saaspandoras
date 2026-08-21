@@ -228,11 +228,11 @@ function AccessV2Inner() {
         }).catch(console.error);
       }
 
-      // Route to project or home
+      // Route to project or home (Smooth client transition to protect extension streams)
       if (projectSlug) {
-        window.location.href = `/projects/${projectSlug}`;
+        router.push(`/projects/${projectSlug}`);
       } else {
-        window.location.href = '/';
+        router.push('/');
       }
     } else {
       console.warn("[AccessV2] handleEnterSystem called but user does not have access yet. Waiting for state update.");

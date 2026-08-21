@@ -228,46 +228,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  
 
 
-    useEffect(() => {
-        // 🔒 ORCHESTRATOR EFFECT (Latest-Wins Strategy)
-        const address = account?.address;
-        
-        // Scenario A: First boot or Account changed
-        if (!hasBooted.current || address !== lastAccountRef.current) {
-            console.log(`[AuthMachine] 🔑 Context change: ${lastAccountRef.current} -> ${address}`);
-            hasBooted.current = true;
-            lastAccountRef.current = address;
-
-            // ELITE FIX (Phase 41): If we detect an account, we MUST clear any previous logout flags
-            // to prevent the "Login Return" loop where AutoLoginGate wipes cookies.
-            if (address && typeof window !== "undefined") {
-                localStorage.removeItem("wallet-logged-out");
-            }
-
-            // ELITE FIX: Abort any previous flow context AND release the mutex lock
-            abortControllerRef.current?.abort();
-            runningFlow.current = null; // 🔓 Force unlock for new identity
-            
-            const controller = new AbortController();
-            abortControllerRef.current = controller;
-
-            if (address) {
-                 console.log("[AuthMachine] 👤 Account detected, initiating unified flow...");
-                 runAuthFlow(controller.signal);
-            } else if (!isAutoConnecting && !isManualConnecting) {
-                 console.log("[AuthMachine] 👤 No account detected and not connecting. Settling as guest.");
-                 dispatch({ type: "SET_STATUS", status: "unauthenticated" });
-            } else {
-                 console.log("[AuthMachine] ⏳ Connection in progress (Auto/Manual). Waiting...");
-            }
-        }
-    }, [account?.address, isAutoConnecting, isManualConnecting]);
-
-    // 🛡️ TRACE LOGS (Phase 39)
-    useEffect(() => {
-        console.log(`[AuthMachine] 📡 RAW STATE: address=${account?.address?.slice(0,6)}... status=${state.status} auto=${isAutoConnecting} manual=${isManualConnecting}`);
-    }, [account?.address, state.status, isAutoConnecting, isManualConnecting]);
-
     /**
      * FRACTURE #1: Scoped refreshSession
      */
@@ -306,6 +266,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw e;
         }
     };
+
+    useEffect(() => {
+        // 🔒 ORCHESTRATOR EFFECT (Latest-Wins Strategy)
+        const address = account?.address;
+        
+        // Scenario A: First boot or Account changed
+        if (!hasBooted.current || address !== lastAccountRef.current) {
+            console.log(`[AuthMachine] 🔑 Context change: ${lastAccountRef.current} -> ${address}`);
+            hasBooted.current = true;
+            lastAccountRef.current = address;
+
+            // ELITE FIX (Phase 41): If we detect an account, we MUST clear any previous logout flags
+            // to prevent the "Login Return" loop where AutoLoginGate wipes cookies.
+            if (address && typeof window !== "undefined") {
+                localStorage.removeItem("wallet-logged-out");
+            }
+
+            // ELITE FIX: Abort any previous flow context AND release the mutex lock
+            abortControllerRef.current?.abort();
+            runningFlow.current = null; // 🔓 Force unlock for new identity
+            
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            if (address) {
+                 console.log("[AuthMachine] 👤 Account detected, initiating unified flow...");
+                 runAuthFlow(controller.signal);
+            } else if (!isAutoConnecting && !isManualConnecting) {
+                 // Check if user has an active cookie session before settling as unauthenticated
+                 refreshSession(undefined, controller.signal).then((session) => {
+                     if (controller.signal.aborted) return;
+                     if (session?.authenticated) {
+                         console.log("[AuthMachine] 🍪 Cookie session detected on boot without active wallet:", session.user?.address);
+                         dispatch({
+                             type: "SET_STATUS",
+                             status: session.hasAccess || session.isAdmin ? "has_access" : "authenticated",
+                             user: session.user,
+                             remoteState: session.state,
+                             ux: session.ux,
+                             betaOpen: session.betaOpen,
+                             ritualEnabled: session.ritualEnabled
+                         });
+                     } else {
+                         console.log("[AuthMachine] 👤 No account detected and not connecting. Settling as guest.");
+                         dispatch({ type: "SET_STATUS", status: "unauthenticated" });
+                     }
+                 }).catch(() => {
+                     if (!controller.signal.aborted) {
+                         dispatch({ type: "SET_STATUS", status: "unauthenticated" });
+                     }
+                 });
+            } else {
+                 console.log("[AuthMachine] ⏳ Connection in progress (Auto/Manual). Waiting...");
+            }
+        }
+    }, [account?.address, isAutoConnecting, isManualConnecting]);
+
+    // 🛡️ TRACE LOGS (Phase 39)
+    useEffect(() => {
+        console.log(`[AuthMachine] 📡 RAW STATE: address=${account?.address?.slice(0,6)}... status=${state.status} auto=${isAutoConnecting} manual=${isManualConnecting}`);
+    }, [account?.address, state.status, isAutoConnecting, isManualConnecting]);
 
     const login = async (id: number) => {
         if (!account) return;

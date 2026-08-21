@@ -670,6 +670,56 @@ async function detectProject(messageText?: string): Promise<number | null> {
   return null;
 }
 
+let isIncomingWamidEnsured = false;
+async function ensureIncomingWamidColumn() {
+  if (isIncomingWamidEnsured) return;
+  try {
+    await sql`ALTER TABLE whatsapp_messages ADD COLUMN IF NOT EXISTS incoming_wamid TEXT;`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_incoming_wamid ON whatsapp_messages (incoming_wamid);`;
+    isIncomingWamidEnsured = true;
+  } catch (err) {
+    console.warn('[SIMPLE-ROUTER] ensureIncomingWamidColumn warning:', err);
+  }
+}
+
+async function logWhatsAppMessage(phone: string, direction: 'incoming' | 'outgoing', body: string, messageId?: string) {
+  try {
+    if (messageId) {
+      await sql`
+        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, incoming_wamid, timestamp)
+        SELECT s.id, ${direction}, ${body}, 'text', ${messageId}, now()
+        FROM whatsapp_sessions s
+        JOIN whatsapp_users u ON s.user_id = u.id
+        WHERE u.phone = ${phone} AND s.is_active = true
+        LIMIT 1
+      `;
+    } else {
+      await sql`
+        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, timestamp)
+        SELECT s.id, ${direction}, ${body}, 'text', now()
+        FROM whatsapp_sessions s
+        JOIN whatsapp_users u ON s.user_id = u.id
+        WHERE u.phone = ${phone} AND s.is_active = true
+        LIMIT 1
+      `;
+    }
+  } catch (err) {
+    // Non-blocking fallback
+    try {
+      await sql`
+        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, timestamp)
+        SELECT s.id, ${direction}, ${body}, 'text', now()
+        FROM whatsapp_sessions s
+        JOIN whatsapp_users u ON s.user_id = u.id
+        WHERE u.phone = ${phone} AND s.is_active = true
+        LIMIT 1
+      `;
+    } catch (fallbackErr) {
+      console.warn('[SIMPLE-ROUTER] Message logging failed (non-blocking):', fallbackErr);
+    }
+  }
+}
+
 /**
  * FUNCIÓN PRINCIPAL DE ROUTING SIMPLIFICADO
  */
@@ -682,15 +732,20 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
     console.log(`🔄 [SIMPLE-ROUTER] Mensaje de ${phone}: "${messageText.substring(0, 50)}..."`);
 
     // 1. IDEMPOTENCY: Verificar si ya procesamos este mensaje
-    const [existingMessage] = await sql`
-      SELECT 1 FROM whatsapp_messages 
-      WHERE incoming_wamid = ${messageId}
-      LIMIT 1
-    ` as any[];
+    try {
+      await ensureIncomingWamidColumn();
+      const [existingMessage] = await sql`
+        SELECT 1 FROM whatsapp_messages 
+        WHERE incoming_wamid = ${messageId}
+        LIMIT 1
+      ` as any[];
 
-    if (existingMessage) {
-      console.log(`⚡ [SIMPLE-ROUTER] Mensaje duplicado ${messageId} ignorado`);
-      return { handled: true, flowType: 'duplicate', action: 'ignored' };
+      if (existingMessage) {
+        console.log(`⚡ [SIMPLE-ROUTER] Mensaje duplicado ${messageId} ignorado`);
+        return { handled: true, flowType: 'duplicate', action: 'ignored' };
+      }
+    } catch (idempotencyErr) {
+      console.warn(`⚠️ [SIMPLE-ROUTER] Idempotency check bypassed:`, idempotencyErr);
     }
 
     // 2. VERIFICAR FLUJO EXISTENTE
@@ -885,25 +940,11 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       }
 
       // Log mensaje de entrada
-      await sql`
-        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, incoming_wamid, timestamp)
-        SELECT s.id, 'incoming', ${messageText}, 'text', ${messageId}, now()
-        FROM whatsapp_sessions s
-        JOIN whatsapp_users u ON s.user_id = u.id
-        WHERE u.phone = ${phone} AND s.is_active = true
-        LIMIT 1
-      `;
+      await logWhatsAppMessage(phone, 'incoming', messageText, messageId);
 
       // Log respuesta si existe
       if (result.response) {
-        await sql`
-          INSERT INTO whatsapp_messages (session_id, direction, body, message_type, timestamp)
-          SELECT s.id, 'outgoing', ${result.response}, 'text', now()
-          FROM whatsapp_sessions s
-          JOIN whatsapp_users u ON s.user_id = u.id
-          WHERE u.phone = ${phone} AND s.is_active = true
-          LIMIT 1
-        `;
+        await logWhatsAppMessage(phone, 'outgoing', result.response);
       }
 
       return result;
@@ -958,24 +999,10 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
     }
 
     // Log inicial
-    await sql`
-      INSERT INTO whatsapp_messages (session_id, direction, body, message_type, incoming_wamid, timestamp)
-      SELECT s.id, 'incoming', ${messageText}, 'text', ${messageId}, now()
-      FROM whatsapp_sessions s
-      JOIN whatsapp_users u ON s.user_id = u.id
-      WHERE u.phone = ${phone} AND s.is_active = true
-      LIMIT 1
-    `;
+    await logWhatsAppMessage(phone, 'incoming', messageText, messageId);
 
     if (result.response) {
-      await sql`
-        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, timestamp)
-        SELECT s.id, 'outgoing', ${result.response}, 'text', now()
-        FROM whatsapp_sessions s
-        JOIN whatsapp_users u ON s.user_id = u.id
-        WHERE u.phone = ${phone} AND s.is_active = true
-        LIMIT 1
-      `;
+      await logWhatsAppMessage(phone, 'outgoing', result.response);
     }
 
     return result;

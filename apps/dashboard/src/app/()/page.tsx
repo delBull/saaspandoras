@@ -335,6 +335,12 @@ export default function DashboardPage() {
       return;
     }
 
+    // 🛡️ AUTHORIZATION GUARD: If user has access or admin via session/context, NEVER redirect
+    const userAlreadyAuthorized = hasAccess || isAdmin || accessState === AccessState.HAS_ACCESS || accessState === AccessState.ADMIN || status === "has_access";
+    if (userAlreadyAuthorized) {
+      return;
+    }
+
     const UNAUTHORIZED_STATES = [
       AccessState.NO_WALLET,
       AccessState.NO_SESSION,

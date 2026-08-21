@@ -873,6 +873,7 @@ export const whatsappMessages = pgTable("whatsapp_messages", {
   direction: text("direction").notNull(), // "incoming" / "outgoing"
   body: text("body"),
   messageType: text("message_type").default("text").notNull(), // "text", "image", "audio"
+  incomingWamid: text("incoming_wamid"),
   timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
 });
 
