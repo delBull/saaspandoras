@@ -186,6 +186,17 @@ export default function AcademyConsole() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href={
+                typeof window !== "undefined" && new URLSearchParams(window.location.search).get("unlock")
+                  ? `/nexus/rooms?unlock=${encodeURIComponent(new URLSearchParams(window.location.search).get("unlock")!)}`
+                  : "/nexus/rooms"
+              }
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-amber-500/30 text-amber-300 hover:bg-amber-500/10 text-xs font-mono transition-colors"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              DEAL ROOMS
+            </Link>
             <button
               onClick={() => {
                 setGeneratedInviteLink(null);
