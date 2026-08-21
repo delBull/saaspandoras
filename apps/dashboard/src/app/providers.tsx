@@ -64,7 +64,7 @@ export function Providers({
               client={client}
               wallets={wallets}
               chain={config.chain}
-              timeout={15000}
+              timeout={5000}
             />
           )}
 

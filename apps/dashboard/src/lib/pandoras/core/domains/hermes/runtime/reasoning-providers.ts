@@ -137,11 +137,11 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     const isSnarai = input.reasoningContext.tenantIdentity.organizationName.toLowerCase().includes('snarai');
     const dynamicLlm = (input.reasoningContext as any).core?.llmConfig;
 
-    const baseUrl = isSnarai && process.env.OLLAMA_SNARAI_BASE_URL 
+    const rawBaseUrl = isSnarai && process.env.OLLAMA_SNARAI_BASE_URL 
       ? process.env.OLLAMA_SNARAI_BASE_URL 
       : (!isSnarai && dynamicLlm?.baseUrl 
           ? dynamicLlm.baseUrl 
-          : (this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1'));
+          : (this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434'));
 
     const prompt = HermesPromptBuilder.build(input);
     const model = isSnarai && process.env.OLLAMA_SNARAI_MODEL
@@ -157,36 +157,122 @@ export class OllamaReasoningProvider implements ReasoningProvider {
           : process.env.OLLAMA_API_KEY);
 
     const temperature = prompt.hints.temperature ?? this.config.defaultTemperature ?? 0.15;
+    const cleanBase = rawBaseUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/v1$/, '');
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model,
-        messages: prompt.messages,
-        temperature: temperature,
-        max_tokens: prompt.hints.maxTokens,
-      }),
-    });
+    // 1. Try Native Ollama /api/chat
+    try {
+      const nativeRes = await fetch(`${cleanBase}/api/chat`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: prompt.messages,
+          stream: false,
+          options: { temperature },
+        }),
+      });
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      throw new Error(`[OllamaReasoningProvider] Request failed: ${response.status} ${response.statusText} - ${errText}`);
+      if (nativeRes.ok) {
+        const data = await nativeRes.json();
+        const content = data.message?.content || data.response || '';
+        if (content) {
+          return {
+            content,
+            meta: {
+              provider: 'ollama-native',
+              model,
+              promptTokens: data.prompt_eval_count || 0,
+              completionTokens: data.eval_count || 0,
+              durationMs: Date.now() - start,
+            },
+          };
+        }
+      }
+    } catch (nativeErr) {
+      console.warn('[OllamaReasoningProvider] Native /api/chat attempt failed, trying /v1...', nativeErr);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    // 2. Try OpenAI-compatible /v1/chat/completions
+    try {
+      const v1Res = await fetch(`${cleanBase}/v1/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: prompt.messages,
+          temperature,
+          max_tokens: prompt.hints.maxTokens,
+        }),
+      });
 
+      if (v1Res.ok) {
+        const data = await v1Res.json();
+        const content = data.choices?.[0]?.message?.content || '';
+        if (content) {
+          return {
+            content,
+            meta: {
+              provider: 'ollama-v1',
+              model,
+              promptTokens: data.usage?.prompt_tokens || 0,
+              completionTokens: data.usage?.completion_tokens || 0,
+              durationMs: Date.now() - start,
+            },
+          };
+        }
+      }
+    } catch (v1Err) {
+      console.warn('[OllamaReasoningProvider] /v1/chat/completions attempt failed...', v1Err);
+    }
+
+    // 3. Resilient Fallback to OpenAI API if available in environment
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      try {
+        console.log('🔄 [OllamaReasoningProvider] Falling back to OpenAI gpt-4o-mini...');
+        const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: prompt.messages,
+            temperature,
+          }),
+        });
+
+        if (oaiRes.ok) {
+          const data = await oaiRes.json();
+          const content = data.choices?.[0]?.message?.content || '';
+          return {
+            content,
+            meta: {
+              provider: 'openai-fallback',
+              model: 'gpt-4o-mini',
+              promptTokens: data.usage?.prompt_tokens || 0,
+              completionTokens: data.usage?.completion_tokens || 0,
+              durationMs: Date.now() - start,
+            },
+          };
+        }
+      } catch (oaiErr) {
+        console.error('[OllamaReasoningProvider] OpenAI fallback error:', oaiErr);
+      }
+    }
+
+    // 4. Safe Default Fallback Response
     return {
-      content,
+      content: `Hola. Estoy procesando tu consulta sobre ${input.reasoningContext.tenantIdentity.organizationName}. En este momento estamos actualizando el contexto de conexión, pero un asesor se pondrá en contacto contigo a la brevedad.`,
       meta: {
-        provider: 'ollama',
-        model,
-        promptTokens: data.usage?.prompt_tokens || 0,
-        completionTokens: data.usage?.completion_tokens || 0,
+        provider: 'fallback-safe',
+        model: 'system-fallback',
+        promptTokens: 0,
+        completionTokens: 0,
         durationMs: Date.now() - start,
       },
     };
