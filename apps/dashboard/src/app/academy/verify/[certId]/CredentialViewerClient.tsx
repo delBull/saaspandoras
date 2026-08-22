@@ -5,7 +5,7 @@
  * apps/dashboard/src/app/academy/verify/[certId]/CredentialViewerClient.tsx
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -26,7 +26,8 @@ import {
   ChevronRight,
   Share2,
   AlertTriangle,
-  Play
+  Play,
+  Loader2
 } from 'lucide-react';
 import { UNLOCKED_BLUEPRINTS, SIMULATOR_SCENARIOS, UnlockedBlueprintDoc, SimulatorCrisisScenario } from '@/lib/pandoras/core/domains/academy/rewards/unlocked-perks';
 
@@ -51,13 +52,15 @@ interface CredentialViewerProps {
 export function CredentialViewerClient({ cert }: CredentialViewerProps) {
   const [activeTab, setActiveTab] = useState<'BADGE' | 'PERKS' | 'SIMULATOR'>('BADGE');
   const [selectedBlueprint, setSelectedBlueprint] = useState<UnlockedBlueprintDoc | null>(null);
+  const [blueprintContent, setBlueprintContent] = useState<string>('');
+  const [loadingBlueprint, setLoadingBlueprint] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<SimulatorCrisisScenario>(SIMULATOR_SCENARIOS[0]!);
   const [simulatorResponse, setSimulatorResponse] = useState('');
   const [simulating, setSimulating] = useState(false);
   const [simulatorResult, setSimulatorResult] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const tabParam = new URLSearchParams(window.location.search).get('tab');
       if (tabParam === 'SIMULATOR') setActiveTab('SIMULATOR');
@@ -65,7 +68,7 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
     }
   }, []);
 
-  const role = cert.targetRole.toUpperCase();
+  const role = (cert.targetRole || 'COO').toUpperCase();
   const relevantBlueprints = UNLOCKED_BLUEPRINTS.filter(
     b => b.roleTarget === role || b.roleTarget === 'ALL'
   );
@@ -84,6 +87,43 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
     }
   };
 
+  const handleOpenBlueprint = async (bp: UnlockedBlueprintDoc) => {
+    setSelectedBlueprint(bp);
+    setLoadingBlueprint(true);
+    setBlueprintContent('');
+
+    try {
+      const res = await fetch(`/api/academy/perks/${bp.id}?certId=${encodeURIComponent(cert.id)}`);
+      const data = await res.json();
+      if (data.success && data.blueprint?.contentMarkdown) {
+        setBlueprintContent(data.blueprint.contentMarkdown);
+      } else {
+        setBlueprintContent('⚠️ No fue posible desbloquear el contenido confidencial. Verifica que tu credencial esté activa.');
+      }
+    } catch {
+      setBlueprintContent('⚠️ Error al recuperar el documento del servidor.');
+    } finally {
+      setLoadingBlueprint(false);
+    }
+  };
+
+  const handleDownloadBlueprint = async (bp: UnlockedBlueprintDoc) => {
+    try {
+      const res = await fetch(`/api/academy/perks/${bp.id}?certId=${encodeURIComponent(cert.id)}`);
+      const data = await res.json();
+      if (data.success && data.blueprint?.contentMarkdown) {
+        const blob = new Blob([data.blueprint.contentMarkdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = bp.downloadFilename;
+        a.click();
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+    }
+  };
+
   const handleRunSimulator = async () => {
     if (!simulatorResponse.trim() || simulating) return;
     setSimulating(true);
@@ -94,6 +134,7 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          certId: cert.id,
           scenarioId: selectedScenario.id,
           candidateResponse: simulatorResponse
         })
@@ -101,6 +142,14 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
       const data = await res.json();
       if (data.success) {
         setSimulatorResult(data.evaluation);
+      } else {
+        setSimulatorResult({
+          score: 0,
+          passed: false,
+          hermesVerdict: data.error || 'Error en la sesión del simulador.',
+          feedbackPoints: [],
+          strengths: []
+        });
       }
     } catch (err) {
       console.error('Simulator error:', err);
@@ -108,6 +157,17 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
       setSimulating(false);
     }
   };
+
+  // Dynamic Competencies derived from cert or role
+  const competencies = cert.competencySummary ? Object.entries(cert.competencySummary).map(([key, val]) => ({
+    name: key.replace(/_/g, ' ').toUpperCase(),
+    score: Number(val) || 90
+  })) : [
+    { name: 'Gobernanza Institucional & Separación de Capas', score: Math.round(cert.readinessScore) },
+    { name: 'Estándar PAS v1.0 & Bóvedas Fiduciarias', score: Math.max(80, Math.round(cert.readinessScore - 2)) },
+    { name: 'Protocolos de Safe-Stops & Firmas M-of-N', score: Math.max(80, Math.round(cert.readinessScore - 4)) },
+    { name: 'Contención de Crisis & Legal Engineering', score: Math.min(100, Math.round(cert.readinessScore + 1)) }
+  ];
 
   return (
     <div className="min-h-screen bg-[#08080A] text-zinc-100 p-4 md:p-8 font-sans selection:bg-purple-500/30">
@@ -126,9 +186,9 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> VERIFICADO ON-CHAIN
+                  <CheckCircle2 className="w-3 h-3" /> VERIFICADO CRIPTOGRÁFICO
                 </span>
-                <span className="text-xs font-mono text-zinc-500 hidden sm:inline">ERC-5192 SOULBOUND</span>
+                <span className="text-xs font-mono text-zinc-500 hidden sm:inline">SOULBOUND READY (ERC-5192)</span>
               </div>
               <h1 className="text-lg md:text-xl font-bold text-white mt-0.5">
                 Credencial Institucional: {cert.candidateName}
@@ -155,7 +215,7 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
           </div>
         </div>
 
-        {/* Tab Navigation Navigation */}
+        {/* Tab Navigation */}
         <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#0C0C10] border border-white/10 overflow-x-auto">
           <button
             onClick={() => setActiveTab('BADGE')}
@@ -210,7 +270,7 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
                 </div>
                 <div className="mt-3 flex items-center justify-between px-2 text-[10px] font-mono text-zinc-500">
                   <span className="flex items-center gap-1 text-purple-400">
-                    <Sparkles className="w-3 h-3" /> INTANGIBLE ERC-5192
+                    <Sparkles className="w-3 h-3" /> CREDENCIAL INMUTABLE
                   </span>
                   <span>SEAL: {cert.certificateHash.substring(0, 12)}...</span>
                 </div>
@@ -265,12 +325,7 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
                   Desglose de Competencias Evaluadas por Hermes
                 </h3>
                 <div className="space-y-3">
-                  {[
-                    { name: 'Gobernanza Institucional & Separación de Capas', score: 95 },
-                    { name: 'Estándar PAS v1.0 & Bóvedas Fiduciarias', score: 92 },
-                    { name: 'Protocolos de Safe-Stops & Firmas M-of-N', score: 90 },
-                    { name: 'Contención de Crisis & Legal Engineering', score: 94 }
-                  ].map((comp, idx) => (
+                  {competencies.map((comp, idx) => (
                     <div key={idx} className="space-y-1 text-xs font-mono">
                       <div className="flex justify-between text-zinc-300">
                         <span>{comp.name}</span>
@@ -322,20 +377,13 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
 
                   <div className="pt-3 border-t border-white/5 flex items-center justify-between">
                     <button
-                      onClick={() => setSelectedBlueprint(bp)}
+                      onClick={() => handleOpenBlueprint(bp)}
                       className="text-xs font-mono text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1"
                     >
                       LEER EN LÍNEA <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => {
-                        const blob = new Blob([bp.contentMarkdown], { type: 'text/markdown' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = bp.downloadFilename;
-                        a.click();
-                      }}
+                      onClick={() => handleDownloadBlueprint(bp)}
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-colors"
                       title="Descargar Markdown"
                     >
@@ -467,7 +515,7 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
                   >
                     {simulating ? (
                       <span className="flex items-center gap-2">
-                        <Play className="w-3.5 h-3.5 animate-spin" /> PROCESANDO DICTAMEN...
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> PROCESANDO DICTAMEN...
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
@@ -533,9 +581,16 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
                 </button>
               </div>
 
-              <div className="prose prose-invert prose-xs max-w-none text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap">
-                {selectedBlueprint.contentMarkdown}
-              </div>
+              {loadingBlueprint ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-2 text-xs font-mono text-zinc-400">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+                  <span>Desbloqueando documento confidencial desde el servidor...</span>
+                </div>
+              ) : (
+                <div className="prose prose-invert prose-xs max-w-none text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap">
+                  {blueprintContent}
+                </div>
+              )}
 
               <div className="pt-4 border-t border-white/10 flex justify-end">
                 <button

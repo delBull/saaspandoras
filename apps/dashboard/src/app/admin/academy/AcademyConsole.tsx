@@ -200,6 +200,7 @@ export default function AcademyConsole() {
   const [newCandidateRole, setNewCandidateRole] = useState("COO");
   const [creatingCandidate, setCreatingCandidate] = useState(false);
   const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
+  const [generatedSuiteTokens, setGeneratedSuiteTokens] = useState<Record<string, string> | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   // Simulator state
@@ -255,6 +256,16 @@ export default function AcademyConsole() {
       if (data.success && data.invitation) {
         const link = `${window.location.origin}/academy/assessment/${data.invitation.token}`;
         setGeneratedInviteLink(link);
+        // If this is a Suite invitation, also store all 4 track tokens
+        if (data.suiteTokens) {
+          const suiteLinks: Record<string, string> = {};
+          for (const [role, token] of Object.entries(data.suiteTokens as Record<string, string>)) {
+            suiteLinks[role] = `${window.location.origin}/academy/assessment/${token}`;
+          }
+          setGeneratedSuiteTokens(suiteLinks);
+        } else {
+          setGeneratedSuiteTokens(null);
+        }
         setNewCandidateName("");
         setNewCandidateEmail("");
         setNewCandidatePhone("");
@@ -808,26 +819,59 @@ export default function AcademyConsole() {
                   <div className="space-y-4">
                     <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
                       <div className="flex items-center gap-2 font-bold text-xs font-mono">
-                        <CheckCircle2 className="w-4 h-4" /> INVITACIÓN CREADA EXITOSAMENTE
+                        <CheckCircle2 className="w-4 h-4" />
+                        {generatedSuiteTokens ? '👑 SUITE EJECUTIVA CREADA — 4 TRACKS' : 'INVITACIÓN CREADA EXITOSAMENTE'}
                       </div>
                       <p className="text-xs text-zinc-300 font-sans">
-                        Comparte este enlace público con el candidato para que ingrese directamente a su evaluación:
+                        {generatedSuiteTokens
+                          ? 'Comparte el enlace del Track 1 (COO). Al aprobar, verá automáticamente el botón para el siguiente track:'
+                          : 'Comparte este enlace público con el candidato para que ingrese directamente a su evaluación:'}
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-black/60 border border-white/15 flex items-center justify-between gap-2">
-                      <span className="text-xs font-mono text-purple-300 truncate">{generatedInviteLink}</span>
-                      <button
-                        onClick={() => handleCopyLink(generatedInviteLink)}
-                        className="px-3 py-1.5 rounded-lg bg-purple-500 text-black font-semibold text-xs font-mono uppercase tracking-wider shrink-0"
-                      >
-                        COPIAR
-                      </button>
-                    </div>
+                    {generatedSuiteTokens ? (
+                      <div className="space-y-2">
+                        {(['COO', 'CMO', 'CFO', 'HERMES_OPERATOR'] as const).map((role, idx) => {
+                          const link = generatedSuiteTokens[role];
+                          if (!link) return null;
+                          const labels: Record<string, string> = {
+                            COO: '🔵 Track 1 — COO (Compartir primero)',
+                            CMO: '🟢 Track 2 — CMO',
+                            CFO: '🟡 Track 3 — CFO',
+                            HERMES_OPERATOR: '🟣 Track 4 — Hermes Operator'
+                          };
+                          return (
+                            <div key={role} className="p-3 rounded-xl bg-black/60 border border-white/10 space-y-1">
+                              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{labels[role]}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-mono text-purple-300 truncate flex-1">{link}</span>
+                                <button
+                                  onClick={() => handleCopyLink(link)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-purple-500 text-black font-semibold text-[10px] font-mono uppercase tracking-wider shrink-0"
+                                >
+                                  {copiedToken === link ? <Check className="w-3 h-3" /> : 'COPIAR'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-black/60 border border-white/15 flex items-center justify-between gap-2">
+                        <span className="text-xs font-mono text-purple-300 truncate">{generatedInviteLink}</span>
+                        <button
+                          onClick={() => handleCopyLink(generatedInviteLink)}
+                          className="px-3 py-1.5 rounded-lg bg-purple-500 text-black font-semibold text-xs font-mono uppercase tracking-wider shrink-0"
+                        >
+                          COPIAR
+                        </button>
+                      </div>
+                    )}
 
                     <button
                       onClick={() => {
                         setGeneratedInviteLink(null);
+                        setGeneratedSuiteTokens(null);
                         setShowInviteModal(false);
                       }}
                       className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10"
@@ -873,16 +917,17 @@ export default function AcademyConsole() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-zinc-400">Track / Rol Objetivo</label>
+                      <label className="text-zinc-400">Track / Alcance de Evaluación</label>
                       <select
                         value={newCandidateRole}
                         onChange={(e) => setNewCandidateRole(e.target.value)}
                         className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500/60"
                       >
+                        <option value="ALL_TRACKS">👑 SUITE EJECUTIVA COMPLETA (4 Tracks — COO, CMO, CFO, Hermes)</option>
                         <option value="COO">Chief Operating Officer (COO Track)</option>
                         <option value="CMO">Chief Marketing Officer (CMO Track)</option>
                         <option value="CFO">Chief Financial Officer (CFO Track)</option>
-                        <option value="AI_OPERATOR">Hermes Kernel AI Operator</option>
+                        <option value="HERMES_OPERATOR">Hermes AI Kernel Operator (Operator Track)</option>
                       </select>
                     </div>
 

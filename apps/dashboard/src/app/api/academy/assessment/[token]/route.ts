@@ -140,10 +140,20 @@ export async function POST(
       }
 
       const finalizeResult = await AcademyStore.finalizeAndCertifyAssessment(attemptId);
+
+      // If candidate is part of ALL_TRACKS suite and just got certified, find their next track
+      let nextSuiteInvitation: { token: string; targetRole: string } | null = null;
+      if (finalizeResult.certification && finalizeResult.assessment.candidateId) {
+        const completedRole = finalizeResult.assessment.targetRole;
+        const candidateId = finalizeResult.assessment.candidateId;
+        nextSuiteInvitation = await AcademyStore.getNextSuiteInvitationAsync(candidateId, completedRole);
+      }
+
       return NextResponse.json({
         success: true,
         assessment: finalizeResult.assessment,
-        certification: finalizeResult.certification
+        certification: finalizeResult.certification,
+        nextSuiteInvitation
       });
     }
 

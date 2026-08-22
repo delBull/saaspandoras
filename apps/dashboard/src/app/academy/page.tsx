@@ -34,6 +34,7 @@ import {
 
 export default function AcademyPublicLanding() {
   const [activeTab, setActiveTab] = useState<'PROGRAMS' | 'PERKS' | 'ENTERPRISE'>('PROGRAMS');
+  const [tokenInput, setTokenInput] = useState('');
 
   const tracks = [
     {
@@ -45,8 +46,7 @@ export default function AcademyPublicLanding() {
       icon: ShieldCheck,
       desc: 'Blindaje multi-entidad (Holding Wyoming, SPVs, OpCos), gobernanza multi-firma, estándar PAS v1.0 y Legal Engineering en Nexus Deal Rooms.',
       modulesCount: 10,
-      passingScore: 80,
-      demoToken: 'inv_coo_carlos_demo'
+      passingScore: 90
     },
     {
       role: 'CMO',
@@ -57,8 +57,7 @@ export default function AcademyPublicLanding() {
       icon: TrendingUp,
       desc: 'Pandoras Media Co, loops de distribución viral, embudos agénticos en WhatsApp, protección de marca IMPI (Clases 36/42) y retención anti-Sybil.',
       modulesCount: 5,
-      passingScore: 80,
-      demoToken: 'inv_cmo_sofia_demo'
+      passingScore: 80
     },
     {
       role: 'CFO',
@@ -69,22 +68,28 @@ export default function AcademyPublicLanding() {
       icon: Coins,
       desc: 'Bóvedas fiduciarias PAS v1.0 con colateral 1:1, Pandora Buyback Pool & cálculo de NAV, Safe-Stops 3/5 y dispersión pro-rata en USDC.',
       modulesCount: 5,
-      passingScore: 80,
-      demoToken: 'inv_cfo_alejandro_demo'
+      passingScore: 80
     },
     {
       role: 'HERMES_OPERATOR',
       title: 'Hermes AI Kernel Operator',
       code: 'HERMES_OPERATOR_V1',
-      badge: 'Tier 3 · Technical Clearance',
+      badge: 'Tier 2 · Technical Clearance',
       badgeColor: 'border-blue-500/40 bg-blue-500/10 text-blue-300',
       icon: Cpu,
       desc: 'Event Spine multicanal, aislamiento multi-tenant con ExecutiveScopeValidator, sandboxing de tool calling y compilación de prompts en capas.',
       modulesCount: 5,
-      passingScore: 80,
-      demoToken: 'inv_hermes_operator_demo'
+      passingScore: 85
     }
   ];
+
+  const handleEnterToken = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanToken = tokenInput.trim();
+    if (!cleanToken) return;
+    const token = cleanToken.startsWith('inv_') ? cleanToken : `inv_${cleanToken}`;
+    window.location.href = `/academy/assessment/${token}`;
+  };
 
   return (
     <div className="min-h-screen bg-[#08080A] text-zinc-100 font-sans selection:bg-purple-500/30">
@@ -145,23 +150,30 @@ export default function AcademyPublicLanding() {
             Evaluación socrática continua, gobernanza determinista y credenciales Soulbound (ERC-5192) que acreditan a la directiva de la siguiente generación de proyectos descentralizados.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
-            <a
-              href="/academy/assessment/inv_coo_carlos_demo"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-purple-500 hover:bg-purple-400 text-black font-bold text-xs md:text-sm font-mono uppercase tracking-wider transition-all shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:scale-[1.02]"
-            >
-              <Play className="w-4 h-4 fill-black" />
-              PROBAR EXAMEN SOCRÁTICO (COO)
-            </a>
-            <Link
-              href="/academy/verify/cert_demo_executive"
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/15 hover:bg-white/10 text-white font-semibold text-xs md:text-sm font-mono transition-all"
-            >
-              <Award className="w-4 h-4 text-purple-400" />
-              VER CREDENCIAL SOULBOUND EJEMPLO
-            </Link>
+          {/* Invitation Access Form */}
+          <div className="pt-4 max-w-xl mx-auto space-y-3">
+            <form onSubmit={handleEnterToken} className="flex flex-col sm:flex-row gap-2 bg-[#0C0C10] p-2 rounded-2xl border border-white/15 shadow-[0_0_40px_rgba(168,85,247,0.15)]">
+              <input
+                type="text"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                placeholder="Ingresa tu token (ej. inv_284cbc...)"
+                className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-xs md:text-sm font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/60"
+              />
+              <button
+                type="submit"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-bold text-xs md:text-sm font-mono uppercase tracking-wider transition-all shrink-0"
+              >
+                <span>INGRESAR</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+            <div className="flex items-center justify-center gap-4 text-[11px] font-mono text-zinc-500">
+              <span>¿Eres administrador?</span>
+              <Link href="/admin/academy" className="text-purple-400 hover:text-purple-300 underline font-semibold">
+                Gestionar Candidatos y Emitir Invitaciones →
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -264,19 +276,17 @@ export default function AcademyPublicLanding() {
 
                       <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5 text-[11px] font-mono text-zinc-400">
                         <span>• {t.modulesCount} Módulos Socráticos</span>
-                        <span className="text-purple-300">• Aprobación ≥{t.passingScore}%</span>
+                        <span className="text-purple-300 font-semibold">• Aprobación ≥{t.passingScore}%</span>
                       </div>
                     </div>
 
                     <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                      <a
-                        href={`/academy/assessment/${t.demoToken}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        href="/admin/academy"
                         className="text-xs font-mono text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1"
                       >
-                        INICIAR TEST DE PRUEBA <ArrowRight className="w-3.5 h-3.5" />
-                      </a>
+                        SOLICITAR INVITACIÓN OFICIAL <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
                     </div>
                   </div>
                 );

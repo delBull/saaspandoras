@@ -19,25 +19,12 @@ export async function GET(
   try {
     const cert = await AcademyStore.getCertificationAsync(certId);
 
+    // 🛡️ SECURITY GUARD: Return 404 if certificate does not exist (never fake demo badges for unknown IDs)
     if (!cert) {
-      // Fallback demo badge if cert not yet in DB
-      const fallbackSvg = generateSoulboundSvg({
-        certId: certId || 'cert_demo_executive',
-        candidateName: 'Ejecutivo Pandora\'s',
-        targetRole: 'COO',
-        programTitle: 'Chief Operating Officer (COO) Executive Certification',
-        readinessScore: 92,
-        certifiedAt: new Date().toISOString(),
-        validUntil: new Date(Date.now() + 365 * 86400000).toISOString(),
-        certificateHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-      });
-
-      return new NextResponse(fallbackSvg, {
-        headers: {
-          'Content-Type': 'image/svg+xml',
-          'Cache-Control': 'public, max-age=3600, s-maxage=3600'
-        }
-      });
+      return NextResponse.json(
+        { success: false, error: `Certificate '${certId}' not found in registry.` },
+        { status: 404 }
+      );
     }
 
     const prog = getProgramByRoleOrId(cert.targetRole);
@@ -50,13 +37,13 @@ export async function GET(
       readinessScore: cert.readinessScore,
       certifiedAt: cert.certifiedAt,
       validUntil: cert.validUntil || new Date(Date.now() + 365 * 86400000).toISOString(),
-      certificateHash: cert.certificateHash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+      certificateHash: cert.certificateHash || ''
     });
 
     return new NextResponse(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=86400, s-maxage=86400'
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate'
       }
     });
   } catch (err: any) {

@@ -467,6 +467,38 @@ export default function CandidateAssessmentPage({ params }: Props) {
                   </div>
                 </div>
 
+                {/* ─── SIGUIENTE TRACK DE LA SUITE (AUTO) ─────────────── */}
+                {finalResult.nextSuiteInvitation && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/15 to-emerald-500/15 border border-indigo-400/40 p-5 flex flex-col sm:flex-row items-center gap-4 shadow-[0_0_40px_rgba(99,102,241,0.15)]"
+                  >
+                    <div className="flex-1 space-y-1 text-center sm:text-left">
+                      <div className="flex items-center justify-center sm:justify-start gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-300 shrink-0" />
+                        <span className="text-[10px] font-mono font-bold text-indigo-300 uppercase tracking-widest">
+                          Suite Ejecutiva — Siguiente Track
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-white">
+                        {finalResult.nextSuiteInvitation.targetRole === 'CMO' && '🎯 Chief Marketing Officer (CMO Track)'}
+                        {finalResult.nextSuiteInvitation.targetRole === 'CFO' && '💰 Chief Financial Officer (CFO Track)'}
+                        {finalResult.nextSuiteInvitation.targetRole === 'HERMES_OPERATOR' && '🤖 Hermes AI Kernel Operator Track'}
+                      </p>
+                      <p className="text-xs text-zinc-400">Tu siguiente certificación ya está desbloqueada y lista para comenzar.</p>
+                    </div>
+                    <a
+                      href={`/academy/assessment/${finalResult.nextSuiteInvitation.token}`}
+                      className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-black font-bold text-xs font-mono uppercase tracking-wider shadow-lg hover:shadow-indigo-500/30 transition-all whitespace-nowrap"
+                    >
+                      <span>COMENZAR AHORA</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </motion.div>
+                )}
+
                 {/* Direct Action Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                   <Link

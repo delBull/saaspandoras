@@ -20,7 +20,7 @@ export const COO_EXECUTIVE_PROGRAM: AcademyProgram = {
   targetRole: 'COO',
   status: 'ACTIVE',
   version: 2,
-  passingScore: 80,
+  passingScore: 90,
   modules: [
     // ── MÓDULO 1: ARQUITECTURA INSTITUCIONAL & BLINDAJE MULTI-ENTIDAD (10%) ────
     {

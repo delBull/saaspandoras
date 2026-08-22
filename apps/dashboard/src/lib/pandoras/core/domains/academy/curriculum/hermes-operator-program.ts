@@ -19,7 +19,7 @@ export const HERMES_OPERATOR_PROGRAM: AcademyProgram = {
   targetRole: 'HERMES_OPERATOR',
   status: 'ACTIVE',
   version: 1,
-  passingScore: 80,
+  passingScore: 85,
   modules: [
     // ── MÓDULO 1: ARQUITECTURA COGNITIVA & EVENT SPINE (20%) ────────────────
     {

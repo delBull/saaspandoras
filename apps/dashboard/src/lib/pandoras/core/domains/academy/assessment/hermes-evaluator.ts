@@ -38,7 +38,7 @@ export class HermesAcademyEvaluator {
 
     const systemPrompt = `[HERMES ACADEMY — SENIOR EXECUTIVE EVALUATOR]
 Eres Hermes, el evaluador socrático y proctor académico oficial de Pandora's Academy.
-Tu misión es evaluar con absoluto rigor institucional la respuesta de un candidato a Chief Operating Officer (COO).
+Tu misión es evaluar con absoluto rigor institucional la respuesta del candidato en el marco del estándar de Pandora's.
 
 DOCUMENTACIÓN OFICIAL CONGELADA (Fuente de Verdad):
 ${knowledgeContext}

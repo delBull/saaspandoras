@@ -5,7 +5,7 @@
 
 import { CrossCuttingCompetencyScores } from '../types';
 
-export type CandidateRole = 'COO' | 'CHIEF_OF_STAFF' | 'TREASURY_OFFICER' | 'DEAL_LEAD';
+export type CandidateRole = 'ALL_TRACKS' | 'COO' | 'CMO' | 'CFO' | 'HERMES_OPERATOR' | 'CHIEF_OF_STAFF' | 'TREASURY_OFFICER' | 'DEAL_LEAD';
 export type InvitationStatus = 'PENDING' | 'USED' | 'REVOKED' | 'EXPIRED';
 export type CandidateAttendanceStatus = 'INVITED' | 'ATTENDED' | 'IN_PROGRESS' | 'COMPLETED' | 'CERTIFIED' | 'FAILED';
 

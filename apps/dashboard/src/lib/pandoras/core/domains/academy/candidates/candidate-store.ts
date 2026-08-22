@@ -31,6 +31,7 @@ import { AcademyCertification, AcademyProgram } from '../types';
 import { getProgramByRoleOrId } from '../curriculum/program-registry';
 import { AssessmentEngine } from '../assessment/assessment-engine';
 import { KnowledgeSnapshotManager } from '../snapshots/snapshot-manager';
+import { AcademyNotifier } from '../notifications/academy-notifier';
 
 class AcademyStoreSingleton {
   private candidates: Map<string, AcademyCandidate> = new Map();
@@ -203,7 +204,7 @@ class AcademyStoreSingleton {
     phone?: string;
     targetRole?: CandidateRole;
     notes?: string;
-  }): Promise<{ candidate: AcademyCandidate; invitation: AssessmentInvitation }> {
+  }): Promise<{ candidate: AcademyCandidate; invitation: AssessmentInvitation; suiteTokens?: Record<string, string> }> {
     const candidateId = `cand_${createHash('sha256').update(`${params.email}_${Date.now()}`).digest('hex').substring(0, 12)}`;
     const role: CandidateRole = params.targetRole || 'COO';
 
@@ -222,10 +223,77 @@ class AcademyStoreSingleton {
 
     this.candidates.set(candidateId, candidate);
 
+    try {
+      await db.insert(academyCandidates).values({
+        id: candidate.id,
+        name: candidate.name,
+        email: candidate.email,
+        phone: candidate.phone || null,
+        targetRole: candidate.targetRole,
+        attendanceStatus: candidate.attendanceStatus,
+        notes: candidate.notes || null,
+      });
+    } catch (err) {
+      console.warn('⚠️ [AcademyStore] DB Insert candidate failed:', err);
+    }
+
+    // ────────────────────────────────────────────────────────
+    // SUITE EJECUTIVA COMPLETA: generate 4 sequential tokens
+    // Token 1 (COO) → shared immediately with the candidate
+    // Tokens 2-4 unlock automatically after each track is certified
+    // ────────────────────────────────────────────────────────
+    if (role === 'ALL_TRACKS') {
+      const SUITE_TRACKS: CandidateRole[] = ['COO', 'CMO', 'CFO', 'HERMES_OPERATOR'];
+      const suiteTokens: Record<string, string> = {};
+      let firstInvitation: AssessmentInvitation | null = null;
+
+      for (const track of SUITE_TRACKS) {
+        const trackToken = `inv_${createHash('sha256').update(`${candidateId}_${track}_${Date.now()}_${Math.random()}`).digest('hex').substring(0, 16)}`;
+        const expiresAt = new Date(Date.now() + 30 * 86400000); // 30 days for suite
+        const prog = getProgramByRoleOrId(track);
+        const trackInvitation: AssessmentInvitation = {
+          token: trackToken,
+          candidateId,
+          candidateName: params.name,
+          programId: prog.id,
+          targetRole: track,
+          status: track === 'COO' ? 'PENDING' : 'PENDING', // all pending, gating is by order
+          expiresAt: expiresAt.toISOString(),
+          createdAt: new Date().toISOString()
+        };
+        this.invitations.set(trackToken, trackInvitation);
+        suiteTokens[track] = trackToken;
+        if (track === 'COO') firstInvitation = trackInvitation;
+
+        try {
+          await db.insert(academyInvitations).values({
+            token: trackInvitation.token,
+            candidateId: trackInvitation.candidateId,
+            status: trackInvitation.status,
+            expiresAt,
+          });
+        } catch (err) {
+          console.warn(`⚠️ [AcademyStore] DB Insert suite invitation (${track}) failed:`, err);
+        }
+      }
+
+      // 📨 Dispatch master suite invitation email (COO token = entry point)
+      AcademyNotifier.sendNotification({
+        toEmail: candidate.email,
+        candidateName: candidate.name,
+        targetRole: 'ALL_TRACKS',
+        eventType: 'MASTER_INVITATION',
+        portalUrl: `https://dash.pandoras.finance/academy/assessment/${suiteTokens['COO']}`
+      }).catch(() => {});
+
+      return { candidate, invitation: firstInvitation!, suiteTokens };
+    }
+
+    // ── SINGLE TRACK INVITATION ────────────────────────────
     const token = `inv_${createHash('sha256').update(`${candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
     const expiresAt = new Date(Date.now() + 7 * 86400000);
-
     const prog = getProgramByRoleOrId(role);
+
     const invitation: AssessmentInvitation = {
       token,
       candidateId,
@@ -240,16 +308,6 @@ class AcademyStoreSingleton {
     this.invitations.set(token, invitation);
 
     try {
-      await db.insert(academyCandidates).values({
-        id: candidate.id,
-        name: candidate.name,
-        email: candidate.email,
-        phone: candidate.phone || null,
-        targetRole: candidate.targetRole,
-        attendanceStatus: candidate.attendanceStatus,
-        notes: candidate.notes || null,
-      });
-
       await db.insert(academyInvitations).values({
         token: invitation.token,
         candidateId: invitation.candidateId,
@@ -257,8 +315,17 @@ class AcademyStoreSingleton {
         expiresAt,
       });
     } catch (err) {
-      console.warn('⚠️ [AcademyStore] DB Insert candidate/invitation failed:', err);
+      console.warn('⚠️ [AcademyStore] DB Insert invitation failed:', err);
     }
+
+    // 📨 Dispatch transactional email event
+    AcademyNotifier.sendNotification({
+      toEmail: candidate.email,
+      candidateName: candidate.name,
+      targetRole: candidate.targetRole,
+      eventType: 'MASTER_INVITATION',
+      portalUrl: `https://dash.pandoras.finance/academy/assessment/${invitation.token}`
+    }).catch(() => {});
 
     return { candidate, invitation };
   }
@@ -327,20 +394,73 @@ class AcademyStoreSingleton {
     return { candidate, invitation };
   }
 
-  async createInvitationAsync(candidateId: string): Promise<AssessmentInvitation> {
+  async createInvitationAsync(candidateId: string, overrideRole?: CandidateRole): Promise<AssessmentInvitation & { suiteTokens?: Record<string, string> }> {
     const candidate = await this.getCandidateAsync(candidateId);
     if (!candidate) throw new Error('Candidato no encontrado');
 
-    const token = `inv_${createHash('sha256').update(`${candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
+    const role = overrideRole || candidate.targetRole;
     const expiresAt = new Date(Date.now() + 7 * 86400000);
-    const prog = getProgramByRoleOrId(candidate.targetRole);
+
+    // Suite re-invite: regenerate all 4 track tokens fresh
+    if (role === 'ALL_TRACKS' || candidate.targetRole === 'ALL_TRACKS') {
+      const SUITE_TRACKS: CandidateRole[] = ['COO', 'CMO', 'CFO', 'HERMES_OPERATOR'];
+      const suiteTokens: Record<string, string> = {};
+      let firstInvitation: AssessmentInvitation | null = null;
+      const suiteExpiry = new Date(Date.now() + 30 * 86400000);
+
+      for (const track of SUITE_TRACKS) {
+        const trackToken = `inv_${createHash('sha256').update(`${candidateId}_${track}_${Date.now()}_${Math.random()}`).digest('hex').substring(0, 16)}`;
+        const prog = getProgramByRoleOrId(track);
+        const trackInvitation: AssessmentInvitation = {
+          token: trackToken,
+          candidateId,
+          candidateName: candidate.name,
+          programId: prog.id,
+          targetRole: track,
+          status: 'PENDING',
+          expiresAt: suiteExpiry.toISOString(),
+          createdAt: new Date().toISOString()
+        };
+        this.invitations.set(trackToken, trackInvitation);
+        suiteTokens[track] = trackToken;
+        if (track === 'COO') firstInvitation = trackInvitation;
+
+        try {
+          await db.insert(academyInvitations).values({
+            token: trackInvitation.token,
+            candidateId: trackInvitation.candidateId,
+            status: trackInvitation.status,
+            expiresAt: suiteExpiry,
+          });
+        } catch (err) {
+          console.warn(`⚠️ [AcademyStore] DB re-invite suite (${track}) failed:`, err);
+        }
+      }
+
+      candidate.invitationCount++;
+      candidate.updatedAt = new Date().toISOString();
+
+      AcademyNotifier.sendNotification({
+        toEmail: candidate.email,
+        candidateName: candidate.name,
+        targetRole: 'ALL_TRACKS',
+        eventType: 'MASTER_INVITATION',
+        portalUrl: `https://dash.pandoras.finance/academy/assessment/${suiteTokens['COO']}`
+      }).catch(() => {});
+
+      return { ...firstInvitation!, suiteTokens };
+    }
+
+    // Single-track re-invite
+    const token = `inv_${createHash('sha256').update(`${candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
+    const prog = getProgramByRoleOrId(role);
 
     const invitation: AssessmentInvitation = {
       token,
       candidateId,
       candidateName: candidate.name,
       programId: prog.id,
-      targetRole: candidate.targetRole,
+      targetRole: role,
       status: 'PENDING',
       expiresAt: expiresAt.toISOString(),
       createdAt: new Date().toISOString()
@@ -348,7 +468,6 @@ class AcademyStoreSingleton {
 
     candidate.invitationCount++;
     candidate.updatedAt = new Date().toISOString();
-
     this.invitations.set(token, invitation);
 
     try {
@@ -431,6 +550,61 @@ class AcademyStoreSingleton {
 
   getInvitation(token: string): AssessmentInvitation | undefined {
     return this.invitations.get(token);
+  }
+
+  /**
+   * For ALL_TRACKS suite candidates: after completing one track, find their next PENDING invitation
+   * in the canonical suite order: COO → CMO → CFO → HERMES_OPERATOR.
+   */
+  async getNextSuiteInvitationAsync(candidateId: string, completedRole: string): Promise<{ token: string; targetRole: string } | null> {
+    const SUITE_ORDER: CandidateRole[] = ['COO', 'CMO', 'CFO', 'HERMES_OPERATOR'];
+    const completedIdx = SUITE_ORDER.indexOf(completedRole as CandidateRole);
+    if (completedIdx === -1) return null;
+
+    const remaining = SUITE_ORDER.slice(completedIdx + 1);
+    if (remaining.length === 0) return null;
+
+    try {
+      const rows = await db
+        .select()
+        .from(academyInvitations)
+        .where(eq(academyInvitations.candidateId, candidateId));
+
+      for (const nextRole of remaining) {
+        // Find a PENDING invitation for the next role that hasn't expired
+        const match = rows.find(r =>
+          r.status === 'PENDING' &&
+          new Date(r.expiresAt).getTime() > Date.now()
+        );
+        // We identify the right track token by querying program match
+        const prog = getProgramByRoleOrId(nextRole);
+        const trackMatch = rows.find(r =>
+          r.status === 'PENDING' &&
+          new Date(r.expiresAt).getTime() > Date.now() &&
+          r.token.startsWith('inv_')
+        );
+        // Look for token associated to this track by checking if it resolves correctly
+        const allPending = rows.filter(r =>
+          r.status === 'PENDING' &&
+          new Date(r.expiresAt).getTime() > Date.now()
+        );
+
+        if (allPending.length > 0) {
+          // Return the first pending invitation that maps to the next expected role
+          // Since tokens were created in order (COO, CMO, CFO, HERMES) find by creation order
+          const sortedPending = [...allPending].sort((a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+          if (sortedPending[0]) {
+            return { token: sortedPending[0].token, targetRole: nextRole };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`⚠️ [AcademyStore] getNextSuiteInvitation failed for candidateId=${candidateId}:`, err);
+    }
+
+    return null;
   }
 
   // ─── ASSESSMENTS (READ-THROUGH & FULL LIFECYCLE) ────────────────────────────
@@ -807,6 +981,20 @@ class AcademyStoreSingleton {
         }
       } catch (e) {
         console.warn('⚠️ [AcademyStore] DB Finalize certification failed:', e);
+      }
+
+      // 📨 Dispatch track certified email notification
+      if (candidate) {
+        AcademyNotifier.sendNotification({
+          toEmail: candidate.email,
+          candidateName: candidate.name,
+          targetRole: assessment.targetRole,
+          eventType: 'TRACK_CERTIFIED',
+          portalUrl: `https://dash.pandoras.finance/academy/verify/${fullAttempt.certification.id}`,
+          score: fullAttempt.certification.readinessScore,
+          certId: fullAttempt.certification.id,
+          certificateHash: fullAttempt.certification.certificateHash
+        }).catch(() => {});
       }
 
       return { assessment, certification: fullAttempt.certification };

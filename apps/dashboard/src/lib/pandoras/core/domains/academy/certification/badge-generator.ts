@@ -85,24 +85,37 @@ const ROLE_THEMES: Record<string, RoleTheme> = {
   }
 };
 
+/**
+ * Escapes XML/SVG special characters to prevent XSS / markup injection.
+ */
+function escapeXml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 export function generateSoulboundSvg(params: BadgeParams): string {
   const role = (params.targetRole || 'COO').toUpperCase();
   const theme = ROLE_THEMES[role] || ROLE_THEMES.COO!;
 
-  const formattedDate = new Date(params.certifiedAt).toLocaleDateString('es-ES', {
+  const safeCandidateName = escapeXml(params.candidateName || 'Ejecutivo Pandora\'s');
+  const safeCertId = escapeXml(params.certId);
+  const safeCertificateHash = escapeXml(params.certificateHash);
+  const safeRoleTitle = escapeXml(theme.roleTitle);
+  const safeClearance = escapeXml(theme.clearanceLevel);
+
+  const formattedValid = escapeXml(new Date(params.validUntil).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
-  }).toUpperCase();
+  }).toUpperCase());
 
-  const formattedValid = new Date(params.validUntil).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  }).toUpperCase();
-
-  const shortHash = params.certificateHash.substring(0, 16).toUpperCase();
-  const scoreFormatted = params.readinessScore.toFixed(0);
+  const shortHash = safeCertificateHash.substring(0, 16).toUpperCase();
+  const scoreFormatted = Number(params.readinessScore || 0).toFixed(0);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 700" width="500" height="700" style="background:#08080A; font-family:'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <defs>
@@ -180,13 +193,13 @@ export function generateSoulboundSvg(params: BadgeParams): string {
   <!-- Clearance Badge & Title -->
   <g transform="translate(250, 290)">
     <rect x="-120" y="0" width="240" height="24" rx="12" fill="${theme.primaryColor}" fill-opacity="0.12" stroke="${theme.primaryColor}" stroke-opacity="0.3" />
-    <text x="0" y="16" text-anchor="middle" fill="${theme.primaryColor}" font-size="9" font-family="monospace" font-weight="bold" letter-spacing="1.5">${theme.clearanceLevel}</text>
+    <text x="0" y="16" text-anchor="middle" fill="${theme.primaryColor}" font-size="9" font-family="monospace" font-weight="bold" letter-spacing="1.5">${safeClearance}</text>
 
     <!-- Role Name -->
-    <text x="0" y="48" text-anchor="middle" fill="#FFFFFF" font-size="18" font-weight="800" letter-spacing="0.5">${theme.roleTitle}</text>
+    <text x="0" y="48" text-anchor="middle" fill="#FFFFFF" font-size="18" font-weight="800" letter-spacing="0.5">${safeRoleTitle}</text>
     
     <!-- Candidate Name -->
-    <text x="0" y="72" text-anchor="middle" fill="#E4E4E7" font-size="14" font-weight="600">${params.candidateName}</text>
+    <text x="0" y="72" text-anchor="middle" fill="#E4E4E7" font-size="14" font-weight="600">${safeCandidateName}</text>
   </g>
 
   <!-- Metrics Grid Section -->
@@ -198,7 +211,7 @@ export function generateSoulboundSvg(params: BadgeParams): string {
 
     <!-- Status Box -->
     <rect x="140" y="0" width="130" height="70" rx="16" fill="#0F0F14" stroke="#FFFFFF" stroke-opacity="0.08" />
-    <text x="205" y="24" text-anchor="middle" fill="#71717A" font-size="8.5" font-family="monospace" letter-spacing="1">STATUS ON-CHAIN</text>
+    <text x="205" y="24" text-anchor="middle" fill="#71717A" font-size="8.5" font-family="monospace" letter-spacing="1">STATUS</text>
     <text x="205" y="52" text-anchor="middle" fill="#10B981" font-size="14" font-weight="bold" font-family="monospace">CERTIFIED</text>
 
     <!-- Issue Date Box -->
@@ -212,10 +225,10 @@ export function generateSoulboundSvg(params: BadgeParams): string {
     <rect x="0" y="0" width="410" height="135" rx="18" fill="#0C0C10" stroke="#FFFFFF" stroke-opacity="0.08" />
     
     <text x="20" y="30" fill="#71717A" font-size="8" font-family="monospace" letter-spacing="1">CERTIFICATE IDENTIFIER:</text>
-    <text x="20" y="46" fill="#A1A1AA" font-size="10" font-family="monospace" font-weight="bold">${params.certId}</text>
+    <text x="20" y="46" fill="#A1A1AA" font-size="10" font-family="monospace" font-weight="bold">${safeCertId}</text>
 
     <text x="20" y="74" fill="#71717A" font-size="8" font-family="monospace" letter-spacing="1">SHA-256 PROOF SEAL:</text>
-    <text x="20" y="90" fill="${theme.primaryColor}" font-size="9.5" font-family="monospace">${shortHash}...${params.certificateHash.substring(48)}</text>
+    <text x="20" y="90" fill="${theme.primaryColor}" font-size="9.5" font-family="monospace">${shortHash}...${safeCertificateHash.substring(48)}</text>
 
     <text x="20" y="118" fill="#52525B" font-size="7.5" font-family="monospace">ISSUER: PANDORA'S ACADEMY CORE · SOULBOUND NON-TRANSFERABLE</text>
   </g>
