@@ -24,7 +24,11 @@ import {
   Layers,
   KeyRound,
   Mail,
-  UserCheck
+  UserCheck,
+  Sword,
+  BookOpen,
+  ExternalLink,
+  Share2
 } from "lucide-react";
 import Link from "next/link";
 
@@ -384,51 +388,112 @@ export default function CandidateAssessmentPage({ params }: Props) {
       <div className="relative z-10 flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 flex flex-col justify-center">
         
         {finalResult ? (
-          /* Final Result / Certificate Card */
+          /* Final Result / Celebratory Soulbound Award Modal */
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-6 md:p-10 rounded-3xl bg-[#0C0C10] border border-purple-500/30 shadow-[0_0_60px_rgba(168,85,247,0.12)] space-y-6 text-center"
+            className="p-6 md:p-10 rounded-3xl bg-[#0C0C10] border border-purple-500/40 shadow-[0_0_80px_rgba(168,85,247,0.18)] space-y-8"
           >
             {finalResult.certification ? (
               <>
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
-                  <Award className="w-8 h-8" />
-                </div>
-                <div className="space-y-2">
-                  <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
-                    CERTIFICACIÓN APROBADA
+                <div className="text-center space-y-2">
+                  <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-widest inline-flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> ¡ACREDITACIÓN INSTITUCIONAL EXITOSA!
                   </span>
-                  <h1 className="text-3xl font-bold text-white tracking-tight">¡Felicitaciones, {assessment.candidateName}!</h1>
+                  <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+                    ¡Felicitaciones, {assessment.candidateName}!
+                  </h1>
                   <p className="text-xs md:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-                    Has acreditado satisfactoriamente el programa de certificación institucional para el cargo de <strong>{assessment.targetRole}</strong>.
+                    Has superado las evaluaciones socráticas de Hermes. Se ha emitido tu <strong>Soulbound NFT (ERC-5192)</strong> y desbloqueado tu árbol de recompensas directivas.
                   </p>
                 </div>
 
-                {/* Score & Certificate Details */}
-                <div className="p-5 rounded-2xl bg-black/60 border border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left font-mono text-xs">
-                  <div>
-                    <span className="text-zinc-500 block uppercase text-[10px]">Readiness Score</span>
-                    <span className="text-2xl font-bold text-emerald-400">{finalResult.certification.readinessScore.toFixed(1)}%</span>
+                {/* Soulbound Badge Showcase Card */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                  <div className="md:col-span-5 flex justify-center">
+                    <div className="relative w-full max-w-[260px] rounded-2xl overflow-hidden p-2 bg-gradient-to-b from-purple-500/30 to-black/80 border border-purple-500/50 shadow-[0_0_40px_rgba(168,85,247,0.25)]">
+                      <img
+                        src={`/api/academy/credentials/${finalResult.certification.id}/badge.svg`}
+                        alt="Soulbound Badge"
+                        className="w-full h-auto object-contain rounded-xl"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-zinc-500 block uppercase text-[10px]">ID de Certificado</span>
-                    <span className="text-white font-semibold block truncate">{finalResult.certification.id}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500 block uppercase text-[10px]">Sello Criptográfico SHA-256</span>
-                    <span className="text-purple-400 font-semibold block truncate">{finalResult.certification.certificateHash.substring(0, 16)}...</span>
+
+                  {/* Metadata & Score Breakdown */}
+                  <div className="md:col-span-7 space-y-4">
+                    <div className="p-4 rounded-2xl bg-black/60 border border-white/10 grid grid-cols-2 gap-3 text-xs font-mono">
+                      <div>
+                        <span className="text-zinc-500 text-[10px] uppercase block">Readiness Score</span>
+                        <span className="text-2xl font-extrabold text-emerald-400">
+                          {finalResult.certification.readinessScore.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 text-[10px] uppercase block">Cargo Acreditado</span>
+                        <span className="text-sm font-bold text-white block truncate">
+                          {assessment.targetRole}
+                        </span>
+                      </div>
+                      <div className="col-span-2 pt-1 border-t border-white/5">
+                        <span className="text-zinc-500 text-[10px] uppercase block">Sello SHA-256</span>
+                        <span className="text-purple-300 text-[11px] font-mono block truncate select-all">
+                          {finalResult.certification.certificateHash}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Unlocked Perks Banner */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-500/10 to-transparent border border-purple-500/30 space-y-2.5">
+                      <div className="flex items-center gap-2 text-purple-300 text-xs font-bold font-mono">
+                        <Sparkles className="w-4 h-4" />
+                        <span>RECOMPENSAS DESBLOQUEADAS (NIVEL 1 & 2):</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-zinc-300 font-sans">
+                        <div className="flex items-start gap-2">
+                          <BookOpen className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="text-white">The Obsidian Library (Nivel 1):</strong> SOPs, estatutos de holding y templates de smart contracts listos para descarga.
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Sword className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="text-white">Hermes War Room Simulator (Nivel 2):</strong> Simulador en vivo para entrenar respuestas ante adversarios y crisis de gobernanza.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-center gap-4 pt-2">
-                  <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono uppercase tracking-wider shadow-lg hover:shadow-purple-500/25 transition-all"
+                {/* Direct Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                  <Link
+                    href={`/academy/verify/${finalResult.certification.id}`}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-bold text-xs font-mono uppercase tracking-wider shadow-lg hover:shadow-purple-500/25 transition-all"
+                  >
+                    <Award className="w-4 h-4" />
+                    VER CREDENCIAL PÚBLICA Y PERKS
+                  </Link>
+
+                  <Link
+                    href={`/academy/verify/${finalResult.certification.id}?tab=SIMULATOR`}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white/5 border border-purple-500/30 hover:bg-purple-500/15 text-purple-300 font-semibold text-xs font-mono uppercase tracking-wider transition-all"
+                  >
+                    <Sword className="w-4 h-4 text-purple-400" />
+                    ENTRAR AL SIMULADOR WAR ROOM (NIVEL 2)
+                  </Link>
+
+                  <a
+                    href={`/api/academy/credentials/${finalResult.certification.id}/badge.svg`}
+                    download={`${finalResult.certification.id}_soulbound.svg`}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-zinc-300 hover:text-white text-xs font-mono transition-colors"
+                    title="Descargar SVG"
                   >
                     <Download className="w-4 h-4" />
-                    DESCARGAR CREDENCIAL OFICIAL
-                  </button>
+                    DESCARGAR SVG
+                  </a>
                 </div>
               </>
             ) : (
@@ -436,13 +501,13 @@ export default function CandidateAssessmentPage({ params }: Props) {
                 <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto">
                   <AlertCircle className="w-8 h-8" />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 text-center">
                   <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase tracking-wider">
                     EVALUACIÓN NO APROBADA
                   </span>
                   <h1 className="text-2xl font-bold text-white">Umbral de Calificación No Alcanzado</h1>
                   <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-                    El resultado determinista no alcanzó el umbral mínimo de 90% o se detectó una falla crítica de gobernanza. Contacta a un administrador para programar una retroalimentación.
+                    El resultado determinista no alcanzó el umbral mínimo requerido o se detectó una falla crítica de gobernanza (*Fatal Flaw*). Contacta a un administrador para programar una retroalimentación.
                   </p>
                 </div>
               </>
