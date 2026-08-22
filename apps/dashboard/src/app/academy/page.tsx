@@ -31,10 +31,18 @@ import {
   KeyRound,
   ShieldAlert
 } from 'lucide-react';
+import { AcademySandboxModal } from '@/components/academy/AcademySandboxModals';
 
 export default function AcademyPublicLanding() {
   const [activeTab, setActiveTab] = useState<'PROGRAMS' | 'PERKS' | 'ENTERPRISE'>('PROGRAMS');
   const [tokenInput, setTokenInput] = useState('');
+  const [isSandboxOpen, setIsSandboxOpen] = useState(false);
+  const [sandboxTab, setSandboxTab] = useState<'admin' | 'nexus' | 'assessment'>('admin');
+
+  const openSandbox = (tab: 'admin' | 'nexus' | 'assessment') => {
+    setSandboxTab(tab);
+    setIsSandboxOpen(true);
+  };
 
   const tracks = [
     {
@@ -85,8 +93,8 @@ export default function AcademyPublicLanding() {
 
   const handleEnterToken = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tokenInput.trim()) return;
     const cleanToken = tokenInput.trim();
-    if (!cleanToken) return;
     const token = cleanToken.startsWith('inv_') ? cleanToken : `inv_${cleanToken}`;
     window.location.href = `/academy/assessment/${token}`;
   };
@@ -120,18 +128,20 @@ export default function AcademyPublicLanding() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/nexus"
-              className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-mono text-zinc-300 transition-colors"
+            <button
+              onClick={() => openSandbox('nexus')}
+              className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-mono text-zinc-300 transition-colors flex items-center gap-2 cursor-pointer"
             >
-              NEXUS HUB
-            </Link>
-            <Link
-              href="/admin/academy"
-              className="px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono transition-colors"
+              <span>NEXUS HUB</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">DEMO</span>
+            </button>
+            <button
+              onClick={() => openSandbox('admin')}
+              className="px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono transition-colors flex items-center gap-2 cursor-pointer"
             >
-              CONSOLA ADMIN
-            </Link>
+              <span>CONSOLA ADMIN</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/20 text-black font-bold">SANDBOX</span>
+            </button>
           </div>
         </header>
 
@@ -150,29 +160,39 @@ export default function AcademyPublicLanding() {
             Evaluación socrática continua, gobernanza determinista y credenciales Soulbound (ERC-5192) que acreditan a la directiva de la siguiente generación de proyectos descentralizados.
           </p>
 
-          {/* Invitation Access Form */}
+          {/* Invitation Access Form & Interactive Simulator */}
           <div className="pt-4 max-w-xl mx-auto space-y-3">
             <form onSubmit={handleEnterToken} className="flex flex-col sm:flex-row gap-2 bg-[#0C0C10] p-2 rounded-2xl border border-white/15 shadow-[0_0_40px_rgba(168,85,247,0.15)]">
               <input
                 type="text"
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
-                placeholder="Ingresa tu token (ej. inv_284cbc...)"
+                placeholder="Ingresa tu token de invitación (ej. inv_demo_sandbox)"
                 className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-xs md:text-sm font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/60"
               />
               <button
                 type="submit"
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-bold text-xs md:text-sm font-mono uppercase tracking-wider transition-all shrink-0"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-bold text-xs md:text-sm font-mono uppercase tracking-wider transition-all shrink-0 cursor-pointer"
               >
                 <span>INGRESAR</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
-            <div className="flex items-center justify-center gap-4 text-[11px] font-mono text-zinc-500">
-              <span>¿Eres administrador?</span>
-              <Link href="/admin/academy" className="text-purple-400 hover:text-purple-300 underline font-semibold">
-                Gestionar Candidatos y Emitir Invitaciones →
-              </Link>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-mono text-zinc-500">
+              <button 
+                onClick={() => openSandbox('assessment')}
+                className="text-purple-400 hover:text-purple-300 underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>¿No tienes token? Probar Simulador Sandbox de Evaluación →</span>
+              </button>
+              <span>·</span>
+              <button 
+                onClick={() => openSandbox('admin')}
+                className="text-zinc-400 hover:text-white underline font-semibold cursor-pointer"
+              >
+                Explorar Sandbox Institucional →
+              </button>
             </div>
           </div>
         </section>
@@ -434,13 +454,26 @@ export default function AcademyPublicLanding() {
         <footer className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
           <p>© 2026 Pandora's Growth OS · Institutional Control Plane</p>
           <div className="flex items-center gap-4">
-            <Link href="/nexus" className="hover:text-zinc-300">Nexus Hub</Link>
-            <Link href="/admin/academy" className="hover:text-zinc-300">Consola Admin</Link>
-            <a href="https://pandoras.finance" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300">Pandoras.finance</a>
+            <button onClick={() => openSandbox('nexus')} className="hover:text-zinc-300 transition-colors cursor-pointer">
+              Nexus Hub (Demo)
+            </button>
+            <button onClick={() => openSandbox('admin')} className="hover:text-zinc-300 transition-colors cursor-pointer">
+              Consola Admin (Sandbox)
+            </button>
+            <a href="https://pandoras.finance" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300">
+              Pandoras.finance
+            </a>
           </div>
         </footer>
 
       </div>
+
+      {/* Interactive Sandbox Modals */}
+      <AcademySandboxModal
+        isOpen={isSandboxOpen}
+        onClose={() => setIsSandboxOpen(false)}
+        initialTab={sandboxTab}
+      />
     </div>
   );
 }

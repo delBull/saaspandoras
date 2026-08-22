@@ -71,12 +71,16 @@ export async function resolvePortalContext(
     );
   }
 
-  // 4. Verify the requested slug matches the authorized organization
-  //    This is the critical cross-tenant URL attack prevention.
-  if (organization.slug !== requestedOrganizationSlug) {
+  // 4. Verify the requested slug/UUID matches the authorized organization
+  //    Accepts either canonical organizationId (UUID) or human slug.
+  const isAuthorized =
+    organization.organizationId === requestedOrganizationSlug ||
+    organization.slug === requestedOrganizationSlug;
+
+  if (!isAuthorized) {
     throw new PortalAuthorizationError(
       'ORGANIZATION_ACCESS_DENIED',
-      `Actor session is authorized for '${organization.slug}', not '${requestedOrganizationSlug}'.`
+      `Actor session is authorized for '${organization.slug}' (${organization.organizationId}), not '${requestedOrganizationSlug}'.`
     );
   }
 
@@ -89,14 +93,14 @@ export async function resolvePortalContext(
   const tenant: PortalTenantContext = {
     actorId: `session_${session.installedProductId}`,
     sessionId: sessionToken,
-    organizationId: organization.slug,
-    organizationSlug: organization.slug,
+    organizationId: organization.organizationId, // Canonical UUID
+    organizationSlug: organization.slug,         // Legacy/Human slug
     role,
     permissions,
   };
 
   const portalOrg: PortalOrganization = {
-    id: organization.slug,
+    id: organization.organizationId,
     slug: organization.slug,
     name: organization.name,
     logoUrl: organization.logoUrl ?? null,

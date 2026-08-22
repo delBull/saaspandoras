@@ -42,7 +42,8 @@ export interface InstalledProductContext {
 export interface OrganizationContext {
   // Identity (from projects table)
   projectId: number;
-  slug: string;
+  organizationId: string; // Canonical UUID
+  slug: string;           // Human-readable / legacy slug
   name: string;
   logoUrl: string | null;
   projectStatus: string;
@@ -66,27 +67,40 @@ export interface OrganizationContext {
 
 // ── SDK ───────────────────────────────────────────────────────────────────────
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const OrganizationSDK = {
 
   /**
-   * Resolve full organization context for a given project and optional product.
-   *
-   * Usage:
-   *   const ctx = await OrganizationSDK.resolve(projectId, 'HERMES');
-   *   ctx.capabilities.voice  // → true/false based on plan
-   *   ctx.visibleModules       // → ['intelligence', 'knowledge', 'channels']
-   *   ctx.runtimeManifest      // → snapshot for agent runtime
+   * Resolve full organization context for a given projectId (number) or organizationId / slug (string).
+   * Supports Dual-Read: UUID first, slug fallback, numeric ID fallback.
    */
-  async resolve(projectId: number, productKey?: ProductKey): Promise<OrganizationContext> {
-    // 1. Load project (= Organization)
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.id, projectId),
-      columns: { id: true, slug: true, title: true, logoUrl: true, status: true },
-    });
+  async resolve(projectIdOrTenant: number | string, productKey?: ProductKey): Promise<OrganizationContext> {
+    let project: { id: number; organizationId: string; slug: string; title: string; logoUrl: string | null; status: string } | undefined;
+
+    if (typeof projectIdOrTenant === 'number') {
+      project = await db.query.projects.findFirst({
+        where: eq(projects.id, projectIdOrTenant),
+        columns: { id: true, organizationId: true, slug: true, title: true, logoUrl: true, status: true },
+      });
+    } else if (UUID_REGEX.test(projectIdOrTenant.trim())) {
+      project = await db.query.projects.findFirst({
+        where: eq(projects.organizationId, projectIdOrTenant.trim()),
+        columns: { id: true, organizationId: true, slug: true, title: true, logoUrl: true, status: true },
+      });
+    } else {
+      // Slug lookup (dual-read fallback)
+      project = await db.query.projects.findFirst({
+        where: eq(projects.slug, projectIdOrTenant.trim()),
+        columns: { id: true, organizationId: true, slug: true, title: true, logoUrl: true, status: true },
+      });
+    }
 
     if (!project) {
-      throw new Error(`[OrganizationSDK] Project not found: ${projectId}`);
+      throw new Error(`[OrganizationSDK] Project/Organization not found: ${projectIdOrTenant}`);
     }
+
+    const projectId = project.id;
 
     // 1.5 Load Onboarding Stage (if draft/onboarding)
     let onboardingStage: string | null = null;
@@ -156,6 +170,7 @@ export const OrganizationSDK = {
 
     return {
       projectId: project.id,
+      organizationId: project.organizationId,
       slug: project.slug,
       name: project.title,
       logoUrl: project.logoUrl ?? null,

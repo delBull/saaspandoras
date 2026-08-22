@@ -23,6 +23,8 @@
     "db:sync-local-to-staging": "node sync-local-to-staging.mjs",
     "db:push:pg": "drizzle-kit push",
     "db:seed:ecosystem": "node scripts/db.seed.ecosystem.mjs",
+    "db:seed:journeys": "bun run scripts/seed-canonical-journeys.mjs",
+    "verify:safety": "bun run scripts/verify-migration-safety.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

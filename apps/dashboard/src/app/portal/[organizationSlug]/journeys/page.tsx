@@ -2,6 +2,9 @@ import React from 'react';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { JourneysDashboard, JourneyView } from '@/components/hermes-portal/journeys/JourneysDashboard';
 import { toggleJourneyState } from './actions';
+import { db } from '@/db';
+import { hermesJourneys, hermesJourneyStages } from '@/db/schema';
+import { eq, or, asc } from 'drizzle-orm';
 
 interface JourneysPageProps {
   params: Promise<{ organizationSlug: string }>;
@@ -10,46 +13,49 @@ interface JourneysPageProps {
 export default async function JourneysPage({ params }: JourneysPageProps) {
   const { organizationSlug } = await params;
   
-  // Verify auth context
-  await resolvePortalContext(organizationSlug);
+  // 1. Verify auth context and resolve tenant
+  const { tenant } = await resolvePortalContext(organizationSlug);
 
-  // Mock initial journeys for Phase 2 UI
-  const mockJourneys: JourneyView[] = [
-    {
-      id: 'j-sales-prospecting',
-      name: 'Sales Prospecting & Qualification',
-      status: 'ACTIVE',
-      milestones: [
-        'Identify user pain points and needs',
-        'Verify if they have budget constraints',
-        'Collect email address for follow-up',
-        'Present the Fast Lane investment option',
-        'Close conversation and tag as Warm Lead'
-      ]
-    },
-    {
-      id: 'j-post-sale-onboarding',
-      name: 'Post-Sale Onboarding (Token Holders)',
-      status: 'PAUSED',
-      milestones: [
-        'Verify user wallet holds S-Narai tokens',
-        'Explain the Governance process (DAO)',
-        'Prompt to vote on active proposals',
-        'Explain the rewards distribution schedule'
-      ]
-    },
-    {
-      id: 'j-support-triage',
-      name: 'Level 1 Support Triage',
-      status: 'DRAFT',
-      milestones: [
-        'Understand the technical issue',
-        'Check knowledge base for known fixes',
-        'If unresolved, collect reproduction steps',
-        'Escalate to human support queue'
-      ]
-    }
-  ];
+  // 2. Fetch real persistent journeys from DB
+  const dbJourneys = await db
+    .select()
+    .from(hermesJourneys)
+    .where(
+      or(
+        eq(hermesJourneys.organizationId, tenant.organizationId),
+        eq(hermesJourneys.organizationId, tenant.organizationSlug)
+      )
+    )
+    .orderBy(asc(hermesJourneys.createdAt));
+
+  // 3. For each journey, fetch its stages and objectives
+  const journeysList: JourneyView[] = await Promise.all(
+    dbJourneys.map(async (j) => {
+      const stages = await db
+        .select()
+        .from(hermesJourneyStages)
+        .where(eq(hermesJourneyStages.journeyId, j.id))
+        .orderBy(asc(hermesJourneyStages.orderIndex));
+
+      // Flatten objectives across all stages to build milestones
+      const milestones: string[] = [];
+      for (const s of stages) {
+        const objs = Array.isArray(s.objectives) ? (s.objectives as string[]) : [];
+        if (objs.length > 0) {
+          milestones.push(...objs);
+        } else {
+          milestones.push(s.name);
+        }
+      }
+
+      return {
+        id: j.id,
+        name: j.name,
+        status: (j.status === 'ACTIVE' ? 'ACTIVE' : 'PAUSED') as 'ACTIVE' | 'PAUSED' | 'DRAFT',
+        milestones: milestones.length > 0 ? milestones : [j.description || 'Proceso en curso'],
+      };
+    })
+  );
 
   const handleToggle = async (id: string, activate: boolean) => {
     'use server';
@@ -58,7 +64,7 @@ export default async function JourneysPage({ params }: JourneysPageProps) {
 
   return (
     <JourneysDashboard 
-      journeys={mockJourneys}
+      journeys={journeysList}
       organizationSlug={organizationSlug}
       onToggleJourney={handleToggle}
     />
