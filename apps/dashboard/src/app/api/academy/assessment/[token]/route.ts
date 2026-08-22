@@ -27,14 +27,48 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'El enlace de evaluación ha expirado.' }, { status: 410 });
     }
 
-    if (invitation.status === 'REVOKED') {
-      return NextResponse.json({ success: false, error: 'Esta invitación ha sido revocada.' }, { status: 403 });
+    const candidate = await AcademyStore.getCandidateAsync(invitation.candidateId);
+    if (!candidate) {
+      return NextResponse.json({ success: false, error: 'Candidato no registrado' }, { status: 404 });
+    }
+
+    const url = new URL(req.url);
+    const emailParam = (url.searchParams.get('email') || '').trim().toLowerCase();
+
+    // Mask helper: p***@gmail.com
+    const maskEmail = (e: string) => {
+      const parts = e.split('@');
+      if (parts.length !== 2) return e;
+      const user = parts[0]!;
+      const domain = parts[1]!;
+      const maskedUser = user.length > 2 ? `${user[0]}***${user[user.length - 1]}` : `${user[0]}***`;
+      return `${maskedUser}@${domain}`;
+    };
+
+    // If no email provided, request verification
+    if (!emailParam) {
+      return NextResponse.json({
+        success: true,
+        requiresVerification: true,
+        candidateName: candidate.name,
+        targetRole: candidate.targetRole,
+        maskedEmail: maskEmail(candidate.email)
+      });
+    }
+
+    // Verify provided email against registered candidate email
+    if (emailParam !== candidate.email.trim().toLowerCase()) {
+      return NextResponse.json({
+        success: false,
+        error: 'El correo electrónico ingresado no coincide con el candidato registrado para esta invitación.'
+      }, { status: 403 });
     }
 
     const { assessment, program } = await AcademyStore.startAssessmentSessionAsync(token);
 
     return NextResponse.json({
       success: true,
+      requiresVerification: false,
       assessment: {
         id: assessment.id,
         candidateName: assessment.candidateName,

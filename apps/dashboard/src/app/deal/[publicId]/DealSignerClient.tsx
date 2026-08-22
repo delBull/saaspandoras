@@ -7,7 +7,7 @@ import { useActiveAccount, useActiveWallet, ConnectButton, darkTheme, useDisconn
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 import { buildSignMessage } from "@/lib/nexus-deals/signing";
-import { buildCombinedSignMessage } from "@/lib/nexus-deals/nda-content";
+import { buildCombinedSignMessage, buildNdaSignMessage } from "@/lib/nexus-deals/nda-content";
 import { NDAModal } from "@/components/modals/NDAModal";
 import { DealAttachments } from "./DealAttachments";
 import { DealComments } from "./DealComments";
@@ -176,7 +176,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
     try {
       const emailId = isOpenSign ? account.address.toLowerCase() : initialEmail ?? account.address.toLowerCase();
       const ts = new Date().toISOString();
-      const message = `Pandora's Ecosystem — Acuerdo de Confidencialidad (${ndaVersion})\n\nAl firmar este mensaje reconozco que:\n1. He leído y entiendo el Acuerdo de Confidencialidad, No Uso y Protección de Información Confidencial de Pandora's Ecosystem versión ${ndaVersion}.\n2. Acepto voluntariamente todas sus obligaciones y restricciones.\n3. Esta firma electrónica constituye mi consentimiento legalmente vinculante conforme al Código de Comercio mexicano.\n\nIdentidad: ${emailId}\nWallet: ${account.address.toLowerCase()}\nTimestamp: ${ts}\nVersión: ${ndaVersion}`;
+      const message = buildNdaSignMessage({
+        email: emailId,
+        wallet: account.address.toLowerCase(),
+        ndaVersion,
+        timestamp: ts,
+      });
 
       let signature = "";
       try {
@@ -196,6 +201,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
         body: JSON.stringify({
           email: emailId,
           name: signName.trim() || room.counterparty || "Representante Autorizado",
+          signatureCompany: signCompany.trim() || undefined,
+          signatureRole: signRole.trim() || undefined,
           wallet: account.address,
           signature,
           timestamp: ts,

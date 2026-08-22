@@ -90,6 +90,8 @@ export async function POST(
     const wallet = String(body.wallet ?? "").trim().toLowerCase();
     const signature = String(body.signature ?? "").trim();
     const timestamp = String(body.timestamp ?? new Date().toISOString());
+    const signatureCompany = body.signatureCompany ? String(body.signatureCompany).trim() : undefined;
+    const signatureRole = body.signatureRole ? String(body.signatureRole).trim() : undefined;
 
     if (!name) {
       return NextResponse.json({ error: "Ingresa tu nombre para firmar." }, { status: 400 });
@@ -174,6 +176,8 @@ export async function POST(
       wallet,
       signature,
       signatureMessage: message,
+      signatureCompany,
+      signatureRole,
       roomId: room.id,
       ip,
       userAgent,

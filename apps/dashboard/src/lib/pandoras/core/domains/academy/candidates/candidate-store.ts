@@ -27,8 +27,8 @@ import {
   CandidateRole,
   CandidateResponseItem
 } from './types';
-import { AcademyCertification } from '../types';
-import { COO_EXECUTIVE_PROGRAM } from '../curriculum/coo-program';
+import { AcademyCertification, AcademyProgram } from '../types';
+import { getProgramByRoleOrId } from '../curriculum/program-registry';
 import { AssessmentEngine } from '../assessment/assessment-engine';
 import { KnowledgeSnapshotManager } from '../snapshots/snapshot-manager';
 
@@ -45,31 +45,39 @@ class AcademyStoreSingleton {
   }
 
   private seedDevDemoData() {
-    const cand1Id = 'cand_carlos_mendoza';
-    this.candidates.set(cand1Id, {
-      id: cand1Id,
-      name: 'Carlos Mendoza',
-      email: 'carlos.mendoza@pandoras.finance',
-      phone: '+52 322 100 2030',
-      targetRole: 'COO',
-      notes: 'Candidato Demo a Dirección de Operaciones Institucionales',
-      attendanceStatus: 'INVITED',
-      invitationCount: 1,
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      updatedAt: new Date().toISOString()
-    });
+    const demos = [
+      { id: 'cand_carlos_mendoza', name: 'Carlos Mendoza', email: 'carlos.mendoza@pandoras.finance', role: 'COO' as CandidateRole, token: 'inv_coo_carlos_demo' },
+      { id: 'cand_sofia_navarro', name: 'Sofia Navarro', email: 'sofia.navarro@pandoras.finance', role: 'CMO' as CandidateRole, token: 'inv_cmo_sofia_demo' },
+      { id: 'cand_alejandro_ramos', name: 'Alejandro Ramos', email: 'alejandro.ramos@pandoras.finance', role: 'CFO' as CandidateRole, token: 'inv_cfo_alejandro_demo' },
+      { id: 'cand_diego_morales', name: 'Diego Morales', email: 'diego.morales@pandoras.finance', role: 'AI_OPERATOR' as CandidateRole, token: 'inv_hermes_operator_demo' },
+    ];
 
-    const token1 = 'inv_coo_carlos_demo';
-    this.invitations.set(token1, {
-      token: token1,
-      candidateId: cand1Id,
-      candidateName: 'Carlos Mendoza',
-      programId: COO_EXECUTIVE_PROGRAM.id,
-      targetRole: 'COO',
-      status: 'PENDING',
-      expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
-      createdAt: new Date().toISOString()
-    });
+    for (const d of demos) {
+      const prog = getProgramByRoleOrId(d.role);
+      this.candidates.set(d.id, {
+        id: d.id,
+        name: d.name,
+        email: d.email,
+        phone: '+52 322 100 2030',
+        targetRole: d.role,
+        notes: `Candidato Oficial a ${prog.title}`,
+        attendanceStatus: 'INVITED',
+        invitationCount: 1,
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      this.invitations.set(d.token, {
+        token: d.token,
+        candidateId: d.id,
+        candidateName: d.name,
+        programId: prog.id,
+        targetRole: d.role,
+        status: 'PENDING',
+        expiresAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+        createdAt: new Date().toISOString()
+      });
+    }
   }
 
   // ─── CANDIDATES (READ-THROUGH & WRITE-THROUGH) ──────────────────────────────
@@ -217,11 +225,12 @@ class AcademyStoreSingleton {
     const token = `inv_${createHash('sha256').update(`${candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
     const expiresAt = new Date(Date.now() + 7 * 86400000);
 
+    const prog = getProgramByRoleOrId(role);
     const invitation: AssessmentInvitation = {
       token,
       candidateId,
       candidateName: params.name,
-      programId: COO_EXECUTIVE_PROGRAM.id,
+      programId: prog.id,
       targetRole: role,
       status: 'PENDING',
       expiresAt: expiresAt.toISOString(),
@@ -280,11 +289,12 @@ class AcademyStoreSingleton {
     this.candidates.set(candidateId, candidate);
 
     const token = `inv_${createHash('sha256').update(`${candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
+    const prog = getProgramByRoleOrId(role);
     const invitation: AssessmentInvitation = {
       token,
       candidateId,
       candidateName: params.name,
-      programId: COO_EXECUTIVE_PROGRAM.id,
+      programId: prog.id,
       targetRole: role,
       status: 'PENDING',
       expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
@@ -323,12 +333,13 @@ class AcademyStoreSingleton {
 
     const token = `inv_${createHash('sha256').update(`${candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
     const expiresAt = new Date(Date.now() + 7 * 86400000);
+    const prog = getProgramByRoleOrId(candidate.targetRole);
 
     const invitation: AssessmentInvitation = {
       token,
       candidateId,
       candidateName: candidate.name,
-      programId: COO_EXECUTIVE_PROGRAM.id,
+      programId: prog.id,
       targetRole: candidate.targetRole,
       status: 'PENDING',
       expiresAt: expiresAt.toISOString(),
@@ -359,11 +370,12 @@ class AcademyStoreSingleton {
     if (!candidate) throw new Error('Candidato no encontrado');
 
     const token = `inv_${createHash('sha256').update(`${candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
+    const prog = getProgramByRoleOrId(candidate.targetRole);
     const invitation: AssessmentInvitation = {
       token,
       candidateId,
       candidateName: candidate.name,
-      programId: COO_EXECUTIVE_PROGRAM.id,
+      programId: prog.id,
       targetRole: candidate.targetRole,
       status: 'PENDING',
       expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
@@ -395,11 +407,12 @@ class AcademyStoreSingleton {
         const r = rows[0];
         if (!r) return undefined;
         const candidate = await this.getCandidateAsync(r.candidateId);
+        const prog = getProgramByRoleOrId(candidate?.targetRole);
         const inv: AssessmentInvitation = {
           token: r.token,
           candidateId: r.candidateId,
           candidateName: candidate?.name || 'Candidato Registrado',
-          programId: COO_EXECUTIVE_PROGRAM.id,
+          programId: prog.id,
           targetRole: candidate?.targetRole || 'COO',
           status: r.status as any,
           expiresAt: r.expiresAt.toISOString(),
@@ -485,7 +498,7 @@ class AcademyStoreSingleton {
 
   async startAssessmentSessionAsync(token: string): Promise<{
     assessment: CandidateAssessmentInstance;
-    program: typeof COO_EXECUTIVE_PROGRAM;
+    program: AcademyProgram;
   }> {
     const invitation = await this.getInvitationAsync(token);
     if (!invitation) throw new Error('Invitación no válida');
@@ -503,10 +516,12 @@ class AcademyStoreSingleton {
     const candidate = await this.getCandidateAsync(invitation.candidateId);
     if (!candidate) throw new Error('Candidato no registrado');
 
+    const program = getProgramByRoleOrId(candidate.targetRole);
+
     if (candidate.latestAttemptId) {
       const existing = await this.getAssessmentAsync(candidate.latestAttemptId);
       if (existing) {
-        return { assessment: existing, program: COO_EXECUTIVE_PROGRAM };
+        return { assessment: existing, program };
       }
     }
 
@@ -515,16 +530,16 @@ class AcademyStoreSingleton {
 
     const snapshot = KnowledgeSnapshotManager.createFullProgramSnapshot();
     const knowledgeSnapshotHash = snapshot.snapshotHash;
-    const systemPromptHash = createHash('sha256').update('HERMES_COO_SOCRATIC_PROMPT_V2.0').digest('hex').substring(0, 16);
+    const systemPromptHash = createHash('sha256').update(`HERMES_${candidate.targetRole}_SOCRATIC_PROMPT_V1.0`).digest('hex').substring(0, 16);
 
     const assessment: CandidateAssessmentInstance = {
       id: attemptId,
       candidateId: candidate.id,
       candidateName: candidate.name,
-      programId: COO_EXECUTIVE_PROGRAM.id,
+      programId: program.id,
       targetRole: candidate.targetRole,
       status: 'IN_PROGRESS',
-      curriculumVersion: COO_EXECUTIVE_PROGRAM.version,
+      curriculumVersion: program.version,
       rubricVersion: '2.0',
       fatalFailurePolicyVersion: '2.0',
       knowledgeSnapshotHash,
@@ -572,12 +587,12 @@ class AcademyStoreSingleton {
       console.warn('⚠️ [AcademyStore] DB Insert assessment session failed:', e);
     }
 
-    return { assessment, program: COO_EXECUTIVE_PROGRAM };
+    return { assessment, program };
   }
 
   startAssessmentSession(token: string): {
     assessment: CandidateAssessmentInstance;
-    program: typeof COO_EXECUTIVE_PROGRAM;
+    program: AcademyProgram;
   } {
     const invitation = this.invitations.get(token);
     if (!invitation) throw new Error('Invitación no válida');
@@ -594,9 +609,11 @@ class AcademyStoreSingleton {
     const candidate = this.candidates.get(invitation.candidateId);
     if (!candidate) throw new Error('Candidato no registrado');
 
+    const program = getProgramByRoleOrId(candidate.targetRole);
+
     if (candidate.latestAttemptId && this.assessments.has(candidate.latestAttemptId)) {
       const existing = this.assessments.get(candidate.latestAttemptId)!;
-      return { assessment: existing, program: COO_EXECUTIVE_PROGRAM };
+      return { assessment: existing, program };
     }
 
     const attemptId = `attempt_${createHash('sha256').update(`${invitation.candidateId}_${Date.now()}`).digest('hex').substring(0, 16)}`;
@@ -604,16 +621,16 @@ class AcademyStoreSingleton {
 
     const snapshot = KnowledgeSnapshotManager.createFullProgramSnapshot();
     const knowledgeSnapshotHash = snapshot.snapshotHash;
-    const systemPromptHash = createHash('sha256').update('HERMES_COO_SOCRATIC_PROMPT_V2.0').digest('hex').substring(0, 16);
+    const systemPromptHash = createHash('sha256').update(`HERMES_${candidate.targetRole}_SOCRATIC_PROMPT_V1.0`).digest('hex').substring(0, 16);
 
     const assessment: CandidateAssessmentInstance = {
       id: attemptId,
       candidateId: candidate.id,
       candidateName: candidate.name,
-      programId: COO_EXECUTIVE_PROGRAM.id,
+      programId: program.id,
       targetRole: candidate.targetRole,
       status: 'IN_PROGRESS',
-      curriculumVersion: COO_EXECUTIVE_PROGRAM.version,
+      curriculumVersion: program.version,
       rubricVersion: '2.0',
       fatalFailurePolicyVersion: '2.0',
       knowledgeSnapshotHash,
@@ -631,7 +648,7 @@ class AcademyStoreSingleton {
     invitation.status = 'USED';
     invitation.usedAt = now;
 
-    return { assessment, program: COO_EXECUTIVE_PROGRAM };
+    return { assessment, program };
   }
 
   async submitCandidateAnswer(params: {
@@ -657,7 +674,8 @@ class AcademyStoreSingleton {
       throw new Error(`El índice del módulo enviado (${params.moduleIndex}) no coincide con el progreso actual (${assessment.currentModuleIndex}).`);
     }
 
-    const module = COO_EXECUTIVE_PROGRAM.modules[params.moduleIndex];
+    const program = getProgramByRoleOrId(assessment.targetRole || assessment.programId);
+    const module = program.modules[params.moduleIndex];
     if (!module) throw new Error('Módulo no válido');
 
     const scoreResult = await AssessmentEngine.evaluateSingleAssessment({
@@ -677,7 +695,7 @@ class AcademyStoreSingleton {
     assessment.responses.push(responseItem);
 
     const nextModuleIndex = params.moduleIndex + 1;
-    const isComplete = nextModuleIndex >= COO_EXECUTIVE_PROGRAM.modules.length;
+    const isComplete = nextModuleIndex >= program.modules.length;
     assessment.currentModuleIndex = nextModuleIndex;
 
     try {
@@ -729,6 +747,7 @@ class AcademyStoreSingleton {
       attemptId: assessment.id,
       candidateId: assessment.candidateId,
       candidateName: assessment.candidateName,
+      programCode: assessment.programId || assessment.targetRole,
       answers
     });
 

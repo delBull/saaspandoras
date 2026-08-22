@@ -21,7 +21,10 @@ import {
   ArrowLeft,
   Lock,
   Cpu,
-  Layers
+  Layers,
+  KeyRound,
+  Mail,
+  UserCheck
 } from "lucide-react";
 import Link from "next/link";
 
@@ -36,20 +39,39 @@ export default function CandidateAssessmentPage({ params }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
   
+  // Verification Gate State
+  const [candidateEmailInput, setCandidateEmailInput] = useState("");
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState<string>("");
+
+  // Assessment Execution State
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [finalResult, setFinalResult] = useState<any>(null);
 
-  const fetchSession = async () => {
+  const fetchSession = async (emailToVerify?: string) => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/academy/assessment/${token}`);
+      const activeEmail = emailToVerify || verifiedEmail;
+      const url = activeEmail 
+        ? `/api/academy/assessment/${token}?email=${encodeURIComponent(activeEmail)}`
+        : `/api/academy/assessment/${token}`;
+
+      const res = await fetch(url);
       const json = await res.json();
       if (!res.ok || !json.success) {
         throw new Error(json.error || "No se pudo cargar la sesión");
       }
       setData(json);
+      if (activeEmail && !json.requiresVerification) {
+        setVerifiedEmail(activeEmail);
+        try {
+          sessionStorage.setItem(`academy_verified_${token}`, activeEmail);
+        } catch {}
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -58,8 +80,46 @@ export default function CandidateAssessmentPage({ params }: Props) {
   };
 
   useEffect(() => {
-    fetchSession();
+    // Check if previously verified in session
+    let savedEmail = "";
+    try {
+      savedEmail = sessionStorage.getItem(`academy_verified_${token}`) || "";
+    } catch {}
+    if (savedEmail) {
+      setVerifiedEmail(savedEmail);
+      fetchSession(savedEmail);
+    } else {
+      fetchSession();
+    }
   }, [token]);
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = candidateEmailInput.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      setVerificationError("Por favor ingresa un correo electrónico válido.");
+      return;
+    }
+
+    setVerifyingEmail(true);
+    setVerificationError(null);
+    try {
+      const res = await fetch(`/api/academy/assessment/${token}?email=${encodeURIComponent(email)}`);
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "El correo ingresado no coincide con el candidato registrado.");
+      }
+      setData(json);
+      setVerifiedEmail(email);
+      try {
+        sessionStorage.setItem(`academy_verified_${token}`, email);
+      } catch {}
+    } catch (err: any) {
+      setVerificationError(err.message || "Error al verificar identidad.");
+    } finally {
+      setVerifyingEmail(false);
+    }
+  };
 
   const handleSubmitAnswer = async () => {
     if (!currentAnswer.trim() || submitting || !data) return;
@@ -88,7 +148,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
       }
 
       setCurrentAnswer("");
-      await fetchSession();
+      await fetchSession(verifiedEmail);
     } catch (e: any) {
       alert(e.message);
     } finally {
@@ -131,18 +191,18 @@ export default function CandidateAssessmentPage({ params }: Props) {
     }
   };
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <main className="min-h-screen bg-[#08080A] text-zinc-100 flex items-center justify-center p-6 font-sans">
         <div className="text-center space-y-3">
           <Loader2 className="w-10 h-10 text-purple-400 animate-spin mx-auto" />
-          <p className="text-xs font-mono text-zinc-400">Iniciando sesión segura de evaluación con Hermes...</p>
+          <p className="text-xs font-mono text-zinc-400">Verificando enlace institucional con Hermes...</p>
         </div>
       </main>
     );
   }
 
-  if (error || !data) {
+  if (error && !data) {
     return (
       <main className="min-h-screen bg-[#08080A] text-zinc-100 flex items-center justify-center p-6 font-sans">
         <div className="max-w-md w-full p-8 rounded-3xl bg-[#0C0C10] border border-rose-500/30 text-center space-y-4 shadow-2xl">
@@ -160,6 +220,120 @@ export default function CandidateAssessmentPage({ params }: Props) {
     );
   }
 
+  // ─── CANDIDATE IDENTITY GATE ────────────────────────────────────────────────
+  if (data?.requiresVerification) {
+    return (
+      <main className="min-h-screen bg-[#08080A] text-zinc-100 font-sans flex flex-col selection:bg-purple-500/30">
+        <div
+          className="pointer-events-none fixed inset-0 z-0 opacity-[0.025]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
+          }}
+        />
+
+        <header className="relative z-10 h-16 shrink-0 flex items-center justify-between px-6 bg-[#0C0C10] border-b border-white/10 font-mono">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300">
+              <GraduationCap className="w-4 h-4" />
+            </div>
+            <span className="text-sm font-bold text-white tracking-tight">PANDORA'S ACADEMY · ACCESS GATE</span>
+          </div>
+          <span className="px-2 py-0.5 rounded border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] font-mono font-bold">
+            CONFIDENCIAL
+          </span>
+        </header>
+
+        <div className="relative z-10 flex-1 flex items-center justify-center p-4 md:p-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="max-w-lg w-full p-6 md:p-8 rounded-3xl bg-[#0C0C10] border border-white/15 shadow-[0_0_60px_rgba(168,85,247,0.1)] space-y-6"
+          >
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 mx-auto">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h1 className="text-xl font-bold text-white tracking-tight">
+                Verificación de Identidad del Candidato
+              </h1>
+              <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+                Esta sesión de evaluación socrática está restringida exclusivamente al candidato registrado.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-2 text-xs font-mono">
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Candidato Designado:</span>
+                <span className="text-white font-semibold">{data.candidateName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Track Ejecutivo:</span>
+                <span className="text-purple-300 font-semibold">{data.targetRole} Track</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Pista de Correo:</span>
+                <span className="text-zinc-300">{data.maskedEmail}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleVerifyEmail} className="space-y-4 font-mono text-xs">
+              <div className="space-y-1">
+                <label className="text-zinc-300 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-purple-400" />
+                  Ingresa tu Correo Electrónico Registrado:
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={candidateEmailInput}
+                  onChange={(e) => {
+                    setCandidateEmailInput(e.target.value);
+                    if (verificationError) setVerificationError(null);
+                  }}
+                  placeholder="ej. pablosegali@gmail.com"
+                  className="w-full bg-black/60 border border-white/15 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/60 transition-all font-mono"
+                />
+              </div>
+
+              {verificationError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] leading-relaxed">
+                  {verificationError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={verifyingEmail || !candidateEmailInput.trim()}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-purple-500/25 disabled:opacity-40"
+              >
+                {verifyingEmail ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    VERIFICANDO ACCESO...
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="w-4 h-4" />
+                    DESBLOQUEAR SESIÓN DE EXAMEN
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="text-center pt-2 border-t border-white/5">
+              <p className="text-[10px] font-mono text-zinc-600">
+                Pandora's Academy Core · Socratic Evaluator v2.0
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </main>
+    );
+  }
+
+  // ─── UNLOCKED ACTIVE ASSESSMENT ─────────────────────────────────────────────
   const { assessment, currentModule, isComplete } = data;
   const activeQuestion = currentModule?.assessments[0];
 
@@ -200,7 +374,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
               </span>
-              SESIÓN ACTIVA
+              SESIÓN AUTORIZADA
             </div>
           </div>
         </div>

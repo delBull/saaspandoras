@@ -7,7 +7,7 @@
  * 2. Candidate response handling
  * 3. Hermes AI proposal generation
  * 4. Deterministic Rubric Engine scoring
- * 5. Certification Policy decision
+ * 5. Certification Policy decision across all 4 Executive Programs
  */
 
 import {
@@ -16,7 +16,7 @@ import {
   AssessmentAttemptResult,
   AcademyCertification
 } from '../types';
-import { COO_EXECUTIVE_PROGRAM } from '../curriculum/coo-program';
+import { ALL_ACADEMY_PROGRAMS, getProgramByRoleOrId } from '../curriculum/program-registry';
 import { KnowledgeSnapshotManager } from '../snapshots/snapshot-manager';
 import { HermesAcademyEvaluator } from './hermes-evaluator';
 import { RubricEngine } from './rubric-engine';
@@ -25,19 +25,16 @@ import { CertificationService } from '../certification/certification-service';
 
 export class AssessmentEngine {
   /**
-   * Returns the official program curriculum.
+   * Returns the official program curriculum by code, role or ID.
    */
-  static getProgram(programCode = 'COO_INTERNAL_V1'): AcademyProgram {
-    if (programCode === 'COO_INTERNAL_V1') {
-      return COO_EXECUTIVE_PROGRAM;
-    }
-    return COO_EXECUTIVE_PROGRAM;
+  static getProgram(programCodeOrRole = 'COO_EXECUTIVE_V2'): AcademyProgram {
+    return getProgramByRoleOrId(programCodeOrRole);
   }
 
   /**
    * Initializes an assessment attempt by freezing a KnowledgeSnapshot.
    */
-  static initializeAttempt(programCode = 'COO_INTERNAL_V1', candidateId: string) {
+  static initializeAttempt(programCode = 'COO_EXECUTIVE_V2', candidateId: string) {
     const program = this.getProgram(programCode);
     const snapshot = KnowledgeSnapshotManager.createFullProgramSnapshot();
     const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -53,27 +50,27 @@ export class AssessmentEngine {
   }
 
   /**
-   * Evaluates a single assessment question.
+   * Evaluates a single assessment question across all programs.
    */
   static async evaluateSingleAssessment(params: {
     assessmentId: string;
     candidateAnswer: string;
     snapshotId?: string;
   }): Promise<AssessmentScoreResult> {
-    const program = COO_EXECUTIVE_PROGRAM;
-    
-    // Find assessment across all modules
     let targetAssessment = null;
-    for (const mod of program.modules) {
-      const found = mod.assessments.find(a => a.id === params.assessmentId);
-      if (found) {
-        targetAssessment = found;
-        break;
+    for (const prog of ALL_ACADEMY_PROGRAMS) {
+      for (const mod of prog.modules) {
+        const found = mod.assessments.find(a => a.id === params.assessmentId);
+        if (found) {
+          targetAssessment = found;
+          break;
+        }
       }
+      if (targetAssessment) break;
     }
 
     if (!targetAssessment) {
-      throw new Error(`Assessment with ID ${params.assessmentId} not found.`);
+      throw new Error(`Assessment with ID ${params.assessmentId} not found in any Academy curriculum.`);
     }
 
     const snapshot = KnowledgeSnapshotManager.createFullProgramSnapshot();
