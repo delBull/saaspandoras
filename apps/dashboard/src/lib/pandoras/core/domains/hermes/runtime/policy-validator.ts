@@ -137,6 +137,38 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
       });
     }
 
+    // 9. Phase 2.2 Gate: SECRET Boundary Enforcement (Zero-Tolerance)
+    // Matches private keys (0x + 64 hex chars), API secret keys, database credentials, passwords
+    const secretKeyRegex = /(?:0x[a-fA-F0-9]{64}|sk_(?:live|test)_[a-zA-Z0-9]{12,}|postgresql:\/\/[^\s]+|password\s*=\s*[^\s]+)/i;
+    if (secretKeyRegex.test(output.content)) {
+      violations.push({
+        code: 'SECRET_DISCLOSURE',
+        severity: 'BLOCK',
+        message: 'Output contains raw cryptographic secrets, private keys, or internal credentials.',
+      });
+    }
+
+    // 10. Phase 2.2 Gate: INTERNAL_OPERATIONAL & Corporate Boundary
+    if (
+      (text.includes('iom v1.0') || text.includes('institutional operating model') || text.includes('mxhub ecosistema blockchain') || text.includes('holding wyoming')) &&
+      !context.activeKnowledge.some(k => (k as any).classification === 'PUBLIC' && k.content.toLowerCase().includes('iom'))
+    ) {
+      violations.push({
+        code: 'INTERNAL_OPERATIONAL_DISCLOSURE',
+        severity: 'BLOCK',
+        message: 'Output discloses confidential internal corporate structure or operational documents.',
+      });
+    }
+
+    // 11. Phase 2.2 Gate: ACADEMY_EVALUATE_ONLY Boundary
+    if (text.includes('rubriccriterion') || text.includes('grading_rubric_secret') || text.includes('model_answer_internal')) {
+      violations.push({
+        code: 'ACADEMY_EVALUATE_ONLY_DISCLOSURE',
+        severity: 'BLOCK',
+        message: 'Output discloses internal Academy evaluation blueprints or grading rubrics.',
+      });
+    }
+
     // ─── Build explicit PolicyDecision (K12-A30) ──────────────────────────────
     // The Runtime MUST NOT infer BLOCK from empty output, regex side-effects,
     // or missing content. The decision is always explicit.

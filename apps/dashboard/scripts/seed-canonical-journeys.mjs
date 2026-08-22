@@ -45,12 +45,22 @@ async function seedCanonicalJourneys() {
         RETURNING id;
       `;
 
-      await sql`
+      const salesStages = await sql`
         INSERT INTO hermes_journey_stages (journey_id, name, order_index, objectives) VALUES
         (${salesJourney.id}, 'Pain Points & Discovery', 1, '["Identificar necesidades del prospecto", "Entender caso de uso"]'::jsonb),
         (${salesJourney.id}, 'Budget & Feasibility', 2, '["Verificar capacidad de inversion", "Evaluar requerimientos tecnicos"]'::jsonb),
         (${salesJourney.id}, 'Contact Capture', 3, '["Obtener correo o WhatsApp verificado", "Confirmar tomador de decision"]'::jsonb),
-        (${salesJourney.id}, 'Proposal & Fast Lane', 4, '["Presentar opcion de inversion o deal room", "Agendar llamada o enviar NDA"]'::jsonb);
+        (${salesJourney.id}, 'Proposal & Fast Lane', 4, '["Presentar opcion de inversion o deal room", "Agendar llamada o enviar NDA"]'::jsonb)
+        RETURNING id, name;
+      `;
+
+      await sql`
+        INSERT INTO hermes_journey_transitions (journey_id, from_stage_id, to_stage_id, status) VALUES
+        (${salesJourney.id}, 'Pain Points & Discovery', 'Budget & Feasibility', 'ACTIVE'),
+        (${salesJourney.id}, 'Budget & Feasibility', 'Contact Capture', 'ACTIVE'),
+        (${salesJourney.id}, 'Contact Capture', 'Proposal & Fast Lane', 'ACTIVE'),
+        (${salesJourney.id}, 'Proposal & Fast Lane', 'COMPLETE', 'ACTIVE'),
+        (${salesJourney.id}, 'ANY', 'ABORT', 'ACTIVE');
       `;
 
       // 2. Post-Sale Onboarding & DAO Governance Journey
@@ -67,6 +77,14 @@ async function seedCanonicalJourneys() {
         (${daoJourney.id}, 'Yield Distribution', 3, '["Explicar calendario de distribucion de dividendos USDC", "Detallar registro en bóveda"]'::jsonb);
       `;
 
+      await sql`
+        INSERT INTO hermes_journey_transitions (journey_id, from_stage_id, to_stage_id, status) VALUES
+        (${daoJourney.id}, 'Token Verification', 'DAO Orientation', 'ACTIVE'),
+        (${daoJourney.id}, 'DAO Orientation', 'Yield Distribution', 'ACTIVE'),
+        (${daoJourney.id}, 'Yield Distribution', 'COMPLETE', 'ACTIVE'),
+        (${daoJourney.id}, 'ANY', 'ABORT', 'ACTIVE');
+      `;
+
       // 3. Support & Incident Triage Journey
       const [supportJourney] = await sql`
         INSERT INTO hermes_journeys (organization_id, name, description, version, status, is_default)
@@ -78,6 +96,13 @@ async function seedCanonicalJourneys() {
         INSERT INTO hermes_journey_stages (journey_id, name, order_index, objectives) VALUES
         (${supportJourney.id}, 'Issue Diagnosis', 1, '["Comprender la incidencia tecnica", "Consultar base de conocimiento autorizada"]'::jsonb),
         (${supportJourney.id}, 'Resolution / Escalation', 2, '["Proveer solucion verificada o escalar a cola ejecutiva"]'::jsonb);
+      `;
+
+      await sql`
+        INSERT INTO hermes_journey_transitions (journey_id, from_stage_id, to_stage_id, status) VALUES
+        (${supportJourney.id}, 'Issue Diagnosis', 'Resolution / Escalation', 'ACTIVE'),
+        (${supportJourney.id}, 'Resolution / Escalation', 'COMPLETE', 'ACTIVE'),
+        (${supportJourney.id}, 'ANY', 'ABORT', 'ACTIVE');
       `;
 
       seededCount += 3;

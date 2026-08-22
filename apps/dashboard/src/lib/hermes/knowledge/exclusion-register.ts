@@ -71,3 +71,42 @@ export class ScopeValidator {
     return { allowed: true };
   }
 }
+
+export type DisclosureClassification = 'PUBLIC' | 'B2B_CONFIDENTIAL_NDA' | 'INTERNAL_RESTRICTED' | 'PROHIBITED_SECRET';
+
+export class DisclosurePolicyGuard {
+  /**
+   * 🛡️ DISCLOSURE BOUNDARY VALIDATOR
+   * Enforces the Tri-Fold Principle: Having access to know/use != Permission to disclose.
+   */
+  static evaluateDisclosure(
+    classification: DisclosureClassification,
+    isNdaActive: boolean,
+    isInternalControlPlane: boolean
+  ): { allowed: boolean; requirement?: string } {
+    if (classification === 'PROHIBITED_SECRET') {
+      return { allowed: false, requirement: 'ABSOLUTE_DISCLOSURE_BAN' };
+    }
+
+    if (classification === 'INTERNAL_RESTRICTED' && !isInternalControlPlane) {
+      return { allowed: false, requirement: 'INTERNAL_CONTROL_PLANE_ONLY' };
+    }
+
+    if (classification === 'B2B_CONFIDENTIAL_NDA' && !isNdaActive && !isInternalControlPlane) {
+      return { allowed: false, requirement: 'REQUIRES_MUTUAL_NDA_LEVEL_2_IN_NEXUS' };
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * 🛡️ EGRESS SANITIZER
+   * Redacts any accidental leakage of private keys, DB URLs, or internal secrets
+   */
+  static sanitizeEgress(rawOutput: string): string {
+    return rawOutput
+      .replace(/0x[a-fA-F0-9]{64}/g, '[REDACTED_PRIVATE_KEY]')
+      .replace(/npg_[a-zA-Z0-9_-]+/g, '[REDACTED_DB_CREDENTIAL]')
+      .replace(/sk_live_[a-zA-Z0-9]+/g, '[REDACTED_API_SECRET]');
+  }
+}

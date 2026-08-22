@@ -35,7 +35,7 @@ export class TenantKnowledgeStore {
     dimension: KnowledgeDimension,
     content: string
   ): Promise<{ success: boolean; event?: KnowledgeMutationEvent; error?: string }> {
-    
+
     // C6.2: Tenant Isolation Check
     if (!context.organizationId) {
       return { success: false, error: 'MISSING_ORGANIZATION_ID_IN_CONTEXT' };
@@ -43,7 +43,10 @@ export class TenantKnowledgeStore {
 
     try {
       const projectRecord = await db.query.projects.findFirst({
-        where: eq(projects.slug, context.organizationId)
+        where: (projects, { or, eq }) => or(
+          eq(projects.organizationId, context.organizationId),
+          eq(projects.slug, context.organizationId)
+        )
       });
 
       if (!projectRecord) {
@@ -53,13 +56,13 @@ export class TenantKnowledgeStore {
       // C6.7: Governance isolation. LLM cannot authorize rules.
       let status: KnowledgeStatus = 'DISCOVERED'; // C6.4: All LLM knowledge enters as DISCOVERED
       if (dimension === 'governance') {
-         // Even if discovered, governance from LLM remains strictly descriptive/UNVERIFIED
-         status = 'UNKNOWN'; 
+        // Even if discovered, governance from LLM remains strictly descriptive/UNVERIFIED
+        status = 'UNKNOWN';
       }
 
       const rtConfig = (projectRecord.tenantRuntimeConfig as any) || {};
       const knowledgePack = rtConfig.knowledgePack || {};
-      
+
       const currentVersion = knowledgePack[`${dimension}_version`] || 0;
       const nextVersion = currentVersion + 1;
 

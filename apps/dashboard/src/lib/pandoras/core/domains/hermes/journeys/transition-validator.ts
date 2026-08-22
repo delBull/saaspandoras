@@ -60,7 +60,8 @@ export class JourneyTransitionValidator {
 
       // Check if the target stage exists in allowed transitions from current stage
       const validTransition = availableTransitions.find(
-        (t) => t.fromStageId === actorState.currentStageId && t.toStageId === proposal.targetStageId
+        (t) => (t.fromStageId === actorState.currentStageId || t.fromStageId === 'ANY') && 
+               (t.toStageId === proposal.targetStageId || t.toStageId.toUpperCase() === proposal.targetStageId?.toUpperCase())
       );
 
       if (!validTransition) {
@@ -70,7 +71,7 @@ export class JourneyTransitionValidator {
       return {
         allowed: true,
         fromStageId: actorState.currentStageId,
-        toStageId: proposal.targetStageId,
+        toStageId: validTransition.toStageId,
         reason: 'Valid transition mapped in graph',
       };
     }

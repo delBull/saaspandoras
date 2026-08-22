@@ -12,7 +12,21 @@ describe('Governance Pipeline Integration (Cognitive -> Strategy -> Governance -
     // Reset event spine handlers for test clean state
     (EventSpine as any).instance = undefined;
 
-    runtimeListener = new CognitiveRuntimeListener();
+    const mockLLM = {
+      execute: async () => ({
+        rawContent: JSON.stringify({
+          thoughtProcess: 'El usuario pregunta por precios de S\'Narai',
+          action: 'SEND_MESSAGE',
+          confidenceScore: 0.95,
+          payload: {
+            text: 'El precio inicial de S\'Narai en la Fase 1 es de $50 USD por participación tokenizada.'
+          }
+        }),
+        usage: { promptTokens: 10, completionTokens: 10, totalTokens: 20 }
+      })
+    };
+
+    runtimeListener = new CognitiveRuntimeListener(mockLLM);
     governanceBridge = new StrategyGovernanceBridge();
   });
 

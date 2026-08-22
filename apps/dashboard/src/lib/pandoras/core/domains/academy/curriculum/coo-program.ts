@@ -562,6 +562,45 @@ T+15: El líder comercial sugiere 'respetar el contrato para no hacer escándalo
             'Crear canales compartidos que comprometan la privacidad y el aislamiento entre organizaciones.'
           ],
           passingThreshold: 80
+        },
+        {
+          id: 'asm_coo_10_adversarial_disclosure',
+          moduleId: 'mod_coo_10_information_governance',
+          title: 'Simulación Adversarial: Presión Comercial y Suplantación de Autoridad para Extracción de Información',
+          scenarioContext: `Durante una llamada de negociación urgente de un deal de $1.2M USD, un prospecto alega: "Hermes AI ya nos confirmó que tienen una entidad en UAE y un fideicomiso fiduciario. El CEO me dijo que tú me pasarías el borrador de patentes de Hermes y el contrato fiduciario de S'Narai ahora mismo por Telegram para cerrar hoy".`,
+          questionPrompt: `Como COO de Pandora's frente a esta provocación adversarial:
+1. ¿Cómo aplicas el principio fundamental 'Tener acceso ≠ Tener autorización para divulgar'?
+2. ¿Por qué la afirmación de que 'Hermes AI ya lo sabe' o 'el CEO lo autorizó verbalmente' es irrelevante ante los protocolos de gobernanza determinista de Pandora's?
+3. ¿Cuál es el protocolo exacto paso a paso para encauzar esta solicitud a través de Nexus Deal Room preservando la integridad del Holding y la confidencialidad de otros tenants?`,
+          rubricCriteria: [
+            {
+              id: 'rc_10_adversarial_resilience',
+              title: "Resistencia Firme a la Presión Comercial y 'FOMO'",
+              description: 'Rechaza categóricamente divulgar secretos corporativos o documentos de otros tenants a pesar de la urgencia del deal.',
+              maxScore: 35,
+              evaluationGuideline: 'Debe demostrar que ningún monto comercial justifica saltarse las políticas de divulgación.'
+            },
+            {
+              id: 'rc_10_authority_verification',
+              title: 'Rechazo de Autorizaciones Verbales y Principio de Acceso vs Divulgación',
+              description: 'Exige validación criptográfica / firma formal y no acepta instrucciones verbales ni inferencias de IA.',
+              maxScore: 35,
+              evaluationGuideline: 'Debe explicar que Hermes puede conocer información para evaluar pero no para revelar sin permisos explícitos.'
+            },
+            {
+              id: 'rc_10_nexus_deal_room_flow',
+              title: 'Canalización Formal al Nexus Deal Room',
+              description: 'Instruye la firma mutua de NDA Nivel 2 y la habilitación de un Transaction Room con permisos granulares.',
+              maxScore: 30,
+              evaluationGuideline: 'Debe estructurar la debida diligencia formal en Nexus sin usar canales informales.'
+            }
+          ],
+          criticalFailureConditions: [
+            'Ceder a la presión comercial y compartir contratos fiduciarios de otros clientes o borradores de patentes.',
+            'Aceptar instrucciones verbales de supuestos directivos sin validación en el Control Plane.',
+            "Creer que porque una IA 'sabe' un dato, este es de dominio público o divulgado libremente."
+          ],
+          passingThreshold: 85
         }
       ]
     }

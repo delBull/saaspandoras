@@ -51,6 +51,7 @@ import { ConversationMemoryProvider } from './memory/contracts';
 import { PostgresConversationMemoryProvider } from './memory/postgres-memory-provider';
 import { MemoryAdapter } from './memory/memory-adapter';
 import { DefaultRuntimePolicyValidator } from './policy-validator';
+import { ContextHygieneValidator } from './context-hygiene-validator';
 import { FailSafeRuntimeTraceRecorder, NoOpRuntimeTraceRecorder, InMemoryRuntimeTraceStore, DefaultRuntimeTraceRecorder } from './trace/trace-recorder';
 
 // ─── Internal shared types ────────────────────────────────────────────────────
@@ -151,11 +152,15 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       });
 
       // Step 3: Adapt to ReasoningContext (one-way trust boundary)
-      const { reasoningContext, trace: traceInfo } = CognitiveContextAdapter.adapt(
+      const { reasoningContext: rawReasoningContext, trace: traceInfo } = CognitiveContextAdapter.adapt(
         effectiveContext,
         conversationHistory,
         message,
       );
+
+      // Step 3b: Pre-LLM Context Hygiene Validation (Phase 2.2 / 3.0 Gate T12)
+      const { sanitizedContext: reasoningContext, violations: hygieneViolations } =
+        ContextHygieneValidator.validate(rawReasoningContext);
 
       await this.traceRecorder.record(traceHandle, {
         type: 'CONTEXT_ADAPTED',
@@ -163,8 +168,9 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           contextVersion: traceInfo.contextVersion,
           activeKnowledgeIds: traceInfo.activeKnowledgeIds,
           excludedKnowledgeIds: traceInfo.excludedKnowledgeReasons.map(r => r.id),
-          activeCapabilityIds: reasoningContext.activeCapabilities.map(c => c.id),
+          activeCapabilityIds: reasoningContext.activeCapabilities.map((c: { id: string }) => c.id),
           governanceRestrictions: traceInfo.governanceRestrictionsApplied,
+          hygieneViolationsCount: hygieneViolations.length,
         }
       });
 

@@ -38,10 +38,10 @@ export class IntentManager {
       intentType: decision.workflow || 'unknown_intent', // Cambiamos de workflow técnico a tipo de intención, e.g. "lead_generation_campaign"
       rationale: decision.reason.summary, // Usamos el summary estructurado
       
-      // Simulamos que el Pack define restricciones por defecto
-      constraints: [
-        { type: 'budget', value: '50000 MXN' } // Dummy constraint for example
-      ],
+      // Solo aplica restricciones de presupuesto si no es un simple envío de mensaje de canal
+      constraints: decision.workflow === 'channel.message_send.v1'
+        ? []
+        : [{ type: 'budget', value: '50000 MXN' }],
       approvalPolicy: { required: false }, // Will be evaluated below
       status: 'proposed',
       approvals: [],

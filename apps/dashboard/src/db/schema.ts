@@ -3637,7 +3637,7 @@ export const hermesJourneyTransitions = pgTable("hermes_journey_transitions", {
 
 export const hermesActorJourneys = pgTable("hermes_actor_journeys", {
   id: uuid("id").primaryKey().defaultRandom(),
-  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
   actorId: varchar("actor_id", { length: 256 }).notNull(),
   journeyId: uuid("journey_id").notNull().references(() => hermesJourneys.id),
   journeyVersion: integer("journey_version").notNull(),
@@ -3647,6 +3647,7 @@ export const hermesActorJourneys = pgTable("hermes_actor_journeys", {
   lastAdvancedAt: timestamp("last_advanced_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 }, (t) => ({
+  orgActorJourneyUniq: uniqueIndex("hermes_actor_journeys_org_actor_journey_uniq").on(t.organizationId, t.actorId, t.journeyId),
   orgActorIdx: uniqueIndex("hermes_actor_journeys_org_actor_idx").on(t.organizationId, t.actorId).where(sql`${t.status} = 'IN_PROGRESS'`),
   journeyIdx: index("hermes_actor_journeys_journey_idx").on(t.journeyId),
 }));

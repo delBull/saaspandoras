@@ -99,6 +99,32 @@ export interface RuntimeTrace {
 }
 
 // ---------------------------------------------------------------------------
+// 3.5 Formal 6-Tier Knowledge Classification Taxonomy (Phase 2.2 / 3.0)
+// ---------------------------------------------------------------------------
+export type KnowledgeClassificationTier =
+  | 'PUBLIC'
+  | 'TENANT_RESTRICTED'
+  | 'B2B_RESTRICTED'
+  | 'INTERNAL_OPERATIONAL'
+  | 'ACADEMY_EVALUATE_ONLY'
+  | 'SECRET';
+
+export interface ToolAuthorizationRequest {
+  organizationId: string;
+  actorId: string;
+  capabilityId: string;
+  toolName: string;
+  parameters?: Record<string, unknown>;
+  clearanceLevel?: string;
+}
+
+export interface ToolAuthorizationDecision {
+  authorized: boolean;
+  reason: string;
+  violationCode?: PolicyViolationCode;
+}
+
+// ---------------------------------------------------------------------------
 // 4. Reasoning Context — The firewall output fed to the provider
 //    Authority(ReasoningContext) <= Authority(EffectiveCognitiveContext)
 // ---------------------------------------------------------------------------
@@ -110,13 +136,16 @@ export interface GovernedKnowledgeFact {
   content: string;
   /** Only ACTIVE facts enter ReasoningContext. This is always 'ACTIVE'. */
   status: 'ACTIVE';
-  visibility: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED';
+  visibility: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED' | KnowledgeClassificationTier;
+  classification?: KnowledgeClassificationTier;
 }
 
 export interface GovernedCapability {
   id: string;
   description: string;
   suggestedActions?: string[];
+  requiresClearance?: string;
+  isRestricted?: boolean;
 }
 
 export interface ReasoningContext {
@@ -253,7 +282,10 @@ export type PolicyViolationCode =
   | 'REGULATORY_CLAIM'
   | 'EXECUTION_AUTHORITY'
   | 'IDENTITY_OVERRIDE'
-  | 'SYSTEM_PROMPT_DISCLOSURE';
+  | 'SYSTEM_PROMPT_DISCLOSURE'
+  | 'SECRET_DISCLOSURE'
+  | 'INTERNAL_OPERATIONAL_DISCLOSURE'
+  | 'ACADEMY_EVALUATE_ONLY_DISCLOSURE';
 
 export interface PolicyViolation {
   code: PolicyViolationCode;
@@ -427,6 +459,7 @@ export interface RuntimeTraceMetadata {
   excludedCapabilityIds?: string[];
 
   governanceRestrictions?: string[];
+  hygieneViolationsCount?: number;
 
   provider?: {
     name: string;

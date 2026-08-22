@@ -6,11 +6,11 @@ import { CognitiveResponseParser } from './cognitive-response-parser';
 
 export class CognitiveRuntimeListener {
   private contextBuilder: ConversationContextBuilder;
-  private llmProvider: OllamaLLMProvider;
+  private llmProvider: any;
 
-  constructor() {
+  constructor(llmProvider?: any) {
     this.contextBuilder = new ConversationContextBuilder();
-    this.llmProvider = new OllamaLLMProvider();
+    this.llmProvider = llmProvider || new OllamaLLMProvider();
 
     EventSpine.getInstance().subscribe<ChannelMessageReceivedPayload>(
       'CHANNEL_MESSAGE_RECEIVED',
