@@ -4,6 +4,7 @@ import { NormalizedInboundMessage } from '../normalized-message';
 import { InvalidChannelPayloadError } from '../channel-errors';
 import { SecretResolver, EnvironmentSecretResolver, DatabaseSecretResolver } from '../secret-resolver';
 import { BindingResolver, DatabaseBindingResolver, TelegramIdentity } from '../binding-resolver';
+import { SafeHttpClient } from '../../hermes/runtime/egress-guard';
 
 export interface TelegramMessageFrom {
   id: number;
@@ -131,7 +132,7 @@ export class TelegramAdapter implements ChannelAdapter {
       const parts = input.conversationId.split('_');
       const chatId = parts[parts.length - 1];
 
-      const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      const res = await SafeHttpClient.fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

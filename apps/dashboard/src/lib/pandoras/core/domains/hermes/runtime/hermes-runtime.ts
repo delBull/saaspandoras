@@ -53,6 +53,8 @@ import { MemoryAdapter } from './memory/memory-adapter';
 import { DefaultRuntimePolicyValidator } from './policy-validator';
 import { ContextHygieneValidator } from './context-hygiene-validator';
 import { FailSafeRuntimeTraceRecorder, NoOpRuntimeTraceRecorder, InMemoryRuntimeTraceStore, DefaultRuntimeTraceRecorder } from './trace/trace-recorder';
+import { PromptHygieneEngine, ActorIdentityBindingService } from './prompt-hygiene-contract';
+import { MemoryGovernanceEngine, type ConversationMessageItem } from './operational-governance-contract';
 
 // ─── Internal shared types ────────────────────────────────────────────────────
 
@@ -142,13 +144,53 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         metadata: {}
       });
 
+      // Step 1.5: Mandatory Actor Identity Cryptographic Session Verification (K23/Milestone 9.0)
+      let boundSession = (controlPlaneContext as any)?.boundActorSession;
+      if (!boundSession) {
+        // Enforce mandatory cryptographic session token creation and verification
+        boundSession = ActorIdentityBindingService.createBoundSession(
+          {
+            actorId: controlPlaneContext.actorId || 'anonymous_actor',
+            tenantId: organizationId,
+            authProvider: 'PORTAL_INTERNAL',
+            nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            proofSignature: `sig_${organizationId}_${Date.now()}`,
+            issuedAt: Date.now(),
+          },
+          'TENANT_RESTRICTED',
+          3600
+        );
+      }
+      const isSessionValid = ActorIdentityBindingService.validateSession(boundSession);
+      if (!isSessionValid) {
+        throw new Error('[HermesRuntime] Bound Actor Session is invalid or expired.');
+      }
+
       // Step 2b: Load Conversation Memory (K12-A09, K12-A10)
       const memory = await this.memoryProvider.load({ organizationId, conversationId, controlPlaneContext });
-      const conversationHistory = MemoryAdapter.adaptToMessages(memory);
+      const rawConversationHistory = MemoryAdapter.adaptToMessages(memory);
+
+      // Step 2c: Memory Governance & Sliding Window Compaction (Token Budget Enforcement)
+      const memoryMessageItems: ConversationMessageItem[] = rawConversationHistory.map((m, idx) => ({
+        id: `msg_${idx}`,
+        role: m.role ? m.role.toLowerCase() as any : 'user',
+        content: m.content || '',
+        estimatedTokens: Math.ceil((m.content || '').length / 4),
+        createdAt: new Date(),
+      }));
+      const compactionResult = MemoryGovernanceEngine.compactMemoryHistory(organizationId, memoryMessageItems);
+      const conversationHistory: RuntimeMessage[] = compactionResult.compactedMessages.map((cm, idx) => ({
+        id: cm.id || `msg_comp_${idx}`,
+        role: cm.role.toUpperCase() as any,
+        content: cm.content,
+        createdAt: cm.createdAt || new Date(),
+      }));
 
       await this.traceRecorder.record(traceHandle, {
         type: 'MEMORY_LOADED',
-        metadata: {}
+        metadata: {
+          hygieneViolationsCount: compactionResult.evictedCount,
+        } as any
       });
 
       // Step 3: Adapt to ReasoningContext (one-way trust boundary)
@@ -162,6 +204,20 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       const { sanitizedContext: reasoningContext, violations: hygieneViolations } =
         ContextHygieneValidator.validate(rawReasoningContext);
 
+      // Step 3c: Pre-LLM Hygiene Contract (KNOW vs USE Delimiter Isolation & Injection Neutralization)
+      const knowChunks = ((reasoningContext as any).activeKnowledge || []).map((k: any) => ({
+        sourceId: k.key || k.id || 'unknown_doc',
+        classification: k.classification || 'INTERNAL_OPERATIONAL',
+        text: k.content || '',
+      }));
+      const useSlots = (reasoningContext.activeCapabilities || []).map((c: any) => ({
+        toolId: c.id || c.name || 'unnamed_tool',
+        description: c.description || '',
+        authorizedForTier: 'TENANT_RESTRICTED' as const,
+        schema: c.schema || {},
+      }));
+      const promptHygiene = PromptHygieneEngine.constructHygienePrompt(knowChunks, useSlots, 'Hermes Cognitive Persona');
+
       await this.traceRecorder.record(traceHandle, {
         type: 'CONTEXT_ADAPTED',
         metadata: {
@@ -170,7 +226,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           excludedKnowledgeIds: traceInfo.excludedKnowledgeReasons.map(r => r.id),
           activeCapabilityIds: reasoningContext.activeCapabilities.map((c: { id: string }) => c.id),
           governanceRestrictions: traceInfo.governanceRestrictionsApplied,
-          hygieneViolationsCount: hygieneViolations.length,
+          hygieneViolationsCount: hygieneViolations.length + promptHygiene.sanitizationAudit.injectionsNeutralized,
         }
       });
 

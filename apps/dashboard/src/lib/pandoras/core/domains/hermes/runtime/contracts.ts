@@ -107,7 +107,18 @@ export type KnowledgeClassificationTier =
   | 'B2B_RESTRICTED'
   | 'INTERNAL_OPERATIONAL'
   | 'ACADEMY_EVALUATE_ONLY'
+  | 'CONFIDENTIAL'
   | 'SECRET';
+
+export const CLASSIFICATION_LATTICE_RANK: Record<KnowledgeClassificationTier, number> = {
+  PUBLIC: 1,
+  TENANT_RESTRICTED: 2,
+  B2B_RESTRICTED: 3,
+  INTERNAL_OPERATIONAL: 4,
+  ACADEMY_EVALUATE_ONLY: 4,
+  CONFIDENTIAL: 5,
+  SECRET: 6,
+};
 
 export interface ToolAuthorizationRequest {
   organizationId: string;
@@ -318,11 +329,20 @@ export interface PolicyValidationResult {
   };
 }
 
+export interface PolicyValidationOptions {
+  channel?: string;
+  channelMaxClassification?: KnowledgeClassificationTier;
+  organizationId?: string;
+  actorId?: string;
+  correlationId?: string;
+}
+
 export interface RuntimePolicyValidator {
   validate(
     output: ReasoningOutput,
     context: ReasoningContext,
-    policy: RuntimePolicy
+    policy: RuntimePolicy,
+    options?: PolicyValidationOptions
   ): Promise<PolicyValidationResult>;
 }
 

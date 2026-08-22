@@ -58,21 +58,23 @@ async function run() {
     const status = frontmatter.status || 'ACTIVE';
     const visibility = frontmatter.visibility || 'PUBLIC';
     const authority = frontmatter.authority || 'VERIFIED';
+    const classification = ['AGENT-SOUL', 'OPERATIONS'].includes(dimension) ? 'TENANT_RESTRICTED' : 'PUBLIC';
     const version = Number(frontmatter.version) || 1;
     const id = `k_snarai_${dimension.toLowerCase()}_v${version}`;
 
-    console.log(`Ingesting [${dimension}] key='${key}'...`);
+    console.log(`Ingesting [${dimension}] key='${key}' (classification=${classification})...`);
 
     await sql`
       INSERT INTO hermes_knowledge (
-        id, organization_id, dimension, key, content, status, visibility, authority, version, source, created_by, updated_at
+        id, organization_id, dimension, key, content, status, visibility, classification, authority, version, source, created_by, updated_at
       ) VALUES (
-        ${id}, ${organizationId}, ${dimension}, ${key}, ${body}, ${status}, ${visibility}, ${authority}, ${version}, 'DOMAIN_PACK', 'system_ingest', NOW()
+        ${id}, ${organizationId}, ${dimension}, ${key}, ${body}, ${status}, ${visibility}, ${classification}, ${authority}, ${version}, 'DOMAIN_PACK', 'system_ingest', NOW()
       )
       ON CONFLICT (id) DO UPDATE SET
         content = EXCLUDED.content,
         status = EXCLUDED.status,
         visibility = EXCLUDED.visibility,
+        classification = EXCLUDED.classification,
         authority = EXCLUDED.authority,
         updated_at = NOW();
     `;

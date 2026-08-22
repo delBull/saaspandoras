@@ -3471,6 +3471,7 @@ export const hermesKnowledge = pgTable("hermes_knowledge", {
   content: text("content").notNull(),
   status: varchar("status", { length: 50 }).notNull(),       // 'DISCOVERED', 'PENDING_REVIEW', 'ACTIVE', 'REJECTED', 'SUPERSEDED'
   visibility: varchar("visibility", { length: 50 }).notNull(),
+  classification: varchar("classification", { length: 50 }).notNull().default('PUBLIC'), // PUBLIC, TENANT_RESTRICTED, B2B_RESTRICTED, INTERNAL_OPERATIONAL, CONFIDENTIAL, SECRET
   authority: varchar("authority", { length: 50 }).notNull(),
   version: integer("version").notNull(),
   source: varchar("source", { length: 50 }).notNull(),
@@ -3501,6 +3502,32 @@ export const hermesGovernanceAudit = pgTable("hermes_governance_audit", {
 }, (t) => ({
   tenantAuditIdx: index("hermes_audit_tenant_idx").on(t.organizationId),
   knowledgeAuditIdx: index("hermes_audit_knowledge_idx").on(t.knowledgeId),
+}));
+
+// --- PHASE 6.8B: HERMES SECURITY AUDIT EVENT SPINE (APPEND-ONLY HASH CHAIN) ---
+
+export const hermesSecurityEvents = pgTable("hermes_security_events", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 255 }).notNull(),
+  actorId: varchar("actor_id", { length: 255 }),
+  eventType: varchar("event_type", { length: 100 }).notNull(), // DECRYPTION, SSRF_BLOCKED, CROSS_TENANT_BLOCKED, TOOL_UNAUTHORIZED, DISCLOSURE_BLOCKED
+  severity: varchar("severity", { length: 50 }).notNull(),     // INFO, WARN, CRITICAL
+  policyDecision: varchar("policy_decision", { length: 50 }).notNull(), // ALLOW, DENY, ESCALATE
+  correlationId: varchar("correlation_id", { length: 255 }).notNull(),
+  artifactId: varchar("artifact_id", { length: 255 }),
+  toolId: varchar("tool_id", { length: 255 }),
+  classification: varchar("classification", { length: 50 }),
+  contentHash: varchar("content_hash", { length: 128 }),
+  eventHash: varchar("event_hash", { length: 128 }).notNull(),
+  previousEventHash: varchar("previous_event_hash", { length: 128 }).notNull(),
+  sequenceNumber: integer("sequence_number").notNull(),
+  metadata: jsonb("metadata"), // Zero-plaintext: forensic metadata only
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantIdx: index("hermes_sec_tenant_idx").on(t.organizationId),
+  correlationIdx: index("hermes_sec_correlation_idx").on(t.correlationId),
+  eventHashIdx: uniqueIndex("hermes_sec_event_hash_unique").on(t.eventHash),
+  seqIdx: uniqueIndex("hermes_sec_tenant_seq_unique").on(t.organizationId, t.sequenceNumber),
 }));
 
 // --- PHASE 6.9: ADD-ON REGISTRY & INSTALLATION GOVERNANCE ---
@@ -3747,5 +3774,46 @@ export const academyCertifications = pgTable("academy_certifications", {
   candidateIdx: index("academy_certifications_candidate_idx").on(t.candidateId),
   assessmentIdx: index("academy_certifications_assessment_idx").on(t.assessmentId),
 }));
+
+export const hermesIdentities = pgTable("hermes_identities", {
+  id: varchar("id", { length: 100 }).primaryKey(),
+  publicAddress: varchar("public_address", { length: 42 }).notNull().unique(),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  instanceId: varchar("instance_id", { length: 100 }).notNull(),
+  capabilities: jsonb("capabilities").notNull().default([]),
+  policyHash: varchar("policy_hash", { length: 64 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default('ACTIVE'), // 'ACTIVE' | 'REVOKED' | 'ROTATED'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => ({
+  tenantIdx: index("hermes_identities_tenant_idx").on(t.tenantId),
+  addressIdx: index("hermes_identities_address_idx").on(t.publicAddress),
+}));
+
+export const hermesKnowledgeRegistry = pgTable("hermes_knowledge_registry", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 255 }).notNull(),
+  domain: varchar("domain", { length: 100 }).notNull(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  classification: varchar("classification", { length: 50 }).notNull(),
+  version: integer("version").notNull().default(1),
+  contentHash: varchar("content_hash", { length: 64 }).notNull(),
+  ciphertextHash: varchar("ciphertext_hash", { length: 64 }),
+  ipfsCid: varchar("ipfs_cid", { length: 255 }).notNull(),
+  ipfsUri: varchar("ipfs_uri", { length: 512 }).notNull(),
+  aadBinding: text("aad_binding"),
+  merkleRoot: varchar("merkle_root", { length: 64 }),
+  signedByAddress: varchar("signed_by_address", { length: 42 }).notNull(),
+  agentSignature: text("agent_signature").notNull(),
+  governanceStatus: varchar("governance_status", { length: 50 }).notNull().default('ACTIVE'),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantDomainIdx: index("hermes_kr_tenant_domain_idx").on(t.tenantId, t.domain, t.governanceStatus),
+  artifactVersionIdx: index("hermes_kr_artifact_version_idx").on(t.tenantId, t.artifactId, t.version),
+  cidIdx: index("hermes_kr_cid_idx").on(t.ipfsCid),
+}));
+
+
 
 

@@ -83,6 +83,7 @@ export class CognitiveContextAdapter {
           excludedKnowledgeReasons.push({ id: pack.id, reason: 'RESTRICTED_VISIBILITY' });
           continue;
         }
+        const classificationTier = (pack.classification || (['PUBLIC', 'TENANT_RESTRICTED', 'B2B_RESTRICTED', 'INTERNAL_OPERATIONAL', 'CONFIDENTIAL', 'SECRET'].includes(pack.visibility) ? pack.visibility : 'PUBLIC')) as any;
         activeKnowledge.push({
           id: pack.id,
           dimension: pack.type ?? pack.dimension ?? 'unknown',
@@ -90,6 +91,7 @@ export class CognitiveContextAdapter {
           content: pack.content,
           status: 'ACTIVE',
           visibility: pack.visibility ?? 'INTERNAL',
+          classification: classificationTier,
         });
       } else if (pack.status === 'PENDING_REVIEW') {
         // K11-A07: PENDING_REVIEW is explicitly excluded and traced

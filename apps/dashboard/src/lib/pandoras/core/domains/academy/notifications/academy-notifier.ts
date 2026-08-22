@@ -8,6 +8,8 @@
  * 3. Next Milestone Track Unlocked
  */
 
+import { SafeHttpClient } from '../../hermes/runtime/egress-guard';
+
 export interface EmailNotificationPayload {
   toEmail: string;
   candidateName: string;
@@ -126,7 +128,7 @@ export class AcademyNotifier {
     };
 
     try {
-      await fetch(webhookUrl, {
+      await SafeHttpClient.fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(discordPayload)

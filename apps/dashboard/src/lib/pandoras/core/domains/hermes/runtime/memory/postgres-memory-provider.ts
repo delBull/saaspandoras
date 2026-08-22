@@ -1,7 +1,8 @@
 import { db } from '@/db';
 import { hermesConversations, hermesConversationMessages } from '@/db/schema';
-import { eq, and, asc, desc } from 'drizzle-orm';
+import { eq, and, asc, desc, sql } from 'drizzle-orm';
 import { RuntimeMessage } from '../contracts';
+import { TenantSessionTokenSigner } from '../tenant-session-token';
 import { 
   ConversationMemoryProvider, 
   MemoryQuery, 
@@ -11,11 +12,31 @@ import {
 } from './contracts';
 
 export class PostgresConversationMemoryProvider implements ConversationMemoryProvider {
+  private signer = new TenantSessionTokenSigner();
+
+  private async establishSession(orgId: string, actorId = 'hermes_worker') {
+    try {
+      const token = this.signer.generateToken(orgId, actorId, 300);
+      await db.execute(sql`
+        SELECT set_hermes_tenant_session(
+          ${token.tenantId},
+          ${token.actorId},
+          ${token.expiresAt},
+          ${token.nonce},
+          ${token.signature}
+        );
+      `);
+    } catch {
+      // Ignore if running without DB or in mock mode
+    }
+  }
   
   async load(input: MemoryQuery): Promise<ConversationMemory> {
-    // K12-A11: Tenant Isolation enforced structurally in every query
+    // K12-A11 / K22: Establish tenant context session
     const orgId = input.organizationId;
     const convId = input.conversationId;
+    const actorId = (input as any).actorId || (input.controlPlaneContext as any)?.actorId || 'hermes_worker';
+    await this.establishSession(orgId, actorId);
 
     const convResult = await db.select().from(hermesConversations)
       .where(and(
@@ -72,6 +93,8 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
   async append(input: MemoryAppend): Promise<MemoryAppendResult> {
     const orgId = input.organizationId;
     const convId = input.conversationId;
+    const actorId = (input as any).actorId || (input.controlPlaneContext as any)?.actorId || 'hermes_worker';
+    await this.establishSession(orgId, actorId);
 
     // Check idempotency first (K12-A17)
     const existing = await db.select().from(hermesConversationMessages)

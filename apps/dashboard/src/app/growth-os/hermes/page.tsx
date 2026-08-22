@@ -71,6 +71,10 @@ export default function HermesEnterpriseLandingPage() {
             <a href="#ecosystem" className="hover:text-white transition-colors">Ecosistema</a>
             <a href="#packs" className="hover:text-white transition-colors">Domain Packs</a>
             <a href="#whitelabel" className="hover:text-white transition-colors">White-Label Platform</a>
+            <a href="#web3-vault" className="hover:text-purple-400 transition-colors flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+              Web3 & IPFS Vault
+            </a>
             <Link href="/media" className="hover:text-white transition-colors">Media Co</Link>
           </div>
 
@@ -390,6 +394,87 @@ export default function HermesEnterpriseLandingPage() {
                 <span>5. Activar Omnichannel Runtime</span>
                 <span className="animate-pulse">● Active</span>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SOVEREIGN WEB3 & IPFS VAULT SECTION */}
+      <section id="web3-vault" className="py-24 px-6 max-w-7xl mx-auto border-t border-zinc-800/80">
+        <div className="text-center mb-16">
+          <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-xs px-3 py-1 font-mono mb-4">
+            Institutional Web3 & Sovereign Storage Layer
+          </Badge>
+          <h2 className="text-3xl md:text-5xl font-light text-white mb-6">
+            Bóvedas Soberanas en <span className="bg-gradient-to-r from-purple-300 via-purple-400 to-purple-500 bg-clip-text text-transparent font-normal">IPFS & Identidad Criptográfica</span>
+          </h2>
+          <p className="text-base md:text-lg text-zinc-400 font-light max-w-3xl mx-auto leading-relaxed">
+            Cada tenant de Hermes OS opera como una entidad soberana descentralizada. Cifra y resguarda contratos, balances patrimoniales y auditorías en IPFS con Envelope Encryption (AES-256-GCM + AAD), firmado criptográficamente por la wallet del agente.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Card 1: IPFS Sovereign Vault */}
+          <div className="border border-purple-500/20 rounded-3xl bg-gradient-to-b from-purple-500/5 to-zinc-950 p-8 flex flex-col justify-between hover:border-purple-500/40 transition-colors">
+            <div>
+              <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-400 w-fit mb-6">
+                <Database className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-3">IPFS Knowledge Vault</h3>
+              <p className="text-xs text-zinc-400 font-light leading-relaxed mb-6">
+                Tus documentos y term sheets se cifran en memoria con llaves DEK efímeras y se publican a IPFS con identificadores inmutables (CID). Cero almacenamiento en texto plano.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 font-mono text-[11px] text-purple-300">
+              ipfs://bafkrei... [Zero-Knowledge]
+            </div>
+          </div>
+
+          {/* Card 2: Cryptographic Agent Wallet */}
+          <div className="border border-zinc-800 rounded-3xl bg-zinc-950/60 p-8 flex flex-col justify-between hover:border-zinc-700 transition-colors">
+            <div>
+              <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 w-fit mb-6">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-3">Wallet & DID de Agente</h3>
+              <p className="text-xs text-zinc-400 font-light leading-relaxed mb-6">
+                Cada instancia de Hermes posee su propia identidad institucional (EIP-712 / DID). Firma intents operativos, validando autorizaciones de compra, SPEI y acuerdos on-chain.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 font-mono text-[11px] text-indigo-300">
+              EIP-712 Typed Action Intents
+            </div>
+          </div>
+
+          {/* Card 3: Verifiable Audit Spine on IPFS */}
+          <div className="border border-zinc-800 rounded-3xl bg-zinc-950/60 p-8 flex flex-col justify-between hover:border-zinc-700 transition-colors">
+            <div>
+              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 w-fit mb-6">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-3">Audit Spine en IPFS</h3>
+              <p className="text-xs text-zinc-400 font-light leading-relaxed mb-6">
+                Toda decisión de firewall, acceso a tools y turnos de conversación se ancla en una cadena de hashes SHA-256 inmutable exportable a IPFS como Merkle Root para auditoría de LPs.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 font-mono text-[11px] text-emerald-300">
+              Merkle Tree Proofs & Snapshots
+            </div>
+          </div>
+
+          {/* Card 4: Fleek & Decentralized Edge */}
+          <div className="border border-zinc-800 rounded-3xl bg-zinc-950/60 p-8 flex flex-col justify-between hover:border-zinc-700 transition-colors">
+            <div>
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 w-fit mb-6">
+                <Globe className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-3">Fleek & Edge Web3</h3>
+              <p className="text-xs text-zinc-400 font-light leading-relaxed mb-6">
+                Arquitectura desacoplada y lista para despliegues perimetrales descentralizados (Fleek / IPFS Frontends), con 100% de resistencia a censura y alta disponibilidad global.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 font-mono text-[11px] text-amber-300">
+              Decentralized Frontend Ready
             </div>
           </div>
         </div>

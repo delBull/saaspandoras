@@ -4,6 +4,7 @@ import { NormalizedInboundMessage } from '../normalized-message';
 import { InvalidChannelPayloadError } from '../channel-errors';
 import { SecretResolver, EnvironmentSecretResolver, DatabaseSecretResolver } from '../secret-resolver';
 import { BindingResolver, DatabaseBindingResolver, WhatsAppIdentity } from '../binding-resolver';
+import { SafeHttpClient } from '../../hermes/runtime/egress-guard';
 
 export interface HermesWhatsAppEnvelope {
   source: 'whatsapp';
@@ -143,7 +144,7 @@ export class WhatsAppAdapter implements ChannelAdapter {
       }
 
       // Send via Meta Cloud API
-      const res = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      const res = await SafeHttpClient.fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
