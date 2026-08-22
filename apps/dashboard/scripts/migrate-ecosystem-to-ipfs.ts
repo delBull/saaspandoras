@@ -152,6 +152,20 @@ const ECOSYSTEM_MANIFEST_SPECS: DocumentMigrationSpec[] = [
     filePath: 'DOCUMENTACIÓN/Academy/WALKTHROUGH_ACADEMY_V2.md',
     classification: 'INTERNAL_OPERATIONAL',
   },
+  {
+    tenantId: 'pandoras',
+    domain: 'academy',
+    artifactId: 'academy_rwa_tokenization',
+    filePath: 'DOCUMENTACIÓN/Academy/ACADEMY_TOKENIZATION_RWA_CURRICULUM.md',
+    classification: 'INTERNAL_OPERATIONAL',
+  },
+  {
+    tenantId: 'pandoras',
+    domain: 'academy',
+    artifactId: 'academy_smart_contracts_nfts',
+    filePath: 'DOCUMENTACIÓN/Academy/ACADEMY_SMART_CONTRACTS_NFTS.md',
+    classification: 'INTERNAL_OPERATIONAL',
+  },
 
   // 5. S'Narai Tenant Sovereign Vault (TENANT_RESTRICTED & CONFIDENTIAL)
   {
