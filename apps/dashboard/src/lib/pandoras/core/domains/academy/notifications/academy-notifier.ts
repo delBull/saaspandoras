@@ -61,6 +61,78 @@ export class AcademyNotifier {
     console.log(`   Status: DISPATCHED_SUCCESSFULLY`);
     console.log(`=================================================================\n`);
 
+    // 🔔 Real-time Discord Webhook Notification
+    await this.dispatchDiscordWebhook(payload, subject, eventId);
+
     return { success: true, eventId };
+  }
+
+  private static async dispatchDiscordWebhook(
+    payload: EmailNotificationPayload,
+    subject: string,
+    eventId: string
+  ): Promise<void> {
+    const webhookUrl = process.env.DISCORD_ACADEMY_WEBHOOK || 
+                       process.env.DISCORD_WEBHOOK_PANDORAS_ALERTS || 
+                       process.env.DISCORD_ALERTS_WEBHOOK;
+
+    if (!webhookUrl) {
+      return;
+    }
+
+    const colors: Record<string, number> = {
+      MASTER_INVITATION: 0x9333ea, // Purple
+      TRACK_CERTIFIED: 0x10b981,   // Emerald Green
+      NEXT_TRACK_UNLOCKED: 0x3b82f6, // Blue
+      SUITE_COMPLETED: 0xf59e0b,    // Amber Gold
+    };
+
+    const emojis: Record<string, string> = {
+      MASTER_INVITATION: '📩',
+      TRACK_CERTIFIED: '🎖️',
+      NEXT_TRACK_UNLOCKED: '⚔️',
+      SUITE_COMPLETED: '👑',
+    };
+
+    const fields: Array<{ name: string; value: string; inline?: boolean }> = [
+      { name: 'Candidato', value: payload.candidateName, inline: true },
+      { name: 'Email', value: payload.toEmail, inline: true },
+      { name: 'Track / Rol', value: payload.targetRole, inline: true },
+    ];
+
+    if (payload.score !== undefined) {
+      fields.push({ name: 'Calificación', value: `${payload.score}%`, inline: true });
+    }
+
+    if (payload.certId) {
+      fields.push({ name: 'Cert ID', value: payload.certId, inline: true });
+    }
+
+    if (payload.certificateHash) {
+      fields.push({ name: 'Hash SHA-256', value: `\`${payload.certificateHash.substring(0, 16)}...\``, inline: false });
+    }
+
+    const discordPayload = {
+      username: "Pandora's Academy Control Plane",
+      avatar_url: 'https://dash.pandoras.finance/images/logo.png',
+      embeds: [{
+        title: `${emojis[payload.eventType] || '🎓'} ${subject}`,
+        description: `Notificación operativa de **Pandora's Academy**.`,
+        color: colors[payload.eventType] || 0x6366f1,
+        fields,
+        timestamp: new Date().toISOString(),
+        footer: { text: `Event ID: ${eventId} · Pandora's Growth OS` }
+      }]
+    };
+
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(discordPayload)
+      });
+    } catch (err) {
+      console.warn('[AcademyNotifier] Discord webhook dispatch failed:', err);
+    }
   }
 }
