@@ -13,11 +13,19 @@
 import { HermesAddOnManifest } from './contracts';
 import { AddOnRegistryService } from './registry';
 import { db } from '@/db';
-import { hermesAddonInstallations, hermesAddonAudit } from '@/db/schema';
+import { 
+  hermesAddonInstallations, 
+  hermesAddonAudit, 
+  hermesJourneys, 
+  hermesJourneyStages, 
+  hermesJourneyTransitions, 
+  projects 
+} from '@/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 export const CANONICAL_ADDONS: HermesAddOnManifest[] = [
+
   {
     id: 'vip_family_concierge',
     name: 'VIP Family Concierge (Referral & Warm Network)',
@@ -301,4 +309,142 @@ export async function activateTenantAddOn(
       createdAt: now,
     });
   }
+
+  // If the Add-On includes journey definitions, provision executable journey in NeonDB
+  if (manifest?.journeyDefinitions && manifest.journeyDefinitions.length > 0) {
+    try {
+      await ensureTenantCanonicalJourney(organizationId);
+    } catch (err) {
+      console.warn(`[AddOns] Could not auto-provision journey for tenant ${organizationId}:`, err);
+    }
+  }
+}
+
+/**
+ * Automatically provisions canonical executable journeys (stages & legal transitions)
+ * in NeonDB for the tenant if they don't already exist.
+ */
+export async function ensureTenantCanonicalJourney(organizationId: string): Promise<void> {
+  const isUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+  const [project] = await db
+    .select({ id: projects.id, slug: projects.slug, orgId: projects.organizationId })
+    .from(projects)
+    .where(
+      or(
+        eq(projects.slug, organizationId),
+        ...(isUuid(organizationId) ? [eq(projects.organizationId, organizationId)] : [])
+      )
+    )
+    .limit(1);
+
+  if (!project?.slug) return;
+  const targetSlug = project.slug;
+
+  const existingJourneys = await db
+    .select()
+    .from(hermesJourneys)
+    .where(
+      and(
+        eq(hermesJourneys.organizationId, targetSlug),
+        eq(hermesJourneys.status, 'ACTIVE')
+      )
+    )
+    .limit(1);
+
+  if (existingJourneys.length > 0) return;
+
+  const journeyId = uuidv4();
+  await db.insert(hermesJourneys).values({
+    id: journeyId,
+    organizationId: targetSlug,
+    name: 'Embudo de Confianza & Referidos VIP',
+    description: 'Secuencia automatizada para cualificación, educación patrimonial y conexión directa con fundadores.',
+    version: 1,
+    status: 'ACTIVE',
+    isDefault: true,
+  });
+
+  const stage1Id = uuidv4();
+  const stage2Id = uuidv4();
+  const stage3Id = uuidv4();
+  const stage4Id = uuidv4();
+  const stage5Id = uuidv4();
+
+  await db.insert(hermesJourneyStages).values([
+    {
+      id: stage1Id,
+      journeyId,
+      name: 'Bienvenida & Vínculo de Confianza',
+      orderIndex: 1,
+      objectives: ['Identificar procedencia y vínculo de confianza', 'Establecer tono concierge y responder inquietudes iniciales'] as any,
+    },
+    {
+      id: stage2Id,
+      journeyId,
+      name: 'Cualificación Patrimonial',
+      orderIndex: 2,
+      objectives: ['Cualificar interés de participación y horizonte temporal', 'Manejar objeciones iniciales de riesgo'] as any,
+    },
+    {
+      id: stage3Id,
+      journeyId,
+      name: 'Educación del Activo & Títulos',
+      orderIndex: 3,
+      objectives: ['Presentar estructura fiduciaria y Títulos de Participación', 'Explicar respaldo del activo subyacente'] as any,
+    },
+    {
+      id: stage4Id,
+      journeyId,
+      name: 'Conexión con Fundadores (Human Gate)',
+      orderIndex: 4,
+      objectives: ['Facilitar llamada o reunión con equipo fundador / Family Office', 'Obtener verificación de operador humano'] as any,
+    },
+    {
+      id: stage5Id,
+      journeyId,
+      name: 'Cierre & Sindicación Formal',
+      orderIndex: 5,
+      objectives: ['Acompañamiento en firma y acreditación patrimonial'] as any,
+    },
+  ]);
+
+  await db.insert(hermesJourneyTransitions).values([
+    {
+      id: uuidv4(),
+      journeyId,
+      fromStageId: stage1Id,
+      toStageId: stage2Id,
+      trigger: 'REFERRAL_RECOGNIZED',
+      condition: 'Contacto expresa interés y confirma relación de confianza',
+      priority: 1,
+    },
+    {
+      id: uuidv4(),
+      journeyId,
+      fromStageId: stage2Id,
+      toStageId: stage3Id,
+      trigger: 'INTEREST_CONFIRMED',
+      condition: 'Contacto solicita detalles sobre el activo y modelo',
+      priority: 1,
+    },
+    {
+      id: uuidv4(),
+      journeyId,
+      fromStageId: stage3Id,
+      toStageId: stage4Id,
+      trigger: 'FOUNDER_CALL_REQUESTED',
+      condition: 'Contacto solicita reunión o condiciones de sindicación',
+      priority: 1,
+    },
+    {
+      id: uuidv4(),
+      journeyId,
+      fromStageId: stage4Id,
+      toStageId: stage5Id,
+      trigger: 'DIRECTOR_HANDOFF_COMPLETE',
+      condition: 'Operador humano valida y conduce la reunión',
+      priority: 1,
+    },
+  ]);
 }

@@ -165,6 +165,7 @@ export interface GovernedCapability {
   suggestedActions?: string[];
   requiresClearance?: string;
   isRestricted?: boolean;
+  requiresHumanApproval?: boolean;
 }
 
 export interface ReasoningContext {

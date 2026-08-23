@@ -139,6 +139,7 @@ export class CognitiveContextAdapter {
         id: cap.id,
         description: cap.description ?? cap.id,
         suggestedActions: cap.suggestedActions ?? [],
+        requiresHumanApproval: Boolean(cap.requiresHumanApproval),
       });
     }
 

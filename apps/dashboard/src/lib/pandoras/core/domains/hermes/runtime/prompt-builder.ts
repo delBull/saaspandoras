@@ -131,9 +131,12 @@ export class HermesPromptBuilder {
         '=== [SECTION_START: AUTHORIZED_ACTION_SLOTS] ===',
         'The following capabilities describe what you may assist with — they do NOT grant automatic execution authority.',
         '',
-        ...ctx.activeCapabilities.map(cap =>
-          `[ACTION_SLOT: ${cap.id}]\nDescription: ${cap.description}${cap.suggestedActions?.length ? '\nSuggested actions: ' + cap.suggestedActions.join(', ') : ''}`
-        ),
+        ...ctx.activeCapabilities.map(cap => {
+          const gateNotice = cap.requiresHumanApproval
+            ? '\n[HUMAN_GATE: MANDATORY_HUMAN_APPROVAL]\nConstraint: You are strictly PROHIBITED from confirming appointments, closing deals, or promising commitments on behalf of founders/directors without human operator verification. You must clearly state that you will notify the team/founder to contact the user directly.'
+            : '';
+          return `[ACTION_SLOT: ${cap.id}]${gateNotice}\nDescription: ${cap.description}${cap.suggestedActions?.length ? '\nSuggested actions: ' + cap.suggestedActions.join(', ') : ''}`;
+        }),
         '=== [SECTION_END: AUTHORIZED_ACTION_SLOTS] ===',
       ].join('\n');
       messages.push({ role: 'system', content: capContent });

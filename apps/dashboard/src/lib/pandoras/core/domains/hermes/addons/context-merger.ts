@@ -254,11 +254,18 @@ export class CognitiveContextBuilder {
     const knowledgeOverlay = this.resolveKnowledgeConflicts(tenantKnowledge, activeAddOns);
     
     // 4. Build Effective Runtime
+    const allCapabilities = activeAddOns.flatMap(a =>
+      (a.capabilities || []).map(cap => ({
+        ...cap,
+        requiresHumanApproval: a.governanceRequirements?.requiresHumanApproval ?? false,
+      }))
+    );
+
     return {
       core: coreContext,
       knowledge: [...tenantKnowledge.activePacks, ...knowledgeOverlay],
       style: styleOverlay,
-      activeCapabilities: activeAddOns.flatMap(a => a.capabilities || []),
+      activeCapabilities: allCapabilities,
       intelligenceScores,
       diagnostics: {
         activeAddOns: activeRecords.map(r => r.addonId),
@@ -406,36 +413,61 @@ export class CognitiveContextBuilder {
   private static resolveStyleConflicts(tenantSoul: any, addOns: HermesAddOnManifest[]) {
     let effectiveStyle: Record<string, any> = { ...(tenantSoul || {}) };
 
-    // Merge active Add-On style overlays
+    // Collect all active modes and traits
+    const activeModes: string[] = [];
+    let highestWarmth: string | null = null;
+    let highestExclusivity: string | null = null;
+    let lowestPressure: string | null = null;
+    let highestDirectness: string | null = null;
+
     for (const addon of addOns) {
       if (addon.styleOverlay) {
         effectiveStyle = {
           ...effectiveStyle,
           ...addon.styleOverlay,
         };
+
+        if (addon.styleOverlay.mode && !activeModes.includes(addon.styleOverlay.mode)) {
+          activeModes.push(addon.styleOverlay.mode);
+        }
+        if (addon.styleOverlay.warmth === 'high') highestWarmth = 'high';
+        if (addon.styleOverlay.exclusivity === 'ultra') highestExclusivity = 'ultra';
+        else if (addon.styleOverlay.exclusivity === 'high' && highestExclusivity !== 'ultra') highestExclusivity = 'high';
+
+        if (addon.styleOverlay.pressure === 'none') lowestPressure = 'none';
+        else if (addon.styleOverlay.pressure === 'low' && lowestPressure !== 'none') lowestPressure = 'low';
+
+        if (addon.styleOverlay.directness === 'high') highestDirectness = 'high';
       }
     }
 
-    // Synthesize descriptive communication tone from Add-On style overlays
+    // Synthesize descriptive communication tone composed across all active modes
+    const modeLabels: Record<string, string> = {
+      institutional_concierge: 'Concierge Patrimonial Institucional VIP',
+      family_office_advisor: 'Asesor Patrimonial Especializado (Family Office & Sindicación)',
+      trusted_advisor: 'Asesor de Confianza & Educación Patrimonial',
+    };
+
     const toneDescriptors: string[] = [];
-    if (effectiveStyle.mode) {
-      const modeLabels: Record<string, string> = {
-        institutional_concierge: 'Concierge Patrimonial Institucional VIP',
-        family_office_advisor: 'Asesor Patrimonial Especializado (Family Office & Sindicación)',
-        trusted_advisor: 'Asesor de Confianza & Educación Patrimonial',
-      };
+    if (activeModes.length > 0) {
+      const renderedModes = activeModes.map(m => modeLabels[m] || m).join(' & ');
+      toneDescriptors.push(renderedModes);
+    } else if (effectiveStyle.mode) {
       toneDescriptors.push(modeLabels[effectiveStyle.mode] || effectiveStyle.mode);
     }
-    if (effectiveStyle.warmth === 'high') toneDescriptors.push('calidez alta y empática');
-    if (effectiveStyle.exclusivity === 'high' || effectiveStyle.exclusivity === 'ultra') {
-      toneDescriptors.push('alto nivel de exclusividad y discreción');
-    }
-    if (effectiveStyle.pressure === 'low' || effectiveStyle.pressure === 'none') {
-      toneDescriptors.push('sin presión comercial');
-    }
-    if (effectiveStyle.directness === 'high') {
-      toneDescriptors.push('comunicación directa y transparente');
-    }
+
+    const warmth = highestWarmth || effectiveStyle.warmth;
+    if (warmth === 'high') toneDescriptors.push('calidez alta y empática');
+
+    const exclusivity = highestExclusivity || effectiveStyle.exclusivity;
+    if (exclusivity === 'ultra') toneDescriptors.push('máximo nivel de exclusividad y discreción fiduciaria');
+    else if (exclusivity === 'high') toneDescriptors.push('alto nivel de exclusividad y discreción');
+
+    const pressure = lowestPressure || effectiveStyle.pressure;
+    if (pressure === 'none' || pressure === 'low') toneDescriptors.push('sin presión comercial');
+
+    const directness = highestDirectness || effectiveStyle.directness;
+    if (directness === 'high') toneDescriptors.push('comunicación directa y transparente');
 
     if (toneDescriptors.length > 0) {
       effectiveStyle.tone = toneDescriptors.join(', ');
