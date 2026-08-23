@@ -1,14 +1,33 @@
 'use client';
 
 /**
- * HermesIntelligencePanel — Phase 6.4.2 & 6.5.2.2 Multi-Topic Memory Architecture
+ * HermesIntelligencePanel — Phase 6.4.2 & 6.5.2.2 Multi-Topic Memory Architecture & WhatsApp-Grade Chat Experience
  * 
  * Persistent conversational context panel with multi-topic thread switching,
- * real-time SSE streaming, stage-driven suggestion chips, and rich formatting.
+ * real-time SSE streaming, stage-driven suggestion chips, rich formatting,
+ * seamless auto-scroll, copy, quote/reply pin, and social share dispatchers.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Brain, Sparkles, Trash2, Plus, MessageSquare, Compass, Rocket, Building2, Bot } from 'lucide-react';
+import { 
+  Send, 
+  Brain, 
+  Sparkles, 
+  Trash2, 
+  Plus, 
+  MessageSquare, 
+  Compass, 
+  Rocket, 
+  Building2, 
+  Bot,
+  Copy,
+  Check,
+  Share2,
+  Reply,
+  X,
+  SendHorizontal,
+  ExternalLink
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface HermesIntelligencePanelProps {
@@ -20,6 +39,12 @@ interface MessageItem {
   id: string;
   role: 'hermes' | 'user';
   content: string;
+  timestamp?: string;
+  replyTo?: {
+    id: string;
+    role: 'hermes' | 'user';
+    content: string;
+  };
   chips?: string[];
 }
 
@@ -48,19 +73,28 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
   const [loadingTopic, setLoadingTopic] = useState(false);
   const [activeStage, setActiveStage] = useState<string>('ACTIVATION');
 
+  // Quoted reply state (WhatsApp style)
+  const [replyingTo, setReplyingTo] = useState<MessageItem | null>(null);
+  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const scrollToBottom = () => {
+  // Seamless auto-scroll (WhatsApp style)
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior,
+      });
     }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(isSubmitting ? 'auto' : 'smooth');
   }, [messages, isSubmitting]);
 
   // Load chat history whenever activeTopic changes
@@ -73,7 +107,12 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
       if (res.ok) {
         const data = await res.json();
         if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages);
+          setMessages(data.messages.map((m: any) => ({
+            ...m,
+            timestamp: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
+          })));
+        } else {
+          setMessages([]);
         }
         if (data.stage) {
           setActiveStage(data.stage);
@@ -103,6 +142,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+    setReplyingTo(null);
     setActiveTopic(topic);
   };
 
@@ -132,10 +172,33 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
         { method: 'DELETE' }
       );
       toast.success(`Historial de "${activeTopic.title}" reiniciado`);
+      setReplyingTo(null);
       await loadChatHistory(activeTopic.id);
     } catch (err: any) {
       toast.error('Error al reiniciar historial');
     }
+  };
+
+  const handleCopyMessage = (msg: MessageItem) => {
+    navigator.clipboard.writeText(msg.content);
+    setCopiedMsgId(msg.id);
+    toast.success('Mensaje copiado al portapapeles');
+    setTimeout(() => setCopiedMsgId(null), 2000);
+  };
+
+  const handleShareTelegram = (msg: MessageItem) => {
+    const text = encodeURIComponent(`💬 [Hermes OS - ${organizationName}]\n\n${msg.content}`);
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${text}`, '_blank');
+  };
+
+  const handleShareWhatsApp = (msg: MessageItem) => {
+    const text = encodeURIComponent(`💬 *[Hermes OS - ${organizationName}]*\n\n${msg.content}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const handleQuoteReply = (msg: MessageItem) => {
+    setReplyingTo(msg);
+    textareaRef.current?.focus();
   };
 
   const sendMessage = async (contentToSend: string) => {
@@ -146,12 +209,33 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
     }
     abortControllerRef.current = new AbortController();
 
-    const userMsgText = contentToSend.trim();
+    const rawUserMsg = contentToSend.trim();
+    const currentReply = replyingTo;
+    
+    // Prepare effective prompt text if quoting a previous message
+    let effectivePrompt = rawUserMsg;
+    if (currentReply) {
+      const quotedPreview = currentReply.content.substring(0, 160).replace(/\n/g, ' ');
+      effectivePrompt = `[En referencia al mensaje anterior: "${quotedPreview}..."]\n\n${rawUserMsg}`;
+    }
+
     setInput('');
+    setReplyingTo(null);
     setIsSubmitting(true);
 
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const tempUserMsgId = `user_${Date.now()}`;
-    setMessages(prev => [...prev, { id: tempUserMsgId, role: 'user', content: userMsgText }]);
+    setMessages(prev => [...prev, { 
+      id: tempUserMsgId, 
+      role: 'user', 
+      content: rawUserMsg,
+      timestamp: timeNow,
+      replyTo: currentReply ? {
+        id: currentReply.id,
+        role: currentReply.role,
+        content: currentReply.content.substring(0, 120)
+      } : undefined
+    }]);
 
     try {
       const response = await fetch(`/api/v1/internal/portal/messages/stream`, {
@@ -160,7 +244,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           organizationSlug,
-          content: userMsgText,
+          content: effectivePrompt,
           topicId: activeTopic.id,
         }),
       });
@@ -177,7 +261,12 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
       let buffer = '';
 
       const hermesMsgId = `hermes_${Date.now()}`;
-      setMessages(prev => [...prev, { id: hermesMsgId, role: 'hermes', content: '' }]);
+      setMessages(prev => [...prev, { 
+        id: hermesMsgId, 
+        role: 'hermes', 
+        content: '',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
 
       let accumulatedContent = '';
 
@@ -224,23 +313,26 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
       setMessages(prev => [...prev, { 
         id: `err_${Date.now()}`, 
         role: 'hermes', 
-        content: 'Hubo un problema de conexión con mi kernel operativo. Por favor reintenta.' 
+        content: 'Hubo un problema de conexión con mi kernel operativo. Por favor reintenta.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    sendMessage(input);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
   };
 
   const latestHermesMessage = [...messages].reverse().find(m => m.role === 'hermes');
   const activeChips = latestHermesMessage?.chips || [];
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-[500px] bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
+    <div className="flex flex-col flex-1 h-full min-h-[560px] bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
       {/* ── TOP HEADER: IDENTITY & STATUS ── */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
         <div className="flex items-center gap-3">
@@ -333,33 +425,110 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
         )}
       </div>
 
-      {/* ── MESSAGES AREA ── */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      {/* ── MESSAGES AREA (WhatsApp-Style Bubbles & Smooth Flow) ── */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {loadingTopic ? (
           <div className="flex justify-center items-center py-12 text-neutral-500 text-xs">
             <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2" />
             Cargando memoria del tema...
           </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center text-neutral-500 space-y-2">
+            <Bot size={28} className="text-indigo-400/50 mb-1" />
+            <p className="text-xs font-medium text-neutral-400">
+              Inicia una conversación sobre {activeTopic.title.toLowerCase()}
+            </p>
+            <p className="text-[11px] text-neutral-600 max-w-xs">
+              Hermes responderá con la bóveda soberana de S&apos;Narai, tokenomics y estrategia en tiempo real.
+            </p>
+          </div>
         ) : (
-          messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[88%] sm:max-w-[82%] rounded-2xl px-4 py-3.5 text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap ${
-                msg.role === 'user' 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 font-medium' 
-                  : 'bg-white/[0.05] border border-white/[0.08] text-white/90 font-normal'
-              }`}>
-                {msg.content}
+          messages.map(msg => {
+            const isUser = msg.role === 'user';
+            return (
+              <div 
+                key={msg.id} 
+                className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'}`}
+              >
+                {/* Quoted Message Preview Header */}
+                {msg.replyTo && (
+                  <div className={`text-[10px] text-neutral-400 mb-1 px-3 py-1 rounded-t-lg border border-b-0 max-w-[85%] truncate ${
+                    isUser ? 'bg-indigo-900/40 border-indigo-500/30' : 'bg-white/[0.03] border-white/[0.06]'
+                  }`}>
+                    ↩️ En respuesta a: <span className="italic text-neutral-300">&ldquo;{msg.replyTo.content}&rdquo;</span>
+                  </div>
+                )}
+
+                {/* Message Bubble */}
+                <div className={`relative max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed break-words whitespace-pre-wrap transition-all shadow-md ${
+                  isUser 
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-br-none shadow-indigo-600/20 font-medium' 
+                    : 'bg-[#181824] border border-white/[0.08] text-white/95 rounded-bl-none font-normal'
+                }`}>
+                  {msg.content}
+
+                  {/* Timestamp & Read Receipts */}
+                  <div className={`flex items-center justify-end gap-1 mt-2 text-[10px] font-mono ${
+                    isUser ? 'text-indigo-200/80' : 'text-neutral-500'
+                  }`}>
+                    {msg.timestamp && <span>{msg.timestamp}</span>}
+                    {isUser && <span className="text-emerald-300">✓✓</span>}
+                  </div>
+                </div>
+
+                {/* Message Action Toolbar (Hover floating bar) */}
+                <div className={`flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity px-1`}>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyMessage(msg)}
+                    title="Copiar texto"
+                    className="p-1 rounded-md text-neutral-500 hover:text-white hover:bg-white/[0.06] text-xs transition-colors"
+                  >
+                    {copiedMsgId === msg.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuoteReply(msg)}
+                    title="Citar y responder"
+                    className="p-1 rounded-md text-neutral-500 hover:text-indigo-300 hover:bg-white/[0.06] text-xs transition-colors"
+                  >
+                    <Reply size={12} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleShareWhatsApp(msg)}
+                    title="Compartir en WhatsApp"
+                    className="p-1 rounded-md text-neutral-500 hover:text-emerald-400 hover:bg-white/[0.06] text-xs transition-colors"
+                  >
+                    <Share2 size={12} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleShareTelegram(msg)}
+                    title="Compartir en Telegram"
+                    className="p-1 rounded-md text-neutral-500 hover:text-sky-400 hover:bg-white/[0.06] text-xs transition-colors"
+                  >
+                    <SendHorizontal size={12} />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
 
+        {/* Typing indicator */}
         {isSubmitting && (
           <div className="flex justify-start">
-            <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="bg-[#181824] border border-white/[0.08] rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-2">
+              <span className="text-xs text-indigo-300 font-mono">Hermes está redactando</span>
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
             </div>
           </div>
         )}
@@ -370,7 +539,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
       {/* ── STAGE / TOPIC SUGGESTION CHIPS ── */}
       {activeChips.length > 0 && !isSubmitting && (
         <div className="px-3 py-2 bg-[#0A0A10] border-t border-white/[0.04] shrink-0">
-          <div className="w-full text-[10px] font-mono uppercase tracking-wider text-indigo-400/70 flex items-center gap-1 mb-2 px-1">
+          <div className="w-full text-[10px] font-mono uppercase tracking-wider text-indigo-400/70 flex items-center gap-1 mb-1 px-1">
             <Sparkles size={11} /> Sugerencias Rápidas para {activeTopic.title}
           </div>
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none snap-x snap-mandatory py-1 px-1">
@@ -379,7 +548,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
                 key={idx}
                 type="button"
                 onClick={() => sendMessage(chip)}
-                className="shrink-0 snap-start text-xs bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 px-3.5 py-2 rounded-xl transition-all text-left whitespace-nowrap min-h-[40px] flex items-center shadow-sm"
+                className="shrink-0 snap-start text-xs bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 px-3 py-1.5 rounded-xl transition-all text-left whitespace-nowrap flex items-center shadow-sm"
               >
                 {chip}
               </button>
@@ -388,26 +557,54 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
         </div>
       )}
 
-      {/* ── INPUT AREA ── */}
-      <div className="p-3 sm:p-4 bg-[#0C0C12] border-t border-white/[0.06] shrink-0">
-        <form onSubmit={handleSubmit} className="relative flex items-center">
-          <input
-            type="text"
+      {/* ── QUOTING / REPLYING BANNER (WhatsApp Style) ── */}
+      {replyingTo && (
+        <div className="flex items-center justify-between px-4 py-2 bg-indigo-950/60 border-t border-indigo-500/30 text-xs shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Reply size={14} className="text-indigo-400 shrink-0" />
+            <div className="truncate">
+              <span className="font-bold text-indigo-300">
+                Respondiendo a {replyingTo.role === 'hermes' ? 'Hermes' : 'ti'}:
+              </span>{' '}
+              <span className="text-neutral-400 italic">
+                &ldquo;{replyingTo.content.substring(0, 80)}...&rdquo;
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReplyingTo(null)}
+            className="text-neutral-400 hover:text-white p-1 rounded-md transition-colors shrink-0"
+            title="Cancelar cita"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* ── INPUT AREA (WhatsApp Style) ── */}
+      <div className="p-3 bg-[#0C0C12] border-t border-white/[0.06] shrink-0">
+        <div className="relative flex items-center gap-2">
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Escribe a Hermes sobre ${activeTopic.title.toLowerCase()}...`}
-            className="w-full bg-[#12121A] border border-white/[0.12] rounded-xl pl-4 pr-12 py-3 text-sm sm:text-base text-white placeholder-white/35 focus:outline-none focus:border-indigo-500/60 transition-colors min-h-[48px]"
+            onKeyDown={handleKeyDown}
+            placeholder={`Escribe a Hermes sobre ${activeTopic.title.toLowerCase()} (Enter para enviar, Shift+Enter para salto)...`}
+            className="flex-1 bg-[#12121A] border border-white/[0.12] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-white/35 focus:outline-none focus:border-indigo-500/60 transition-colors resize-none min-h-[44px] max-h-32"
             disabled={isSubmitting}
           />
           <button 
-            type="submit"
+            type="button"
+            onClick={() => sendMessage(input)}
             disabled={!input.trim() || isSubmitting}
-            className="absolute right-2 p-2.5 rounded-lg text-white/70 hover:text-indigo-300 bg-indigo-600/30 hover:bg-indigo-600/50 disabled:opacity-30 disabled:bg-transparent disabled:hover:text-white/50 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+            className="p-3 rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-all flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20"
             aria-label="Enviar Mensaje"
           >
             <Send size={16} />
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );

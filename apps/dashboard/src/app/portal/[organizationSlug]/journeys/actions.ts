@@ -42,12 +42,16 @@ export async function createJourney(
   const targetSlug = tenant.organizationSlug || organizationSlug;
   const orgId = tenant.organizationId;
 
+  const isUuid = (val?: string): boolean => 
+    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
   // Resolve valid foreign key reference for organizationId in projects table
   const [proj] = await db.select({ slug: projects.slug, orgId: projects.organizationId }).from(projects).where(
     or(
       eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, organizationSlug)
+      ...(isUuid(orgId) ? [eq(projects.organizationId, orgId)] : []),
+      eq(projects.slug, organizationSlug),
+      eq(projects.slug, 'snarai')
     )
   ).limit(1);
 

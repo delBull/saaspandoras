@@ -53,11 +53,15 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
     const targetSlug = context.tenant.organizationSlug || organizationSlug;
     const orgId = context.tenant.organizationId;
 
+    const isUuid = (val?: string): boolean => 
+      Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
     const [project] = await db.select().from(projects).where(
       or(
         eq(projects.slug, targetSlug),
-        eq(projects.organizationId, orgId),
-        eq(projects.slug, orgId)
+        ...(isUuid(orgId) ? [eq(projects.organizationId, orgId)] : []),
+        ...(isUuid(targetSlug) ? [eq(projects.organizationId, targetSlug)] : []),
+        eq(projects.slug, 'snarai')
       )
     ).limit(1);
     const config = project?.tenantRuntimeConfig as any;

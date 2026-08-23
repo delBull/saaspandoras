@@ -58,7 +58,10 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
 
           {/* ZONE 3: CURRENT STRATEGIC MISSION */}
           <section className="flex-1 flex flex-col min-h-[220px]">
-            <StrategicActivityCard activity={overview.strategicActivity} />
+            <StrategicActivityCard 
+              activity={overview.strategicActivity} 
+              organizationSlug={context.organization.slug}
+            />
           </section>
         </div>
 

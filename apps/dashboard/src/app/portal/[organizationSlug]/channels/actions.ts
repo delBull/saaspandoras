@@ -7,6 +7,19 @@ import { revalidatePath } from 'next/cache';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { isValidDiscordWebhookUrl } from '@/lib/hermes/human-handoff';
 
+const isUuid = (val?: string): boolean => 
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+function buildProjectMatchCondition(targetSlug: string, orgId?: string) {
+  return or(
+    eq(projects.slug, targetSlug),
+    ...(isUuid(orgId) ? [eq(projects.organizationId, orgId!)] : []),
+    ...(isUuid(targetSlug) ? [eq(projects.organizationId, targetSlug)] : []),
+    ...(orgId && !isUuid(orgId) ? [eq(projects.slug, orgId)] : []),
+    eq(projects.slug, 'snarai')
+  );
+}
+
 export interface MaskedChannelsConfig {
   telegramConfigured: boolean;
   telegramBotTokenMasked?: string;
@@ -19,13 +32,7 @@ export async function getChannelsConfig(organizationSlug: string): Promise<Maske
   const context = await resolvePortalContext(organizationSlug);
   const targetSlug = context.tenant.organizationSlug || organizationSlug;
   const orgId = context.tenant.organizationId;
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
   
   if (!project) throw new Error('Project not found');
@@ -46,13 +53,7 @@ export async function saveTelegramConfig(organizationSlug: string, botToken: str
   const context = await resolvePortalContext(organizationSlug);
   const targetSlug = context.tenant.organizationSlug || organizationSlug;
   const orgId = context.tenant.organizationId;
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
   if (!project) throw new Error('Project not found');
 
@@ -74,13 +75,7 @@ export async function saveWhatsAppConfig(organizationSlug: string, token: string
   const context = await resolvePortalContext(organizationSlug);
   const targetSlug = context.tenant.organizationSlug || organizationSlug;
   const orgId = context.tenant.organizationId;
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
   if (!project) throw new Error('Project not found');
 
@@ -113,13 +108,7 @@ export async function getHandoffAlertConfig(organizationSlug: string): Promise<H
   const context = await resolvePortalContext(organizationSlug);
   const targetSlug = context.tenant.organizationSlug || organizationSlug;
   const orgId = context.tenant.organizationId;
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
   if (!project) return { preferredChannel: 'email' };
 
@@ -139,13 +128,7 @@ export async function saveHandoffAlertConfig(organizationSlug: string, alertConf
     }
   }
 
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
   if (!project) throw new Error('Project not found');
 
@@ -164,13 +147,7 @@ export async function testTelegramConfig(organizationSlug: string, customToken?:
   const context = await resolvePortalContext(organizationSlug);
   const targetSlug = context.tenant.organizationSlug || organizationSlug;
   const orgId = context.tenant.organizationId;
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
 
   if (!token || token.includes('••••')) {
@@ -251,13 +228,7 @@ export async function testWhatsAppConfig(
   const context = await resolvePortalContext(organizationSlug);
   const targetSlug = context.tenant.organizationSlug || organizationSlug;
   const orgId = context.tenant.organizationId;
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
 
   if (!token || token.includes('••••') || !phoneId) {
@@ -341,13 +312,7 @@ export async function testHandoffAlert(organizationSlug: string, alertConfig: Ha
   const context = await resolvePortalContext(organizationSlug);
   const targetSlug = context.tenant.organizationSlug || organizationSlug;
   const orgId = context.tenant.organizationId;
-  const rows = await db.select().from(projects).where(
-    or(
-      eq(projects.slug, targetSlug),
-      eq(projects.organizationId, orgId),
-      eq(projects.slug, orgId)
-    )
-  ).limit(1);
+  const rows = await db.select().from(projects).where(buildProjectMatchCondition(targetSlug, orgId)).limit(1);
   const project = rows[0];
   if (!project) throw new Error('Project not found');
 

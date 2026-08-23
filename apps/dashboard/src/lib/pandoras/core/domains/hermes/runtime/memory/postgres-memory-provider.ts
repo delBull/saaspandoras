@@ -11,6 +11,9 @@ import {
   MemoryAppendResult 
 } from './contracts';
 
+const isUuid = (val?: string): boolean => 
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
 export class PostgresConversationMemoryProvider implements ConversationMemoryProvider {
   private signer = new TenantSessionTokenSigner();
 
@@ -39,10 +42,17 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     await this.establishSession(orgId, actorId);
 
     // Resolve slug for foreign key safety
+    const orgIsUuid = isUuid(orgId);
     const [proj] = await db
       .select({ slug: projects.slug })
       .from(projects)
-      .where(or(eq(projects.slug, orgId), eq(projects.organizationId, orgId), eq(projects.slug, 'snarai')))
+      .where(
+        or(
+          eq(projects.slug, orgId),
+          ...(orgIsUuid ? [eq(projects.organizationId, orgId)] : []),
+          eq(projects.slug, 'snarai')
+        )
+      )
       .limit(1);
     const targetOrgId = proj?.slug || orgId;
 
@@ -72,7 +82,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
 
     const msgResults = await db.select().from(hermesConversationMessages)
       .where(and(
-        eq(hermesConversationMessages.organizationId, orgId),
+        or(eq(hermesConversationMessages.organizationId, orgId), eq(hermesConversationMessages.organizationId, targetOrgId)),
         eq(hermesConversationMessages.conversationId, convId)
       ))
       .orderBy(desc(hermesConversationMessages.sequence))
@@ -105,10 +115,17 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     await this.establishSession(orgId, actorId);
 
     // Resolve slug for foreign key safety
+    const orgIsUuid = isUuid(orgId);
     const [proj] = await db
       .select({ slug: projects.slug })
       .from(projects)
-      .where(or(eq(projects.slug, orgId), eq(projects.organizationId, orgId), eq(projects.slug, 'snarai')))
+      .where(
+        or(
+          eq(projects.slug, orgId),
+          ...(orgIsUuid ? [eq(projects.organizationId, orgId)] : []),
+          eq(projects.slug, 'snarai')
+        )
+      )
       .limit(1);
     const targetOrgId = proj?.slug || orgId;
 

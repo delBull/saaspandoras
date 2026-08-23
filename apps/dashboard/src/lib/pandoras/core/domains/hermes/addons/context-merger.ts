@@ -52,11 +52,15 @@ export interface ConversationContext {
   };
 }
 
+const isUuid = (val?: string): boolean => 
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
 export class CognitiveContextBuilder {
   static async buildEffectiveContext(tenantId: string, contactId: string): Promise<ConversationContext> {
     const coreContext = await this.buildCoreSecurityContext(tenantId);
     
     // Resolve project identifiers for multi-tenant resilience
+    const tenantIsUuid = isUuid(tenantId);
     const [project] = await db
       .select({
         id: projects.id,
@@ -68,7 +72,7 @@ export class CognitiveContextBuilder {
       .where(
         or(
           eq(projects.slug, tenantId),
-          eq(projects.organizationId, tenantId),
+          ...(tenantIsUuid ? [eq(projects.organizationId, tenantId)] : []),
           eq(projects.slug, 'snarai')
         )
       )
@@ -238,13 +242,14 @@ export class CognitiveContextBuilder {
       };
     }
 
+    const tenantIsUuid = isUuid(tenantId);
     const [project] = await db
       .select()
       .from(projects)
       .where(
         or(
           eq(projects.slug, tenantId),
-          eq(projects.organizationId, tenantId),
+          ...(tenantIsUuid ? [eq(projects.organizationId, tenantId)] : []),
           eq(projects.slug, 'snarai')
         )
       )
