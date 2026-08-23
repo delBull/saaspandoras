@@ -328,21 +328,30 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
     }
   };
 
+  // Auto-adjust textarea height on input
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  };
+
   const latestHermesMessage = [...messages].reverse().find(m => m.role === 'hermes');
   const activeChips = latestHermesMessage?.chips || [];
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-[560px] bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
+    <div className="flex flex-col w-full h-[580px] sm:h-[620px] lg:h-[650px] bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl shrink-0">
       {/* ── TOP HEADER: IDENTITY & STATUS ── */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0">
             <Brain size={16} className="text-indigo-400" />
           </div>
-          <div>
-            <h3 className="text-white font-medium text-sm tracking-wide">Hermes Intelligence</h3>
-            <p className="text-indigo-400/70 text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="min-w-0">
+            <h3 className="text-white font-medium text-sm tracking-wide truncate">Hermes Intelligence</h3>
+            <p className="text-indigo-400/70 text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               Patrimonial Growth Officer • {activeTopic.title}
             </p>
           </div>
@@ -353,7 +362,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
           type="button"
           onClick={handleClearHistory}
           title="Reiniciar conversación de este tema"
-          className="text-neutral-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+          className="text-neutral-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors shrink-0"
         >
           <Trash2 size={15} />
         </button>
@@ -425,8 +434,8 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
         )}
       </div>
 
-      {/* ── MESSAGES AREA (WhatsApp-Style Bubbles & Smooth Flow) ── */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+      {/* ── MESSAGES AREA (WhatsApp-Style Internal Smooth Scroll) ── */}
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5 overscroll-contain">
         {loadingTopic ? (
           <div className="flex justify-center items-center py-12 text-neutral-500 text-xs">
             <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2" />
@@ -438,7 +447,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
             <p className="text-xs font-medium text-neutral-400">
               Inicia una conversación sobre {activeTopic.title.toLowerCase()}
             </p>
-            <p className="text-[11px] text-neutral-600 max-w-xs">
+            <p className="text-[11px] text-neutral-600 max-w-xs leading-relaxed">
               Hermes responderá con la bóveda soberana de S&apos;Narai, tokenomics y estrategia en tiempo real.
             </p>
           </div>
@@ -460,19 +469,23 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
                 )}
 
                 {/* Message Bubble */}
-                <div className={`relative max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed break-words whitespace-pre-wrap transition-all shadow-md ${
+                <div className={`relative max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed break-words shadow-md ${
                   isUser 
                     ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-br-none shadow-indigo-600/20 font-medium' 
-                    : 'bg-[#181824] border border-white/[0.08] text-white/95 rounded-bl-none font-normal'
+                    : 'bg-[#181824] border border-white/[0.08] text-neutral-200 rounded-bl-none font-normal'
                 }`}>
-                  {msg.content}
+                  {isUser ? (
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  ) : (
+                    <RichMessageBody content={msg.content} />
+                  )}
 
                   {/* Timestamp & Read Receipts */}
                   <div className={`flex items-center justify-end gap-1 mt-2 text-[10px] font-mono ${
                     isUser ? 'text-indigo-200/80' : 'text-neutral-500'
                   }`}>
                     {msg.timestamp && <span>{msg.timestamp}</span>}
-                    {isUser && <span className="text-emerald-300">✓✓</span>}
+                    {isUser && <span className="text-emerald-300 font-bold">✓✓</span>}
                   </div>
                 </div>
 
@@ -582,30 +595,150 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
         </div>
       )}
 
-      {/* ── INPUT AREA (WhatsApp Style) ── */}
-      <div className="p-3 bg-[#0C0C12] border-t border-white/[0.06] shrink-0">
+      {/* ── INPUT AREA (Clean WhatsApp-Grade Layout) ── */}
+      <div className="p-3 bg-[#0C0C12] border-t border-white/[0.06] shrink-0 flex flex-col gap-1.5">
         <div className="relative flex items-center gap-2">
           <textarea
             ref={textareaRef}
             rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Escribe a Hermes sobre ${activeTopic.title.toLowerCase()} (Enter para enviar, Shift+Enter para salto)...`}
-            className="flex-1 bg-[#12121A] border border-white/[0.12] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-white/35 focus:outline-none focus:border-indigo-500/60 transition-colors resize-none min-h-[44px] max-h-32"
+            placeholder={`Pregunta a Hermes sobre ${activeTopic.title.toLowerCase()}...`}
+            className="flex-1 bg-[#161622] border border-white/[0.12] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-indigo-500/70 transition-all resize-none min-h-[44px] max-h-[120px] leading-relaxed shadow-inner"
             disabled={isSubmitting}
           />
           <button 
             type="button"
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || isSubmitting}
-            className="p-3 rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-all flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20"
+            className="h-[44px] w-[44px] rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-all flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30"
             aria-label="Enviar Mensaje"
           >
             <Send size={16} />
           </button>
         </div>
+        <div className="flex items-center justify-between text-[10px] text-neutral-500 px-1 font-mono">
+          <span>Enter ↵ para enviar</span>
+          <span>Shift+Enter para salto de línea</span>
+        </div>
       </div>
     </div>
   );
+}
+
+/**
+ * 🎨 RichMessageBody — Markdown Formatter for Hermes Assistant Responses
+ * Supports Bold (**), Headings (###, ##, #), Bullet Lists (-/*), Numbered Lists (1.), Dividers (---), and Code.
+ */
+function RichMessageBody({ content }: { content: string }) {
+  if (!content) return null;
+
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-2 text-sm leading-relaxed">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+
+        // Empty line
+        if (!trimmed) {
+          return <div key={idx} className="h-1.5" />;
+        }
+
+        // Horizontal rule
+        if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+          return <hr key={idx} className="border-t border-white/[0.1] my-2" />;
+        }
+
+        // Headings: ###
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} className="text-sm font-bold text-indigo-300 mt-2 mb-1">
+              {formatInlineText(trimmed.replace(/^###\s+/, ''))}
+            </h4>
+          );
+        }
+
+        // Headings: ## or #
+        if (trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
+          return (
+            <h3 key={idx} className="text-sm font-bold text-white mt-3 mb-1 border-b border-white/[0.08] pb-1">
+              {formatInlineText(trimmed.replace(/^#+\s+/, ''))}
+            </h3>
+          );
+        }
+
+        // Unordered list item: - or *
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          const itemText = trimmed.replace(/^[-*]\s+/, '');
+          return (
+            <div key={idx} className="flex items-start gap-2 my-1 pl-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
+              <div className="flex-1">{formatInlineText(itemText)}</div>
+            </div>
+          );
+        }
+
+        // Ordered list item: 1. 2. etc
+        const orderedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+        if (orderedMatch) {
+          const num = orderedMatch[1];
+          const itemText = orderedMatch[2] || '';
+          return (
+            <div key={idx} className="flex items-start gap-2 my-1 pl-1">
+              <span className="text-indigo-400 font-mono text-xs font-bold shrink-0 mt-0.5">{num}.</span>
+              <div className="flex-1">{formatInlineText(itemText)}</div>
+            </div>
+          );
+        }
+
+        // Regular paragraph
+        return (
+          <p key={idx} className="my-0.5">
+            {formatInlineText(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Parses inline formatting: **bold**, *italic*, `code`
+ */
+function formatInlineText(text: string): React.ReactNode {
+  // Regex splitting on **bold**, *italic*, and `code`
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+
+  return parts.map((part, i) => {
+    // Bold: **text**
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={i} className="font-semibold text-white">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+
+    // Italic: *text*
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return (
+        <em key={i} className="italic text-indigo-200">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+
+    // Code: `text`
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return (
+        <code key={i} className="px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 font-mono text-[11px]">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
+    return part;
+  });
 }
