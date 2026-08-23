@@ -1,17 +1,18 @@
 'use server';
 
 import { db } from '@/db';
-import { integrationClients, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { integrationClients, projects, marketingLeads } from '@/db/schema';
+import { eq, and, or } from 'drizzle-orm';
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export async function generateApiKey(organizationSlug: string, name: string, environment: 'staging' | 'production') {
   const ctx = await resolvePortalContext(organizationSlug);
+  const cleanSlug = organizationSlug.replace(/^org_/, '').trim();
 
   // 1. Get the project ID
-  const project = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, organizationSlug)).limit(1);
+  const project = await db.select({ id: projects.id }).from(projects).where(or(eq(projects.slug, cleanSlug), eq(projects.slug, organizationSlug))).limit(1);
   if (!project.length) throw new Error("Project not found");
 
   // 2. Generate key
@@ -29,15 +30,13 @@ export async function generateApiKey(organizationSlug: string, name: string, env
   });
 
   revalidatePath(`/portal/${organizationSlug}/identity`);
-  
-  // NOTE: In a real app we'd return the rawKey exactly once so the user can copy it!
-  // But for this UI demo we just reload the page.
 }
 
 export async function revokeApiKey(organizationSlug: string, id: string) {
   const ctx = await resolvePortalContext(organizationSlug);
+  const cleanSlug = organizationSlug.replace(/^org_/, '').trim();
 
-  const project = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, organizationSlug)).limit(1);
+  const project = await db.select({ id: projects.id }).from(projects).where(or(eq(projects.slug, cleanSlug), eq(projects.slug, organizationSlug))).limit(1);
   if (!project.length) throw new Error("Project not found");
 
   await db.delete(integrationClients)
@@ -51,24 +50,21 @@ export async function revokeApiKey(organizationSlug: string, id: string) {
 
 export async function inviteTeamMember(organizationSlug: string, email: string, name: string) {
   const ctx = await resolvePortalContext(organizationSlug);
+  const cleanSlug = organizationSlug.replace(/^org_/, '').trim();
   
-  const project = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, organizationSlug)).limit(1);
+  const project = await db.select({ id: projects.id }).from(projects).where(or(eq(projects.slug, cleanSlug), eq(projects.slug, organizationSlug))).limit(1);
   if (!project.length) throw new Error("Project not found");
 
-  const { marketingLeads } = await import('@/db/schema');
-  
-  // Create a record so this email can login to this project
+  // Create a record for this team member in the tenant scope
   await db.insert(marketingLeads).values({
     projectId: project[0]!.id,
     email: email.toLowerCase().trim(),
-    name,
+    name: name.trim(),
     leadType: 'team_member',
     origin: 'portal_invite',
-    ownerContext: 'client'
+    ownerContext: 'client',
+    status: 'active'
   });
 
   revalidatePath(`/portal/${organizationSlug}/identity`);
-
-  // Optionally, we could trigger the Magic Link email here,
-  // but just adding them to marketingLeads allows them to login via the portal.
 }

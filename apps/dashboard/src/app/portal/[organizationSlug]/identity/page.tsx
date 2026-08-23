@@ -9,6 +9,9 @@ interface IdentityPageProps {
   params: Promise<{ organizationSlug: string }>;
 }
 
+const isUuid = (val?: string): boolean => 
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
 export default async function IdentityPage({ params }: IdentityPageProps) {
   const { organizationSlug } = await params;
 
@@ -16,29 +19,77 @@ export default async function IdentityPage({ params }: IdentityPageProps) {
   let members: any[] = [];
   
   try {
-    const project = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, organizationSlug)).limit(1);
+    const cleanSlug = organizationSlug.replace(/^org_/, '').trim();
+    
+    const project = await db
+      .select({
+        id: projects.id,
+        title: projects.title,
+        applicantName: projects.applicantName,
+        applicantEmail: projects.applicantEmail,
+        applicantPosition: projects.applicantPosition,
+      })
+      .from(projects)
+      .where(
+        or(
+          eq(projects.slug, cleanSlug),
+          eq(projects.slug, organizationSlug),
+          ...(isUuid(organizationSlug) ? [eq(projects.organizationId, organizationSlug)] : []),
+          ...(isUuid(cleanSlug) ? [eq(projects.organizationId, cleanSlug)] : [])
+        )
+      )
+      .limit(1);
     
     if (project.length > 0) {
+      const proj = project[0]!;
+
       apiKeys = await db
         .select()
         .from(integrationClients)
-        .where(eq(integrationClients.projectId, project[0]!.id));
+        .where(eq(integrationClients.projectId, proj.id));
 
-      members = await db
+      const explicitMembers = await db
         .select()
         .from(marketingLeads)
         .where(
           and(
-            eq(marketingLeads.projectId, project[0]!.id),
+            eq(marketingLeads.projectId, proj.id),
             or(
               eq(marketingLeads.leadType, 'team_member'),
-              eq(marketingLeads.ownerContext, 'client')
+              eq(marketingLeads.origin, 'portal_invite')
             )
           )
         );
+
+      // Primary project owner from projects record
+      const ownerEmail = proj.applicantEmail || `admin@${cleanSlug}.finance`;
+      const ownerName = proj.applicantName || proj.title || 'Propietario';
+
+      const seenEmails = new Set<string>();
+      seenEmails.add(ownerEmail.toLowerCase().trim());
+
+      members.push({
+        id: `owner_${proj.id}`,
+        name: ownerName,
+        email: ownerEmail,
+        role: 'OWNER'
+      });
+
+      for (const m of explicitMembers) {
+        const email = (m.email || '').toLowerCase().trim();
+        if (email && !seenEmails.has(email)) {
+          seenEmails.add(email);
+          members.push({
+            id: m.id,
+            name: m.name || email.split('@')[0] || 'Miembro',
+            email: email,
+            role: 'OPERATOR'
+          });
+        }
+      }
     }
   } catch (error) {
-    console.warn("Failed to fetch integration clients (table might be missing or no project)", error);
+    console.warn("Failed to fetch integration clients or team members", error);
   }
 
   const mappedKeys = apiKeys.map(k => ({
@@ -46,15 +97,10 @@ export default async function IdentityPage({ params }: IdentityPageProps) {
     name: k.name,
     environment: k.environment,
     keyFingerprint: k.keyFingerprint,
-    createdAt: new Date(), // Mocking date since we don't have createdAt in the schema block shown, but ideally it would have it
+    createdAt: k.createdAt || new Date(),
   }));
 
-  const teamMembers = members.map(m => ({
-    id: m.id,
-    name: m.name || m.email?.split('@')[0] || 'Unknown',
-    email: m.email || '',
-    role: m.ownerContext === 'tenant' || m.leadType === 'team_member' ? 'OPERATOR' : 'OWNER'
-  }));
+  const teamMembers = members;
 
   const handleGenerate = async (name: string, env: string) => {
     'use server';
