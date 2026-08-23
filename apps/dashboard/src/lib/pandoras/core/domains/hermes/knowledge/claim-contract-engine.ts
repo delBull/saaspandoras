@@ -572,10 +572,13 @@ export class ClaimContractEngine {
   /**
    * Evaluates Claim Coverage:
    * Validates that every material commercial or financial assertion is backed by active authorized claims.
+   * Contextual-descriptive clauses (disclaimers, legal framing, references to structure) are exempt,
+   * and clauses may alternatively be grounded in ACTIVE sovereign knowledge via `options.additionalSources`.
    */
   public static evaluateClaimCoverage(
     text: string,
-    tenantId: string
+    tenantId: string,
+    options?: { additionalSources?: string[] }
   ): ClaimCoverageReport {
     const contract = this.getContract(tenantId);
     if (!contract || contract.governanceStatus !== 'ACTIVE') {
@@ -628,6 +631,44 @@ export class ClaimContractEngine {
 
           const hasForbiddenExtrapolation = /\b(garantizad[ao]|asegurad[ao]|fij[ao]|sin riesgo|recompra asegurada)\b/i.test(clause);
           const isTransactional = /\b(spei|clabe|orden\s+spei|referencia|ticket|recibo|tx\s?id)\b/i.test(clause);
+
+          // K27-FP1: Contextual-descriptive exemption.
+          // A clause carrying an explicit disclaimer/legal-framing marker AND lacking a
+          // non-negated hard promise is informational — it must not be blocked.
+          const clauseLower = clause.toLowerCase();
+          const hardPromise =
+            /\b(garantizamos|garantizo|garantiza|garantizamos|garantizados?|garantizadas?|aseguramos|asegurad[oa]s?|guaranteed|risk[-\s]?free)\b/i.test(
+              clause
+            ) &&
+            !/(?:sin|no|tampoco|nunca|jam[aá]s)[^.;]{0,40}(garantiz\w*|asegur\w*|fij[oa]s?)/i.test(clause) &&
+            !/(?:sin|no)\s+(?:hay\s+)?(?:garant[ií]as?|retorno[s]?\s+fij[oa]s?)/i.test(clause);
+          const contextualMarker = [
+            'sin garantía',
+            'sin garantias',
+            'no garantiza',
+            'no se garantiza',
+            'no hay garantía',
+            'sujeto a',
+            'sujeta a',
+            'sujetos a',
+            'sujetas a',
+            'según la estructura',
+            'según el contrato',
+            'según los términos',
+            'de acuerdo con',
+            'conforme a',
+            'establecid',
+            'definid',
+            'puede variar',
+            'pueden variar',
+            'históricamente',
+            'historicaménte',
+            'en el pasado',
+          ].some(m => clauseLower.includes(m));
+          if (contextualMarker && !hardPromise) {
+            continue;
+          }
+
           let isClauseCovered = false;
 
           if (!hasForbiddenExtrapolation) {
@@ -648,6 +689,25 @@ export class ClaimContractEngine {
                   matchedClaimsCount++;
                   break;
                 }
+              }
+            }
+          }
+
+          // K27-FP2: Sovereign knowledge grounding.
+          // A material clause not covered by canonical claims may still be supported by
+          // ACTIVE tenant knowledge (the sovereign vault). Requires meaningful keyword overlap.
+          if (!isClauseCovered && options?.additionalSources?.length) {
+            const clauseKeywords = clause
+              .split(/\s+/)
+              .map(w => w.replace(/[^\wáéíóúÁÉÍÓÚñÑ]/g, ''))
+              .filter(w => w.length > 4);
+            if (clauseKeywords.length >= 3) {
+              const grounded = options.additionalSources.some(src =>
+                clauseKeywords.filter(kw => src.toLowerCase().includes(kw.toLowerCase())).length >= 3
+              );
+              if (grounded) {
+                isClauseCovered = true;
+                matchedClaimsCount++;
               }
             }
           }

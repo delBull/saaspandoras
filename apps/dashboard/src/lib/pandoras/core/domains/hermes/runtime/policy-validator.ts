@@ -51,10 +51,20 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     const maxAllowedRank = CLASSIFICATION_LATTICE_RANK[channelMax] ?? 2;
 
     // 1. K11-A21: Financial Hallucination Boundary
+    // Only block when output makes financial PROMISES without active knowledge backing.
+    // Informational legal explanations that include disclaimers (e.g. "sin garantías", "no garantiza")
+    // are allowed — blocking them produces false positives on legitimate legal queries.
     if (!policy.allowFinancialPromises) {
-      if (text.includes('rendimiento') || text.includes('garantiza') || text.includes('garantía') || text.includes('return')) {
+      const hasFinancialKeyword = text.includes('garantiza') || text.includes('garantía') ||
+        text.includes('guaranteed return') || text.includes('retorno garantizado') ||
+        text.includes('rendimiento garantizado');
+      // If output mentions yield/return but with an explicit disclaimer, it's informational — allow.
+      const hasDisclaimer = text.includes('sin garantías') || text.includes('no garantiza') ||
+        text.includes('no hay garantía') || text.includes('sujetos a') ||
+        text.includes('sujeto a') || text.includes('no fixed') || text.includes('no se garantiza');
+      if (hasFinancialKeyword && !hasDisclaimer) {
         const hasAuthority = context.activeKnowledge?.some(k =>
-          k.content.toLowerCase().includes('rendimiento') || k.content.toLowerCase().includes('garantiza')
+          k.content.toLowerCase().includes('garantiza') || k.content.toLowerCase().includes('garantía')
         );
         if (!hasAuthority) {
           violations.push({
@@ -103,8 +113,10 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     }
 
     // 4. K11-A19: Restricted Knowledge Escape
+    // Only block explicit exfiltration phrases — NOT general legal/compliance words like 'auditoría'.
+    // Mentioning an audit in a legal explanation is valid informational content.
     if (!policy.allowRestrictedKnowledge) {
-      if (text.includes('audit report') || text.includes('auditoría') || text.includes('restricted information')) {
+      if (text.includes('audit report') || text.includes('restricted information')) {
         violations.push({
           code: 'RESTRICTED_KNOWLEDGE',
           severity: 'BLOCK',
@@ -301,9 +313,13 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     }
 
     // 18. Milestone K26.1: Material Claim Coverage Validation
+    // K27-FP2: ACTIVE sovereign knowledge counts as a legitimate support source alongside
+    // canonical contract claims — the vault governs facts, the contract governs promises.
     const intentTier = ClaimContractEngine.determineIntentTier(output.content);
     if (intentTier === 'LEVEL_2_COMMERCIAL' || intentTier === 'LEVEL_3_FINANCIAL_CONTRACTUAL' || intentTier === 'LEVEL_4_ACTION') {
-      const coverage = ClaimContractEngine.evaluateClaimCoverage(output.content, targetTenantId);
+      const coverage = ClaimContractEngine.evaluateClaimCoverage(output.content, targetTenantId, {
+        additionalSources: (context.activeKnowledge || []).map(k => k.content),
+      });
       if (!coverage.complete && coverage.unsupportedSegments.length > 0) {
         violations.push({
           code: 'UNSUPPORTED_CLAIM_COMPOSITION',

@@ -142,7 +142,9 @@ export class TenantResponsePolicyGate {
     if (!activeKnowledge || activeKnowledge.length === 0) return undefined;
 
     const policyDocs = activeKnowledge.filter(
-      k => k.dimension === 'policy' || k.key.includes('banned') || k.key.includes('policy')
+      k =>
+        k?.dimension === 'policy' ||
+        (typeof k?.key === 'string' && (k.key.includes('banned') || k.key.includes('policy')))
     );
     if (policyDocs.length === 0) return undefined;
 

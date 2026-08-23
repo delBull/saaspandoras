@@ -1,15 +1,14 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { KnowledgeDashboard } from '@/components/hermes-portal/knowledge/KnowledgeDashboard';
 import { GetKnowledgeOverviewQuery } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
-import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { KnowledgePageClient } from './KnowledgePageClient';
 
 import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
 
 export default async function KnowledgePage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
-  const portalCtx = await resolvePortalContext(organizationSlug);
+  const portalCtx = await tryResolvePortalContext(organizationSlug);
   
   if (!portalCtx) {
     notFound();

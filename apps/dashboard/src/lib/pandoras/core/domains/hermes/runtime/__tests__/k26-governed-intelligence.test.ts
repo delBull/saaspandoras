@@ -962,6 +962,66 @@ describe("Milestone K26 — Governed Intelligence, Epistemic Claims & IPFS Prove
     expect(replayAttempt.reason).toContain('TENANT_BINDING_MISMATCH');
   });
 
+  // ─── TEST 22: Legal-Descriptive False Positive Immunity (K27-FP1/K27-FP2) ────
+  it('K26-CLAIM-22: Contextual-descriptive legal answers pass coverage; hard promises stay blocked', async () => {
+    // The real production false positive (2026-08-23): a legitimate legal question answer
+    // was blocked by Rule 18 despite being grounded in sovereign knowledge and carrying disclaimers.
+    const legalAnswer =
+      "Las cuestiones legales de S'Narai incluyen: **Distribución de Rendimientos** — Los ingresos operativos se distribuyen proporcionalmente a los CPs, sin garantías de retorno fijo. Las distribuciones están sujetos a impuestos federales y existen auditorías de rendimientos definidas en la estructura de la DAO.";
+
+    // Engine-level strict (contract-only): disclaimer segments exempt, descriptive segment
+    // requires knowledge grounding to be complete.
+    const strictReport = ClaimContractEngine.evaluateClaimCoverage(legalAnswer, 'snarai');
+    expect(strictReport.unsupportedSegments.length).toBeLessThan(4);
+
+    // Validator-level: knowledge-grounded support sources prevent UNSUPPORTED_CLAIM_COMPOSITION
+    const validator = new DefaultRuntimePolicyValidator();
+    const groundedContext = {
+      ...baseContext,
+      activeKnowledge: [
+        {
+          id: 'kb_snarai_distribucion',
+          dimension: 'business',
+          key: 'snarai-distribucion-rendimientos',
+          content:
+            'Distribución de rendimientos: los ingresos operativos se distribuyen proporcionalmente a los CPs. Las distribuciones están sujetas a impuestos federales y las auditorías de rendimientos están definidas en la estructura de la DAO.',
+          status: 'ACTIVE' as const,
+          visibility: 'PUBLIC' as const,
+        },
+      ],
+    };
+    const groundedSources = groundedContext.activeKnowledge.map(k => k.content);
+    const groundedReport = ClaimContractEngine.evaluateClaimCoverage(legalAnswer, 'snarai', {
+      additionalSources: groundedSources,
+    });
+    expect(groundedReport.complete).toBe(true);
+    expect(groundedReport.unsupportedSegments.length).toBe(0);
+
+    const result = await validator.validate(makeOutput(legalAnswer), groundedContext, RUNTIME_POLICY, {
+      organizationId: 'snarai',
+    });
+    expect(result.decision.action).not.toBe('BLOCK');
+    expect(
+      result.violations.some(v => v.code === 'UNSUPPORTED_CLAIM_COMPOSITION')
+    ).toBe(false);
+
+    // Adversarial regression: hard promises with disclaimer appended elsewhere remain BLOCKED
+    const smuggleText =
+      "Te garantizamos rendimientos mensuales del 25% sobre tu inversión. Todo está sujeto a impuestos federales.";
+    const smuggleReport = ClaimContractEngine.evaluateClaimCoverage(smuggleText, 'snarai');
+    expect(smuggleReport.complete).toBe(false);
+    expect(
+      smuggleReport.unsupportedSegments.some(s => /garantizamos/i.test(s))
+    ).toBe(true);
+
+    const smuggleResult = await validator.validate(makeOutput(smuggleText), groundedContext, RUNTIME_POLICY, {
+      organizationId: 'snarai',
+    });
+    expect(
+      smuggleResult.violations.some(v => v.code === 'UNSUPPORTED_CLAIM_COMPOSITION')
+    ).toBe(true);
+  });
+
   afterAll(async () => {
     if (db) {
       try {

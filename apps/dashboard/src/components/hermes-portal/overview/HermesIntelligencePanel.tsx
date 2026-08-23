@@ -303,7 +303,15 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
                   accumulatedContent += dataObj.delta;
                   setMessages(prev => prev.map(m => m.id === hermesMsgId ? { ...m, content: accumulatedContent } : m));
                 } else if (eventType === 'response.blocked') {
-                  accumulatedContent += `\n\n[Bloqueado por política: ${dataObj.reason}]`;
+                  const blockedCode = dataObj.code || dataObj.reason || 'POLICY';
+                  const blockedMsg = blockedCode === 'FINANCIAL_PROMISE'
+                    ? 'Esta respuesta fue bloqueada porque contiene afirmaciones financieras no respaldadas por el contrato activo.'
+                    : blockedCode === 'UNSUPPORTED_CLAIM_COMPOSITION'
+                    ? 'Esta respuesta fue bloqueada porque incluye afirmaciones materiales sin respaldo en la bóveda soberana activa.'
+                    : blockedCode === 'RESTRICTED_KNOWLEDGE'
+                    ? 'Esta respuesta contiene información clasificada que no puede divulgarse en este canal.'
+                    : `Esta respuesta fue bloqueada por gobernanza (${blockedCode}). Reformula la pregunta con más contexto.`;
+                  accumulatedContent += `\n\n⚠️ *${blockedMsg}*`;
                   setMessages(prev => prev.map(m => m.id === hermesMsgId ? { ...m, content: accumulatedContent } : m));
                 } else if (eventType === 'stream.error') {
                   accumulatedContent += `\n\n[Error de conexión: ${dataObj.error}]`;
