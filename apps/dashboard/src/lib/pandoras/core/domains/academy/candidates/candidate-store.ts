@@ -136,10 +136,6 @@ class AcademyStoreSingleton {
   }
 
   async getCandidateAsync(id: string): Promise<AcademyCandidate | undefined> {
-    if (this.candidates.has(id)) {
-      return this.candidates.get(id);
-    }
-
     try {
       const rows = await db
         .select()
@@ -193,7 +189,7 @@ class AcademyStoreSingleton {
       console.warn(`⚠️ [AcademyStore] DB getCandidate failed for ${id}:`, err);
     }
 
-    return undefined;
+    return this.candidates.get(id);
   }
 
   getCandidate(id: string): AcademyCandidate | undefined {

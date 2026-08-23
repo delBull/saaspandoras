@@ -113,9 +113,12 @@ export async function POST(
     const { action, attemptId, moduleIndex, questionId, questionPrompt, candidateAnswer } = body;
 
     // 🛡️ SECURITY GUARD 2: Attempt must belong to this invitation / candidate
-    const candidate = await AcademyStore.getCandidateAsync(invitation.candidateId);
-    if (!candidate || candidate.latestAttemptId !== attemptId) {
-      return NextResponse.json({ success: false, error: 'El intento de evaluación no corresponde a este token' }, { status: 403 });
+    const assessment = await AcademyStore.getAssessmentAsync(attemptId);
+    if (!assessment || assessment.candidateId !== invitation.candidateId) {
+      const candidate = await AcademyStore.getCandidateAsync(invitation.candidateId);
+      if (!candidate || candidate.latestAttemptId !== attemptId) {
+        return NextResponse.json({ success: false, error: 'El intento de evaluación no corresponde a este token' }, { status: 403 });
+      }
     }
 
     if (action === 'SUBMIT_ANSWER') {
