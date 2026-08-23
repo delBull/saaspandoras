@@ -1,25 +1,17 @@
 import { NextResponse } from 'next/server';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { DefaultPlatformEventBus } from '@/lib/pandoras/core/platform/events/default-event-bus';
-import { OperationalIntent } from '@/lib/pandoras/core/contracts/governance-contracts';
-import {
-  HermesOnboardingWorkflow,
-  OnboardingStage,
-} from '@/lib/pandoras/core/domains/hermes/onboarding-workflow';
 import { db } from '@/db';
-import { portalOnboardingState } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { HermesOnboardingOrchestrator } from '@/lib/pandoras/core/domains/hermes/onboarding/orchestrator';
-
+import { hermesConversationMessages, portalOnboardingState } from '@/db/schema';
+import { eq, and, or, asc } from 'drizzle-orm';
+import { OnboardingStage } from '@/lib/pandoras/core/domains/hermes/onboarding-workflow';
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
 import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
-import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
+import { HermesOnboardingOrchestrator } from '@/lib/pandoras/core/domains/hermes/onboarding/orchestrator';
 import { RuntimeMessage } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
 
-const eventBus = new DefaultPlatformEventBus();
 const omnichannelGateway = new DefaultOmnichannelGateway();
 
-export interface PortalChatMessage {
+interface PortalChatMessage {
   id: string;
   role: 'hermes' | 'user';
   content: string;
@@ -32,88 +24,82 @@ interface OrganizationOnboardingState {
   messages: PortalChatMessage[];
 }
 
-// Stage replies are now handled dynamically by HermesOnboardingOrchestrator.
-
-function getStageChips(stage: OnboardingStage): string[] {
-  switch (stage) {
-    case 'BUSINESS_DISCOVERY':
+function getTopicChips(topicId: string, orgName: string): string[] {
+  switch (topicId) {
+    case 'marketing':
       return [
-        '🏠 Inmobiliaria & Desarrollo',
-        '💼 Servicios B2B & Consultoría',
-        '💰 Fondo de Inversión',
-        '🛍 Comercio & E-Commerce'
+        '🚀 Plan de Lanzamiento Founder',
+        '💎 Propuesta de Valor ($50 USD)',
+        '🎯 Segmentación Inversionistas VIP',
+        '📊 Campaña Meta & Funnels'
       ];
-    case 'IDENTITY_CONFIGURATION':
+    case 'tokenomics':
       return [
-        '👔 Profesional & Formal',
-        '🤝 Cercano & Asesor',
-        '⚡ Directo & Comercial'
+        '📜 Estructura de CPs y Fideicomiso',
+        '🏖️ Noches de Estancia por Nivel',
+        '💰 Distribución Pro-Rata USDC',
+        '🛡️ Respaldo RWA en Bucerías'
       ];
-    case 'KNOWLEDGE_GATHERING':
+    case 'journeys':
       return [
-        '📄 Subir Documentos (KNOW)',
-        '🔗 Aprender de Sitio Web',
-        '💬 Cargar FAQ de Clientes',
-        '⚙ Enseñar Reglas de Negocio'
+        '🚨 Reglas de Escalación (> $25k USD)',
+        '📋 Funnel de Cualificación de Leads',
+        '📱 Flujo WhatsApp Concierge',
+        '💬 Asistente Telegram'
       ];
-    case 'POLICY_DEFINITION':
-      return [
-        '🛡 No prometer retornos o garantías',
-        '🔒 Requerir aprobación para descuentos',
-        '📞 Derivar a un humano si hay dudas'
-      ];
-    case 'CHANNEL_SETUP':
-      return [
-        '📱 Conectar Telegram (Fase 6.5)',
-        '🌐 Probar Widget del Portal'
-      ];
-    case 'ACTIVATION':
+    case 'general':
     default:
       return [
-        '🧠 Ir a Hermes KNOW',
-        '📊 Ver Estado del Sistema'
+        '📊 Resumen de Rendimiento',
+        '💎 Diagnóstico de Bóveda RWA',
+        '🤖 Configurar Nuevo Journey',
+        '🔧 Políticas Institucionales'
       ];
   }
 }
 
-// ---------------------------------------------------------------------------
-// K12-A07: Conversation ≠ Knowledge ≠ Authority
-// This mapper converts Portal chat history to RuntimeMessages.
-// The resulting array is passed as conversationHistory — ephemeral context only.
-// It NEVER grants authority, creates ACTIVE knowledge, or overrides governance.
-// ---------------------------------------------------------------------------
-function toRuntimeMessages(msgs: PortalChatMessage[]): RuntimeMessage[] {
-  return msgs.map(m => ({
-    id: m.id,
-    role: m.role === 'hermes' ? 'ASSISTANT' as const : 'USER' as const,
-    content: m.content,
-    createdAt: new Date(m.timestamp),
-  }));
-}
-
-function getInitialState(orgName: string, orgSlug: string): OrganizationOnboardingState {
+function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: string): PortalChatMessage {
   const isKnownOrg = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
-  
-  const initialStage: OnboardingStage = isKnownOrg ? 'ACTIVATION' : 'BUSINESS_DISCOVERY';
-  
-  const initialChips = getStageChips(initialStage);
-    
-  const initialContent = isKnownOrg 
-    ? `Hola. Conozco perfectamente los detalles de ${orgName} y su modelo de Fractional Real Estate. ¿En qué puedo ayudarte hoy para optimizar la conversión de S'Narai?`
-    : `Hola. Todavía no conozco los detalles de ${orgName}. Antes de conectar canales y definir políticas, necesito entender qué hace tu organización y qué tipo de clientes quieres atender. ¿Podrías describirme brevemente tu negocio?`;
+  const now = new Date().toISOString();
 
-  return {
-    stage: initialStage,
-    messages: [
-      {
-        id: 'welcome-1',
+  switch (topicId) {
+    case 'marketing':
+      return {
+        id: `welcome_marketing_${Date.now()}`,
+        role: 'hermes',
+        content: `🎯 **Estrategia de Marketing & Lanzamiento — ${orgName}**\n\nConozco el dossier confidencial, el pool de capitalización de **$100M MXN** y las tres fases de certificados:\n\n1. 💎 **Fase Founder:** $50 USD / CP\n2. 📈 **Fase Estratégica:** $75 USD / CP\n3. 🏛️ **Fase General:** $100 USD / CP\n\n¿Qué aspecto de la campaña, embudo o segmentación de inversionistas deseas estructurar hoy?`,
+        timestamp: now,
+        chips: getTopicChips('marketing', orgName)
+      };
+    case 'tokenomics':
+      return {
+        id: `welcome_tokenomics_${Date.now()}`,
+        role: 'hermes',
+        content: `🏛️ **Estructura RWA & Certificados de Participación — ${orgName}**\n\nEste canal está enfocado en la ingeniería patrimonial de la **Zona Dorada de Bucerías**:\n\n- 💰 **5% Yield Operativo Pro-Rata en USDC**\n- 🏖️ **Derechos de Estancia:** Explorer ($500), Resident ($2,500), Ambassador ($10,000), Riviera Owner ($50,000)\n- 🛡️ **Fideicomiso Bancario Mexicano**\n\n¿Qué consulta tienes sobre el activo o los rendimientos?`,
+        timestamp: now,
+        chips: getTopicChips('tokenomics', orgName)
+      };
+    case 'journeys':
+      return {
+        id: `welcome_journeys_${Date.now()}`,
+        role: 'hermes',
+        content: `🤖 **Automatizaciones & Embudo de Prospección — ${orgName}**\n\nControl de flujos conversacionales multicanal:\n\n- 📞 **Cualificación de Leads en WhatsApp y Telegram**\n- 🚨 **Escalación Humana Inmediata** para compras corporativas (> $25,000 USD)\n- 📅 **Agendamiento de Llamadas Patrimoniales**\n\n¿Qué flujo deseas calibrar o activar?`,
+        timestamp: now,
+        chips: getTopicChips('journeys', orgName)
+      };
+    case 'general':
+    default:
+      const initialContent = isKnownOrg 
+        ? `Hola. Soy **Hermes**, tu Asesor Patrimonial y Growth Intelligence Officer para **${orgName}**.\n\nConozco a fondo el modelo de Fractional Real Estate, la bóveda de conocimiento y los canales conectados. ¿En qué objetivo estratégico nos enfocamos hoy?`
+        : `Hola. Soy **Hermes**, tu asistente institucional para **${orgName}**. ¿En qué puedo ayudarte hoy?`;
+      return {
+        id: `welcome_general_${Date.now()}`,
         role: 'hermes',
         content: initialContent,
-        timestamp: new Date().toISOString(),
-        chips: initialChips
-      }
-    ]
-  };
+        timestamp: now,
+        chips: getTopicChips('general', orgName)
+      };
+  }
 }
 
 async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: string): Promise<OrganizationOnboardingState> {
@@ -131,7 +117,12 @@ async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: str
     };
   }
 
-  const initialState = getInitialState(orgName, orgSlug);
+  const initial = getTopicInitialMessage('general', orgName, orgSlug);
+  const initialState: OrganizationOnboardingState = {
+    stage: 'ACTIVATION',
+    messages: [initial]
+  };
+
   await db.insert(portalOnboardingState).values({
     tenantId,
     stage: initialState.stage,
@@ -166,25 +157,104 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const organizationSlug = searchParams.get('organizationSlug');
+    const topicId = searchParams.get('topicId') || 'general';
 
     if (!organizationSlug) {
       return NextResponse.json({ error: 'Missing organizationSlug' }, { status: 400 });
     }
 
     const context = await resolvePortalContext(organizationSlug);
-    const tenantId = context.organization.slug;
+    const tenantSlug = context.tenant.organizationSlug || context.organization.slug || organizationSlug;
+    const orgId = context.tenant.organizationId;
     const orgName = context.organization.name || organizationSlug;
+    const conversationId = `portal_${tenantSlug}_${topicId}`;
 
-    const state = await loadOrCreateState(tenantId, orgName, organizationSlug);
+    // 1. Fetch persisted messages from hermesConversationMessages
+    const dbMessages = await db
+      .select()
+      .from(hermesConversationMessages)
+      .where(
+        and(
+          or(
+            eq(hermesConversationMessages.organizationId, tenantSlug),
+            eq(hermesConversationMessages.organizationId, orgId),
+            eq(hermesConversationMessages.organizationId, 'snarai')
+          ),
+          or(
+            eq(hermesConversationMessages.conversationId, conversationId),
+            eq(hermesConversationMessages.conversationId, `portal_${orgId}_${topicId}`),
+            ...(topicId === 'general' ? [eq(hermesConversationMessages.conversationId, `portal_${orgId}`)] : [])
+          )
+        )
+      )
+      .orderBy(asc(hermesConversationMessages.sequence));
 
+    if (dbMessages.length > 0) {
+      const mappedMessages: PortalChatMessage[] = dbMessages.map(m => ({
+        id: m.id,
+        role: m.role === 'ASSISTANT' ? 'hermes' : 'user',
+        content: m.content,
+        timestamp: m.createdAt.toISOString(),
+      }));
+
+      return NextResponse.json({
+        success: true,
+        topicId,
+        stage: 'ACTIVATION',
+        messages: mappedMessages,
+        chips: getTopicChips(topicId, orgName)
+      });
+    }
+
+    // 2. Return tailored initial state if no messages exist yet
+    const topicInitial = getTopicInitialMessage(topicId, orgName, tenantSlug);
     return NextResponse.json({
       success: true,
-      stage: state.stage,
-      messages: state.messages,
-      chips: getStageChips(state.stage)
+      topicId,
+      stage: 'ACTIVATION',
+      messages: [topicInitial],
+      chips: getTopicChips(topicId, orgName)
     });
   } catch (error: any) {
     console.error('[Portal Messages GET] Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const organizationSlug = searchParams.get('organizationSlug');
+    const topicId = searchParams.get('topicId') || 'general';
+
+    if (!organizationSlug) {
+      return NextResponse.json({ error: 'Missing organizationSlug' }, { status: 400 });
+    }
+
+    const context = await resolvePortalContext(organizationSlug);
+    const tenantSlug = context.tenant.organizationSlug || context.organization.slug || organizationSlug;
+    const orgId = context.tenant.organizationId;
+    const conversationId = `portal_${tenantSlug}_${topicId}`;
+
+    await db
+      .delete(hermesConversationMessages)
+      .where(
+        and(
+          or(
+            eq(hermesConversationMessages.organizationId, tenantSlug),
+            eq(hermesConversationMessages.organizationId, orgId),
+            eq(hermesConversationMessages.organizationId, 'snarai')
+          ),
+          or(
+            eq(hermesConversationMessages.conversationId, conversationId),
+            eq(hermesConversationMessages.conversationId, `portal_${orgId}_${topicId}`),
+            ...(topicId === 'general' ? [eq(hermesConversationMessages.conversationId, `portal_${orgId}`)] : [])
+          )
+        )
+      );
+
+    return NextResponse.json({ success: true, message: `Historial de ${topicId} limpiado` });
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -202,7 +272,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // LOCK 6.5.1-A & H3: Authenticate & resolve authorized ControlPlaneContext (NEVER trust payload body for tenantId)
     const context = await resolvePortalContext(organizationSlug);
     const tenantId = context.organization.slug;
     const orgName = context.organization.name || organizationSlug;
@@ -215,7 +284,6 @@ export async function POST(request: Request) {
       [{ organizationId: context.tenant.organizationId, role: context.tenant.role as any }]
     );
 
-    // LOCK 6.5.1-A: Delegate Inbound transport through PortalAdapter & OmnichannelGateway
     const normalizedInbound = await omnichannelGateway.receive({
       channelType: 'portal',
       externalId: clientMessageId || `msg_${Date.now()}`,
@@ -228,7 +296,6 @@ export async function POST(request: Request) {
     const state = await loadOrCreateState(tenantId, orgName, organizationSlug);
     const currentStage = state.stage;
 
-    // 1. Record User Message
     const userMsg: PortalChatMessage = {
       id: normalizedInbound.message.externalMessageId,
       role: 'user',
@@ -237,7 +304,6 @@ export async function POST(request: Request) {
     };
     state.messages.push(userMsg);
 
-    // Delegate processing to HermesOnboardingOrchestrator
     const orchestrator = new HermesOnboardingOrchestrator();
     const currentMsg: RuntimeMessage = {
       id: userMsg.id,

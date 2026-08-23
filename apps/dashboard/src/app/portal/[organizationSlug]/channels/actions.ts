@@ -158,21 +158,22 @@ export async function saveHandoffAlertConfig(organizationSlug: string, alertConf
   return { success: true };
 }
 
-export async function testTelegramConfig(organizationSlug: string, customToken?: string) {
+export async function testTelegramConfig(organizationSlug: string, customToken?: string, targetChatId?: string) {
   let token = customToken?.trim();
 
+  const context = await resolvePortalContext(organizationSlug);
+  const targetSlug = context.tenant.organizationSlug || organizationSlug;
+  const orgId = context.tenant.organizationId;
+  const rows = await db.select().from(projects).where(
+    or(
+      eq(projects.slug, targetSlug),
+      eq(projects.organizationId, orgId),
+      eq(projects.slug, orgId)
+    )
+  ).limit(1);
+  const project = rows[0];
+
   if (!token || token.includes('••••')) {
-    const context = await resolvePortalContext(organizationSlug);
-    const targetSlug = context.tenant.organizationSlug || organizationSlug;
-    const orgId = context.tenant.organizationId;
-    const rows = await db.select().from(projects).where(
-      or(
-        eq(projects.slug, targetSlug),
-        eq(projects.organizationId, orgId),
-        eq(projects.slug, orgId)
-      )
-    ).limit(1);
-    const project = rows[0];
     const config = (project?.tenantRuntimeConfig as any) || {};
     token = config.secrets?.telegramBotToken || '';
   }
@@ -193,6 +194,34 @@ export async function testTelegramConfig(organizationSlug: string, customToken?:
       throw new Error(data.description || 'Token de Telegram inválido o revocado');
     }
 
+    let messageSent = false;
+    let messageError = '';
+
+    // If a chat ID is provided, dispatch a personalized test message
+    const finalChatId = targetChatId?.trim();
+    if (finalChatId) {
+      try {
+        const sendRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(6000),
+          body: JSON.stringify({
+            chat_id: finalChatId,
+            text: `🚀 <b>[Hermes OS — Test de Canal Telegram]</b>\n\n✅ <b>¡Conexión Exitosa con ${project?.title || "S'Narai"}!</b>\nEl bot <b>@${data.result.username}</b> está activo y listo para interactuar con prospectos y fundadores.\n\n⏱ Latencia: <code>${latency}ms</code>\n📅 Fecha: <code>${new Date().toLocaleString('es-MX')}</code>`,
+            parse_mode: 'HTML',
+          }),
+        });
+        const sendData = await sendRes.json();
+        if (sendData.ok) {
+          messageSent = true;
+        } else {
+          messageError = sendData.description || 'Error al enviar mensaje';
+        }
+      } catch (sendErr: any) {
+        messageError = sendErr.message || 'Error de despacho en Telegram';
+      }
+    }
+
     return {
       success: true,
       latency,
@@ -201,29 +230,37 @@ export async function testTelegramConfig(organizationSlug: string, customToken?:
         firstName: data.result.first_name,
         username: data.result.username,
         canJoinGroups: data.result.can_join_groups,
-      }
+      },
+      messageSent,
+      messageError,
     };
   } catch (err: any) {
     throw new Error(err.message || 'Error de conexión con Telegram API');
   }
 }
 
-export async function testWhatsAppConfig(organizationSlug: string, customToken?: string, customPhoneId?: string) {
+export async function testWhatsAppConfig(
+  organizationSlug: string, 
+  customToken?: string, 
+  customPhoneId?: string,
+  targetPhone?: string
+) {
   let token = customToken?.trim();
   let phoneId = customPhoneId?.trim();
 
+  const context = await resolvePortalContext(organizationSlug);
+  const targetSlug = context.tenant.organizationSlug || organizationSlug;
+  const orgId = context.tenant.organizationId;
+  const rows = await db.select().from(projects).where(
+    or(
+      eq(projects.slug, targetSlug),
+      eq(projects.organizationId, orgId),
+      eq(projects.slug, orgId)
+    )
+  ).limit(1);
+  const project = rows[0];
+
   if (!token || token.includes('••••') || !phoneId) {
-    const context = await resolvePortalContext(organizationSlug);
-    const targetSlug = context.tenant.organizationSlug || organizationSlug;
-    const orgId = context.tenant.organizationId;
-    const rows = await db.select().from(projects).where(
-      or(
-        eq(projects.slug, targetSlug),
-        eq(projects.organizationId, orgId),
-        eq(projects.slug, orgId)
-      )
-    ).limit(1);
-    const project = rows[0];
     const config = (project?.tenantRuntimeConfig as any) || {};
     if (!token || token.includes('••••')) token = config.secrets?.whatsappToken || '';
     if (!phoneId) phoneId = config.secrets?.whatsappPhoneId || '';
@@ -246,6 +283,42 @@ export async function testWhatsAppConfig(organizationSlug: string, customToken?:
       throw new Error(data.error.message || 'Credenciales de Meta Cloud API inválidas');
     }
 
+    let messageSent = false;
+    let messageError = '';
+
+    // If destination phone is provided, dispatch a live test message
+    const finalPhone = targetPhone?.trim().replace(/\D/g, '');
+    if (finalPhone) {
+      try {
+        const sendRes = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(6000),
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: finalPhone,
+            type: 'text',
+            text: {
+              preview_url: false,
+              body: `⚡ *[Hermes OS — Test de Canal WhatsApp]*\n\n✅ *¡Conexión Exitosa con ${project?.title || "S'Narai"}!*\nEl número oficial *${data.display_phone_number || phoneId}* (${data.verified_name || 'WABA'}) está conectado y operativo en Meta Cloud.\n\n📊 Calidad: *${data.quality_rating || 'GREEN'}*\n⏱ Latencia: *${latency}ms*\n📅 Fecha: *${new Date().toLocaleString('es-MX')}*`
+            }
+          }),
+        });
+        const sendData = await sendRes.json();
+        if (sendData.messages && sendData.messages.length > 0) {
+          messageSent = true;
+        } else if (sendData.error) {
+          messageError = sendData.error.message || 'Error de envío en WhatsApp';
+        }
+      } catch (sendErr: any) {
+        messageError = sendErr.message || 'Fallo de conexión al enviar WhatsApp';
+      }
+    }
+
     return {
       success: true,
       latency,
@@ -255,7 +328,9 @@ export async function testWhatsAppConfig(organizationSlug: string, customToken?:
         displayPhoneNumber: data.display_phone_number || phoneId,
         qualityRating: data.quality_rating || 'GREEN',
         status: data.code_verification_status || 'VERIFIED',
-      }
+      },
+      messageSent,
+      messageError,
     };
   } catch (err: any) {
     throw new Error(err.message || 'Error de conexión con Meta Cloud API');

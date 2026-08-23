@@ -132,9 +132,9 @@ export class CognitiveContextAdapter {
     // Tenant identity from core security context
     const tenantIdentity = {
       agentName: 'Hermes',
-      organizationName: effectiveContext.core.tenantId,
-      language: (effectiveContext.style as any)?.language,
-      tone: (effectiveContext.style as any)?.tone,
+      organizationName: effectiveContext.core.organizationName || (effectiveContext.core.tenantId.toLowerCase().includes('snarai') ? "S'Narai" : effectiveContext.core.tenantId),
+      language: (effectiveContext.style as any)?.language || 'es',
+      tone: (effectiveContext.style as any)?.tone || 'Formal, Concierge Patrimonial Institucional',
     };
 
     // Enrich identity from ACTIVE identity-dimension knowledge

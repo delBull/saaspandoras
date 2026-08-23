@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { organizationSlug, content, clientMessageId } = body;
+    const { organizationSlug, content, clientMessageId, topicId = 'general' } = body;
 
     if (!organizationSlug || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -26,7 +26,8 @@ export async function POST(request: Request) {
 
     // K12-A57: resolvePortalContext is the single source of truth for identity
     const context = await resolvePortalContext(organizationSlug);
-    const tenantId = context.organization.slug;
+    const tenantSlug = context.tenant.organizationSlug || context.organization.slug || organizationSlug;
+    const conversationId = `portal_${tenantSlug}_${topicId}`;
 
     // K12-A58: Only server can construct the ControlPlaneContext
     const cpCtx = new ControlPlaneContext(
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       context.tenant.actorId,
       context.tenant.role as any,
       context.tenant.permissions as any,
-      [{ organizationId: context.tenant.organizationId, role: context.tenant.role as any }]
+      [{ organizationId: tenantSlug, role: context.tenant.role as any }]
     );
 
     // K12-A60: Delegate Inbound transport through OmnichannelGateway
@@ -66,12 +67,12 @@ export async function POST(request: Request) {
 
     // Start the runtime stream
     const runtimeStream = await runtime.stream({
-      organizationId: context.tenant.organizationId,
-      conversationId: `portal_${context.tenant.organizationId}`,
+      organizationId: tenantSlug,
+      conversationId,
       message: currentMsg,
       controlPlaneContext: {
         actorId: context.tenant.actorId,
-        organizationId: context.tenant.organizationId,
+        organizationId: tenantSlug,
         role: context.tenant.role as any,
         permissions: context.tenant.permissions as any,
         sessionId: context.tenant.sessionId,

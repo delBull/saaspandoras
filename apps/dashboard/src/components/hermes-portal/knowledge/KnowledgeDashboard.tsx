@@ -38,9 +38,9 @@ export function KnowledgeDashboard({ overview, organizationName = 'your organiza
       <KnowledgeMetrics overview={overview} />
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-w-0 max-w-full">
         {/* Left Column (Sources & Context) */}
-        <div className="lg:col-span-2 flex flex-col gap-8">
+        <div className="lg:col-span-2 flex flex-col gap-8 min-w-0 max-w-full">
           <KnowledgeSourcesPanel 
             sources={overview.sources} 
             onViewSource={onViewSource} 
@@ -55,7 +55,7 @@ export function KnowledgeDashboard({ overview, organizationName = 'your organiza
         </div>
 
         {/* Right Column (Health & Advanced) */}
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 min-w-0 max-w-full">
           <KnowledgeHealthPanel overview={overview} />
           <KnowledgeAdvancedPanel overview={overview} />
         </div>

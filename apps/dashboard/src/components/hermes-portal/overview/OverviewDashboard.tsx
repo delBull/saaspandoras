@@ -11,7 +11,6 @@
 import React from 'react';
 import type { HermesOverviewView, PortalContext } from '@/lib/portal/portal-types';
 import { SystemCore } from './SystemCore';
-import { SystemStatusPanel } from './SystemStatusPanel';
 import { StrategicActivityCard } from './StrategicActivityCard';
 import { LiveActivityFeed } from './LiveActivityFeed';
 import { OperatingLayers } from './OperatingLayers';
@@ -39,27 +38,36 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
   }
 
   return (
-    <div className="flex flex-col gap-8 pt-8 pb-12 animate-in fade-in duration-500 w-full px-4 sm:px-6">
+    <div className="flex flex-col gap-8 pt-6 pb-12 animate-in fade-in duration-500 w-full px-4 sm:px-6">
       
-      {/* TOP ROW: Core, Status, and Hermes Chat */}
-      <div className="flex flex-col lg:flex-row gap-8 items-stretch w-full">
-        {/* Left Column (Core, Status) */}
-        <div className="flex-1 flex flex-col gap-8 w-full">
-          {/* ZONE 2: SYSTEM CORE */}
+      {/* TOP ROW: Core, Mission, and Hermes Chat */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full">
+        {/* Left Column: System Core & Current Mission (7 cols on lg, 8 cols on xl) */}
+        <div className="lg:col-span-7 xl:col-span-7 flex flex-col gap-6 w-full">
+          {/* ZONE 2: UNIFIED SYSTEM CORE (HERMES HEALTH & 6 NODES) */}
           <section>
-            <SystemCore status={overview.system} organization={overview.organization} />
+            <SystemCore 
+              status={overview.system} 
+              organization={{
+                id: context.organization.id || context.organization.slug,
+                name: overview.organization.name || context.organization.name,
+                slug: context.organization.slug
+              }} 
+            />
           </section>
 
-          {/* ZONE 3: CURRENT MISSION & SYSTEM STATUS */}
-          <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* ZONE 3: CURRENT STRATEGIC MISSION */}
+          <section className="flex-1 flex flex-col min-h-[220px]">
             <StrategicActivityCard activity={overview.strategicActivity} />
-            <SystemStatusPanel status={overview.system} organizationSlug={context.organization.slug} />
           </section>
         </div>
 
-        {/* Right Column (Chat) */}
-        <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0 sticky top-6 z-10">
-          <HermesIntelligencePanel organizationSlug={context.organization.slug} organizationName={overview.organization.name} />
+        {/* Right Column: Hermes Intelligence Chat (5 cols on lg, 5 cols on xl) */}
+        <div className="lg:col-span-5 xl:col-span-5 flex flex-col h-full sticky top-4 z-10">
+          <HermesIntelligencePanel 
+            organizationSlug={context.organization.slug} 
+            organizationName={overview.organization.name} 
+          />
         </div>
       </div>
 

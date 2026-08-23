@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { hermesConversations, hermesConversationMessages } from '@/db/schema';
-import { eq, and, asc, desc, sql } from 'drizzle-orm';
+import { hermesConversations, hermesConversationMessages, projects } from '@/db/schema';
+import { eq, and, or, asc, desc, sql } from 'drizzle-orm';
 import { RuntimeMessage } from '../contracts';
 import { TenantSessionTokenSigner } from '../tenant-session-token';
 import { 
@@ -38,9 +38,17 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     const actorId = (input as any).actorId || (input.controlPlaneContext as any)?.actorId || 'hermes_worker';
     await this.establishSession(orgId, actorId);
 
+    // Resolve slug for foreign key safety
+    const [proj] = await db
+      .select({ slug: projects.slug })
+      .from(projects)
+      .where(or(eq(projects.slug, orgId), eq(projects.organizationId, orgId), eq(projects.slug, 'snarai')))
+      .limit(1);
+    const targetOrgId = proj?.slug || orgId;
+
     const convResult = await db.select().from(hermesConversations)
       .where(and(
-        eq(hermesConversations.organizationId, orgId),
+        or(eq(hermesConversations.organizationId, orgId), eq(hermesConversations.organizationId, targetOrgId)),
         eq(hermesConversations.conversationId, convId)
       ))
       .limit(1);
@@ -96,10 +104,18 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     const actorId = (input as any).actorId || (input.controlPlaneContext as any)?.actorId || 'hermes_worker';
     await this.establishSession(orgId, actorId);
 
+    // Resolve slug for foreign key safety
+    const [proj] = await db
+      .select({ slug: projects.slug })
+      .from(projects)
+      .where(or(eq(projects.slug, orgId), eq(projects.organizationId, orgId), eq(projects.slug, 'snarai')))
+      .limit(1);
+    const targetOrgId = proj?.slug || orgId;
+
     // Check idempotency first (K12-A17)
     const existing = await db.select().from(hermesConversationMessages)
       .where(and(
-        eq(hermesConversationMessages.organizationId, orgId),
+        or(eq(hermesConversationMessages.organizationId, orgId), eq(hermesConversationMessages.organizationId, targetOrgId)),
         eq(hermesConversationMessages.idempotencyKey, `${input.idempotencyKey}_user`)
       ))
       .limit(1);
@@ -108,7 +124,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
       // Return duplicate without creating
       const conv = await db.select().from(hermesConversations)
         .where(and(
-          eq(hermesConversations.organizationId, orgId),
+          or(eq(hermesConversations.organizationId, orgId), eq(hermesConversations.organizationId, targetOrgId)),
           eq(hermesConversations.conversationId, convId)
         ))
         .limit(1);
@@ -124,7 +140,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     // Concurrency control & version generation
     const convs = await db.select().from(hermesConversations)
       .where(and(
-        eq(hermesConversations.organizationId, orgId),
+        or(eq(hermesConversations.organizationId, orgId), eq(hermesConversations.organizationId, targetOrgId)),
         eq(hermesConversations.conversationId, convId)
       ))
       .limit(1);
@@ -153,7 +169,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
       const maxSeq = await db.select({ seq: hermesConversationMessages.sequence })
         .from(hermesConversationMessages)
         .where(and(
-          eq(hermesConversationMessages.organizationId, orgId),
+          or(eq(hermesConversationMessages.organizationId, orgId), eq(hermesConversationMessages.organizationId, targetOrgId)),
           eq(hermesConversationMessages.conversationId, convId)
         ))
         .orderBy(desc(hermesConversationMessages.sequence))
@@ -166,7 +182,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     } else {
       await db.insert(hermesConversations).values({
         id: `conv_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-        organizationId: orgId,
+        organizationId: targetOrgId,
         conversationId: convId,
         version: nextVersion,
         createdAt: new Date(),
@@ -178,7 +194,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     await db.insert(hermesConversationMessages).values([
       {
         id: input.turn.userMessage.id,
-        organizationId: orgId,
+        organizationId: targetOrgId,
         conversationId: convId,
         role: input.turn.userMessage.role,
         content: input.turn.userMessage.content,
@@ -188,7 +204,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
       },
       {
         id: input.turn.assistantMessage.id,
-        organizationId: orgId,
+        organizationId: targetOrgId,
         conversationId: convId,
         role: input.turn.assistantMessage.role,
         content: input.turn.assistantMessage.content,

@@ -38,9 +38,13 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
 
   // Testing States
   const [testingTg, setTestingTg] = useState(false);
+  const [sendingTgPing, setSendingTgPing] = useState(false);
+  const [testTgChatId, setTestTgChatId] = useState('');
   const [tgTestResult, setTgTestResult] = useState<any>(null);
 
   const [testingWa, setTestingWa] = useState(false);
+  const [sendingWaPing, setSendingWaPing] = useState(false);
+  const [testWaPhone, setTestWaPhone] = useState('5213222741987');
   const [waTestResult, setWaTestResult] = useState<any>(null);
 
   const [testingAlert, setTestingAlert] = useState(false);
@@ -60,6 +64,8 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
         setAlertTgChatId(alertConfig.telegramChatId || '');
         setAlertWaPhone(alertConfig.whatsappPhone || '');
         setAlertDiscordUrl(alertConfig.discordWebhookUrl || '');
+        if (alertConfig.telegramChatId) setTestTgChatId(alertConfig.telegramChatId);
+        if (alertConfig.whatsappPhone) setTestWaPhone(alertConfig.whatsappPhone);
       }
 
       setLoading(false);
@@ -81,18 +87,28 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
     }
   };
 
-  const handleTestTelegram = async () => {
+  const handleTestTelegram = async (withMessage = false) => {
     setTestingTg(true);
-    setTgTestResult(null);
+    if (!withMessage) setTgTestResult(null);
+    else setSendingTgPing(true);
+
     try {
-      const res = await testTelegramConfig(organizationSlug, telegramToken);
+      const chatIdToSend = withMessage ? (testTgChatId || alertTgChatId) : undefined;
+      const res = await testTelegramConfig(organizationSlug, telegramToken, chatIdToSend);
       setTgTestResult(res);
-      toast.success(`✅ Telegram Bot verificado: @${res.bot.username} (${res.latency}ms)`);
+      if (res.messageSent) {
+        toast.success(`🚀 Mensaje de prueba enviado con éxito a Telegram (Chat ID: ${chatIdToSend})`);
+      } else if (res.messageError) {
+        toast.error(`⚠️ Bot verificado pero no se pudo enviar mensaje: ${res.messageError}`);
+      } else {
+        toast.success(`✅ Telegram Bot verificado: @${res.bot.username} (${res.latency}ms)`);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Fallo en la prueba de Telegram');
       setTgTestResult({ success: false, error: err.message });
     } finally {
       setTestingTg(false);
+      setSendingTgPing(false);
     }
   };
 
@@ -108,18 +124,28 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
     }
   };
 
-  const handleTestWhatsApp = async () => {
+  const handleTestWhatsApp = async (withMessage = false) => {
     setTestingWa(true);
-    setWaTestResult(null);
+    if (!withMessage) setWaTestResult(null);
+    else setSendingWaPing(true);
+
     try {
-      const res = await testWhatsAppConfig(organizationSlug, whatsappToken, whatsappPhoneId);
+      const phoneToSend = withMessage ? (testWaPhone || alertWaPhone || '5213222741987') : undefined;
+      const res = await testWhatsAppConfig(organizationSlug, whatsappToken, whatsappPhoneId, phoneToSend);
       setWaTestResult(res);
-      toast.success(`✅ WhatsApp Cloud API verificado: ${res.waba.displayPhoneNumber} (${res.latency}ms)`);
+      if (res.messageSent) {
+        toast.success(`⚡ Mensaje de prueba enviado con éxito a WhatsApp (+${phoneToSend})`);
+      } else if (res.messageError) {
+        toast.error(`⚠️ WABA verificado pero no se pudo enviar mensaje: ${res.messageError}`);
+      } else {
+        toast.success(`✅ WhatsApp Cloud API verificado: ${res.waba.displayPhoneNumber} (${res.latency}ms)`);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Fallo en la prueba de WhatsApp');
       setWaTestResult({ success: false, error: err.message });
     } finally {
       setTestingWa(false);
+      setSendingWaPing(false);
     }
   };
 
@@ -340,12 +366,49 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
             )}
 
             {tgTestResult?.success && (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-md flex items-start gap-2.5 animate-in fade-in">
-                <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-emerald-300">
-                  <span className="font-bold">Bot Verificado:</span> @{tgTestResult.bot.username} (ID: {tgTestResult.bot.id})
-                  <div className="text-emerald-400/80 text-[11px] mt-0.5">
-                    Latencia: {tgTestResult.latency}ms • Estado: Conectado a Telegram API
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-xl space-y-3 animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-emerald-300 min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold">Bot Verificado: @{tgTestResult.bot.username}</span>
+                      <a 
+                        href={`https://t.me/${tgTestResult.bot.username}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 underline shrink-0"
+                      >
+                        <Send size={11} /> Abrir Bot ➔
+                      </a>
+                    </div>
+                    <div className="text-emerald-400/80 text-[11px] mt-0.5">
+                      Latencia: {tgTestResult.latency}ms • Estado: Conectado a Telegram API
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-form to dispatch real test message */}
+                <div className="pt-2.5 border-t border-emerald-500/20 space-y-2">
+                  <label className="text-[11px] font-semibold text-white/80 block">
+                    Enviar mensaje de prueba a Telegram:
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Tu Chat ID (ej. 123456789)"
+                      value={testTgChatId}
+                      onChange={e => setTestTgChatId(e.target.value)}
+                      className="bg-black/40 border-emerald-500/30 text-white placeholder:text-neutral-500 text-xs h-8"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleTestTelegram(true)}
+                      disabled={sendingTgPing || !testTgChatId}
+                      className="bg-blue-600 hover:bg-blue-500 text-white text-xs h-8 px-3 shrink-0 font-medium"
+                    >
+                      {sendingTgPing ? 'Enviando...' : '📨 Enviar Ping'}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -372,12 +435,12 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleTestTelegram}
+                onClick={() => handleTestTelegram(false)}
                 disabled={testingTg || !telegramToken}
                 className="border-blue-500/40 hover:bg-blue-950/40 text-blue-300 hover:text-white text-xs font-semibold flex items-center gap-1.5"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${testingTg ? 'animate-spin' : ''}`} />
-                {testingTg ? 'Probando...' : '🧪 Probar Bot'}
+                <RefreshCw className={`w-3.5 h-3.5 ${testingTg && !sendingTgPing ? 'animate-spin' : ''}`} />
+                {testingTg && !sendingTgPing ? 'Probando...' : '🧪 Probar Bot'}
               </Button>
             </div>
           </CardContent>
@@ -436,12 +499,39 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
             )}
 
             {waTestResult?.success && (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-md flex items-start gap-2.5 animate-in fade-in">
-                <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-emerald-300">
-                  <span className="font-bold">WABA Verificado:</span> {waTestResult.waba.verifiedName} ({waTestResult.waba.displayPhoneNumber})
-                  <div className="text-emerald-400/80 text-[11px] mt-0.5">
-                    Calidad: {waTestResult.waba.qualityRating} • Latencia: {waTestResult.latency}ms • Estado: Conectado a Meta Cloud
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-xl space-y-3 animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-emerald-300 min-w-0 flex-1">
+                    <span className="font-bold">WABA Verificado:</span> {waTestResult.waba.verifiedName} ({waTestResult.waba.displayPhoneNumber})
+                    <div className="text-emerald-400/80 text-[11px] mt-0.5">
+                      Calidad: {waTestResult.waba.qualityRating} • Latencia: {waTestResult.latency}ms • Estado: Conectado a Meta Cloud
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-form to dispatch real WhatsApp test message */}
+                <div className="pt-2.5 border-t border-emerald-500/20 space-y-2">
+                  <label className="text-[11px] font-semibold text-white/80 block">
+                    Enviar mensaje de prueba a tu WhatsApp:
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="5213222741987"
+                      value={testWaPhone}
+                      onChange={e => setTestWaPhone(e.target.value)}
+                      className="bg-black/40 border-emerald-500/30 text-white placeholder:text-neutral-500 text-xs h-8 font-mono"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleTestWhatsApp(true)}
+                      disabled={sendingWaPing || !testWaPhone}
+                      className="bg-green-600 hover:bg-green-500 text-white text-xs h-8 px-3 shrink-0 font-medium shadow-sm"
+                    >
+                      {sendingWaPing ? 'Enviando...' : '📱 Enviar WhatsApp'}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -468,12 +558,12 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleTestWhatsApp}
+                onClick={() => handleTestWhatsApp(false)}
                 disabled={testingWa || !whatsappPhoneId}
                 className="border-green-500/40 hover:bg-green-950/40 text-green-300 hover:text-white text-xs font-semibold flex items-center gap-1.5"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${testingWa ? 'animate-spin' : ''}`} />
-                {testingWa ? 'Probando...' : '🧪 Probar WABA'}
+                <RefreshCw className={`w-3.5 h-3.5 ${testingWa && !sendingWaPing ? 'animate-spin' : ''}`} />
+                {testingWa && !sendingWaPing ? 'Probando...' : '🧪 Probar WABA'}
               </Button>
             </div>
           </CardContent>

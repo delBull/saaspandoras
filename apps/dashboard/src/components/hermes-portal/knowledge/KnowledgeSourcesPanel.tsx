@@ -93,28 +93,28 @@ function KnowledgeSourceRow({ source, onClick }: { source: KnowledgeSourceView, 
     <motion.button
       whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}
       onClick={onClick}
-      className="flex items-center justify-between p-4 text-left group transition-all"
+      className="flex items-center justify-between p-4 text-left group transition-all w-full min-w-0 overflow-hidden gap-4"
     >
-      <div className="flex items-center gap-4">
-        <div className="text-white/50 group-hover:text-white/80 transition-colors">
+      <div className="flex items-center gap-4 min-w-0 flex-1 overflow-hidden">
+        <div className="text-white/50 group-hover:text-white/80 transition-colors shrink-0">
           {getIcon()}
         </div>
-        <div>
-          <div className="text-white/90 font-medium mb-1 line-clamp-1">{source.title}</div>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <div className="text-white/90 font-medium mb-1 truncate text-sm">{source.title}</div>
           <div className="text-white/50 text-xs">
             {source.type.replace('_', ' ')} · v{source.version}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 shrink-0">
         <div className="text-right hidden sm:block">
           {getStatusDisplay()}
           <div className="text-white/30 text-xs mt-1">
             Updated {source.lastUpdated ? new Date(source.lastUpdated).toLocaleDateString() : 'Just now'}
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors" />
+        <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors shrink-0" />
       </div>
     </motion.button>
   );
