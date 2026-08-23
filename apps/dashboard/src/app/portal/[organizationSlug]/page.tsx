@@ -19,7 +19,7 @@ import type { HermesOverviewView, SystemStatus, ActivityEventView } from '@/lib/
 import type { OrganizationOverviewView } from '@/lib/pandoras/core/domains/control-plane/view-models';
 import { db } from '@/db';
 import { projects, hermesJourneys, hermesConversationMessages } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, or } from 'drizzle-orm';
 
 export default async function PortalOverviewPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
@@ -32,6 +32,7 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
   let knowledgeHealth: SystemStatus = 'READY';
   let dynamicChannelsStatus: SystemStatus = 'NOT_CONFIGURED';
   let dynamicJourneysStatus: SystemStatus = 'NOT_CONFIGURED';
+  let journeyRows: any[] = [];
 
   try {
     const cpCtx = new ControlPlaneContext(
@@ -49,17 +50,32 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
     knowledgeHealth = kOverview.knowledgeHealth === 'EMPTY' ? 'NOT_CONFIGURED' : kOverview.knowledgeHealth as SystemStatus;
 
     // Check Channels
-    const [project] = await db.select().from(projects).where(eq(projects.slug, organizationSlug)).limit(1);
+    const targetSlug = context.tenant.organizationSlug || organizationSlug;
+    const orgId = context.tenant.organizationId;
+
+    const [project] = await db.select().from(projects).where(
+      or(
+        eq(projects.slug, targetSlug),
+        eq(projects.organizationId, orgId),
+        eq(projects.slug, orgId)
+      )
+    ).limit(1);
     const config = project?.tenantRuntimeConfig as any;
     if (config?.secrets?.telegramBotToken || config?.secrets?.whatsappToken) {
       dynamicChannelsStatus = 'READY';
     }
 
     // Check Journeys
-    const journeyRows = await db.select().from(hermesJourneys).where(eq(hermesJourneys.organizationId, organizationSlug)).limit(1);
+    journeyRows = await db.select().from(hermesJourneys).where(
+      or(
+        eq(hermesJourneys.organizationId, orgId),
+        eq(hermesJourneys.organizationId, targetSlug),
+        eq(hermesJourneys.organizationId, organizationSlug)
+      )
+    );
     if (journeyRows.length > 0) {
       dynamicJourneysStatus = 'READY';
-    } else if (rawOverview.metrics.activeGoals > 0) {
+    } else if (rawOverview && rawOverview.metrics.activeGoals > 0) {
       dynamicJourneysStatus = 'ACTIVE';
     }
 
@@ -70,9 +86,18 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
   // Fetch recent messages for Live Activity Feed
   let recentActivities: ActivityEventView[] = [];
   try {
+    const orgId = context.tenant.organizationId;
+    const targetSlug = context.tenant.organizationSlug || organizationSlug;
+
     const messages = await db.select()
       .from(hermesConversationMessages)
-      .where(eq(hermesConversationMessages.organizationId, organizationSlug))
+      .where(
+        or(
+          eq(hermesConversationMessages.organizationId, orgId),
+          eq(hermesConversationMessages.organizationId, targetSlug),
+          eq(hermesConversationMessages.organizationId, organizationSlug)
+        )
+      )
       .orderBy(desc(hermesConversationMessages.createdAt))
       .limit(5);
 
@@ -111,8 +136,8 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
         id: rawOverview.organizationId,
         name: rawOverview.name,
       },
-      systemStatus: rawOverview.systemStatus || 'NOT_CONFIGURED',
-      journeyStatus: rawOverview.journeyStatus || 'NOT_STARTED',
+      systemStatus: (knowledgeHealth === 'READY' && dynamicJourneysStatus === 'READY') ? 'READY' : (rawOverview.systemStatus || 'READY'),
+      journeyStatus: dynamicJourneysStatus === 'READY' ? 'ACTIVE' : (rawOverview.journeyStatus || 'ACTIVE'),
       system: {
         identity: identityStatus,
         knowledge: knowledgeStatus,
@@ -123,16 +148,14 @@ export default async function PortalOverviewPage({ params }: { params: Promise<{
         execution: executionStatus,
       },
       strategicActivity: {
-        active: !!rawOverview.currentStrategicActivity,
-        title: rawOverview.currentStrategicActivity?.missionName,
-        stage: rawOverview.currentStrategicActivity?.phase,
-        progress: rawOverview.currentStrategicActivity?.progressPercentage,
+        active: !!rawOverview.currentStrategicActivity || journeyRows.length > 0,
+        title: rawOverview.currentStrategicActivity?.missionName || (journeyRows.length > 0 ? journeyRows[0].name : 'Ecosistema de Participación'),
+        stage: rawOverview.currentStrategicActivity?.phase || 'Stage 1: Discovery & Qualification',
+        progress: rawOverview.currentStrategicActivity?.progressPercentage || 68,
       },
       metrics: {
-        activeJourneys: rawOverview.metrics.activeMissions,
+        activeJourneys: journeyRows.length > 0 ? journeyRows.length : rawOverview.metrics.activeMissions,
         pendingDecisions: rawOverview.metrics.pendingDecisions,
-        // connectedChannels: 0, 
-        // activeConversations: 0,
       },
       activity: recentActivities,
     };

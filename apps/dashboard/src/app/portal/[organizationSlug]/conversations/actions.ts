@@ -2,20 +2,26 @@
 
 import { db } from '@/db';
 import { hermesConversations, hermesConversationMessages } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, or } from 'drizzle-orm';
 import type { MessageView } from '@/components/hermes-portal/conversations/ConversationsDashboard';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export async function getConversationMessages(organizationSlug: string, conversationId: string): Promise<MessageView[]> {
   try {
     const ctx = await resolvePortalContext(organizationSlug);
+    const orgId = ctx.tenant.organizationId;
+    const orgSlug = ctx.tenant.organizationSlug || organizationSlug;
 
     const messages = await db
       .select()
       .from(hermesConversationMessages)
       .where(
         and(
-          eq(hermesConversationMessages.organizationId, organizationSlug),
+          or(
+            eq(hermesConversationMessages.organizationId, orgSlug),
+            eq(hermesConversationMessages.organizationId, orgId),
+            eq(hermesConversationMessages.organizationId, organizationSlug)
+          ),
           eq(hermesConversationMessages.conversationId, conversationId)
         )
       )
