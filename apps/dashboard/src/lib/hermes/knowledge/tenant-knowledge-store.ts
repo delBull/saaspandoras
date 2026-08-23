@@ -42,9 +42,12 @@ export class TenantKnowledgeStore {
     }
 
     try {
+      const cleanOrgId = context.organizationId.replace(/^org_/, '').trim();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(context.organizationId);
       const projectRecord = await db.query.projects.findFirst({
         where: (projects, { or, eq }) => or(
-          eq(projects.organizationId, context.organizationId),
+          ...(isUuid ? [eq(projects.organizationId, context.organizationId)] : []),
+          eq(projects.slug, cleanOrgId),
           eq(projects.slug, context.organizationId)
         )
       });

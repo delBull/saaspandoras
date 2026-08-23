@@ -42,19 +42,21 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     await this.establishSession(orgId, actorId);
 
     // Resolve slug for foreign key safety
+    const cleanOrgId = orgId.replace(/^org_/, '').trim();
     const orgIsUuid = isUuid(orgId);
     const [proj] = await db
       .select({ slug: projects.slug })
       .from(projects)
       .where(
         or(
+          eq(projects.slug, cleanOrgId),
           eq(projects.slug, orgId),
           ...(orgIsUuid ? [eq(projects.organizationId, orgId)] : []),
-          eq(projects.slug, 'snarai')
+          ...(isUuid(cleanOrgId) ? [eq(projects.organizationId, cleanOrgId)] : [])
         )
       )
       .limit(1);
-    const targetOrgId = proj?.slug || orgId;
+    const targetOrgId = proj?.slug || cleanOrgId;
 
     const convResult = await db.select().from(hermesConversations)
       .where(and(
@@ -115,19 +117,21 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     await this.establishSession(orgId, actorId);
 
     // Resolve slug for foreign key safety
+    const cleanOrgId = orgId.replace(/^org_/, '').trim();
     const orgIsUuid = isUuid(orgId);
     const [proj] = await db
       .select({ slug: projects.slug })
       .from(projects)
       .where(
         or(
+          eq(projects.slug, cleanOrgId),
           eq(projects.slug, orgId),
           ...(orgIsUuid ? [eq(projects.organizationId, orgId)] : []),
-          eq(projects.slug, 'snarai')
+          ...(isUuid(cleanOrgId) ? [eq(projects.organizationId, cleanOrgId)] : [])
         )
       )
       .limit(1);
-    const targetOrgId = proj?.slug || orgId;
+    const targetOrgId = proj?.slug || cleanOrgId;
 
     // Check idempotency first (K12-A17)
     const existing = await db.select().from(hermesConversationMessages)

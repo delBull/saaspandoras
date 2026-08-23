@@ -11,12 +11,13 @@ const isUuid = (val?: string): boolean =>
   Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
 
 function buildProjectMatchCondition(targetSlug: string, orgId?: string) {
+  const canonicalTarget = targetSlug?.replace(/^org_/, '').trim();
+  const canonicalOrgId = orgId?.replace(/^org_/, '').trim();
   return or(
-    eq(projects.slug, targetSlug),
-    ...(isUuid(orgId) ? [eq(projects.organizationId, orgId!)] : []),
+    ...(canonicalTarget ? [eq(projects.slug, canonicalTarget)] : []),
+    ...(canonicalOrgId && isUuid(canonicalOrgId) ? [eq(projects.organizationId, canonicalOrgId)] : []),
     ...(isUuid(targetSlug) ? [eq(projects.organizationId, targetSlug)] : []),
-    ...(orgId && !isUuid(orgId) ? [eq(projects.slug, orgId)] : []),
-    eq(projects.slug, 'snarai')
+    ...(canonicalOrgId && !isUuid(canonicalOrgId) ? [eq(projects.slug, canonicalOrgId)] : [])
   );
 }
 

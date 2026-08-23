@@ -59,7 +59,8 @@ export class CognitiveContextBuilder {
   static async buildEffectiveContext(tenantId: string, contactId: string): Promise<ConversationContext> {
     const coreContext = await this.buildCoreSecurityContext(tenantId);
     
-    // Resolve project identifiers for multi-tenant resilience
+    // Resolve project identifiers for multi-tenant resilience with org_ normalization
+    const cleanSlug = tenantId.replace(/^org_/, '').trim();
     const tenantIsUuid = isUuid(tenantId);
     const [project] = await db
       .select({
@@ -71,14 +72,15 @@ export class CognitiveContextBuilder {
       .from(projects)
       .where(
         or(
+          eq(projects.slug, cleanSlug),
           eq(projects.slug, tenantId),
           ...(tenantIsUuid ? [eq(projects.organizationId, tenantId)] : []),
-          eq(projects.slug, 'snarai')
+          ...(isUuid(cleanSlug) ? [eq(projects.organizationId, cleanSlug)] : [])
         )
       )
       .limit(1);
 
-    const resolvedSlug = project?.slug || tenantId;
+    const resolvedSlug = project?.slug || cleanSlug;
     const resolvedOrgId = project?.orgId || tenantId;
 
     // 1. Fetch Tenant Knowledge (ACTIVE) from hermesKnowledge
@@ -88,9 +90,9 @@ export class CognitiveContextBuilder {
       .where(
         or(
           eq(hermesKnowledge.organizationId, tenantId),
+          eq(hermesKnowledge.organizationId, cleanSlug),
           eq(hermesKnowledge.organizationId, resolvedSlug),
-          eq(hermesKnowledge.organizationId, resolvedOrgId),
-          eq(hermesKnowledge.organizationId, 'snarai')
+          ...(isUuid(resolvedOrgId) ? [eq(hermesKnowledge.organizationId, resolvedOrgId)] : [])
         )
       );
 
@@ -101,51 +103,29 @@ export class CognitiveContextBuilder {
       .where(
         or(
           eq(hermesKnowledgeRegistry.tenantId, tenantId),
+          eq(hermesKnowledgeRegistry.tenantId, cleanSlug),
           eq(hermesKnowledgeRegistry.tenantId, resolvedSlug),
-          eq(hermesKnowledgeRegistry.tenantId, resolvedOrgId),
-          eq(hermesKnowledgeRegistry.tenantId, 'snarai')
+          ...(isUuid(resolvedOrgId) ? [eq(hermesKnowledgeRegistry.tenantId, resolvedOrgId)] : [])
         )
       );
 
-    const mappedIpfsKnowledge = ipfsRecords.map(r => ({
-      id: `ipfs_${r.id}`,
-      organizationId: r.tenantId,
-      dimension: 'IPFS_SOVEREIGN_VAULT',
-      key: `${r.domain || 'DOCUMENT'}: ${r.artifactId}`,
-      content: `[Sovereign IPFS Document]\nArtifact: ${r.artifactId}\nDomain: ${r.domain}\nCID: ${r.ipfsCid}\nGovernance Status: ${r.governanceStatus}\nClassification: ${r.classification}`,
-      status: 'ACTIVE',
-      visibility: 'PUBLIC',
-      classification: r.classification || 'PUBLIC',
-      version: r.version,
-    }));
+    const mappedIpfsKnowledge = ipfsRecords
+      .filter(r => r.classification === 'PUBLIC' || r.classification === 'TENANT_RESTRICTED')
+      .map(r => ({
+        id: `ipfs_${r.id}`,
+        organizationId: r.tenantId,
+        dimension: 'IPFS_SOVEREIGN_VAULT',
+        key: `${r.domain || 'DOCUMENT'}: ${r.artifactId}`,
+        content: `[Sovereign IPFS Document] Artifact: ${r.artifactId} | Domain: ${r.domain} | CID: ${r.ipfsCid}`,
+        status: 'ACTIVE',
+        visibility: 'PUBLIC',
+        classification: r.classification || 'PUBLIC',
+        version: r.version,
+      }));
 
     const allCombinedRecords = [...rawRecords, ...mappedIpfsKnowledge];
 
-    const execContext: RuntimeExecutionContext = {
-      organizationId: tenantId,
-      organizationType: tenantId === 'pandoras_internal' ? 'INTERNAL' : 'TENANT',
-      application: 'HERMES_PORTAL',
-      purpose: 'TENANT_CUSTOMER_SUPPORT',
-      actorId: contactId,
-      roleClearance: 'TIER_4_OPERATOR',
-      allowedClassifications: ['PUBLIC', 'TENANT_SCOPED', 'INTERNAL', 'CONFIDENTIAL']
-    };
-
-    const knowledgeRecords = allCombinedRecords.filter(k => {
-      const doc: ClassifiedKnowledgeDocument = {
-        docId: k.id,
-        title: k.key,
-        version: String(k.version || 1),
-        contentHash: k.id,
-        classification: 'PUBLIC',
-        minClearance: 'TIER_4_OPERATOR',
-        targetRoleScope: 'ALL',
-        ownerOrganizationId: k.organizationId,
-        summary: (k.content || '').substring(0, 100),
-        fullContent: k.content || ''
-      };
-      return true; // Authorized under portal context
-    });
+    const knowledgeRecords = allCombinedRecords;
       
     // 1.1 Calculate Intelligence Scores
     const intelligenceScores = this.calculateIntelligenceScores(knowledgeRecords as unknown as any[]);
@@ -161,19 +141,36 @@ export class CognitiveContextBuilder {
       .where(
         or(
           eq(hermesAddonInstallations.organizationId, tenantId),
+          eq(hermesAddonInstallations.organizationId, cleanSlug),
           eq(hermesAddonInstallations.organizationId, resolvedSlug),
-          eq(hermesAddonInstallations.organizationId, resolvedOrgId),
-          eq(hermesAddonInstallations.organizationId, 'snarai')
+          ...(isUuid(resolvedOrgId) ? [eq(hermesAddonInstallations.organizationId, resolvedOrgId)] : [])
         )
       );
 
     const activeRecords = records.filter(r => r.status === 'ACTIVE');
     const excludedRecords = records.filter(r => r.status !== 'ACTIVE');
 
-    // Filter to ensure manifestSnapshot exists
-    const activeAddOns = activeRecords
-      .filter(r => !!r.manifestSnapshot)
-      .map(r => r.manifestSnapshot as unknown as HermesAddOnManifest);
+    // Filter and map active add-ons, ensuring capabilities are populated even if snapshot was minimal
+    const activeAddOns = activeRecords.map(r => {
+      const snap = (r.manifestSnapshot || {}) as unknown as HermesAddOnManifest;
+      if (!snap.capabilities || snap.capabilities.length === 0) {
+        const capId = r.addonId.replace(/^hermes\.(capability|channel|composite)\./, '');
+        return {
+          ...snap,
+          id: r.addonId,
+          name: snap.name || r.addonId,
+          version: snap.version || '1.0.0',
+          capabilities: [
+            {
+              id: capId,
+              name: r.addonId,
+              description: `Capability for ${r.addonId}`
+            }
+          ]
+        } as unknown as HermesAddOnManifest;
+      }
+      return snap;
+    });
 
     // 3. Resolve Overlays
     const styleOverlay = this.resolveStyleConflicts(tenantKnowledge.soul, activeAddOns);
@@ -194,16 +191,23 @@ export class CognitiveContextBuilder {
   }
 
   static async getIntelligenceScores(tenantId: string): Promise<DimensionIntelligenceScore[]> {
-    const knowledgeRecords = await db
-      .select()
-      .from(hermesKnowledge)
-      .where(
-        or(
-          eq(hermesKnowledge.organizationId, tenantId),
-          eq(hermesKnowledge.organizationId, 'snarai')
-        )
-      );
-      
+    // Canonical tenant resolution (fail-closed): accepts slug, 'org_'-prefixed slug or numeric projectId
+    const canonical = tenantId?.replace(/^org_/, '').trim();
+    let orgKey = canonical;
+    if (canonical && /^\d+$/.test(canonical)) {
+      const [proj] = await db
+        .select({ slug: projects.slug })
+        .from(projects)
+        .where(eq(projects.id, Number(canonical)))
+        .limit(1);
+      if (!proj) return this.calculateIntelligenceScores([]);
+      orgKey = proj.slug.replace(/^org_/, '').trim();
+    }
+
+    const knowledgeRecords = orgKey
+      ? await db.select().from(hermesKnowledge).where(eq(hermesKnowledge.organizationId, orgKey))
+      : [];
+
     return this.calculateIntelligenceScores(knowledgeRecords as unknown as any[]);
   }
 
@@ -242,15 +246,17 @@ export class CognitiveContextBuilder {
       };
     }
 
+    const cleanSlug = tenantId.replace(/^org_/, '').trim();
     const tenantIsUuid = isUuid(tenantId);
     const [project] = await db
       .select()
       .from(projects)
       .where(
         or(
+          eq(projects.slug, cleanSlug),
           eq(projects.slug, tenantId),
           ...(tenantIsUuid ? [eq(projects.organizationId, tenantId)] : []),
-          eq(projects.slug, 'snarai')
+          ...(isUuid(cleanSlug) ? [eq(projects.organizationId, cleanSlug)] : [])
         )
       )
       .limit(1);

@@ -7,6 +7,21 @@ import { hermesJourneys, hermesJourneyStages, projects } from '@/db/schema';
 import { and, eq, or } from 'drizzle-orm';
 import crypto from 'crypto';
 
+const isUuid = (val?: string): boolean =>
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+function journeyOrgMatch(...values: (string | undefined)[]) {
+  const candidates = Array.from(
+    new Set(
+      values
+        .filter((v): v is string => Boolean(v && v.trim()))
+        .map(v => v.replace(/^org_/, '').trim())
+        .filter(v => v.length > 0)
+    )
+  );
+  return or(...candidates.map(v => eq(hermesJourneys.organizationId, v)));
+}
+
 export async function toggleJourneyState(organizationSlug: string, journeyId: string, activate: boolean) {
   const { tenant } = await resolvePortalContext(organizationSlug);
   const targetSlug = tenant.organizationSlug || organizationSlug;
@@ -21,12 +36,7 @@ export async function toggleJourneyState(organizationSlug: string, journeyId: st
     .where(
       and(
         eq(hermesJourneys.id, journeyId),
-        or(
-          eq(hermesJourneys.organizationId, orgId),
-          eq(hermesJourneys.organizationId, targetSlug),
-          eq(hermesJourneys.organizationId, organizationSlug),
-          eq(hermesJourneys.organizationId, 'snarai')
-        )
+        journeyOrgMatch(orgId, targetSlug, organizationSlug)
       )
     );
   
@@ -42,20 +52,19 @@ export async function createJourney(
   const targetSlug = tenant.organizationSlug || organizationSlug;
   const orgId = tenant.organizationId;
 
-  const isUuid = (val?: string): boolean => 
-    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
-
-  // Resolve valid foreign key reference for organizationId in projects table
+  // Resolve valid foreign key reference for organizationId in projects table (fail-closed)
+  const canonicalTarget = targetSlug?.replace(/^org_/, '').trim();
+  const canonicalOrgId = orgId?.replace(/^org_/, '').trim();
   const [proj] = await db.select({ slug: projects.slug, orgId: projects.organizationId }).from(projects).where(
     or(
-      eq(projects.slug, targetSlug),
-      ...(isUuid(orgId) ? [eq(projects.organizationId, orgId)] : []),
-      eq(projects.slug, organizationSlug),
-      eq(projects.slug, 'snarai')
+      ...(canonicalTarget ? [eq(projects.slug, canonicalTarget)] : []),
+      ...(isUuid(canonicalOrgId) ? [eq(projects.organizationId, canonicalOrgId)] : []),
+      ...(organizationSlug ? [eq(projects.slug, organizationSlug.replace(/^org_/, '').trim())] : [])
     )
   ).limit(1);
 
-  const finalOrgIdentifier = proj?.slug || targetSlug || orgId;
+  if (!proj) throw new Error('ORGANIZATION_NOT_FOUND');
+  const finalOrgIdentifier = proj.slug;
   const journeyId = crypto.randomUUID();
 
   // 1. Insert Journey
@@ -117,12 +126,7 @@ export async function updateJourney(
     .where(
       and(
         eq(hermesJourneys.id, journeyId),
-        or(
-          eq(hermesJourneys.organizationId, orgId),
-          eq(hermesJourneys.organizationId, targetSlug),
-          eq(hermesJourneys.organizationId, organizationSlug),
-          eq(hermesJourneys.organizationId, 'snarai')
-        )
+        journeyOrgMatch(orgId, targetSlug, organizationSlug)
       )
     );
 
@@ -160,12 +164,7 @@ export async function deleteJourney(organizationSlug: string, journeyId: string)
     .where(
       and(
         eq(hermesJourneys.id, journeyId),
-        or(
-          eq(hermesJourneys.organizationId, orgId),
-          eq(hermesJourneys.organizationId, targetSlug),
-          eq(hermesJourneys.organizationId, organizationSlug),
-          eq(hermesJourneys.organizationId, 'snarai')
-        )
+        journeyOrgMatch(orgId, targetSlug, organizationSlug)
       )
     );
 

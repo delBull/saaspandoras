@@ -37,10 +37,13 @@ export class GetKnowledgeOverviewQuery {
       // Resolve human-readable project slug from UUID if necessary
       let projectSlug = orgSlug;
       try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalOrgId);
+        const cleanOrgId = canonicalOrgId.replace(/^org_/, '').trim();
         const proj = await db.query.projects.findFirst({
           where: or(
-            eq(projects.organizationId, canonicalOrgId),
+            ...(isUuid ? [eq(projects.organizationId, canonicalOrgId)] : []),
             eq(projects.slug, canonicalOrgId),
+            eq(projects.slug, cleanOrgId),
             eq(projects.slug, orgSlug)
           ),
           columns: { slug: true, organizationId: true },

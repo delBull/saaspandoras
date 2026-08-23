@@ -36,8 +36,24 @@ import { HermesPromptBuilder } from './prompt-builder';
  * K11-A25: Same input + same context → deterministic output.
  */
 export class MockReasoningProvider implements ReasoningProvider {
+  constructor(private readonly fixedResponse?: string) {}
+
   async generate(input: ReasoningInput): Promise<ReasoningOutput> {
     const start = Date.now();
+
+    if (this.fixedResponse) {
+      return {
+        content: this.fixedResponse,
+        meta: {
+          provider: 'mock',
+          model: 'mock-deterministic',
+          promptTokens: Math.ceil(this.fixedResponse.length / 4),
+          completionTokens: Math.ceil(this.fixedResponse.length / 4),
+          durationMs: Date.now() - start,
+        },
+      };
+    }
+
     const ctx = input.reasoningContext;
 
     // Build a deterministic inspection report

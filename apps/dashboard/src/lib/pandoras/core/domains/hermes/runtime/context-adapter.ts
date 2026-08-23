@@ -63,6 +63,7 @@ export class CognitiveContextAdapter {
   ): { reasoningContext: ReasoningContext; trace: Omit<RuntimeTrace, 'runtimeId' | 'conversationId' | 'createdAt'> } {
     const excludedKnowledgeReasons: RuntimeTrace['excludedKnowledgeReasons'] = [];
     const excludedAddonReasons: RuntimeTrace['excludedAddonReasons'] = [];
+    const governanceRestrictions: string[] = [];
 
     // -------------------------------------------------------------------------
     // 1. ACTIVE Knowledge — filter strictly (K11-A06, A07, A08)
@@ -83,7 +84,21 @@ export class CognitiveContextAdapter {
           excludedKnowledgeReasons.push({ id: pack.id, reason: 'RESTRICTED_VISIBILITY' });
           continue;
         }
+
+        const isPolicy = (pack.dimension || '').toLowerCase() === 'policy';
+        if (isPolicy) {
+          governanceRestrictions.push(pack.content);
+          continue;
+        }
+
         const classificationTier = (pack.classification || (['PUBLIC', 'TENANT_RESTRICTED', 'B2B_RESTRICTED', 'INTERNAL_OPERATIONAL', 'CONFIDENTIAL', 'SECRET'].includes(pack.visibility) ? pack.visibility : 'PUBLIC')) as any;
+        
+        // Exclude higher classification tiers from default public reasoning context
+        if (['CONFIDENTIAL', 'SECRET'].includes(classificationTier)) {
+          excludedKnowledgeReasons.push({ id: pack.id, reason: 'RESTRICTED_CLASSIFICATION' });
+          continue;
+        }
+
         activeKnowledge.push({
           id: pack.id,
           dimension: pack.type ?? pack.dimension ?? 'unknown',
@@ -125,7 +140,7 @@ export class CognitiveContextAdapter {
     // 3. Governance restrictions (K11-A13: Governance cannot be overridden)
     // These come from the effective context style/soul restrictions
     // -------------------------------------------------------------------------
-    const governanceRestrictions: string[] = [];
+    // Populated from policy packs and governance documents
     // Currently governance restrictions live in the old PolicyPack.
     // Extend here as governance data becomes richer.
 
