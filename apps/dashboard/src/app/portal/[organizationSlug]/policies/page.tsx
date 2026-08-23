@@ -3,7 +3,8 @@ import { db } from '@/db';
 import { hermesKnowledge } from '@/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 import { PoliciesDashboard } from '@/components/hermes-portal/policies/PoliciesDashboard';
-import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { notFound } from 'next/navigation';
+import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { savePolicy } from './actions';
 
 interface PoliciesPageProps {
@@ -13,9 +14,15 @@ interface PoliciesPageProps {
 export default async function PoliciesPage({ params }: PoliciesPageProps) {
   const { organizationSlug } = await params;
 
+  // Auth context first: null → clean 404 instead of silently rendering an empty page
+  const portalCtx = await tryResolvePortalContext(organizationSlug);
+  if (!portalCtx) {
+    notFound();
+  }
+
   let dbPolicies: any[] = [];
   try {
-    const context = await resolvePortalContext(organizationSlug);
+    const context = portalCtx;
     const targetSlug = context.tenant.organizationSlug || organizationSlug;
     const orgId = context.tenant.organizationId;
 

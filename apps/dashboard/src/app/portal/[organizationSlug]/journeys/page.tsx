@@ -1,5 +1,6 @@
 import React from 'react';
-import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { notFound } from 'next/navigation';
+import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { JourneysDashboard, JourneyView } from '@/components/hermes-portal/journeys/JourneysDashboard';
 import { toggleJourneyState } from './actions';
 import { db } from '@/db';
@@ -13,8 +14,12 @@ interface JourneysPageProps {
 export default async function JourneysPage({ params }: JourneysPageProps) {
   const { organizationSlug } = await params;
   
-  // 1. Verify auth context and resolve tenant
-  const { tenant } = await resolvePortalContext(organizationSlug);
+  // 1. Verify auth context and resolve tenant (null → clean 404 instead of 500)
+  const portalCtx = await tryResolvePortalContext(organizationSlug);
+  if (!portalCtx) {
+    notFound();
+  }
+  const { tenant } = portalCtx;
 
   const targetSlug = tenant.organizationSlug || organizationSlug;
   const orgId = tenant.organizationId;
