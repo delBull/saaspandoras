@@ -32,6 +32,8 @@ import { getProgramByRoleOrId } from '../curriculum/program-registry';
 import { AssessmentEngine } from '../assessment/assessment-engine';
 import { KnowledgeSnapshotManager } from '../snapshots/snapshot-manager';
 import { AcademyNotifier } from '../notifications/academy-notifier';
+import { CertificationService } from '../certification/certification-service';
+import { HermesIdentitySigner } from '../../hermes/identity/identity-signer';
 
 class AcademyStoreSingleton {
   private candidates: Map<string, AcademyCandidate> = new Map();
@@ -931,32 +933,53 @@ class AcademyStoreSingleton {
     assessment.criticalFailures = fullAttempt.attemptResult.criticalFailures;
 
     if (fullAttempt.certification) {
+      // 🛡️ Anchor Certificate to IPFS with Hermes Identity Signer
+      let finalCertification = fullAttempt.certification;
+      try {
+        const signer = new HermesIdentitySigner();
+        finalCertification = await CertificationService.issueAndAnchorCertification({
+          programId: assessment.programId || assessment.targetRole,
+          targetRole: assessment.targetRole,
+          candidateId: assessment.candidateId,
+          candidateName: assessment.candidateName,
+          attemptResult: fullAttempt.attemptResult,
+          agentSigner: signer,
+        });
+      } catch (e) {
+        console.warn('⚠️ [AcademyStore] IPFS Certification anchoring warning (proceeding with base cert):', e);
+      }
+
       assessment.certified = true;
-      assessment.certificationId = fullAttempt.certification.id;
+      assessment.certificationId = finalCertification.id;
       assessment.status = 'CERTIFIED';
-      this.certifications.set(fullAttempt.certification.id, fullAttempt.certification);
+      this.certifications.set(finalCertification.id, finalCertification);
 
       if (candidate) {
         candidate.attendanceStatus = 'CERTIFIED';
         candidate.latestScore = assessment.overallReadinessScore;
-        candidate.latestCertificationId = fullAttempt.certification.id;
+        candidate.latestCertificationId = finalCertification.id;
         candidate.updatedAt = now;
       }
 
       try {
         await db.insert(academyCertifications).values({
-          id: fullAttempt.certification.id,
+          id: finalCertification.id,
           candidateId: assessment.candidateId,
           candidateName: assessment.candidateName,
           assessmentId: assessment.id,
           programId: assessment.programId,
-          readinessScore: fullAttempt.certification.readinessScore,
-          competencySummary: fullAttempt.certification.competencySummary as any,
+          readinessScore: finalCertification.readinessScore,
+          competencySummary: finalCertification.competencySummary as any,
           knowledgeSnapshotHash: assessment.knowledgeSnapshotHash,
           curriculumVersion: assessment.curriculumVersion,
-          certificateHash: fullAttempt.certification.certificateHash,
-          issuer: fullAttempt.certification.issuer,
-          validUntil: new Date(fullAttempt.certification.validUntil)
+          certificateHash: finalCertification.certificateHash,
+          issuer: finalCertification.issuer,
+          validUntil: new Date(finalCertification.validUntil),
+          ipfsCid: finalCertification.ipfsCid,
+          ipfsUri: finalCertification.ipfsUri,
+          signedByAddress: finalCertification.signedByAddress,
+          agentSignature: finalCertification.agentSignature,
+          rubricSnapshotCid: finalCertification.rubricSnapshotCid,
         });
 
         await db
@@ -997,7 +1020,7 @@ class AcademyStoreSingleton {
         }).catch(() => {});
       }
 
-      return { assessment, certification: fullAttempt.certification };
+      return { assessment, certification: finalCertification };
     } else {
       assessment.certified = false;
       assessment.status = 'FAILED';
@@ -1078,7 +1101,12 @@ class AcademyStoreSingleton {
           certifiedAt: r.issuedAt.toISOString(),
           validUntil: r.validUntil ? r.validUntil.toISOString() : new Date(r.issuedAt.getTime() + 365 * 86400000).toISOString(),
           certificateHash: r.certificateHash,
-          issuer: r.issuer
+          issuer: r.issuer,
+          ipfsCid: r.ipfsCid || undefined,
+          ipfsUri: r.ipfsUri || undefined,
+          signedByAddress: r.signedByAddress || undefined,
+          agentSignature: r.agentSignature || undefined,
+          rubricSnapshotCid: r.rubricSnapshotCid || undefined,
         };
         this.certifications.set(cert.id, cert);
         return cert;

@@ -151,6 +151,11 @@ export interface AcademyCertification {
   validUntil: string;
   issuer: string; // 'Pandora's Academy Core'
   certificateHash: string; // Cryptographic seal
+  ipfsCid?: string;
+  ipfsUri?: string;
+  signedByAddress?: string;
+  agentSignature?: string;
+  rubricSnapshotCid?: string;
 }
 
 // ─── 5. AUDIT TRAIL LAYER ──────────────────────────────────────────────────────

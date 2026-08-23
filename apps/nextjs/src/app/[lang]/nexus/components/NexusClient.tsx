@@ -81,6 +81,7 @@ const categories: Category[] = [
       { name: "Pandora's Academy (Certificaciones)", path: "https://dash.pandoras.finance/admin/academy" },
       { name: "Hermes AI Platform (AI-OS)", path: "https://dash.pandoras.finance/growth-os/hermes" },
       { name: "Pandora's Media Co (Demand Engine)", path: "https://dash.pandoras.finance/media" },
+      { name: "Pandora's Media Co (Dashboard)", path: "https://media.pandoras.finance" },
       { name: "Asset Capitalization", path: "https://dash.pandoras.finance/asset-capitalization" },
       { name: "Ambassadors", path: "https://dash.pandoras.finance/ambassadors" },
       { name: "Founders", path: "https://dash.pandoras.finance/founders" },

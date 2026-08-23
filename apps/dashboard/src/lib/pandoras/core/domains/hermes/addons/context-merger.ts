@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { HermesAddOnManifest } from './contracts';
 import { db } from '@/db';
 import { hermesAddonInstallations, hermesKnowledge, hermesKnowledgeRegistry, projects, installedProducts } from '@/db/schema';
@@ -6,6 +7,7 @@ import { KnowledgeDimensionDefinitionRegistry } from '../knowledge/registry';
 import { KnowledgeDimension, GovernedKnowledgeItem } from '../knowledge/types';
 import { ExecutiveScopeValidator } from '@/lib/pandoras/core/domains/academy/security/scope-validator';
 import { RuntimeExecutionContext, ClassifiedKnowledgeDocument } from '@/lib/pandoras/core/domains/academy/security/types';
+import { SecurityAuditLogger } from '../runtime/security-audit-logger';
 
 export interface CoreSecurityContext {
   organizationId: string;
@@ -110,18 +112,61 @@ export class CognitiveContextBuilder {
       );
 
     const mappedIpfsKnowledge = ipfsRecords
-      .filter(r => r.classification === 'PUBLIC' || r.classification === 'TENANT_RESTRICTED')
-      .map(r => ({
-        id: `ipfs_${r.id}`,
-        organizationId: r.tenantId,
-        dimension: 'IPFS_SOVEREIGN_VAULT',
-        key: `${r.domain || 'DOCUMENT'}: ${r.artifactId}`,
-        content: `[Sovereign IPFS Document] Artifact: ${r.artifactId} | Domain: ${r.domain} | CID: ${r.ipfsCid}`,
-        status: 'ACTIVE',
-        visibility: 'PUBLIC',
-        classification: r.classification || 'PUBLIC',
-        version: r.version,
-      }));
+      .filter(r => 
+        r.governanceStatus === 'ACTIVE' && 
+        (r.classification === 'PUBLIC' || r.classification === 'TENANT_RESTRICTED')
+      )
+      .map(r => {
+        const matchingRaw = rawRecords.find(raw => raw.key === r.artifactId);
+        
+        let resolvedContent: string;
+        if (matchingRaw?.content) {
+          const computedHash = crypto.createHash('sha256').update(matchingRaw.content, 'utf8').digest('hex');
+          const isCryptographicallyVerified = computedHash === r.contentHash;
+
+          if (!isCryptographicallyVerified) {
+            console.warn(
+              `[ContextMerger] 🚨 KNOWLEDGE_INTEGRITY_MISMATCH: Artifact "${r.artifactId}" for tenant "${r.tenantId}" in DB plaintext does not match anchored IPFS hash. Degrading to fail-closed pointer.`
+            );
+            SecurityAuditLogger.logEvent({
+              organizationId: r.tenantId,
+              eventType: 'RESOURCE_MISMATCH_BLOCKED',
+              severity: 'CRITICAL',
+              policyDecision: 'DENY',
+              correlationId: `integ_${Date.now()}`,
+              artifactId: r.artifactId,
+              contentHash: computedHash,
+              metadata: {
+                reason: 'KNOWLEDGE_INTEGRITY_MISMATCH',
+                expectedHash: r.contentHash,
+                computedHash,
+                ipfsCid: r.ipfsCid,
+                action: 'FAIL_CLOSED_DEGRADATION',
+              },
+            }).catch(err => {
+              console.error('[ContextMerger] Failed to record security audit event:', err);
+            });
+          }
+
+          resolvedContent = isCryptographicallyVerified
+            ? `[IPFS Sovereign Verified: ${r.ipfsCid}]\n${matchingRaw.content}`
+            : `[Sovereign IPFS Document] Artifact: ${r.artifactId} | Domain: ${r.domain} | CID: ${r.ipfsCid} | HASH_MISMATCH`;
+        } else {
+          resolvedContent = `[Sovereign IPFS Document] Artifact: ${r.artifactId} | Domain: ${r.domain} | CID: ${r.ipfsCid}`;
+        }
+
+        return {
+          id: `ipfs_${r.id}`,
+          organizationId: r.tenantId,
+          dimension: 'IPFS_SOVEREIGN_VAULT',
+          key: `${r.domain || 'DOCUMENT'}: ${r.artifactId}`,
+          content: resolvedContent,
+          status: 'ACTIVE',
+          visibility: 'PUBLIC',
+          classification: r.classification || 'PUBLIC',
+          version: r.version,
+        };
+      });
 
     const allCombinedRecords = [...rawRecords, ...mappedIpfsKnowledge];
 

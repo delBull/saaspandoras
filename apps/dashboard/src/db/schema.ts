@@ -3770,9 +3770,15 @@ export const academyCertifications = pgTable("academy_certifications", {
   issuer: varchar("issuer", { length: 256 }).notNull(),
   issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
   validUntil: timestamp("valid_until", { withTimezone: true }),
+  ipfsCid: varchar("ipfs_cid", { length: 255 }),
+  ipfsUri: varchar("ipfs_uri", { length: 512 }),
+  signedByAddress: varchar("signed_by_address", { length: 42 }),
+  agentSignature: text("agent_signature"),
+  rubricSnapshotCid: varchar("rubric_snapshot_cid", { length: 255 }),
 }, (t) => ({
   candidateIdx: index("academy_certifications_candidate_idx").on(t.candidateId),
   assessmentIdx: index("academy_certifications_assessment_idx").on(t.assessmentId),
+  ipfsCidIdx: index("academy_certifications_ipfs_cid_idx").on(t.ipfsCid),
 }));
 
 export const hermesIdentities = pgTable("hermes_identities", {
@@ -3814,6 +3820,20 @@ export const hermesKnowledgeRegistry = pgTable("hermes_knowledge_registry", {
   cidIdx: index("hermes_kr_cid_idx").on(t.ipfsCid),
 }));
 
-
-
-
+export const hermesClaimContracts = pgTable("hermes_claim_contracts", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 255 }).notNull(),
+  version: integer("version").notNull().default(1),
+  contractHash: varchar("contract_hash", { length: 64 }).notNull(),
+  ipfsCid: varchar("ipfs_cid", { length: 255 }).notNull(),
+  ipfsUri: varchar("ipfs_uri", { length: 512 }).notNull(),
+  claims: jsonb("claims").notNull().default([]),
+  signedByAddress: varchar("signed_by_address", { length: 42 }).notNull(),
+  agentSignature: text("agent_signature").notNull(),
+  governanceStatus: varchar("governance_status", { length: 50 }).notNull().default('ACTIVE'),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantVersionIdx: uniqueIndex("hermes_cc_tenant_version_idx").on(t.tenantId, t.version),
+  cidIdx: index("hermes_cc_cid_idx").on(t.ipfsCid),
+}));

@@ -25,6 +25,9 @@ import {
   PolicyValidationOptions
 } from './contracts';
 import { SecurityAuditLogger } from './security-audit-logger';
+import { SnaraiResponsePolicyGate } from './policy/snarai-response-policy-gate';
+import { TenantResponsePolicyGate } from './policy/tenant-response-policy';
+import { ClaimContractEngine } from '../knowledge/claim-contract-engine';
 
 export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
   async validate(
@@ -235,14 +238,48 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
       }
     }
 
+    // 14. Milestone K25.5: Multi-Tenant Intelligence & Canonical Response Policy Gate
+    let finalOutput = output.content;
+    const targetTenantId = options?.organizationId || context.tenantIdentity?.organizationName || 'generic';
+    const policyResult = TenantResponsePolicyGate.evaluate(
+      output.content,
+      targetTenantId,
+      undefined,
+      context.activeKnowledge
+    );
+
+    if (policyResult.action === 'BLOCK') {
+      for (const v of policyResult.violations) {
+        violations.push({
+          code: v.code as any,
+          severity: 'BLOCK',
+          message: v.message,
+        });
+      }
+    } else if (policyResult.action === 'REWRITE') {
+      finalOutput = policyResult.sanitizedOutput;
+    }
+
+    // 15. Milestone K26: Epistemic Framing & Governed Claim Validation
+    const epistemicCheck = ClaimContractEngine.validateEpistemicFraming(output.content, targetTenantId);
+    if (!epistemicCheck.valid) {
+      for (const v of epistemicCheck.violations) {
+        violations.push({
+          code: v.code as any,
+          severity: 'BLOCK',
+          message: v.message,
+        });
+      }
+    }
+
     // ─── Build explicit PolicyDecision (K12-A30) ──────────────────────────────
     const hasBlock = violations.some(v => v.severity === 'BLOCK');
-    const hasRewrite = !hasBlock && violations.some(v => v.severity === 'REWRITE');
+    const hasRewrite = !hasBlock && (violations.some(v => v.severity === 'REWRITE') || finalOutput !== output.content);
 
     const decision: PolicyDecision = hasBlock
       ? { action: 'BLOCK',   output: 'Message blocked by Hermes Governance Policy.', violations }
       : hasRewrite
-        ? { action: 'REWRITE', output: output.content, violations }
+        ? { action: 'REWRITE', output: finalOutput, violations }
         : { action: 'ALLOW',   output: output.content, violations };
 
     // ─── K21: Emit Security Audit Event on Disclosure Block ───────────────────

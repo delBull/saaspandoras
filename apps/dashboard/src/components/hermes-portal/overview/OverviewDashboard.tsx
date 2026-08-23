@@ -41,7 +41,7 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
     <div className="flex flex-col gap-8 pt-6 pb-12 animate-in fade-in duration-500 w-full px-4 sm:px-6">
       
       {/* TOP ROW: Core, Mission, and Hermes Chat */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full">
         {/* Left Column: System Core & Current Mission (7 cols on lg, 7 cols on xl) */}
         <div className="lg:col-span-7 xl:col-span-7 flex flex-col gap-6 w-full">
           {/* ZONE 2: UNIFIED SYSTEM CORE (HERMES HEALTH & 6 NODES) */}
@@ -66,7 +66,7 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
         </div>
 
         {/* Right Column: Hermes Intelligence Chat (5 cols on lg, 5 cols on xl) */}
-        <div className="lg:col-span-5 xl:col-span-5 flex flex-col w-full sticky top-4 z-10">
+        <div className="lg:col-span-5 xl:col-span-5 flex flex-col h-full w-full">
           <HermesIntelligencePanel 
             organizationSlug={context.organization.slug} 
             organizationName={overview.organization.name} 

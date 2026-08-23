@@ -19,7 +19,7 @@ export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
   systemInstructions:
     `Eres HERMES PATRIMONIAL, el Gestor Patrimonial IA Autónomo de S'Narai Riviera Nayarit.\n` +
     `Tu misión es asesorar prospectos con voz ejecutiva y patrimonial, resolver dudas sobre ` +
-    `la estructura de Certificados de Participación y guiar hacia el cierre ` +
+    `la estructura de Inversión Fraccionada y guiar hacia el cierre ` +
     `(sesión con fundadores o adquisición directa vía SPEI Fast Lane).\n` +
     `Operado corporativamente bajo Aztecas Hub S.A.P.I. de C.V. con +15 años de experiencia ` +
     `de Aztecas Real Estate en Riviera Nayarit.`,
@@ -29,8 +29,8 @@ export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
       "S'Narai es un desarrollo residencial boutique de lujo ubicado en la Zona Dorada de Bucerías, " +
       'Riviera Nayarit, México, desarrollado por Aztecas Real Estate (+15 años de experiencia) ' +
       'y operado corporativamente bajo Aztecas Hub S.A.P.I. de C.V. Ofrece un modelo de ' +
-      'Propiedad Fraccionada y Certificados de Participación que combinan estancias de lujo ' +
-      'con distribución de utilidades por rentas hoteleras y plusvalía inmobiliaria.',
+      'Inversión Fraccionada que combina plusvalía inmobiliaria con distribución pro-rata ' +
+      'de utilidades por rentas vacacionales administradas profesionalmente.',
     pricingDetails: {
       currentPhase: 'Etapa Fundadores',
       tokenPriceUsd: 50,
@@ -39,28 +39,12 @@ export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
       acceptedCurrencies: ['USDC', 'MXN (SPEI Fast Lane)'],
       tiers: [
         {
-          id: 'PACK_EXPLORADOR',
-          name: 'Nivel Explorador',
+          id: 'PACK_FUNDADOR',
+          name: 'Membresía Fundador',
           priceUsd: 50,
           description:
-            'Punto de entrada flexible al ecosistema S\'Narai para asegurar posicionamiento en la etapa fundadora.',
-          url: 'https://snarai.aztecaz.xyz/portal?tier=explorer',
-        },
-        {
-          id: 'PACK_RESIDENTE',
-          name: 'Nivel Residente',
-          priceUsd: 500,
-          description:
-            'Nivel recomendado que otorga estancias prioritarias anuales y bono adicional sobre la utilidad distribuida.',
-          url: 'https://snarai.aztecaz.xyz/portal?tier=residente',
-        },
-        {
-          id: 'PACK_EMBAJADOR',
-          name: 'Nivel Embajador',
-          priceUsd: 2500,
-          description:
-            'Participación de capital estratégico con voz directiva y máxima prioridad en reservaciones de alta temporada.',
-          url: 'https://snarai.aztecaz.xyz/portal?tier=ambassador',
+            'Punto de entrada preferencial al ecosistema S\'Narai para asegurar posicionamiento en la etapa fundadora a precio de costo.',
+          url: 'https://snarai.aztecaz.xyz/portal',
         },
       ],
     },
@@ -68,38 +52,36 @@ export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
       {
         question: '¿Qué recibo exactamente al adquirir títulos en S\'Narai?',
         answer:
-          'Al adquirir títulos digitales respaldados legalmente bajo Aztecas Hub S.A.P.I. de C.V., ' +
+          'Al adquirir títulos respaldados legalmente bajo Aztecas Hub S.A.P.I. de C.V., ' +
           'recibes tu Certificado de Participación digital oficial. Este certificado es único, refleja ' +
           'dinámicamente el número de títulos adquiridos, y puedes descargarlo e imprimirlo en PDF desde tu portal. ' +
-          'Te otorga dos beneficios principales: 1) Derecho a estancias de uso personal (según el nivel de títulos) ' +
-          'y 2) Participación en la distribución de utilidades del negocio total por la operación del desarrollo.',
+          'Te otorga participación en la distribución de utilidades del negocio por la operación de rentas vacacionales del desarrollo y plusvalía del inmueble.',
       },
       {
-        question: '¿Cómo funcionan los derechos de estancias y rendimientos?',
+        question: '¿Cómo funcionan los rendimientos?',
         answer:
-          'Dependiendo de la cantidad de títulos adquiridos, existen paquetes que otorgan derechos ' +
-          'a estancias prioritarias anuales en Bucerías, además de un porcentaje de rendimiento adicional ' +
-          'sobre las utilidades globales distribuidas por la operación del proyecto.',
+          'Las utilidades generadas por la operación de rentas vacacionales se distribuyen proporcionalmente ' +
+          'entre los poseedores de títulos, además de capturar la plusvalía proyectada de la Zona Dorada de Bucerías.',
       },
       {
-        question: '¿Cómo funciona el proceso de pago e inscripción en Pesos Mexicanos (MXN)?',
+        question: '¿Cómo funciona el proceso de pago en Pesos Mexicanos (MXN)?',
         answer:
           'Mediante el sistema SPEI Fast Lane puedes realizar tu pago por transferencia bancaria ' +
-          'en MXN. Tu cupo se bloquea inmediatamente (Soft-Lock por 7 días) y recibes tu ' +
+          'en MXN. Tu cupo se bloquea inmediatamente y recibes tu ' +
           'contrato digital de participación expedido por la S.A.P.I.',
       },
       {
         question: '¿Puedo ceder o vender mi participación en el futuro?',
         answer:
           'Sí, tu derecho de participación es legalmente vinculante, heredable y puede cederse ' +
-          "o venderse en cualquier momento a través del tablero de transferencia interna de S'Narai.",
+          "o venderse a través del tablero de transferencia interna de S'Narai.",
       },
       {
         question: '¿Cuándo se comienzan a percibir los beneficios y utilidades?',
         answer:
           'Obtienes plusvalía proyectada desde el momento de tu adquisición ' +
           'en etapa fundadora, y recibes distribuciones de utilidades por rentas una vez ' +
-          'concluida la obra e iniciada la operación.',
+          'concluida la obra (14-18 meses post-fondeo) e iniciada la operación.',
       },
     ],
   },
@@ -120,66 +102,69 @@ export const SNARAI_KNOWLEDGE_PACK: KnowledgePack = {
       recommendedResponse:
         "S'Narai no promete retornos fijos garantizados por razones de cumplimiento regulatorio " +
         'y transparencia. Las utilidades distribuidas provienen del desempeño real de las rentas ' +
-        'hoteleras operadas profesionalmente en Bucerías. Históricamente la zona registra ' +
-        'plusvalía del 12-15% anual proyectado, sin garantía.',
+        'vacacionales operadas profesionalmente en Bucerías. Históricamente la zona registra ' +
+        'plusvalía del 12-15% anual proyectada, sin garantía.',
       suggestedDocument: 'DATA_ROOM_FINANCIERO',
     },
     {
       triggerPattern: 'mantenimiento|administración|hotelera|deterioro|gestión',
       objectionCategory: 'product',
       recommendedResponse:
-        'El desarrollo cuenta con administración hotelera profesional (concierge 24/7, limpieza y ' +
+        'El desarrollo cuenta con administración profesional manos-fuera (concierge, limpieza y ' +
         'mantenimiento) y un Fondo de Reserva destinado a mejoras mayores para garantizar que la ' +
-        'propiedad no pierda valor con el tiempo.',
+        'propiedad conserve y maximice su valor en el tiempo.',
       suggestedDocument: 'DATA_ROOM_OPERATIVO',
     },
     {
       triggerPattern: 'luego|después|pensar|consultar|más tiempo',
       objectionCategory: 'timing',
       recommendedResponse:
-        'Entiendo perfectamente. La Etapa Fundadores a $50 USD por Certificado está limitada a ' +
+        'Entiendo perfectamente. La Etapa Fundadores a $50 USD por título está limitada a ' +
         '30,000 unidades. Puedo reservarte tu posición sin compromiso durante 7 días vía ' +
         'SPEI Fast Lane. ¿Te reservo una posición?',
       suggestedDocument: 'FAST_LANE_RESERVATION',
     },
   ],
   salesPitch:
-    "S'Narai es un desarrollo residencial boutique de lujo en la Zona Dorada de Bucerías, " +
-    'Riviera Nayarit — a pasos del mar. A través de un modelo de Propiedad Fraccionada y ' +
-    'Certificados de Participación emitidos por Aztecas Hub S.A.P.I. de C.V., puedes ' +
-    'asegurar tu posición desde $50 USD, disfrutar estancias anuales de lujo y participar ' +
-    'en las utilidades de las rentas hoteleras. Transparencia corporativa completa, ' +
-    'liquidez garantizada y plusvalía proyectada en una de las zonas de mayor crecimiento de México.',
+    "S'Narai Riviera Nayarit es un desarrollo residencial boutique ubicado en la Zona Dorada de Bucerías, " +
+    'Riviera Nayarit. Desarrollado por Aztecas Real Estate (+15 años de trayectoria) y operado ' +
+    'corporativamente bajo Aztecas Hub S.A.P.I. de C.V., ofrece un modelo de Inversión Fraccionada ' +
+    'mediante Títulos de Participación desde $50 USD, con distribución pro-rata de utilidades ' +
+    'por rentas vacacionales administradas y captura de plusvalía inmobiliaria.',
 };
 
 export class KnowledgePackLoader {
   private static packs: Map<string, KnowledgePack> = new Map([
-    ['snarai', SNARAI_KNOWLEDGE_PACK]
+    ['snarai', SNARAI_KNOWLEDGE_PACK],
   ]);
 
+  /**
+   * Registers or updates a sealed/canonical Knowledge Pack for any tenant
+   */
+  public static registerPack(projectSlug: string, pack: KnowledgePack): void {
+    const slug = projectSlug.toLowerCase().replace(/^org_/, '');
+    this.packs.set(slug, pack);
+  }
+
   static async getPack(projectSlug: string, customConfig?: any): Promise<KnowledgePack> {
-    const slug = projectSlug.toLowerCase();
-    
-    // Check DB first
+    const slug = projectSlug.toLowerCase().replace(/^org_/, '');
+
+    // 1. Canonical Registry: Return verified sealed pack if registered
+    if (this.packs.has(slug)) {
+      return this.packs.get(slug)!;
+    }
+
+    // 2. Check DB config for dynamic tenants with governance status check
     try {
       const projectRecord = await db.query.projects.findFirst({
         where: eq(projects.slug, slug)
       });
       const dbConfig = projectRecord?.tenantRuntimeConfig as any;
-      if (dbConfig?.knowledgePack) {
+      if (dbConfig?.knowledgePack && dbConfig.knowledgePack.status !== 'DEPRECATED' && dbConfig.knowledgePack.status !== 'REVOKED') {
         return dbConfig.knowledgePack as KnowledgePack;
       }
     } catch (e) {
       console.error('[KnowledgePackLoader] Error fetching from DB:', e);
-    }
-
-    // Always return S'Narai Reference Pack for snarai
-    if (slug === 'snarai') {
-      return SNARAI_KNOWLEDGE_PACK;
-    }
-
-    if (this.packs.has(slug)) {
-      return this.packs.get(slug)!;
     }
 
     // Check if custom KnowledgePack was provided in tenantRuntimeConfig

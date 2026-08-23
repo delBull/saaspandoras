@@ -219,11 +219,11 @@ export class TenantIpfsVaultService {
   }
 
   /**
-   * Internal IPFS Pinning Handler.
+   * IPFS Pinning Handler.
    * Fail-Closed in Production: throws on missing JWT or Pinata failure.
    * Dev/Test: returns clearly prefixed 'mock_bafkrei...' CID fixture.
    */
-  private async pinJsonToIpfs(data: unknown, name: string): Promise<string> {
+  public async pinJsonToIpfs(data: unknown, name: string): Promise<string> {
     const isProduction = process.env.NODE_ENV === 'production';
 
     if (isProduction && !this.pinataJwt) {
