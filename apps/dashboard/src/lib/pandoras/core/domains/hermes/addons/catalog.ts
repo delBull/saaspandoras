@@ -237,13 +237,14 @@ export async function activateTenantAddOn(
   const now = new Date();
 
   if (existing.length > 0) {
+    const prev = existing[0]!;
     await db
       .update(hermesAddonInstallations)
       .set({
         status: 'ACTIVE',
         activatedAt: now,
         updatedAt: now,
-        manifestSnapshot: (manifest || existing[0]!.manifestSnapshot) as any,
+        manifestSnapshot: (manifest || prev.manifestSnapshot) as any,
         configuration: config,
       })
       .where(
@@ -252,6 +253,22 @@ export async function activateTenantAddOn(
           eq(hermesAddonInstallations.addonId, addonId)
         )
       );
+
+    // Audit transition for update/reactivation
+    await db.insert(hermesAddonAudit).values({
+      id: `evt_${uuidv4()}`,
+      organizationId,
+      addonId,
+      installationId: prev.id,
+      eventType: prev.status === 'ACTIVE' ? 'CONFIGURATION_UPDATED' : 'ACTIVATED',
+      actorId,
+      actorType: 'SYSTEM',
+      oldStatus: (prev.status as any) || null,
+      newStatus: 'ACTIVE',
+      version: manifest?.version || prev.version || '1.0.0',
+      reason: prev.status === 'ACTIVE' ? 'Add-On configuration refreshed' : 'Add-On reactivated for tenant',
+      createdAt: now,
+    });
   } else {
     const installId = `inst_${uuidv4()}`;
     await db.insert(hermesAddonInstallations).values({

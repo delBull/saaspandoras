@@ -420,3 +420,5 @@ export class CognitiveContextBuilder {
     return addOns.flatMap(a => a.knowledgeOverlays || []);
   }
 }
+
+export { CognitiveContextBuilder as ContextMerger };
