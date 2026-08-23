@@ -272,6 +272,47 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
       }
     }
 
+    // 16. Milestone K26.1: Unsupported Claim Composition & Extrapolation Defense
+    const compositionCheck = ClaimContractEngine.detectUnsupportedClaimComposition(output.content, targetTenantId);
+    if (!compositionCheck.valid) {
+      for (const v of compositionCheck.violations) {
+        violations.push({
+          code: v.code as any,
+          severity: 'BLOCK',
+          message: v.message,
+        });
+      }
+    }
+
+    // 17. Milestone K26.1: Disclosure Authorization vs Cryptographic Validity Separation
+    const disclosureCheck = ClaimContractEngine.validateDisclosureAuthorization(
+      output.content,
+      targetTenantId,
+      options?.controlPlaneContext?.role
+    );
+    if (!disclosureCheck.valid) {
+      for (const v of disclosureCheck.violations) {
+        violations.push({
+          code: v.code as any,
+          severity: 'BLOCK',
+          message: v.message,
+        });
+      }
+    }
+
+    // 18. Milestone K26.1: Material Claim Coverage Validation
+    const intentTier = ClaimContractEngine.determineIntentTier(output.content);
+    if (intentTier === 'LEVEL_2_COMMERCIAL' || intentTier === 'LEVEL_3_FINANCIAL_CONTRACTUAL' || intentTier === 'LEVEL_4_ACTION') {
+      const coverage = ClaimContractEngine.evaluateClaimCoverage(output.content, targetTenantId);
+      if (!coverage.complete && coverage.unsupportedSegments.length > 0) {
+        violations.push({
+          code: 'UNSUPPORTED_CLAIM_COMPOSITION',
+          severity: 'BLOCK',
+          message: `Afirmación material no respaldada en el Claim Contract activo: ${coverage.unsupportedSegments.join('; ')}`,
+        });
+      }
+    }
+
     // ─── Build explicit PolicyDecision (K12-A30) ──────────────────────────────
     const hasBlock = violations.some(v => v.severity === 'BLOCK');
     const hasRewrite = !hasBlock && (violations.some(v => v.severity === 'REWRITE') || finalOutput !== output.content);
@@ -285,19 +326,23 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     // ─── K21: Emit Security Audit Event on Disclosure Block ───────────────────
     if (hasBlock) {
       const orgId = options?.organizationId || 'snarai';
-      SecurityAuditLogger.logEvent({
-        organizationId: orgId,
-        actorId: options?.actorId,
-        eventType: 'DISCLOSURE_BLOCKED',
-        severity: 'CRITICAL',
-        policyDecision: 'DENY',
-        correlationId: options?.correlationId || `corr_${Date.now()}`,
-        metadata: {
-          channel: options?.channel || 'unknown',
-          channelMax,
-          violations: violations.map(v => ({ code: v.code, message: v.message }))
-        }
-      }).catch(err => console.warn('[PolicyValidator] Security audit log write error:', err));
+      try {
+        await SecurityAuditLogger.logEvent({
+          organizationId: orgId,
+          actorId: options?.actorId,
+          eventType: 'DISCLOSURE_BLOCKED',
+          severity: 'CRITICAL',
+          policyDecision: 'DENY',
+          correlationId: options?.correlationId || `corr_${Date.now()}`,
+          metadata: {
+            channel: options?.channel || 'unknown',
+            channelMax,
+            violations: violations.map(v => ({ code: v.code, message: v.message }))
+          }
+        });
+      } catch (err: any) {
+        console.warn('[PolicyValidator] Security audit log write error:', err?.message);
+      }
     }
 
     return {

@@ -162,6 +162,8 @@ export class DefaultRuntimeTraceRecorder implements RuntimeTraceRecorder {
       type: result.success ? 'RUNTIME_COMPLETED' : 'RUNTIME_FAILED',
       metadata: {
         errorCode: result.errorCode,
+        receiptSummary: result.receiptSummary,
+        ...result.metadata,
       },
       visibility: 'SYSTEM',
     });

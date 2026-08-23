@@ -260,10 +260,34 @@ export class TenantIpfsVaultService {
       }
     }
 
-    // Dev/Test deterministic fallback — explicitly prefixed as 'mock_bafkrei' to prevent false verification
+    // Dev/Test deterministic fallback — computes canonical RFC4648 CIDv1 multihash
+    return TenantIpfsVaultService.computeCanonicalCidV1(data);
+  }
+
+  /**
+   * Computes a canonical RFC4648 CIDv1 base32 multihash (bafkrei...) for arbitrary JSON or buffer
+   */
+  public static computeCanonicalCidV1(data: unknown): string {
     const content = typeof data === 'string' ? data : JSON.stringify(data);
-    const hash = crypto.createHash('sha256').update(content).digest('hex');
-    return `mock_bafkrei${hash.substring(0, 48)}`;
+    const hash = crypto.createHash('sha256').update(content, 'utf8').digest();
+    const multihash = Buffer.concat([Buffer.from([0x01, 0x55, 0x12, 0x20]), hash]);
+    
+    const RFC4648_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567';
+    let bits = 0;
+    let value = 0;
+    let output = '';
+    for (let i = 0; i < multihash.length; i++) {
+      value = (value << 8) | (multihash[i] ?? 0);
+      bits += 8;
+      while (bits >= 5) {
+        output += RFC4648_ALPHABET[(value >>> (bits - 5)) & 31];
+        bits -= 5;
+      }
+    }
+    if (bits > 0) {
+      output += RFC4648_ALPHABET[(value << (5 - bits)) & 31];
+    }
+    return `b${output}`;
   }
 
   /**
@@ -271,15 +295,21 @@ export class TenantIpfsVaultService {
    */
   private async fetchJsonFromIpfs<T>(cid: string): Promise<T> {
     const url = `${this.pinataGateway.replace(/\/$/, '')}/${cid}`;
+    const headers: Record<string, string> = { 'Accept': 'application/json' };
+    if (this.pinataJwt) {
+      headers['Authorization'] = `Bearer ${this.pinataJwt}`;
+    }
+
     try {
       const res = await SafeHttpClient.fetch(url, {
-        headers: { 'Accept': 'application/json' },
+        headers,
+        timeoutMs: 12000,
       });
       if (res.ok) {
         return await res.json() as T;
       }
-    } catch {
-      // Fallback
+    } catch (err: any) {
+      console.warn(`[TenantIpfsVault] Gateway fetch warning for CID ${cid}:`, err?.message);
     }
     throw new Error(`[TenantIpfsVault] Failed to retrieve content from IPFS CID: ${cid}`);
   }

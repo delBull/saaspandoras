@@ -8,6 +8,7 @@ import { KnowledgeDimension, GovernedKnowledgeItem } from '../knowledge/types';
 import { ExecutiveScopeValidator } from '@/lib/pandoras/core/domains/academy/security/scope-validator';
 import { RuntimeExecutionContext, ClassifiedKnowledgeDocument } from '@/lib/pandoras/core/domains/academy/security/types';
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
+import { TenantIpfsVaultService } from '../knowledge/ipfs-vault';
 
 export interface CoreSecurityContext {
   organizationId: string;
@@ -111,66 +112,97 @@ export class CognitiveContextBuilder {
         )
       );
 
-    const mappedIpfsKnowledge = ipfsRecords
-      .filter(r => 
-        r.governanceStatus === 'ACTIVE' && 
-        (r.classification === 'PUBLIC' || r.classification === 'TENANT_RESTRICTED')
-      )
-      .map(r => {
-        const matchingRaw = rawRecords.find(raw => raw.key === r.artifactId);
-        
-        let resolvedContent: string;
-        if (matchingRaw?.content) {
-          const computedHash = crypto.createHash('sha256').update(matchingRaw.content, 'utf8').digest('hex');
-          const isCryptographicallyVerified = computedHash === r.contentHash;
+    const ipfsVault = new TenantIpfsVaultService();
+    const mappedIpfsKnowledge: Array<{
+      id: string;
+      organizationId: string;
+      dimension: string;
+      key: string;
+      content: string;
+      status: string;
+      visibility: string;
+      classification: string;
+      version: number;
+    }> = [];
 
-          if (!isCryptographicallyVerified) {
-            console.warn(
-              `[ContextMerger] 🚨 KNOWLEDGE_INTEGRITY_MISMATCH: Artifact "${r.artifactId}" for tenant "${r.tenantId}" in DB plaintext does not match anchored IPFS hash. Degrading to fail-closed pointer.`
-            );
-            SecurityAuditLogger.logEvent({
-              organizationId: r.tenantId,
-              eventType: 'RESOURCE_MISMATCH_BLOCKED',
-              severity: 'CRITICAL',
-              policyDecision: 'DENY',
-              correlationId: `integ_${Date.now()}`,
-              artifactId: r.artifactId,
-              contentHash: computedHash,
-              metadata: {
-                reason: 'KNOWLEDGE_INTEGRITY_MISMATCH',
-                expectedHash: r.contentHash,
-                computedHash,
-                ipfsCid: r.ipfsCid,
-                action: 'FAIL_CLOSED_DEGRADATION',
-              },
-            }).catch(err => {
-              console.error('[ContextMerger] Failed to record security audit event:', err);
-            });
-          }
+    for (const r of ipfsRecords) {
+      if (
+        r.governanceStatus !== 'ACTIVE' ||
+        (r.classification !== 'PUBLIC' && r.classification !== 'TENANT_RESTRICTED')
+      ) {
+        continue;
+      }
 
-          resolvedContent = isCryptographicallyVerified
-            ? `[IPFS Sovereign Verified: ${r.ipfsCid}]\n${matchingRaw.content}`
-            : `[Sovereign IPFS Document] Artifact: ${r.artifactId} | Domain: ${r.domain} | CID: ${r.ipfsCid} | HASH_MISMATCH`;
-        } else {
-          resolvedContent = `[Sovereign IPFS Document] Artifact: ${r.artifactId} | Domain: ${r.domain} | CID: ${r.ipfsCid}`;
+      let decryptedContent: string | null = null;
+
+      try {
+        decryptedContent = await ipfsVault.retrieveAndDecryptFromIpfs(r.ipfsCid, {
+          tenantId: r.tenantId,
+          artifactId: r.artifactId,
+          version: r.version,
+          classification: (r.classification || 'PUBLIC') as any,
+        });
+
+        const computedHash = crypto.createHash('sha256').update(decryptedContent, 'utf8').digest('hex');
+        if (computedHash !== r.contentHash) {
+          console.warn(`[ContextMerger] 🚨 KNOWLEDGE_INTEGRITY_MISMATCH: ${r.artifactId}. Failing closed.`);
+          SecurityAuditLogger.logEvent({
+            organizationId: r.tenantId,
+            eventType: 'RESOURCE_MISMATCH_BLOCKED',
+            severity: 'CRITICAL',
+            policyDecision: 'DENY',
+            correlationId: `integ_${Date.now()}`,
+            artifactId: r.artifactId,
+            contentHash: computedHash,
+            metadata: {
+              reason: 'KNOWLEDGE_INTEGRITY_MISMATCH',
+              expectedHash: r.contentHash,
+              computedHash,
+              ipfsCid: r.ipfsCid,
+              action: 'FAIL_CLOSED_EXCLUSION',
+            },
+          }).catch(err => console.error('[ContextMerger] Failed to record audit:', err));
+          decryptedContent = null;
         }
+      } catch (err: any) {
+        // Fallback fail-closed: exclude pack if IPFS retrieval fails, never fall back to plaintext
+        console.warn(`[ContextMerger] 🚨 IPFS_FETCH_FAILED for "${r.artifactId}":`, err?.message);
+        SecurityAuditLogger.logEvent({
+          organizationId: r.tenantId,
+          eventType: 'RESOURCE_MISMATCH_BLOCKED',
+          severity: 'WARN',
+          policyDecision: 'DENY',
+          correlationId: `ipfs_fail_${Date.now()}`,
+          artifactId: r.artifactId,
+          metadata: {
+            reason: 'IPFS_FETCH_FAILED',
+            ipfsCid: r.ipfsCid,
+            error: err?.message,
+            action: 'FAIL_CLOSED_EXCLUSION',
+          },
+        }).catch(e => console.error('[ContextMerger] Failed to record audit:', e));
+        decryptedContent = null;
+      }
 
-        return {
+      if (decryptedContent) {
+        mappedIpfsKnowledge.push({
           id: `ipfs_${r.id}`,
           organizationId: r.tenantId,
           dimension: 'IPFS_SOVEREIGN_VAULT',
           key: `${r.domain || 'DOCUMENT'}: ${r.artifactId}`,
-          content: resolvedContent,
+          content: `[IPFS Sovereign Verified: ${r.ipfsCid}]\n${decryptedContent}`,
           status: 'ACTIVE',
           visibility: 'PUBLIC',
           classification: r.classification || 'PUBLIC',
           version: r.version,
-        };
-      });
+        });
+      }
+    }
 
-    const allCombinedRecords = [...rawRecords, ...mappedIpfsKnowledge];
-
-    const knowledgeRecords = allCombinedRecords;
+    // Pure sovereign knowledge: if IPFS records exist, prioritize verified IPFS payloads
+    const knowledgeRecords = mappedIpfsKnowledge.length > 0 
+      ? mappedIpfsKnowledge 
+      : rawRecords.filter(r => r.content !== null && r.content !== undefined);
       
     // 1.1 Calculate Intelligence Scores
     const intelligenceScores = this.calculateIntelligenceScores(knowledgeRecords as unknown as any[]);

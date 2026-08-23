@@ -25,7 +25,8 @@ export type SecurityEventType =
   | 'RESOURCE_MISMATCH_BLOCKED'
   | 'DISCLOSURE_BLOCKED'
   | 'CAPABILITY_ESCALATION_BLOCKED'
-  | 'KNOWLEDGE_REVOCATION_TRIGGERED';
+  | 'KNOWLEDGE_REVOCATION_TRIGGERED'
+  | 'PROVENANCE_RECEIPT_DEGRADED';
 
 export type SecuritySeverity = 'INFO' | 'WARN' | 'CRITICAL';
 export type SecurityPolicyDecision = 'ALLOW' | 'DENY' | 'ESCALATE';
@@ -187,11 +188,54 @@ export class SecurityAuditLogger {
       createdAt: now,
     };
 
-    // 3. Atomic Insert
-    try {
-      await db.insert(hermesSecurityEvents).values(record as any);
-    } catch (err) {
-      console.error('[SecurityAuditLogger] Failed to write security event to DB:', err);
+    // 3. Atomic Insert with Concurrency Retry Loop
+    if (db) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await db.insert(hermesSecurityEvents).values(record as any);
+          break;
+        } catch (err: any) {
+          const isConflict =
+            err?.code === '23505' ||
+            err?.cause?.code === '23505' ||
+            err?.message?.includes('duplicate key') ||
+            err?.message?.includes('23505');
+
+          if (isConflict && attempt < 2) {
+            try {
+              const retryLatest = await db.query.hermesSecurityEvents.findFirst({
+                where: eq(hermesSecurityEvents.organizationId, input.organizationId),
+                orderBy: [desc(hermesSecurityEvents.sequenceNumber)],
+              });
+              const newSeq = (retryLatest?.sequenceNumber ?? sequenceNumber) + 1 + attempt;
+              const newPrevHash = retryLatest?.eventHash ?? previousEventHash;
+              const newEventHash = this.computeEventHash({
+                previousHash: newPrevHash,
+                sequenceNumber: newSeq,
+                organizationId: input.organizationId,
+                actorId: input.actorId,
+                eventType: input.eventType,
+                severity: input.severity,
+                policyDecision: input.policyDecision,
+                correlationId: input.correlationId,
+                artifactId: input.artifactId,
+                toolId: input.toolId,
+                classification: input.classification,
+                timestampIso: now.toISOString(),
+                contentHash: input.contentHash,
+              });
+              record.id = `sec_${Date.now()}_${Math.random().toString(16).substring(2, 10)}`;
+              record.sequenceNumber = newSeq;
+              record.previousEventHash = newPrevHash;
+              record.eventHash = newEventHash;
+            } catch {
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+      }
     }
 
     // 4. Dispatch Discord operational alert if WARN or CRITICAL

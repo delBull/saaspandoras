@@ -66,6 +66,7 @@ export interface RuntimeResponse {
     promptTokens: number;
     completionTokens: number;
     durationMs: number;
+    provenanceDegraded?: boolean;
   };
   /**
    * Runtime trace: auditable record of what context was used.
@@ -77,6 +78,11 @@ export interface RuntimeResponse {
    * If present, the content was likely blocked or rewritten.
    */
   policyViolations?: import('./contracts').PolicyViolation[];
+  /**
+   * Cryptographic Claim Provenance Receipt (Proof of Governed Response - Milestone K26.1).
+   * Present whenever claims of Tier >= LEVEL_1/LEVEL_2 are asserted in the governed output.
+   */
+  claimProvenanceReceipt?: import('../knowledge/claim-contract-engine').ClaimProvenanceReceipt;
 }
 
 export interface RuntimeTrace {
@@ -96,6 +102,8 @@ export interface RuntimeTrace {
     claimsChecked: number;
     violationsDetected: number;
   };
+  claimProvenanceReceipt?: import('../knowledge/claim-contract-engine').ClaimProvenanceReceipt;
+  provenanceDegraded?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +309,9 @@ export type PolicyViolationCode =
   | 'FORBIDDEN_HOSPITALITY_MODEL'
   | 'FORBIDDEN_PRODUCT_INVENTION'
   | 'FORBIDDEN_FINANCIAL_PROMISE'
-  | 'EPISTEMIC_MUTATION_TO_GUARANTEE';
+  | 'EPISTEMIC_MUTATION_TO_GUARANTEE'
+  | 'UNSUPPORTED_CLAIM_COMPOSITION'
+  | 'INCOMPLETE_CLAIM_PROVENANCE';
 
 export interface PolicyViolation {
   code: PolicyViolationCode;
@@ -340,6 +350,7 @@ export interface PolicyValidationOptions {
   organizationId?: string;
   actorId?: string;
   correlationId?: string;
+  controlPlaneContext?: ControlPlaneContext;
 }
 
 export interface RuntimePolicyValidator {
@@ -511,6 +522,22 @@ export interface RuntimeTraceMetadata {
     completed: boolean;
   };
 
+  /** Cryptographic provenance receipt summary (K26 / K27) */
+  receiptSummary?: {
+    responseHash?: string;
+    tier?: string;
+    contractVersion?: number;
+    signerAddress?: string;
+  };
+
+  /** Milestone K26.1: Provenance and Governed Intelligence attestation metadata. */
+  provenance?: {
+    receiptId?: string;
+    tier?: string;
+    claimsCount: number;
+    provenanceDegraded?: boolean;
+  };
+
   /** K12-A54: persistence lifecycle is reconstructable. */
   persistence?: {
     attempted: boolean;
@@ -567,6 +594,13 @@ export interface RuntimeTraceCompletion {
   success: boolean;
   errorCode?: string;
   durationMs: number;
+  metadata?: RuntimeTraceMetadata;
+  receiptSummary?: {
+    responseHash?: string;
+    tier?: string;
+    contractVersion?: number;
+    signerAddress?: string;
+  };
 }
 
 export interface RuntimeTraceEventInput {

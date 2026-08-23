@@ -3468,7 +3468,7 @@ export const hermesKnowledge = pgTable("hermes_knowledge", {
   organizationId: varchar("organization_id", { length: 255 }).notNull(),
   dimension: varchar("dimension", { length: 50 }).notNull(), // e.g. 'identity', 'business'
   key: varchar("key", { length: 255 }).notNull(),            // logical unit of knowledge
-  content: text("content").notNull(),
+  content: text("content"),                                  // Nullable post-K25 Phase C plaintext purge (stored in IPFS Sovereign Vault)
   status: varchar("status", { length: 50 }).notNull(),       // 'DISCOVERED', 'PENDING_REVIEW', 'ACTIVE', 'REJECTED', 'SUPERSEDED'
   visibility: varchar("visibility", { length: 50 }).notNull(),
   classification: varchar("classification", { length: 50 }).notNull().default('PUBLIC'), // PUBLIC, TENANT_RESTRICTED, B2B_RESTRICTED, INTERNAL_OPERATIONAL, CONFIDENTIAL, SECRET

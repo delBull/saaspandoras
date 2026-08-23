@@ -83,4 +83,11 @@ export class HermesIdentitySigner {
       signature,
     };
   }
+
+  /**
+   * Signs a plain string message with the Hermes Identity private key.
+   */
+  public async signMessage(message: string): Promise<string> {
+    return await this.account.signMessage({ message });
+  }
 }

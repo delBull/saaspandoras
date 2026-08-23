@@ -66,7 +66,7 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
         </div>
 
         {/* Right Column: Hermes Intelligence Chat (5 cols on lg, 5 cols on xl) */}
-        <div className="lg:col-span-5 xl:col-span-5 flex flex-col h-full w-full">
+        <div className="lg:col-span-5 xl:col-span-5 flex flex-col h-full w-full min-h-0">
           <HermesIntelligencePanel 
             organizationSlug={context.organization.slug} 
             organizationName={overview.organization.name} 

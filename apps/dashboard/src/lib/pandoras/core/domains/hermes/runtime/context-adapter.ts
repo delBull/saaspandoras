@@ -115,6 +115,12 @@ export class CognitiveContextAdapter {
         excludedKnowledgeReasons.push({ id: pack.id, reason: 'REJECTED' });
       } else if (pack.status === 'SUPERSEDED') {
         excludedKnowledgeReasons.push({ id: pack.id, reason: 'SUPERSEDED' });
+      } else if (pack.status === 'DEPRECATED') {
+        excludedKnowledgeReasons.push({ id: pack.id, reason: 'DEPRECATED' });
+      } else if (pack.status === 'REVOKED') {
+        excludedKnowledgeReasons.push({ id: pack.id, reason: 'REVOKED' });
+      } else if (pack.status === 'SHADOW_VERIFIED') {
+        excludedKnowledgeReasons.push({ id: pack.id, reason: 'SHADOW_VERIFIED' });
       }
       // Structural entries (no status) are ignored as knowledge facts
     }

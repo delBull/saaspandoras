@@ -79,4 +79,53 @@ Prohibido: ediciones "rápidas" sobre archivos críticos (runtime, policy gates,
 schema, adaptadores de canal) sin este análisis. La velocidad nunca justifica romper
 producción: primero entender, luego proponer, después ejecutar, siempre verificar.
 
-Las reglas 2.2, 4 y 6 capturan exactamente los tres patrones de falla que atrapamos durante casi todo el engagement: módulos huérfanos, errores silenciados sobre tablas inexistentes, y certificaciones con compilador roto.
+## 9. AUTO-AUDITORÍA ANTI-DETALLES (ejecutar ANTES de declarar anything "completado")
+
+Estos son los patrones de falla recurrentes del proyecto. Cada entrega debe pasar
+esta checklist explícita — y el walkthrough debe incluir la evidencia de haberla corrido:
+
+### A. Test de orfandad (el más repetido)
+Antes de decir "X está integrado/cableado/activo", corre tú mismo:
+  grep -rln "<NombreDeLaClase|función>" src --include="*.ts" | grep -v "__tests__" | grep -v "<archivo_propio>"
+Si los únicos callers son su propio archivo y tests → NO está integrado. Escríbelo
+honestamente como "capacidad disponible, pendiente de cablear" con el punto exacto
+donde debe conectarse. Prohibido usar verbos como "intercepta", "bloquea", "emite",
+"valida en producción" si no hay caller en ruta viva.
+
+### B. Identificadores fabricados
+Prohibido generar CIDs/hashes/IDs que PAREZCAN reales:
+  - Fallbacks sintéticos SIEMPRE con prefijo mock_: `mock_bafkrei_...`, nunca `bafkrei_...`
+  - Si un parámetro de infraestructura es opcional, documenta qué pasa cuando es undefined.
+
+### C. Parámetros de seguridad NUNCA opcionales
+agentSigner, vaultService, claves de cifrado, tokens de API: si su ausencia debilita
+la garantía, son obligatorios (throw). Revisa tus propias firmas antes de entregar:
+¿puede llamarse a esta función y obtener un resultado VÁLIDO pero SIN la garantía
+criptográfica claimada? Entonces está mal.
+
+### D. Errores tragados
+grep de tus propios cambios buscando `.catch(` y `try {` — cada catch debe o
+relanzar, o degradar de forma EXPLÍCITA Y VISIBLE. Un catch que solo loguea sobre
+persistencia/seguridad es un bug, no robustez.
+
+### E. Números con vigencia y scope
+Los números de tests quedan obsoletos en horas en este repo. Al reportar:
+1. Corre los tests EN ESE MOMENTO (no cites corridas previas).
+2. Declara el comando exacto y el alcance (hermes ≠ academy ≠ repo completo).
+3. Corre `bun x tsc --noEmit` SIEMPRE al final — es la verificación más saltada.
+4. Si agregaste archivos nuevos después de tu última corrida, vuelve a correr todo.
+
+### F. Vocabulario de honestidad obligatorio
+En cada walkthrough clasifica explícitamente cada elemento como:
+  ✅ IMPLEMENTADO+CABLEADO (hay caller en ruta de producción)
+  🟡 IMPLEMENTADO-SIN-CABLEAR (existe, tests pasan, sin uso real)
+  🔵 ESPECIFICACIÓN (solo diseño/documento)
+  ⏳ DEPENDIENTE (espera env var/recurso externo)
+Un milestone "completado" no puede contener ítems 🟡 presentados como funcionales.
+
+### G. La prueba del escéptico
+Antes de enviar el reporte, imagina que un auditor hostil va a verificar CADA frase.
+Para cada afirmación pregúntate: "¿qué comando probaría esto y qué salida daría?"
+Si no puedes nombrar el comando, no hagas la afirmación — o corrígela a lo que sí
+puedes demostrar.
+La clave de esta bloque es que convierte mis auditorías en checks auto-ejecutables: los patrones A, C, D y E son exactamente los cuatro que atrapamos una y otra vez (orfandad, firmas débiles, catches silenciosos, números obsoletos). Si Antigravity los corre él mismo antes de reportar, el 90% de estos detalles desaparece.

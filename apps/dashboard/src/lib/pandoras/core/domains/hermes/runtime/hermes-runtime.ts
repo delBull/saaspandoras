@@ -55,6 +55,9 @@ import { ContextHygieneValidator } from './context-hygiene-validator';
 import { FailSafeRuntimeTraceRecorder, NoOpRuntimeTraceRecorder, InMemoryRuntimeTraceStore, DefaultRuntimeTraceRecorder } from './trace/trace-recorder';
 import { PromptHygieneEngine, ActorIdentityBindingService } from './prompt-hygiene-contract';
 import { MemoryGovernanceEngine, type ConversationMessageItem } from './operational-governance-contract';
+import { ClaimContractEngine, type ClaimProvenanceReceipt } from '../knowledge/claim-contract-engine';
+import { HermesIdentitySigner } from '../identity/identity-signer';
+import { SecurityAuditLogger } from './security-audit-logger';
 
 // ─── Internal shared types ────────────────────────────────────────────────────
 
@@ -332,7 +335,16 @@ export class HermesRuntime implements HermesCognitiveRuntime {
 
       // Step 6: Policy Boundary (K12-A29, K12-A30)
       const policyValidator = new DefaultRuntimePolicyValidator();
-      const policyResult = await policyValidator.validate(reasoningOutput, setup.reasoningContext, RUNTIME_POLICY);
+      const policyResult = await policyValidator.validate(
+        reasoningOutput,
+        setup.reasoningContext,
+        RUNTIME_POLICY,
+        {
+          organizationId,
+          controlPlaneContext: input.controlPlaneContext,
+          correlationId: traceHandle.traceId,
+        }
+      );
       const decision: PolicyDecision = policyResult.decision;
 
       await this.traceRecorder.record(traceHandle, {
@@ -374,7 +386,77 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       // Step 8: Atomic persist (ALLOW or REWRITE)
       const assistantMessage = await this.persistTurn(setup, decision.output);
 
-      await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+      // Step 8b: Emit Claim Provenance Receipt (Proof of Governed Response - Milestone K26.1)
+      let claimProvenanceReceipt: ClaimProvenanceReceipt | undefined = undefined;
+      let provenanceDegraded: boolean = false;
+      try {
+        const intentTier = ClaimContractEngine.determineIntentTier(decision.output);
+        if (intentTier !== 'LEVEL_0_CONVERSATIONAL') {
+          const signer = new HermesIdentitySigner();
+          const receipt = await ClaimContractEngine.generateClaimProvenanceReceipt(
+            decision.output,
+            organizationId,
+            signer,
+            {
+              conversationId,
+              policyVersion: 'v1.0.4-k26.1',
+              explicitTier: intentTier,
+            }
+          );
+          if (receipt) {
+            claimProvenanceReceipt = receipt;
+          }
+        }
+      } catch (receiptErr: any) {
+        provenanceDegraded = true;
+        console.warn('[HermesRuntime] ⚠️ Claim provenance generation failed (audited degradation):', receiptErr?.message);
+
+        // K26.1 Fail-closed security event recording in immutable audit hash-chain
+        SecurityAuditLogger.logEvent({
+          organizationId,
+          eventType: 'PROVENANCE_RECEIPT_DEGRADED',
+          severity: 'CRITICAL',
+          policyDecision: 'DENY',
+          correlationId: `deg_${Date.now()}`,
+          metadata: {
+            reason: 'HERMES_IDENTITY_SIGNER_FAILURE',
+            error: receiptErr?.message || String(receiptErr),
+            conversationId,
+            action: 'AUDITED_PROVENANCE_DEGRADATION',
+          },
+        }).catch(err => {
+          console.error('[HermesRuntime] Failed to record security event for degraded provenance:', err);
+        });
+      }
+
+      // Step 8c: Attach to trace & record in trace recorder
+      trace.claimProvenanceReceipt = claimProvenanceReceipt;
+      if (provenanceDegraded) {
+        trace.provenanceDegraded = true;
+      }
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'POLICY_VALIDATED',
+        metadata: {
+          provenance: {
+            receiptId: claimProvenanceReceipt?.receiptId,
+            tier: claimProvenanceReceipt?.provenanceTier,
+            claimsCount: claimProvenanceReceipt?.claims.length ?? 0,
+            provenanceDegraded,
+          },
+        },
+      });
+
+      await this.traceRecorder.complete(traceHandle, {
+        success: true,
+        durationMs: Date.now() - start,
+        receiptSummary: claimProvenanceReceipt ? {
+          responseHash: claimProvenanceReceipt.responseHash,
+          tier: claimProvenanceReceipt.provenanceTier,
+          contractVersion: claimProvenanceReceipt.claims[0]?.version,
+          signerAddress: claimProvenanceReceipt.agentWalletAddress,
+        } : undefined,
+      });
 
       return {
         responseId: assistantMessage.id,
@@ -382,8 +464,13 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         conversationId,
         content: decision.output,
         suggestedActions,
-        providerMeta: { ...reasoningOutput.meta, durationMs: Date.now() - start },
+        providerMeta: {
+          ...reasoningOutput.meta,
+          durationMs: Date.now() - start,
+          provenanceDegraded: provenanceDegraded || undefined,
+        },
         trace,
+        claimProvenanceReceipt,
       };
     } catch (err) {
       if (traceHandle) {
