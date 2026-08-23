@@ -341,7 +341,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
   const activeChips = latestHermesMessage?.chips || [];
 
   return (
-    <div className="flex flex-col w-full h-full min-h-[520px] lg:min-h-0 bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
+    <div className="flex flex-col w-full h-full bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
       {/* ── TOP HEADER: IDENTITY & STATUS ── */}
       <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
         <div className="flex items-center gap-3 min-w-0">
