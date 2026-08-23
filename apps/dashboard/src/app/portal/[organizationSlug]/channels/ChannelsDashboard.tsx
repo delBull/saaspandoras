@@ -5,8 +5,18 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MessageCircle, Send, CheckCircle2, AlertTriangle, Mail, Disc as DiscordIcon, UserCheck } from 'lucide-react';
-import { getChannelsConfig, saveTelegramConfig, saveWhatsAppConfig, getHandoffAlertConfig, saveHandoffAlertConfig, HandoffAlertConfig } from './actions';
+import { MessageCircle, Send, CheckCircle2, AlertTriangle, Mail, Disc as DiscordIcon, UserCheck, Activity, Zap, RefreshCw } from 'lucide-react';
+import { 
+  getChannelsConfig, 
+  saveTelegramConfig, 
+  saveWhatsAppConfig, 
+  getHandoffAlertConfig, 
+  saveHandoffAlertConfig, 
+  testTelegramConfig,
+  testWhatsAppConfig,
+  testHandoffAlert,
+  HandoffAlertConfig 
+} from './actions';
 import { toast } from 'sonner';
 
 export default function ChannelsDashboard({ organizationSlug }: { organizationSlug: string }) {
@@ -25,6 +35,15 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
   const [savingTg, setSavingTg] = useState(false);
   const [savingWa, setSavingWa] = useState(false);
   const [savingAlert, setSavingAlert] = useState(false);
+
+  // Testing States
+  const [testingTg, setTestingTg] = useState(false);
+  const [tgTestResult, setTgTestResult] = useState<any>(null);
+
+  const [testingWa, setTestingWa] = useState(false);
+  const [waTestResult, setWaTestResult] = useState<any>(null);
+
+  const [testingAlert, setTestingAlert] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +81,21 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
     }
   };
 
+  const handleTestTelegram = async () => {
+    setTestingTg(true);
+    setTgTestResult(null);
+    try {
+      const res = await testTelegramConfig(organizationSlug, telegramToken);
+      setTgTestResult(res);
+      toast.success(`✅ Telegram Bot verificado: @${res.bot.username} (${res.latency}ms)`);
+    } catch (err: any) {
+      toast.error(err.message || 'Fallo en la prueba de Telegram');
+      setTgTestResult({ success: false, error: err.message });
+    } finally {
+      setTestingTg(false);
+    }
+  };
+
   const handleSaveWhatsApp = async () => {
     setSavingWa(true);
     try {
@@ -71,6 +105,21 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
       toast.error(err.message || 'Error al guardar WhatsApp');
     } finally {
       setSavingWa(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    setTestingWa(true);
+    setWaTestResult(null);
+    try {
+      const res = await testWhatsAppConfig(organizationSlug, whatsappToken, whatsappPhoneId);
+      setWaTestResult(res);
+      toast.success(`✅ WhatsApp Cloud API verificado: ${res.waba.displayPhoneNumber} (${res.latency}ms)`);
+    } catch (err: any) {
+      toast.error(err.message || 'Fallo en la prueba de WhatsApp');
+      setWaTestResult({ success: false, error: err.message });
+    } finally {
+      setTestingWa(false);
     }
   };
 
@@ -89,6 +138,24 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
       toast.error(err.message || 'Error al guardar canal de escalación');
     } finally {
       setSavingAlert(false);
+    }
+  };
+
+  const handleTestHandoffAlert = async () => {
+    setTestingAlert(true);
+    try {
+      await testHandoffAlert(organizationSlug, {
+        preferredChannel: alertChannel,
+        email: alertEmail,
+        telegramChatId: alertTgChatId,
+        whatsappPhone: alertWaPhone,
+        discordWebhookUrl: alertDiscordUrl,
+      });
+      toast.success(`✅ Notificación de prueba enviada exitosamente a ${alertChannel.toUpperCase()}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Error al enviar alerta de prueba');
+    } finally {
+      setTestingAlert(false);
     }
   };
 
@@ -143,86 +210,87 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
             })}
           </div>
 
-          {/* Formulario e Instrucciones Dinámicas */}
+          {/* Formulario según Canal */}
           {alertChannel === 'email' && (
-            <div className="space-y-3 bg-neutral-950/80 p-4 rounded-xl border border-neutral-800">
-              <Label className="text-xs text-neutral-300">Correo Electrónico para Recibir Alertas</Label>
+            <div className="space-y-2 bg-neutral-950/60 border border-neutral-800/80 p-4 rounded-xl">
+              <Label className="text-neutral-300 text-xs font-medium">Email de Alertas</Label>
               <Input
                 type="email"
-                placeholder="operaciones@tuempresa.com"
+                placeholder="operaciones@snarai.com"
                 value={alertEmail}
                 onChange={(e) => setAlertEmail(e.target.value)}
-                className="bg-neutral-900 border-neutral-700 text-white"
+                className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600 text-xs"
               />
-              <p className="text-[11px] text-neutral-400">
-                ℹ️ Recibirás un correo formateado inmediatamente con el motivo de la escalación, número del cliente y el último mensaje enviado.
-              </p>
             </div>
           )}
 
           {alertChannel === 'telegram' && (
-            <div className="space-y-3 bg-neutral-950/80 p-4 rounded-xl border border-neutral-800">
-              <Label className="text-xs text-neutral-300">Telegram Chat ID (Usuario o Grupo)</Label>
+            <div className="space-y-2 bg-neutral-950/60 border border-neutral-800/80 p-4 rounded-xl">
+              <Label className="text-neutral-300 text-xs font-medium">Chat ID o ID de Grupo de Telegram</Label>
               <Input
-                placeholder="123456789 (o -100123456789 para grupo)"
+                placeholder="Ej. 123456789 o -100123456789"
                 value={alertTgChatId}
                 onChange={(e) => setAlertTgChatId(e.target.value)}
-                className="bg-neutral-900 border-neutral-700 text-white font-mono text-sm"
+                className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600 text-xs"
               />
-              <div className="text-[11px] text-neutral-300 bg-neutral-900/90 p-3 rounded-lg border border-neutral-800 space-y-1.5">
-                <p className="font-semibold text-blue-300">¿Cómo obtener tu Telegram Chat ID?</p>
-                <ol className="list-decimal list-inside space-y-1 text-neutral-400">
-                  <li>Abre Telegram y busca a <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@userinfobot</a> o <a href="https://t.me/RawDataBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@RawDataBot</a>.</li>
-                  <li>Envía cualquier mensaje y el bot te responderá con tu número de <strong>ID</strong>.</li>
-                  <li>Pega ese número aquí arriba.</li>
-                </ol>
-              </div>
+              <p className="text-[11px] text-neutral-400">
+                Añade tu Bot de Telegram a tu grupo o chat privado y coloca aquí el Chat ID para recibir las alertas.
+              </p>
             </div>
           )}
 
           {alertChannel === 'whatsapp' && (
-            <div className="space-y-3 bg-neutral-950/80 p-4 rounded-xl border border-neutral-800">
-              <Label className="text-xs text-neutral-300">Número de WhatsApp del Operador (con código de país)</Label>
+            <div className="space-y-2 bg-neutral-950/60 border border-neutral-800/80 p-4 rounded-xl">
+              <Label className="text-neutral-300 text-xs font-medium">Número de WhatsApp Destino (con código de país)</Label>
               <Input
-                placeholder="5213221234567"
+                placeholder="Ej. +5213221234567"
                 value={alertWaPhone}
                 onChange={(e) => setAlertWaPhone(e.target.value)}
-                className="bg-neutral-900 border-neutral-700 text-white font-mono text-sm"
+                className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600 text-xs"
               />
               <p className="text-[11px] text-neutral-400">
-                ℹ️ Ingresa el número en formato internacional sin el signo '+' ni espacios (ej: 5213221234567 para México o 14155552671 para USA).
+                Hermes te enviará un mensaje directo cuando un cliente necesite escalación.
               </p>
             </div>
           )}
 
           {alertChannel === 'discord' && (
-            <div className="space-y-3 bg-neutral-950/80 p-4 rounded-xl border border-neutral-800">
-              <Label className="text-xs text-neutral-300">Discord Webhook URL</Label>
+            <div className="space-y-2 bg-neutral-950/60 border border-neutral-800/80 p-4 rounded-xl">
+              <Label className="text-neutral-300 text-xs font-medium">Discord Webhook URL</Label>
               <Input
+                type="url"
                 placeholder="https://discord.com/api/webhooks/..."
                 value={alertDiscordUrl}
                 onChange={(e) => setAlertDiscordUrl(e.target.value)}
-                className="bg-neutral-900 border-neutral-700 text-white font-mono text-xs"
+                className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600 text-xs"
               />
-              <div className="text-[11px] text-neutral-300 bg-neutral-900/90 p-3 rounded-lg border border-neutral-800 space-y-1.5">
-                <p className="font-semibold text-purple-300">¿Cómo crear un Webhook en Discord?</p>
-                <ol className="list-decimal list-inside space-y-1 text-neutral-400">
-                  <li>En tu servidor de Discord, entra a la configuración del canal donde deseas las alertas (⚙️ Editar Canal).</li>
-                  <li>Ve a la pestaña <strong>Integraciones</strong> ➔ <strong>Webhooks</strong>.</li>
-                  <li>Haz clic en <strong>Crear Webhook</strong>, asígnale el nombre "Hermes Alerts" y haz clic en <strong>Copiar URL del Webhook</strong>.</li>
-                  <li>Pega la URL copiada aquí arriba.</li>
-                </ol>
-              </div>
+              <p className="text-[11px] text-neutral-400">
+                Crea un Webhook en tu canal de Discord (Ajustes del canal → Integraciones → Webhooks) y pega la URL aquí.
+              </p>
             </div>
           )}
 
-          <Button
-            onClick={handleSaveHandoffAlert}
-            disabled={savingAlert}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-lg shadow-indigo-600/20"
-          >
-            {savingAlert ? 'Guardando Alerta...' : '💾 Guardar Canal de Escalación'}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Button
+              type="button"
+              onClick={handleSaveHandoffAlert}
+              disabled={savingAlert}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-lg shadow-indigo-600/20"
+            >
+              {savingAlert ? 'Guardando Alerta...' : '💾 Guardar Canal de Escalación'}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTestHandoffAlert}
+              disabled={testingAlert}
+              className="border-indigo-500/40 hover:bg-indigo-950/50 text-indigo-300 hover:text-white text-xs font-semibold py-2.5 rounded-xl flex items-center gap-2"
+            >
+              <Zap className={`w-3.5 h-3.5 ${testingAlert ? 'animate-spin' : 'text-indigo-400'}`} />
+              {testingAlert ? 'Enviando Alerta...' : '🧪 Probar Alerta en Vivo'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -247,7 +315,6 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
                 <li>Abre Telegram y busca a <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@BotFather</a>.</li>
                 <li>Envía el comando <code className="text-blue-300 font-mono">/newbot</code> y sigue las instrucciones para crear tu bot.</li>
                 <li>Copia el <strong>HTTP API Token</strong> que te proporcione BotFather y pégalo aquí abajo.</li>
-                <li>Una vez guardado, Hermes configurará automáticamente el Webhook para escuchar los mensajes de tu bot.</li>
               </ol>
             </div>
 
@@ -257,7 +324,7 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
                 value={telegramToken}
                 onChange={e => setTelegramToken(e.target.value)}
                 placeholder="123456789:ABCDEF..."
-                className="bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600"
+                className="bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 font-mono text-xs"
                 type="password"
               />
             </div>
@@ -272,13 +339,47 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
               </div>
             )}
 
-            <Button 
-              onClick={handleSaveTelegram} 
-              disabled={savingTg}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {savingTg ? 'Guardando...' : 'Guardar Telegram'}
-            </Button>
+            {tgTestResult?.success && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-md flex items-start gap-2.5 animate-in fade-in">
+                <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-emerald-300">
+                  <span className="font-bold">Bot Verificado:</span> @{tgTestResult.bot.username} (ID: {tgTestResult.bot.id})
+                  <div className="text-emerald-400/80 text-[11px] mt-0.5">
+                    Latencia: {tgTestResult.latency}ms • Estado: Conectado a Telegram API
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tgTestResult?.success === false && (
+              <div className="bg-rose-500/10 border border-rose-500/30 p-3 rounded-md flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-rose-300">
+                  <span className="font-bold">Fallo en verificación:</span> {tgTestResult.error}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button 
+                onClick={handleSaveTelegram} 
+                disabled={savingTg}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {savingTg ? 'Guardando...' : 'Guardar Telegram'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleTestTelegram}
+                disabled={testingTg || !telegramToken}
+                className="border-blue-500/40 hover:bg-blue-950/40 text-blue-300 hover:text-white text-xs font-semibold flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${testingTg ? 'animate-spin' : ''}`} />
+                {testingTg ? 'Probando...' : '🧪 Probar Bot'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -299,10 +400,8 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
               <h4 className="text-sm font-semibold text-white mb-2">Instrucciones de configuración:</h4>
               <ol className="text-xs text-neutral-300 space-y-2 list-decimal list-inside">
                 <li>Ve a <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">Meta for Developers</a> y crea una App tipo "Negocios".</li>
-                <li>Añade el producto <strong>WhatsApp</strong> a tu App.</li>
-                <li>En la configuración de la API, genera un <strong>Access Token permanente</strong>.</li>
-                <li>Copia el <strong>Phone Number ID</strong> (Identificador del número de teléfono).</li>
-                <li>Guarda las credenciales aquí. Hermes enrutará automáticamente todos los mensajes entrantes dirigidos a este número hacia tu motor cognitivo.</li>
+                <li>Añade el producto <strong>WhatsApp</strong> y genera un <strong>Access Token</strong>.</li>
+                <li>Copia el <strong>Phone Number ID</strong>.</li>
               </ol>
             </div>
 
@@ -312,7 +411,7 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
                 value={whatsappToken}
                 onChange={e => setWhatsappToken(e.target.value)}
                 placeholder="EAAB..."
-                className="bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600"
+                className="bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 font-mono text-xs"
                 type="password"
               />
             </div>
@@ -322,7 +421,7 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
                 value={whatsappPhoneId}
                 onChange={e => setWhatsappPhoneId(e.target.value)}
                 placeholder="102345678901234"
-                className="bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600"
+                className="bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 font-mono text-xs"
               />
             </div>
             
@@ -336,13 +435,47 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
               </div>
             )}
 
-            <Button 
-              onClick={handleSaveWhatsApp} 
-              disabled={savingWa}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
-            >
-              {savingWa ? 'Guardando...' : 'Guardar WhatsApp'}
-            </Button>
+            {waTestResult?.success && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-md flex items-start gap-2.5 animate-in fade-in">
+                <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-emerald-300">
+                  <span className="font-bold">WABA Verificado:</span> {waTestResult.waba.verifiedName} ({waTestResult.waba.displayPhoneNumber})
+                  <div className="text-emerald-400/80 text-[11px] mt-0.5">
+                    Calidad: {waTestResult.waba.qualityRating} • Latencia: {waTestResult.latency}ms • Estado: Conectado a Meta Cloud
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {waTestResult?.success === false && (
+              <div className="bg-rose-500/10 border border-rose-500/30 p-3 rounded-md flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-rose-300">
+                  <span className="font-bold">Fallo en verificación:</span> {waTestResult.error}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button 
+                onClick={handleSaveWhatsApp} 
+                disabled={savingWa}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {savingWa ? 'Guardando...' : 'Guardar WhatsApp'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleTestWhatsApp}
+                disabled={testingWa || !whatsappPhoneId}
+                className="border-green-500/40 hover:bg-green-950/40 text-green-300 hover:text-white text-xs font-semibold flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${testingWa ? 'animate-spin' : ''}`} />
+                {testingWa ? 'Probando...' : '🧪 Probar WABA'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

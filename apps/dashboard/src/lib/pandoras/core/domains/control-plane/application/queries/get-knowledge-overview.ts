@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { knowledgeSources, hermesKnowledge, hermesKnowledgeRegistry } from '@/db/schema';
+import { knowledgeSources, hermesKnowledge, hermesKnowledgeRegistry, projects } from '@/db/schema';
 import { eq, or, desc } from 'drizzle-orm';
 import type { ControlPlaneContext } from '../context';
 import type { KnowledgeSourceView } from '../../view-models';
@@ -34,24 +34,41 @@ export class GetKnowledgeOverviewQuery {
     let registryRecords: any[] = [];
 
     try {
+      // Resolve human-readable project slug from UUID if necessary
+      let projectSlug = orgSlug;
+      try {
+        const proj = await db.query.projects.findFirst({
+          where: or(
+            eq(projects.organizationId, canonicalOrgId),
+            eq(projects.slug, canonicalOrgId),
+            eq(projects.slug, orgSlug)
+          ),
+          columns: { slug: true, organizationId: true },
+        });
+        if (proj?.slug) projectSlug = proj.slug;
+      } catch {}
+
       records = await db.select().from(knowledgeSources).where(
         or(
           eq(knowledgeSources.tenantId, orgSlug),
-          eq(knowledgeSources.tenantId, canonicalOrgId)
+          eq(knowledgeSources.tenantId, canonicalOrgId),
+          eq(knowledgeSources.tenantId, projectSlug)
         )
       );
 
       knowledgeRecords = await db.select().from(hermesKnowledge).where(
         or(
           eq(hermesKnowledge.organizationId, orgSlug),
-          eq(hermesKnowledge.organizationId, canonicalOrgId)
+          eq(hermesKnowledge.organizationId, canonicalOrgId),
+          eq(hermesKnowledge.organizationId, projectSlug)
         )
       );
 
       registryRecords = await db.select().from(hermesKnowledgeRegistry).where(
         or(
           eq(hermesKnowledgeRegistry.tenantId, orgSlug),
-          eq(hermesKnowledgeRegistry.tenantId, canonicalOrgId)
+          eq(hermesKnowledgeRegistry.tenantId, canonicalOrgId),
+          eq(hermesKnowledgeRegistry.tenantId, projectSlug)
         )
       ).orderBy(desc(hermesKnowledgeRegistry.updatedAt));
     } catch (error) {

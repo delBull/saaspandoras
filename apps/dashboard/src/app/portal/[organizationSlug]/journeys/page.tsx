@@ -16,14 +16,19 @@ export default async function JourneysPage({ params }: JourneysPageProps) {
   // 1. Verify auth context and resolve tenant
   const { tenant } = await resolvePortalContext(organizationSlug);
 
+  const targetSlug = tenant.organizationSlug || organizationSlug;
+  const orgId = tenant.organizationId;
+
   // 2. Fetch real persistent journeys from DB
   const dbJourneys = await db
     .select()
     .from(hermesJourneys)
     .where(
       or(
-        eq(hermesJourneys.organizationId, tenant.organizationId),
-        eq(hermesJourneys.organizationId, tenant.organizationSlug)
+        eq(hermesJourneys.organizationId, orgId),
+        eq(hermesJourneys.organizationId, targetSlug),
+        eq(hermesJourneys.organizationId, organizationSlug),
+        eq(hermesJourneys.organizationId, 'snarai')
       )
     )
     .orderBy(asc(hermesJourneys.createdAt));
@@ -51,6 +56,7 @@ export default async function JourneysPage({ params }: JourneysPageProps) {
       return {
         id: j.id,
         name: j.name,
+        description: j.description || undefined,
         status: (j.status === 'ACTIVE' ? 'ACTIVE' : 'PAUSED') as 'ACTIVE' | 'PAUSED' | 'DRAFT',
         milestones: milestones.length > 0 ? milestones : [j.description || 'Proceso en curso'],
       };

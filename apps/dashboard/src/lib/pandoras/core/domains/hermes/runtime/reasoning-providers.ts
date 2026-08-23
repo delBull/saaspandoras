@@ -427,73 +427,90 @@ export class OllamaStreamingProvider implements StreamingReasoningProvider {
     }
 
     const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let totalContent = '';
-    let promptTokens = 0;
-    let completionTokens = 0;
 
-    const chunks: AsyncIterable<ReasoningStreamChunk> = {
-      [Symbol.asyncIterator]() {
-        return {
-          async next(): Promise<IteratorResult<ReasoningStreamChunk>> {
+    async function* generateChunks(): AsyncGenerator<ReasoningStreamChunk> {
+      const decoder = new TextDecoder();
+      let totalContent = '';
+      let promptTokens = 0;
+      let completionTokens = 0;
+      let lineBuffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          lineBuffer += decoder.decode(value, { stream: true });
+          const lines = lineBuffer.split('\n');
+          lineBuffer = lines.pop() || '';
+
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) continue;
+
             try {
-              const { done, value } = await reader.read();
-              if (done) {
-                return {
-                  value: {
-                    type: 'done',
-                    meta: {
-                      provider: 'ollama-stream',
-                      model,
-                      promptTokens,
-                      completionTokens,
-                      durationMs: Date.now() - start,
-                    },
-                  } satisfies ReasoningStreamChunk,
-                  done: true,
-                };
-              }
-
-              const line = decoder.decode(value, { stream: true }).trim();
-              if (!line) return { value: { type: 'delta', content: '' }, done: false };
-
               const parsed = JSON.parse(line);
               const content = parsed?.message?.content ?? '';
-              totalContent += content;
+              if (content) {
+                totalContent += content;
+                yield { type: 'delta', content };
+              }
 
               if (parsed.done) {
                 promptTokens = parsed.prompt_eval_count ?? 0;
                 completionTokens = parsed.eval_count ?? 0;
-                return {
-                  value: {
-                    type: 'done',
-                    meta: {
-                      provider: 'ollama-stream',
-                      model,
-                      promptTokens,
-                      completionTokens,
-                      durationMs: Date.now() - start,
-                    },
-                  } satisfies ReasoningStreamChunk,
-                  done: true,
+                yield {
+                  type: 'done',
+                  meta: {
+                    provider: 'ollama-stream',
+                    model,
+                    promptTokens,
+                    completionTokens,
+                    durationMs: Date.now() - start,
+                  },
                 };
+                return;
               }
-
-              return { value: { type: 'delta', content }, done: false };
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : String(err);
-              return {
-                value: { type: 'error', error: { code: 'PROVIDER_ERROR', message: msg } },
-                done: false,
-              };
+            } catch (jsonErr: any) {
+              console.warn('[OllamaReasoningProvider] Skipping unparseable stream line:', line, jsonErr);
             }
+          }
+        }
+
+        // Flush any remaining buffer if stream finished
+        if (lineBuffer.trim()) {
+          try {
+            const parsed = JSON.parse(lineBuffer.trim());
+            const content = parsed?.message?.content ?? '';
+            if (content) {
+              totalContent += content;
+              yield { type: 'delta', content };
+            }
+            if (parsed.done) {
+              promptTokens = parsed.prompt_eval_count ?? 0;
+              completionTokens = parsed.eval_count ?? 0;
+            }
+          } catch {}
+        }
+
+        yield {
+          type: 'done',
+          meta: {
+            provider: 'ollama-stream',
+            model,
+            promptTokens,
+            completionTokens,
+            durationMs: Date.now() - start,
           },
         };
-      },
-    };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        yield { type: 'error', error: { code: 'PROVIDER_ERROR', message: msg } };
+      }
+    }
 
     return {
-      chunks,
+      chunks: generateChunks(),
       async cancel() { await reader.cancel(); },
     };
   }

@@ -1,8 +1,9 @@
 import React from 'react';
 import { db } from '@/db';
 import { hermesKnowledge } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 import { PoliciesDashboard } from '@/components/hermes-portal/policies/PoliciesDashboard';
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { savePolicy } from './actions';
 
 interface PoliciesPageProps {
@@ -14,17 +15,26 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
 
   let dbPolicies: any[] = [];
   try {
+    const context = await resolvePortalContext(organizationSlug);
+    const targetSlug = context.tenant.organizationSlug || organizationSlug;
+    const orgId = context.tenant.organizationId;
+
     dbPolicies = await db
       .select()
       .from(hermesKnowledge)
       .where(
         and(
-          eq(hermesKnowledge.organizationId, organizationSlug),
+          or(
+            eq(hermesKnowledge.organizationId, organizationSlug),
+            eq(hermesKnowledge.organizationId, targetSlug),
+            eq(hermesKnowledge.organizationId, orgId),
+            eq(hermesKnowledge.organizationId, 'snarai')
+          ),
           eq(hermesKnowledge.dimension, 'policy')
         )
       );
   } catch (error) {
-    console.warn("Failed to fetch policies (table might be missing)", error);
+    console.warn("Failed to fetch policies:", error);
   }
 
   const mappedPolicies = dbPolicies.map(p => ({

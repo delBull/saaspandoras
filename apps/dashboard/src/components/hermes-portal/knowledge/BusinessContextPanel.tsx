@@ -5,9 +5,9 @@ import { Network, CircleDollarSign, ShieldCheck, UserCheck } from 'lucide-react'
 
 export function BusinessContextPanel() {
   const params = useParams();
-  const slug = params?.organizationSlug as string;
+  const slug = (params?.organizationSlug as string) || '';
 
-  const isSnarai = slug === 'snarai';
+  const isSnarai = slug.toLowerCase().includes('snarai') || slug === '9079ecf5-2162-4078-bddf-66b607e2d32f';
 
   const snaraiEntities = [
     { name: "S'Narai Token (SNR)", type: "Asset", icon: <CircleDollarSign className="w-5 h-5" />, desc: "Primary utility token on Sepolia" },

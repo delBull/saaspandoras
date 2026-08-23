@@ -62,7 +62,7 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
   };
 
   const renderPolicyCard = (title: string, desc: string, icon: React.ReactNode, key: string, value: string) => (
-    <section className="bg-[#0C0C12] border border-white/[0.06] rounded-2xl p-6 relative group hover:border-white/[0.12] transition-colors">
+    <section className="bg-[#0C0C12] border border-white/[0.06] rounded-2xl p-6 relative group hover:border-white/[0.12] transition-colors flex flex-col">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-1">
@@ -73,12 +73,13 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
         </div>
         <button 
           onClick={() => setEditingPolicy({ key, title, value })}
-          className="p-2 text-white/40 hover:text-white bg-white/[0.02] hover:bg-white/[0.08] rounded-xl transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.1] rounded-xl transition-all border border-white/[0.06]"
         >
-          <Maximize2 size={16} />
+          <Maximize2 size={13} />
+          <span>Editar</span>
         </button>
       </div>
-      <div className="bg-[#12121A] border border-white/5 rounded-xl p-4 text-sm text-white/70 line-clamp-2 h-[60px]">
+      <div className="bg-[#12121A] border border-white/5 rounded-xl p-4 text-xs text-white/80 max-h-[180px] overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
         {value || <span className="text-white/20 italic">No policy defined...</span>}
       </div>
     </section>

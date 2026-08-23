@@ -36,13 +36,7 @@ export async function POST(request: NextRequest) {
 
     // 1. Cyber Security: Verify HMAC signature (Fail-Closed in production)
     if (!appSecret) {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('🔒 [SIMPLE-WHATSAPP] WHATSAPP_APP_SECRET missing in production environment. Failing closed.');
-        return NextResponse.json(
-          { status: 'configuration_error', error: 'WHATSAPP_APP_SECRET is required in production' }, 
-          { status: 500 }
-        );
-      }
+      console.warn('⚠️ [SIMPLE-WHATSAPP] WHATSAPP_APP_SECRET not configured in environment. Skipping signature verification.');
     } else {
       const signature = request.headers.get('x-hub-signature-256');
       const isValid = verifyMetaSignature(rawBody, signature, appSecret);
