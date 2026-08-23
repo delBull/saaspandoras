@@ -129,11 +129,11 @@ function FactCard({
           ) : (
             <div className="min-w-0 max-w-full">
               <div className={`text-white/90 font-normal leading-relaxed text-xs sm:text-sm break-words whitespace-pre-wrap font-sans ${
-                !expanded && fact.content.length > 250 ? 'line-clamp-3' : ''
+                !expanded && (fact.content?.length ?? 0) > 250 ? 'line-clamp-3' : ''
               }`}>
-                {fact.content}
+                {fact.content ?? '🔒 Artefacto soberano cifrado — contenido disponible únicamente en IPFS (verificación SHA-256 en tiempo de inferencia).'}
               </div>
-              {fact.content.length > 250 && (
+              {(fact.content?.length ?? 0) > 250 && (
                 <button
                   onClick={() => setExpanded(!expanded)}
                   className="mt-1.5 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
