@@ -404,15 +404,43 @@ export class CognitiveContextBuilder {
   }
 
   private static resolveStyleConflicts(tenantSoul: any, addOns: HermesAddOnManifest[]) {
-    let effectiveStyle = { ...tenantSoul };
+    let effectiveStyle: Record<string, any> = { ...(tenantSoul || {}) };
+
+    // Merge active Add-On style overlays
     for (const addon of addOns) {
       if (addon.styleOverlay) {
-        if (addon.styleOverlay.exclusivity === 'high') {
-          effectiveStyle.exclusivity = 'high';
-          effectiveStyle.mode = addon.styleOverlay.mode;
-        }
+        effectiveStyle = {
+          ...effectiveStyle,
+          ...addon.styleOverlay,
+        };
       }
     }
+
+    // Synthesize descriptive communication tone from Add-On style overlays
+    const toneDescriptors: string[] = [];
+    if (effectiveStyle.mode) {
+      const modeLabels: Record<string, string> = {
+        institutional_concierge: 'Concierge Patrimonial Institucional VIP',
+        family_office_advisor: 'Asesor Patrimonial Especializado (Family Office & Sindicación)',
+        trusted_advisor: 'Asesor de Confianza & Educación Patrimonial',
+      };
+      toneDescriptors.push(modeLabels[effectiveStyle.mode] || effectiveStyle.mode);
+    }
+    if (effectiveStyle.warmth === 'high') toneDescriptors.push('calidez alta y empática');
+    if (effectiveStyle.exclusivity === 'high' || effectiveStyle.exclusivity === 'ultra') {
+      toneDescriptors.push('alto nivel de exclusividad y discreción');
+    }
+    if (effectiveStyle.pressure === 'low' || effectiveStyle.pressure === 'none') {
+      toneDescriptors.push('sin presión comercial');
+    }
+    if (effectiveStyle.directness === 'high') {
+      toneDescriptors.push('comunicación directa y transparente');
+    }
+
+    if (toneDescriptors.length > 0) {
+      effectiveStyle.tone = toneDescriptors.join(', ');
+    }
+
     return effectiveStyle;
   }
 

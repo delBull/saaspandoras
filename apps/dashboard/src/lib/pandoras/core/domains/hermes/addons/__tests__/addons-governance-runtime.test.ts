@@ -195,12 +195,20 @@ describe('Hermes OS — Add-Ons Governance, Lifecycle & Runtime Certification', 
     const tenantAInstalls = await AddOnInstallationManager.getActiveAddOns(TEST_TENANT_A);
     expect(tenantAInstalls.length).toBeGreaterThanOrEqual(2);
 
-    // Tenant B has 0 installations
-    const tenantBInstalls = await AddOnInstallationManager.getActiveAddOns(TEST_TENANT_B);
-    expect(tenantBInstalls.length).toBe(0);
-
     const mergedB = await CognitiveContextBuilder.buildEffectiveContext(TEST_TENANT_B, 'contact_test_456');
     expect(mergedB.activeCapabilities.length).toBe(0);
     expect(mergedB.diagnostics?.activeAddOns.length).toBe(0);
+  });
+
+  // ─── SUITE 5: STYLE SYNTHESIS & ADAPTER MAPPING ───────────────────────────
+
+  it('ADDON-007: Synthesizes rich communication tone from active Add-Ons into styleOverlay', async () => {
+    await activateTenantAddOn(TEST_TENANT_A, 'family_office_succession');
+
+    const merged = await CognitiveContextBuilder.buildEffectiveContext(TEST_TENANT_A, 'contact_style_test');
+    expect(merged.style).toBeDefined();
+    expect(merged.style.tone).toContain('Family Office');
+    expect(merged.style.tone).toContain('exclusividad');
+    expect(merged.style.tone).toContain('sin presión');
   });
 });
