@@ -102,11 +102,17 @@ function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: strin
   }
 }
 
-async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: string): Promise<OrganizationOnboardingState> {
+async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: string, orgId?: string): Promise<OrganizationOnboardingState> {
   const rows = await db
     .select()
     .from(portalOnboardingState)
-    .where(eq(portalOnboardingState.tenantId, tenantId))
+    .where(
+      or(
+        eq(portalOnboardingState.tenantId, tenantId),
+        eq(portalOnboardingState.tenantId, orgSlug),
+        ...(orgId ? [eq(portalOnboardingState.tenantId, orgId)] : [])
+      )
+    )
     .limit(1);
 
   const existing = rows[0];
@@ -119,7 +125,7 @@ async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: str
 
   const initial = getTopicInitialMessage('general', orgName, orgSlug);
   const initialState: OrganizationOnboardingState = {
-    stage: 'ACTIVATION',
+    stage: 'BUSINESS_DISCOVERY',
     messages: [initial]
   };
 
@@ -169,6 +175,22 @@ export async function GET(request: Request) {
     const orgName = context.organization.name || organizationSlug;
     const conversationId = `portal_${tenantSlug}_${topicId}`;
 
+    // 0. Fetch actual onboarding stage from portalOnboardingState
+    const onboardingRows = await db
+      .select({ stage: portalOnboardingState.stage })
+      .from(portalOnboardingState)
+      .where(
+        or(
+          eq(portalOnboardingState.tenantId, tenantSlug),
+          eq(portalOnboardingState.tenantId, orgId),
+          eq(portalOnboardingState.tenantId, organizationSlug),
+          eq(portalOnboardingState.tenantId, String(context.organization.projectId))
+        )
+      )
+      .limit(1);
+
+    const currentStage: OnboardingStage = (onboardingRows[0]?.stage as OnboardingStage) || 'BUSINESS_DISCOVERY';
+
     // 1. Fetch persisted messages from hermesConversationMessages
     const dbMessages = await db
       .select()
@@ -200,7 +222,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         success: true,
         topicId,
-        stage: 'ACTIVATION',
+        stage: currentStage,
         messages: mappedMessages,
         chips: getTopicChips(topicId, orgName)
       });
@@ -211,7 +233,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       topicId,
-      stage: 'ACTIVATION',
+      stage: currentStage,
       messages: [topicInitial],
       chips: getTopicChips(topicId, orgName)
     });
@@ -293,7 +315,7 @@ export async function POST(request: Request) {
       }
     }, cpCtx);
 
-    const state = await loadOrCreateState(tenantId, orgName, organizationSlug);
+    const state = await loadOrCreateState(tenantId, orgName, organizationSlug, context.tenant.organizationId);
     const currentStage = state.stage;
 
     const userMsg: PortalChatMessage = {

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { hermesKnowledge, hermesGovernanceAudit } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { hermesKnowledge, hermesGovernanceAudit, projects, portalOnboardingState } from '@/db/schema';
+import { eq, and, or, inArray } from 'drizzle-orm';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
+import { TenantProvisioner } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-provisioner';
+import type { TenantKnowledgePackInput, TenantClaimInput } from '@/lib/pandoras/core/domains/hermes/tenants/contracts';
 
 export async function POST(request: Request) {
   try {
@@ -16,17 +18,23 @@ export async function POST(request: Request) {
 
     const context = await resolvePortalContext(organizationSlug);
     const orgId = context.tenant.organizationId;
+    const tenantSlug = context.tenant.organizationSlug || context.organization.slug || organizationSlug;
+    const orgName = context.organization.name || organizationSlug;
 
     let activatedCount = 0;
 
-    // Execute within a database transaction for strict atomic consistency
+    // 1. Execute within a database transaction for strict atomic consistency
     await db.transaction(async (tx) => {
       const pendingItems = await tx
         .select()
         .from(hermesKnowledge)
         .where(
           and(
-            eq(hermesKnowledge.organizationId, orgId),
+            or(
+              eq(hermesKnowledge.organizationId, orgId),
+              eq(hermesKnowledge.organizationId, organizationSlug),
+              eq(hermesKnowledge.organizationId, tenantSlug)
+            ),
             inArray(hermesKnowledge.status, ['DISCOVERED', 'PENDING_REVIEW'])
           )
         );
@@ -38,7 +46,11 @@ export async function POST(request: Request) {
           .set({ status: 'SUPERSEDED', updatedAt: new Date() })
           .where(
             and(
-              eq(hermesKnowledge.organizationId, orgId),
+              or(
+                eq(hermesKnowledge.organizationId, orgId),
+                eq(hermesKnowledge.organizationId, organizationSlug),
+                eq(hermesKnowledge.organizationId, tenantSlug)
+              ),
               eq(hermesKnowledge.dimension, item.dimension),
               eq(hermesKnowledge.key, item.key),
               eq(hermesKnowledge.status, 'ACTIVE')
@@ -74,10 +86,107 @@ export async function POST(request: Request) {
       }
     });
 
+    // 2. Fetch all ACTIVE knowledge facts to compile sovereign Claim Contract & policies
+    const allActiveKnowledge = await db
+      .select()
+      .from(hermesKnowledge)
+      .where(
+        and(
+          or(
+            eq(hermesKnowledge.organizationId, orgId),
+            eq(hermesKnowledge.organizationId, organizationSlug),
+            eq(hermesKnowledge.organizationId, tenantSlug)
+          ),
+          eq(hermesKnowledge.status, 'ACTIVE')
+        )
+      );
+
+    // Fetch Project record for deterministic metadata
+    const projectRecord = await db.query.projects.findFirst({
+      where: or(
+        eq(projects.organizationId, orgId),
+        eq(projects.slug, organizationSlug),
+        eq(projects.slug, tenantSlug),
+        eq(projects.id, context.organization.projectId)
+      ),
+    });
+
+    // Filter to facts with valid non-null content
+    const validFacts = allActiveKnowledge.filter(
+      (k): k is typeof k & { content: string } => typeof k.content === 'string' && k.content.trim().length > 0
+    );
+
+    const knowledgePacks: TenantKnowledgePackInput[] = validFacts.map((k) => ({
+      title: k.key,
+      dimension: k.dimension,
+      content: k.content,
+      visibility: (k.visibility as any) || 'PUBLIC',
+      classification: (k.classification as any) || 'PUBLIC',
+    }));
+
+    const customClaims: TenantClaimInput[] = validFacts.map((k, idx) => ({
+      claimId: `claim_${k.dimension}_${k.key}_${idx}`.replace(/[^a-zA-Z0-9_]/g, '_'),
+      category: 'FACT' as const,
+      canonicalAssertion: k.content,
+      permittedPhrasings: [k.content],
+      disclosureClearance: (k.classification as any) || 'PUBLIC',
+    }));
+
+    // 3. Provision Sovereign Intelligence Stack (Claim Contract, IPFS anchoring, Policy registration)
+    try {
+      await TenantProvisioner.provisionTenantIntelligence({
+        tenantId: organizationSlug,
+        organizationName: orgName,
+        agentName: 'Hermes',
+        projectMetadata: {
+          tokenPriceUsd: projectRecord?.tokenPriceUsd ?? undefined,
+          totalSupply: projectRecord?.totalTokens ?? undefined,
+          location: projectRecord?.businessCategory ?? undefined,
+          legalEntity: projectRecord?.fiduciaryEntity || projectRecord?.applicantName || undefined,
+          websiteUrl: projectRecord?.website ?? undefined,
+          whitepaperUrl: projectRecord?.whitepaperUrl ?? undefined,
+        },
+        knowledgePacks,
+        customClaims,
+      });
+    } catch (provErr) {
+      console.warn('[Bulk Activate] TenantProvisioner warning:', provErr);
+    }
+
+    // 4. Transition portalOnboardingState to ACTIVATION across all tenant identifiers
+    await db
+      .insert(portalOnboardingState)
+      .values({
+        tenantId: organizationSlug,
+        stage: 'ACTIVATION',
+        messages: [],
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: portalOnboardingState.tenantId,
+        set: {
+          stage: 'ACTIVATION',
+          updatedAt: new Date(),
+        },
+      });
+
+    await db
+      .update(portalOnboardingState)
+      .set({ stage: 'ACTIVATION', updatedAt: new Date() })
+      .where(
+        or(
+          eq(portalOnboardingState.tenantId, organizationSlug),
+          eq(portalOnboardingState.tenantId, orgId),
+          eq(portalOnboardingState.tenantId, tenantSlug),
+          eq(portalOnboardingState.tenantId, String(context.organization.projectId))
+        )
+      );
+
     return NextResponse.json({
       success: true,
       activatedCount,
-      message: `Se activaron ${activatedCount} elementos de conocimiento para ${context.organization.name || organizationSlug}. Hermes ahora responderá con esta información verificada.`,
+      stage: 'ACTIVATION',
+      message: `Se activaron ${activatedCount} elementos de conocimiento para ${orgName}. Hermes ahora responderá con esta información verificada.`,
     });
   } catch (error: any) {
     console.error('[Bulk Activate Knowledge Error]:', error);
