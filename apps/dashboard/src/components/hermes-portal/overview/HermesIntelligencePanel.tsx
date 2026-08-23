@@ -73,6 +73,10 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
   const [loadingTopic, setLoadingTopic] = useState(false);
   const [activeStage, setActiveStage] = useState<string>('ACTIVATION');
 
+  // History collapsed by default — only latest exchange visible on load
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [sessionStartedAt, setSessionStartedAt] = useState<number>(0);
+
   // Quoted reply state (WhatsApp style)
   const [replyingTo, setReplyingTo] = useState<MessageItem | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
@@ -100,6 +104,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
   // Load chat history whenever activeTopic changes
   const loadChatHistory = async (topicId: string) => {
     setLoadingTopic(true);
+    setHistoryExpanded(false); // collapse on every topic switch
     try {
       const res = await fetch(
         `/api/v1/internal/portal/messages?organizationSlug=${encodeURIComponent(organizationSlug)}&topicId=${encodeURIComponent(topicId)}`
@@ -107,12 +112,15 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
       if (res.ok) {
         const data = await res.json();
         if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages.map((m: any) => ({
+          const loaded: MessageItem[] = data.messages.map((m: any) => ({
             ...m,
             timestamp: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
-          })));
+          }));
+          setMessages(loaded);
+          setSessionStartedAt(loaded.length); // everything loaded is "history"
         } else {
           setMessages([]);
+          setSessionStartedAt(0);
         }
         if (data.stage) {
           setActiveStage(data.stage);
@@ -451,86 +459,91 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
               Hermes responderá con la bóveda soberana de S&apos;Narai, tokenomics y estrategia en tiempo real.
             </p>
           </div>
-        ) : (
-          messages.map(msg => {
-            const isUser = msg.role === 'user';
-            return (
-              <div 
-                key={msg.id} 
-                className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'}`}
-              >
-                {/* Quoted Message Preview Header */}
-                {msg.replyTo && (
-                  <div className={`text-[10px] text-neutral-400 mb-1 px-3 py-1 rounded-t-lg border border-b-0 max-w-[85%] truncate ${
-                    isUser ? 'bg-indigo-900/40 border-indigo-500/30' : 'bg-white/[0.03] border-white/[0.06]'
+        ) : (() => {
+            const historyMsgs = messages.slice(0, sessionStartedAt);
+            const sessionMsgs = messages.slice(sessionStartedAt);
+            const hiddenCount = historyExpanded ? 0 : Math.max(0, historyMsgs.length - 2);
+            const visibleHistory = historyExpanded ? historyMsgs : historyMsgs.slice(-2);
+
+            const renderMsg = (msg: MessageItem) => {
+              const isUser = msg.role === 'user';
+              return (
+                <div key={msg.id} className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'}`}>
+                  {msg.replyTo && (
+                    <div className={`text-[10px] text-neutral-400 mb-1 px-3 py-1 rounded-t-lg border border-b-0 max-w-[85%] truncate ${
+                      isUser ? 'bg-indigo-900/40 border-indigo-500/30' : 'bg-white/[0.03] border-white/[0.06]'
+                    }`}>
+                      ↩️ En respuesta a: <span className="italic text-neutral-300">&ldquo;{msg.replyTo.content}&rdquo;</span>
+                    </div>
+                  )}
+                  <div className={`relative max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed break-words shadow-md ${
+                    isUser
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-br-none shadow-indigo-600/20 font-medium'
+                      : 'bg-[#181824] border border-white/[0.08] text-neutral-200 rounded-bl-none font-normal'
                   }`}>
-                    ↩️ En respuesta a: <span className="italic text-neutral-300">&ldquo;{msg.replyTo.content}&rdquo;</span>
+                    {isUser ? <div className="whitespace-pre-wrap">{msg.content}</div> : <RichMessageBody content={msg.content} />}
+                    <div className={`flex items-center justify-end gap-1 mt-2 text-[10px] font-mono ${
+                      isUser ? 'text-indigo-200/80' : 'text-neutral-500'
+                    }`}>
+                      {msg.timestamp && <span>{msg.timestamp}</span>}
+                      {isUser && <span className="text-emerald-300 font-bold">✓✓</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity px-1">
+                    <button type="button" onClick={() => handleCopyMessage(msg)} title="Copiar texto" className="p-1 rounded-md text-neutral-500 hover:text-white hover:bg-white/[0.06] text-xs transition-colors">
+                      {copiedMsgId === msg.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    </button>
+                    <button type="button" onClick={() => handleQuoteReply(msg)} title="Citar y responder" className="p-1 rounded-md text-neutral-500 hover:text-indigo-300 hover:bg-white/[0.06] text-xs transition-colors">
+                      <Reply size={12} />
+                    </button>
+                    <button type="button" onClick={() => handleShareWhatsApp(msg)} title="Compartir en WhatsApp" className="p-1 rounded-md text-neutral-500 hover:text-emerald-400 hover:bg-white/[0.06] text-xs transition-colors">
+                      <Share2 size={12} />
+                    </button>
+                    <button type="button" onClick={() => handleShareTelegram(msg)} title="Compartir en Telegram" className="p-1 rounded-md text-neutral-500 hover:text-sky-400 hover:bg-white/[0.06] text-xs transition-colors">
+                      <SendHorizontal size={12} />
+                    </button>
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <>
+                {/* History pill — shows count of hidden messages */}
+                {hiddenCount > 0 && (
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryExpanded(true)}
+                      className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-indigo-500/10 border border-white/[0.08] hover:border-indigo-500/30 text-[11px] text-neutral-400 hover:text-indigo-300 transition-all"
+                    >
+                      <MessageSquare size={12} className="shrink-0" />
+                      <span>{hiddenCount === 1 ? '1 mensaje anterior' : `${hiddenCount} mensajes anteriores`}</span>
+                      <span className="text-[10px] opacity-50 group-hover:opacity-100">↑</span>
+                    </button>
                   </div>
                 )}
 
-                {/* Message Bubble */}
-                <div className={`relative max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed break-words shadow-md ${
-                  isUser 
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-br-none shadow-indigo-600/20 font-medium' 
-                    : 'bg-[#181824] border border-white/[0.08] text-neutral-200 rounded-bl-none font-normal'
-                }`}>
-                  {isUser ? (
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-                  ) : (
-                    <RichMessageBody content={msg.content} />
-                  )}
+                {/* Visible history messages */}
+                {visibleHistory.map(renderMsg)}
 
-                  {/* Timestamp & Read Receipts */}
-                  <div className={`flex items-center justify-end gap-1 mt-2 text-[10px] font-mono ${
-                    isUser ? 'text-indigo-200/80' : 'text-neutral-500'
-                  }`}>
-                    {msg.timestamp && <span>{msg.timestamp}</span>}
-                    {isUser && <span className="text-emerald-300 font-bold">✓✓</span>}
+                {/* Divider between history and current session */}
+                {historyExpanded && sessionMsgs.length > 0 && (
+                  <div className="flex items-center gap-2 py-1">
+                    <div className="flex-1 h-px bg-white/[0.05]" />
+                    <span className="text-[10px] text-neutral-600 font-mono uppercase tracking-wider">Sesión actual</span>
+                    <div className="flex-1 h-px bg-white/[0.05]" />
                   </div>
-                </div>
+                )}
 
-                {/* Message Action Toolbar (Hover floating bar) */}
-                <div className={`flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity px-1`}>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyMessage(msg)}
-                    title="Copiar texto"
-                    className="p-1 rounded-md text-neutral-500 hover:text-white hover:bg-white/[0.06] text-xs transition-colors"
-                  >
-                    {copiedMsgId === msg.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuoteReply(msg)}
-                    title="Citar y responder"
-                    className="p-1 rounded-md text-neutral-500 hover:text-indigo-300 hover:bg-white/[0.06] text-xs transition-colors"
-                  >
-                    <Reply size={12} />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleShareWhatsApp(msg)}
-                    title="Compartir en WhatsApp"
-                    className="p-1 rounded-md text-neutral-500 hover:text-emerald-400 hover:bg-white/[0.06] text-xs transition-colors"
-                  >
-                    <Share2 size={12} />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleShareTelegram(msg)}
-                    title="Compartir en Telegram"
-                    className="p-1 rounded-md text-neutral-500 hover:text-sky-400 hover:bg-white/[0.06] text-xs transition-colors"
-                  >
-                    <SendHorizontal size={12} />
-                  </button>
-                </div>
-              </div>
+                {/* Current session messages — always visible */}
+                {sessionMsgs.map(renderMsg)}
+              </>
             );
-          })
-        )}
+          })()
+        }
+
+
 
         {/* Typing indicator */}
         {isSubmitting && (
