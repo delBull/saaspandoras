@@ -17,7 +17,6 @@ import {
 } from './envelope-vault';
 import { EphemeralMemoryScrubber } from '../runtime/sandbox/memory-scrubber';
 import { HermesIdentitySigner } from '../identity/identity-signer';
-import { SafeHttpClient } from '../runtime/egress-guard';
 import { VaultAuthorizationGate, type VaultAccessContext } from './vault-authorization-gate';
 import { 
   SovereignIpfsOrchestrator, 
@@ -30,6 +29,7 @@ export type { EncryptedKnowledgeArtifact, EncryptionContextAAD };
 
 export interface IpfsPinnedArtifact {
   cid: string;
+  backupCid?: string;
   ipfsUri: string;
   contentHash: string;
   tenantId: string;
@@ -94,6 +94,15 @@ export class TenantIpfsVaultService {
       throw new Error('[TenantIpfsVault] HermesIdentitySigner is mandatory to anchor knowledge to IPFS.');
     }
 
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (
+      isProduction &&
+      !this.pinataJwt &&
+      !process.env.PANDORAS_KUBO_RPC_URL
+    ) {
+      throw new Error('[TenantIpfsVault] PINATA_JWT is mandatory in production for verifiable IPFS pinning.');
+    }
+
     // 1. Envelope Encryption with AAD & Multi-Pass Zeroization
     const encryptedArtifact = await this.envelopeVault.encryptArtifact(plaintext, context);
 
@@ -101,8 +110,9 @@ export class TenantIpfsVaultService {
     const payloadString = JSON.stringify(encryptedArtifact);
     const contentHash = crypto.createHash('sha256').update(payloadString, 'utf8').digest('hex');
 
-    // 3. Pin to IPFS (via Pinata API or Deterministic Mock Gateway in dev/test)
-    const cid = await this.pinJsonToIpfs(encryptedArtifact, `hermes_${context.tenantId}_${context.artifactId}_v${context.version}`);
+    // 3. Pin to IPFS (via SovereignIpfsOrchestrator: Kubo / Pinata / Mock)
+    const pinResult = await this.orchestrator.pinJson(encryptedArtifact, `hermes_${context.tenantId}_${context.artifactId}_v${context.version}`);
+    const cid = pinResult.cid;
 
     // 4. Mandatory: Cryptographically sign the IPFS Anchor with Tenant Agent Wallet (EIP-712)
     const signedIntent = await agentSigner.signIntent({
@@ -115,6 +125,7 @@ export class TenantIpfsVaultService {
 
     return {
       cid,
+      backupCid: pinResult.backupCid,
       ipfsUri: `ipfs://${cid}`,
       contentHash,
       tenantId: context.tenantId,

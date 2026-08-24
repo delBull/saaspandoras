@@ -39,6 +39,18 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
     return headers;
   }
 
+  private getEgressOptions() {
+    let rpcHost = '127.0.0.1';
+    let gwHost = '127.0.0.1';
+    try { rpcHost = new URL(this.rpcUrl).hostname; } catch {}
+    try { gwHost = new URL(this.gatewayUrl).hostname; } catch {}
+
+    return {
+      allowPrivateNetwork: true,
+      allowedDomains: [rpcHost, gwHost],
+    };
+  }
+
   /**
    * Pins JSON data to Kubo via /api/v0/add?cid-version=1&pin=true
    */
@@ -56,6 +68,7 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
       headers,
       body: formData,
       timeoutMs: this.timeoutMs,
+      ...this.getEgressOptions(),
     });
 
     if (!response.ok) {
@@ -82,6 +95,7 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
         method: 'POST',
         headers: this.getAuthHeaders(),
         timeoutMs: this.timeoutMs,
+        ...this.getEgressOptions(),
       });
 
       if (catRes.ok) {
@@ -101,6 +115,7 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
           'Accept': 'application/json',
         },
         timeoutMs: this.timeoutMs,
+        ...this.getEgressOptions(),
       });
 
       if (gwRes.ok) {
@@ -122,16 +137,19 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
       const res = await SafeHttpClient.fetch(url, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        timeoutMs: 5000,
+        timeoutMs: 6000,
+        ...this.getEgressOptions(),
       });
-      return res.ok;
+      if (!res.ok) return false;
+      const data = await res.json() as { Keys?: Record<string, unknown> };
+      return !!data.Keys && Object.keys(data.Keys).includes(cid);
     } catch {
       return false;
     }
   }
 
   /**
-   * Health check against Kubo /api/v0/version
+   * Health check against Kubo RPC /api/v0/version
    */
   public async healthCheck(): Promise<IpfsHealthStatus> {
     const start = Date.now();
@@ -140,17 +158,17 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
       const res = await SafeHttpClient.fetch(url, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        timeoutMs: 5000,
+        timeoutMs: 4000,
+        ...this.getEgressOptions(),
       });
 
       const latencyMs = Date.now() - start;
-
       if (res.ok) {
-        const body = await res.json() as { Version?: string };
+        const data = await res.json() as { Version?: string; Commit?: string };
         return {
           ok: true,
           providerType: 'KUBO',
-          version: body.Version || 'unknown',
+          version: data.Version,
           latencyMs,
         };
       }
@@ -159,14 +177,14 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
         ok: false,
         providerType: 'KUBO',
         latencyMs,
-        error: `HTTP ${res.status}: ${res.statusText}`,
+        error: `RPC returned HTTP ${res.status}`,
       };
     } catch (err: any) {
       return {
         ok: false,
         providerType: 'KUBO',
         latencyMs: Date.now() - start,
-        error: err?.message || 'Connection failed',
+        error: err?.message || 'Connection refused',
       };
     }
   }

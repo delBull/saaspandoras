@@ -17,6 +17,7 @@ export class SovereignIpfsOrchestrator {
   private primary: IpfsProvider;
   private backup?: IpfsProvider;
   private enableDualPinning: boolean;
+  private cidAliasMap = new Map<string, string>();
 
   constructor(config?: SovereignIpfsConfig) {
     const isProduction = process.env.NODE_ENV === 'production';
@@ -39,7 +40,6 @@ export class SovereignIpfsOrchestrator {
     } else if (!isProduction) {
       this.primary = new MockIpfsProvider();
     } else {
-      // In production without configured primary, throw fail-closed
       this.primary = new PinataIpfsProvider({
         pinataJwt: config?.pinataJwt,
         pinataGateway: config?.pinataGateway,
@@ -66,9 +66,30 @@ export class SovereignIpfsOrchestrator {
   }
 
   /**
+   * Registers a bidirectional mapping between two CIDs representing identical underlying content.
+   */
+  public registerCidAlias(primaryCid: string, backupCid: string): void {
+    if (primaryCid && backupCid && primaryCid !== backupCid) {
+      this.cidAliasMap.set(primaryCid, backupCid);
+      this.cidAliasMap.set(backupCid, primaryCid);
+    }
+  }
+
+  /**
+   * Retrieves the mapped CID alias if registered.
+   */
+  public getCidAlias(cid: string): string | undefined {
+    return this.cidAliasMap.get(cid);
+  }
+
+  /**
    * Pins JSON data using the primary provider and optionally mirrors to the backup provider.
    */
   public async pinJson(data: unknown, name?: string): Promise<IpfsPinResult> {
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction && !process.env.PANDORAS_KUBO_RPC_URL && !process.env.PINATA_JWT && this.primary.providerType === 'PINATA') {
+      throw new Error('[SovereignIpfsOrchestrator] PANDORAS_KUBO_RPC_URL or PINATA_JWT is mandatory in production.');
+    }
     const pinnedAt = new Date().toISOString();
 
     // 1. Pin to Primary (Sovereign Kubo or Pinata)
@@ -82,6 +103,9 @@ export class SovereignIpfsOrchestrator {
       try {
         backupCid = await this.backup.pinJson(data, name);
         backupMirrored = true;
+        if (backupCid && backupCid !== primaryCid) {
+          this.registerCidAlias(primaryCid, backupCid);
+        }
       } catch (err: any) {
         console.warn(`[SovereignIpfsOrchestrator] Backup dual-pinning warning for '${name}':`, err?.message);
       }
@@ -99,17 +123,19 @@ export class SovereignIpfsOrchestrator {
 
   /**
    * Fetches JSON content with automatic fail-over between Primary and Backup.
+   * Resolves CID alias mappings when formats differ across storage engines.
    */
   public async fetchJson<T = unknown>(cid: string): Promise<T> {
     try {
       return await this.primary.fetchJson<T>(cid);
     } catch (primaryErr: any) {
       if (this.backup) {
-        console.warn(`[SovereignIpfsOrchestrator] Primary (${this.primary.providerType}) fetch failed for CID '${cid}'. Initiating fail-over to backup (${this.backup.providerType})...`);
+        const targetCid = this.cidAliasMap.get(cid) || cid;
+        console.warn(`[SovereignIpfsOrchestrator] Primary (${this.primary.providerType}) fetch failed for CID '${cid}'. Initiating fail-over to backup (${this.backup.providerType}) using CID '${targetCid}'...`);
         try {
-          return await this.backup.fetchJson<T>(cid);
+          return await this.backup.fetchJson<T>(targetCid);
         } catch (backupErr: any) {
-          throw new Error(`[SovereignIpfsOrchestrator] Both primary and backup providers failed to retrieve CID '${cid}'. Primary: ${primaryErr?.message}; Backup: ${backupErr?.message}`);
+          throw new Error(`[SovereignIpfsOrchestrator] Both primary and backup providers failed to retrieve CID '${cid}' (target: '${targetCid}'). Primary: ${primaryErr?.message}; Backup: ${backupErr?.message}`);
         }
       }
       throw primaryErr;
@@ -117,13 +143,14 @@ export class SovereignIpfsOrchestrator {
   }
 
   /**
-   * Checks if CID exists across providers.
+   * Checks if CID exists across providers, taking into account CID aliases.
    */
   public async exists(cid: string): Promise<boolean> {
     if (this.primary.exists && await this.primary.exists(cid)) {
       return true;
     }
-    if (this.backup?.exists && await this.backup.exists(cid)) {
+    const targetCid = this.cidAliasMap.get(cid) || cid;
+    if (this.backup?.exists && await this.backup.exists(targetCid)) {
       return true;
     }
     return false;
