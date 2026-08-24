@@ -230,6 +230,7 @@ async function syncKnowledge() {
           .set({
             tenantId: TENANT_ID,
             ipfsCid: pinned.cid,
+            backupIpfsCid: pinned.backupCid || null,
             ipfsUri: pinned.ipfsUri,
             contentHash: pinned.contentHash,
             ciphertextHash,
@@ -248,6 +249,7 @@ async function syncKnowledge() {
           classification: doc.classification,
           version: 1,
           ipfsCid: pinned.cid,
+          backupIpfsCid: pinned.backupCid || null,
           ipfsUri: pinned.ipfsUri,
           contentHash: pinned.contentHash,
           ciphertextHash,

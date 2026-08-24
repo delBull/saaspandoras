@@ -313,7 +313,26 @@ export class TenantProvisioner {
             const pack = input.knowledgePacks[i]!;
             const contentHash = crypto.createHash('sha256').update(pack.content).digest('hex');
             const artifactId = `pack_${cleanTenantId}_${i + 1}`;
-            const packCid = `mock_bafkrei_pack_${cleanTenantId}_${i + 1}`;
+            let packCid = `mock_bafkrei_pack_${cleanTenantId}_${i + 1}`;
+            let backupPackCid: string | undefined = undefined;
+
+            try {
+              const vault = new TenantIpfsVaultService();
+              const pinnedPack = await vault.storeEncryptedKnowledgeToIpfs(
+                pack.content,
+                {
+                  tenantId: cleanTenantId,
+                  artifactId,
+                  version: 1,
+                  classification: (pack.classification || 'PUBLIC') as any,
+                },
+                signer
+              );
+              packCid = pinnedPack.cid;
+              backupPackCid = pinnedPack.backupCid;
+            } catch {
+              /* test/offline fallback */
+            }
 
             await activeDb
               .insert(hermesKnowledgeRegistry)
@@ -327,6 +346,7 @@ export class TenantProvisioner {
                 contentHash,
                 ciphertextHash: contentHash,
                 ipfsCid: packCid,
+                backupIpfsCid: backupPackCid || null,
                 ipfsUri: `ipfs://${packCid}`,
                 aadBinding: `tenant:${cleanTenantId}:art:${artifactId}:v1`,
                 merkleRoot,
@@ -347,6 +367,7 @@ export class TenantProvisioner {
                   contentHash,
                   ciphertextHash: contentHash,
                   ipfsCid: packCid,
+                  backupIpfsCid: backupPackCid || null,
                   ipfsUri: `ipfs://${packCid}`,
                   governanceStatus: 'ACTIVE',
                   updatedAt: new Date(),

@@ -12,6 +12,7 @@
 import crypto from 'crypto';
 import { HermesIdentitySigner } from '../identity/identity-signer';
 import { TenantIpfsVaultService } from './ipfs-vault';
+import { SovereignIpfsOrchestrator } from './ipfs/orchestrator';
 import { db } from '@/db';
 import { hermesClaimContracts } from '@/db/schema';
 import { eq, desc, and, inArray } from 'drizzle-orm';
@@ -339,8 +340,7 @@ export class ClaimContractEngine {
           if (isAllowed) {
             // Rehydrate CID alias mapping if backup replica CID exists
             if (row.backupIpfsCid && row.backupIpfsCid !== row.ipfsCid) {
-              const vault = new TenantIpfsVaultService();
-              vault.ipfsOrchestrator.registerCidAlias(row.ipfsCid, row.backupIpfsCid);
+              SovereignIpfsOrchestrator.registerGlobalCidAlias(row.ipfsCid, row.backupIpfsCid);
             }
 
             const loaded: TenantClaimContract = {

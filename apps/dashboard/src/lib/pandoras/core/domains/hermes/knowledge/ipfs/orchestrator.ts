@@ -24,6 +24,7 @@ import { MockIpfsProvider } from './mock-provider';
 import { SovereignStoragePolicyEngine } from './storage-policy';
 
 export class SovereignIpfsOrchestrator {
+  private static readonly globalCidAliasMap = new Map<string, string>();
   private primary: IpfsProvider;
   private backup?: IpfsProvider;
   private enableDualPinning: boolean;
@@ -76,20 +77,31 @@ export class SovereignIpfsOrchestrator {
   }
 
   /**
-   * Registers a bidirectional mapping between two CIDs representing identical underlying content.
+   * Statically registers a global bidirectional mapping between two CIDs.
    */
-  public registerCidAlias(primaryCid: string, backupCid: string): void {
+  public static registerGlobalCidAlias(primaryCid?: string | null, backupCid?: string | null): void {
     if (primaryCid && backupCid && primaryCid !== backupCid) {
-      this.cidAliasMap.set(primaryCid, backupCid);
-      this.cidAliasMap.set(backupCid, primaryCid);
+      this.globalCidAliasMap.set(primaryCid, backupCid);
+      this.globalCidAliasMap.set(backupCid, primaryCid);
     }
   }
 
   /**
-   * Retrieves the mapped CID alias if registered.
+   * Registers a bidirectional mapping between two CIDs representing identical underlying content.
+   */
+  public registerCidAlias(primaryCid?: string | null, backupCid?: string | null): void {
+    if (primaryCid && backupCid && primaryCid !== backupCid) {
+      this.cidAliasMap.set(primaryCid, backupCid);
+      this.cidAliasMap.set(backupCid, primaryCid);
+      SovereignIpfsOrchestrator.registerGlobalCidAlias(primaryCid, backupCid);
+    }
+  }
+
+  /**
+   * Retrieves the mapped CID alias if registered (checks instance and global process maps).
    */
   public getCidAlias(cid: string): string | undefined {
-    return this.cidAliasMap.get(cid);
+    return this.cidAliasMap.get(cid) || SovereignIpfsOrchestrator.globalCidAliasMap.get(cid);
   }
 
   /**
