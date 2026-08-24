@@ -18,6 +18,8 @@ import { CANONICAL_ADDONS, ensureCanonicalAddOnsRegistered, activateTenantAddOn 
 import { AddOnInstallationManager } from '../installation-manager';
 import { CognitiveContextBuilder } from '../context-merger';
 import { HermesAddOnManifest } from '../contracts';
+import { HermesPromptBuilder } from '../../runtime/prompt-builder';
+import { JourneyEngine, JOURNEY_TRIGGER_PATTERNS } from '../../runtime/journey-engine';
 
 describe('Hermes OS — Add-Ons Governance, Lifecycle & Runtime Certification', () => {
   const TEST_TENANT_A = `test_addon_tenant_a_${Date.now()}`;
@@ -210,5 +212,73 @@ describe('Hermes OS — Add-Ons Governance, Lifecycle & Runtime Certification', 
     expect(merged.style.tone).toContain('Family Office');
     expect(merged.style.tone).toContain('exclusividad');
     expect(merged.style.tone).toContain('sin presión');
+  });
+
+  it('ADDON-008: Composes harmonious multi-mode tone when multiple styled Add-Ons are active', async () => {
+    // Tenant A now has BOTH vip_family_concierge and family_office_succession active
+    await activateTenantAddOn(TEST_TENANT_A, 'vip_family_concierge');
+    await activateTenantAddOn(TEST_TENANT_A, 'family_office_succession');
+
+    const merged = await CognitiveContextBuilder.buildEffectiveContext(TEST_TENANT_A, 'contact_multi_mode');
+    const tone = merged.style?.tone ?? '';
+    expect(tone).toContain('VIP');
+    expect(tone).toContain('Family Office');
+    // Hierarchical merge keeps maximum exclusivity (ultra) across add-ons
+    expect(tone).toContain('máximo nivel de exclusividad');
+    expect(tone).toContain('sin presión comercial');
+  });
+
+  it('ADDON-009: Injects technical HUMAN_GATE constraint into prompt for gated capabilities only', async () => {
+    const baseContext = {
+      systemRules: [],
+      governanceRestrictions: [],
+      tenantIdentity: { agentName: 'Hermes', organizationName: 'Test Org' },
+      activeKnowledge: [],
+      conversationHistory: [],
+      currentMessage: { id: 'm1', role: 'USER' as const, content: 'Hola', createdAt: new Date() },
+    };
+
+    const prompt = HermesPromptBuilder.build({
+      reasoningContext: {
+        ...baseContext,
+        activeCapabilities: [
+          { id: 'vip_founder_connection', description: 'Facilitación de llamadas con fundadores.', suggestedActions: [], requiresHumanApproval: true },
+          { id: 'investment_guidance', description: 'Explicación de tokenomics.', suggestedActions: [], requiresHumanApproval: false },
+        ],
+      },
+      hints: {},
+    } as any);
+
+    const rendered = JSON.stringify(prompt);
+    expect(rendered).toContain('[ACTION_SLOT: vip_founder_connection]');
+    expect(rendered).toContain('[HUMAN_GATE: MANDATORY_HUMAN_APPROVAL]');
+    expect(rendered).toContain('[ACTION_SLOT: investment_guidance]');
+    // Only ONE gated slot — ungated capability must not inherit the gate
+    expect((rendered.match(/HUMAN_GATE/g) || []).length).toBe(1);
+  });
+
+  it('JOURNEY-001: Canonical trigger patterns match intent text and fail closed for unknown tenants', async () => {
+    // Pattern integrity
+    const triggers = JOURNEY_TRIGGER_PATTERNS.map(p => p.trigger);
+    expect(triggers).toContain('FOUNDER_CALL_REQUESTED');
+    expect(triggers).toContain('INTEREST_CONFIRMED');
+    expect(triggers).toContain('REFERRAL_RECOGNIZED');
+    // Human-gated transition must NEVER be auto-triggerable by message text
+    expect(triggers).not.toContain('DIRECTOR_HANDOFF_COMPLETE');
+
+    expect(JOURNEY_TRIGGER_PATTERNS.find(p => p.trigger === 'REFERRAL_RECOGNIZED')!.pattern.test('Hola, me recomendó María')).toBe(true);
+    expect(JOURNEY_TRIGGER_PATTERNS.find(p => p.trigger === 'INTEREST_CONFIRMED')!.pattern.test('Me interesa invertir, ¿cómo funciona?')).toBe(true);
+    expect(JOURNEY_TRIGGER_PATTERNS.find(p => p.trigger === 'FOUNDER_CALL_REQUESTED')!.pattern.test('Quisiera agendar una llamada con fundadores')).toBe(true);
+    expect(JOURNEY_TRIGGER_PATTERNS.find(p => p.trigger === 'INTEREST_CONFIRMED')!.pattern.test('El clima está agradable hoy')).toBe(false);
+
+    // Fail-closed for unknown tenant
+    const engine = new JourneyEngine();
+    const result = await engine.evaluateAndAdvance({
+      organizationId: `no_such_tenant_${Date.now()}`,
+      actorId: 'actor_x',
+      text: 'me interesa',
+    });
+    expect(result.success).toBe(false);
+    expect(result.skipped).toBe(true);
   });
 });

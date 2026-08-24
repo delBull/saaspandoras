@@ -37,6 +37,19 @@ export interface JourneyEnginePort {
   advanceActorStage(params: AdvanceActorStageParams): Promise<AdvanceActorStageResult>;
 }
 
+/**
+ * K28 — Canonical trigger patterns for auto-navigation.
+ * Ordered by journey depth (deepest first) at evaluation time.
+ * DIRECTOR_HANDOFF_COMPLETE is intentionally NOT mapped: stage 4→5 requires
+ * a human operator action (Human Gate) and must never be auto-triggered
+ * by prospect message text.
+ */
+export const JOURNEY_TRIGGER_PATTERNS: Array<{ trigger: string; pattern: RegExp }> = [
+  { trigger: 'FOUNDER_CALL_REQUESTED', pattern: /fundador|hablar con (el equipo|alguien|un asesor)|reuni[óo]n con|agendar|agenda(r)? una (llamada|cita)/i },
+  { trigger: 'INTEREST_CONFIRMED', pattern: /me interesa|quiero invertir|m[áa]s informaci[óo]n|c[óo]mo invierto|cu[áa]l es (el|la) (precio|rendimiento)|rendimientos?/i },
+  { trigger: 'REFERRAL_RECOGNIZED', pattern: /referid[oa]|me recomend|nos recomendaron/i },
+];
+
 export class JourneyEngine implements JourneyEnginePort {
   private readonly validator: JourneyTransitionValidator;
 
@@ -133,6 +146,122 @@ export class JourneyEngine implements JourneyEnginePort {
     } catch (err) {
       console.error(`[JourneyEngine] Error resolving journey for org ${organizationId}:`, err);
       return this.buildFailClosedSnapshot(organizationId);
+    }
+  }
+
+  /**
+   * 🛡️ K28 — Journey Auto-Navigation:
+   * Evaluates the actor's message against canonical transition triggers and
+   * advances the actor ONE legal stage when a trigger matches. Deeper jumps
+   * are attempted first; illegal jumps fall through to lower-priority
+   * triggers (the Journey Graph Validator rejects non-adjacent moves).
+   * Human-gated transitions (DIRECTOR_HANDOFF_COMPLETE) are never automatic.
+   */
+  async evaluateAndAdvance(params: {
+    organizationId: string;
+    actorId: string;
+    text: string;
+  }): Promise<AdvanceActorStageResult & { skipped?: boolean }> {
+    const { organizationId, actorId, text } = params;
+    if (!text || !actorId || !organizationId) {
+      return { success: false, skipped: true, reason: 'Missing organizationId, actorId or text' };
+    }
+
+    try {
+      // Resolve tenant (fail-closed)
+      const project = await db.query.projects.findFirst({
+        where: isUuid(organizationId)
+          ? eq(projects.organizationId, organizationId)
+          : eq(projects.slug, organizationId),
+        columns: { id: true, organizationId: true, slug: true }
+      });
+      if (!project) {
+        return { success: false, skipped: true, reason: `Unknown tenant '${organizationId}'` };
+      }
+      const canonicalOrgId = project.organizationId;
+      const orgSlug = project.slug;
+
+      // Active journey + stages + explicit transitions
+      const activeJourney = await db.query.hermesJourneys.findFirst({
+        where: and(
+          or(eq(hermesJourneys.organizationId, canonicalOrgId), eq(hermesJourneys.organizationId, orgSlug)),
+          eq(hermesJourneys.status, 'ACTIVE')
+        ),
+        orderBy: [asc(hermesJourneys.createdAt)]
+      });
+      if (!activeJourney) {
+        return { success: false, skipped: true, reason: 'No active journey for tenant' };
+      }
+
+      const stages = await db
+        .select()
+        .from(hermesJourneyStages)
+        .where(eq(hermesJourneyStages.journeyId, activeJourney.id))
+        .orderBy(asc(hermesJourneyStages.orderIndex));
+      if (stages.length === 0) {
+        return { success: false, skipped: true, reason: 'Journey has no stages' };
+      }
+
+      const dbTransitions = await db
+        .select()
+        .from(hermesJourneyTransitions)
+        .where(and(
+          eq(hermesJourneyTransitions.journeyId, activeJourney.id),
+          eq(hermesJourneyTransitions.status, 'ACTIVE')
+        ));
+      if (dbTransitions.length === 0) {
+        return { success: false, skipped: true, reason: 'No executable transitions configured' };
+      }
+
+      // Current stage of the actor (or first stage)
+      const actorJourney = await db.query.hermesActorJourneys.findFirst({
+        where: and(
+          or(
+            eq(hermesActorJourneys.organizationId, canonicalOrgId),
+            eq(hermesActorJourneys.organizationId, orgSlug)
+          ),
+          eq(hermesActorJourneys.actorId, actorId),
+          eq(hermesActorJourneys.journeyId, activeJourney.id),
+          eq(hermesActorJourneys.status, 'IN_PROGRESS')
+        )
+      });
+      const currentStage =
+        stages.find(s => s.name === actorJourney?.currentStageId || s.id === actorJourney?.currentStageId) ||
+        stages[0]!;
+
+      // Candidate transitions FROM the current stage whose trigger matches the text,
+      // deepest journey position first.
+      const candidates = dbTransitions
+        .filter(t => t.fromStageId === currentStage.id || t.fromStageId === currentStage.name)
+        .map(t => ({
+          transition: t,
+          toStage: stages.find(s => s.id === t.toStageId || s.name === t.toStageId),
+        }))
+        .filter((c): c is { transition: typeof dbTransitions[number]; toStage: typeof stages[number] } => Boolean(c.toStage))
+        .sort((a, b) => (b.toStage.orderIndex ?? 0) - (a.toStage.orderIndex ?? 0));
+
+      for (const candidate of candidates) {
+        const matched = JOURNEY_TRIGGER_PATTERNS.find(p => p.trigger === candidate.transition.trigger);
+        if (!matched) continue;
+        if (!matched.pattern.test(text)) continue;
+
+        const result = await this.advanceActorStage({
+          organizationId,
+          actorId,
+          targetStageId: candidate.toStage.name,
+          expectedCurrentStageId: currentStage.id,
+          journeyId: activeJourney.id,
+          reason: `Auto-navigation via ${candidate.transition.trigger}`,
+          metadata: { source: 'RUNTIME_AUTO_NAV', trigger: candidate.transition.trigger },
+        });
+        if (result.success) return result;
+        // Rejected by validator (e.g. concurrency race) — try next candidate
+      }
+
+      return { success: false, skipped: true, reason: 'No matching legal transition for message' };
+    } catch (err: any) {
+      console.error(`[JourneyEngine] evaluateAndAdvance failed for ${organizationId}/${actorId}:`, err);
+      return { success: false, skipped: true, reason: err?.message || 'Internal error' };
     }
   }
 

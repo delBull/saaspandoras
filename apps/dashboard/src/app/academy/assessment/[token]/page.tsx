@@ -125,10 +125,41 @@ export default function CandidateAssessmentPage({ params }: Props) {
     }
   };
 
+  // Auto-restore draft for current module when assessment data loads or moduleIndex changes
+  useEffect(() => {
+    if (data?.assessment?.currentModuleIndex !== undefined) {
+      const draftKey = `academy_draft_${token}_m${data.assessment.currentModuleIndex}`;
+      try {
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft) {
+          setCurrentAnswer(savedDraft);
+        } else {
+          setCurrentAnswer("");
+        }
+      } catch {}
+    }
+  }, [data?.assessment?.currentModuleIndex, token]);
+
+  // Auto-save draft on every keystroke
+  const handleAnswerChange = (val: string) => {
+    setCurrentAnswer(val);
+    if (data?.assessment?.currentModuleIndex !== undefined) {
+      const draftKey = `academy_draft_${token}_m${data.assessment.currentModuleIndex}`;
+      try {
+        if (val.trim()) {
+          localStorage.setItem(draftKey, val);
+        } else {
+          localStorage.removeItem(draftKey);
+        }
+      } catch {}
+    }
+  };
+
   const handleSubmitAnswer = async () => {
     if (!currentAnswer.trim() || submitting || !data) return;
 
     setSubmitting(true);
+    const draftKey = `academy_draft_${token}_m${data.assessment.currentModuleIndex}`;
     try {
       const currentModule = data.currentModule;
       const question = currentModule?.assessments[0];
@@ -151,10 +182,15 @@ export default function CandidateAssessmentPage({ params }: Props) {
         throw new Error(json.error || "Error al registrar respuesta");
       }
 
+      // Clear draft on successful persistence
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {}
+
       setCurrentAnswer("");
       await fetchSession(verifiedEmail);
     } catch (e: any) {
-      alert(e.message);
+      alert(`⚠️ No se pudo enviar la respuesta: ${e.message}\n\nTu respuesta permanece guardada en el cuadro de texto. Puedes volver a presionar 'Enviar Respuesta' cuando se restablezca la conexión.`);
     } finally {
       setSubmitting(false);
     }
@@ -638,7 +674,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
                   rows={6}
                   placeholder="Redacta tu fundamentación, decisiones operativas, mitigación de riesgos y protocolo de escalación..."
                   value={currentAnswer}
-                  onChange={(e) => setCurrentAnswer(e.target.value)}
+                  onChange={(e) => handleAnswerChange(e.target.value)}
                   className="w-full bg-black/60 border border-white/15 rounded-xl p-4 text-xs font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/60 leading-relaxed resize-none transition-all"
                 />
               </div>
@@ -646,7 +682,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                 <span className="text-[10px] font-mono text-zinc-500">
-                  {currentAnswer.length} caracteres · Evaluado bajo rúbricas institucionales
+                  {currentAnswer.length} caracteres · Borrador auto-guardado en tiempo real
                 </span>
 
                 <button
@@ -657,7 +693,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      REGISTRANDO...
+                      REGISTRANDO RESPUESTA...
                     </>
                   ) : (
                     <>
@@ -668,6 +704,52 @@ export default function CandidateAssessmentPage({ params }: Props) {
                 </button>
               </div>
             </div>
+
+            {/* Completed Modules History (Persisted in Vault) */}
+            {assessment.responses && assessment.responses.length > 0 && (
+              <div className="space-y-3 pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-400" />
+                    <span>Progreso Guardado ({assessment.responses.length} Módulos Acreditados)</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    Sincronizado en NeonDB
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {assessment.responses.map((resp: any, rIdx: number) => (
+                    <div
+                      key={rIdx}
+                      className="p-4 rounded-2xl bg-[#0C0C10]/80 border border-white/5 space-y-2 text-xs"
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="font-bold text-purple-300">
+                          Módulo {resp.moduleIndex + 1}: {resp.questionPrompt || `Pregunta ${resp.moduleIndex + 1}`}
+                        </span>
+                        <span className="text-zinc-500">
+                          {new Date(resp.submittedAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-black/40 border border-white/5 font-mono text-zinc-300 text-[11px] whitespace-pre-wrap">
+                        {resp.candidateAnswer}
+                      </div>
+
+                      {resp.hermesFeedback && (
+                        <div className="p-2.5 rounded-xl bg-purple-500/[0.04] border border-purple-500/15 text-[11px] text-purple-300/90 font-sans">
+                          <span className="font-bold font-mono text-purple-400 block text-[10px] uppercase mb-0.5">
+                            Feedback de Hermes Socratic Evaluator:
+                          </span>
+                          {resp.hermesFeedback}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : null}
 

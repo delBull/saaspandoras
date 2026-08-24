@@ -83,6 +83,19 @@ export interface RuntimeResponse {
    * Present whenever claims of Tier >= LEVEL_1/LEVEL_2 are asserted in the governed output.
    */
   claimProvenanceReceipt?: import('../knowledge/claim-contract-engine').ClaimProvenanceReceipt;
+  /**
+   * K28 — Journey Auto-Navigation result.
+   * Present when the actor's message advanced (or attempted to advance) an
+   * executable journey stage. Human-gated transitions are never automatic.
+   */
+  journeyNavigation?: {
+    advanced: boolean;
+    skipped?: boolean;
+    journeyId?: string;
+    previousStageId?: string;
+    currentStageId?: string;
+    reason?: string;
+  };
 }
 
 export interface RuntimeTrace {
@@ -467,6 +480,7 @@ export type RuntimeTraceEventType =
   | 'PERSISTENCE_STARTED'
   | 'PERSISTENCE_COMMITTED'
   | 'PERSISTENCE_FAILED'
+  | 'JOURNEY_ADVANCED'
   | 'RUNTIME_COMPLETED'
   | 'RUNTIME_FAILED';
 
@@ -543,6 +557,15 @@ export interface RuntimeTraceMetadata {
   persistence?: {
     attempted: boolean;
     committed: boolean;
+  };
+
+  /** K28 — journey auto-navigation outcome (stage IDs only, never content). */
+  journeyNavigation?: {
+    advanced: boolean;
+    journeyId?: string;
+    previousStageId?: string;
+    currentStageId?: string;
+    reason?: string;
   };
 
   errorCode?: string;

@@ -46,6 +46,7 @@ import {
 import { CognitiveContextAdapter } from './context-adapter';
 import { HermesPromptBuilder } from './prompt-builder';
 import { CognitiveContextBuilder } from '../addons/context-merger';
+import { JourneyEngine } from './journey-engine';
 import { MockReasoningProvider, MockStreamingProvider } from './reasoning-providers';
 import { ConversationMemoryProvider } from './memory/contracts';
 import { PostgresConversationMemoryProvider } from './memory/postgres-memory-provider';
@@ -447,6 +448,34 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         },
       });
 
+      // Step 8d: Journey Auto-Navigation (Milestone K28 — executable journeys)
+      // Fire-after-persist, fail-open for the response itself: a journey engine
+      // failure NEVER blocks or degrades the governed reply.
+      let journeyNavigation: RuntimeResponse['journeyNavigation'] = undefined;
+      try {
+        const journeyEngine = new JourneyEngine();
+        const navResult = await journeyEngine.evaluateAndAdvance({
+          organizationId,
+          actorId: input.controlPlaneContext.actorId,
+          text: input.message?.content || '',
+        });
+        if (!navResult.skipped) {
+          journeyNavigation = {
+            advanced: navResult.success,
+            journeyId: navResult.journeyId,
+            previousStageId: navResult.previousStageId,
+            currentStageId: navResult.currentStageId,
+            reason: navResult.reason,
+          };
+          await this.traceRecorder.record(traceHandle, {
+            type: 'JOURNEY_ADVANCED',
+            metadata: { journeyNavigation },
+          });
+        }
+      } catch (journeyErr: any) {
+        console.warn('[HermesRuntime] Journey auto-navigation warning (non-blocking):', journeyErr?.message);
+      }
+
       await this.traceRecorder.complete(traceHandle, {
         success: true,
         durationMs: Date.now() - start,
@@ -471,6 +500,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         },
         trace,
         claimProvenanceReceipt,
+        journeyNavigation,
       };
     } catch (err) {
       if (traceHandle) {
