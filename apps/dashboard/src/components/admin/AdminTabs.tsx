@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * AdminTabs — Pandora's Growth OS & Hermes Control Plane
+ * Responsive tab navigator for Protocols, Users, NFT Lab, and Hermes Tenants.
+ * Reference: DOCUMENTACIÓN/Hermes/ROADMAP_HERMES_CHANNEL_MESH.md (Fase 1: Mobile Web Portal)
+ */
+
 import { useCallback } from 'react';
 import type { ReactNode } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';

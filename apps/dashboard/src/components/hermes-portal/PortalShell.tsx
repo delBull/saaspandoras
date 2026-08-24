@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * PortalShell — Phase 6.1 & 6.5.2.2 Mobile Polish
+ * PortalShell — Phase 6.1 & Hermes Channel Mesh (Fase 1: Mobile Web Portal)
  * components/hermes-portal/PortalShell.tsx
  * 
  * The visual frame for the Hermes Customer Operating Console.
  * Mobile-first responsive layout with slide-over backdrop drawer.
+ * Reference: DOCUMENTACIÓN/Hermes/ROADMAP_HERMES_CHANNEL_MESH.md
  */
 
 import React, { useState } from 'react';
