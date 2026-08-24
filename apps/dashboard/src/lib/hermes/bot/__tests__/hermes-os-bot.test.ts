@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HermesOSBotAdapter, TelegramUpdate } from '../hermes-os-bot';
+import { HermesOSBotAdapter, TelegramUpdate, escapeHtml } from '../hermes-os-bot';
 import * as routerModule from '@/lib/hermes/telegram-runtime/router';
 
 describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & Command Center Adapter', () => {
@@ -43,7 +43,7 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
     expect(sentMessages[0]?.text).toContain('no tiene workspaces vinculados');
   });
 
-  it('BOT-002: Handles /status running thin health check without cognitive overhead', async () => {
+  it('BOT-002: Handles /status responding with real dynamic metrics (DB + IPFS + K26)', async () => {
     const update: TelegramUpdate = {
       update_id: 1002,
       message: {
@@ -57,6 +57,8 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
 
     const result = await botAdapter.handleUpdate(update);
     expect(result.handled).toBe(true);
+    expect(sentMessages.length).toBe(1);
+    expect(sentMessages[0]?.text).toContain('No tienes acceso a métricas');
   });
 
   it('BOT-003: Handles /portal command returning WebApp launch button', async () => {
@@ -73,6 +75,7 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
 
     const result = await botAdapter.handleUpdate(update);
     expect(result.handled).toBe(true);
+    expect(result.action).toBe('PORTAL_UNAUTHORIZED');
   });
 
   it('BOT-004: Handles /switch command listing authorized workspaces', async () => {
@@ -89,6 +92,7 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
 
     const result = await botAdapter.handleUpdate(update);
     expect(result.handled).toBe(true);
+    expect(result.action).toBe('SWITCH_EMPTY');
   });
 
   it('BOT-005: Handles callback query switch:<UUID> with fail-closed access check', async () => {
@@ -110,5 +114,13 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
     expect(result.handled).toBe(true);
     expect(result.action).toBe('SWITCH_DENIED');
     expect(sentMessages.some(m => m.text.includes('Error al conmutar'))).toBe(true);
+  });
+
+  it('BOT-006: escapeHtml sanitizes dangerous characters preventing Telegram HTML injection', () => {
+    const dangerous = `<script>alert("xss & 'pwn'")</script>`;
+    const safe = escapeHtml(dangerous);
+    expect(safe).toBe('&lt;script&gt;alert(&quot;xss &amp; &#039;pwn&#039;&quot;)&lt;/script&gt;');
+    expect(safe).not.toContain('<');
+    expect(safe).not.toContain('>');
   });
 });

@@ -1,12 +1,12 @@
 import { 
-  TelegramAuthValidator, 
   HermesTenantMembershipService, 
-  HermesWorkspaceResolver,
   AuthorizedTenant
 } from '@/lib/hermes/auth';
 import { sendTelegramMessage } from '@/lib/hermes/telegram-runtime/router';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
+import { hermesSecurityEvents, hermesKnowledge } from '@/db/schema';
+import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
 
 export interface TelegramUpdate {
   update_id: number;
@@ -52,17 +52,30 @@ export interface HermesBotExecutionResult {
   action?: string;
   replySent?: boolean;
   error?: string;
+  data?: any;
+}
+
+export function escapeHtml(text: string): string {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 export class HermesOSBotAdapter {
   private botToken: string;
   private tmaBaseUrl: string;
   private membershipService: HermesTenantMembershipService;
+  private ipfsOrchestrator: SovereignIpfsOrchestrator;
 
   constructor(options: { botToken?: string; tmaBaseUrl?: string } = {}) {
     this.botToken = options.botToken || process.env.HERMES_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
     this.tmaBaseUrl = options.tmaBaseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
     this.membershipService = new HermesTenantMembershipService();
+    this.ipfsOrchestrator = new SovereignIpfsOrchestrator();
   }
 
   /**
@@ -70,7 +83,7 @@ export class HermesOSBotAdapter {
    */
   async handleUpdate(update: TelegramUpdate): Promise<HermesBotExecutionResult> {
     if (!this.botToken) {
-      console.error('[HermesOSBotAdapter] TELEGRAM_BOT_TOKEN is not configured.');
+      console.error('[HermesOSBotAdapter] HERMES_BOT_TOKEN is not configured.');
       return { handled: false, error: 'MISSING_BOT_TOKEN' };
     }
 
@@ -135,8 +148,9 @@ export class HermesOSBotAdapter {
     const tenants = await this.membershipService.getAuthorizedTenants(telegramUserId);
 
     if (tenants.length === 0) {
+      const safeUsername = escapeHtml(username || 'Operador');
       const unauthText = `🏛️ <b>Hermes OS — Command Center</b>\n\n` +
-        `Hola ${username ? `@${username}` : 'Operador'}. Tu cuenta de Telegram (ID: <code>${telegramUserId}</code>) no tiene workspaces vinculados en Hermes OS.\n\n` +
+        `Hola ${username ? `@${safeUsername}` : 'Operador'}. Tu cuenta de Telegram (ID: <code>${escapeHtml(telegramUserId)}</code>) no tiene workspaces vinculados en Hermes OS.\n\n` +
         `ℹ️ <i>Para vincular tu cuenta, entra al Dashboard web en tu organización y agrega tu Telegram ID o conecta tu wallet autorizada.</i>`;
 
       await sendTelegramMessage(this.botToken, chatId, unauthText);
@@ -155,11 +169,11 @@ export class HermesOSBotAdapter {
       }
     }
 
-    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${activeTenant.tenantSlug || activeTenant.organizationId}`;
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
 
     const welcomeText = `🏛️ <b>Hermes OS — Command Center</b>\n\n` +
-      `Operador: <b>${username ? `@${username}` : telegramUserId}</b>\n` +
-      `Workspace Activo: <b>${activeTenant.organizationName}</b> (Rol: <code>${activeTenant.role}</code>)\n\n` +
+      `Operador: <b>${username ? `@${escapeHtml(username)}` : escapeHtml(telegramUserId)}</b>\n` +
+      `Workspace Activo: <b>${escapeHtml(activeTenant.organizationName)}</b> (Rol: <code>${escapeHtml(activeTenant.role)}</code>)\n\n` +
       `Selecciona una acción operativa:`;
 
     const inlineKeyboard: any[][] = [
@@ -205,9 +219,9 @@ export class HermesOSBotAdapter {
       if (matched) activeTenant = matched;
     }
 
-    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${activeTenant.tenantSlug || activeTenant.organizationId}`;
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
 
-    const text = `📱 <b>Hermes OS Command Center</b>\nWorkspace: <b>${activeTenant.organizationName}</b>`;
+    const text = `📱 <b>Hermes OS Command Center</b>\nWorkspace: <b>${escapeHtml(activeTenant.organizationName)}</b>`;
     const keyboard = {
       inline_keyboard: [
         [
@@ -228,24 +242,73 @@ export class HermesOSBotAdapter {
       return { handled: true, action: 'STATUS_UNAUTHORIZED' };
     }
 
-    // Thin query for system status (DB + IPFS health check)
-    let dbStatus = '🟢 ONLINE';
+    // 1. Real check: Postgres Neon connectivity
+    let dbStatus = '🔴 OFFLINE';
     try {
       await db.execute(sql`SELECT 1`);
+      dbStatus = '🟢 ONLINE';
     } catch {
       dbStatus = '🔴 OFFLINE';
     }
 
+    // 2. Real check: Sovereign IPFS Health Check (Kubo + Pinata durability)
+    let ipfsStatusText = '🟡 UNKNOWN';
+    try {
+      const ipfsHealth = await this.ipfsOrchestrator.healthCheck();
+      const primaryType = ipfsHealth.primary.providerType;
+      const durability = ipfsHealth.durability.status;
+      if (durability === 'DURABLE') {
+        ipfsStatusText = `🟢 DURABLE (${primaryType} + Dual-Mirror)`;
+      } else if (durability === 'LOCAL_ONLY' || ipfsHealth.primary.ok) {
+        ipfsStatusText = `🟢 ACTIVE (${primaryType} Primary)`;
+      } else if (durability === 'DEGRADED') {
+        ipfsStatusText = `🟡 DEGRADED (Fail-over Active)`;
+      } else {
+        ipfsStatusText = `🔴 UNREACHABLE`;
+      }
+    } catch {
+      ipfsStatusText = '🔴 OFFLINE';
+    }
+
+    // 3. Real check: Security Events in last 24h
+    let securityEventsCount = 0;
+    try {
+      const secRows = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(hermesSecurityEvents)
+        .where(sql`${hermesSecurityEvents.createdAt} >= NOW() - INTERVAL '24 hours'`);
+      securityEventsCount = secRows[0]?.count ?? 0;
+    } catch {
+      // Non-blocking
+    }
+
+    // 4. Real check: Knowledge facts for active tenant
+    const activeTenant = tenants[0]!;
+    let factsCount = 0;
+    try {
+      const kRows = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(hermesKnowledge)
+        .where(sql`${hermesKnowledge.organizationId} = ${activeTenant.organizationId} OR ${hermesKnowledge.organizationId} = ${activeTenant.tenantSlug || ''}`);
+      factsCount = kRows[0]?.count ?? 0;
+    } catch {
+      // Non-blocking
+    }
+
     const statusText = `📊 <b>Hermes OS — System Health</b>\n\n` +
       `• <b>Postgres Database (Neon):</b> ${dbStatus}\n` +
-      `• <b>Sovereign IPFS Vault:</b> 🟢 ACTIVE (Kubo Primary + Pinata DR)\n` +
-      `• <b>Security Firewall (K26):</b> 🟢 ENFORCING (0 Breaches)\n` +
-      `• <b>Lattice Channel Mesh:</b> 🟢 CONNECTED\n` +
+      `• <b>Sovereign IPFS Vault:</b> ${ipfsStatusText}\n` +
+      `• <b>Security Firewall (K26):</b> 🟢 ENFORCING (<code>${securityEventsCount}</code> eventos 24h)\n` +
+      `• <b>Workspace Activo:</b> <b>${escapeHtml(activeTenant.organizationName)}</b> (<code>${factsCount}</code> hechos)\n` +
       `• <b>Workspaces Autorizados:</b> ${tenants.length}\n\n` +
-      `<i>Estado general: 100% Operativo</i>`;
+      `<i>Consulta ejecutada en tiempo real.</i>`;
 
     await sendTelegramMessage(this.botToken, chatId, statusText);
-    return { handled: true, action: 'STATUS_SUCCESS' };
+    return { 
+      handled: true, 
+      action: 'STATUS_SUCCESS',
+      data: { dbStatus, ipfsStatusText, securityEventsCount, factsCount }
+    };
   }
 
   private async executeSwitchCommand(chatId: number, telegramUserId: string): Promise<HermesBotExecutionResult> {
@@ -298,11 +361,11 @@ export class HermesOSBotAdapter {
           username: callbackQuery.from.username,
         });
 
-        const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${session.tenant.tenantSlug || session.tenant.organizationId}`;
+        const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(session.tenant.tenantSlug || session.tenant.organizationId)}`;
 
         const successText = `✅ <b>Workspace Activo Conmutado:</b>\n` +
-          `Organización: <b>${session.tenant.organizationName}</b>\n` +
-          `Rol: <code>${session.role}</code>\n\n` +
+          `Organización: <b>${escapeHtml(session.tenant.organizationName)}</b>\n` +
+          `Rol: <code>${escapeHtml(session.role)}</code>\n\n` +
           `Tu Command Center ahora opera sobre este workspace.`;
 
         const keyboard = {
@@ -320,7 +383,7 @@ export class HermesOSBotAdapter {
         await sendTelegramMessage(this.botToken, chatId, successText, keyboard);
         return { handled: true, action: 'SWITCH_SUCCESS' };
       } catch (err: any) {
-        await sendTelegramMessage(this.botToken, chatId, `❌ Error al conmutar workspace: ${err.message}`);
+        await sendTelegramMessage(this.botToken, chatId, `❌ Error al conmutar workspace: ${escapeHtml(err.message)}`);
         return { handled: true, action: 'SWITCH_DENIED' };
       }
     }
