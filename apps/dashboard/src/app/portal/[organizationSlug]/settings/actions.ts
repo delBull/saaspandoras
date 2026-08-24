@@ -70,6 +70,8 @@ export async function updateTenantSettingsAction(
   return { success: true };
 }
 
+import { SecurityAuditLogger } from '@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger';
+
 export async function generateApiKeyAction(
   organizationSlug: string,
   name: string,
@@ -107,6 +109,27 @@ export async function generateApiKeyAction(
       createdAt: integrationClients.createdAt,
     });
 
+  if (!inserted) {
+    throw new Error('Error al registrar la llave de API');
+  }
+
+  // K27.1 Immutable Security Event Logging for Credential Issuance
+  await SecurityAuditLogger.logEvent({
+    organizationId: organizationSlug,
+    eventType: 'TOOL_UNAUTHORIZED', // Audit credential event
+    severity: 'INFO',
+    policyDecision: 'ALLOW',
+    correlationId: `key_gen_${inserted.id}`,
+    metadata: {
+      action: 'API_KEY_GENERATED',
+      keyId: inserted.id,
+      keyFingerprint,
+      name: inserted.name,
+      permissions,
+      actorRole: ctx.tenant.role,
+    },
+  }).catch((err) => console.error('[Settings] Failed to log API key creation audit:', err));
+
   revalidatePath(`/portal/${organizationSlug}/settings`);
   return {
     success: true,
@@ -132,6 +155,20 @@ export async function revokeApiKeyAction(organizationSlug: string, keyId: string
         eq(integrationClients.projectId, projectId)
       )
     );
+
+  // K27.1 Immutable Security Event Logging for Credential Revocation
+  await SecurityAuditLogger.logEvent({
+    organizationId: organizationSlug,
+    eventType: 'TOOL_UNAUTHORIZED',
+    severity: 'WARN',
+    policyDecision: 'DENY',
+    correlationId: `key_rev_${keyId}`,
+    metadata: {
+      action: 'API_KEY_REVOKED',
+      keyId,
+      actorRole: ctx.tenant.role,
+    },
+  }).catch((err) => console.error('[Settings] Failed to log API key revocation audit:', err));
 
   revalidatePath(`/portal/${organizationSlug}/settings`);
   return { success: true };

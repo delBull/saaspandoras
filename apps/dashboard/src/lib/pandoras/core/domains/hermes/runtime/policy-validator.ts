@@ -50,6 +50,18 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     const channelMax = options?.channelMaxClassification || defaultChannelMax;
     const maxAllowedRank = CLASSIFICATION_LATTICE_RANK[channelMax] ?? 2;
 
+    // ── K27.1 Invariant: Fail-Closed when sovereign knowledge is unavailable ───
+    if (context.knowledgeUnavailable) {
+      const intentTier = ClaimContractEngine.determineIntentTier(output.content);
+      if (intentTier !== 'LEVEL_0_CONVERSATIONAL') {
+        violations.push({
+          code: 'RESTRICTED_KNOWLEDGE',
+          severity: 'BLOCK',
+          message: `KNOWLEDGE_UNAVAILABLE: Sovereign knowledge vault is unreachable. Ingestion failed and factual/commercial assertions (${intentTier}) are strictly prohibited in fail-closed state.`,
+        });
+      }
+    }
+
     // 1. K11-A21: Financial Hallucination Boundary
     // Only block when output makes financial PROMISES without active knowledge backing.
     // Informational legal explanations that include disclaimers (e.g. "sin garantías", "no garantiza")

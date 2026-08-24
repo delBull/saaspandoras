@@ -212,6 +212,11 @@ export interface ReasoningContext {
     tone?: string;
     language?: string;
   };
+  /**
+   * K27.1 Invariant: Set to true if the tenant has registered knowledge artifacts
+   * but the IPFS/K25 vault was completely unreachable or compromised.
+   */
+  knowledgeUnavailable?: boolean;
   conversationHistory: RuntimeMessage[];
   currentMessage: RuntimeMessage;
 }

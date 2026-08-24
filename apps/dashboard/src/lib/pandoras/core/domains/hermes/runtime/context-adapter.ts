@@ -175,6 +175,12 @@ export class CognitiveContextAdapter {
       ? { tone: style.tone, language: style.language }
       : undefined;
 
+    if (effectiveContext.knowledgeUnavailable) {
+      governanceRestrictions.push(
+        'KNOWLEDGE UNAVAILABLE (CRITICAL FAIL-CLOSED): The sovereign knowledge vault is currently unreachable. You are strictly forbidden from stating material project facts, prices, yields, or legal terms. Inform the user that factual validation is temporarily unavailable.'
+      );
+    }
+
     // -------------------------------------------------------------------------
     // 6. Assemble ReasoningContext
     // -------------------------------------------------------------------------
@@ -185,6 +191,7 @@ export class CognitiveContextAdapter {
       activeKnowledge,
       activeCapabilities,
       styleOverlay,
+      knowledgeUnavailable: Boolean(effectiveContext.knowledgeUnavailable),
       conversationHistory,
       currentMessage,
     };

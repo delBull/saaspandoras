@@ -9,6 +9,7 @@ import { ExecutiveScopeValidator } from '@/lib/pandoras/core/domains/academy/sec
 import { RuntimeExecutionContext, ClassifiedKnowledgeDocument } from '@/lib/pandoras/core/domains/academy/security/types';
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
 import { TenantIpfsVaultService } from '../knowledge/ipfs-vault';
+import { ClaimContractEngine } from '../knowledge/claim-contract-engine';
 
 export interface CoreSecurityContext {
   organizationId: string;
@@ -49,6 +50,8 @@ export interface ConversationContext {
   style: any;
   activeCapabilities: any[];
   intelligenceScores: DimensionIntelligenceScore[];
+  /** K27.1 Invariant: True when registered sovereign claim contracts failed retrieval from IPFS */
+  knowledgeUnavailable?: boolean;
   diagnostics?: {
     activeAddOns: string[];
     excludedAddOns: { id: string; status: string }[];
@@ -200,9 +203,12 @@ export class CognitiveContextBuilder {
     }
 
     // Pure sovereign knowledge: if IPFS records exist, prioritize verified IPFS payloads
+    const unpurgedRecords = rawRecords.filter(r => r.content !== null && r.content !== undefined);
+    const hasSovereignRegistry = ipfsRecords.length > 0;
+
     const knowledgeRecords = mappedIpfsKnowledge.length > 0 
       ? mappedIpfsKnowledge 
-      : rawRecords.filter(r => r.content !== null && r.content !== undefined);
+      : unpurgedRecords;
       
     // 1.1 Calculate Intelligence Scores
     const intelligenceScores = this.calculateIntelligenceScores(knowledgeRecords as unknown as any[]);
@@ -210,6 +216,20 @@ export class CognitiveContextBuilder {
     // For context-merger, pass ALL records so the ContextAdapter can enforce
     // the ACTIVE-only filter with proper exclusion tracing.
     const tenantKnowledge = await this.getTenantKnowledge(tenantId, knowledgeRecords as unknown as any[], project?.title);
+
+    const hasActiveContract = Boolean(
+      ClaimContractEngine.getContract(tenantId) || 
+      ClaimContractEngine.getContract(cleanSlug) ||
+      ClaimContractEngine.getContract(resolvedSlug)
+    );
+
+    const isKnowledgeUnavailable = Boolean(
+      hasSovereignRegistry && 
+      mappedIpfsKnowledge.length === 0 && 
+      unpurgedRecords.length === 0 && 
+      tenantKnowledge.activePacks.length === 0 && 
+      !hasActiveContract
+    );
     
     // 2. Fetch ALL Add-Ons for Tenant from the DB (to determine ACTIVE vs EXCLUDED)
     const records = await db
@@ -267,6 +287,7 @@ export class CognitiveContextBuilder {
       style: styleOverlay,
       activeCapabilities: allCapabilities,
       intelligenceScores,
+      knowledgeUnavailable: isKnowledgeUnavailable,
       diagnostics: {
         activeAddOns: activeRecords.map(r => r.addonId),
         excludedAddOns: excludedRecords.map(r => ({ id: r.addonId, status: r.status }))
