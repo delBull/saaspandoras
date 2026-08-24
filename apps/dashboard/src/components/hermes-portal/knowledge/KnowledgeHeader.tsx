@@ -16,7 +16,7 @@ export function KnowledgeHeader({ organizationName, onTeachClick }: { organizati
       
       <button 
         onClick={onTeachClick}
-        className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl font-medium transition-all duration-300 overflow-hidden"
+        className="w-full sm:w-auto group relative inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/15 text-white rounded-xl font-medium transition-all duration-300 overflow-hidden min-h-[44px]"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
         <Plus className="w-4 h-4" />

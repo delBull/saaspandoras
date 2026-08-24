@@ -74,36 +74,36 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
 
   return (
     <>
-      <div className="border-b border-zinc-700 mb-6 overflow-x-auto scrollbar-hide pb-1">
-        <nav className="flex space-x-4 min-w-max">
-          <button onClick={() => setTab('projects')} className={`pb-2 font-semibold transition-colors ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
+      <div className="border-b border-zinc-700 mb-6 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
+        <nav className="flex space-x-4 sm:space-x-6 min-w-max">
+          <button onClick={() => setTab('projects')} className={`pb-2 px-1 text-sm sm:text-base font-semibold transition-colors ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Protocolos
           </button>
-          <button onClick={() => setTab('users')} className={`pb-2 font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('users')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
             Usuarios
           </button>
-          <button onClick={() => setTab('nft')} className={`pb-2 font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('nft')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
             NFT Lab
           </button>
-          <button onClick={() => setTab('clients')} className={`pb-2 font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('clients')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
             Clientes
           </button>
-          <button onClick={() => setTab('hermes')} className={`pb-2 font-semibold ${activeTab === 'hermes' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-1.5`}>
+          <button onClick={() => setTab('hermes')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'hermes' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-1.5`}>
             🔑 Hermes Tenants
           </button>
 
           {showMarketing && (
-            <button onClick={() => setTab('marketing')} className={`pb-2 font-semibold ${activeTab === 'marketing' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-2`}>
+            <button onClick={() => setTab('marketing')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'marketing' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-2`}>
               Marketing
             </button>
           )}
           {showSettings && (
-            <button onClick={() => setTab('settings')} className={`pb-2 font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
+            <button onClick={() => setTab('settings')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
               Config
             </button>
           )}
           {showApiKeys && (
-            <button onClick={() => setTab('api-keys')} className={`pb-2 font-semibold ${activeTab === 'api-keys' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-1.5`}>
+            <button onClick={() => setTab('api-keys')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'api-keys' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-1.5`}>
               🔑 API Keys
             </button>
           )}

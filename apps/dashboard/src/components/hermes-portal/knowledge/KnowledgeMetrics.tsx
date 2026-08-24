@@ -33,7 +33,7 @@ export function KnowledgeMetrics({ overview }: { overview: KnowledgeOverviewView
   ].filter(Boolean).join(' · ') || 'No sources';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Health Card */}
       <div className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] flex flex-col gap-2">
         <span className="text-white/60 text-xs font-mono uppercase tracking-wider">Knowledge Health</span>

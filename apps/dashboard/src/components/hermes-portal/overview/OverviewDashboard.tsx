@@ -38,7 +38,7 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
   }
 
   return (
-    <div className="flex flex-col gap-8 pt-6 pb-12 animate-in fade-in duration-500 w-full px-4 sm:px-6">
+    <div className="flex flex-col gap-6 sm:gap-8 pt-4 sm:pt-6 pb-12 animate-in fade-in duration-500 w-full px-3 sm:px-6">
       
       {/* TOP ROW: Core, Mission, and Hermes Chat */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
@@ -66,8 +66,8 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
         </div>
 
         {/* Right Column: Hermes Intelligence Chat (5 cols on lg, 5 cols on xl) */}
-        {/* sticky top-6 keeps it visible while scrolling, max-h syncs with ~left col height */}
-        <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 flex flex-col w-full" style={{ height: 'min(calc(100vh - 140px), 680px)' }}>
+        {/* Responsive height on mobile, sticky and tall on desktop */}
+        <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 flex flex-col w-full h-[520px] lg:h-[min(calc(100vh-140px),680px)]">
           <HermesIntelligencePanel 
             organizationSlug={context.organization.slug} 
             organizationName={overview.organization.name} 
