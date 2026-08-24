@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 import { TenantAuthorityService } from '../tenant-authority';
 import { CognitiveContextAdapter } from '../../runtime/context-adapter';
 import { DefaultRuntimePolicyValidator } from '../../runtime/policy-validator';
@@ -63,8 +63,7 @@ describe('🏛️ Hermes OS — Milestone K27.1 Tenant Authority & Knowledge Una
 
     const unbackedFinancialOutput: ReasoningOutput = {
       content: 'El precio del token es de $100 USD y genera rendimientos del 20% anual garantizado.',
-      suggestedActions: [],
-      meta: { provider: 'mock', model: 'mock-k27', promptTokens: 50, completionTokens: 25 },
+      meta: { provider: 'mock', model: 'mock-k27', promptTokens: 50, completionTokens: 25, durationMs: 15 },
     };
 
     const result = await validator.validate(unbackedFinancialOutput, mockReasoningContext as any, strictPolicy);
@@ -89,8 +88,7 @@ describe('🏛️ Hermes OS — Milestone K27.1 Tenant Authority & Knowledge Una
 
     const conversationalOutput: ReasoningOutput = {
       content: 'Hola, un gusto saludarte. Actualmente nuestro servicio de validación fáctica se encuentra en sincronización. ¿En qué más puedo orientarte?',
-      suggestedActions: [],
-      meta: { provider: 'mock', model: 'mock-k27', promptTokens: 50, completionTokens: 25 },
+      meta: { provider: 'mock', model: 'mock-k27', promptTokens: 50, completionTokens: 25, durationMs: 12 },
     };
 
     const result = await validator.validate(conversationalOutput, mockReasoningContext as any, strictPolicy);
