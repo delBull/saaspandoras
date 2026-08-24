@@ -11,14 +11,12 @@ export class SessionTokenService {
   constructor(overrideSecret?: string) {
     this.secret = overrideSecret || 
       process.env.HERMES_SESSION_SECRET || 
-      process.env.JWT_SECRET || 
-      process.env.AUTH_SECRET || 
-      '';
+      (process.env.NODE_ENV === 'test' ? (process.env.JWT_SECRET || process.env.AUTH_SECRET || '') : '');
   }
 
   private getSigningKey(): Buffer {
     if (!this.secret) {
-      throw new HermesAuthError('Hermes session secret is not configured in environment.', 'MISSING_SESSION_SECRET', 500);
+      throw new HermesAuthError('HERMES_SESSION_SECRET is not configured in environment.', 'MISSING_SESSION_SECRET', 500);
     }
     return crypto.createHash('sha256').update(this.secret).digest();
   }
@@ -75,7 +73,7 @@ export class SessionTokenService {
   }
 
   /**
-   * Verifies and decodes a Hermes session token with tamper detection and expiry verification.
+   * Verifies and decodes a Hermes session token with tamper detection and mandatory expiry verification.
    */
   verifyToken(token: string): HermesTokenPayload {
     if (!token || typeof token !== 'string') {
@@ -94,7 +92,18 @@ export class SessionTokenService {
     const signingInput = `${encodedHeader}.${encodedPayload}`;
     const key = this.getSigningKey();
 
-    // Verify signature
+    // 1. Verify header alg
+    try {
+      const header = JSON.parse(this.base64UrlDecode(encodedHeader));
+      if (header.alg !== 'HS256') {
+        throw new HermesAuthError(`Unsupported JWT algorithm: ${header.alg}`, 'UNSUPPORTED_ALGORITHM', 401);
+      }
+    } catch (err: any) {
+      if (err instanceof HermesAuthError) throw err;
+      throw new HermesAuthError(`Invalid token header: ${err.message}`, 'MALFORMED_HEADER', 401);
+    }
+
+    // 2. Verify signature
     const expectedSignature = this.base64UrlEncode(
       crypto.createHmac('sha256', key).update(signingInput).digest()
     );
@@ -109,12 +118,16 @@ export class SessionTokenService {
       throw new HermesAuthError('Session token signature verification failed (tampered token).', 'INVALID_SIGNATURE', 401);
     }
 
-    // Parse and verify payload
+    // 3. Parse and verify payload (with mandatory exp and required authority fields)
     try {
       const payload: HermesTokenPayload = JSON.parse(this.base64UrlDecode(encodedPayload));
 
       const nowSeconds = Math.floor(Date.now() / 1000);
-      if (payload.exp && payload.exp < nowSeconds) {
+      if (!payload.exp || typeof payload.exp !== 'number') {
+        throw new HermesAuthError('Session token is missing mandatory exp timestamp.', 'MISSING_EXP', 401);
+      }
+
+      if (payload.exp < nowSeconds) {
         throw new HermesAuthError('Session token has expired.', 'EXPIRED_TOKEN', 401);
       }
 

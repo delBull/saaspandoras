@@ -6,15 +6,18 @@ import {
   AuthorizedTenant, 
   HermesSession, 
   HermesRole, 
-  HermesTenantAccessDeniedError 
+  HermesTenantAccessDeniedError,
+  HermesAuthError
 } from './hermes-session.types';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class HermesTenantMembershipService {
   /**
    * Resolves all organizations / tenants that a Telegram user is authorized to operate.
    * 
    * Precedence & Rules:
-   * 1. Global Platform Admin (`users.role === 'admin'`) grants ADMIN access to all active organizations.
+   * 1. Global Platform Admin (`users.role === 'admin'`) grants ADMIN access to active organizations.
    * 2. Project Owner (`projects.applicant_wallet_address` or `applicant_email`) grants OWNER access.
    * 3. DAO Member / Operator (`dao_members.wallet`) grants OPERATOR access.
    * 4. Channel Binding (`channel_identity_bindings`) grants OPERATOR access to bound tenant.
@@ -37,8 +40,13 @@ export class HermesTenantMembershipService {
         .where(eq(users.telegramId, telegramUserId))
         .limit(1);
       userRecord = userRows[0];
-    } catch (err) {
-      console.warn('[HermesTenantMembershipService] User lookup error:', err);
+    } catch (err: any) {
+      console.error('[HermesTenantMembershipService] User lookup error in database:', err?.message || err);
+      throw new HermesAuthError(
+        `Failed to resolve user identity from database: ${err?.message || 'Database error'}`,
+        'MEMBERSHIP_DB_UNAVAILABLE',
+        503
+      );
     }
 
     // 2. Look up secondary binding in `telegram_bindings`
@@ -52,8 +60,8 @@ export class HermesTenantMembershipService {
       if (bindingRows[0]?.walletAddress) {
         secondaryWallet = bindingRows[0].walletAddress.toLowerCase();
       }
-    } catch (err) {
-      console.warn('[HermesTenantMembershipService] Binding lookup error:', err);
+    } catch (err: any) {
+      console.error('[HermesTenantMembershipService] Binding lookup error in database:', err?.message || err);
     }
 
     // Candidate wallets associated with this Telegram user
@@ -65,7 +73,7 @@ export class HermesTenantMembershipService {
       wallets.push(secondaryWallet);
     }
 
-    // RULE 1: Global Platform Admin Authority
+    // RULE 1: Global Platform Admin Authority (Bounded to 100 workspaces per query)
     if (userRecord?.role === 'admin') {
       try {
         const allProjects = await db
@@ -75,7 +83,8 @@ export class HermesTenantMembershipService {
             title: projects.title,
             slug: projects.slug,
           })
-          .from(projects);
+          .from(projects)
+          .limit(100);
 
         for (const proj of allProjects) {
           tenantMap.set(proj.organizationId, {
@@ -88,8 +97,13 @@ export class HermesTenantMembershipService {
           });
         }
         return Array.from(tenantMap.values());
-      } catch (err) {
-        console.error('[HermesTenantMembershipService] Global admin project fetch failed:', err);
+      } catch (err: any) {
+        console.error('[HermesTenantMembershipService] Global admin project fetch failed:', err?.message || err);
+        throw new HermesAuthError(
+          `Failed to fetch admin projects: ${err?.message || 'Database error'}`,
+          'MEMBERSHIP_DB_UNAVAILABLE',
+          503
+        );
       }
     }
 
@@ -112,7 +126,8 @@ export class HermesTenantMembershipService {
             slug: projects.slug,
           })
           .from(projects)
-          .where(or(...ownerConditions));
+          .where(or(...ownerConditions))
+          .limit(50);
 
         for (const proj of ownedProjects) {
           tenantMap.set(proj.organizationId, {
@@ -124,8 +139,8 @@ export class HermesTenantMembershipService {
             isOwner: true,
           });
         }
-      } catch (err) {
-        console.warn('[HermesTenantMembershipService] Owner projects lookup failed:', err);
+      } catch (err: any) {
+        console.error('[HermesTenantMembershipService] Owner projects lookup failed:', err?.message || err);
       }
     }
 
@@ -141,7 +156,8 @@ export class HermesTenantMembershipService {
           })
           .from(daoMembers)
           .innerJoin(projects, eq(daoMembers.projectId, projects.id))
-          .where(inArray(daoMembers.wallet, wallets));
+          .where(inArray(daoMembers.wallet, wallets))
+          .limit(50);
 
         for (const row of memberRows) {
           if (!tenantMap.has(row.projectOrgId)) {
@@ -155,15 +171,17 @@ export class HermesTenantMembershipService {
             });
           }
         }
-      } catch (err) {
-        console.warn('[HermesTenantMembershipService] DAO members lookup failed:', err);
+      } catch (err: any) {
+        console.error('[HermesTenantMembershipService] DAO members lookup failed:', err?.message || err);
       }
     }
 
-    // RULE 4: Channel Identity Binding direct tenant lookup
+    // RULE 4: Channel Identity Binding direct tenant lookup (Batch query, no N+1, safe UUID casting)
     try {
       const cibRows = await db
-        .select()
+        .select({
+          identityId: channelIdentityBindings.identityId,
+        })
         .from(channelIdentityBindings)
         .where(
           and(
@@ -171,40 +189,50 @@ export class HermesTenantMembershipService {
             eq(channelIdentityBindings.externalUserId, telegramUserId),
             eq(channelIdentityBindings.status, 'ACTIVE')
           )
-        );
+        )
+        .limit(50);
 
-      for (const cib of cibRows) {
-        const targetIdent = cib.identityId;
-        // Check if identityId is a UUID or slug matching projects
-        const matchingProjs = await db
-          .select({
-            id: projects.id,
-            organizationId: projects.organizationId,
-            title: projects.title,
-            slug: projects.slug,
-          })
-          .from(projects)
-          .where(
-            or(
-              eq(projects.slug, targetIdent),
-              eq(projects.organizationId, targetIdent as any)
-            )
-          )
-          .limit(1);
+      if (cibRows.length > 0) {
+        const rawIds = Array.from(new Set(cibRows.map(r => r.identityId)));
+        const uuidList = rawIds.filter(id => UUID_REGEX.test(id));
+        const slugList = rawIds.filter(id => !UUID_REGEX.test(id));
 
-        if (matchingProjs[0] && !tenantMap.has(matchingProjs[0].organizationId)) {
-          tenantMap.set(matchingProjs[0].organizationId, {
-            organizationId: matchingProjs[0].organizationId,
-            organizationName: matchingProjs[0].title,
-            tenantSlug: matchingProjs[0].slug,
-            projectId: matchingProjs[0].id,
-            role: 'OPERATOR',
-            isOwner: false,
-          });
+        const conditions = [];
+        if (uuidList.length > 0) {
+          conditions.push(inArray(projects.organizationId, uuidList));
+        }
+        if (slugList.length > 0) {
+          conditions.push(inArray(projects.slug, slugList));
+        }
+
+        if (conditions.length > 0) {
+          const matchingProjs = await db
+            .select({
+              id: projects.id,
+              organizationId: projects.organizationId,
+              title: projects.title,
+              slug: projects.slug,
+            })
+            .from(projects)
+            .where(or(...conditions))
+            .limit(50);
+
+          for (const proj of matchingProjs) {
+            if (!tenantMap.has(proj.organizationId)) {
+              tenantMap.set(proj.organizationId, {
+                organizationId: proj.organizationId,
+                organizationName: proj.title,
+                tenantSlug: proj.slug,
+                projectId: proj.id,
+                role: 'OPERATOR',
+                isOwner: false,
+              });
+            }
+          }
         }
       }
-    } catch (err) {
-      console.warn('[HermesTenantMembershipService] CIB lookup failed:', err);
+    } catch (err: any) {
+      console.error('[HermesTenantMembershipService] Channel Identity Binding lookup failed:', err?.message || err);
     }
 
     return Array.from(tenantMap.values());
@@ -256,8 +284,8 @@ export class HermesTenantMembershipService {
         internalUserId = userRows[0].id;
         walletAddress = userRows[0].walletAddress || undefined;
       }
-    } catch {
-      // Non-blocking fallback to telegram identity
+    } catch (err: any) {
+      console.error('[HermesTenantMembershipService] User details lookup failed during session build:', err?.message || err);
     }
 
     const actorId = internalUserId ? `usr_${internalUserId}` : `tg_${telegramUserId}`;

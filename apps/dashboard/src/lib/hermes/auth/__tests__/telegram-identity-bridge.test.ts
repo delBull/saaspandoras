@@ -205,5 +205,53 @@ describe('🔐 Hermes OS Milestone 2.1 — Telegram Identity & Tenant Membership
         tokenService.verifyToken(expiredToken);
       }).toThrow();
     });
+
+    it('JWT-004: Rejects token with unsupported/tampered algorithm header (e.g. none)', () => {
+      const now = Date.now();
+      const mockSession = {
+        subject: { telegramUserId: '987654321' },
+        tenant: { organizationId: '9079ecf5-2162-4078-bddf-66b607e2d32f', organizationName: "S'Narai" },
+        actorId: 'tg_987654321',
+        role: 'OPERATOR' as const,
+        sessionId: 'hses_alg_test',
+        issuedAt: now,
+        expiresAt: now + 86400000,
+        source: 'TELEGRAM' as const,
+      };
+
+      const token = tokenService.issueToken(mockSession);
+      const [, payload, sig] = token.split('.');
+      const tamperedHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64').replace(/=/g, '');
+      const insecureToken = `${tamperedHeader}.${payload}.${sig}`;
+
+      expect(() => {
+        tokenService.verifyToken(insecureToken);
+      }).toThrow();
+    });
+
+    it('JWT-005: Rejects token missing exp claim', () => {
+      const now = Date.now();
+      const mockSession = {
+        subject: { telegramUserId: '987654321' },
+        tenant: { organizationId: '9079ecf5-2162-4078-bddf-66b607e2d32f', organizationName: "S'Narai" },
+        actorId: 'tg_987654321',
+        role: 'OPERATOR' as const,
+        sessionId: 'hses_no_exp',
+        issuedAt: now,
+        expiresAt: now + 86400000,
+        source: 'TELEGRAM' as const,
+      };
+
+      const token = tokenService.issueToken(mockSession);
+      const [header, payload, sig] = token.split('.');
+      const decodedPayload = JSON.parse(Buffer.from(payload!, 'base64').toString());
+      delete decodedPayload.exp;
+      const noExpPayload = Buffer.from(JSON.stringify(decodedPayload)).toString('base64').replace(/=/g, '');
+      const noExpToken = `${header}.${noExpPayload}.${sig}`;
+
+      expect(() => {
+        tokenService.verifyToken(noExpToken);
+      }).toThrow();
+    });
   });
 });
