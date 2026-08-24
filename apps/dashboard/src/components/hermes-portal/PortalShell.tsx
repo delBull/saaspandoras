@@ -9,7 +9,7 @@
  * Reference: DOCUMENTACIÓN/Hermes/ROADMAP_HERMES_CHANNEL_MESH.md
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { PortalContext } from '@/lib/portal/portal-types';
 import { PortalSidebar } from '@/components/hermes-portal/PortalSidebar';
 import { PortalHeader } from '@/components/hermes-portal/PortalHeader';
@@ -44,6 +44,21 @@ export function PortalShell({ context, children }: PortalShellProps) {
   // Inspector is hidden on the Overview page so the Hermes Intelligence Chat can take its place
   const isOverview = pathname === `/portal/${context.organization.slug}`;
 
+  // Mobile drawer: Escape-to-close + body scroll-lock while the slide-over is open
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <div className="min-h-screen bg-[#08080A] text-white font-sans flex relative overflow-x-hidden">
       
@@ -73,10 +88,15 @@ export function PortalShell({ context, children }: PortalShellProps) {
       )}
 
       {/* Desktop Sidebar & Mobile Slide-Over Drawer */}
-      <div className={`
-        fixed top-0 bottom-0 left-0 z-50 transition-transform duration-300 md:relative md:translate-x-0
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navegación del portal"
+        className={`
+          fixed top-0 bottom-0 left-0 z-50 transition-transform duration-300 md:relative md:translate-x-0
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
         <PortalSidebar
           organization={context.organization}
           permissions={context.tenant.permissions}

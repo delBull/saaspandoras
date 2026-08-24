@@ -128,4 +128,45 @@ Antes de enviar el reporte, imagina que un auditor hostil va a verificar CADA fr
 Para cada afirmación pregúntate: "¿qué comando probaría esto y qué salida daría?"
 Si no puedes nombrar el comando, no hagas la afirmación — o corrígela a lo que sí
 puedes demostrar.
-La clave de esta bloque es que convierte mis auditorías en checks auto-ejecutables: los patrones A, C, D y E son exactamente los cuatro que atrapamos una y otra vez (orfandad, firmas débiles, catches silenciosos, números obsoletos). Si Antigravity los corre él mismo antes de reportar, el 90% de estos detalles desaparece.
+
+La clave de este bloque es que convierte mis auditorías en checks auto-ejecutables:
+los patrones A, C, D y E son exactamente los cuatro que atrapamos una y otra vez
+(orfandad, firmas débiles, catches silenciosos, números obsoletos). Si Antigravity
+los corre él mismo antes de reportar, el 90% de estos detalles desaparece.
+
+## 10. PROTOCOLO DE ENTREGA ANTE AUDITORÍA (walkthrough obligatorio)
+
+Complementa §6 y §9: define CÓMO se presenta la entrega. La ejecución de las
+verificaciones ya está cubierta por §6 y §9E — esta sección regula la forma del
+reporte y la trazabilidad de cada claim. Sin este formato, la entrega se rechaza
+aunque el código sea correcto.
+
+### A. Mapa de completitud (verdad de completitud)
+- NUNCA declares una fase/checklist "completa" sin incluir una tabla de mapeo
+  EXHAUSTIVA: ítem del checklist → archivo tocado → tamaño del diff
+  (`git show <commit> --stat`).
+- Si un ítem del checklist NO aparece en el stat del commit, márcalo explícitamente
+  como ⏳ PENDIENTE. Prohibido omitirlo o doblarlo con otro ítem.
+- Prohibido certificar más ítems que archivos tocados.
+
+### B. Sellos de autoría (verdad de autoría)
+Clasifica CADA cambio con uno de tres sellos visibles, además del estado de §9F:
+  [NUEVO] código escrito en este commit ·
+  [PREEXISTENTE] funcionalidad que ya existía y solo se verificó ·
+  [INSPECCIÓN] verificado a mano sin test automatizado.
+- Describir funcionalidad preexistente como si fuera nueva = fabricación.
+- Todo test cuyo nombre diga "invokes X" / "rejects Y" DEBE incluir una
+  spy/mock assertion real (`vi.spyOn(...)` + expect de que fue llamado). Un test
+  que seguiría pasando sin la implementación es teatro prohibido (caso K27-IPFS-05 original).
+
+### C. Inmutabilidad desktop (frontend responsive)
+- En cambios responsive, la clase base puede cambiar SOLO si un prefijo sm:/md:/lg:
+  restaura el VALOR COMPUTADO anterior exacto (válido: `p-6` → `p-4 sm:p-6`).
+- Prohibido mutar textos/copy visible en el mismo commit responsive.
+- Antes de entregar, lista cada clase base modificada junto a su prefijo restore.
+
+### D. Formato de entrega obligatorio
+Walkthrough con esta tabla, sin excepciones:
+  | Claim | Evidencia (archivo:línea) | Sello | Estado |
+Sin tabla = entrega rechazada. Cada celda "Evidencia" debe ser verificable por un
+tercero con grep/read — la prueba del escéptico (§9G) aplicada al formato mismo.

@@ -52,8 +52,8 @@ export function LiveActivityFeed({ activity }: LiveActivityFeedProps) {
   };
 
   return (
-    <div className="flex flex-col p-6 rounded-2xl bg-[#0C0C12] border border-white/[0.04]">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="flex flex-col p-4 sm:p-6 rounded-2xl bg-[#0C0C12] border border-white/[0.04]">
+      <div className="flex items-center gap-2 mb-4 sm:mb-6">
         <Activity size={16} className="text-white/30" />
         <h3 className="text-white/50 text-xs font-semibold tracking-wider uppercase">Live Activity</h3>
       </div>

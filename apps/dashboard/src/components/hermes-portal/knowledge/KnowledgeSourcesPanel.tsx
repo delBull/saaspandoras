@@ -1,23 +1,36 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, FileText, Globe, MessageCircle, Building2, ShieldAlert, ChevronRight } from 'lucide-react';
+import { Brain, FileText, Globe, MessageCircle, Building2, ShieldAlert, ChevronDown, ChevronRight } from 'lucide-react';
 import type { KnowledgeSourceView } from '@/lib/pandoras/core/domains/control-plane/view-models';
 
-export function KnowledgeSourcesPanel({ 
-  sources, 
+const COLLAPSED_VISIBLE_COUNT = 4;
+
+export function KnowledgeSourcesPanel({
+  sources,
   onViewSource,
   onTeachClick
-}: { 
-  sources: KnowledgeSourceView[], 
+}: {
+  sources: KnowledgeSourceView[],
   onViewSource?: (id: string) => void,
   onTeachClick: () => void
 }) {
+  const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    setExpanded(window.matchMedia('(min-width: 640px)').matches);
+  }, []);
+
+  const isCollapsible = sources.length > COLLAPSED_VISIBLE_COUNT;
+  const visibleSources = expanded ? sources : sources.slice(0, COLLAPSED_VISIBLE_COUNT);
+
   return (
     <div className="flex flex-col border border-white/5 bg-white/[0.01] rounded-2xl overflow-hidden">
       <div className="p-6 border-b border-white/5 flex items-center justify-between">
         <h2 className="text-xl text-white/90 font-medium tracking-tight">KNOWLEDGE SOURCES</h2>
       </div>
-      
+
       {sources.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Brain className="w-12 h-12 text-white/20 mb-4" />
@@ -25,7 +38,7 @@ export function KnowledgeSourcesPanel({
           <p className="text-white/50 max-w-md mb-6">
             Your business knowledge is what allows Hermes to understand your customers, products, and operation.
           </p>
-          <button 
+          <button
             onClick={onTeachClick}
             className="px-6 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors"
           >
@@ -34,11 +47,22 @@ export function KnowledgeSourcesPanel({
         </div>
       ) : (
         <div className="flex flex-col divide-y divide-white/5">
-          {sources.map(source => (
+          {visibleSources.map(source => (
             <KnowledgeSourceRow key={source.id} source={source} onClick={() => onViewSource?.(source.id)} />
           ))}
-          
-          <button 
+
+          {isCollapsible && (
+            <button
+              className="p-3.5 min-h-[44px] flex items-center justify-center gap-1.5 text-sm font-medium text-indigo-300 hover:text-indigo-200 hover:bg-white/[0.02] transition-colors bg-white/[0.01]"
+              onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
+            >
+              {expanded ? 'Mostrar menos' : `Ver todas las fuentes (${sources.length})`}
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+            </button>
+          )}
+
+          <button
             className="p-4 text-center text-sm text-white/40 hover:text-white/60 transition-colors bg-white/[0.01]"
             onClick={onTeachClick}
           >
