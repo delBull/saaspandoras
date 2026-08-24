@@ -330,8 +330,13 @@ export class TenantProvisioner {
               );
               packCid = pinnedPack.cid;
               backupPackCid = pinnedPack.backupCid;
-            } catch {
-              /* test/offline fallback */
+            } catch (pinErr: any) {
+              // K27.x fail-closed: production NEVER anchors registry rows to
+              // fabricated CIDs — a failed pin must surface, not silently degrade.
+              if (process.env.NODE_ENV === 'production') {
+                throw new Error(`[TenantProvisioner] Knowledge pack IPFS anchoring failed for '${artifactId}': ${pinErr?.message}`);
+              }
+              /* test/offline fallback retains deterministic mock CID */
             }
 
             await activeDb

@@ -14,9 +14,9 @@ import {
   IpfsPinResult, 
   IpfsHealthStatus,
   IpfsPinOptions,
-  ArtifactStorageCategory,
-  SovereignIpfsHealth,
   IpfsReplicationStatus,
+  SovereignIpfsHealth,
+  ArtifactStorageCategory,
 } from './contracts';
 import { KuboRpcIpfsProvider } from './kubo-provider';
 import { PinataIpfsProvider } from './pinata-provider';
@@ -25,6 +25,8 @@ import { SovereignStoragePolicyEngine } from './storage-policy';
 
 export class SovereignIpfsOrchestrator {
   private static readonly globalCidAliasMap = new Map<string, string>();
+  /** K27.x: settled replication outcome per primary CID (REPLICATING is never terminal). */
+  private static readonly replicationOutcomes = new Map<string, IpfsReplicationStatus>();
   private primary: IpfsProvider;
   private backup?: IpfsProvider;
   private enableDualPinning: boolean;
@@ -105,6 +107,30 @@ export class SovereignIpfsOrchestrator {
   }
 
   /**
+   * K27.x: Returns the settled replication outcome for a primary CID.
+   * Undefined means the mirror decision has not settled yet (still REPLICATING).
+   */
+  public getReplicationOutcome(primaryCid: string): IpfsReplicationStatus | undefined {
+    return SovereignIpfsOrchestrator.replicationOutcomes.get(primaryCid);
+  }
+
+  /**
+   * K27.x Production integrity gate: fetches content (with fail-over) and
+   * recomputes the canonical SHA-256, failing closed on replica divergence.
+   * This is the enforcement behind the DURABLE invariant — no test-side logic.
+   */
+  public async fetchJsonVerified<T = unknown>(cid: string, expectedCanonicalContentHash: string): Promise<T> {
+    const data = await this.fetchJson<T>(cid);
+    const recomputedHash = SovereignStoragePolicyEngine.computeCanonicalContentHash(data);
+    if (recomputedHash !== expectedCanonicalContentHash) {
+      throw new Error(
+        `KNOWLEDGE_INTEGRITY_MISMATCH: Recovered replica content does not match canonical hash for CID '${cid}'. Expected '${expectedCanonicalContentHash}', got '${recomputedHash}'. Failing closed.`
+      );
+    }
+    return data;
+  }
+
+  /**
    * Pins JSON data using the primary provider and optionally mirrors to the backup provider
    * according to the institutional storage policy.
    */
@@ -157,8 +183,11 @@ export class SovereignIpfsOrchestrator {
             if (bCid && bCid !== primaryCid) {
               this.registerCidAlias(primaryCid, bCid);
             }
+            SovereignIpfsOrchestrator.replicationOutcomes.set(primaryCid, 'DURABLE');
           })
           .catch((err: any) => {
+            // K27.x: REPLICATING must never be terminal — record the degraded outcome.
+            SovereignIpfsOrchestrator.replicationOutcomes.set(primaryCid, 'DEGRADED');
             console.warn(`[SovereignIpfsOrchestrator] Background backup dual-pinning warning for '${artifactName}':`, err?.message);
           });
       }
@@ -175,6 +204,10 @@ export class SovereignIpfsOrchestrator {
       backupSuccess: backupMirrored,
       isAsyncInFlight,
     });
+
+    if (durabilityProof.replicationStatus !== 'REPLICATING') {
+      SovereignIpfsOrchestrator.replicationOutcomes.set(primaryCid, durabilityProof.replicationStatus);
+    }
 
     return {
       cid: primaryCid,

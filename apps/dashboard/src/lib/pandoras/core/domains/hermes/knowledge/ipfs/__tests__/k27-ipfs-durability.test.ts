@@ -215,20 +215,25 @@ describe('🏛️ Hermes OS — Milestone K27.x Sovereign IPFS Durability & Adve
 
     orchestrator.registerCidAlias('bafybei_primary_kubo_1', 'bafyrei_backup_pinata_tampered');
 
-    // Fail-over fetches from backup
+    // Fail-over fetches the TAMPERED backup payload
     const recovered = await orchestrator.fetchJson<typeof authenticPayload>('bafybei_primary_kubo_1');
     const recoveredHash = SovereignStoragePolicyEngine.computeCanonicalContentHash(recovered);
-
-    // Assert integrity check detects mismatch and rejects authenticity
     expect(recoveredHash).not.toBe(authenticHash);
     expect(recoveredHash).toBe(SovereignStoragePolicyEngine.computeCanonicalContentHash(forgedPayload));
 
-    // Validating against authentic hash throws fail-closed rejection
-    expect(() => {
-      if (recoveredHash !== authenticHash) {
-        throw new Error('KNOWLEDGE_INTEGRITY_MISMATCH: Recovered replica content does not match canonical hash.');
-      }
-    }).toThrow('KNOWLEDGE_INTEGRITY_MISMATCH');
+    // K27.x: PRODUCTION integrity gate (orchestrator.fetchJsonVerified) must
+    // reject the forged replica fail-closed — no test-side logic involved.
+    await expect(
+      orchestrator.fetchJsonVerified<typeof authenticPayload>('bafybei_primary_kubo_1', authenticHash)
+    ).rejects.toThrow('KNOWLEDGE_INTEGRITY_MISMATCH');
+
+    // The same gate accepts authentic content once primary is restored.
+    primaryOnline = true;
+    const verifiedAuthentic = await orchestrator.fetchJsonVerified<typeof authenticPayload>(
+      'bafybei_primary_kubo_1',
+      authenticHash
+    );
+    expect(verifiedAuthentic.authorizedShareCapital).toBe(50000000);
   });
 
   // K27-IPFS-06: L3 Claim Contract strict durability gating
@@ -324,5 +329,48 @@ describe('🏛️ Hermes OS — Milestone K27.x Sovereign IPFS Durability & Adve
 
     const decrypted = await rebootedVault.retrieveAndDecryptFromIpfs(pinned.cid, context);
     expect(decrypted).toBe(plaintext);
+  });
+
+  // K27-IPFS-09: REPLICATING is never a terminal state — settled outcomes are tracked
+  it('K27-IPFS-09: Async mirror settles into DURABLE or DEGRADED outcome, never orphaned REPLICATING', async () => {
+    const payload = { governance: 'outcome-lifecycle', seq: 1 };
+    const backupStore = new Map<string, any>();
+    let backupHealthy = false; // starts down
+
+    const primaryMock: IpfsProvider = {
+      providerType: 'KUBO',
+      async pinJson(data: any) { return `bafybei_kubo_${JSON.stringify(data).length}`; },
+      async fetchJson<T = unknown>(cid: string): Promise<T> { return null as any; },
+      async healthCheck() { return { ok: true, providerType: 'KUBO', latencyMs: 4 }; },
+    };
+    const backupMock: IpfsProvider = {
+      providerType: 'PINATA',
+      async pinJson(data: any) {
+        if (!backupHealthy) throw new Error('Pinata 503 unavailable');
+        return `bafyrei_pinata_${JSON.stringify(data).length}`;
+      },
+      async fetchJson<T = unknown>(cid: string): Promise<T> { return null as any; },
+      async healthCheck() { return { ok: backupHealthy, providerType: 'PINATA', latencyMs: 12 }; },
+    };
+
+    const orchestrator = new SovereignIpfsOrchestrator({
+      customPrimary: primaryMock,
+      customBackup: backupMock,
+      enableDualPinning: true,
+    });
+
+    // L2 KNOWLEDGE_VAULT → async mirror, initial proof is REPLICATING
+    const pinned = await orchestrator.pinJson(payload, { name: 'lifecycle.json', category: 'KNOWLEDGE_VAULT' });
+    expect(pinned.durabilityProof!.replicationStatus).toBe('REPLICATING');
+
+    // Mirror fails in background → outcome must settle to DEGRADED (not orphaned)
+    await new Promise((r) => setTimeout(r, 10));
+    expect(orchestrator.getReplicationOutcome(pinned.cid)).toBe('DEGRADED');
+
+    // Recovery scenario: healthy backup mirrors successfully → DURABLE
+    backupHealthy = true;
+    const recovered = await orchestrator.pinJson({ ...payload, seq: 2 }, { name: 'lifecycle.json', category: 'KNOWLEDGE_VAULT' });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(orchestrator.getReplicationOutcome(recovered.cid)).toBe('DURABLE');
   });
 });
