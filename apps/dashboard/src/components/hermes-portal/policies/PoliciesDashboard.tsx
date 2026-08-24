@@ -86,23 +86,23 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
   );
 
   return (
-    <div className="p-6 lg:p-10 max-w-6xl mx-auto space-y-10">
+    <div className="p-3 sm:p-6 lg:p-10 max-w-6xl mx-auto space-y-6 sm:space-y-10">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <Shield className="w-8 h-8 text-rose-400" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+            <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-rose-400 shrink-0" />
             Cognitive Policies
           </h1>
-          <p className="text-white/50 mt-2 max-w-2xl text-sm leading-relaxed">
+          <p className="text-white/50 mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed">
             Define boundaries, safety guardrails, and behavioral rules for Hermes. These policies are injected directly into the agent's core memory context.
           </p>
         </div>
         <button 
           onClick={handleSaveAll}
           disabled={isSaving}
-          className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-medium transition-all shrink-0 shadow-lg shadow-rose-900/20"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-medium transition-all shrink-0 shadow-lg shadow-rose-900/20 min-h-[44px]"
         >
           {isSaving ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

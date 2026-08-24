@@ -108,12 +108,12 @@ export function OnboardingClient({ organizationSlug, organizationName }: { organ
         <div className="bg-indigo-950/40 border-b border-indigo-500/20 px-3.5 sm:px-4 py-2 flex items-start sm:items-center gap-2 text-[11px] sm:text-xs text-indigo-200 leading-snug">
           <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400 shrink-0 mt-0.5 sm:mt-0" />
           <span>
-            <strong>¿Por qué activar?</strong> Al activar el conocimiento, Hermes responde a tus clientes en canales basándose estrictamente en estos hechos corporativos gobernados.
+            <strong>¿Por qué activar?</strong> Al activar el conocimiento descubierto, Hermes adquiere autoridad oficial para responder a tus clientes en WhatsApp, Telegram y Web basándose estrictamente en estos hechos corporativos sin alucinaciones.
           </span>
         </div>
         
         {/* Usamos el componente persistente del chat pero en un contenedor inmersivo */}
-        <div className="flex-1 bg-[#12121A] flex flex-col min-h-0 relative overflow-hidden">
+        <div className="flex-1 bg-[#12121A] flex flex-col min-h-0 relative">
           <HermesIntelligencePanel organizationSlug={organizationSlug} organizationName={organizationName} />
         </div>
       </motion.div>

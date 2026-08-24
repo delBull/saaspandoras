@@ -27,8 +27,8 @@ export function HermesTerminalBar({ sidebarCollapsed = true }: { sidebarCollapse
 
   return (
     <div className={`border-t border-white/10 bg-[#08080A] flex flex-col fixed bottom-0 right-0 z-40 text-[11px] font-mono text-zinc-500 transition-all duration-300 ${sidebarCollapsed ? 'left-0 md:left-16' : 'left-0 md:left-64'} ${isExpanded ? 'h-72' : 'h-10'}`}>
-        <div className="flex items-center justify-between px-4 shrink-0 h-10 w-full bg-[#08080A] select-none">
-            <div className="flex items-center gap-2 sm:gap-4 h-full">
+        <div className="flex items-center justify-between px-2 sm:px-4 shrink-0 h-10 w-full bg-[#08080A] select-none">
+            <div className="flex items-center gap-1 sm:gap-4 h-full overflow-x-auto scrollbar-hide">
                 <button 
                   onClick={() => setIsExpanded(!isExpanded)}
                   className="flex items-center hover:text-zinc-300 transition-colors h-full px-2 border-b-2 border-transparent hover:border-zinc-500"

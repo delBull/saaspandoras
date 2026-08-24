@@ -185,7 +185,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
   };
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+    <div className="p-3 sm:p-6 lg:p-10 max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 sm:gap-8">
       
       {/* Sidebar: List of Journeys */}
       <div className="lg:w-80 shrink-0 space-y-6">
@@ -201,7 +201,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
 
         <button 
           onClick={handleOpenCreate}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-900/20"
+          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-900/20 min-h-[44px]"
         >
           <Plus size={16} />
           Create New Journey

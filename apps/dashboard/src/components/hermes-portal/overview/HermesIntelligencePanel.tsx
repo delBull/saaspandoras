@@ -626,7 +626,7 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={`Pregunta a Hermes sobre ${activeTopic.title.toLowerCase()}...`}
-            className="flex-1 bg-[#161622] border border-white/[0.12] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-indigo-500/70 transition-all resize-none min-h-[44px] max-h-[120px] leading-relaxed shadow-inner"
+            className="flex-1 bg-[#161622] border border-white/[0.12] rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-indigo-500/70 transition-all resize-none min-h-[44px] max-h-[120px] leading-relaxed shadow-inner"
             disabled={isSubmitting}
           />
           <button 

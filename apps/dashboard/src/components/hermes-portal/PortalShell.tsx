@@ -101,7 +101,7 @@ export function PortalShell({ context, children }: PortalShellProps) {
 
         {/* Content Row: Main Page + Optional Inspector */}
         <div className="flex-1 flex flex-row overflow-hidden relative">
-          <main className="flex-1 overflow-y-auto pb-20 h-[calc(100vh-3rem)] mr-2">
+          <main className="flex-1 overflow-y-auto pb-20 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-3rem)] mr-0 sm:mr-2">
             {children}
           </main>
 
