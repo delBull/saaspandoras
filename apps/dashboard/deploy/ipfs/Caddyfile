@@ -1,0 +1,48 @@
+# 🌐 Pandora's Sovereign IPFS Reverse Proxy Configuration
+
+# 1. Public Gateway (Read Only - Content Addressed)
+ipfs.pandoras.finance {
+    encode gzip zstd
+
+    # CORS Headers for Web3 Frontends
+    header {
+        Access-Control-Allow-Origin *
+        Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+        Access-Control-Allow-Headers "Range"
+        X-Content-Type-Options "nosniff"
+    }
+
+    # Handle Preflight
+    @options {
+        method OPTIONS
+    }
+    respond @options 204
+
+    # Reverse proxy to local Kubo Gateway
+    reverse_proxy 127.0.0.1:8080 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
+# 2. Private RPC API (Hermes Control Plane Only)
+rpc.ipfs.pandoras.finance {
+    encode gzip zstd
+
+    # Authentication Gate: Check Bearer token or X-API-Key
+    @unauthorized {
+        not header Authorization "Bearer {$PANDORAS_KUBO_API_KEY}"
+        not header X-API-Key "{$PANDORAS_KUBO_API_KEY}"
+    }
+    respond @unauthorized "Unauthorized Sovereign RPC Access" 401
+
+    # Reverse proxy to local Kubo RPC API
+    reverse_proxy 127.0.0.1:5001 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

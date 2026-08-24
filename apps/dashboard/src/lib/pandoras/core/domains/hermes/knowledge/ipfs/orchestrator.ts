@@ -15,6 +15,8 @@ import {
   IpfsHealthStatus,
   IpfsPinOptions,
   ArtifactStorageCategory,
+  SovereignIpfsHealth,
+  IpfsReplicationStatus,
 } from './contracts';
 import { KuboRpcIpfsProvider } from './kubo-provider';
 import { PinataIpfsProvider } from './pinata-provider';
@@ -201,20 +203,37 @@ export class SovereignIpfsOrchestrator {
   }
 
   /**
-   * Health check across all configured providers.
+   * Health check across all configured providers reporting institutional durability metrics.
    */
-  public async healthCheck(): Promise<{
-    primary: IpfsHealthStatus;
-    backup?: IpfsHealthStatus;
-    overallOk: boolean;
-  }> {
+  public async healthCheck(): Promise<SovereignIpfsHealth> {
     const primaryStatus = await this.primary.healthCheck();
     const backupStatus = this.backup ? await this.backup.healthCheck() : undefined;
+
+    const primaryOnline = primaryStatus.ok;
+    const backupOnline = backupStatus?.ok ?? false;
+
+    let durabilityStatus: IpfsReplicationStatus = 'FAILED';
+    if (primaryOnline && backupOnline) {
+      durabilityStatus = 'DURABLE';
+    } else if (primaryOnline && !backupOnline) {
+      durabilityStatus = this.enableDualPinning ? 'DEGRADED' : 'LOCAL_ONLY';
+    } else if (!primaryOnline && backupOnline) {
+      durabilityStatus = 'DEGRADED';
+    }
 
     return {
       primary: primaryStatus,
       backup: backupStatus,
-      overallOk: primaryStatus.ok || (backupStatus?.ok ?? false),
+      overallOk: primaryOnline || backupOnline,
+      replication: {
+        primaryOnline,
+        backupOnline,
+        dualPinningEnabled: this.enableDualPinning,
+      },
+      durability: {
+        status: durabilityStatus,
+        clusterPeers: primaryStatus.providerType === 'KUBO' ? 1 : undefined,
+      },
     };
   }
 }

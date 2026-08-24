@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  kubo:
+    image: ipfs/kubo:v0.26.0
+    container_name: pandoras-kubo
+    restart: unless-stopped
+    environment:
+      - IPFS_PATH=/data/ipfs
+      - IPFS_PROFILE=server
+    volumes:
+      - ./data/ipfs_export:/export
+      - ./data/ipfs_data:/data/ipfs
+    ports:
+      # P2P Swarm is public
+      - "4001:4001"
+      - "4001:4001/udp"
+      # Gateway and RPC are bound STRICTLY to loopback
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:5001:5001"
+    healthcheck:
+      test: ["CMD", "ipfs", "id"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: pandoras-ipfs-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy_data:/data
+      - ./data/caddy_config:/config
+    environment:
+      - PANDORAS_KUBO_API_KEY=${PANDORAS_KUBO_API_KEY}
+    depends_on:
+      - kubo
+    network_mode: "host"

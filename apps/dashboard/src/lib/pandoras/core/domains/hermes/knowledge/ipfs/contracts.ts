@@ -44,6 +44,21 @@ export interface IpfsHealthStatus {
   error?: string;
 }
 
+export interface SovereignIpfsHealth {
+  overallOk: boolean;
+  primary: IpfsHealthStatus;
+  backup?: IpfsHealthStatus;
+  replication: {
+    primaryOnline: boolean;
+    backupOnline: boolean;
+    dualPinningEnabled: boolean;
+  };
+  durability: {
+    status: IpfsReplicationStatus;
+    clusterPeers?: number;
+  };
+}
+
 export interface IpfsPinOptions {
   name?: string;
   category?: ArtifactStorageCategory;

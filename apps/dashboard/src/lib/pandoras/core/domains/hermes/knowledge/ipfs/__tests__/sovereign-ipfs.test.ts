@@ -249,6 +249,9 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
     expect(health.overallOk).toBe(true);
     expect(health.primary.ok).toBe(true);
     expect(health.backup?.ok).toBe(true);
+    expect(health.replication.primaryOnline).toBe(true);
+    expect(health.replication.backupOnline).toBe(true);
+    expect(health.durability.status).toBe('DURABLE');
   });
 
   it('IPFS-008: SovereignStoragePolicyEngine computes correct replicationStatus per artifact tier', async () => {
