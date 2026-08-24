@@ -198,7 +198,9 @@ export class SovereignIpfsOrchestrator {
       return await this.primary.fetchJson<T>(cid);
     } catch (primaryErr: any) {
       if (this.backup) {
-        const targetCid = this.cidAliasMap.get(cid) || cid;
+        // K27.x Cold-Start DR: resolve aliases from instance AND process-global
+        // registry so rehydrated mappings survive vault/orchestrator disposal.
+        const targetCid = this.getCidAlias(cid) || cid;
         console.warn(`[SovereignIpfsOrchestrator] Primary (${this.primary.providerType}) fetch failed for CID '${cid}'. Initiating fail-over to backup (${this.backup.providerType}) using CID '${targetCid}'...`);
         try {
           return await this.backup.fetchJson<T>(targetCid);
@@ -217,7 +219,7 @@ export class SovereignIpfsOrchestrator {
     if (this.primary.exists && await this.primary.exists(cid)) {
       return true;
     }
-    const targetCid = this.cidAliasMap.get(cid) || cid;
+    const targetCid = this.getCidAlias(cid) || cid;
     if (this.backup?.exists && await this.backup.exists(targetCid)) {
       return true;
     }

@@ -425,4 +425,57 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
     const recovered = await rebootedVault.ipfsOrchestrator.fetchJson<any>(persistedRecord.ipfsCid);
     expect(recovered.message).toBe('Recovered from cold DR backup');
   });
+
+  it('IPFS-012: Global alias registry resolves fail-over on a BRAND-NEW instance (cold-start end-to-end)', async () => {
+    // Production cold-start sequence: DB loader registers aliases into the
+    // STATIC global registry (as claim-contract-engine.ts does) — no instance exists yet.
+    SovereignIpfsOrchestrator.registerGlobalCidAlias(
+      'bafybei_global_primary_cold',
+      'bafyrei_global_backup_cold'
+    );
+
+    const backupStore = new Map<string, any>();
+    backupStore.set('bafyrei_global_backup_cold', { status: 'recovered_via_global_registry' });
+
+    let primaryUp = false;
+    const primaryMock: IpfsProvider = {
+      providerType: 'KUBO',
+      async pinJson() { return 'bafybei_global_primary_cold'; },
+      async fetchJson<T = unknown>(_cid: string): Promise<T> {
+        if (!primaryUp) throw new Error('Kubo daemon down after redeploy (ECONNREFUSED)');
+        return null as any;
+      },
+      async healthCheck() { return { ok: primaryUp, providerType: 'KUBO', latencyMs: 5 }; },
+    };
+    const backupMock: IpfsProvider = {
+      providerType: 'PINATA',
+      async pinJson() { return 'bafyrei_global_backup_cold'; },
+      async fetchJson<T = unknown>(cid: string): Promise<T> {
+        const data = backupStore.get(cid);
+        if (!data) throw new Error(`Backup miss for '${cid}'`);
+        return data as unknown as T;
+      },
+      async exists(cid: string) { return backupStore.has(cid); },
+      async healthCheck() { return { ok: true, providerType: 'PINATA', latencyMs: 15 }; },
+    };
+
+    // BRAND-NEW orchestrator: empty instance map — must resolve via GLOBAL registry.
+    const freshOrchestrator = new SovereignIpfsOrchestrator({
+      customPrimary: primaryMock,
+      customBackup: backupMock,
+    });
+    expect(freshOrchestrator.getCidAlias('bafybei_global_primary_cold')).toBe('bafyrei_global_backup_cold');
+
+    // Fail-over must translate the primary CID through the global registry.
+    const recovered = await freshOrchestrator.fetchJson<{ status: string }>('bafybei_global_primary_cold');
+    expect(recovered.status).toBe('recovered_via_global_registry');
+
+    // exists() must also consult the global registry.
+    await expect(freshOrchestrator.exists('bafybei_global_primary_cold')).resolves.toBe(true);
+
+    primaryUp = true;
+    primaryMock.fetchJson = async () => ({ status: 'primary_back_online' }) as any;
+    const fromPrimary = await freshOrchestrator.fetchJson<{ status: string }>('bafybei_global_primary_cold');
+    expect(fromPrimary.status).toBe('primary_back_online');
+  });
 });
