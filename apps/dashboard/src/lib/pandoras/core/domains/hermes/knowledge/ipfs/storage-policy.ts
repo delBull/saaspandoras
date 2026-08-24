@@ -6,7 +6,13 @@
  * according to artifact sensitivity and legal/epistemic weight.
  */
 
-import { ArtifactStorageCategory, StorageDurabilityPolicy } from './contracts';
+import crypto from 'crypto';
+import { 
+  ArtifactStorageCategory, 
+  StorageDurabilityPolicy,
+  DurabilityProof,
+  IpfsReplicationStatus,
+} from './contracts';
 
 export class SovereignStoragePolicyEngine {
   private static readonly DEFAULT_POLICIES: Record<ArtifactStorageCategory, StorageDurabilityPolicy> = {
@@ -23,19 +29,19 @@ export class SovereignStoragePolicyEngine {
       description: 'Encrypted tenant knowledge (Level 2: Kubo + async Pinata redundancy)',
     },
     CLAIM_CONTRACT: {
-      minReplicationCopies: 3,
+      minReplicationCopies: 2,
       requireExternalBackup: true,
       synchronousMirror: true,
       description: 'Institutional Epistemic Claims (Level 3: Synchronous dual-pin + EIP-712 proof)',
     },
     AUDIT_SNAPSHOT: {
-      minReplicationCopies: 3,
+      minReplicationCopies: 2,
       requireExternalBackup: true,
       synchronousMirror: true,
       description: 'Append-only Merkle audit chain (Level 3: Synchronous dual-pin for compliance)',
     },
     AGENT_SOUL: {
-      minReplicationCopies: 3,
+      minReplicationCopies: 2,
       requireExternalBackup: true,
       synchronousMirror: true,
       description: 'Tenant Agent Identity & Policy manifest (Level 3: High durability)',
@@ -47,6 +53,14 @@ export class SovereignStoragePolicyEngine {
       description: 'Evaluator rubrics and benchmark standards (Level 2: Dual-pinned)',
     },
   };
+
+  /**
+   * Computes the deterministic SHA-256 content hash of any payload.
+   */
+  public static computeCanonicalContentHash(data: unknown): string {
+    const serialized = typeof data === 'string' ? data : JSON.stringify(data);
+    return crypto.createHash('sha256').update(serialized, 'utf8').digest('hex');
+  }
 
   /**
    * Resolves the effective durability policy for a given storage category,
@@ -78,7 +92,7 @@ export class SovereignStoragePolicyEngine {
     primarySuccess: boolean,
     backupSuccess: boolean,
     policy: StorageDurabilityPolicy
-  ): 'LOCAL_ONLY' | 'REPLICATING' | 'DURABLE' | 'DEGRADED' | 'FAILED' {
+  ): IpfsReplicationStatus {
     if (!primarySuccess && !backupSuccess) {
       return 'FAILED';
     }
@@ -96,5 +110,46 @@ export class SovereignStoragePolicyEngine {
 
     // Primary failed, but backup succeeded
     return 'DEGRADED';
+  }
+
+  /**
+   * Constructs a verifiable DurabilityProof binding the canonical content hash
+   * to verified physical storage locations.
+   */
+  public static buildDurabilityProof(params: {
+    data: unknown;
+    primaryCid: string;
+    backupCid?: string;
+    tenantId?: string;
+    category: ArtifactStorageCategory;
+    policy: StorageDurabilityPolicy;
+    primarySuccess: boolean;
+    backupSuccess: boolean;
+  }): DurabilityProof {
+    const verifiedReplicas: string[] = [];
+    if (params.primarySuccess && params.primaryCid) {
+      verifiedReplicas.push(`primary:${params.primaryCid}`);
+    }
+    if (params.backupSuccess && params.backupCid) {
+      verifiedReplicas.push(`backup:${params.backupCid}`);
+    }
+
+    const replicationStatus = this.evaluateReplicationStatus(
+      params.primarySuccess,
+      params.backupSuccess,
+      params.policy
+    );
+
+    return {
+      canonicalContentHash: this.computeCanonicalContentHash(params.data),
+      primaryCid: params.primaryCid,
+      backupCid: params.backupCid,
+      tenantId: params.tenantId,
+      category: params.category,
+      requiredCopies: params.policy.minReplicationCopies,
+      verifiedReplicas,
+      replicationStatus,
+      verifiedAt: new Date().toISOString(),
+    };
   }
 }

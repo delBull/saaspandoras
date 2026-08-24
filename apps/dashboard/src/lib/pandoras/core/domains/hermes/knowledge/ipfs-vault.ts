@@ -25,9 +25,16 @@ import {
   type IpfsProvider,
   type IpfsReplicationStatus,
   type ArtifactStorageCategory,
+  type DurabilityProof,
 } from './ipfs';
 
-export type { EncryptedKnowledgeArtifact, EncryptionContextAAD, IpfsReplicationStatus, ArtifactStorageCategory };
+export type { 
+  EncryptedKnowledgeArtifact, 
+  EncryptionContextAAD, 
+  IpfsReplicationStatus, 
+  ArtifactStorageCategory,
+  DurabilityProof,
+};
 
 export interface IpfsPinnedArtifact {
   cid: string;
@@ -41,6 +48,7 @@ export interface IpfsPinnedArtifact {
   agentSignature?: string;
   pinnedAt: string;
   replicationStatus?: IpfsReplicationStatus;
+  durabilityProof?: DurabilityProof;
 }
 
 export interface IpfsAuditSnapshot {
@@ -57,6 +65,7 @@ export interface IpfsAuditSnapshot {
   agentSignature: string;
   timestamp: string;
   replicationStatus?: IpfsReplicationStatus;
+  durabilityProof?: DurabilityProof;
 }
 
 export interface TenantIpfsVaultOptions extends SovereignIpfsConfig {
@@ -118,6 +127,7 @@ export class TenantIpfsVaultService {
     // 3. Pin to IPFS (via SovereignIpfsOrchestrator: Kubo / Pinata / Mock with KNOWLEDGE_VAULT storage policy)
     const pinResult = await this.orchestrator.pinJson(encryptedArtifact, {
       name: `hermes_${context.tenantId}_${context.artifactId}_v${context.version}`,
+      tenantId: context.tenantId,
       category: 'KNOWLEDGE_VAULT',
     });
     const cid = pinResult.cid;
@@ -143,6 +153,7 @@ export class TenantIpfsVaultService {
       agentSignature: signedIntent.signature,
       pinnedAt: new Date().toISOString(),
       replicationStatus: pinResult.replicationStatus,
+      durabilityProof: pinResult.durabilityProof,
     };
   }
 
@@ -236,6 +247,7 @@ export class TenantIpfsVaultService {
     // 2. Pin Audit Snapshot to IPFS with AUDIT_SNAPSHOT policy (Level 3)
     const pinResult = await this.orchestrator.pinJson(snapshotPayload, {
       name: `hermes_audit_${tenantId}_seq_${snapshotPayload.startSequence}_${snapshotPayload.endSequence}`,
+      tenantId,
       category: 'AUDIT_SNAPSHOT',
     });
     const cid = pinResult.cid;
@@ -263,6 +275,7 @@ export class TenantIpfsVaultService {
       agentSignature: signedIntent.signature,
       timestamp: snapshotPayload.exportedAt,
       replicationStatus: pinResult.replicationStatus,
+      durabilityProof: pinResult.durabilityProof,
     };
   }
 

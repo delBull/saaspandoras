@@ -59,8 +59,21 @@ export interface SovereignIpfsHealth {
   };
 }
 
+export interface DurabilityProof {
+  canonicalContentHash: string;
+  primaryCid: string;
+  backupCid?: string;
+  tenantId?: string;
+  category: ArtifactStorageCategory;
+  requiredCopies: number;
+  verifiedReplicas: string[];
+  replicationStatus: IpfsReplicationStatus;
+  verifiedAt: string;
+}
+
 export interface IpfsPinOptions {
   name?: string;
+  tenantId?: string;
   category?: ArtifactStorageCategory;
   policyOverride?: Partial<StorageDurabilityPolicy>;
 }
@@ -74,6 +87,7 @@ export interface IpfsPinResult {
   backupMirrored?: boolean;
   replicationStatus: IpfsReplicationStatus;
   storageCategory?: ArtifactStorageCategory;
+  durabilityProof?: DurabilityProof;
 }
 
 export interface IpfsProvider {

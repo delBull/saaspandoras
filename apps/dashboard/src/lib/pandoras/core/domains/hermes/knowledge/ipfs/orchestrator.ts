@@ -149,11 +149,16 @@ export class SovereignIpfsOrchestrator {
       }
     }
 
-    const replicationStatus = SovereignStoragePolicyEngine.evaluateReplicationStatus(
-      !!primaryCid,
-      backupMirrored,
-      policy
-    );
+    const durabilityProof = SovereignStoragePolicyEngine.buildDurabilityProof({
+      data,
+      primaryCid,
+      backupCid,
+      tenantId: options.tenantId,
+      category,
+      policy,
+      primarySuccess: !!primaryCid,
+      backupSuccess: backupMirrored,
+    });
 
     return {
       cid: primaryCid,
@@ -162,8 +167,9 @@ export class SovereignIpfsOrchestrator {
       pinnedAt,
       backupCid,
       backupMirrored,
-      replicationStatus,
+      replicationStatus: durabilityProof.replicationStatus,
       storageCategory: category,
+      durabilityProof,
     };
   }
 
