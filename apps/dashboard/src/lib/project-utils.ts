@@ -211,6 +211,12 @@ export function sanitizeUrl(url: any): string | null {
 
   // Handle standard absolute URLs
   if (cleanUrl.startsWith('http')) {
+    // Route legacy public gateway URLs through resolveIpfsUrl
+    if (cleanUrl.includes('cloudflare-ipfs.com/ipfs/') || cleanUrl.includes('ipfs.io/ipfs/')) {
+      const path = cleanUrl.substring(cleanUrl.indexOf('/ipfs/') + 6);
+      return resolveIpfsUrl(path);
+    }
+
     // Safety check: if the url is something like http://logo-gold.png (which happens if mistakenly entered),
     // we should treat it as a relative filename instead of a domain.
     try {

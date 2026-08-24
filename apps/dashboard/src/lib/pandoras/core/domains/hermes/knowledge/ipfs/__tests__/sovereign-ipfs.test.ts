@@ -3,7 +3,7 @@
  * src/lib/pandoras/core/domains/hermes/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import http from 'node:http';
 import { 
   MockIpfsProvider,
@@ -12,6 +12,7 @@ import {
   SovereignIpfsOrchestrator,
   type IpfsProvider,
 } from '../index';
+import { SovereignIpfsAlerting } from '../ipfs-alerting';
 import { TenantIpfsVaultService } from '../../ipfs-vault';
 import { HermesIdentitySigner } from '../../../identity/identity-signer';
 import { SafeHttpClient, EgressGuard } from '../../../runtime/egress-guard';
@@ -505,9 +506,15 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
     expect(fallbacks.length).toBeGreaterThanOrEqual(3);
     expect(fallbacks[0]).toContain('pinata.cloud');
     expect(fallbacks[1]).toContain('ipfs.io');
+
+    // Legacy gateway rewrite check
+    expect(sanitizeUrl(`https://cloudflare-ipfs.com/ipfs/${validCidV0}`)).toContain(validCidV0);
+    expect(sanitizeUrl(`https://ipfs.io/ipfs/${validCidV0}`)).toContain(validCidV0);
   });
 
   it('IPFS-014: Pinata DR failure during dual-pinning invokes notifyPinataDrDown', async () => {
+    const alertSpy = vi.spyOn(SovereignIpfsAlerting, 'notifyPinataDrDown');
+
     const primaryMock: IpfsProvider = {
       providerType: 'KUBO',
       async pinJson() { return 'bafybei_primary_ok'; },
@@ -534,5 +541,11 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
 
     expect(pinResult.replicationStatus).toBe('DEGRADED');
     expect(pinResult.backupMirrored).toBe(false);
+    expect(alertSpy).toHaveBeenCalledWith(expect.objectContaining({
+      error: expect.stringContaining('502 Bad Gateway'),
+      affectedCategory: 'LEGAL_AGREEMENT',
+    }));
+
+    alertSpy.mockRestore();
   });
 });
