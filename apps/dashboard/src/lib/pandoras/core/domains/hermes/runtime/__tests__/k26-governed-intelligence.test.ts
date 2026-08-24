@@ -17,6 +17,7 @@ import { DefaultRuntimePolicyValidator } from '../policy-validator';
 import { CognitiveContextAdapter } from '../context-adapter';
 import { HermesRuntime } from '../hermes-runtime';
 import { PostgresConversationMemoryProvider } from '../memory/postgres-memory-provider';
+import { TenantAuthorityService } from '../../tenants/tenant-authority';
 import {
   ReasoningContext,
   ReasoningOutput,
@@ -322,7 +323,10 @@ describe("Milestone K26 — Governed Intelligence, Epistemic Claims & IPFS Prove
 
     expect(runtimeResponse.content).toContain("Aztecas Hub S.A.P.I. de C.V.");
     expect(runtimeResponse.claimProvenanceReceipt).toBeDefined();
-    expect(runtimeResponse.claimProvenanceReceipt!.tenantId).toBe('snarai');
+    // K27.1: receipts are stamped with the CANONICAL tenant identity (UUID),
+    // even when the turn was initiated with the legacy slug.
+    const k26Canonical = await TenantAuthorityService.resolveCanonicalTenant('snarai');
+    expect(runtimeResponse.claimProvenanceReceipt!.tenantId).toBe(k26Canonical!.canonicalOrgId);
     expect(runtimeResponse.claimProvenanceReceipt!.provenanceTier).toBe('LEVEL_3_FINANCIAL_CONTRACTUAL');
     expect(runtimeResponse.claimProvenanceReceipt!.claims.length).toBeGreaterThanOrEqual(2);
     expect(runtimeResponse.claimProvenanceReceipt!.agentSignature).toBeDefined();

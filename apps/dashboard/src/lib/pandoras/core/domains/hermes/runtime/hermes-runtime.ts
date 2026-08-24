@@ -67,6 +67,8 @@ import { TenantAuthorityService } from '../tenants/tenant-authority';
 interface CognitiveTurnSetup {
   runtimeId: string;
   organizationId: string;
+  /** K27.1 Golden Invariant: canonical UUID resolved via TenantAuthorityService. */
+  canonicalTenantId: string;
   conversationId: string;
   message: RuntimeMessage;
   controlPlaneContext: import('../knowledge/types').ControlPlaneContext;
@@ -142,6 +144,27 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       // K27.1 Golden Invariant: Resolve Canonical Tenant Identity
       const canonical = await TenantAuthorityService.resolveCanonicalTenant(organizationId);
       const canonicalTenantId = canonical?.canonicalOrgId || organizationId;
+      if (!canonical) {
+        // Fail-open WITH audited trace: unknown tenant proceeds constrained
+        // (empty context, no contract coverage) but never silently.
+        SecurityAuditLogger.logEvent({
+          organizationId,
+          actorId: controlPlaneContext.actorId,
+          eventType: 'TENANT_UNRESOLVED',
+          severity: 'WARN',
+          policyDecision: 'ALLOW',
+          correlationId: `unresolved_${Date.now()}`,
+          metadata: {
+            action: 'AUDITED_CANONICAL_FALLBACK',
+            rawIdentifier: organizationId,
+            conversationId,
+          },
+        }).catch(() => undefined);
+      }
+
+      // Hydrate the sovereign claim contract under BOTH canonical identities so
+      // synchronous Rule-18 coverage lookups resolve regardless of caller key.
+      await ClaimContractEngine.getOrLoadContract(canonicalTenantId).catch(() => undefined);
 
       // Step 2: Load Effective Cognitive Context (DB layer)
       const effectiveContext = await CognitiveContextBuilder.buildEffectiveContext(
@@ -161,10 +184,10 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         boundSession = ActorIdentityBindingService.createBoundSession(
           {
             actorId: controlPlaneContext.actorId || 'anonymous_actor',
-            tenantId: organizationId,
+            tenantId: canonicalTenantId,
             authProvider: 'PORTAL_INTERNAL',
             nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            proofSignature: `sig_${organizationId}_${Date.now()}`,
+            proofSignature: `sig_${canonicalTenantId}_${Date.now()}`,
             issuedAt: Date.now(),
           },
           'TENANT_RESTRICTED',
@@ -248,7 +271,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       const suggestedActions = effectiveContext.activeCapabilities.flatMap(c => c.suggestedActions || []);
 
       return {
-        runtimeId, organizationId, conversationId, message, controlPlaneContext,
+        runtimeId, organizationId, canonicalTenantId, conversationId, message, controlPlaneContext,
         effectiveContext, memory, reasoningContext, traceInfo,
         reasoningInput, suggestedActions, traceHandle,
       };
@@ -323,7 +346,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
     try {
       const setup = await this.setupCognitiveTurn(input);
       traceHandle = setup.traceHandle;
-      const { runtimeId, organizationId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
+      const { runtimeId, organizationId, canonicalTenantId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
 
       await this.traceRecorder.record(traceHandle, {
         type: 'PROVIDER_STARTED',
@@ -402,7 +425,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           const signer = new HermesIdentitySigner();
           const receipt = await ClaimContractEngine.generateClaimProvenanceReceipt(
             decision.output,
-            organizationId,
+            canonicalTenantId,
             signer,
             {
               conversationId,
@@ -461,7 +484,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       try {
         const journeyEngine = new JourneyEngine();
         const navResult = await journeyEngine.evaluateAndAdvance({
-          organizationId,
+          organizationId: canonicalTenantId,
           actorId: input.controlPlaneContext.actorId,
           text: input.message?.content || '',
         });
@@ -533,7 +556,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
     try {
       const setup = await this.setupCognitiveTurn(input);
       traceHandle = setup.traceHandle;
-      const { runtimeId, organizationId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
+      const { runtimeId, organizationId, canonicalTenantId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
 
       const streamId = `stream_${crypto.randomUUID()}`;
       const signal = options?.signal;

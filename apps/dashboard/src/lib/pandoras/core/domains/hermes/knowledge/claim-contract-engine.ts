@@ -14,7 +14,7 @@ import { HermesIdentitySigner } from '../identity/identity-signer';
 import { TenantIpfsVaultService } from './ipfs-vault';
 import { db } from '@/db';
 import { hermesClaimContracts } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 
 export type EpistemicCategory = 'FACT' | 'HISTORICAL_DATA' | 'PROJECTION' | 'PRODUCT_BOUNDARY';
 
@@ -311,10 +311,24 @@ export class ClaimContractEngine {
 
     if (db) {
       try {
+        // K27.1 Golden Invariant bridge: resolve canonical aliases (slug ↔ UUID)
+        // so a contract stored under either identity is reachable from both.
+        const candidates = new Set<string>([key]);
+        try {
+          const { TenantAuthorityService } = await import('../tenants/tenant-authority');
+          const canonical = await TenantAuthorityService.resolveCanonicalTenant(key);
+          if (canonical) {
+            candidates.add(canonical.canonicalOrgId.toLowerCase());
+            candidates.add(canonical.projectSlug.toLowerCase());
+          }
+        } catch {
+          /* resolver unavailable — proceed with as-given key only */
+        }
+
         const rows = await db
           .select()
           .from(hermesClaimContracts)
-          .where(eq(hermesClaimContracts.tenantId, key))
+          .where(inArray(hermesClaimContracts.tenantId, [...candidates]))
           .orderBy(desc(hermesClaimContracts.version))
           .limit(1);
 
@@ -335,6 +349,14 @@ export class ClaimContractEngine {
               updatedAt: row.updatedAt.toISOString(),
             };
             this.registerContract(loaded);
+            // Dual-register under every candidate identity (raw + cleaned + org_ forms)
+            for (const c of candidates) {
+              const cleaned = this.cleanTenant(c);
+              this.registeredContracts.set(c, loaded);
+              this.registeredContracts.set(`org_${c}`, loaded);
+              this.registeredContracts.set(cleaned, loaded);
+              this.registeredContracts.set(`org_${cleaned}`, loaded);
+            }
             return loaded;
           }
         }

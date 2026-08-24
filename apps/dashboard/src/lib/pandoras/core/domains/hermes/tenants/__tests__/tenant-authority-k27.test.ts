@@ -111,4 +111,44 @@ describe('🏛️ Hermes OS — Milestone K27.1 Tenant Authority & Knowledge Una
     expect(result.decision.action).toBe('ALLOW');
     expect(result.violations.length).toBe(0);
   });
+
+  it('K27.1-AUTH-03: Contract loader bridges canonical UUID ↔ legacy slug key (dual registration)', async () => {
+    const { ClaimContractEngine } = await import('../../knowledge/claim-contract-engine');
+
+    // snarai's ACTIVE contract lives in Neon keyed by the SLUG. Loading via the
+    // canonical UUID must resolve it through the alias bridge and register it
+    // under BOTH identities for subsequent synchronous lookups.
+    const canonical = await TenantAuthorityService.resolveCanonicalTenant('snarai');
+    expect(canonical).not.toBeNull();
+
+    const viaUuid = await ClaimContractEngine.getOrLoadContract(canonical!.canonicalOrgId);
+    expect(viaUuid).toBeDefined();
+    expect(viaUuid?.governanceStatus).toBe('ACTIVE');
+    expect(viaUuid?.version).toBeGreaterThanOrEqual(1);
+
+    // Synchronous lookups now hit from either identity (in-memory dual registration)
+    expect(ClaimContractEngine.getContract(canonical!.canonicalOrgId)).toBeDefined();
+    expect(ClaimContractEngine.getContract('snarai')).toBeDefined();
+  });
+
+  it("K27.1-AUTH-04: JourneyEngine auto-navigation resolves canonical identity end-to-end (no 'Unknown tenant')", async () => {
+    const { JourneyEngine } = await import('../../runtime/journey-engine');
+
+    const engine = new JourneyEngine();
+    const canonical = await TenantAuthorityService.resolveCanonicalTenant('snarai');
+    expect(canonical).not.toBeNull();
+
+    const result = await engine.evaluateAndAdvance({
+      organizationId: canonical!.canonicalOrgId,
+      actorId: `k27_probe_actor_${Date.now()}`,
+      text: 'Buenos días, ¿cómo están?', // benign text — must NOT match any trigger
+    });
+
+    // The pipeline resolved the tenant canonically: failure may only be a
+    // benign "no matching transition", never an unknown-tenant skip.
+    expect(result.success).toBe(false);
+    expect(result.skipped).toBe(true);
+    expect(result.reason || '').not.toContain('Unknown tenant');
+    expect(result.reason || '').not.toContain('No active journey');
+  });
 });

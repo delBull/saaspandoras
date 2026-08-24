@@ -28,7 +28,8 @@ export type SecurityEventType =
   | 'KNOWLEDGE_REVOCATION_TRIGGERED'
   | 'PROVENANCE_RECEIPT_DEGRADED'
   | 'CREDENTIAL_ISSUED'
-  | 'CREDENTIAL_REVOKED';
+  | 'CREDENTIAL_REVOKED'
+  | 'TENANT_UNRESOLVED';
 
 export type SecuritySeverity = 'INFO' | 'WARN' | 'CRITICAL';
 export type SecurityPolicyDecision = 'ALLOW' | 'DENY' | 'ESCALATE';
