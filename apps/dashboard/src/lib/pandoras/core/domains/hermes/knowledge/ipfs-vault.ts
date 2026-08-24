@@ -19,6 +19,12 @@ import { EphemeralMemoryScrubber } from '../runtime/sandbox/memory-scrubber';
 import { HermesIdentitySigner } from '../identity/identity-signer';
 import { SafeHttpClient } from '../runtime/egress-guard';
 import { VaultAuthorizationGate, type VaultAccessContext } from './vault-authorization-gate';
+import { 
+  SovereignIpfsOrchestrator, 
+  MockIpfsProvider,
+  type SovereignIpfsConfig,
+  type IpfsProvider,
+} from './ipfs';
 
 export type { EncryptedKnowledgeArtifact, EncryptionContextAAD };
 
@@ -48,21 +54,31 @@ export interface IpfsAuditSnapshot {
   timestamp: string;
 }
 
+export interface TenantIpfsVaultOptions extends SovereignIpfsConfig {
+  kekProvider?: any;
+}
+
 export class TenantIpfsVaultService {
   private envelopeVault: KnowledgeEnvelopeVault;
   private pinataJwt?: string;
   private pinataGateway: string;
   private authGate: VaultAuthorizationGate;
+  private orchestrator: SovereignIpfsOrchestrator;
 
-  constructor(options?: { pinataJwt?: string; pinataGateway?: string; kekProvider?: any }) {
+  constructor(options?: TenantIpfsVaultOptions) {
     this.envelopeVault = new KnowledgeEnvelopeVault(options?.kekProvider);
     this.pinataJwt = options?.pinataJwt || process.env.PINATA_JWT;
     this.pinataGateway = options?.pinataGateway || process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs';
     this.authGate = new VaultAuthorizationGate();
+    this.orchestrator = new SovereignIpfsOrchestrator(options);
   }
 
   public get authorizationGate(): VaultAuthorizationGate {
     return this.authGate;
+  }
+
+  public get ipfsOrchestrator(): SovereignIpfsOrchestrator {
+    return this.orchestrator;
   }
 
   /**
@@ -220,98 +236,37 @@ export class TenantIpfsVaultService {
 
   /**
    * IPFS Pinning Handler.
-   * Fail-Closed in Production: throws on missing JWT or Pinata failure.
-   * Dev/Test: returns clearly prefixed 'mock_bafkrei...' CID fixture.
+   * Delegates to SovereignIpfsOrchestrator (Kubo Primary / Pinata Backup / Mock Dev).
+   * Fail-Closed in Production if neither Kubo nor Pinata is configured/reachable.
    */
   public async pinJsonToIpfs(data: unknown, name: string): Promise<string> {
     const isProduction = process.env.NODE_ENV === 'production';
 
-    if (isProduction && !this.pinataJwt) {
+    if (
+      isProduction &&
+      !this.pinataJwt &&
+      !process.env.PANDORAS_KUBO_RPC_URL
+    ) {
       throw new Error('[TenantIpfsVault] PINATA_JWT is mandatory in production for verifiable IPFS pinning.');
     }
 
-    if (this.pinataJwt) {
-      try {
-        const res = await SafeHttpClient.fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.pinataJwt}`,
-          },
-          body: JSON.stringify({
-            pinataOptions: { cidVersion: 1 },
-            pinataMetadata: { name },
-            pinataContent: data,
-          }),
-        });
-
-        if (res.ok) {
-          const body = await res.json() as { IpfsHash: string };
-          if (body.IpfsHash) return body.IpfsHash;
-        }
-
-        if (isProduction) {
-          throw new Error(`[TenantIpfsVault] Pinata API returned non-OK status: ${res.status}`);
-        }
-      } catch (err) {
-        if (isProduction) {
-          throw new Error(`[TenantIpfsVault] IPFS pinning failed in production: ${(err as Error).message}`);
-        }
-      }
-    }
-
-    // Dev/Test deterministic fallback — computes canonical RFC4648 CIDv1 multihash
-    return TenantIpfsVaultService.computeCanonicalCidV1(data);
+    const pinResult = await this.orchestrator.pinJson(data, name);
+    return pinResult.cid;
   }
 
   /**
    * Computes a canonical RFC4648 CIDv1 base32 multihash (bafkrei...) for arbitrary JSON or buffer
    */
   public static computeCanonicalCidV1(data: unknown): string {
-    const content = typeof data === 'string' ? data : JSON.stringify(data);
-    const hash = crypto.createHash('sha256').update(content, 'utf8').digest();
-    const multihash = Buffer.concat([Buffer.from([0x01, 0x55, 0x12, 0x20]), hash]);
-    
-    const RFC4648_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567';
-    let bits = 0;
-    let value = 0;
-    let output = '';
-    for (let i = 0; i < multihash.length; i++) {
-      value = (value << 8) | (multihash[i] ?? 0);
-      bits += 8;
-      while (bits >= 5) {
-        output += RFC4648_ALPHABET[(value >>> (bits - 5)) & 31];
-        bits -= 5;
-      }
-    }
-    if (bits > 0) {
-      output += RFC4648_ALPHABET[(value << (5 - bits)) & 31];
-    }
-    return `b${output}`;
+    return MockIpfsProvider.computeCanonicalCidV1(data);
   }
 
   /**
-   * Internal IPFS Retrieval Handler
+   * Internal IPFS Retrieval Handler.
+   * Delegates to SovereignIpfsOrchestrator with automatic fail-over.
    */
   private async fetchJsonFromIpfs<T>(cid: string): Promise<T> {
-    const url = `${this.pinataGateway.replace(/\/$/, '')}/${cid}`;
-    const headers: Record<string, string> = { 'Accept': 'application/json' };
-    if (this.pinataJwt) {
-      headers['Authorization'] = `Bearer ${this.pinataJwt}`;
-    }
-
-    try {
-      const res = await SafeHttpClient.fetch(url, {
-        headers,
-        timeoutMs: 12000,
-      });
-      if (res.ok) {
-        return await res.json() as T;
-      }
-    } catch (err: any) {
-      console.warn(`[TenantIpfsVault] Gateway fetch warning for CID ${cid}:`, err?.message);
-    }
-    throw new Error(`[TenantIpfsVault] Failed to retrieve content from IPFS CID: ${cid}`);
+    return await this.orchestrator.fetchJson<T>(cid);
   }
 
   /**
