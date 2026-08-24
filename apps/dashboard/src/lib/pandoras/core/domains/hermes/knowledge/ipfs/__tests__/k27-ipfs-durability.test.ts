@@ -373,4 +373,74 @@ describe('🏛️ Hermes OS — Milestone K27.x Sovereign IPFS Durability & Adve
     await new Promise((r) => setTimeout(r, 10));
     expect(orchestrator.getReplicationOutcome(recovered.cid)).toBe('DURABLE');
   });
+
+  // K27-IPFS-DR-01: Physical DR lifecycle & state-transition recovery verification
+  it('K27-IPFS-DR-01: End-to-end fail-over, SHA-256 recovery, and state-transition health check cycle', async () => {
+    let primaryOnline = true;
+    const primaryStore = new Map<string, any>();
+    const backupStore = new Map<string, any>();
+
+    const primaryMock: IpfsProvider = {
+      providerType: 'KUBO',
+      async pinJson(data: any) {
+        const cid = `bafybei_kubo_primary_${Date.now()}`;
+        primaryStore.set(cid, data);
+        return cid;
+      },
+      async fetchJson<T = unknown>(cid: string): Promise<T> {
+        if (!primaryOnline) throw new Error('Kubo node unreachable (503)');
+        return primaryStore.get(cid) as T;
+      },
+      async healthCheck() {
+        return { ok: primaryOnline, providerType: 'KUBO', latencyMs: primaryOnline ? 8 : 0 };
+      },
+    };
+
+    const backupMock: IpfsProvider = {
+      providerType: 'PINATA',
+      async pinJson(data: any) {
+        const cid = `bafyrei_pinata_dr_${Date.now()}`;
+        backupStore.set(cid, data);
+        return cid;
+      },
+      async fetchJson<T = unknown>(cid: string): Promise<T> {
+        return backupStore.get(cid) as T;
+      },
+      async healthCheck() {
+        return { ok: true, providerType: 'PINATA', latencyMs: 25 };
+      },
+    };
+
+    const orchestrator = new SovereignIpfsOrchestrator({
+      customPrimary: primaryMock,
+      customBackup: backupMock,
+      enableDualPinning: true,
+    });
+
+    // 1. Initial healthy pin (dual-pinned)
+    const legalDoc = { contractId: 'AG-NAR-00001', investor: '0x1234567890abcdef', amount: 50000 };
+    const pinResult = await orchestrator.pinJson(legalDoc, { name: 'legal_doc.json', category: 'LEGAL_AGREEMENT' });
+    expect(pinResult.replicationStatus).toBe('DURABLE');
+    expect(pinResult.backupMirrored).toBe(true);
+
+    const canonicalHash = SovereignStoragePolicyEngine.computeCanonicalContentHash(legalDoc);
+
+    // 2. Primary Kubo node goes down (Simulated outage)
+    primaryOnline = false;
+    const healthDuringOutage = await orchestrator.healthCheck();
+    expect(healthDuringOutage.primary.ok).toBe(false);
+    expect(healthDuringOutage.backup?.ok).toBe(true);
+    expect(healthDuringOutage.durability.status).toBe('DEGRADED');
+
+    // 3. Transparent DR retrieval with verified hash
+    const recoveredDoc = await orchestrator.fetchJsonVerified<typeof legalDoc>(pinResult.cid, canonicalHash);
+    expect(recoveredDoc.contractId).toBe('AG-NAR-00001');
+    expect(recoveredDoc.amount).toBe(50000);
+
+    // 4. Primary node recovers
+    primaryOnline = true;
+    const healthAfterRecovery = await orchestrator.healthCheck();
+    expect(healthAfterRecovery.primary.ok).toBe(true);
+    expect(healthAfterRecovery.durability.status).toBe('DURABLE');
+  });
 });

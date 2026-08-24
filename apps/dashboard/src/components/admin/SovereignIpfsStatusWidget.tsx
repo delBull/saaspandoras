@@ -41,6 +41,8 @@ export function SovereignIpfsStatusWidget() {
   const [data, setData] = useState<IpfsStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [repairing, setRepairing] = useState(false);
+
   const fetchStatus = async (isManual = false) => {
     setLoading(true);
     try {
@@ -56,6 +58,27 @@ export function SovereignIpfsStatusWidget() {
       if (isManual) toast.error('Fallo de conexión con API de IPFS');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRepair = async () => {
+    setRepairing(true);
+    try {
+      toast.loading('Reconciliando evidencias legales PENDING/DEGRADED...');
+      const res = await fetch('/api/admin/ipfs/repair', { method: 'POST' });
+      const json = await res.json();
+      toast.dismiss();
+      if (json.success) {
+        toast.success(`Reconciliación completada: ${json.result.repairedCount} evidencias reparadas.`);
+        fetchStatus(false);
+      } else {
+        toast.error(`Error de reconciliación: ${json.error}`);
+      }
+    } catch {
+      toast.dismiss();
+      toast.error('Fallo al ejecutar motor de reparación');
+    } finally {
+      setRepairing(false);
     }
   };
 
@@ -88,16 +111,29 @@ export function SovereignIpfsStatusWidget() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fetchStatus(true)}
-          disabled={loading}
-          className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs h-8 gap-2"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Health Check
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRepair}
+            disabled={repairing || loading}
+            className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs h-8 gap-2"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${repairing ? 'animate-spin' : ''}`} />
+            Reconciliar Evidencias
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchStatus(true)}
+            disabled={loading}
+            className="border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs h-8 gap-2"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Health Check
+          </Button>
+        </div>
       </div>
 
       {/* Node Status Grid */}

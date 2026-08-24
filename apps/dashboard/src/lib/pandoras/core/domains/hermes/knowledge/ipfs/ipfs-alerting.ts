@@ -27,26 +27,22 @@ interface DiscordAlertPayload {
 const DISCORD_COLORS = {
   CRITICAL: 15548997, // Red
   WARNING: 16776960,  // Yellow
+  RECOVERY: 5763719,  // Green
   INFO: 5793266,      // Blue
 };
 
-// 5-minute cooldown per alert key to prevent alert storming during outages
-const alertCooldowns = new Map<string, number>();
-const COOLDOWN_MS = 5 * 60 * 1000;
+type InfrastructureComponentState = 'HEALTHY' | 'DEGRADED' | 'DOWN';
 
-function shouldSendAlert(key: string): boolean {
-  const now = Date.now();
-  const last = alertCooldowns.get(key) || 0;
-  if (now - last < COOLDOWN_MS) {
-    return false;
-  }
-  alertCooldowns.set(key, now);
-  return true;
-}
+// State-transition tracker per component (ensures 1 alert on degradation, 1 alert on recovery, 0 duplicate noise)
+const componentStates = new Map<string, InfrastructureComponentState>();
+const alertDedupSet = new Set<string>();
 
-async function postToDiscordWebhook(payload: DiscordAlertPayload, cooldownKey?: string): Promise<void> {
-  if (cooldownKey && !shouldSendAlert(cooldownKey)) {
-    return;
+async function postToDiscordWebhook(payload: DiscordAlertPayload, dedupKey?: string): Promise<void> {
+  if (dedupKey) {
+    if (alertDedupSet.has(dedupKey)) {
+      return;
+    }
+    alertDedupSet.add(dedupKey);
   }
 
   const webhookUrl = process.env.DISCORD_WEBHOOK_IPFS_ALERTS || process.env.DISCORD_WEBHOOK_ALERTS;
@@ -56,11 +52,17 @@ async function postToDiscordWebhook(payload: DiscordAlertPayload, cooldownKey?: 
   }
 
   try {
+    const prefix = payload.color === DISCORD_COLORS.CRITICAL 
+      ? '🚨 **SOVEREIGN IPFS CRITICAL ALERT**' 
+      : payload.color === DISCORD_COLORS.RECOVERY 
+        ? '🟢 **SOVEREIGN IPFS RECOVERY**' 
+        : '⚠️ **SOVEREIGN IPFS WARNING**';
+
     await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        content: payload.color === DISCORD_COLORS.CRITICAL ? '🚨 **SOVEREIGN IPFS CRITICAL ALERT**' : '⚠️ **SOVEREIGN IPFS WARNING**',
+        content: prefix,
         embeds: [payload],
       }),
     });
@@ -71,13 +73,19 @@ async function postToDiscordWebhook(payload: DiscordAlertPayload, cooldownKey?: 
 
 export class SovereignIpfsAlerting {
   /**
-   * 1. 🔴 Triggered when Kubo Primary daemon is offline/unreachable and fail-over is engaged.
+   * 1. 🔴 Triggered when Kubo Primary daemon transitions from HEALTHY to DOWN.
    */
   public static async notifyKuboPrimaryDown(details: {
     error: string;
     cidRequested?: string;
     fallbackProvider: string;
   }): Promise<void> {
+    const currentState = componentStates.get('kubo_primary') || 'HEALTHY';
+    if (currentState === 'DOWN') {
+      return; // Already in DOWN state — suppress duplicate alerts
+    }
+    componentStates.set('kubo_primary', 'DOWN');
+
     await postToDiscordWebhook({
       title: '🔴 Kubo Primary Node Offline — Fail-Over Engaged',
       description: 'The primary sovereign Kubo node is unreachable. Transparent fail-over to external DR mirror was engaged to preserve availability.',
@@ -90,16 +98,46 @@ export class SovereignIpfsAlerting {
       ],
       footer: { text: "Pandora's Sovereign Storage Fabric" },
       timestamp: new Date().toISOString(),
-    }, 'kubo_primary_down');
+    });
   }
 
   /**
-   * 2. 🟡 Triggered when Pinata DR Mirror is unreachable during dual-pinning or health checks.
+   * 1b. 🟢 Triggered when Kubo Primary daemon recovers back to HEALTHY.
+   */
+  public static async notifyKuboPrimaryRecovered(details?: { latencyMs?: number; version?: string }): Promise<void> {
+    const currentState = componentStates.get('kubo_primary');
+    if (currentState !== 'DOWN' && currentState !== 'DEGRADED') {
+      return; // Was already healthy
+    }
+    componentStates.set('kubo_primary', 'HEALTHY');
+
+    await postToDiscordWebhook({
+      title: '🟢 Kubo Primary Node Restored — Full Sovereignty Active',
+      description: 'The primary sovereign Kubo node is back online and responding normally. Fail-over disengaged.',
+      color: DISCORD_COLORS.RECOVERY,
+      fields: [
+        { name: 'Daemon Version', value: details?.version || 'Kubo RPC Active', inline: true },
+        { name: 'Health Check Latency', value: details?.latencyMs ? `${details.latencyMs}ms` : 'Healthy', inline: true },
+        { name: 'Storage State', value: 'Sovereign Primary Serving', inline: false },
+      ],
+      footer: { text: "Pandora's Sovereign Storage Fabric — Operational Recovery" },
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * 2. 🟡 Triggered when Pinata DR Mirror transitions from HEALTHY to DOWN/DEGRADED.
    */
   public static async notifyPinataDrDown(details: {
     error: string;
     affectedCategory?: string;
   }): Promise<void> {
+    const currentState = componentStates.get('pinata_dr') || 'HEALTHY';
+    if (currentState === 'DEGRADED') {
+      return; // Already in DEGRADED state
+    }
+    componentStates.set('pinata_dr', 'DEGRADED');
+
     await postToDiscordWebhook({
       title: '🟡 Pinata DR Mirror Unreachable',
       description: 'The external Disaster Recovery mirror failed to respond. Primary Kubo node remains operational, but external redundancy is temporarily degraded.',
@@ -111,7 +149,30 @@ export class SovereignIpfsAlerting {
       ],
       footer: { text: "Pandora's Sovereign Storage Fabric" },
       timestamp: new Date().toISOString(),
-    }, 'pinata_dr_down');
+    });
+  }
+
+  /**
+   * 2b. 🟢 Triggered when Pinata DR recovers back to HEALTHY.
+   */
+  public static async notifyPinataDrRecovered(latencyMs?: number): Promise<void> {
+    const currentState = componentStates.get('pinata_dr');
+    if (currentState !== 'DEGRADED' && currentState !== 'DOWN') {
+      return; // Was already healthy
+    }
+    componentStates.set('pinata_dr', 'HEALTHY');
+
+    await postToDiscordWebhook({
+      title: '🟢 Pinata DR Mirror Restored',
+      description: 'The external Disaster Recovery mirror is back online. Multi-replica dual-pinning redundancy fully restored.',
+      color: DISCORD_COLORS.RECOVERY,
+      fields: [
+        { name: 'DR Mirror Status', value: 'Healthy', inline: true },
+        { name: 'Latency', value: latencyMs ? `${latencyMs}ms` : 'Operational', inline: true },
+      ],
+      footer: { text: "Pandora's Sovereign Storage Fabric" },
+      timestamp: new Date().toISOString(),
+    });
   }
 
   /**

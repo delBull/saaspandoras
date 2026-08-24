@@ -302,6 +302,17 @@ export class SovereignIpfsOrchestrator {
     const primaryOnline = primaryStatus.ok;
     const backupOnline = backupStatus?.ok ?? false;
 
+    // State-transition recovery notifications (only fires if previous state was DOWN/DEGRADED)
+    if (primaryOnline && this.primary.providerType === 'KUBO') {
+      SovereignIpfsAlerting.notifyKuboPrimaryRecovered({
+        latencyMs: primaryStatus.latencyMs,
+        version: primaryStatus.version,
+      }).catch(() => {});
+    }
+    if (backupOnline && this.backup?.providerType === 'PINATA') {
+      SovereignIpfsAlerting.notifyPinataDrRecovered(backupStatus?.latencyMs).catch(() => {});
+    }
+
     let durabilityStatus: IpfsReplicationStatus = 'FAILED';
     if (primaryOnline && backupOnline) {
       durabilityStatus = 'DURABLE';

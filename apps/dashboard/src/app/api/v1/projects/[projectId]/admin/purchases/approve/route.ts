@@ -136,6 +136,7 @@ async function handler(
                 });
 
                 ipfsMetadata = {
+                    legalEvidenceStatus: pinResult.replicationStatus === 'DURABLE' ? 'DURABLE' : 'ANCHORED',
                     ipfsCid: pinResult.cid,
                     backupIpfsCid: pinResult.backupCid,
                     ipfsUri: `ipfs://${pinResult.cid}`,
@@ -145,6 +146,7 @@ async function handler(
             } catch (err: any) {
                 console.warn('[PurchasesApprove] IPFS legal anchor warning (fail-safe fallback):', err?.message);
                 ipfsMetadata = {
+                    legalEvidenceStatus: 'PENDING',
                     replicationStatus: 'DEGRADED',
                     ipfsError: err?.message || 'Failed to anchor legal agreement to IPFS',
                 };
