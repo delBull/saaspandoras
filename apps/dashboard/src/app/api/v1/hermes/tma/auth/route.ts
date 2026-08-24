@@ -7,6 +7,7 @@ import {
   HermesAuthError,
   HermesTenantAccessDeniedError
 } from '@/lib/hermes/auth';
+import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
 
 const authValidator = new TelegramAuthValidator();
 const membershipService = new HermesTenantMembershipService();
@@ -14,6 +15,14 @@ const tokenService = new SessionTokenService();
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(`tma-auth:${clientIpFromHeaders(req.headers)}`, 20, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too Many Requests', code: 'RATE_LIMITED' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const { initData, targetWorkspace } = body;
 
@@ -48,7 +57,16 @@ export async function POST(req: NextRequest) {
 
     if (targetWorkspace) {
       // Resolve provided slug/UUID/id to canonical UUID
-      const resolved = await HermesWorkspaceResolver.resolveCanonicalWorkspace(targetWorkspace);
+      // Anti-enumeración: workspace inexistente responde igual que acceso denegado.
+      let resolved;
+      try {
+        resolved = await HermesWorkspaceResolver.resolveCanonicalWorkspace(targetWorkspace);
+      } catch {
+        return NextResponse.json(
+          { success: false, error: 'No tienes acceso a este workspace.', code: 'TENANT_ACCESS_DENIED' },
+          { status: 403 }
+        );
+      }
       targetOrgId = resolved.organizationId;
     } else {
       // Default to first authorized tenant (prioritizing OWNER/ADMIN)

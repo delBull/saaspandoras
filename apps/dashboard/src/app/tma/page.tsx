@@ -44,34 +44,51 @@ interface HermesSession {
   source: 'TELEGRAM';
 }
 
+interface TmaSystemStatus {
+  postgres: { online: boolean };
+  ipfs: { state: 'DURABLE' | 'ACTIVE' | 'DEGRADED' | 'UNREACHABLE' | 'OFFLINE'; detail: string };
+  securityEvents24h: number | null;
+  knowledgeFacts: number | null;
+}
+
 export default function HermesTmaPage() {
   const [loading, setLoading] = useState(true);
+  const [outsideTelegram, setOutsideTelegram] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<HermesSession | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authorizedTenants, setAuthorizedTenants] = useState<AuthorizedTenant[]>([]);
+  const [sysStatus, setSysStatus] = useState<TmaSystemStatus | null>(null);
   const [switching, startTransition] = useTransition();
   const [showTenantSelector, setShowTenantSelector] = useState(false);
 
   useEffect(() => {
-    // 1. Initialize Telegram WebApp SDK if present
-    const tg = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp : undefined;
-    if (tg) {
-      tg.ready();
-      tg.expand?.();
+    // Poll breve por la carrera del script telegram-web-app.js (afterInteractive)
+    async function waitForSdk(maxMs = 1500): Promise<any> {
+      const start = Date.now();
+      while (Date.now() - start < maxMs) {
+        const tg = (window as any).Telegram?.WebApp;
+        if (tg) return tg;
+        await new Promise(r => setTimeout(r, 50));
+      }
+      return undefined;
     }
 
-    const initData = tg?.initData || '';
-    const searchParams = new URLSearchParams(window.location.search);
-    const tenantParam = searchParams.get('tenant') || undefined;
-
-    // Fallback for development/testing when outside Telegram browser
-    if (!initData && process.env.NODE_ENV === 'development') {
-      console.warn('[TMA] Running outside Telegram webview in dev mode.');
-    }
-
-    // 2. Perform authentication handshake with BFF
     async function authenticate() {
+      const tg = await waitForSdk();
+      tg?.ready?.();
+      tg?.expand?.();
+
+      const initData: string = tg?.initData || '';
+      const searchParams = new URLSearchParams(window.location.search);
+      const tenantParam = searchParams.get('tenant') || undefined;
+
+      if (!initData) {
+        setOutsideTelegram(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -80,7 +97,7 @@ export default function HermesTmaPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            initData: initData || 'dev_test_mode=1',
+            initData,
             targetWorkspace: tenantParam,
           }),
         });
@@ -103,6 +120,25 @@ export default function HermesTmaPage() {
 
     authenticate();
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/hermes/tma/status', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled && res.ok && data.success && data.status) {
+          setSysStatus(data.status);
+        }
+      } catch {
+        // Estado queda null → UI muestra "sin datos"
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
 
   const handleSwitchTenant = (targetOrgId: string) => {
     if (!token || switching) return;
@@ -134,6 +170,20 @@ export default function HermesTmaPage() {
       }
     });
   };
+
+  if (outsideTelegram) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center mb-4">
+          <Cpu className="w-6 h-6 text-indigo-400" />
+        </div>
+        <h2 className="text-lg font-semibold text-slate-100">Abre Hermes OS desde Telegram</h2>
+        <p className="text-xs text-slate-400 mt-2 max-w-xs">
+          Este Command Center solo está disponible dentro del bot @pandorasHermes_bot (menú WebApp o comando /portal).
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -228,32 +278,45 @@ export default function HermesTmaPage() {
         )}
       </header>
 
-      {/* System Core Health Strip */}
+      {/* System Core Health Strip (datos reales vía /tma/status) */}
       <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3.5">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Estado del Sistema</span>
           </span>
-          <span className="text-[10px] text-emerald-400 font-mono flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            <span>100% OPERATIVO</span>
-          </span>
+          {!sysStatus && (
+            <span className="text-[10px] text-slate-500 font-mono">consultando…</span>
+          )}
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-          <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
-            <div className="text-slate-400">Postgres</div>
-            <div className="text-emerald-400 font-semibold mt-0.5">ONLINE</div>
+        {sysStatus && (
+          <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
+              <div className="text-slate-400">Postgres</div>
+              <div className={`font-semibold mt-0.5 ${sysStatus.postgres.online ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {sysStatus.postgres.online ? 'ONLINE' : 'OFFLINE'}
+              </div>
+            </div>
+            <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
+              <div className="text-slate-400">IPFS Vault</div>
+              <div className={`font-semibold mt-0.5 ${
+                sysStatus.ipfs.state === 'DURABLE' || sysStatus.ipfs.state === 'ACTIVE'
+                  ? 'text-emerald-400'
+                  : sysStatus.ipfs.state === 'DEGRADED'
+                    ? 'text-amber-400'
+                    : 'text-rose-400'
+              }`}>
+                {sysStatus.ipfs.state}
+              </div>
+            </div>
+            <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
+              <div className="text-slate-400">Eventos 24h</div>
+              <div className="text-indigo-400 font-semibold mt-0.5">
+                {sysStatus.securityEvents24h ?? '—'}
+              </div>
+            </div>
           </div>
-          <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
-            <div className="text-slate-400">IPFS Vault</div>
-            <div className="text-emerald-400 font-semibold mt-0.5">DURABLE</div>
-          </div>
-          <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
-            <div className="text-slate-400">Security K26</div>
-            <div className="text-indigo-400 font-semibold mt-0.5">ENFORCING</div>
-          </div>
-        </div>
+        )}
       </section>
 
       {/* Operator Mission Control Modules */}

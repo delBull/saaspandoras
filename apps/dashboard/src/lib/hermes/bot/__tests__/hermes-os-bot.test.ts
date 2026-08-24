@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HermesOSBotAdapter, TelegramUpdate, escapeHtml } from '../hermes-os-bot';
+import { buildStatusMessage, type HermesSystemStatus } from '../system-status';
 import * as routerModule from '@/lib/hermes/telegram-runtime/router';
 
 describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & Command Center Adapter', () => {
@@ -43,7 +44,7 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
     expect(sentMessages[0]?.text).toContain('no tiene workspaces vinculados');
   });
 
-  it('BOT-002: Handles /status responding with real dynamic metrics (DB + IPFS + K26)', async () => {
+  it('BOT-002: /status rejects unauthorized telegram user with STATUS_UNAUTHORIZED', async () => {
     const update: TelegramUpdate = {
       update_id: 1002,
       message: {
@@ -122,5 +123,37 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
     expect(safe).toBe('&lt;script&gt;alert(&quot;xss &amp; &#039;pwn&#039;&quot;)&lt;/script&gt;');
     expect(safe).not.toContain('<');
     expect(safe).not.toContain('>');
+  });
+
+  const healthyStatus: HermesSystemStatus = {
+    postgres: { online: true },
+    ipfs: { state: 'DURABLE', detail: 'Kubo + Dual-Mirror' },
+    securityEvents24h: 7,
+    knowledgeFacts: 42,
+  };
+
+  it('BOT-007: buildStatusMessage reports real metrics without fabricated enforcement claims', () => {
+    const msg = buildStatusMessage(healthyStatus, "S'Narai", 2);
+    expect(msg).toContain('🟢 ONLINE');
+    expect(msg).toContain('DURABLE');
+    expect(msg).toContain('<code>7</code> eventos registrados (24h)');
+    expect(msg).toContain("<code>42</code> hechos");
+    expect(msg).toContain("S&#039;Narai");
+    expect(msg).not.toContain('ENFORCING');
+    expect(msg).not.toContain('100%');
+  });
+
+  it('BOT-008: buildStatusMessage renders degraded/offline states and missing data honestly', () => {
+    const degraded: HermesSystemStatus = {
+      postgres: { online: false },
+      ipfs: { state: 'DEGRADED', detail: 'Fail-over Active' },
+      securityEvents24h: null,
+      knowledgeFacts: null,
+    };
+    const msg = buildStatusMessage(degraded, 'Org <b>', 1);
+    expect(msg).toContain('🔴 OFFLINE');
+    expect(msg).toContain('🟡 DEGRADED (Fail-over Active)');
+    expect(msg).toContain('⚪ Sin datos');
+    expect(msg).toContain('Org &lt;b&gt;');
   });
 });

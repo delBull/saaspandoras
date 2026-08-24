@@ -3,10 +3,7 @@ import {
   AuthorizedTenant
 } from '@/lib/hermes/auth';
 import { sendTelegramMessage } from '@/lib/hermes/telegram-runtime/router';
-import { db } from '@/db';
-import { sql } from 'drizzle-orm';
-import { hermesSecurityEvents, hermesKnowledge } from '@/db/schema';
-import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
+import { collectSystemStatus, buildStatusMessage } from '@/lib/hermes/bot/system-status';
 
 export interface TelegramUpdate {
   update_id: number;
@@ -69,13 +66,11 @@ export class HermesOSBotAdapter {
   private botToken: string;
   private tmaBaseUrl: string;
   private membershipService: HermesTenantMembershipService;
-  private ipfsOrchestrator: SovereignIpfsOrchestrator;
 
   constructor(options: { botToken?: string; tmaBaseUrl?: string } = {}) {
     this.botToken = options.botToken || process.env.HERMES_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
     this.tmaBaseUrl = options.tmaBaseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
     this.membershipService = new HermesTenantMembershipService();
-    this.ipfsOrchestrator = new SovereignIpfsOrchestrator();
   }
 
   /**
@@ -242,72 +237,15 @@ export class HermesOSBotAdapter {
       return { handled: true, action: 'STATUS_UNAUTHORIZED' };
     }
 
-    // 1. Real check: Postgres Neon connectivity
-    let dbStatus = '🔴 OFFLINE';
-    try {
-      await db.execute(sql`SELECT 1`);
-      dbStatus = '🟢 ONLINE';
-    } catch {
-      dbStatus = '🔴 OFFLINE';
-    }
-
-    // 2. Real check: Sovereign IPFS Health Check (Kubo + Pinata durability)
-    let ipfsStatusText = '🟡 UNKNOWN';
-    try {
-      const ipfsHealth = await this.ipfsOrchestrator.healthCheck();
-      const primaryType = ipfsHealth.primary.providerType;
-      const durability = ipfsHealth.durability.status;
-      if (durability === 'DURABLE') {
-        ipfsStatusText = `🟢 DURABLE (${primaryType} + Dual-Mirror)`;
-      } else if (durability === 'LOCAL_ONLY' || ipfsHealth.primary.ok) {
-        ipfsStatusText = `🟢 ACTIVE (${primaryType} Primary)`;
-      } else if (durability === 'DEGRADED') {
-        ipfsStatusText = `🟡 DEGRADED (Fail-over Active)`;
-      } else {
-        ipfsStatusText = `🔴 UNREACHABLE`;
-      }
-    } catch {
-      ipfsStatusText = '🔴 OFFLINE';
-    }
-
-    // 3. Real check: Security Events in last 24h
-    let securityEventsCount = 0;
-    try {
-      const secRows = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(hermesSecurityEvents)
-        .where(sql`${hermesSecurityEvents.createdAt} >= NOW() - INTERVAL '24 hours'`);
-      securityEventsCount = secRows[0]?.count ?? 0;
-    } catch {
-      // Non-blocking
-    }
-
-    // 4. Real check: Knowledge facts for active tenant
     const activeTenant = tenants[0]!;
-    let factsCount = 0;
-    try {
-      const kRows = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(hermesKnowledge)
-        .where(sql`${hermesKnowledge.organizationId} = ${activeTenant.organizationId} OR ${hermesKnowledge.organizationId} = ${activeTenant.tenantSlug || ''}`);
-      factsCount = kRows[0]?.count ?? 0;
-    } catch {
-      // Non-blocking
-    }
-
-    const statusText = `📊 <b>Hermes OS — System Health</b>\n\n` +
-      `• <b>Postgres Database (Neon):</b> ${dbStatus}\n` +
-      `• <b>Sovereign IPFS Vault:</b> ${ipfsStatusText}\n` +
-      `• <b>Security Firewall (K26):</b> 🟢 ENFORCING (<code>${securityEventsCount}</code> eventos 24h)\n` +
-      `• <b>Workspace Activo:</b> <b>${escapeHtml(activeTenant.organizationName)}</b> (<code>${factsCount}</code> hechos)\n` +
-      `• <b>Workspaces Autorizados:</b> ${tenants.length}\n\n` +
-      `<i>Consulta ejecutada en tiempo real.</i>`;
+    const status = await collectSystemStatus(activeTenant.organizationId);
+    const statusText = buildStatusMessage(status, activeTenant.organizationName, tenants.length);
 
     await sendTelegramMessage(this.botToken, chatId, statusText);
-    return { 
-      handled: true, 
+    return {
+      handled: true,
       action: 'STATUS_SUCCESS',
-      data: { dbStatus, ipfsStatusText, securityEventsCount, factsCount }
+      data: { ...status }
     };
   }
 

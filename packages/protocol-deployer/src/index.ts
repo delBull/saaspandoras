@@ -16,9 +16,6 @@ export const pandoraOracleWallet = new Proxy({}, {
   get: (_target, prop) => (getPandoraOracleWallet() as any)[prop]
 }) as Account;
 
-// Exportar cliente Thirdweb
-export { client } from './thirdweb-client';
-
 // Exportar Artifacts (ABIs)
 import W2ELicenseArtifact from "./artifacts/W2ELicense.json";
 import W2EUtilityArtifact from "./artifacts/W2EUtility.json";

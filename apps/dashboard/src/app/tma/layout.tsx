@@ -12,18 +12,14 @@ export default function TmaLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="dark">
-      <head>
-        <Script 
-          src="https://telegram.org/js/telegram-web-app.js" 
-          strategy="beforeInteractive" 
-        />
-      </head>
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased font-sans selection:bg-indigo-500/30">
-        <main className="min-h-screen flex flex-col max-w-md mx-auto relative overflow-x-hidden pb-12">
-          {children}
-        </main>
-      </body>
-    </html>
+    <>
+      <Script
+        src="https://telegram.org/js/telegram-web-app.js"
+        strategy="afterInteractive"
+      />
+      <main className="min-h-screen flex flex-col max-w-md mx-auto relative overflow-x-hidden pb-12 bg-slate-950 text-slate-100 antialiased font-sans selection:bg-indigo-500/30">
+        {children}
+      </main>
+    </>
   );
 }

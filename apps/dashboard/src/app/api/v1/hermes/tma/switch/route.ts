@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  HermesTenantMembershipService, 
+import {
+  HermesTenantMembershipService,
   HermesWorkspaceResolver,
   SessionTokenService,
   HermesAuthError,
   HermesTenantAccessDeniedError
 } from '@/lib/hermes/auth';
+import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
 
 const membershipService = new HermesTenantMembershipService();
 const tokenService = new SessionTokenService();
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(`tma-switch:${clientIpFromHeaders(req.headers)}`, 30, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too Many Requests', code: 'RATE_LIMITED' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+      );
+    }
+
     const authHeader = req.headers.get('authorization');
     const body = await req.json().catch(() => ({}));
     
@@ -40,7 +49,13 @@ export async function POST(req: NextRequest) {
     const payload = tokenService.verifyToken(token);
 
     // 2. Resolve target organization to canonical UUID
-    const resolved = await HermesWorkspaceResolver.resolveCanonicalWorkspace(targetWorkspace);
+    // Anti-enumeración: workspace inexistente responde igual que acceso denegado.
+    let resolved;
+    try {
+      resolved = await HermesWorkspaceResolver.resolveCanonicalWorkspace(targetWorkspace);
+    } catch {
+      throw new HermesAuthError('No tienes acceso a este workspace.', 'TENANT_ACCESS_DENIED', 403);
+    }
 
     // 3. Re-validate membership strictly on new UUID
     const newSession = await membershipService.validateTenantAccess({

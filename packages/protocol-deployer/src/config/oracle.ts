@@ -3,7 +3,7 @@ import { createThirdwebClient } from 'thirdweb';
 
 export const PANDORA_ORACLE_CONFIG = {
   // Wallet dedicada para operaciones SCaaS
-  privateKey: process.env.PANDORA_ORACLE_PRIVATE_KEY || '',
+  privateKey: process.env.PANDORA_ORACLE_PRIVATE_KEY,
   address: process.env.PANDORA_ORACLE_ADDRESS || '',
 
   // Configuración de gas
@@ -17,32 +17,30 @@ export const PANDORA_ORACLE_CONFIG = {
   }
 };
 
-// Validar configuración
-// Crear wallet del oráculo (Lazy)
+// Crear wallet del oráculo (Lazy) — fail-closed: sin private key real no hay wallet (§4/§9C)
 export const getPandoraOracleWallet = () => {
-  // Validar configuración solo al llamar
-  if (!PANDORA_ORACLE_CONFIG.privateKey) {
-    console.warn('⚠️ PANDORA_ORACLE_PRIVATE_KEY no está configurada. Usando dummy para build.');
+  const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error('[Oracle] PANDORA_ORACLE_PRIVATE_KEY no está configurada. Fail-closed: no se crea wallet sin clave.');
   }
 
-  if (!PANDORA_ORACLE_CONFIG.address) {
-    console.warn('⚠️ PANDORA_ORACLE_ADDRESS no está configurada.');
+  const clientId = process.env.THIRDWEB_CLIENT_ID;
+  if (!clientId) {
+    throw new Error('[Oracle] THIRDWEB_CLIENT_ID no está configurada.');
   }
-
-  const safePrivateKey = PANDORA_ORACLE_CONFIG.privateKey || "0x0000000000000000000000000000000000000000000000000000000000000001";
 
   // Crear cliente Thirdweb para el oráculo
   const oracleClient = createThirdwebClient({
-    clientId: process.env.THIRDWEB_CLIENT_ID || "8a0dde1c971805259575cea5cb737530"
+    clientId
   });
 
   const wallet = privateKeyToAccount({
-    privateKey: safePrivateKey,
+    privateKey,
     client: oracleClient
   });
 
   // Verificar que la dirección coincide
-  if (PANDORA_ORACLE_CONFIG.privateKey && PANDORA_ORACLE_CONFIG.address &&
+  if (PANDORA_ORACLE_CONFIG.address &&
     wallet.address.toLowerCase() !== PANDORA_ORACLE_CONFIG.address.toLowerCase()) {
     console.warn('⚠️ La dirección derivada de la private key no coincide con PANDORA_ORACLE_ADDRESS');
   }
