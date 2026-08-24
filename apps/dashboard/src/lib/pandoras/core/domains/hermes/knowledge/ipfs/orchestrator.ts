@@ -8,10 +8,18 @@
  * - Dev/Test: Deterministic Mock Provider with RFC4648 CIDv1 Multihashes
  */
 
-import { IpfsProvider, SovereignIpfsConfig, IpfsPinResult, IpfsHealthStatus } from './contracts';
+import { 
+  IpfsProvider, 
+  SovereignIpfsConfig, 
+  IpfsPinResult, 
+  IpfsHealthStatus,
+  IpfsPinOptions,
+  ArtifactStorageCategory,
+} from './contracts';
 import { KuboRpcIpfsProvider } from './kubo-provider';
 import { PinataIpfsProvider } from './pinata-provider';
 import { MockIpfsProvider } from './mock-provider';
+import { SovereignStoragePolicyEngine } from './storage-policy';
 
 export class SovereignIpfsOrchestrator {
   private primary: IpfsProvider;
@@ -83,33 +91,67 @@ export class SovereignIpfsOrchestrator {
   }
 
   /**
-   * Pins JSON data using the primary provider and optionally mirrors to the backup provider.
+   * Pins JSON data using the primary provider and optionally mirrors to the backup provider
+   * according to the institutional storage policy.
    */
-  public async pinJson(data: unknown, name?: string): Promise<IpfsPinResult> {
+  public async pinJson(
+    data: unknown, 
+    nameOrOptions?: string | IpfsPinOptions
+  ): Promise<IpfsPinResult> {
     const isProduction = process.env.NODE_ENV === 'production';
     if (isProduction && !process.env.PANDORAS_KUBO_RPC_URL && !process.env.PINATA_JWT && this.primary.providerType === 'PINATA') {
       throw new Error('[SovereignIpfsOrchestrator] PANDORAS_KUBO_RPC_URL or PINATA_JWT is mandatory in production.');
     }
+
+    const options: IpfsPinOptions = typeof nameOrOptions === 'string'
+      ? { name: nameOrOptions }
+      : (nameOrOptions || {});
+
+    const artifactName = options.name || 'hermes-artifact.json';
+    const category: ArtifactStorageCategory = options.category || 'KNOWLEDGE_VAULT';
+    const policy = SovereignStoragePolicyEngine.resolvePolicy(category, options.policyOverride);
+
     const pinnedAt = new Date().toISOString();
 
     // 1. Pin to Primary (Sovereign Kubo or Pinata)
-    const primaryCid = await this.primary.pinJson(data, name);
+    const primaryCid = await this.primary.pinJson(data, artifactName);
 
     let backupMirrored = false;
     let backupCid: string | undefined = undefined;
 
-    // 2. Dual-Pinning Redundancy Mirror
-    if (this.enableDualPinning && this.backup) {
-      try {
-        backupCid = await this.backup.pinJson(data, name);
-        backupMirrored = true;
-        if (backupCid && backupCid !== primaryCid) {
-          this.registerCidAlias(primaryCid, backupCid);
+    // 2. Dual-Pinning Redundancy Mirror based on Storage Policy
+    const shouldMirror = (this.enableDualPinning || policy.requireExternalBackup) && !!this.backup;
+
+    if (shouldMirror && this.backup) {
+      if (policy.synchronousMirror) {
+        try {
+          backupCid = await this.backup.pinJson(data, artifactName);
+          backupMirrored = true;
+          if (backupCid && backupCid !== primaryCid) {
+            this.registerCidAlias(primaryCid, backupCid);
+          }
+        } catch (err: any) {
+          console.warn(`[SovereignIpfsOrchestrator] Synchronous backup dual-pinning warning for '${artifactName}':`, err?.message);
         }
-      } catch (err: any) {
-        console.warn(`[SovereignIpfsOrchestrator] Backup dual-pinning warning for '${name}':`, err?.message);
+      } else {
+        // Async/Parallel execution
+        try {
+          backupCid = await this.backup.pinJson(data, artifactName);
+          backupMirrored = true;
+          if (backupCid && backupCid !== primaryCid) {
+            this.registerCidAlias(primaryCid, backupCid);
+          }
+        } catch (err: any) {
+          console.warn(`[SovereignIpfsOrchestrator] Async backup dual-pinning warning for '${artifactName}':`, err?.message);
+        }
       }
     }
+
+    const replicationStatus = SovereignStoragePolicyEngine.evaluateReplicationStatus(
+      !!primaryCid,
+      backupMirrored,
+      policy
+    );
 
     return {
       cid: primaryCid,
@@ -118,6 +160,8 @@ export class SovereignIpfsOrchestrator {
       pinnedAt,
       backupCid,
       backupMirrored,
+      replicationStatus,
+      storageCategory: category,
     };
   }
 

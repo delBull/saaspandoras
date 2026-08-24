@@ -250,4 +250,83 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
     expect(health.primary.ok).toBe(true);
     expect(health.backup?.ok).toBe(true);
   });
+
+  it('IPFS-008: SovereignStoragePolicyEngine computes correct replicationStatus per artifact tier', async () => {
+    const primaryMock = new MockIpfsProvider();
+    const backupMock = new MockIpfsProvider();
+
+    const orchestrator = new SovereignIpfsOrchestrator({
+      customPrimary: primaryMock,
+      customBackup: backupMock,
+      enableDualPinning: true,
+    });
+
+    // 1. Level 3 Claim Contract (Requires synchronous dual-pinning -> DURABLE)
+    const claimResult = await orchestrator.pinJson(
+      { claim: 'Aztecas SAPI' }, 
+      { name: 'snarai_claim.json', category: 'CLAIM_CONTRACT' }
+    );
+    expect(claimResult.replicationStatus).toBe('DURABLE');
+    expect(claimResult.storageCategory).toBe('CLAIM_CONTRACT');
+    expect(claimResult.backupMirrored).toBe(true);
+
+    // 2. Single provider only with PUBLIC_DOCUMENT -> LOCAL_ONLY (not degraded because external backup not required)
+    const singleOrchestrator = new SovereignIpfsOrchestrator({
+      customPrimary: primaryMock,
+      enableDualPinning: false,
+    });
+    const publicResult = await singleOrchestrator.pinJson(
+      { publicMemo: 'Hello World' },
+      { name: 'public.json', category: 'PUBLIC_DOCUMENT' }
+    );
+    expect(publicResult.replicationStatus).toBe('LOCAL_ONLY');
+
+    // 3. Single provider with CLAIM_CONTRACT -> DEGRADED (because external backup was required but not available)
+    const degradedResult = await singleOrchestrator.pinJson(
+      { claim: 'Unbacked Claim' },
+      { name: 'claim.json', category: 'CLAIM_CONTRACT' }
+    );
+    expect(degradedResult.replicationStatus).toBe('DEGRADED');
+  });
+
+  it('IPFS-009: TenantIpfsVaultService.exportAuditSnapshotToIpfs attaches Level 3 AUDIT_SNAPSHOT policy and DURABLE status', async () => {
+    const primaryMock = new MockIpfsProvider();
+    const backupMock = new MockIpfsProvider();
+
+    const vault = new TenantIpfsVaultService({
+      customPrimary: primaryMock,
+      customBackup: backupMock,
+      enableDualPinning: true,
+    });
+
+    const mockEvents = [
+      {
+        id: 'evt_1',
+        sequenceNumber: 1,
+        eventHash: 'hash_111',
+        previousEventHash: null,
+        contentHash: null,
+        eventType: 'KEY_CREATED',
+        severity: 'INFO',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'evt_2',
+        sequenceNumber: 2,
+        eventHash: 'hash_222',
+        previousEventHash: 'hash_111',
+        contentHash: null,
+        eventType: 'POLICY_EVALUATED',
+        severity: 'INFO',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    const snapshot = await vault.exportAuditSnapshotToIpfs('snarai', mockEvents, signer);
+    expect(snapshot.ipfsCid.startsWith('bafkrei')).toBe(true);
+    expect(snapshot.backupCid).toBeDefined();
+    expect(snapshot.replicationStatus).toBe('DURABLE');
+    expect(snapshot.merkleRoot).toBeDefined();
+    expect(snapshot.agentSignature.startsWith('0x')).toBe(true);
+  });
 });

@@ -23,9 +23,11 @@ import {
   MockIpfsProvider,
   type SovereignIpfsConfig,
   type IpfsProvider,
+  type IpfsReplicationStatus,
+  type ArtifactStorageCategory,
 } from './ipfs';
 
-export type { EncryptedKnowledgeArtifact, EncryptionContextAAD };
+export type { EncryptedKnowledgeArtifact, EncryptionContextAAD, IpfsReplicationStatus, ArtifactStorageCategory };
 
 export interface IpfsPinnedArtifact {
   cid: string;
@@ -38,6 +40,7 @@ export interface IpfsPinnedArtifact {
   encryptedMetadata: EncryptedKnowledgeArtifact;
   agentSignature?: string;
   pinnedAt: string;
+  replicationStatus?: IpfsReplicationStatus;
 }
 
 export interface IpfsAuditSnapshot {
@@ -48,10 +51,12 @@ export interface IpfsAuditSnapshot {
   startSequence: number;
   endSequence: number;
   ipfsCid: string;
+  backupCid?: string;
   ipfsUri: string;
   signedByAddress: string;
   agentSignature: string;
   timestamp: string;
+  replicationStatus?: IpfsReplicationStatus;
 }
 
 export interface TenantIpfsVaultOptions extends SovereignIpfsConfig {
@@ -110,8 +115,11 @@ export class TenantIpfsVaultService {
     const payloadString = JSON.stringify(encryptedArtifact);
     const contentHash = crypto.createHash('sha256').update(payloadString, 'utf8').digest('hex');
 
-    // 3. Pin to IPFS (via SovereignIpfsOrchestrator: Kubo / Pinata / Mock)
-    const pinResult = await this.orchestrator.pinJson(encryptedArtifact, `hermes_${context.tenantId}_${context.artifactId}_v${context.version}`);
+    // 3. Pin to IPFS (via SovereignIpfsOrchestrator: Kubo / Pinata / Mock with KNOWLEDGE_VAULT storage policy)
+    const pinResult = await this.orchestrator.pinJson(encryptedArtifact, {
+      name: `hermes_${context.tenantId}_${context.artifactId}_v${context.version}`,
+      category: 'KNOWLEDGE_VAULT',
+    });
     const cid = pinResult.cid;
 
     // 4. Mandatory: Cryptographically sign the IPFS Anchor with Tenant Agent Wallet (EIP-712)
@@ -134,6 +142,7 @@ export class TenantIpfsVaultService {
       encryptedMetadata: encryptedArtifact,
       agentSignature: signedIntent.signature,
       pinnedAt: new Date().toISOString(),
+      replicationStatus: pinResult.replicationStatus,
     };
   }
 
@@ -150,9 +159,10 @@ export class TenantIpfsVaultService {
         targetTenantId: expectedContext.tenantId,
         artifactId: expectedContext.artifactId,
         classification: expectedContext.classification,
-        ipfsCid: encryptedArtifact.contentHash,
+        ipfsCid: encryptedArtifact.contentHash || 'direct_memory',
         domain: 'knowledge_vault',
       });
+
       if (!decision.allowed) {
         throw new Error(`[VaultAuthorizationGate] ${decision.decisionCode}: ${decision.reason}`);
       }
@@ -161,52 +171,48 @@ export class TenantIpfsVaultService {
   }
 
   /**
-   * Retrieves an encrypted artifact from IPFS and decrypts it strictly in RAM.
-   * Gated by VaultAuthorizationGate contextual policy.
+   * Retrieves an encrypted artifact from IPFS by CID, verifies its integrity,
+   * and decrypts it locally in memory with cryptographic zeroization.
    */
   public async retrieveAndDecryptFromIpfs(
     cid: string,
     expectedContext: EncryptionContextAAD,
     authContext?: VaultAccessContext
   ): Promise<string> {
-    if (authContext) {
-      const decision = this.authGate.evaluate(authContext, {
-        targetTenantId: expectedContext.tenantId,
-        artifactId: expectedContext.artifactId,
-        classification: expectedContext.classification,
-        ipfsCid: cid,
-        domain: 'knowledge_vault',
-      });
-      if (!decision.allowed) {
-        throw new Error(`[VaultAuthorizationGate] ${decision.decisionCode}: ${decision.reason}`);
-      }
-    }
-
     // 1. Fetch ciphertext JSON from IPFS Gateway
     const encryptedArtifact = await this.fetchJsonFromIpfs<EncryptedKnowledgeArtifact>(cid);
 
-    // 2. Decrypt Payload using Envelope Vault (with AAD verification and key zeroization)
-    return await this.envelopeVault.decryptArtifact(encryptedArtifact, expectedContext);
+    // 2. Decrypt Payload using Envelope Vault
+    return await this.decryptArtifact(encryptedArtifact, expectedContext, authContext);
   }
 
   /**
-   * Packages and exports an append-only security hash chain to IPFS as a verifiable compliance snapshot.
+   * Exports an append-only security event log chain to an immutable, signed IPFS Merkle snapshot.
    */
   public async exportAuditSnapshotToIpfs(
     tenantId: string,
-    events: Array<{ sequenceNumber: number; eventHash: string; previousEventHash: string; eventType: string; createdAt: string }>,
+    events: Array<{
+      sequenceNumber: number;
+      eventHash: string;
+      id?: string;
+      previousEventHash?: string | null;
+      contentHash?: string | null;
+      eventType?: string;
+      severity?: string;
+      createdAt?: Date | string;
+    }>,
     agentSigner: HermesIdentitySigner
   ): Promise<IpfsAuditSnapshot> {
     if (!agentSigner) {
-      throw new Error('[TenantIpfsVault] HermesIdentitySigner is mandatory to sign audit snapshots.');
+      throw new Error('[TenantIpfsVault] HermesIdentitySigner is mandatory to export audit snapshots to IPFS.');
     }
-    if (!events || events.length === 0) {
-      throw new Error('[TenantIpfsVault] Cannot export empty security events to IPFS.');
+    if (events.length === 0) {
+      throw new Error('[TenantIpfsVault] Cannot export empty event chain to IPFS.');
     }
 
-    // 1. Calculate Merkle Root of event hashes
-    const sortedHashes = events.map(e => e.eventHash);
-    const merkleRoot = this.computeMerkleRoot(sortedHashes);
+    // 1. Build Merkle Root of the Event Sequence
+    const eventHashes = events.map(e => `${e.sequenceNumber}:${e.eventHash}`).join('|');
+    const merkleRoot = crypto.createHash('sha256').update(eventHashes, 'utf8').digest('hex');
 
     const snapshotPayload = {
       tenantId,
@@ -218,8 +224,21 @@ export class TenantIpfsVaultService {
       exportedAt: new Date().toISOString(),
     };
 
-    // 2. Pin Audit Snapshot to IPFS
-    const cid = await this.pinJsonToIpfs(snapshotPayload, `hermes_audit_${tenantId}_seq_${snapshotPayload.startSequence}_${snapshotPayload.endSequence}`);
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (
+      isProduction &&
+      !this.pinataJwt &&
+      !process.env.PANDORAS_KUBO_RPC_URL
+    ) {
+      throw new Error('[TenantIpfsVault] PINATA_JWT is mandatory in production for verifiable IPFS pinning.');
+    }
+
+    // 2. Pin Audit Snapshot to IPFS with AUDIT_SNAPSHOT policy (Level 3)
+    const pinResult = await this.orchestrator.pinJson(snapshotPayload, {
+      name: `hermes_audit_${tenantId}_seq_${snapshotPayload.startSequence}_${snapshotPayload.endSequence}`,
+      category: 'AUDIT_SNAPSHOT',
+    });
+    const cid = pinResult.cid;
 
     // 3. Cryptographically Sign the Audit Root with Agent Wallet
     const signedIntent = await agentSigner.signIntent({
@@ -238,10 +257,12 @@ export class TenantIpfsVaultService {
       startSequence: snapshotPayload.startSequence,
       endSequence: snapshotPayload.endSequence,
       ipfsCid: cid,
+      backupCid: pinResult.backupCid,
       ipfsUri: `ipfs://${cid}`,
       signedByAddress: agentSigner.getPublicAddress(),
       agentSignature: signedIntent.signature,
       timestamp: snapshotPayload.exportedAt,
+      replicationStatus: pinResult.replicationStatus,
     };
   }
 

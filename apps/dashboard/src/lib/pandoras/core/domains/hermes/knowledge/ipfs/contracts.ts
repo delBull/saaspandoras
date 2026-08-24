@@ -5,12 +5,49 @@
 
 export type IpfsProviderType = 'KUBO' | 'PINATA' | 'MOCK';
 
+/**
+ * Institutional Durability States for Sovereign Artifacts
+ */
+export type IpfsReplicationStatus = 
+  | 'LOCAL_ONLY'   // Pinned only on primary Kubo node (no mirror required/configured)
+  | 'REPLICATING'  // Primary OK, async mirror in flight
+  | 'DURABLE'      // Satisfies required storage durability policy (primary + confirmed mirror)
+  | 'DEGRADED'     // Primary OK, but required external backup mirror failed
+  | 'FAILED';      // Primary and backup failed
+
+/**
+ * Storage categories that map to institutional durability policies
+ */
+export type ArtifactStorageCategory = 
+  | 'PUBLIC_DOCUMENT'
+  | 'KNOWLEDGE_VAULT'
+  | 'CLAIM_CONTRACT'
+  | 'AUDIT_SNAPSHOT'
+  | 'AGENT_SOUL'
+  | 'ACADEMY_RUBRIC';
+
+/**
+ * Durability requirements per artifact tier
+ */
+export interface StorageDurabilityPolicy {
+  minReplicationCopies: number;
+  requireExternalBackup: boolean;
+  synchronousMirror: boolean;
+  description: string;
+}
+
 export interface IpfsHealthStatus {
   ok: boolean;
   providerType: IpfsProviderType;
   version?: string;
   latencyMs: number;
   error?: string;
+}
+
+export interface IpfsPinOptions {
+  name?: string;
+  category?: ArtifactStorageCategory;
+  policyOverride?: Partial<StorageDurabilityPolicy>;
 }
 
 export interface IpfsPinResult {
@@ -20,6 +57,8 @@ export interface IpfsPinResult {
   pinnedAt: string;
   backupCid?: string;
   backupMirrored?: boolean;
+  replicationStatus: IpfsReplicationStatus;
+  storageCategory?: ArtifactStorageCategory;
 }
 
 export interface IpfsProvider {
