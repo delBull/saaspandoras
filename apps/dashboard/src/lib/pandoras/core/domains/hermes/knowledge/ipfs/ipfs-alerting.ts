@@ -45,6 +45,11 @@ async function postToDiscordWebhook(payload: DiscordAlertPayload, dedupKey?: str
     alertDedupSet.add(dedupKey);
   }
 
+  // Suppress real external webhook dispatch during automated test runs
+  if (process.env.NODE_ENV === 'test' && process.env.ENABLE_DISCORD_IN_TESTS !== 'true') {
+    return;
+  }
+
   const webhookUrl = process.env.DISCORD_WEBHOOK_IPFS_ALERTS || process.env.DISCORD_WEBHOOK_ALERTS;
   if (!webhookUrl) {
     // Non-blocking in environments without Discord webhooks
