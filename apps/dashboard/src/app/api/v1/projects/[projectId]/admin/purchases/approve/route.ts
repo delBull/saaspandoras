@@ -10,6 +10,7 @@ import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 import { verifySignature } from 'thirdweb/auth';
 import { client } from '@/lib/thirdweb-client';
 import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
+import { SovereignIpfsAlerting } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/ipfs-alerting';
 
 async function handler(
     req: Request,
@@ -126,6 +127,7 @@ async function handler(
                     purchaseId,
                     targetWallet: targetWallet || null,
                     units,
+                    agreementContent,
                     agreementHash,
                     certifiedAt: new Date().toISOString(),
                 }, {
@@ -141,7 +143,17 @@ async function handler(
                     replicationStatus: pinResult.replicationStatus,
                 };
             } catch (err: any) {
-                console.warn('[PurchasesApprove] Non-blocking IPFS legal anchor notice:', err?.message);
+                console.warn('[PurchasesApprove] IPFS legal anchor warning (fail-safe fallback):', err?.message);
+                ipfsMetadata = {
+                    replicationStatus: 'DEGRADED',
+                    ipfsError: err?.message || 'Failed to anchor legal agreement to IPFS',
+                };
+                SovereignIpfsAlerting.notifyL3DurabilityDegraded({
+                    category: 'LEGAL_AGREEMENT',
+                    name: `legal_agreement_${project.slug}_${purchaseId}.json`,
+                    primaryCid: 'UNPINNED',
+                    reason: err?.message || 'IPFS pinning failed during purchase approval',
+                }).catch(() => {});
             }
 
             // Ambassador Logic

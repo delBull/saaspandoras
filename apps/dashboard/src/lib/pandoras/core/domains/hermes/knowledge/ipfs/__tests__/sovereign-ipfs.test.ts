@@ -15,6 +15,7 @@ import {
 import { TenantIpfsVaultService } from '../../ipfs-vault';
 import { HermesIdentitySigner } from '../../../identity/identity-signer';
 import { SafeHttpClient, EgressGuard } from '../../../runtime/egress-guard';
+import { resolveIpfsUrl, sanitizeUrl, getIpfsGatewayFallbackUrls } from '@/lib/project-utils';
 
 describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy)', () => {
   const signer = new HermesIdentitySigner();
@@ -477,5 +478,61 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
     primaryMock.fetchJson = async () => ({ status: 'primary_back_online' }) as any;
     const fromPrimary = await freshOrchestrator.fetchJson<{ status: string }>('bafybei_global_primary_cold');
     expect(fromPrimary.status).toBe('primary_back_online');
+  });
+
+  it('IPFS-013: Strict CID regex differentiates real CIDs from standard filenames/relative paths', () => {
+    // Non-CID strings that start with 'ba' or 'Qm' but are regular filenames or relative paths
+    const regularBanner = 'banner-hero-snarai-production-real-estate-project.png';
+    const regularBase64 = 'basic-document-attachment-sample-v2-long-path-name.pdf';
+    const relativePath = '/assets/images/badges/gold-status-verified.png';
+
+    // Must NOT be treated as IPFS CIDs
+    expect(sanitizeUrl(regularBanner)).toBe('https://dash.pandoras.finance/banner-hero-snarai-production-real-estate-project.png');
+    expect(sanitizeUrl(regularBase64)).toBe('https://dash.pandoras.finance/basic-document-attachment-sample-v2-long-path-name.pdf');
+    expect(sanitizeUrl(relativePath)).toBe('https://dash.pandoras.finance/assets/images/badges/gold-status-verified.png');
+
+    // Real CIDs (CIDv0 and CIDv1)
+    const validCidV0 = 'QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco';
+    const validCidV1 = 'bafybeicg2deb4pd2mgx35fvxd5257zskh7r45o66s2e663x37a';
+    const ipfsUri = `ipfs://${validCidV0}`;
+
+    expect(resolveIpfsUrl(validCidV0)).toContain(validCidV0);
+    expect(resolveIpfsUrl(validCidV1)).toContain(validCidV1);
+    expect(resolveIpfsUrl(ipfsUri)).toContain(validCidV0);
+
+    // Multi-gateway fallback list
+    const fallbacks = getIpfsGatewayFallbackUrls(validCidV0);
+    expect(fallbacks.length).toBeGreaterThanOrEqual(3);
+    expect(fallbacks[0]).toContain('pinata.cloud');
+    expect(fallbacks[1]).toContain('ipfs.io');
+  });
+
+  it('IPFS-014: Pinata DR failure during dual-pinning invokes notifyPinataDrDown', async () => {
+    const primaryMock: IpfsProvider = {
+      providerType: 'KUBO',
+      async pinJson() { return 'bafybei_primary_ok'; },
+      async fetchJson<T = unknown>() { return {} as T; },
+      async healthCheck() { return { ok: true, providerType: 'KUBO', latencyMs: 5 }; },
+    };
+    const backupMock: IpfsProvider = {
+      providerType: 'PINATA',
+      async pinJson() { throw new Error('Pinata 502 Bad Gateway'); },
+      async fetchJson<T = unknown>() { throw new Error('Pinata 502 Bad Gateway'); },
+      async healthCheck() { return { ok: false, providerType: 'PINATA', latencyMs: 50, error: '502 Bad Gateway' }; },
+    };
+
+    const orchestrator = new SovereignIpfsOrchestrator({
+      customPrimary: primaryMock,
+      customBackup: backupMock,
+      enableDualPinning: true,
+    });
+
+    const pinResult = await orchestrator.pinJson({ test: 'legal_doc' }, {
+      name: 'agreement.json',
+      category: 'LEGAL_AGREEMENT',
+    });
+
+    expect(pinResult.replicationStatus).toBe('DEGRADED');
+    expect(pinResult.backupMirrored).toBe(false);
   });
 });

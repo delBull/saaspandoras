@@ -197,24 +197,20 @@ export function sanitizeUrl(url: any): string | null {
   const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder'];
   if (placeholders.includes(cleanUrl.toLowerCase())) return null;
   
-  // Handle IPFS: ipfs://CID or ipfs:CID or raw CID (Qm... or ba...)
+  // Handle IPFS: ipfs://CID or ipfs:CID or strict raw CIDv0 / CIDv1
+  const isCidV0 = /^Qm[1-9A-HJ-NP-Za-km-z]{44,}$/.test(cleanUrl);
+  const isCidV1 = /^ba[fkyz][a-z0-9]{40,}$/i.test(cleanUrl);
   if (
     cleanUrl.startsWith('ipfs:') || 
     cleanUrl.startsWith('ipfs://') || 
-    (cleanUrl.startsWith('Qm') && cleanUrl.length >= 46) ||
-    (cleanUrl.startsWith('ba') && cleanUrl.length >= 46)
+    isCidV0 ||
+    isCidV1
   ) {
     return resolveIpfsUrl(cleanUrl);
   }
 
   // Handle standard absolute URLs
   if (cleanUrl.startsWith('http')) {
-    // If the URL is already an IPFS gateway URL, redirect through sovereign gateway
-    if (cleanUrl.includes('cloudflare-ipfs.com/ipfs/') || cleanUrl.includes('ipfs.io/ipfs/')) {
-      const path = cleanUrl.substring(cleanUrl.indexOf('/ipfs/') + 6);
-      return resolveIpfsUrl(path);
-    }
-    
     // Safety check: if the url is something like http://logo-gold.png (which happens if mistakenly entered),
     // we should treat it as a relative filename instead of a domain.
     try {
@@ -256,9 +252,9 @@ export function sanitizeUrl(url: any): string | null {
 }
 
 /**
- * Resolves an IPFS CID or URI to Pandora's Sovereign Gateway (ipfs.pandoras.finance).
- * Primary Gateway: https://ipfs.pandoras.finance/ipfs/{cid}
- * External DR Fallback: https://gateway.pinata.cloud/ipfs/{cid}
+ * Resolves an IPFS CID or URI to an active IPFS Gateway.
+ * Interim production default: gateway.pinata.cloud (active functional gateway)
+ * Switchable via NEXT_PUBLIC_IPFS_GATEWAY (e.g. https://ipfs.pandoras.finance/ipfs once DNS is live).
  */
 export function resolveIpfsUrl(url?: string | null): string | null {
   if (!url) return null;
@@ -267,18 +263,32 @@ export function resolveIpfsUrl(url?: string | null): string | null {
   let path = '';
   if (clean.startsWith('ipfs://') || clean.startsWith('ipfs:')) {
     path = clean.replace(/^ipfs:(\/*)/, '');
-  } else if ((clean.startsWith('Qm') && clean.length >= 46) || (clean.startsWith('ba') && clean.length >= 46)) {
+  } else if (/^Qm[1-9A-HJ-NP-Za-km-z]{44,}$/.test(clean) || /^ba[fkyz][a-z0-9]{40,}$/i.test(clean)) {
     path = clean;
   } else if (clean.includes('/ipfs/')) {
     path = clean.substring(clean.indexOf('/ipfs/') + 6);
   }
 
   if (path) {
-    const sovereignGateway = process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://ipfs.pandoras.finance/ipfs';
-    const cleanGateway = sovereignGateway.replace(/\/$/, '');
-    return `${cleanGateway}/${path}`;
+    // Default to active Pinata gateway until ipfs.pandoras.finance DNS is active
+    const gateway = (process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs').replace(/\/$/, '');
+    return `${gateway}/${path}`;
   }
 
   return clean;
+}
+
+/**
+ * Returns prioritized fallback gateway URLs for client-side multi-gateway retry.
+ */
+export function getIpfsGatewayFallbackUrls(cidOrPath: string): string[] {
+  const path = cidOrPath.replace(/^ipfs:(\/*)/, '');
+  const customGateway = process.env.NEXT_PUBLIC_IPFS_GATEWAY?.replace(/\/$/, '');
+  const urls: string[] = [];
+  if (customGateway) urls.push(`${customGateway}/${path}`);
+  urls.push(`https://gateway.pinata.cloud/ipfs/${path}`);
+  urls.push(`https://ipfs.io/ipfs/${path}`);
+  urls.push(`https://cloudflare-ipfs.com/ipfs/${path}`);
+  return urls;
 }
 

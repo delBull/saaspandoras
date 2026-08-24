@@ -29,6 +29,10 @@ interface IpfsStatusResponse {
     knowledgePacks: number;
     legalAgreements: number;
     totalSovereignArtifacts: number;
+    durability?: {
+      durable: number;
+      degradedOrSingle: number;
+    };
   };
   timestamp: string;
 }
@@ -186,6 +190,10 @@ export function SovereignIpfsStatusWidget() {
           <span className="text-zinc-600">|</span>
           <span className="text-zinc-400">
             Legal Agreements: <strong className="text-emerald-400">{data?.stats?.legalAgreements ?? 0}</strong>
+          </span>
+          <span className="text-zinc-600">|</span>
+          <span className="text-zinc-400">
+            Verified Durable: <strong className="text-lime-400">{data?.stats?.durability?.durable ?? 0}</strong>
           </span>
           <span className="text-zinc-600">|</span>
           <span className="text-zinc-400">

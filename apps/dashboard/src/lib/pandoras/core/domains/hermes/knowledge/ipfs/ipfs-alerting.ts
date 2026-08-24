@@ -30,7 +30,25 @@ const DISCORD_COLORS = {
   INFO: 5793266,      // Blue
 };
 
-async function postToDiscordWebhook(payload: DiscordAlertPayload): Promise<void> {
+// 5-minute cooldown per alert key to prevent alert storming during outages
+const alertCooldowns = new Map<string, number>();
+const COOLDOWN_MS = 5 * 60 * 1000;
+
+function shouldSendAlert(key: string): boolean {
+  const now = Date.now();
+  const last = alertCooldowns.get(key) || 0;
+  if (now - last < COOLDOWN_MS) {
+    return false;
+  }
+  alertCooldowns.set(key, now);
+  return true;
+}
+
+async function postToDiscordWebhook(payload: DiscordAlertPayload, cooldownKey?: string): Promise<void> {
+  if (cooldownKey && !shouldSendAlert(cooldownKey)) {
+    return;
+  }
+
   const webhookUrl = process.env.DISCORD_WEBHOOK_IPFS_ALERTS || process.env.DISCORD_WEBHOOK_ALERTS;
   if (!webhookUrl) {
     // Non-blocking in environments without Discord webhooks
@@ -72,7 +90,7 @@ export class SovereignIpfsAlerting {
       ],
       footer: { text: "Pandora's Sovereign Storage Fabric" },
       timestamp: new Date().toISOString(),
-    });
+    }, 'kubo_primary_down');
   }
 
   /**
@@ -93,7 +111,7 @@ export class SovereignIpfsAlerting {
       ],
       footer: { text: "Pandora's Sovereign Storage Fabric" },
       timestamp: new Date().toISOString(),
-    });
+    }, 'pinata_dr_down');
   }
 
   /**
@@ -119,7 +137,7 @@ export class SovereignIpfsAlerting {
       ],
       footer: { text: "Pandora's Sovereign Storage Fabric — Fail-Closed Boundary" },
       timestamp: new Date().toISOString(),
-    });
+    }, `mismatch_${details.tenantId}_${details.artifactId}`);
   }
 
   /**
@@ -143,6 +161,6 @@ export class SovereignIpfsAlerting {
       ],
       footer: { text: "Pandora's Sovereign Storage Fabric" },
       timestamp: new Date().toISOString(),
-    });
+    }, `l3_degraded_${details.primaryCid}`);
   }
 }

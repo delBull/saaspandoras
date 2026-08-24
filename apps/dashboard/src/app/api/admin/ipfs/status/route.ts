@@ -21,16 +21,33 @@ export async function GET(request: Request) {
     const orchestrator = new SovereignIpfsOrchestrator();
     const health = await orchestrator.healthCheck();
 
-    // Fast DB aggregate queries
-    const [claimRows, knowledgeRows, purchaseRows] = await Promise.all([
+    // Fast DB aggregate queries with durability breakdown
+    const [
+      claimTotalRows, 
+      claimDurableRows,
+      knowledgeTotalRows, 
+      knowledgeDurableRows,
+      legalTotalRows,
+      legalDurableRows,
+    ] = await Promise.all([
       db.select({ count: sql<number>`count(*)::int` }).from(hermesClaimContracts),
+      db.select({ count: sql<number>`count(*)::int` }).from(hermesClaimContracts).where(isNotNull(hermesClaimContracts.backupIpfsCid)),
       db.select({ count: sql<number>`count(*)::int` }).from(hermesKnowledgeRegistry),
+      db.select({ count: sql<number>`count(*)::int` }).from(hermesKnowledgeRegistry).where(isNotNull(hermesKnowledgeRegistry.backupIpfsCid)),
       db.select({ count: sql<number>`count(*)::int` }).from(purchases).where(isNotNull(purchases.agreementHash)),
+      db.select({ count: sql<number>`count(*)::int` }).from(purchases).where(sql`metadata->>'replicationStatus' = 'DURABLE'`),
     ]);
 
-    const claimCount = claimRows[0]?.count || 0;
-    const knowledgeCount = knowledgeRows[0]?.count || 0;
-    const legalCount = purchaseRows[0]?.count || 0;
+    const claimCount = claimTotalRows[0]?.count || 0;
+    const claimDurable = claimDurableRows[0]?.count || 0;
+    const knowledgeCount = knowledgeTotalRows[0]?.count || 0;
+    const knowledgeDurable = knowledgeDurableRows[0]?.count || 0;
+    const legalCount = legalTotalRows[0]?.count || 0;
+    const legalDurable = legalDurableRows[0]?.count || 0;
+
+    const totalArtifacts = claimCount + knowledgeCount + legalCount;
+    const durableArtifacts = claimDurable + knowledgeDurable + legalDurable;
+    const replicatingOrDegraded = totalArtifacts - durableArtifacts;
 
     return NextResponse.json({
       success: true,
@@ -40,7 +57,7 @@ export async function GET(request: Request) {
           ok: health.primary.ok,
           latencyMs: health.primary.latencyMs,
           endpoint: process.env.PANDORAS_KUBO_RPC_URL ? 'rpc.ipfs.pandoras.finance' : 'mock/local',
-          version: health.primary.version || 'v0.32.0',
+          version: health.primary.version || 'unknown',
         },
         backup: health.backup ? {
           provider: health.backup.providerType,
@@ -56,7 +73,11 @@ export async function GET(request: Request) {
         claimContracts: claimCount,
         knowledgePacks: knowledgeCount,
         legalAgreements: legalCount,
-        totalSovereignArtifacts: claimCount + knowledgeCount + legalCount,
+        totalSovereignArtifacts: totalArtifacts,
+        durability: {
+          durable: durableArtifacts,
+          degradedOrSingle: replicatingOrDegraded,
+        },
       },
       timestamp: new Date().toISOString(),
     });

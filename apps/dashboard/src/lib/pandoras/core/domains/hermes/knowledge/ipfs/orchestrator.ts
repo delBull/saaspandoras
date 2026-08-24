@@ -176,6 +176,12 @@ export class SovereignIpfsOrchestrator {
         } catch (err: any) {
           console.warn(`[SovereignIpfsOrchestrator] Synchronous backup dual-pinning warning for '${artifactName}':`, err?.message);
           backupMirrored = false;
+          if (this.backup?.providerType === 'PINATA') {
+            SovereignIpfsAlerting.notifyPinataDrDown({
+              error: err?.message || 'Synchronous DR mirror pinning failed',
+              affectedCategory: category,
+            }).catch(() => {});
+          }
           if (category === 'CLAIM_CONTRACT' || category === 'LEGAL_AGREEMENT' || category === 'AUDIT_SNAPSHOT' || category === 'AGENT_SOUL') {
             SovereignIpfsAlerting.notifyL3DurabilityDegraded({
               category,
@@ -200,6 +206,12 @@ export class SovereignIpfsOrchestrator {
             // K27.x: REPLICATING must never be terminal — record the degraded outcome.
             SovereignIpfsOrchestrator.replicationOutcomes.set(primaryCid, 'DEGRADED');
             console.warn(`[SovereignIpfsOrchestrator] Background backup dual-pinning warning for '${artifactName}':`, err?.message);
+            if (this.backup?.providerType === 'PINATA') {
+              SovereignIpfsAlerting.notifyPinataDrDown({
+                error: err?.message || 'Background DR mirror pinning failed',
+                affectedCategory: category,
+              }).catch(() => {});
+            }
           });
       }
     }
