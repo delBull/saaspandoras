@@ -1,3 +1,7 @@
+/**
+ * 🏛️ Nexus Deal Rooms — B2B Legal & Deal Execution Repository
+ * @roadmap DOCUMENTACIÓN/Hermes/ROADMAP_SOVEREIGN_STORAGE.md (Phase A.2: Sovereign IPFS Legal Vault Anchoring)
+ */
 import { db } from "@/db";
 import {
   nexusDealRooms,

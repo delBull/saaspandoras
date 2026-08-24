@@ -8,6 +8,7 @@
  * - Anchors Claim Contracts to IPFS with EIP-712 Agent Wallet signature
  * - Persists into hermes_claim_contracts, hermes_knowledge_registry, and projects
  * - Bootloader / Lazy loader for TenantResponsePolicyGate
+ * @roadmap DOCUMENTACIÓN/Hermes/ROADMAP_SOVEREIGN_STORAGE.md (Phase B: Self-Serve Dynamic Tenant Onboarding & Storage Quotas)
  */
 
 import * as crypto from 'crypto';

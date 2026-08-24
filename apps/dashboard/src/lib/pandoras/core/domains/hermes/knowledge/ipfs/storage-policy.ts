@@ -34,6 +34,12 @@ export class SovereignStoragePolicyEngine {
       synchronousMirror: true,
       description: 'Institutional Epistemic Claims (Level 3: Synchronous dual-pin + EIP-712 proof)',
     },
+    LEGAL_AGREEMENT: {
+      minReplicationCopies: 2,
+      requireExternalBackup: true,
+      synchronousMirror: true,
+      description: 'Digital Participation & Legal Purchase Agreements (Level 3: Synchronous dual-pin + SHA256 proof)',
+    },
     AUDIT_SNAPSHOT: {
       minReplicationCopies: 2,
       requireExternalBackup: true,

@@ -4,6 +4,7 @@ import { Sparkles, Cpu, RefreshCw, Bot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { SovereignIpfsStatusWidget } from './SovereignIpfsStatusWidget';
 
 export function HermesTenantsAdminView() {
   const [tenants, setTenants] = useState<any[]>([]);
@@ -62,6 +63,10 @@ export function HermesTenantsAdminView() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
+      {/* Sovereign IPFS Infrastructure Health Widget */}
+      <SovereignIpfsStatusWidget />
+
+      {/* Header Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-900/60 p-6 rounded-2xl border border-purple-500/20 shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-2xl text-purple-400">

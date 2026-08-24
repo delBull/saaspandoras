@@ -197,21 +197,22 @@ export function sanitizeUrl(url: any): string | null {
   const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder'];
   if (placeholders.includes(cleanUrl.toLowerCase())) return null;
   
-  // Handle IPFS: ipfs://CID or ipfs:CID or just a raw CID (starting with Qm or ba)
-  if (cleanUrl.startsWith('ipfs:') || cleanUrl.startsWith('ipfs://')) {
-    const path = cleanUrl.replace(/^ipfs:(\/*)/, '');
-    return `https://ipfs.io/ipfs/${path}`;
-  }
-  
-  // Detect raw CID (Common in Web3/Thirdweb)
-  if (cleanUrl.startsWith('Qm') && cleanUrl.length >= 46) {
-    return `https://ipfs.io/ipfs/${cleanUrl}`;
+  // Handle IPFS: ipfs://CID or ipfs:CID or raw CID (Qm... or ba...)
+  if (
+    cleanUrl.startsWith('ipfs:') || 
+    cleanUrl.startsWith('ipfs://') || 
+    (cleanUrl.startsWith('Qm') && cleanUrl.length >= 46) ||
+    (cleanUrl.startsWith('ba') && cleanUrl.length >= 46)
+  ) {
+    return resolveIpfsUrl(cleanUrl);
   }
 
   // Handle standard absolute URLs
   if (cleanUrl.startsWith('http')) {
-    if (cleanUrl.includes('cloudflare-ipfs.com')) {
-      return cleanUrl.replace('cloudflare-ipfs.com', 'ipfs.io');
+    // If the URL is already an IPFS gateway URL, redirect through sovereign gateway
+    if (cleanUrl.includes('cloudflare-ipfs.com/ipfs/') || cleanUrl.includes('ipfs.io/ipfs/')) {
+      const path = cleanUrl.substring(cleanUrl.indexOf('/ipfs/') + 6);
+      return resolveIpfsUrl(path);
     }
     
     // Safety check: if the url is something like http://logo-gold.png (which happens if mistakenly entered),
@@ -252,5 +253,32 @@ export function sanitizeUrl(url: any): string | null {
   // Remove trailing slash from baseUrl if present
   baseUrl = baseUrl.replace(/\/$/, '');
   return `${baseUrl}/${cleanUrl}`;
+}
+
+/**
+ * Resolves an IPFS CID or URI to Pandora's Sovereign Gateway (ipfs.pandoras.finance).
+ * Primary Gateway: https://ipfs.pandoras.finance/ipfs/{cid}
+ * External DR Fallback: https://gateway.pinata.cloud/ipfs/{cid}
+ */
+export function resolveIpfsUrl(url?: string | null): string | null {
+  if (!url) return null;
+  const clean = url.trim();
+  
+  let path = '';
+  if (clean.startsWith('ipfs://') || clean.startsWith('ipfs:')) {
+    path = clean.replace(/^ipfs:(\/*)/, '');
+  } else if ((clean.startsWith('Qm') && clean.length >= 46) || (clean.startsWith('ba') && clean.length >= 46)) {
+    path = clean;
+  } else if (clean.includes('/ipfs/')) {
+    path = clean.substring(clean.indexOf('/ipfs/') + 6);
+  }
+
+  if (path) {
+    const sovereignGateway = process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://ipfs.pandoras.finance/ipfs';
+    const cleanGateway = sovereignGateway.replace(/\/$/, '');
+    return `${cleanGateway}/${path}`;
+  }
+
+  return clean;
 }
 

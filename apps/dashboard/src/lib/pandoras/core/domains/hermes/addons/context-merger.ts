@@ -10,6 +10,7 @@ import { RuntimeExecutionContext, ClassifiedKnowledgeDocument } from '@/lib/pand
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
 import { TenantIpfsVaultService } from '../knowledge/ipfs-vault';
 import { ClaimContractEngine } from '../knowledge/claim-contract-engine';
+import { SovereignIpfsAlerting } from '../knowledge/ipfs/ipfs-alerting';
 
 export interface CoreSecurityContext {
   organizationId: string;
@@ -164,12 +165,20 @@ export class CognitiveContextBuilder {
             metadata: {
               reason: 'KNOWLEDGE_INTEGRITY_MISMATCH',
               expectedHash: r.contentHash,
-              computedHash,
-              ipfsCid: r.ipfsCid,
-              action: 'FAIL_CLOSED_EXCLUSION',
+              receivedHash: computedHash,
+              cid: r.ipfsCid,
             },
-          }).catch(err => console.error('[ContextMerger] Failed to record audit:', err));
-          decryptedContent = null;
+          }).catch(() => {});
+
+          SovereignIpfsAlerting.notifyIntegrityMismatch({
+            tenantId: r.tenantId,
+            artifactId: r.artifactId,
+            cid: r.ipfsCid,
+            expectedHash: r.contentHash,
+            receivedHash: computedHash,
+          }).catch(() => {});
+
+          continue;
         }
       } catch (err: any) {
         // Fallback fail-closed: exclude pack if IPFS retrieval fails, never fall back to plaintext

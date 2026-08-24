@@ -22,6 +22,7 @@ export type ArtifactStorageCategory =
   | 'PUBLIC_DOCUMENT'
   | 'KNOWLEDGE_VAULT'
   | 'CLAIM_CONTRACT'
+  | 'LEGAL_AGREEMENT'
   | 'AUDIT_SNAPSHOT'
   | 'AGENT_SOUL'
   | 'ACADEMY_RUBRIC';

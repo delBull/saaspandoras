@@ -21,8 +21,4 @@ export function getDashboardDomain() {
   return 'dash.pandoras.finance';
 }
 
-import { sanitizeUrl } from "./project-utils";
-
-export function resolveIpfsUrl(url?: string | null): string | null {
-  return sanitizeUrl(url);
-}
+export { sanitizeUrl, resolveIpfsUrl } from "./project-utils";

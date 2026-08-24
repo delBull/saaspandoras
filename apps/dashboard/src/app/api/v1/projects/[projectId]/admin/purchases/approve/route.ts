@@ -9,6 +9,7 @@ import { TelemetryService } from '@/lib/security/telemetry';
 import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
 import { verifySignature } from 'thirdweb/auth';
 import { client } from '@/lib/thirdweb-client';
+import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
 
 async function handler(
     req: Request,
@@ -115,6 +116,34 @@ async function handler(
             const agreementContent = `Investor Participation & Digital Certificate Agreement v2.0 - Project: ${project.title} - Purchase: ${purchaseId} - User: ${purchase.userId} - Units: ${purchase.amount}`;
             const agreementHash = crypto.createHash('sha256').update(agreementContent).digest('hex');
 
+            // 🔐 Sovereign IPFS Legal Agreement Anchoring (Level 3 - Synchronous Dual-Pin)
+            let ipfsMetadata: Record<string, any> = {};
+            try {
+                const orchestrator = new SovereignIpfsOrchestrator();
+                const pinResult = await orchestrator.pinJson({
+                    title: `Digital Participation Agreement — ${project.title}`,
+                    projectSlug: project.slug,
+                    purchaseId,
+                    targetWallet: targetWallet || null,
+                    units,
+                    agreementHash,
+                    certifiedAt: new Date().toISOString(),
+                }, {
+                    name: `legal_agreement_${project.slug}_${purchaseId}.json`,
+                    category: 'LEGAL_AGREEMENT',
+                });
+
+                ipfsMetadata = {
+                    ipfsCid: pinResult.cid,
+                    backupIpfsCid: pinResult.backupCid,
+                    ipfsUri: `ipfs://${pinResult.cid}`,
+                    durabilityProof: pinResult.durabilityProof,
+                    replicationStatus: pinResult.replicationStatus,
+                };
+            } catch (err: any) {
+                console.warn('[PurchasesApprove] Non-blocking IPFS legal anchor notice:', err?.message);
+            }
+
             // Ambassador Logic
             let ambassador = null;
             const meta = purchase.metadata as any;
@@ -134,6 +163,10 @@ async function handler(
                     .set({
                         status: 'completed' as any,
                         agreementHash: agreementHash,
+                        metadata: {
+                            ...(typeof purchase.metadata === 'object' && purchase.metadata !== null ? (purchase.metadata as any) : {}),
+                            ...ipfsMetadata,
+                        },
                         updatedAt: new Date()
                     })
                     .where(eq(purchases.id, purchaseId));

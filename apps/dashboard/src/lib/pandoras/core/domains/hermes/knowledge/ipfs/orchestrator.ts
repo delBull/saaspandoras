@@ -22,6 +22,7 @@ import { KuboRpcIpfsProvider } from './kubo-provider';
 import { PinataIpfsProvider } from './pinata-provider';
 import { MockIpfsProvider } from './mock-provider';
 import { SovereignStoragePolicyEngine } from './storage-policy';
+import { SovereignIpfsAlerting } from './ipfs-alerting';
 
 export class SovereignIpfsOrchestrator {
   private static readonly globalCidAliasMap = new Map<string, string>();
@@ -166,13 +167,23 @@ export class SovereignIpfsOrchestrator {
     if (shouldMirror && this.backup) {
       if (policy.synchronousMirror) {
         try {
-          backupCid = await this.backup.pinJson(data, artifactName);
+          const backupProvider = this.backup;
+          backupCid = await backupProvider.pinJson(data, artifactName);
           backupMirrored = true;
           if (backupCid && backupCid !== primaryCid) {
             this.registerCidAlias(primaryCid, backupCid);
           }
         } catch (err: any) {
           console.warn(`[SovereignIpfsOrchestrator] Synchronous backup dual-pinning warning for '${artifactName}':`, err?.message);
+          backupMirrored = false;
+          if (category === 'CLAIM_CONTRACT' || category === 'LEGAL_AGREEMENT' || category === 'AUDIT_SNAPSHOT' || category === 'AGENT_SOUL') {
+            SovereignIpfsAlerting.notifyL3DurabilityDegraded({
+              category,
+              name: artifactName,
+              primaryCid,
+              reason: err?.message || 'Synchronous DR mirror failed',
+            }).catch(() => {});
+          }
         }
       } else {
         // Non-blocking Async / Background Mirror (Fire-and-forget)
@@ -235,10 +246,20 @@ export class SovereignIpfsOrchestrator {
         // registry so rehydrated mappings survive vault/orchestrator disposal.
         const targetCid = this.getCidAlias(cid) || cid;
         console.warn(`[SovereignIpfsOrchestrator] Primary (${this.primary.providerType}) fetch failed for CID '${cid}'. Initiating fail-over to backup (${this.backup.providerType}) using CID '${targetCid}'...`);
+        
+        // Dispatch alert only when Kubo primary node is down
+        if (this.primary.providerType === 'KUBO') {
+          SovereignIpfsAlerting.notifyKuboPrimaryDown({
+            error: primaryErr?.message || 'Primary Kubo daemon unreachable',
+            cidRequested: cid,
+            fallbackProvider: this.backup.providerType,
+          }).catch(() => {});
+        }
+
         try {
           return await this.backup.fetchJson<T>(targetCid);
         } catch (backupErr: any) {
-          throw new Error(`[SovereignIpfsOrchestrator] Both primary and backup providers failed to retrieve CID '${cid}' (target: '${targetCid}'). Primary: ${primaryErr?.message}; Backup: ${backupErr?.message}`);
+          throw new Error(`[SovereignIpfsOrchestrator] Complete fetch failure for CID '${cid}'. Primary error: ${primaryErr?.message}. Backup error: ${backupErr?.message}`);
         }
       }
       throw primaryErr;
