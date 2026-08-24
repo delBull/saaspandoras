@@ -283,6 +283,7 @@ export class TenantProvisioner {
             version: contractVersion,
             contractHash,
             ipfsCid,
+            backupIpfsCid: claimContract.backupIpfsCid,
             ipfsUri,
             claims: claims as any,
             signedByAddress: signerAddress,
@@ -296,6 +297,7 @@ export class TenantProvisioner {
             set: {
               contractHash,
               ipfsCid,
+              backupIpfsCid: claimContract.backupIpfsCid,
               ipfsUri,
               claims: claims as any,
               signedByAddress: signerAddress,

@@ -106,6 +106,7 @@ export interface TenantClaimContract {
   agentWalletAddress?: string;
   contractHash: string;
   ipfsCid?: string;
+  backupIpfsCid?: string;
   ipfsUri?: string;
   agentSignature?: string;
   governanceStatus: KnowledgeGovernanceLifecycle;
@@ -336,11 +337,18 @@ export class ClaimContractEngine {
           const row = rows[0];
           const isAllowed = options?.allowSuperseded || row.governanceStatus === 'ACTIVE';
           if (isAllowed) {
+            // Rehydrate CID alias mapping if backup replica CID exists
+            if (row.backupIpfsCid && row.backupIpfsCid !== row.ipfsCid) {
+              const vault = new TenantIpfsVaultService();
+              vault.ipfsOrchestrator.registerCidAlias(row.ipfsCid, row.backupIpfsCid);
+            }
+
             const loaded: TenantClaimContract = {
               tenantId: row.tenantId,
               version: row.version,
               contractHash: row.contractHash,
               ipfsCid: row.ipfsCid,
+              backupIpfsCid: row.backupIpfsCid || undefined,
               ipfsUri: row.ipfsUri,
               claims: (row.claims as unknown as GovernedClaim[]) || [],
               agentWalletAddress: row.signedByAddress,
@@ -391,7 +399,7 @@ export class ClaimContractEngine {
   }
 
   /**
-   * Anchors and cryptographically signs a claim contract to IPFS with Hermes Agent Wallet
+   * Anchors and cryptographically seals a Tenant Claim Contract to IPFS and Agent Wallet.
    */
   public static async anchorClaimContractToIpfs(
     contract: TenantClaimContract,
@@ -411,7 +419,7 @@ export class ClaimContractEngine {
 
     const contractHash = crypto.createHash('sha256').update(canonicalPayload, 'utf8').digest('hex');
 
-    // 1. Pin to IPFS via TenantIpfsVaultService (real Pinata in prod / deterministic in test)
+    // 1. Pin to IPFS via SovereignIpfsOrchestrator with CLAIM_CONTRACT durability policy
     const vault = vaultService || new TenantIpfsVaultService();
     const payloadObj = {
       tenantId: cleanTenant,
@@ -419,7 +427,13 @@ export class ClaimContractEngine {
       claims: contract.claims,
       contractHash,
     };
-    const ipfsCid = await vault.pinJsonToIpfs(payloadObj, `claim_contract_${cleanTenant}_v${contract.version}`);
+    const pinResult = await vault.ipfsOrchestrator.pinJson(payloadObj, {
+      name: `claim_contract_${cleanTenant}_v${contract.version}`,
+      tenantId: cleanTenant,
+      category: 'CLAIM_CONTRACT',
+    });
+    const ipfsCid = pinResult.cid;
+    const backupIpfsCid = pinResult.backupCid;
 
     // 2. Sign with Agent Wallet (EIP-712 Intent)
     const signedIntent = await agentSigner.signIntent({
@@ -435,16 +449,16 @@ export class ClaimContractEngine {
       tenantId: cleanTenant,
       contractHash,
       ipfsCid,
+      backupIpfsCid,
       ipfsUri: `ipfs://${ipfsCid}`,
       agentWalletAddress: agentSigner.getPublicAddress(),
       agentSignature: signedIntent.signature,
       governanceStatus: 'ACTIVE',
       integrityStatus: 'VERIFIED',
-      claims: contract.claims,
       updatedAt: new Date().toISOString(),
     };
 
-    this.registerContract(anchoredContract);
+    ClaimContractEngine.registerContract(anchoredContract);
 
     // 3. Persist local index to Neon PostgreSQL (only in real environments, guarded against test pollution)
     const shouldPersist = db && !options?.skipDb && process.env.NODE_ENV !== 'test';
@@ -456,6 +470,7 @@ export class ClaimContractEngine {
           version: contract.version,
           contractHash,
           ipfsCid,
+          backupIpfsCid,
           ipfsUri: `ipfs://${ipfsCid}`,
           claims: contract.claims as any,
           signedByAddress: agentSigner.getPublicAddress(),
@@ -468,6 +483,7 @@ export class ClaimContractEngine {
           set: {
             contractHash,
             ipfsCid,
+            backupIpfsCid,
             ipfsUri: `ipfs://${ipfsCid}`,
             claims: contract.claims as any,
             signedByAddress: agentSigner.getPublicAddress(),

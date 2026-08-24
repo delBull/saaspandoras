@@ -91,14 +91,19 @@ export class SovereignStoragePolicyEngine {
   public static evaluateReplicationStatus(
     primarySuccess: boolean,
     backupSuccess: boolean,
-    policy: StorageDurabilityPolicy
+    policy: StorageDurabilityPolicy,
+    isAsyncInFlight = false
   ): IpfsReplicationStatus {
-    if (!primarySuccess && !backupSuccess) {
+    if (!primarySuccess && !backupSuccess && !isAsyncInFlight) {
       return 'FAILED';
     }
 
     if (primarySuccess && backupSuccess) {
       return 'DURABLE';
+    }
+
+    if (primarySuccess && isAsyncInFlight) {
+      return 'REPLICATING';
     }
 
     if (primarySuccess && !backupSuccess) {
@@ -125,6 +130,7 @@ export class SovereignStoragePolicyEngine {
     policy: StorageDurabilityPolicy;
     primarySuccess: boolean;
     backupSuccess: boolean;
+    isAsyncInFlight?: boolean;
   }): DurabilityProof {
     const verifiedReplicas: string[] = [];
     if (params.primarySuccess && params.primaryCid) {
@@ -137,7 +143,8 @@ export class SovereignStoragePolicyEngine {
     const replicationStatus = this.evaluateReplicationStatus(
       params.primarySuccess,
       params.backupSuccess,
-      params.policy
+      params.policy,
+      params.isAsyncInFlight
     );
 
     return {

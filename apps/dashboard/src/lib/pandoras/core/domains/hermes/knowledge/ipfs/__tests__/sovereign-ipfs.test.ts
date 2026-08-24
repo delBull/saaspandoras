@@ -164,12 +164,16 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
     });
 
     const payload = { document: 'Sovereign Agreement', version: 3 };
-    const pinResult = await orchestrator.pinJson(payload, 'agreement_v3');
+    const pinResult = await orchestrator.pinJson(payload, {
+      name: 'agreement_v3',
+      category: 'CLAIM_CONTRACT',
+    });
 
     // Verify dual-pin produced distinct CIDs
     expect(pinResult.cid).toBe('bafybei_dagpb_unixfs_kubo_123');
     expect(pinResult.backupCid).toBe('bafyrei_dagjson_pinata_456');
     expect(pinResult.backupMirrored).toBe(true);
+    expect(pinResult.replicationStatus).toBe('DURABLE');
 
     // Verify CID alias mapping was automatically registered
     expect(orchestrator.getCidAlias('bafybei_dagpb_unixfs_kubo_123')).toBe('bafyrei_dagjson_pinata_456');
@@ -227,7 +231,7 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
 
     const pinned = await vault.storeEncryptedKnowledgeToIpfs(plaintext, context, signer);
     expect(pinned.cid.startsWith('bafkrei')).toBe(true);
-    expect(pinned.backupCid).toBeDefined();
+    expect(pinned.replicationStatus).toBe('REPLICATING');
     expect(pinned.agentSignature).toBeDefined();
     expect(pinned.agentSignature!.startsWith('0x')).toBe(true);
 
@@ -331,5 +335,94 @@ describe('🌐 Pandora\'s Sovereign IPFS Stack (Kubo Primary + Pinata Redundancy
     expect(snapshot.replicationStatus).toBe('DURABLE');
     expect(snapshot.merkleRoot).toBeDefined();
     expect(snapshot.agentSignature.startsWith('0x')).toBe(true);
+  });
+
+  it('IPFS-010: Comprehensive anti-SSRF regression suite blocks IPv4-mapped IPv6, CGNAT, TEST-NET, Multicast, and ULA', async () => {
+    // 1. IPv4-mapped IPv6 to loopback
+    const v6Loopback = await EgressGuard.validateUrl('http://[::ffff:127.0.0.1]:8080', { allowPrivateNetwork: false });
+    expect(v6Loopback.allowed).toBe(false);
+
+    // 2. IPv4-mapped IPv6 to private RFC1918
+    const v6Private = await EgressGuard.validateUrl('http://[::ffff:10.0.0.1]:8080', { allowPrivateNetwork: false });
+    expect(v6Private.allowed).toBe(false);
+
+    // 3. IPv4-mapped IPv6 to cloud metadata MUST be blocked even with allowPrivateNetwork: true
+    const v6CloudMeta = await EgressGuard.validateUrl('http://[::ffff:169.254.169.254]/latest/meta-data', { allowPrivateNetwork: true });
+    expect(v6CloudMeta.allowed).toBe(false);
+
+    // 4. CGNAT (100.64.0.0/10)
+    const cgnat = await EgressGuard.validateUrl('http://100.64.1.1:8080', { allowPrivateNetwork: false });
+    expect(cgnat.allowed).toBe(false);
+
+    // 5. TEST-NET ranges (192.0.2.1, 198.51.100.1, 203.0.113.1)
+    const testNet1 = await EgressGuard.validateUrl('http://192.0.2.1', { allowPrivateNetwork: false });
+    expect(testNet1.allowed).toBe(false);
+    const testNet2 = await EgressGuard.validateUrl('http://198.51.100.1', { allowPrivateNetwork: false });
+    expect(testNet2.allowed).toBe(false);
+    const testNet3 = await EgressGuard.validateUrl('http://203.0.113.1', { allowPrivateNetwork: false });
+    expect(testNet3.allowed).toBe(false);
+
+    // 6. Multicast & Reserved
+    const multicast = await EgressGuard.validateUrl('http://224.0.0.1', { allowPrivateNetwork: false });
+    expect(multicast.allowed).toBe(false);
+    const reserved = await EgressGuard.validateUrl('http://240.0.0.1', { allowPrivateNetwork: false });
+    expect(reserved.allowed).toBe(false);
+
+    // 7. IPv6 Unique Local Address (ULA) & Link-Local
+    const ula = await EgressGuard.validateUrl('http://[fc00::1]', { allowPrivateNetwork: false });
+    expect(ula.allowed).toBe(false);
+    const linkLocal = await EgressGuard.validateUrl('http://[fe80::1]', { allowPrivateNetwork: false });
+    expect(linkLocal.allowed).toBe(false);
+  });
+
+  it('IPFS-011: Cold-start CID alias rehydration survives process reboot and succeeds on fail-over', async () => {
+    // Simulate persistent storage in DB
+    const persistedRecord = {
+      tenantId: 'snarai',
+      artifactId: 'sovereign_governance',
+      version: 1,
+      ipfsCid: 'bafybei_primary_kubo_cold_1',
+      backupIpfsCid: 'bafyrei_backup_pinata_cold_2',
+    };
+
+    // Primary store (lost or offline)
+    let kuboOnline = false;
+    const backupStore = new Map<string, any>();
+    backupStore.set('bafyrei_backup_pinata_cold_2', { message: 'Recovered from cold DR backup' });
+
+    const primaryMock: IpfsProvider = {
+      providerType: 'KUBO',
+      async pinJson() { return 'bafybei_primary_kubo_cold_1'; },
+      async fetchJson<T = unknown>(_cid: string): Promise<T> {
+        if (!kuboOnline) throw new Error('Kubo daemon down (ECONNREFUSED)');
+        return null as any;
+      },
+      async healthCheck() { return { ok: kuboOnline, providerType: 'KUBO', latencyMs: 5 }; }
+    };
+
+    const backupMock: IpfsProvider = {
+      providerType: 'PINATA',
+      async pinJson() { return 'bafyrei_backup_pinata_cold_2'; },
+      async fetchJson(cid) {
+        const data = backupStore.get(cid);
+        if (!data) throw new Error('Not found in backup');
+        return data;
+      },
+      async healthCheck() { return { ok: true, providerType: 'PINATA', latencyMs: 15 }; }
+    };
+
+    // Fresh instance (representing server restart / Railway redeploy)
+    const rebootedVault = new TenantIpfsVaultService({
+      customPrimary: primaryMock,
+      customBackup: backupMock,
+      enableDualPinning: true,
+    });
+
+    // Rehydrate CID alias from persisted DB record
+    rebootedVault.ipfsOrchestrator.registerCidAlias(persistedRecord.ipfsCid, persistedRecord.backupIpfsCid);
+
+    // Primary fetch fails, but orchestrator uses rehydrated alias to fetch from backup transparently
+    const recovered = await rebootedVault.ipfsOrchestrator.fetchJson<any>(persistedRecord.ipfsCid);
+    expect(recovered.message).toBe('Recovered from cold DR backup');
   });
 });

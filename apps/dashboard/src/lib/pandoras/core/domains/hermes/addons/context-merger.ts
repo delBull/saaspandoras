@@ -139,6 +139,10 @@ export class CognitiveContextBuilder {
       let decryptedContent: string | null = null;
 
       try {
+        if (r.backupIpfsCid && r.backupIpfsCid !== r.ipfsCid) {
+          ipfsVault.ipfsOrchestrator.registerCidAlias(r.ipfsCid, r.backupIpfsCid);
+        }
+
         decryptedContent = await ipfsVault.retrieveAndDecryptFromIpfs(r.ipfsCid, {
           tenantId: r.tenantId,
           artifactId: r.artifactId,

@@ -123,6 +123,7 @@ export class SovereignIpfsOrchestrator {
 
     // 2. Dual-Pinning Redundancy Mirror based on Storage Policy
     const shouldMirror = (this.enableDualPinning || policy.requireExternalBackup) && !!this.backup;
+    let isAsyncInFlight = false;
 
     if (shouldMirror && this.backup) {
       if (policy.synchronousMirror) {
@@ -136,16 +137,18 @@ export class SovereignIpfsOrchestrator {
           console.warn(`[SovereignIpfsOrchestrator] Synchronous backup dual-pinning warning for '${artifactName}':`, err?.message);
         }
       } else {
-        // Async/Parallel execution
-        try {
-          backupCid = await this.backup.pinJson(data, artifactName);
-          backupMirrored = true;
-          if (backupCid && backupCid !== primaryCid) {
-            this.registerCidAlias(primaryCid, backupCid);
-          }
-        } catch (err: any) {
-          console.warn(`[SovereignIpfsOrchestrator] Async backup dual-pinning warning for '${artifactName}':`, err?.message);
-        }
+        // Non-blocking Async / Background Mirror (Fire-and-forget)
+        isAsyncInFlight = true;
+        const backupProvider = this.backup;
+        backupProvider.pinJson(data, artifactName)
+          .then((bCid) => {
+            if (bCid && bCid !== primaryCid) {
+              this.registerCidAlias(primaryCid, bCid);
+            }
+          })
+          .catch((err: any) => {
+            console.warn(`[SovereignIpfsOrchestrator] Background backup dual-pinning warning for '${artifactName}':`, err?.message);
+          });
       }
     }
 
@@ -158,6 +161,7 @@ export class SovereignIpfsOrchestrator {
       policy,
       primarySuccess: !!primaryCid,
       backupSuccess: backupMirrored,
+      isAsyncInFlight,
     });
 
     return {

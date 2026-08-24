@@ -64,7 +64,7 @@ describe('🏛️ Hermes OS — Milestone K27.x Sovereign IPFS Durability & Adve
     const result = await orchestrator.pinJson(payload, {
       name: 'fiduciary.json',
       tenantId: 'snarai',
-      category: 'KNOWLEDGE_VAULT',
+      category: 'CLAIM_CONTRACT',
     });
 
     expect(result.durabilityProof).toBeDefined();
@@ -281,7 +281,7 @@ describe('🏛️ Hermes OS — Milestone K27.x Sovereign IPFS Durability & Adve
 
     const pinned = await vault.storeEncryptedKnowledgeToIpfs(plaintext, context, signer);
     expect(pinned.durabilityProof).toBeDefined();
-    expect(pinned.durabilityProof!.replicationStatus).toBe('DURABLE');
+    expect(pinned.durabilityProof!.replicationStatus).toBe('REPLICATING');
 
     // Simulate node restart: Create brand new vault instance pointing to same storage
     const rebootedVault = new TenantIpfsVaultService({
