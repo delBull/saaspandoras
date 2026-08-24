@@ -5,6 +5,7 @@ import { eq, and, or, inArray } from 'drizzle-orm';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { TenantProvisioner } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-provisioner';
+import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
 import type { TenantKnowledgePackInput, TenantClaimInput } from '@/lib/pandoras/core/domains/hermes/tenants/contracts';
 
 export async function POST(request: Request) {
@@ -134,9 +135,7 @@ export async function POST(request: Request) {
 
     // 3. Provision Sovereign Intelligence Stack (Claim Contract, IPFS anchoring, Policy registration)
     try {
-      await TenantProvisioner.provisionTenantIntelligence({
-        tenantId: organizationSlug,
-        organizationName: orgName,
+      await TenantAuthorityService.provisionTenantSovereignty(tenantSlug, {
         agentName: 'Hermes',
         projectMetadata: {
           tokenPriceUsd: projectRecord?.tokenPriceUsd ?? undefined,
@@ -150,7 +149,7 @@ export async function POST(request: Request) {
         customClaims,
       });
     } catch (provErr) {
-      console.warn('[Bulk Activate] TenantProvisioner warning:', provErr);
+      console.warn('[Bulk Activate] TenantAuthorityService.provisionTenantSovereignty warning:', provErr);
     }
 
     // 4. Transition portalOnboardingState to ACTIVATION across all tenant identifiers

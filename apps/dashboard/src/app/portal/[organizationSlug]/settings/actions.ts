@@ -116,7 +116,7 @@ export async function generateApiKeyAction(
   // K27.1 Immutable Security Event Logging for Credential Issuance
   await SecurityAuditLogger.logEvent({
     organizationId: organizationSlug,
-    eventType: 'TOOL_UNAUTHORIZED', // Audit credential event
+    eventType: 'CREDENTIAL_ISSUED',
     severity: 'INFO',
     policyDecision: 'ALLOW',
     correlationId: `key_gen_${inserted.id}`,
@@ -142,11 +142,14 @@ export async function revokeApiKeyAction(organizationSlug: string, keyId: string
   const ctx = await resolvePortalContext(organizationSlug);
   const projectId = Number(ctx.organization.projectId);
 
-  await db
+  if (!projectId) {
+    throw new Error('Proyecto no identificado');
+  }
+
+  const [revoked] = await db
     .update(integrationClients)
     .set({
       isActive: false,
-      revokedAt: new Date(),
       updatedAt: new Date(),
     })
     .where(
@@ -154,18 +157,27 @@ export async function revokeApiKeyAction(organizationSlug: string, keyId: string
         eq(integrationClients.id, keyId),
         eq(integrationClients.projectId, projectId)
       )
-    );
+    )
+    .returning({
+      id: integrationClients.id,
+      keyFingerprint: integrationClients.keyFingerprint,
+    });
+
+  if (!revoked) {
+    throw new Error('No se encontró la llave para revocar');
+  }
 
   // K27.1 Immutable Security Event Logging for Credential Revocation
   await SecurityAuditLogger.logEvent({
     organizationId: organizationSlug,
-    eventType: 'TOOL_UNAUTHORIZED',
+    eventType: 'CREDENTIAL_REVOKED',
     severity: 'WARN',
     policyDecision: 'DENY',
-    correlationId: `key_rev_${keyId}`,
+    correlationId: `key_rev_${revoked.id}`,
     metadata: {
       action: 'API_KEY_REVOKED',
-      keyId,
+      keyId: revoked.id,
+      keyFingerprint: revoked.keyFingerprint,
       actorRole: ctx.tenant.role,
     },
   }).catch((err) => console.error('[Settings] Failed to log API key revocation audit:', err));

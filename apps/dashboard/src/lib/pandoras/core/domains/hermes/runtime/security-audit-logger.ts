@@ -26,7 +26,9 @@ export type SecurityEventType =
   | 'DISCLOSURE_BLOCKED'
   | 'CAPABILITY_ESCALATION_BLOCKED'
   | 'KNOWLEDGE_REVOCATION_TRIGGERED'
-  | 'PROVENANCE_RECEIPT_DEGRADED';
+  | 'PROVENANCE_RECEIPT_DEGRADED'
+  | 'CREDENTIAL_ISSUED'
+  | 'CREDENTIAL_REVOKED';
 
 export type SecuritySeverity = 'INFO' | 'WARN' | 'CRITICAL';
 export type SecurityPolicyDecision = 'ALLOW' | 'DENY' | 'ESCALATE';

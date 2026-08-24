@@ -13,7 +13,7 @@
 
 import { db } from '@/db';
 import { projects, hermesClaimContracts, hermesKnowledgeRegistry } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, and } from 'drizzle-orm';
 import { TenantProvisioner } from './tenant-provisioner';
 import { ensureTenantCanonicalJourney } from '../addons/catalog';
 import { TenantIntelligenceProvisionInput, TenantProvisionResult } from './contracts';
@@ -25,6 +25,8 @@ export interface CanonicalTenantIdentity {
   projectSlug: string;
   projectId: number;
   title: string;
+  tokenPriceUsd?: number | null;
+  fiduciaryEntity?: string | null;
   status: string;
 }
 
@@ -45,7 +47,7 @@ export class TenantAuthorityService {
    */
   public static async resolveCanonicalTenant(identifier: string): Promise<CanonicalTenantIdentity | null> {
     if (!identifier || typeof identifier !== 'string') return null;
-    const cleanId = identifier.trim();
+    const cleanId = identifier.trim().replace(/^org_/, '');
 
     const [project] = await db
       .select({
@@ -53,13 +55,17 @@ export class TenantAuthorityService {
         slug: projects.slug,
         organizationId: projects.organizationId,
         title: projects.title,
+        tokenPriceUsd: projects.tokenPriceUsd,
+        fiduciaryEntity: projects.fiduciaryEntity,
         status: projects.status,
       })
       .from(projects)
       .where(
         or(
           eq(projects.slug, cleanId),
+          eq(projects.slug, identifier.trim()),
           ...(isUuid(cleanId) ? [eq(projects.organizationId, cleanId)] : []),
+          ...(isUuid(identifier.trim()) ? [eq(projects.organizationId, identifier.trim())] : []),
           ...(Number.isInteger(Number(cleanId)) ? [eq(projects.id, Number(cleanId))] : [])
         )
       )
@@ -74,6 +80,8 @@ export class TenantAuthorityService {
       projectSlug: project.slug,
       projectId: project.id,
       title: project.title || project.slug,
+      tokenPriceUsd: project.tokenPriceUsd !== null && project.tokenPriceUsd !== undefined ? Number(project.tokenPriceUsd) : null,
+      fiduciaryEntity: project.fiduciaryEntity || null,
       status: project.status || 'ACTIVE',
     };
   }
@@ -91,31 +99,43 @@ export class TenantAuthorityService {
       throw new Error(`[TenantAuthority] Impossible to provision sovereignty: Tenant '${identifier}' not found.`);
     }
 
-    // 1. Check existing Claim Contract
-    const existingContracts = await db
+    // 1. Check existing ACTIVE Claim Contract (fail-closed against SUPERSEDED/REVOKED)
+    const existingActiveContracts = await db
       .select()
       .from(hermesClaimContracts)
       .where(
-        or(
-          eq(hermesClaimContracts.tenantId, canonical.canonicalOrgId),
-          eq(hermesClaimContracts.tenantId, canonical.projectSlug)
+        and(
+          or(
+            eq(hermesClaimContracts.tenantId, canonical.canonicalOrgId),
+            eq(hermesClaimContracts.tenantId, canonical.projectSlug)
+          ),
+          eq(hermesClaimContracts.governanceStatus, 'ACTIVE')
         )
       )
       .limit(1);
 
     let provisionResult: TenantProvisionResult | undefined = undefined;
 
-    // If no contract exists, provision full intelligence stack
-    if (existingContracts.length === 0) {
+    // If no active contract exists, provision intelligence without fabricating unbacked numbers
+    if (existingActiveContracts.length === 0) {
+      const realPrice = canonical.tokenPriceUsd !== null && canonical.tokenPriceUsd !== undefined
+        ? canonical.tokenPriceUsd
+        : undefined;
+
+      const realMetadata = customInput?.projectMetadata || (
+        realPrice !== undefined || canonical.fiduciaryEntity
+          ? {
+              tokenPriceUsd: realPrice,
+              legalEntity: canonical.fiduciaryEntity || undefined,
+            }
+          : undefined
+      );
+
       const provisionInput: TenantIntelligenceProvisionInput = {
         tenantId: canonical.canonicalOrgId,
         organizationName: canonical.title,
         agentName: customInput?.agentName || 'Hermes',
-        projectMetadata: customInput?.projectMetadata || {
-          tokenPriceUsd: 1.0,
-          location: 'México',
-          legalEntity: canonical.title,
-        },
+        projectMetadata: realMetadata,
         customClaims: customInput?.customClaims || [],
         knowledgePacks: customInput?.knowledgePacks || [],
       };
@@ -131,9 +151,12 @@ export class TenantAuthorityService {
       .select()
       .from(hermesClaimContracts)
       .where(
-        or(
-          eq(hermesClaimContracts.tenantId, canonical.canonicalOrgId),
-          eq(hermesClaimContracts.tenantId, canonical.projectSlug)
+        and(
+          or(
+            eq(hermesClaimContracts.tenantId, canonical.canonicalOrgId),
+            eq(hermesClaimContracts.tenantId, canonical.projectSlug)
+          ),
+          eq(hermesClaimContracts.governanceStatus, 'ACTIVE')
         )
       )
       .limit(1);
@@ -145,7 +168,7 @@ export class TenantAuthorityService {
       ipfsCid: latestContract?.ipfsCid || undefined,
       hasExecutableJourney: true,
       provisionResult,
-      status: 'SOVEREIGN_READY',
+      status: latestContract ? 'SOVEREIGN_READY' : 'PROVISIONING_REQUIRED',
     };
   }
 }

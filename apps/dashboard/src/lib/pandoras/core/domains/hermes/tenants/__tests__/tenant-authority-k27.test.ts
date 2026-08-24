@@ -27,6 +27,21 @@ describe('🏛️ Hermes OS — Milestone K27.1 Tenant Authority & Knowledge Una
     expect(canonical).toBeNull();
   });
 
+  it('K27.1-AUTH-03: Canonical resolution identifies tenant via numeric project ID', async () => {
+    const canonical = await TenantAuthorityService.resolveCanonicalTenant('17');
+    expect(canonical).not.toBeNull();
+    expect(canonical?.projectSlug).toBe('snarai');
+    expect(canonical?.canonicalOrgId).toBeDefined();
+  });
+
+  it('K27.1-AUTH-04: Provisioning returns SOVEREIGN_READY for active contracts and uses true metadata', async () => {
+    const state = await TenantAuthorityService.provisionTenantSovereignty('snarai');
+    expect(state.status).toBe('SOVEREIGN_READY');
+    expect(state.hasClaimContract).toBe(true);
+    expect(state.hasExecutableJourney).toBe(true);
+    expect(state.canonicalIdentity.projectSlug).toBe('snarai');
+  });
+
   it('K27.1-KNOW-01: ContextAdapter injects fail-closed restriction when knowledge is unavailable', () => {
     const mockEffectiveContext = {
       core: { tenantId: 'test_tenant', organizationName: 'Test Org' },

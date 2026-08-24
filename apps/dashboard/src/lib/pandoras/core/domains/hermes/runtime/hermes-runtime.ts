@@ -60,6 +60,8 @@ import { ClaimContractEngine, type ClaimProvenanceReceipt } from '../knowledge/c
 import { HermesIdentitySigner } from '../identity/identity-signer';
 import { SecurityAuditLogger } from './security-audit-logger';
 
+import { TenantAuthorityService } from '../tenants/tenant-authority';
+
 // ─── Internal shared types ────────────────────────────────────────────────────
 
 interface CognitiveTurnSetup {
@@ -137,9 +139,13 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         );
       }
 
+      // K27.1 Golden Invariant: Resolve Canonical Tenant Identity
+      const canonical = await TenantAuthorityService.resolveCanonicalTenant(organizationId);
+      const canonicalTenantId = canonical?.canonicalOrgId || organizationId;
+
       // Step 2: Load Effective Cognitive Context (DB layer)
       const effectiveContext = await CognitiveContextBuilder.buildEffectiveContext(
-        organizationId,
+        canonicalTenantId,
         controlPlaneContext.actorId,
       );
 

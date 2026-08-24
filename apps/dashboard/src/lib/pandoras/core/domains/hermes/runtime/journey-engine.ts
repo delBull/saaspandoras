@@ -10,6 +10,7 @@ import {
   JourneyDefinition as DomainJourneyDefinition, 
   JourneyTransition as DomainJourneyTransition 
 } from '../journeys/contracts';
+import { TenantAuthorityService } from '../tenants/tenant-authority';
 
 const isUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
@@ -66,22 +67,17 @@ export class JourneyEngine implements JourneyEnginePort {
     const organizationId = normalized.organizationId;
     
     try {
-      // 1. Resolve project/organization (safe dual-read: UUID or slug)
-      const project = await db.query.projects.findFirst({
-        where: isUuid(organizationId)
-          ? eq(projects.organizationId, organizationId)
-          : eq(projects.slug, organizationId),
-        columns: { id: true, organizationId: true, slug: true, status: true }
-      });
+      // 1. Resolve canonical tenant authority (Golden Invariant)
+      const canonical = await TenantAuthorityService.resolveCanonicalTenant(organizationId);
 
       // 🛡️ SECURITY GUARD (FAIL-CLOSED): If tenant cannot be resolved, fail closed immediately
-      if (!project) {
+      if (!canonical) {
         console.warn(`[JourneyEngine] Security: Tenant '${organizationId}' not found. Failing closed.`);
         return this.buildFailClosedSnapshot(organizationId);
       }
 
-      const canonicalOrgId = project.organizationId;
-      const orgSlug = project.slug;
+      const canonicalOrgId = canonical.canonicalOrgId;
+      const orgSlug = canonical.projectSlug;
 
       // 2. Query active default journey strictly isolated to this tenant's UUID / slug
       const activeJourney = await db.query.hermesJourneys.findFirst({
