@@ -198,7 +198,10 @@ export class SovereignIpfsAlerting {
       ],
       footer: { text: "Pandora's Sovereign Storage Fabric — Fail-Closed Boundary" },
       timestamp: new Date().toISOString(),
-    }, `mismatch_${details.tenantId}_${details.artifactId}`);
+    // K27.x: key includes the received hash so a SECOND tampering event of the
+    // same artifact (different divergent content) re-alerts instead of being
+    // permanently suppressed. Identical repeated fetches stay deduplicated.
+    }, `mismatch_${details.tenantId}_${details.artifactId}_${details.receivedHash.substring(0, 16)}`);
   }
 
   /**

@@ -302,6 +302,20 @@ export class SovereignIpfsOrchestrator {
     const primaryOnline = primaryStatus.ok;
     const backupOnline = backupStatus?.ok ?? false;
 
+    // K27.x alert symmetry: health checks must ALSO raise DOWN transitions,
+    // otherwise an idle outage (no fetch/pin traffic) is invisible to Discord.
+    if (!primaryOnline && this.primary.providerType === 'KUBO') {
+      SovereignIpfsAlerting.notifyKuboPrimaryDown({
+        error: primaryStatus.error || 'Kubo health check failed',
+        fallbackProvider: this.backup?.providerType || 'NONE',
+      }).catch(() => {});
+    }
+    if (!backupOnline && this.backup?.providerType === 'PINATA') {
+      SovereignIpfsAlerting.notifyPinataDrDown({
+        error: backupStatus?.error || 'Pinata DR health check failed',
+      }).catch(() => {});
+    }
+
     // State-transition recovery notifications (only fires if previous state was DOWN/DEGRADED)
     if (primaryOnline && this.primary.providerType === 'KUBO') {
       SovereignIpfsAlerting.notifyKuboPrimaryRecovered({

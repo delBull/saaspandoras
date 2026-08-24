@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { HardDrive, ShieldCheck, RefreshCw, Activity, AlertTriangle, CheckCircle2, Server } from 'lucide-react';
+import { HardDrive, ShieldCheck, RefreshCw, Activity, AlertTriangle, CheckCircle2, Server, ShieldAlert, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -33,6 +33,22 @@ interface IpfsStatusResponse {
       durable: number;
       degradedOrSingle: number;
     };
+  };
+  security?: {
+    integrityMismatches: number;
+    fetchFailures: number;
+    totalSecurityEvents: number;
+    recentIncidents: Array<{
+      id: string;
+      organizationId: string;
+      artifactId?: string;
+      severity: string;
+      reason?: string;
+      error?: string;
+      expectedHash?: string;
+      receivedHash?: string;
+      createdAt: string;
+    }>;
   };
   timestamp: string;
 }
@@ -236,6 +252,68 @@ export function SovereignIpfsStatusWidget() {
             Total: <strong className="text-zinc-100">{data?.stats?.totalSovereignArtifacts ?? 0}</strong>
           </span>
         </div>
+      </div>
+
+      {/* Security & Cryptographic Invariant Integrity Section */}
+      <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 space-y-3 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/40 pb-2">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 text-emerald-400" />
+            <span className="font-semibold text-zinc-200">Security Invariants & Integrity Proofs:</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {(data?.security?.integrityMismatches ?? 0) === 0 ? (
+              <Badge variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-400 font-mono text-[10px] gap-1">
+                <CheckCircle2 className="w-3 h-3" /> 0 Integrity Mismatches (SHA-256 Verified)
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-rose-500/20 border-rose-500/40 text-rose-400 font-mono text-[10px] gap-1">
+                <ShieldAlert className="w-3 h-3" /> {data?.security?.integrityMismatches} KNOWLEDGE_INTEGRITY_MISMATCH
+              </Badge>
+            )}
+
+            {(data?.security?.fetchFailures ?? 0) > 0 && (
+              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/20 text-amber-400 font-mono text-[10px] gap-1">
+                <AlertTriangle className="w-3 h-3" /> {data?.security?.fetchFailures} Fetch / Egress Errors
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Incidents Table / List */}
+        {data?.security?.recentIncidents && data.security.recentIncidents.length > 0 ? (
+          <div className="space-y-2 pt-1 font-mono text-[11px]">
+            <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Últimos Eventos de Integridad Registrados:</span>
+            <div className="divide-y divide-zinc-800/60 rounded-lg border border-zinc-800 bg-zinc-950/60 overflow-hidden">
+              {data.security.recentIncidents.map((incident) => (
+                <div key={incident.id} className="p-2.5 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-zinc-900/40">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${incident.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                        {incident.reason || incident.severity}
+                      </span>
+                      <span className="text-zinc-300 font-semibold">{incident.organizationId}</span>
+                      {incident.artifactId && (
+                        <span className="text-zinc-500">[{incident.artifactId}]</span>
+                      )}
+                    </div>
+                    {incident.error && (
+                      <p className="text-zinc-400 text-[10px] font-sans truncate max-w-xl">{incident.error}</p>
+                    )}
+                  </div>
+                  <div className="text-zinc-500 text-[10px] shrink-0">
+                    {new Date(incident.createdAt).toLocaleDateString()} {new Date(incident.createdAt).toLocaleTimeString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] text-zinc-500 font-sans">
+            ✅ No se registran eventos de corrupción o fallos de integridad criptográfica en los artefactos almacenados.
+          </p>
+        )}
       </div>
     </div>
   );

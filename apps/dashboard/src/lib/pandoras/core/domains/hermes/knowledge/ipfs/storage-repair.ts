@@ -17,6 +17,7 @@ export interface RepairResult {
   totalScanned: number;
   repairedCount: number;
   failedCount: number;
+  skippedCount: number;
   details: Array<{
     purchaseId: string;
     status: 'REPAIRED' | 'FAILED' | 'SKIPPED';
@@ -49,6 +50,7 @@ export class SovereignStorageRepairEngine {
       totalScanned: pendingPurchases.length,
       repairedCount: 0,
       failedCount: 0,
+      skippedCount: 0,
       details: [],
     };
 
@@ -59,6 +61,7 @@ export class SovereignStorageRepairEngine {
         });
 
         if (!project) {
+          result.skippedCount++;
           result.details.push({
             purchaseId: purchase.purchaseId,
             status: 'SKIPPED',
@@ -67,16 +70,32 @@ export class SovereignStorageRepairEngine {
           continue;
         }
 
-        const units = Number(purchase.amount);
-        const agreementContent = `Investor Participation & Digital Certificate Agreement v2.0 - Project: ${project.title} - Purchase: ${purchase.purchaseId} - User: ${purchase.userId} - Units: ${units}`;
+        // K27.x: byte-identical regeneration — must mirror approve/route.ts exactly
+        // (raw amount interpolation, same field order) or the canonical hash diverges.
+        const agreementContent = `Investor Participation & Digital Certificate Agreement v2.0 - Project: ${project.title} - Purchase: ${purchase.purchaseId} - User: ${purchase.userId} - Units: ${purchase.amount}`;
         const agreementHash = crypto.createHash('sha256').update(agreementContent).digest('hex');
+
+        // K27.x evidence-integrity guard: NEVER mutate the legal hash of record.
+        // If a stored hash exists and differs from the regenerated content, the
+        // historical agreement text cannot be faithfully reconstructed here —
+        // fail-safe skip for manual review instead of a silent hash overwrite.
+        const storedHash = purchase.agreementHash;
+        if (storedHash && storedHash !== agreementHash) {
+          result.skippedCount++;
+          result.details.push({
+            purchaseId: purchase.purchaseId,
+            status: 'SKIPPED',
+            error: `agreementHash mismatch (stored ${storedHash.substring(0, 12)}… vs regenerated ${agreementHash.substring(0, 12)}…) — manual review required, hash of record preserved`,
+          });
+          continue;
+        }
 
         const pinResult = await this.orchestrator.pinJson({
           title: `Digital Participation Agreement — ${project.title}`,
           projectSlug: project.slug,
           purchaseId: purchase.purchaseId,
           targetWallet: purchase.userId || null,
-          units,
+          units: Number(purchase.amount),
           agreementContent,
           agreementHash,
           certifiedAt: new Date().toISOString(),
