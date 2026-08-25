@@ -63,11 +63,11 @@ async function authorizeTenant(request: NextRequest, tenantId: number): Promise<
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ tenantId: string }> }
 ) {
   try {
-    const { slug } = await params;
-    const tenant = await resolveTenant(slug);
+    const { tenantId } = await params;
+    const tenant = await resolveTenant(tenantId);
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
@@ -110,27 +110,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ tenantId: string }> }
 ) {
   try {
-    const { slug } = await params;
-    const body = await request.json();
-    // Solo IDs numéricos: los @usuario NO son resolubles de forma segura
-    // server-side y jamás matchearían el sender id numérico de Telegram.
-    const telegramId = String(body.telegramId ?? '').trim().replace(/^@/, '');
-
-    if (!TELEGRAM_NUMERIC_ID.test(telegramId)) {
-      return NextResponse.json(
-        {
-          error:
-            'Ingresa el ID numérico de Telegram (obténlo con @userinfobot). Los @usuario no son válidos.',
-          code: 'INVALID_TELEGRAM_ID',
-        },
-        { status: 400 }
-      );
-    }
-
-    const tenant = await resolveTenant(slug);
+    const { tenantId } = await params;
+    const tenant = await resolveTenant(tenantId);
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
@@ -138,15 +122,42 @@ export async function POST(
     const denied = await authorizeTenant(request, tenant.id);
     if (denied) return denied;
 
-    // Upsert scoped a ESTE tenant: si el mismo Telegram ya está vinculado aquí se
-    // reactiva; si está en otro tenant NO se mueve, se crea un grant independiente.
+    const body = await request.json().catch(() => ({}));
+    const rawTelegramId = String(body.telegramId || '').trim();
+    const rawUsername = body.username ? String(body.username).trim().replace(/^@/, '') : undefined;
+
+    if (!rawTelegramId) {
+      return NextResponse.json(
+        { error: 'Telegram User ID numérico es requerido para despacho confiable' },
+        { status: 400 }
+      );
+    }
+
+    const numericId = rawTelegramId.replace(/^@/, '');
+    if (!TELEGRAM_NUMERIC_ID.test(numericId)) {
+      return NextResponse.json(
+        {
+          error:
+            'Telegram ID debe ser numérico (ej. 123456789). La API de Telegram Bot requiere IDs numéricos para enviar mensajes y configurar el botón azul de la Mini App.',
+          code: 'INVALID_TELEGRAM_USER_ID',
+        },
+        { status: 400 }
+      );
+    }
+
+    const address = rawUsername
+      ? `@${rawUsername}`
+      : rawTelegramId.startsWith('@')
+      ? rawTelegramId
+      : `@user_${numericId}`;
+
     const existing = await db
       .select()
       .from(channelIdentityBindings)
       .where(
         and(
           eq(channelIdentityBindings.channel, 'telegram'),
-          eq(channelIdentityBindings.externalUserId, telegramId),
+          eq(channelIdentityBindings.externalUserId, numericId),
           inArray(channelIdentityBindings.identityId, [tenant.organizationId, tenant.slug])
         )
       )
@@ -156,6 +167,8 @@ export async function POST(
       await db
         .update(channelIdentityBindings)
         .set({
+          identityId: tenant.organizationId,
+          address,
           status: 'ACTIVE',
           verifiedAt: new Date(),
           updatedAt: new Date(),
@@ -165,8 +178,8 @@ export async function POST(
       await db.insert(channelIdentityBindings).values({
         identityId: tenant.organizationId,
         channel: 'telegram',
-        externalUserId: telegramId,
-        address: telegramId,
+        externalUserId: numericId,
+        address,
         status: 'ACTIVE',
         verifiedAt: new Date(),
       });
@@ -176,7 +189,8 @@ export async function POST(
       success: true,
       message: `Operador Telegram vinculado con éxito a ${tenant.title}`,
       operator: {
-        externalUserId: telegramId,
+        externalUserId: numericId,
+        address,
         organizationId: tenant.organizationId,
       },
     });
@@ -188,19 +202,11 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ tenantId: string }> }
 ) {
   try {
-    const { slug } = await params;
-    const { searchParams } = new URL(request.url);
-    const operatorId = searchParams.get('id');
-    const externalUserId = searchParams.get('externalUserId');
-
-    if (!operatorId && !externalUserId) {
-      return NextResponse.json({ error: 'ID de operador o Telegram ID es requerido' }, { status: 400 });
-    }
-
-    const tenant = await resolveTenant(slug);
+    const { tenantId } = await params;
+    const tenant = await resolveTenant(tenantId);
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
@@ -208,7 +214,17 @@ export async function DELETE(
     const denied = await authorizeTenant(request, tenant.id);
     if (denied) return denied;
 
-    // Ambas ramas scoped al tenant: nunca borrar grants de otros tenants.
+    const { searchParams } = new URL(request.url);
+    const operatorId = searchParams.get('id');
+    const externalUserId = searchParams.get('externalUserId');
+
+    if (!operatorId && !externalUserId) {
+      return NextResponse.json(
+        { error: 'ID de operador o Telegram ID es requerido' },
+        { status: 400 }
+      );
+    }
+
     if (operatorId) {
       await db
         .delete(channelIdentityBindings)
@@ -219,13 +235,13 @@ export async function DELETE(
             inArray(channelIdentityBindings.identityId, [tenant.organizationId, tenant.slug])
           )
         );
-    } else {
+    } else if (externalUserId) {
       await db
         .delete(channelIdentityBindings)
         .where(
           and(
+            eq(channelIdentityBindings.externalUserId, externalUserId),
             eq(channelIdentityBindings.channel, 'telegram'),
-            eq(channelIdentityBindings.externalUserId, externalUserId!),
             inArray(channelIdentityBindings.identityId, [tenant.organizationId, tenant.slug])
           )
         );
