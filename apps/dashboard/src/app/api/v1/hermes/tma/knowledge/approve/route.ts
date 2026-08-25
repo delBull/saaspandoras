@@ -1,23 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
+import { HermesAuthError } from '@/lib/hermes/auth/hermes-session.types';
 import { db } from '@/db';
 import { hermesKnowledge, hermesGovernanceAudit } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 const tokenService = new SessionTokenService();
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkRateLimit(`tma-approve:${clientIpFromHeaders(req.headers)}`, 30, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too Many Requests', code: 'RATE_LIMITED' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+      );
+    }
+
     const authHeader = req.headers.get('authorization') || '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
     if (!token) {
-      return NextResponse.json({ error: 'Missing authorization token' }, { status: 401 });
+      return NextResponse.json({ error: 'Missing authorization token', code: 'MISSING_TOKEN' }, { status: 401 });
     }
 
     const payload = tokenService.verifyToken(token);
     const orgId = payload.organizationId;
+
+    if (payload.role === 'OPERATOR') {
+      return NextResponse.json(
+        { error: 'OPERATOR role cannot approve knowledge facts', code: 'INSUFFICIENT_ROLE' },
+        { status: 403 }
+      );
+    }
 
     const body = await req.json();
     const { knowledgeId } = body;
@@ -52,25 +69,29 @@ export async function POST(req: NextRequest) {
     const timestamp = new Date();
     const previousStatus = item.status;
 
-    // 2. Perform atomic update to ACTIVE
-    const [updatedItem] = await db
-      .update(hermesKnowledge)
-      .set({
-        status: 'ACTIVE',
-        authority: 'TENANT_PROVIDED',
-        updatedAt: timestamp,
-      })
-      .where(
-        and(
-          eq(hermesKnowledge.id, knowledgeId),
-          eq(hermesKnowledge.organizationId, orgId)
+    // 2. Atomic update + immutable audit in one transaction (fail-closed:
+    //    sin registro de auditoría no hay aprobación)
+    const updatedItem = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(hermesKnowledge)
+        .set({
+          status: 'ACTIVE',
+          authority: 'TENANT_PROVIDED',
+          updatedAt: timestamp,
+        })
+        .where(
+          and(
+            eq(hermesKnowledge.id, knowledgeId),
+            eq(hermesKnowledge.organizationId, orgId)
+          )
         )
-      )
-      .returning();
+        .returning();
 
-    // 3. Append immutable audit event
-    try {
-      await db.insert(hermesGovernanceAudit).values({
+      if (!updated) {
+        throw new HermesAuthError('Fact changed during approval', 'CONCURRENT_MODIFICATION', 409);
+      }
+
+      await tx.insert(hermesGovernanceAudit).values({
         id: `evt_${Date.now()}_tma_app_${Math.random().toString(36).substring(7)}`,
         organizationId: orgId,
         knowledgeId,
@@ -81,9 +102,9 @@ export async function POST(req: NextRequest) {
         oldStatus: previousStatus,
         newStatus: 'ACTIVE',
       });
-    } catch (auditErr) {
-      console.error('[TMA Knowledge Approve] Non-fatal audit log failure:', auditErr);
-    }
+
+      return updated;
+    });
 
     return NextResponse.json({
       success: true,
@@ -92,9 +113,15 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('[TMA Knowledge Approve Error]:', error);
+    if (error instanceof HermesAuthError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.statusCode }
+      );
+    }
     return NextResponse.json(
-      { error: error?.message || 'Failed to approve knowledge fact' },
-      { status: error?.statusCode || 401 }
+      { error: error?.message || 'Failed to approve knowledge fact', code: 'INTERNAL_ERROR' },
+      { status: 500 }
     );
   }
 }

@@ -1,25 +1,26 @@
-import { redirect } from 'next/navigation';
+'use client';
 
-export default async function GrowthOsHermesPortalPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const queryString = new URLSearchParams();
+import { useEffect } from 'react';
 
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (Array.isArray(value)) {
-          value.forEach(v => queryString.append(key, v));
-        } else {
-          queryString.append(key, value);
-        }
-      }
-    });
-  }
+export default function GrowthOsHermesPortalRedirect() {
+  useEffect(() => {
+    // Telemetría: identificar el origen real de este enlace legacy
+    // (ningún código actual lo genera; se sospecha email antiguo o bookmark).
+    console.warn(
+      '[Legacy Route] /growth-os/hermes/portal hit. Referer:',
+      document.referrer || 'none',
+      'Query:',
+      window.location.search
+    );
 
-  const query = queryString.toString();
-  redirect(`/portal${query ? `?${query}` : ''}`);
+    const search = window.location.search;
+    const hash = window.location.hash;
+    window.location.replace(`/portal${search}${hash}`);
+  }, []);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-300 text-sm">
+      Redirigiendo al portal…
+    </div>
+  );
 }

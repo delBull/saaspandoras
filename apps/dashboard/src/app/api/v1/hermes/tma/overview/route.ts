@@ -1,24 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
+import { HermesAuthError } from '@/lib/hermes/auth/hermes-session.types';
 import { db } from '@/db';
 import { hermesKnowledge, hermesActorJourneys, hermesSecurityEvents } from '@/db/schema';
 import { eq, and, sql, gte, inArray } from 'drizzle-orm';
 import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
+import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 const tokenService = new SessionTokenService();
 
 export async function GET(req: NextRequest) {
   try {
+    const rl = checkRateLimit(`tma-overview:${clientIpFromHeaders(req.headers)}`, 60, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too Many Requests', code: 'RATE_LIMITED' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+      );
+    }
+
     const authHeader = req.headers.get('authorization') || '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
     if (!token) {
-      return NextResponse.json({ error: 'Missing authorization token' }, { status: 401 });
+      return NextResponse.json({ error: 'Missing authorization token', code: 'MISSING_TOKEN' }, { status: 401 });
     }
 
     const payload = tokenService.verifyToken(token);
     const orgId = payload.organizationId;
+
+    let postgresOnline = false;
+    try {
+      await db.execute(sql`SELECT 1`);
+      postgresOnline = true;
+    } catch {
+      postgresOnline = false;
+    }
 
     // 1. Facts count: verified vs pending
     const [verifiedCountResult] = await db
@@ -93,6 +111,9 @@ export async function GET(req: NextRequest) {
       role: payload.role,
       actorId: payload.sub,
       metrics: {
+        postgres: {
+          online: postgresOnline,
+        },
         facts: {
           verified: verifiedCountResult?.count || 0,
           pending: pendingCountResult?.count || 0,
@@ -111,9 +132,15 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('[TMA Overview API Error]:', error);
+    if (error instanceof HermesAuthError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.statusCode }
+      );
+    }
     return NextResponse.json(
-      { error: error?.message || 'Failed to fetch overview metrics' },
-      { status: error?.statusCode || 401 }
+      { error: error?.message || 'Failed to fetch overview metrics', code: 'INTERNAL_ERROR' },
+      { status: 500 }
     );
   }
 }
