@@ -73,6 +73,16 @@ const SIGN_BUTTON_STYLE =
   "shadow-[0_4px_24px_rgba(245,158,11,0.25)] hover:shadow-[0_6px_32px_rgba(245,158,11,0.4)] " +
   "hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none";
 
+const COMPANY_TYPES = [
+  { value: "LLC", label: "LLC (Limited Liability Company)" },
+  { value: "S.A. de C.V.", label: "S.A. de C.V." },
+  { value: "S.A.P.I. de C.V.", label: "S.A.P.I. de C.V." },
+  { value: "S. de R.L. de C.V.", label: "S. de R.L. de C.V." },
+  { value: "Inc.", label: "Inc. (Corporation)" },
+  { value: "S.L.", label: "S.L. (Sociedad Limitada)" },
+  { value: "Otra", label: "Otra entidad jurídica" },
+] as const;
+
 interface Props {
   publicId: string;
   room: PublicRoom;
@@ -88,8 +98,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [magicError, setMagicError] = useState<string | null>(null);
 
   const [openSection, setOpenSection] = useState(room.sections[0]?.code ?? "01");
+  const [dealScope, setDealScope] = useState<"B2B" | "B2C">("B2B");
   const [signName, setSignName] = useState("");
   const [signCompany, setSignCompany] = useState("");
+  const [signCompanyType, setSignCompanyType] = useState<string>("LLC");
   const [signRole, setSignRole] = useState("Representante Legal");
   const [signing, setSigning] = useState(false);
   const [signingNda, setSigningNda] = useState(false);
@@ -114,6 +126,16 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const signerId = isOpenSign ? (account?.address?.toLowerCase() ?? "") : (initialEmail ?? "");
   const ndaVersion = room.ndaVersion ?? "v2.2";
   const effectiveNdaEnabled = Boolean(room.ndaEnabled);
+
+  // Dynamic party resolution for B2B vs B2C deals
+  const isB2B = dealScope === "B2B";
+  const fullCompanyName = signCompany.trim()
+    ? (signCompanyType && signCompanyType !== "Otra" ? `${signCompany.trim()} ${signCompanyType}` : signCompany.trim())
+    : (room.company || room.counterparty);
+
+  const dynamicPartyName = isB2B
+    ? fullCompanyName
+    : (signName.trim() || room.counterparty);
 
   // ── NDA CHECK ON MOUNT ───────────────────────────────────────────────────
   // Once we know the wallet/email, check if NDA is needed and if already signed.
@@ -241,8 +263,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
       // Combined when: NDA required+checked (first time), or NDA already signed/bypassed
       const usesCombined = effectiveNdaEnabled && (needsNda || ndaStep === "signed" || ndaStep === "bypassed");
-      const companyVal = signCompany.trim() || room.company || undefined;
-      const roleVal = signRole.trim() || "Representante Legal";
+      const companyVal = isB2B
+        ? (signCompany.trim()
+            ? (signCompanyType && signCompanyType !== "Otra" ? `${signCompany.trim()} ${signCompanyType}` : signCompany.trim())
+            : (room.company || room.counterparty || undefined))
+        : undefined;
+      const roleVal = isB2B ? (signRole.trim() || "Representante Legal") : (signRole.trim() || "Titular / Individual");
       const message = usesCombined
         ? buildCombinedSignMessage({
             email: emailId,
@@ -252,14 +278,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             wallet: account.address.toLowerCase(),
             publicId,
             dealKind: room.kind,
-            dealCounterparty: companyVal || room.counterparty,
+            dealCounterparty: companyVal || dynamicPartyName,
             ndaVersion,
             timestamp: ts,
           })
         : buildSignMessage({
             publicId,
             kind: room.kind,
-            counterparty: companyVal || room.counterparty,
+            counterparty: companyVal || dynamicPartyName,
             email: emailId,
             name,
             company: companyVal,
@@ -442,12 +468,16 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </h1>
               <div className="mt-3 mb-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400">Contraparte B2B:</span>
-                  <p className="text-[14px] font-bold text-white print:text-black">{signCompany || room.company || room.counterparty}</p>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400">
+                    {isB2B ? "Contraparte B2B:" : "Contraparte Individual (B2C):"}
+                  </span>
+                  <p className="text-[14px] font-bold text-white print:text-black">{dynamicPartyName}</p>
                 </div>
-                <p className="text-[11px] font-mono text-zinc-400 mt-1 print:text-black">
-                  Representante Legal: <span className="text-zinc-200">{signName || room.counterparty}</span> {signRole ? `(${signRole})` : ""}
-                </p>
+                {isB2B && signName.trim() && (
+                  <p className="text-[10px] font-mono text-zinc-500 mt-1 print:text-black">
+                    Representante Legal (registro interno / firma): <span className="text-zinc-300">{signName}</span> {signRole ? `(${signRole})` : ""}
+                  </p>
+                )}
               </div>
 
               {/* ── ACTIVE NDA BADGE ──────────────────────────────────── */}
@@ -548,18 +578,27 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     >
                       <span className="flex items-center gap-3">
                         <span className="text-[10px] font-mono text-amber-300/80">{sec.code}</span>
-                        <span className="text-[13px] text-zinc-100">{sec.title}</span>
+                        <span className="text-[13px] text-zinc-100">
+                          {sec.title
+                            .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
+                            .replace(/{{COUNTERPARTY}}/g, dynamicPartyName)}
+                        </span>
                       </span>
                       <span className={`text-zinc-600 transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
                     </button>
                     {openSection === sec.code && (
                       <div className="px-4 pb-4 space-y-1.5">
-                        {sec.content.split("\n").filter(Boolean).map((line, i) => (
-                          <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed">
-                            <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
-                            {line}
-                          </p>
-                        ))}
+                        {sec.content.split("\n").filter(Boolean).map((line, i) => {
+                          const renderedLine = line
+                            .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
+                            .replace(/{{COUNTERPARTY}}/g, dynamicPartyName);
+                          return (
+                            <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed">
+                              <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                              {renderedLine}
+                            </p>
+                          );
+                        })}
                         {unlocked && (
                           <div className="print:hidden">
                             <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
@@ -676,50 +715,120 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 {/* ── PASO 2: AGREEMENT SIGNING FORM ───────────────────── */}
                 {(!effectiveNdaEnabled || ndaStep === "signed" || ndaStep === "bypassed" || ndaStep === "none") && (
                   <>
-                    <h3 className="text-sm font-semibold text-white">
-                      {isProposal ? "Aceptar propuesta B2B" : "Firmar acuerdo B2B"}
-                    </h3>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">
-                      Ingresa los datos de tu empresa y representación legal para firmar on-chain este acuerdo.
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <h3 className="text-sm font-semibold text-white">
+                        {isProposal
+                          ? isB2B ? "Aceptar propuesta B2B" : "Aceptar propuesta Individual"
+                          : isB2B ? "Firmar acuerdo B2B" : "Firmar acuerdo Individual"}
+                      </h3>
+                    </div>
+
+                    {/* Selector B2B / B2C */}
+                    <div className="flex rounded-lg border border-white/10 bg-black/40 p-1 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setDealScope("B2B")}
+                        className={`flex-1 py-1.5 px-3 rounded-md text-[11px] font-mono transition-all ${
+                          dealScope === "B2B"
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold"
+                            : "text-zinc-400 hover:text-zinc-200"
+                        }`}
+                      >
+                        🏢 Empresa / B2B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDealScope("B2C")}
+                        className={`flex-1 py-1.5 px-3 rounded-md text-[11px] font-mono transition-all ${
+                          dealScope === "B2C"
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold"
+                            : "text-zinc-400 hover:text-zinc-200"
+                        }`}
+                      >
+                        👤 Persona Física / B2C
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-zinc-500 leading-relaxed mb-3">
+                      {isB2B
+                        ? "Ingresa los datos de tu empresa y representación legal para firmar on-chain."
+                        : "Ingresa tus datos personales para firmar on-chain como persona física."}
                     </p>
 
                     <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
+                      {isB2B && (
+                        <div>
+                          <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                            Empresa / Razón Social *
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="sm:col-span-2">
+                              <input
+                                type="text"
+                                placeholder="Nombre de la empresa"
+                                value={signCompany}
+                                onChange={(e) => setSignCompany(e.target.value)}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                              />
+                            </div>
+                            <div>
+                              <select
+                                value={signCompanyType}
+                                onChange={(e) => setSignCompanyType(e.target.value)}
+                                className="w-full bg-[#0C0C10] border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-zinc-200 focus:outline-none focus:border-amber-500/40 cursor-pointer"
+                              >
+                                {COMPANY_TYPES.map((t) => (
+                                  <option key={t.value} value={t.value} className="bg-[#0C0C10] text-zinc-200">
+                                    {t.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <p className="text-[9px] text-zinc-500 mt-1">
+                            Razón social B2B: <strong className="text-zinc-300">{fullCompanyName}</strong>
+                          </p>
+                        </div>
+                      )}
+
                       <div>
-                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">Nombre del Representante Legal *</label>
+                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                          {isB2B ? "Nombre del Representante Legal *" : "Nombre Completo (Persona Física) *"}
+                        </label>
                         <input
                           type="text"
-                          placeholder="Tu nombre completo"
+                          placeholder="Tu nombre y apellidos"
                           value={signName}
                           onChange={(e) => setSignName(e.target.value)}
                           className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                         />
+                        <p className="text-[9px] text-zinc-500 mt-1">
+                          {isB2B
+                            ? "Para registro interno y firma on-chain (la empresa figura como la entidad contratante)."
+                            : "Nombre que figurará formalmente en el acuerdo y registro de firma on-chain."}
+                        </p>
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">Empresa / Razón Social *</label>
+                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                          {isB2B ? "Cargo o Poder Legal *" : "Rol o Calidad (Opcional)"}
+                        </label>
                         <input
                           type="text"
-                          placeholder="Ej: ESCUELA LIBRE DIGITAL"
-                          value={signCompany}
-                          onChange={(e) => setSignCompany(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">Cargo o Poder Legal *</label>
-                        <input
-                          type="text"
-                          placeholder="Ej: Representante Legal / Director"
+                          placeholder={isB2B ? "Ej: Representante Legal / Director General" : "Ej: Inversionista / Colaborador / Titular"}
                           value={signRole}
                           onChange={(e) => setSignRole(e.target.value)}
                           className="w-full bg-black/40 border border-amber-500/30 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500/60 transition-colors"
                         />
                       </div>
                       
-                      {signName && (
+                      {signName.trim() && (
                         <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] text-[11px] text-amber-200/80 leading-relaxed">
-                          Firmarás como: <strong className="text-amber-300 not-italic">{signName}</strong> ({signRole || "Representante"}) en representación de <strong className="text-amber-300 not-italic">{signCompany || room.company || room.counterparty}</strong>
+                          {isB2B ? (
+                            <>Firmarás como: <strong className="text-amber-300 not-italic">{signName}</strong> ({signRole || "Representante"}) en representación formal de <strong className="text-amber-300 not-italic">{fullCompanyName}</strong></>
+                          ) : (
+                            <>Firmarás como persona física: <strong className="text-amber-300 not-italic">{signName}</strong> {signRole ? `(${signRole})` : ""}</>
+                          )}
                         </div>
                       )}
 
@@ -780,11 +889,17 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <button
                         type="button"
                         onClick={handleSign}
-                        disabled={signing || !signName.trim() || !account?.address || (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())}
+                        disabled={
+                          signing ||
+                          !signName.trim() ||
+                          (isB2B && (!signCompany.trim() || !signCompanyType)) ||
+                          !account?.address ||
+                          (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())
+                        }
                         className={SIGN_BUTTON_STYLE}
                       >
                         {signing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
-                        {signing ? "FIRMANDO..." : isProposal ? "ACEPTAR PROPUESTA B2B" : "FIRMAR ACUERDO B2B"}
+                        {signing ? "FIRMANDO..." : isProposal ? `ACEPTAR PROPUESTA (${dealScope})` : `FIRMAR ACUERDO (${dealScope})`}
                       </button>
                     </form>
                     <p className="text-[9px] text-zinc-600 mt-1 text-center leading-relaxed">

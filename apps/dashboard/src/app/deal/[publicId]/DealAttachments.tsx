@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Paperclip, Upload, File as FileIcon } from "lucide-react";
+import { Loader2, Paperclip, Upload, File as FileIcon, Download, ExternalLink } from "lucide-react";
 
 interface Attachment {
   id: string;
@@ -78,12 +78,29 @@ export function DealAttachments({ publicId, rawToken }: { publicId: string, rawT
               <p className="text-[11px] text-zinc-500 italic text-center">No hay anexos subidos</p>
             ) : (
               attachments.map(att => (
-                <div key={att.id} className="flex flex-col gap-1 p-2.5 rounded-lg border border-white/5 bg-white/[0.02]">
-                  <a href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[12px] text-zinc-200 hover:text-amber-300 transition-colors">
-                    <FileIcon className="w-3.5 h-3.5" />
-                    <span className="truncate" title={att.filename}>{att.filename}</span>
+                <div key={att.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <FileIcon className="w-4 h-4 text-amber-400/80 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-medium text-zinc-200 truncate" title={att.filename}>
+                        {att.filename}
+                      </p>
+                      <p className="text-[10px] text-zinc-500">
+                        Por: {att.uploadedBy} · {new Date(att.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={att.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={att.filename}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-white/10 bg-white/5 text-[11px] text-zinc-300 hover:text-amber-300 hover:border-amber-500/30 hover:bg-amber-500/10 transition-all shrink-0"
+                    title="Descargar / Abrir archivo"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Descargar</span>
                   </a>
-                  <p className="text-[9px] text-zinc-500 pl-5">Por: {att.uploadedBy} · {new Date(att.createdAt).toLocaleDateString()}</p>
                 </div>
               ))
             )}

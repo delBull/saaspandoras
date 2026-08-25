@@ -241,12 +241,29 @@ export class SecurityAuditLogger {
       }
     }
 
-    // 4. Dispatch Discord operational alert if WARN or CRITICAL
+    // 4. Dispatch Discord & Telegram operational alerts if WARN or CRITICAL
     if (input.severity === 'WARN' || input.severity === 'CRITICAL') {
       this.dispatchDiscordAlert(record);
     }
+    if (input.severity === 'CRITICAL') {
+      this.dispatchTelegramAlert(record).catch(() => {});
+    }
 
     return record;
+  }
+
+  private static async dispatchTelegramAlert(record: SecurityEventRecord) {
+    try {
+      const { HermesNotificationDispatcher } = await import('@/lib/hermes/notifications/notification-dispatcher');
+      const dispatcher = new HermesNotificationDispatcher();
+      await dispatcher.dispatchSecurityAlert(record.organizationId, record.organizationId, {
+        eventType: record.eventType,
+        severity: record.severity as 'INFO' | 'WARN' | 'CRITICAL',
+        detail: `Decision: ${record.policyDecision} | Artifact: ${record.artifactId || 'N/A'} | Correlation: ${record.correlationId}`,
+      });
+    } catch (err) {
+      console.warn('[SecurityAuditLogger] Telegram alert dispatch failed non-fatally:', err);
+    }
   }
 
   private static async dispatchDiscordAlert(record: SecurityEventRecord) {

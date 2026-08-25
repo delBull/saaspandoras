@@ -9,7 +9,7 @@ import {
   KnowledgeStatus
 } from './types';
 import { db } from '@/db';
-import { hermesKnowledge, hermesGovernanceAudit } from '@/db/schema';
+import { hermesKnowledge, hermesGovernanceAudit, projects } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -71,7 +71,44 @@ export class KnowledgeGovernanceService {
       reason: initialStatus === 'ACTIVE' ? 'Auto-approved by policy' : undefined
     });
 
+    if (initialStatus === 'DISCOVERED' || initialStatus === 'PENDING_REVIEW') {
+      this.emitKnowledgeUpdated(context.organizationId, {
+        id,
+        dimension: payload.dimension,
+        key: payload.key,
+        content: payload.content,
+        status: initialStatus
+      }).catch(() => {});
+    }
+
     return await this.getKnowledgeByIdTx(db, id);
+  }
+
+  /**
+   * Fire-and-forget bridge to the Hermes event bus. Non-fatal by design:
+   * notification failures must never break governance writes.
+   */
+  private static async emitKnowledgeUpdated(
+    organizationId: string,
+    fact: { id: string; dimension: string; key: string; content: string; status: string }
+  ): Promise<void> {
+    try {
+      const { HermesEventBus } = await import('@/lib/hermes/event-bus');
+      const [project] = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(eq(projects.organizationId, organizationId))
+        .limit(1)
+        .catch(() => []);
+
+      const projectId = project?.id ?? 0;
+      await HermesEventBus.emit('KnowledgeUpdated', projectId, 'knowledge-vault', {
+        organizationId,
+        fact
+      });
+    } catch (err) {
+      console.warn('[KnowledgeGovernance] KnowledgeUpdated emit skipped:', err);
+    }
   }
 
   /**
@@ -263,6 +300,14 @@ export class KnowledgeGovernanceService {
       newStatus: 'PENDING_REVIEW',
       reason: `Edit of ${oldItem.id}`
     });
+
+    this.emitKnowledgeUpdated(context.organizationId, {
+      id,
+      dimension: oldItem.scope.dimension,
+      key: oldItem.content.key,
+      content: newContent,
+      status: 'PENDING_REVIEW'
+    }).catch(() => {});
 
     return await this.getKnowledgeByIdTx(db, id);
   }

@@ -87,7 +87,78 @@ HermesEventBus.on('CustomerEscalated', async (event) => {
   }).catch(e => console.error('[EventBus Discord Error]:', e));
 });
 
+// Dispatch Human Escalation to Telegram Operators
+HermesEventBus.on('CustomerEscalated', async (event) => {
+  try {
+    const { HermesNotificationDispatcher } = await import('@/lib/hermes/notifications/notification-dispatcher');
+    const { db } = await import('@/db');
+    const { projects } = await import('@/db/schema');
+    const { eq } = await import('drizzle-orm');
+
+    // Resolve project organizationId & title
+    const [project] = await db
+      .select({
+        organizationId: projects.organizationId,
+        title: projects.title,
+      })
+      .from(projects)
+      .where(eq(projects.id, event.projectId))
+      .limit(1);
+
+    if (project?.organizationId) {
+      const dispatcher = new HermesNotificationDispatcher();
+      await dispatcher.dispatchHumanEscalation(project.organizationId, project.title, {
+        chatId: event.chatId,
+        reason: event.payload.reason || 'Escalación automática por baja certeza o solicitud de cliente',
+        summary: event.payload.summary || event.payload.lastUserMessage,
+        conversationId: event.payload.conversationId,
+        customerName: event.payload.customerName,
+      });
+    }
+  } catch (err: any) {
+    console.error('[EventBus Telegram Escalation Error]:', err?.message || err);
+  }
+});
+
+// Dispatch Fact Discovered to Telegram Operators
+HermesEventBus.on('KnowledgeUpdated', async (event) => {
+  try {
+    const fact = event.payload?.fact;
+    if (!fact || (fact.status !== 'DISCOVERED' && fact.status !== 'PENDING_REVIEW')) {
+      return;
+    }
+
+    const { HermesNotificationDispatcher } = await import('@/lib/hermes/notifications/notification-dispatcher');
+    const { db } = await import('@/db');
+    const { projects } = await import('@/db/schema');
+    const { eq } = await import('drizzle-orm');
+
+    const [project] = await db
+      .select({
+        organizationId: projects.organizationId,
+        title: projects.title,
+      })
+      .from(projects)
+      .where(eq(projects.id, event.projectId))
+      .limit(1);
+
+    if (project?.organizationId) {
+      const dispatcher = new HermesNotificationDispatcher();
+      await dispatcher.dispatchFactDiscovered(project.organizationId, project.title, {
+        factId: fact.id,
+        dimension: fact.dimension || 'identity',
+        key: fact.key || 'Dato no clasificado',
+        content: fact.content || '',
+        source: fact.source,
+      });
+    }
+  } catch (err: any) {
+    console.error('[EventBus Telegram Fact Error]:', err?.message || err);
+  }
+});
+
 // Log Appointments
 HermesEventBus.on('AppointmentCreated', async (event) => {
   console.log(`[EventBus] Appointment scheduled for Project ${event.projectId}:`, event.payload);
 });
+
