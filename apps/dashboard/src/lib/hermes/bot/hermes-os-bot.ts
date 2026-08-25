@@ -2,7 +2,7 @@ import {
   HermesTenantMembershipService, 
   AuthorizedTenant
 } from '@/lib/hermes/auth';
-import { sendTelegramMessage } from '@/lib/hermes/telegram-runtime/router';
+import { sendTelegramMessage, setTelegramChatMenuButton } from '@/lib/hermes/telegram-runtime/router';
 import { collectSystemStatus, buildStatusMessage } from '@/lib/hermes/bot/system-status';
 
 export interface TelegramUpdate {
@@ -118,20 +118,30 @@ export class HermesOSBotAdapter {
       return this.executeStatusCommand(chatId, telegramUserId);
     }
 
+    if (command === '/help') {
+      return this.executeHelpCommand(chatId);
+    }
+
     if (command === '/switch') {
       return this.executeSwitchCommand(chatId, telegramUserId);
     }
 
     // Default Fallback
-    const fallbackText = `🤖 <b>Hermes OS Command Center (@pandorasHermes_bot)</b>\n\n` +
-      `Usa los comandos del operador:\n` +
-      `• /portal — Abrir la Mini App de Hermes OS\n` +
-      `• /status — Estado de salud del sistema y bóvedas IPFS\n` +
-      `• /switch — Conmutar de Workspace / Organización\n` +
-      `• /start — Menú principal de control`;
+    return this.executeHelpCommand(chatId);
+  }
 
-    await sendTelegramMessage(this.botToken, chatId, fallbackText);
-    return { handled: true, action: 'FALLBACK' };
+  private async executeHelpCommand(chatId: number): Promise<HermesBotExecutionResult> {
+    const helpText = `🤖 <b>Hermes OS Command Center (@pandorasHermes_bot)</b>\n\n` +
+      `<b>Comandos de Operación:</b>\n` +
+      `• <code>/start</code> — Menú principal e inicio de sesión en tu Workspace.\n` +
+      `• <code>/portal</code> o <code>/tma</code> — Abrir la Mini App de Hermes OS.\n` +
+      `• <code>/status</code> — Diagnóstico de salud (Postgres, IPFS y Bóvedas).\n` +
+      `• <code>/switch</code> — Conmutar entre organizaciones/workspaces autorizados.\n` +
+      `• <code>/help</code> — Guía de comandos y operación.\n\n` +
+      `💡 <i>Para vincular tu Telegram a un Workspace, ingresa al Dashboard Web con tu wallet autorizada o agrega tu Telegram ID.</i>`;
+
+    await sendTelegramMessage(this.botToken, chatId, helpText);
+    return { handled: true, action: 'HELP' };
   }
 
   private async executeStartCommand(
@@ -189,7 +199,10 @@ export class HermesOSBotAdapter {
       ]);
     }
 
-    await sendTelegramMessage(this.botToken, chatId, welcomeText, { inline_keyboard: inlineKeyboard });
+    await Promise.all([
+      sendTelegramMessage(this.botToken, chatId, welcomeText, { inline_keyboard: inlineKeyboard }),
+      setTelegramChatMenuButton(this.botToken, chatId, '🚀 Command Center', tmaUrl).catch(() => null),
+    ]);
     return { handled: true, action: 'START_SUCCESS' };
   }
 
@@ -225,7 +238,10 @@ export class HermesOSBotAdapter {
       ]
     };
 
-    await sendTelegramMessage(this.botToken, chatId, text, keyboard);
+    await Promise.all([
+      sendTelegramMessage(this.botToken, chatId, text, keyboard),
+      setTelegramChatMenuButton(this.botToken, chatId, '🚀 Command Center', tmaUrl).catch(() => null),
+    ]);
     return { handled: true, action: 'PORTAL_LAUNCH' };
   }
 
@@ -318,7 +334,10 @@ export class HermesOSBotAdapter {
           ]
         };
 
-        await sendTelegramMessage(this.botToken, chatId, successText, keyboard);
+        await Promise.all([
+          sendTelegramMessage(this.botToken, chatId, successText, keyboard),
+          setTelegramChatMenuButton(this.botToken, chatId, '🚀 Command Center', tmaUrl).catch(() => null),
+        ]);
         return { handled: true, action: 'SWITCH_SUCCESS' };
       } catch (err: any) {
         await sendTelegramMessage(this.botToken, chatId, `❌ Error al conmutar workspace: ${escapeHtml(err.message)}`);

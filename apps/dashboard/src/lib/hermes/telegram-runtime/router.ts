@@ -86,6 +86,32 @@ export async function sendTelegramMessage(
   });
 }
 
+export async function setTelegramChatMenuButton(
+  token: string,
+  chatId?: number,
+  menuButtonText: string = '🚀 Command Center',
+  webAppUrl?: string
+) {
+  const payload: Record<string, unknown> = {};
+  if (chatId) {
+    payload.chat_id = chatId;
+  }
+  if (webAppUrl) {
+    payload.menu_button = {
+      type: 'web_app',
+      text: menuButtonText,
+      web_app: {
+        url: webAppUrl
+      }
+    };
+  } else {
+    payload.menu_button = {
+      type: 'default'
+    };
+  }
+  return tgPost(token, 'setChatMenuButton', payload);
+}
+
 async function answerCallbackQuery(token: string, callbackQueryId: string, text?: string) {
   await tgPost(token, 'answerCallbackQuery', {
     callback_query_id: callbackQueryId,

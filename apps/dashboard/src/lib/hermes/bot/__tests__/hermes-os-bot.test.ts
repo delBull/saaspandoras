@@ -156,4 +156,24 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
     expect(msg).toContain('⚪ Sin datos');
     expect(msg).toContain('Org &lt;b&gt;');
   });
+
+  it('BOT-009: Handles /help with operational guide', async () => {
+    const update: TelegramUpdate = {
+      update_id: 1009,
+      message: {
+        message_id: 9,
+        from: { id: 999999999, username: 'operator' },
+        chat: { id: 55555, type: 'private' },
+        date: Math.floor(Date.now() / 1000),
+        text: '/help',
+      }
+    };
+
+    const result = await botAdapter.handleUpdate(update);
+    expect(result.handled).toBe(true);
+    expect(result.action).toBe('HELP');
+    expect(sentMessages[0]?.text).toContain('/portal');
+    expect(sentMessages[0]?.text).toContain('/status');
+    expect(sentMessages[0]?.text).toContain('/switch');
+  });
 });
