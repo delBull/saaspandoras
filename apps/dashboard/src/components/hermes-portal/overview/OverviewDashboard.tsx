@@ -12,6 +12,7 @@ import React from 'react';
 import type { HermesOverviewView, PortalContext } from '@/lib/portal/portal-types';
 import { SystemCore } from './SystemCore';
 import { StrategicActivityCard } from './StrategicActivityCard';
+import { TelegramOperatorLinkCard } from './TelegramOperatorLinkCard';
 import { LiveActivityFeed } from './LiveActivityFeed';
 import { OperatingLayers } from './OperatingLayers';
 import { OverviewMetrics } from './OverviewMetrics';
@@ -40,9 +41,9 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
   return (
     <div className="flex flex-col gap-6 sm:gap-8 pt-4 sm:pt-6 pb-12 animate-in fade-in duration-500 w-full px-3 sm:px-6">
       
-      {/* TOP ROW: Core, Mission, and Hermes Chat */}
+      {/* TOP ROW: Core, Mission, Operator Bridge, and Hermes Chat */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
-        {/* Left Column: System Core & Current Mission (7 cols on lg, 7 cols on xl) */}
+        {/* Left Column: System Core, Current Mission & Operator Link (7 cols on lg, 7 cols on xl) */}
         <div className="lg:col-span-7 xl:col-span-7 flex flex-col gap-6 w-full">
           {/* ZONE 2: UNIFIED SYSTEM CORE (HERMES HEALTH & 6 NODES) */}
           <section>
@@ -61,6 +62,14 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
             <StrategicActivityCard 
               activity={overview.strategicActivity} 
               organizationSlug={context.organization.slug}
+            />
+          </section>
+
+          {/* ZONE 3.5: TELEGRAM OPERATOR COMMAND CENTER (HERMES TENANT-FIRST) */}
+          <section className="w-full">
+            <TelegramOperatorLinkCard 
+              organizationSlug={context.organization.slug} 
+              organizationName={overview.organization.name || context.organization.name}
             />
           </section>
         </div>

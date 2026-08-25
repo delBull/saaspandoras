@@ -8,7 +8,8 @@
  * Invariants:
  * 1. Multi-tenant isolation: recipients are resolved through the SAME chain as
  *    HermesTenantMembershipService (telegramId -> wallet [users + telegram_bindings]
- *    -> dao_members of the target project). Global platform admins are included
+ *    -> dao_members of the target project, PLUS portal-linked operators via
+ *    channel_identity_bindings / RULE 4). Global platform admins are included
  *    ONLY when HERMES_NOTIFY_GLOBAL_ADMINS === 'true' (explicit opt-in).
  * 2. Deep-link preservation: notifications embed WebApp buttons targeting /tma?tenant=<orgId>.
  * 3. Sanitized presentation: all user-supplied content is escaped via escapeHtml.
@@ -20,7 +21,7 @@
  */
 
 import { db } from '@/db';
-import { users, projects, daoMembers, telegramBindings } from '@/db/schema';
+import { users, projects, daoMembers, telegramBindings, channelIdentityBindings } from '@/db/schema';
 import { eq, or, inArray, and, isNotNull, sql } from 'drizzle-orm';
 import { createHash } from 'crypto';
 import { sendTelegramMessage } from '@/lib/hermes/telegram-runtime/router';
@@ -129,7 +130,7 @@ export class HermesNotificationDispatcher {
     const isUuidCtx = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ctx.organizationId);
 
     const [projectRow] = await db
-      .select({ id: projects.id })
+      .select({ id: projects.id, slug: projects.slug })
       .from(projects)
       .where(
         isUuidCtx
@@ -152,47 +153,69 @@ export class HermesNotificationDispatcher {
         .limit(50)
     ).map(d => d.wallet?.toLowerCase()).filter((w): w is string => Boolean(w));
 
-    if (memberWallets.length === 0) {
-      return [];
+    if (memberWallets.length > 0) {
+      const operatorUsers = await db
+        .select({
+          telegramId: users.telegramId,
+          name: users.name,
+        })
+        .from(users)
+        .where(
+          and(
+            inArray(users.walletAddress, memberWallets),
+            isNotNull(users.telegramId)
+          )
+        )
+        .limit(50);
+
+      for (const op of operatorUsers) {
+        if (op.telegramId && !recipients.has(op.telegramId)) {
+          recipients.set(op.telegramId, {
+            telegramUserId: op.telegramId,
+            name: op.name || undefined,
+            role: 'OPERATOR',
+          });
+        }
+      }
+
+      // Bindings secundarios (telegram_bindings), igual que el membership service.
+      const bindingRows = await db
+        .select({ telegramUserId: telegramBindings.telegramUserId })
+        .from(telegramBindings)
+        .where(inArray(sql`lower(${telegramBindings.walletAddress})`, memberWallets))
+        .limit(50);
+
+      for (const b of bindingRows) {
+        if (!recipients.has(b.telegramUserId)) {
+          recipients.set(b.telegramUserId, {
+            telegramUserId: b.telegramUserId,
+            role: 'OPERATOR',
+          });
+        }
+      }
     }
 
-    const operatorUsers = await db
-      .select({
-        telegramId: users.telegramId,
-        name: users.name,
-      })
-      .from(users)
+    // Operadores vinculados desde el Portal de Hermes (channel_identity_bindings),
+    // misma fuente que HermesTenantMembershipService RULE 4. Solo IDs numéricos.
+    const identityKeys = Array.from(
+      new Set([ctx.organizationId, projectRow.slug].filter((v): v is string => Boolean(v)))
+    );
+    const cibRows = await db
+      .select({ externalUserId: channelIdentityBindings.externalUserId })
+      .from(channelIdentityBindings)
       .where(
         and(
-          inArray(users.walletAddress, memberWallets),
-          isNotNull(users.telegramId)
+          eq(channelIdentityBindings.channel, 'telegram'),
+          eq(channelIdentityBindings.status, 'ACTIVE'),
+          inArray(channelIdentityBindings.identityId, identityKeys)
         )
       )
       .limit(50);
 
-    for (const op of operatorUsers) {
-      if (op.telegramId && !recipients.has(op.telegramId)) {
-        recipients.set(op.telegramId, {
-          telegramUserId: op.telegramId,
-          name: op.name || undefined,
-          role: 'OPERATOR',
-        });
-      }
-    }
-
-    // Bindings secundarios (telegram_bindings), igual que el membership service.
-    const bindingRows = await db
-      .select({ telegramUserId: telegramBindings.telegramUserId })
-      .from(telegramBindings)
-      .where(inArray(sql`lower(${telegramBindings.walletAddress})`, memberWallets))
-      .limit(50);
-
-    for (const b of bindingRows) {
-      if (!recipients.has(b.telegramUserId)) {
-        recipients.set(b.telegramUserId, {
-          telegramUserId: b.telegramUserId,
-          role: 'OPERATOR',
-        });
+    for (const row of cibRows) {
+      const tgId = String(row.externalUserId || '');
+      if (/^\d{3,20}$/.test(tgId) && !recipients.has(tgId)) {
+        recipients.set(tgId, { telegramUserId: tgId, role: 'OPERATOR' });
       }
     }
 
