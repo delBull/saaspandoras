@@ -37,9 +37,12 @@ export default async function ConversationsPage({ params }: ConversationsPagePro
   const mappedConversations = conversations.map(c => ({
     id: c.id,
     conversationId: c.conversationId,
+    status: c.status || 'ACTIVE',
+    escalationReason: c.escalationReason,
+    escalatedAt: c.escalatedAt,
     updatedAt: c.updatedAt,
-    messageCount: c.version, // assuming version corresponds to message count roughly
-    preview: 'Tap to view conversation thread...',
+    messageCount: c.version,
+    preview: c.status === 'PAUSED_HUMAN' ? `⚠️ Requiere atención: ${c.escalationReason || 'Escalado'}` : 'Toca para ver el historial...',
   }));
 
   const handleSelect = async (id: string) => {

@@ -178,67 +178,81 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-    // 1. Try Native Ollama /api/chat
+    // 1. Try Native Ollama /api/chat (15s timeout)
     try {
-      const nativeRes = await fetch(`${cleanBase}/api/chat`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model,
-          messages: prompt.messages,
-          stream: false,
-          options: { temperature },
-        }),
-      });
+      const ctrl1 = new AbortController();
+      const t1 = setTimeout(() => ctrl1.abort(), 15_000);
+      try {
+        const nativeRes = await fetch(`${cleanBase}/api/chat`, {
+          method: 'POST',
+          headers,
+          signal: ctrl1.signal,
+          body: JSON.stringify({
+            model,
+            messages: prompt.messages,
+            stream: false,
+            options: { temperature },
+          }),
+        });
 
-      if (nativeRes.ok) {
-        const data = await nativeRes.json();
-        const content = data.message?.content || data.response || '';
-        if (content) {
-          return {
-            content,
-            meta: {
-              provider: 'ollama-native',
-              model,
-              promptTokens: data.prompt_eval_count || 0,
-              completionTokens: data.eval_count || 0,
-              durationMs: Date.now() - start,
-            },
-          };
+        if (nativeRes.ok) {
+          const data = await nativeRes.json();
+          const content = data.message?.content || data.response || '';
+          if (content) {
+            return {
+              content,
+              meta: {
+                provider: 'ollama-native',
+                model,
+                promptTokens: data.prompt_eval_count || 0,
+                completionTokens: data.eval_count || 0,
+                durationMs: Date.now() - start,
+              },
+            };
+          }
         }
+      } finally {
+        clearTimeout(t1);
       }
     } catch (nativeErr) {
       console.warn('[OllamaReasoningProvider] Native /api/chat attempt failed, trying /v1...', nativeErr);
     }
 
-    // 2. Try OpenAI-compatible /v1/chat/completions
+    // 2. Try OpenAI-compatible /v1/chat/completions (15s timeout)
     try {
-      const v1Res = await fetch(`${cleanBase}/v1/chat/completions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model,
-          messages: prompt.messages,
-          temperature,
-          max_tokens: prompt.hints.maxTokens,
-        }),
-      });
+      const ctrl2 = new AbortController();
+      const t2 = setTimeout(() => ctrl2.abort(), 15_000);
+      try {
+        const v1Res = await fetch(`${cleanBase}/v1/chat/completions`, {
+          method: 'POST',
+          headers,
+          signal: ctrl2.signal,
+          body: JSON.stringify({
+            model,
+            messages: prompt.messages,
+            temperature,
+            max_tokens: prompt.hints.maxTokens,
+          }),
+        });
 
-      if (v1Res.ok) {
-        const data = await v1Res.json();
-        const content = data.choices?.[0]?.message?.content || '';
-        if (content) {
-          return {
-            content,
-            meta: {
-              provider: 'ollama-v1',
-              model,
-              promptTokens: data.usage?.prompt_tokens || 0,
-              completionTokens: data.usage?.completion_tokens || 0,
-              durationMs: Date.now() - start,
-            },
-          };
+        if (v1Res.ok) {
+          const data = await v1Res.json();
+          const content = data.choices?.[0]?.message?.content || '';
+          if (content) {
+            return {
+              content,
+              meta: {
+                provider: 'ollama-v1',
+                model,
+                promptTokens: data.usage?.prompt_tokens || 0,
+                completionTokens: data.usage?.completion_tokens || 0,
+                durationMs: Date.now() - start,
+              },
+            };
+          }
         }
+      } finally {
+        clearTimeout(t2);
       }
     } catch (v1Err) {
       console.warn('[OllamaReasoningProvider] /v1/chat/completions attempt failed...', v1Err);
@@ -249,32 +263,39 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     if (openaiKey) {
       try {
         console.log('🔄 [OllamaReasoningProvider] Falling back to OpenAI gpt-4o-mini...');
-        const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: prompt.messages,
-            temperature,
-          }),
-        });
-
-        if (oaiRes.ok) {
-          const data = await oaiRes.json();
-          const content = data.choices?.[0]?.message?.content || '';
-          return {
-            content,
-            meta: {
-              provider: 'openai-fallback',
-              model: 'gpt-4o-mini',
-              promptTokens: data.usage?.prompt_tokens || 0,
-              completionTokens: data.usage?.completion_tokens || 0,
-              durationMs: Date.now() - start,
+        const ctrl3 = new AbortController();
+        const t3 = setTimeout(() => ctrl3.abort(), 20_000); // OpenAI can be slower
+        try {
+          const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openaiKey}`,
             },
-          };
+            signal: ctrl3.signal,
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: prompt.messages,
+              temperature,
+            }),
+          });
+
+          if (oaiRes.ok) {
+            const data = await oaiRes.json();
+            const content = data.choices?.[0]?.message?.content || '';
+            return {
+              content,
+              meta: {
+                provider: 'openai-fallback',
+                model: 'gpt-4o-mini',
+                promptTokens: data.usage?.prompt_tokens || 0,
+                completionTokens: data.usage?.completion_tokens || 0,
+                durationMs: Date.now() - start,
+              },
+            };
+          }
+        } finally {
+          clearTimeout(t3);
         }
       } catch (oaiErr) {
         console.error('[OllamaReasoningProvider] OpenAI fallback error:', oaiErr);
@@ -425,21 +446,71 @@ export class OllamaStreamingProvider implements StreamingReasoningProvider {
     const cleanBaseUrl = baseUrl.replace(/\/$/, '').replace(/\/api$/, '');
     const finalUrl = `${cleanBaseUrl}/api/chat`;
 
-    const response = await fetch(finalUrl, {
-      method: 'POST',
-      headers,
-      signal,
-      body: JSON.stringify({
-        model,
-        messages: prompt.messages,
-        stream: true,
-        options: { temperature: prompt.hints.temperature ?? 0.15 },
-      }),
-    });
+    // Connect to Ollama streaming with 15s connection timeout + caller signal
+    let response: Response;
+    try {
+      const connCtrl = new AbortController();
+      const connTimer = setTimeout(() => connCtrl.abort(), 15_000);
+      if (signal) {
+        if (signal.aborted) {
+          connCtrl.abort();
+        } else {
+          signal.addEventListener('abort', () => connCtrl.abort(), { once: true });
+        }
+      }
+
+      try {
+        response = await fetch(finalUrl, {
+          method: 'POST',
+          headers,
+          signal: connCtrl.signal,
+          body: JSON.stringify({
+            model,
+            messages: prompt.messages,
+            stream: true,
+            options: { temperature: prompt.hints.temperature ?? 0.15 },
+          }),
+        });
+      } finally {
+        clearTimeout(connTimer);
+      }
+    } catch (connErr: any) {
+      // --- Streaming Fallback: degrade to generate() safe response ---
+      console.error('[OllamaStreamingProvider] Connection failed, degrading to safe fallback:', connErr?.message);
+      const fallback = await new OllamaReasoningProvider(this.config).generate(input);
+      const words = fallback.content.split(' ');
+
+      async function* safeChunks(): AsyncGenerator<ReasoningStreamChunk> {
+        for (let i = 0; i < words.length; i++) {
+          yield { type: 'delta', content: (i === 0 ? '' : ' ') + words[i] };
+        }
+        yield { type: 'done', meta: { ...fallback.meta, provider: 'streaming-fallback' } };
+      }
+
+      return {
+        chunks: safeChunks(),
+        async cancel() {},
+      };
+    }
 
     if (!response.ok || !response.body) {
       const errText = await response.text().catch(() => '');
-      throw new Error(`[OllamaStreamingProvider] Request failed: ${response.status} ${response.statusText} - ${errText}`);
+      // Degrade gracefully instead of throwing
+      console.error(`[OllamaStreamingProvider] Non-OK response (${response.status}), degrading to generate() fallback. ${errText}`);
+      const fallback = await new OllamaReasoningProvider(this.config).generate(input);
+      const words = fallback.content.split(' ');
+
+      async function* safeChunks(): AsyncGenerator<ReasoningStreamChunk> {
+        for (let i = 0; i < words.length; i++) {
+          yield { type: 'delta', content: (i === 0 ? '' : ' ') + words[i] };
+        }
+        yield { type: 'done', meta: { ...fallback.meta, provider: 'streaming-fallback' } };
+      }
+
+      return {
+        chunks: safeChunks(),
+        async cancel() {},
+      };
     }
 
     const reader = response.body.getReader();

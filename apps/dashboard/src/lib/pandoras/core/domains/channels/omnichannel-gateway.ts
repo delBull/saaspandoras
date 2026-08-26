@@ -7,6 +7,7 @@ import { WhatsAppAdapter } from './adapters/whatsapp-adapter';
 import { DuplicateMessageError } from './channel-errors';
 import { ControlPlaneContext } from '../control-plane/application/context';
 import { DefaultPlatformEventBus } from '../../platform/events/default-event-bus';
+import { IdempotencyStore, RedisIdempotencyStore } from './idempotency-store';
 
 export interface OmnichannelGateway {
   receive(
@@ -17,10 +18,11 @@ export interface OmnichannelGateway {
 
 export class DefaultOmnichannelGateway implements OmnichannelGateway {
   private registry: ChannelAdapterRegistry;
-  private processedIdempotencyKeys = new Set<string>();
+  private idempotencyStore: IdempotencyStore;
   private eventBus = new DefaultPlatformEventBus();
 
-  constructor(registry?: ChannelAdapterRegistry) {
+  constructor(registry?: ChannelAdapterRegistry, idempotencyStore?: IdempotencyStore) {
+    this.idempotencyStore = idempotencyStore || new RedisIdempotencyStore();
     if (registry) {
       this.registry = registry;
     } else {
@@ -42,11 +44,11 @@ export class DefaultOmnichannelGateway implements OmnichannelGateway {
     // 2. Process and normalize inbound message via adapter
     const normalized = await adapter.receive(input, context);
 
-    // 3. Idempotency Check (C5.8 & C5.17)
-    if (this.processedIdempotencyKeys.has(normalized.idempotencyKey)) {
+    // 3. Distributed Idempotency Check via Redis (C5.8 & C5.17 & Sprint 4 Hardening)
+    const claim = await this.idempotencyStore.claim(normalized.idempotencyKey);
+    if (claim.status === 'ALREADY_CLAIMED') {
       throw new DuplicateMessageError(`Message with idempotency key '${normalized.idempotencyKey}' already processed`);
     }
-    this.processedIdempotencyKeys.add(normalized.idempotencyKey);
 
     // 4. Publish Normalized Event to Event Spine (C5.7)
     this.eventBus.publish({
@@ -69,6 +71,6 @@ export class DefaultOmnichannelGateway implements OmnichannelGateway {
 
   // Helper for test cleanup
   clearIdempotencyCache(): void {
-    this.processedIdempotencyKeys.clear();
+    this.idempotencyStore = new RedisIdempotencyStore();
   }
 }

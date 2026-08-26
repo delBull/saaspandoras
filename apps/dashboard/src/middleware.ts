@@ -97,7 +97,43 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
-  // 3. Global CORS headers for API
+  // 3. Rate limit headers for API routes (X-RateLimit-* on success)
+  if (pathname.startsWith("/api")) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'anonymous';
+    const now = Date.now();
+
+    const rateLimits = {
+      '/api/auth/login': { requests: 15, windowMs: 60 * 1000 },
+      '/api/auth/link-wallet': { requests: 15, windowMs: 60 * 1000 },
+      '/api/auth/telegram': { requests: 15, windowMs: 60 * 1000 },
+      '/api/auth': { requests: 60, windowMs: 60 * 1000 },
+      '/api/admin/whatsapp/multi-flow': { requests: 30, windowMs: 5 * 60 * 1000 },
+      '/api/admin/whatsapp-preapply': { requests: 100, windowMs: 15 * 60 * 1000 },
+      '/api/admin': { requests: 150, windowMs: 60 * 1000 },
+      '/api/whatsapp/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      '/api/whatsapp/preapply': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      default: { requests: 200, windowMs: 15 * 60 * 1000 },
+    };
+    const limitConfig = Object.entries(rateLimits).find(([path]) => pathname.startsWith(path))?.[1] || rateLimits.default;
+    const key = `${ip}:${pathname}`;
+    const current = rateLimitMap.get(key);
+
+    if (current && now <= current.resetTime) {
+      const remaining = Math.max(0, limitConfig.requests - current.count);
+      const resetSeconds = Math.ceil((current.resetTime - now) / 1000);
+      response.headers.set('X-RateLimit-Limit', limitConfig.requests.toString());
+      response.headers.set('X-RateLimit-Remaining', remaining.toString());
+      response.headers.set('X-RateLimit-Reset', resetSeconds.toString());
+    } else {
+      response.headers.set('X-RateLimit-Limit', limitConfig.requests.toString());
+      response.headers.set('X-RateLimit-Remaining', (limitConfig.requests - 1).toString());
+      response.headers.set('X-RateLimit-Reset', Math.ceil(limitConfig.windowMs / 1000).toString());
+    }
+  }
+
+  // 4. Global CORS headers for API
   const requestOrigin = request.headers.get("origin");
   const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public');
 

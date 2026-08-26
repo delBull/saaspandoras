@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
 import { DefaultCognitiveChannelDispatcher } from '@/lib/pandoras/core/domains/channels/channel-dispatcher';
 import { DuplicateMessageError, InvalidChannelPayloadError } from '@/lib/pandoras/core/domains/channels/channel-errors';
@@ -28,6 +29,31 @@ export async function POST(request: Request) {
     const targetTenant = searchParams.get('tenant') || searchParams.get('organizationId');
 
     const bodyText = await request.text();
+
+    // Verify Meta X-Hub-Signature-256 if secret is configured
+    const metaAppSecret = process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET;
+    const signatureHeader = request.headers.get('x-hub-signature-256');
+
+    if (metaAppSecret && signatureHeader) {
+      const signature = signatureHeader.replace(/^sha256=/, '');
+      const expectedSignature = crypto
+        .createHmac('sha256', metaAppSecret)
+        .update(bodyText, 'utf8')
+        .digest('hex');
+
+      try {
+        const sigBuf = Buffer.from(signature, 'hex');
+        const expBuf = Buffer.from(expectedSignature, 'hex');
+        if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+          console.warn('[WhatsApp Webhook] Invalid X-Hub-Signature-256');
+          return NextResponse.json({ error: 'Invalid Signature' }, { status: 401 });
+        }
+      } catch (sigErr) {
+        console.warn('[WhatsApp Webhook] Signature verification failed:', sigErr);
+        return NextResponse.json({ error: 'Invalid Signature' }, { status: 401 });
+      }
+    }
+
     let body;
     try {
       body = JSON.parse(bodyText);

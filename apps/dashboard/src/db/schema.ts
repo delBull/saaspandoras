@@ -3597,18 +3597,40 @@ export const hermesConversations = pgTable("hermes_conversations", {
   id: varchar("id", { length: 256 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
   conversationId: varchar("conversation_id", { length: 256 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default('ACTIVE'), // 'ACTIVE' | 'PAUSED_HUMAN' | 'RESOLVED'
+  escalationReason: varchar("escalation_reason", { length: 100 }), // 'FRUSTRATION' | 'USER_REQUEST' | 'POLICY_VIOLATION' | 'KNOWLEDGE_GAP' | 'MANUAL'
+  escalatedAt: timestamp("escalated_at"),
   version: integer("version").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 }, (t) => ({
   orgConversationUnique: uniqueIndex("hermes_conv_unique").on(t.organizationId, t.conversationId),
+  orgStatusIdx: index("hermes_conv_org_status_idx").on(t.organizationId, t.status),
+}));
+
+export const hermesEscalations = pgTable("hermes_escalations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  conversationId: varchar("conversation_id", { length: 256 }).notNull(),
+  actorId: varchar("actor_id", { length: 256 }),
+  channel: varchar("channel", { length: 50 }).notNull().default('TELEGRAM'), // 'TELEGRAM' | 'WHATSAPP' | 'WEB' | 'API'
+  reason: varchar("reason", { length: 100 }).notNull(), // 'FRUSTRATION' | 'USER_REQUEST' | 'POLICY_VIOLATION' | 'KNOWLEDGE_GAP' | 'MANUAL'
+  status: varchar("status", { length: 50 }).notNull().default('PENDING'), // 'PENDING' | 'IN_PROGRESS' | 'RESOLVED'
+  notes: text("notes"),
+  resolvedBy: varchar("resolved_by", { length: 256 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+  resolvedAt: timestamp("resolved_at"),
+}, (t) => ({
+  orgStatusIdx: index("hermes_escalations_org_status_idx").on(t.organizationId, t.status),
+  orgConvIdx: index("hermes_escalations_org_conv_idx").on(t.organizationId, t.conversationId),
 }));
 
 export const hermesConversationMessages = pgTable("hermes_conversation_messages", {
   id: varchar("id", { length: 256 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
   conversationId: varchar("conversation_id", { length: 256 }).notNull(),
-  role: varchar("role", { length: 50 }).notNull(), // 'USER' | 'ASSISTANT' | 'SYSTEM'
+  role: varchar("role", { length: 50 }).notNull(), // 'USER' | 'ASSISTANT' | 'SYSTEM' | 'OPERATOR'
   content: text("content").notNull(),
   sequence: integer("sequence").notNull(),
   idempotencyKey: varchar("idempotency_key", { length: 256 }).notNull(),

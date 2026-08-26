@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AutonomousWorkflowEngine } from '@/lib/hermes/workflow-engine';
 import { OrganizationLifecycleManager } from '@/lib/platform/lifecycle-manager';
+import { Scheduler } from '@/lib/hermes/kernel/scheduler/scheduler';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +25,15 @@ export async function GET(request: Request) {
     // 2. Audit Trial Expirations in Lifecycle Manager
     const lifecycleResult = await OrganizationLifecycleManager.checkTrialExpirations();
 
+    // 3. Process Dead-Letter Queue & Expired Callback Jobs (Sprint 4 Hardening)
+    const deadLetterResult = await Scheduler.processDeadLetterQueue();
+
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       followups: followupResult,
       lifecycle: lifecycleResult,
+      deadLetter: deadLetterResult,
     });
   } catch (error: any) {
     console.error('[Hermes Workflows Cron Error]:', error);

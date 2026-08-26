@@ -11,6 +11,7 @@ import { HermesRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes
 import { OllamaReasoningProvider } from '@/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
 import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
 import type { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
+import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,21 @@ export async function POST(req: NextRequest) {
       channelType = 'AUTHENTICATED_WEB',
       sessionToken,
     } = body;
+
+    // Rate Limiting (Per-tenant protection)
+    const rateLimit = checkTenantRateLimit(organizationId, 120, 60_000);
+    const rlHeaders = buildRateLimitHeaders(rateLimit);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'RATE_LIMIT_EXCEEDED',
+          message: 'Límite de solicitudes por minuto excedido para este tenant.',
+          retryAfter: rateLimit.retryAfterSeconds,
+        },
+        { status: 429, headers: rlHeaders }
+      );
+    }
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -93,6 +109,7 @@ export async function POST(req: NextRequest) {
         headers: {
           'X-Hermes-Runtime-Version': '9.0.0',
           'X-Hermes-Response-Id': response.responseId,
+          ...rlHeaders,
         },
       }
     );
