@@ -495,7 +495,16 @@ export default function DealRoomConsole() {
             <p className="text-[10px] text-zinc-500 truncate">TRANSACTION ROOMS · ADMINISTRACIÓN</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            href="/deal/sovereign-esign"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 text-[10px] font-mono transition-colors"
+            title="Sovereign On-Chain E-Sign & NOM-151 Protocol Specification"
+            target="_blank"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>SOVEREIGN E-SIGN</span>
+          </Link>
           <Link
             href="/academy"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 text-[10px] font-mono transition-colors"
