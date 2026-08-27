@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
   // 0. Global OPTIONS Handling (CORS Preflight)
   if (request.method === "OPTIONS") {
     const origin = request.headers.get("origin") || "*";
-    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public');
+    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public') || pathname.startsWith('/api/v1/deal-signing');
     return new NextResponse(null, {
       status: 204,
       headers: {
@@ -23,6 +23,24 @@ export function middleware(request: NextRequest) {
         "Access-Control-Max-Age": "86400",
       },
     });
+  }
+
+  // 0.1 Sovereign Sign Subdomain Routing (e.g. sign.pandoras.finance / firmas.pandoras.finance)
+  const host = request.headers.get("host") || "";
+  const isSignSubdomain = host.startsWith("sign.") || host.startsWith("firmas.");
+
+  if (isSignSubdomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+    if (pathname === "/" || pathname === "") {
+      return NextResponse.rewrite(new URL("/deal/sign", request.url));
+    }
+    if (pathname.startsWith("/envelopes/")) {
+      return NextResponse.rewrite(new URL(`/deal${pathname}`, request.url));
+    }
+    // Direct envelope lookup: sign.pandoras.finance/<envelopeId> -> /deal/envelopes/<envelopeId>
+    if (!pathname.startsWith("/deal/") && pathname.length > 1) {
+      const cleanPath = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+      return NextResponse.rewrite(new URL(`/deal/envelopes/${cleanPath}`, request.url));
+    }
   }
 
   // 1. Rate Limiting Strategy (Only for API routes)

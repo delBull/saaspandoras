@@ -3861,3 +3861,36 @@ export const hermesClaimContracts = pgTable("hermes_claim_contracts", {
   tenantVersionIdx: uniqueIndex("hermes_cc_tenant_version_idx").on(t.tenantId, t.version),
   cidIdx: index("hermes_cc_cid_idx").on(t.ipfsCid),
 }));
+
+// ============================================================================
+// 📜 SOVEREIGN DOCUMENT EXECUTION & DEAL ENVELOPES (ETAPA 1)
+// ============================================================================
+
+export const dealEnvelopes = pgTable("deal_envelopes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 })
+    .notNull()
+    .references(() => projects.slug, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  documentHash: varchar("document_hash", { length: 64 }).notNull(),
+  canonicalDocumentCid: varchar("canonical_document_cid", { length: 255 }).notNull(),
+  backupDocumentCid: varchar("backup_document_cid", { length: 255 }),
+  documentVersion: integer("document_version").notNull().default(1),
+  documentSize: integer("document_size").notNull(),
+  mimeType: varchar("mime_type", { length: 50 }).notNull().default('application/pdf'),
+  signingPolicy: varchar("signing_policy", { length: 50 }).notNull().default('PARALLEL'), // PARALLEL | SEQUENTIAL | M_OF_N
+  thresholdM: integer("threshold_m"),
+  signers: jsonb("signers").notNull().default([]), // SignerParticipant[]
+  status: varchar("status", { length: 50 }).notNull().default('DRAFT'), // DRAFT | PENDING_SIGNATURES | COMPLETED | DECLINED | REVOKED | EXPIRED
+  evidencePackageCid: varchar("evidence_package_cid", { length: 255 }),
+  blockchainEvidence: jsonb("blockchain_evidence"), // BlockchainEvidence
+  preservationEvidence: jsonb("preservation_evidence"), // PreservationEvidence (Stage 2)
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+}, (t) => ({
+  orgStatusIdx: index("deal_envelopes_org_status_idx").on(t.organizationId, t.status),
+  docHashIdx: index("deal_envelopes_doc_hash_idx").on(t.documentHash),
+}));

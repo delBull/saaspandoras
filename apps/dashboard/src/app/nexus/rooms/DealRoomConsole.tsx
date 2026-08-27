@@ -25,6 +25,7 @@ import {
   Ban,
   Download,
   GraduationCap,
+  ExternalLink,
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 
@@ -497,13 +498,22 @@ export default function DealRoomConsole() {
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <Link
+            href="/deal/sign"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-[10px] font-mono transition-colors shadow-sm shadow-amber-500/10"
+            title="Abrir Portal Funcional de Firmas Soberanas"
+            target="_blank"
+          >
+            <FileSignature className="w-3.5 h-3.5 text-amber-400" />
+            <span>PORTAL DE FIRMAS</span>
+          </Link>
+          <Link
             href="/deal/sovereign-esign"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 text-[10px] font-mono transition-colors"
             title="Sovereign On-Chain E-Sign & NOM-151 Protocol Specification"
             target="_blank"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>SOVEREIGN E-SIGN</span>
+            <span>ESPECIFICACIÓN</span>
           </Link>
           <Link
             href="/academy"
@@ -685,6 +695,33 @@ export default function DealRoomConsole() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Institutional Sovereign Sign Links */}
+          <div className="p-3 border-t border-white/10 bg-black/40 space-y-1.5 font-mono text-[10px]">
+            <Link
+              href="/deal/sign"
+              target="_blank"
+              className="flex items-center justify-between p-2 rounded-lg bg-amber-500/[0.08] hover:bg-amber-500/15 border border-amber-500/30 text-amber-300 transition-colors"
+            >
+              <span className="flex items-center gap-1.5 font-semibold">
+                <FileSignature className="w-3.5 h-3.5 text-amber-400" />
+                <span>Portal de Firmas</span>
+              </span>
+              <span className="text-[8px] bg-amber-500/20 px-1 py-0.5 rounded text-amber-200">v1.0</span>
+            </Link>
+
+            <Link
+              href="/deal/sovereign-esign"
+              target="_blank"
+              className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] text-zinc-400 hover:text-white transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Protocolo & Whitepaper</span>
+              </span>
+              <ExternalLink className="w-3 h-3 text-zinc-600" />
+            </Link>
           </div>
         </aside>
 
