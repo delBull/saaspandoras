@@ -311,7 +311,6 @@ export async function POST(request: Request) {
                             chainId: config.chain.id,
                             v: parseInt(process.env.JWT_VERSION || "2"),
                             iat: Math.floor(Date.now() / 1000),
-                            alg: "RS256",
                         }, pem, { algorithm: 'RS256', expiresIn: '24h' });
                         
                         algorithmUsed = "RS256";
@@ -335,7 +334,6 @@ export async function POST(request: Request) {
                         chainId: config.chain.id,
                         v: parseInt(process.env.JWT_VERSION || "2"),
                         iat: Math.floor(Date.now() / 1000),
-                        alg: "HS256",
                     }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '24h' });
                     
                     algorithmUsed = "HS256";
