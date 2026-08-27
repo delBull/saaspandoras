@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { jwtVerify, importSPKI, importJWK } from 'jose';
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 

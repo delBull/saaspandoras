@@ -1,9 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import { DocumentHasher } from '../document-hasher';
 import { EIP712Builder } from '../eip712-builder';
 import { EvidencePackager } from '../evidence-packager';
 import { StandaloneVerifierGenerator } from '../standalone-verifier';
 import { privateKeyToAccount } from 'viem/accounts';
+
+// SovereignAuthService resolves its JWT secret lazily from env (no hardcoded
+// fallback). Provide a deterministic test secret before the module is imported.
+beforeAll(() => {
+  process.env.SOVEREIGN_SIGN_JWT_SECRET = 'test-sovereign-sign-jwt-secret-32-bytes';
+});
 
 describe('📜 Sovereign Sign / Evidence Layer — Domain Core Tests', () => {
   // Deterministic test private key
@@ -200,6 +206,61 @@ describe('📜 Sovereign Sign / Evidence Layer — Domain Core Tests', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+    });
+  });
+
+  describe('5. SovereignAuthService & Cyber Isolation', () => {
+    it('generates, verifies, and expires magic link tokens with strict scope isolation', async () => {
+      const { SovereignAuthService } = await import('../auth');
+
+      const testEmail = 'inversionista@holding.com';
+      const magicToken = await SovereignAuthService.generateMagicLinkToken(testEmail);
+
+      expect(typeof magicToken).toBe('string');
+      expect(magicToken.length).toBeGreaterThan(20);
+
+      // Verify valid token
+      const verifiedEmail = await SovereignAuthService.verifyMagicLinkToken(magicToken);
+      expect(verifiedEmail).toBe(testEmail);
+
+      // Reject tampered token
+      const tamperedToken = magicToken.slice(0, -5) + 'xxxxx';
+      const failedEmail = await SovereignAuthService.verifyMagicLinkToken(tamperedToken);
+      expect(failedEmail).toBeNull();
+
+      // Reject cross-scope misuse: a session token must not pass magic-link verification
+      const sessionTokenAbuse = await SovereignAuthService.generateSessionToken(testEmail);
+      const crossScope = await SovereignAuthService.verifyMagicLinkToken(sessionTokenAbuse);
+      expect(crossScope).toBeNull();
+    });
+
+    it('expires magic link tokens after their 15-minute TTL', async () => {
+      const { SovereignAuthService } = await import('../auth');
+      const testEmail = 'expiry@holding.com';
+
+      // Build a token issued 20 minutes ago — its 15-minute TTL has already elapsed
+      const expiredToken = await SovereignAuthService.buildExpiredMagicLinkToken(testEmail, 20);
+      const verified = await SovereignAuthService.verifyMagicLinkToken(expiredToken);
+      expect(verified).toBeNull();
+    });
+
+    it('issues persistent session tokens and correctly resolves admin roles', async () => {
+      const { SovereignAuthService } = await import('../auth');
+
+      const normalUserEmail = 'user@externo.org';
+      const sessionToken = await SovereignAuthService.generateSessionToken(normalUserEmail);
+      const session = await SovereignAuthService.verifySessionToken(sessionToken);
+
+      expect(session).toBeDefined();
+      expect(session?.email).toBe(normalUserEmail);
+      expect(session?.isAdmin).toBe(false);
+
+      // Check admin recognition
+      const adminEmail = 'admin@pandoras.finance';
+      const adminSessionToken = await SovereignAuthService.generateSessionToken(adminEmail);
+      const adminSession = await SovereignAuthService.verifySessionToken(adminSessionToken);
+
+      expect(adminSession?.isAdmin).toBe(true);
     });
   });
 });

@@ -8,10 +8,14 @@ import { verifySignature } from "thirdweb/auth";
 import { client } from "@/lib/thirdweb-client";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-dev-key";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function POST(req: Request) {
     try {
+        if (!JWT_SECRET) {
+            return NextResponse.json({ error: "Server Configuration Error: Missing JWT_SECRET" }, { status: 500 });
+        }
+
         // We accept auth_token from cookies OR X-Telegram-Auth header
         const token = (await cookies()).get("auth_token")?.value || req.headers.get("X-Telegram-Auth");
         

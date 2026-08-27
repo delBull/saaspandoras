@@ -1,4 +1,4 @@
-import { SovereignSignPortalClient } from '@/app/deal/sign/SovereignSignPortalClient';
+import { SovereignSignPortalClient } from './SovereignSignPortalClient';
 
 export const dynamic = 'force-dynamic';
 

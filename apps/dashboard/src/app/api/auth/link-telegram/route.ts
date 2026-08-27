@@ -6,10 +6,14 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { validateTelegramInitData } from "@/lib/telegram";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-dev-key";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function POST(req: Request) {
     try {
+        if (!JWT_SECRET) {
+            return NextResponse.json({ error: "Server Configuration Error: Missing JWT_SECRET" }, { status: 500 });
+        }
+
         const token = (await cookies()).get("auth_token")?.value;
         if (!token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

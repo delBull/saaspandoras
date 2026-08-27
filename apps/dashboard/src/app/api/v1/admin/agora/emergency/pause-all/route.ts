@@ -2,14 +2,20 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { protocolConfigs } from '@/db/schema';
 import { sql } from 'drizzle-orm';
+import { validateAdminSession } from '@/lib/admin-auth';
 
 /**
  * POST /api/v1/admin/agora/emergency/pause-all
  * Emergency Global Kill-Switch used to pause all Agora settlements immediately.
- * Restricted to Super Admin in practice (Auth handled by middleware).
+ * Restricted to verified platform admins (server-side check).
  */
 export async function POST(request: Request) {
     try {
+        const auth = await validateAdminSession(request.headers);
+        if (auth.errorResponse) {
+            return auth.errorResponse;
+        }
+
         const body = await request.json();
         const { confirmed } = body;
 

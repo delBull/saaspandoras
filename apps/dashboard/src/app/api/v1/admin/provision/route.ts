@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { ProvisioningEngine } from '@/lib/platform/provisioning-engine';
 import { ProductKey, PlanKey } from '@/lib/platform/product-registry';
+import { validateAdminSession } from '@/lib/admin-auth';
 
 export async function POST(request: Request) {
   try {
+    const auth = await validateAdminSession(request.headers);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+
     const body = await request.json();
     const { leadId, product, plan = 'sandbox', trialDays = 14, existingProjectId } = body;
 

@@ -7,26 +7,6 @@ import crypto from "crypto";
 export const runtime = "nodejs";
 export async function GET(request: Request) {
     try {
-        // 🚀 DEV_FAST MODE: Instant Mock Session
-        if (process.env.NEXT_PUBLIC_DEV_FAST === "true" && process.env.NODE_ENV === "development") {
-            const cookieStore = await cookies();
-            const walletAddress = cookieStore.get("wallet-address")?.value || "0xDEV_USER";
-
-            return NextResponse.json({
-                authenticated: true,
-                user: {
-                    id: "dev-user-id",
-                    address: walletAddress,
-                    role: "admin",
-                    scope: "web",
-                    hasAccess: true,
-                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-                }
-            }, {
-                headers: { "Cache-Control": "no-store" }
-            });
-        }
-
         const cookieStore = await cookies();
         const token = cookieStore.get("auth_token")?.value;
 

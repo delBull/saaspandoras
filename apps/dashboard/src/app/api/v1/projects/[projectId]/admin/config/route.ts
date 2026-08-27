@@ -3,9 +3,30 @@ import { headers } from 'next/headers';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
+import { getAuth, isAdmin } from '@/lib/auth';
 
 type RouteParams = { params: Promise<{ projectId: string }> };
+
+// Authorize project owner OR platform admin (closes unauthenticated ownership bypass).
+async function authorizeProjectAccess(project: { applicantWalletAddress: string | null }, request: Request) {
+    const { session } = await getAuth(await headers());
+    const walletAddress = session?.address;
+    if (!walletAddress) {
+        return { errorResponse: NextResponse.json({ error: 'No autenticado' }, { status: 401 }) };
+    }
+
+    const isOwner = project.applicantWalletAddress?.toLowerCase() === walletAddress.toLowerCase();
+    if (isOwner) {
+        return { authorized: true, walletAddress };
+    }
+
+    const isPlatformAdmin = await isAdmin(walletAddress);
+    if (isPlatformAdmin) {
+        return { authorized: true, walletAddress };
+    }
+
+    return { errorResponse: NextResponse.json({ error: 'No tienes permisos para este proyecto' }, { status: 403 }) };
+}
 
 // PATCH /api/v1/projects/[projectId]/admin/config
 // Updates extra_config (resource hub, calendar, events config) for a project.
@@ -16,12 +37,6 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     if (isNaN(projectId)) {
         return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
-    }
-
-    const { session } = await getAuth(await headers());
-    const walletAddress = session?.address;
-    if (!walletAddress) {
-        return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -66,12 +81,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
     }
 
-    // [TEMPORARY BYPASS PARA TESTING]
-    /*
-    if (project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
-        return NextResponse.json({ error: 'No tienes permisos para este proyecto' }, { status: 403 });
+    const access = await authorizeProjectAccess(project, request);
+    if (access.errorResponse) {
+        return access.errorResponse;
     }
-    */
 
     // Deep merge: preserve existing keys, update only what's sent
     const currentConfig = (project.extraConfig as Record<string, any>) || {};
@@ -99,12 +112,6 @@ export async function GET(request: Request, { params }: RouteParams) {
     const { projectId: projectIdStr } = await params;
     const projectId = Number(projectIdStr);
 
-    const { session } = await getAuth(await headers());
-    const walletAddress = session?.address;
-    if (!walletAddress) {
-        return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-    }
-
     const [project] = await db.select({ id: projects.id, extraConfig: projects.extraConfig, applicantWalletAddress: projects.applicantWalletAddress })
         .from(projects)
         .where(eq(projects.id, projectId));
@@ -113,12 +120,10 @@ export async function GET(request: Request, { params }: RouteParams) {
         return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
     }
 
-    // [TEMPORARY BYPASS PARA TESTING]
-    /*
-    if (project.applicantWalletAddress?.toLowerCase() !== walletAddress.toLowerCase()) {
-        return NextResponse.json({ error: 'No tienes permisos para este proyecto' }, { status: 403 });
+    const access = await authorizeProjectAccess(project, request);
+    if (access.errorResponse) {
+        return access.errorResponse;
     }
-    */
 
     return NextResponse.json({ extraConfig: project.extraConfig });
 }

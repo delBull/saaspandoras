@@ -93,9 +93,24 @@ export async function POST(
 
       const reply = TelegramAdapter.render(result);
 
-      // CompatibilityProvider already replied via the Telegram runtime router
-      // (it returns an intentionally empty reply so we avoid double-sending).
-      if (botToken && reply && reply.trim()) {
+      // Coherent reply contract for the Channel Mesh bot bridge (Fase 2/3):
+      // - The bot daemon (pandoras-telegram-bot) POSTs the raw Telegram update with
+      //   header `x-hermes-bot: 1`, signalling it will render the reply itself
+      //   (including inline evidence + human-escalation buttons). In that mode we
+      //   RETURN (reply, evidenceCid, escalate) and DO NOT send directly -> single
+      //   response with reply_markup, no double-send.
+      // - If the webhook is hit by Telegram's native webhook (no bot header), we send
+      //   the reply directly over the bot token as a safe self-contained fallback.
+      const botWillReply = req.headers.get('x-hermes-bot') === '1';
+
+      const tel = (result.telemetry as any) || {};
+      const escalate = tel.blocked === true
+        || tel.fallbackTriggered === 'technical'
+        || tel.fallbackTriggered === 'knowledge';
+      const evidenceCid = tel.evidenceCid || null;
+
+      const sendDirectly = botToken && !!reply && reply.trim() && !botWillReply;
+      if (sendDirectly) {
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -103,7 +118,15 @@ export async function POST(
         }).catch(e => console.error('[Webhook Telegram Send Error]:', e));
       }
 
-      return NextResponse.json({ ok: true, channel, result });
+      return NextResponse.json({
+        ok: true,
+        channel,
+        result,
+        reply: (botWillReply && reply) ? reply : undefined,
+        evidenceCid,
+        escalate,
+        replyHandledByBot: !!(botWillReply && reply && reply.trim()),
+      });
     }
 
     // Default fallback for other channels temporarily

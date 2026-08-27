@@ -44,8 +44,24 @@ export class CompatibilityProvider {
           },
           state: {}
         });
-        
-        return this.success(experience.actions.messages.join('\n') || '');
+
+        const messages = experience.actions.messages.join('\n');
+
+        return {
+          status: 'completed',
+          events: [{ type: 'DELEGATED_TO_COMPATIBILITY', to: 'CompatibilityProvider' }],
+          artifacts: [
+            { id: 'reply', type: 'message', content: messages }
+          ],
+          telemetry: {
+            // Surface escalation / evidence signals to the reply contract so the
+            // Channel Mesh bot can render human-escalation + evidence buttons.
+            blocked: experience.blocked,
+            blockReason: experience.blockReason,
+            fallbackTriggered: experience.fallbackTriggered,
+            evidenceCid: (experience as any).evidenceCid || null,
+          },
+        };
       }
 
       // 1. Handle Callback Queries (Inline Buttons)

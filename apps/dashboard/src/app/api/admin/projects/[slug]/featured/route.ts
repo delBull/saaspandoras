@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '~/db';
 import { eq } from 'drizzle-orm';
 import { projects } from '~/db/schema';
+import { validateAdminSession } from '~/lib/admin-auth';
 
 interface FeaturedUpdateRequest {
   featured?: boolean;
@@ -14,6 +15,11 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const auth = await validateAdminSession(request.headers);
+    if (auth.errorResponse) {
+      return auth.errorResponse;
+    }
+
     console.log('🔧 Featured API: Starting PATCH request');
     const { slug } = await params;
     console.log('🔧 Featured API: Project slug:', slug);

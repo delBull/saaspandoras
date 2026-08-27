@@ -8,10 +8,14 @@ import { eq } from "drizzle-orm";
 import { validateTelegramInitData } from "@/lib/telegram";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-dev-key";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function POST(req: Request) {
     try {
+        if (!JWT_SECRET) {
+            return NextResponse.json({ error: "Server Configuration Error: Missing JWT_SECRET" }, { status: 500 });
+        }
+
         const { initData } = await req.json();
 
         if (!initData) {

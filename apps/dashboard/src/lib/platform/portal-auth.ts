@@ -16,9 +16,18 @@ import { installedProducts, projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
-const PORTAL_JWT_SECRET = process.env.PORTAL_JWT_SECRET || process.env.NEXTAUTH_SECRET || 'pandoras-portal-dev-secret';
+const PORTAL_JWT_SECRET = process.env.PORTAL_JWT_SECRET || process.env.NEXTAUTH_SECRET || '';
 const PORTAL_SESSION_DURATION_DAYS = 30;
 const PORTAL_TOKEN_EXPIRY = '7d';
+
+// Fail closed: portal magic-link tokens must never be signed/verified with a
+// hardcoded secret. If no secret is configured, token operations are rejected.
+function requirePortalSecret(): string {
+  if (!PORTAL_JWT_SECRET) {
+    throw new Error('SERVER_CONFIG_ERROR: PORTAL_JWT_SECRET (or NEXTAUTH_SECRET) is not configured');
+  }
+  return PORTAL_JWT_SECRET;
+}
 
 export interface PortalTokenPayload {
   sub: string;  // installedProducts.id (UUID)
@@ -54,7 +63,7 @@ export function generatePortalToken(
     projectId,
   };
 
-  return jwt.sign(payload, PORTAL_JWT_SECRET, { expiresIn: PORTAL_TOKEN_EXPIRY });
+  return jwt.sign(payload, requirePortalSecret(), { expiresIn: PORTAL_TOKEN_EXPIRY });
 }
 
 // ── Token Validation & Consumption ───────────────────────────────────────────
@@ -66,13 +75,13 @@ export function generatePortalToken(
  * Returns a PortalSession on success, throws on invalid/used/expired token.
  */
 export async function consumePortalToken(token: string): Promise<PortalSession> {
-  // 1. Verify JWT signature & expiry (with secret fallback list)
+  // 1. Verify JWT signature & expiry (with configured secret variants only)
   let payload: PortalTokenPayload | null = null;
+  const configuredSecret = requirePortalSecret();
   const secretsToTry = [
-    PORTAL_JWT_SECRET,
+    configuredSecret,
     process.env.NEXTAUTH_SECRET,
-    process.env.JWT_SECRET,
-    'pandoras-portal-dev-secret'
+    process.env.JWT_SECRET
   ].filter(Boolean) as string[];
 
   for (const secret of secretsToTry) {

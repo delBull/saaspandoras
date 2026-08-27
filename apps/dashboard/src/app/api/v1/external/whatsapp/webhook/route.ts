@@ -13,9 +13,9 @@ export async function GET(request: Request) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'hermes_verify_token_2026';
+  const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
 
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+  if (mode === 'subscribe' && VERIFY_TOKEN && token === VERIFY_TOKEN) {
     console.log('[WhatsApp Webhook] Meta Verification successful');
     return new NextResponse(challenge, { status: 200 });
   }
@@ -69,10 +69,11 @@ export async function POST(request: Request) {
     if (!isNativeMeta) {
       // C5.23: Edge Authentication (Bridge -> Hermes)
       const bridgeToken = request.headers.get('x-bridge-token');
-      const expectedToken = process.env.WA_BRIDGE_SECRET || 'dev_bridge_secret';
-      
-      if (bridgeToken !== expectedToken) {
-        console.warn('[WhatsApp Webhook] Unauthorized attempt (Invalid x-bridge-token)');
+      const expectedToken = process.env.WA_BRIDGE_SECRET;
+
+      // Fail closed: reject bridge traffic unless a real secret is configured and matches.
+      if (!expectedToken || bridgeToken !== expectedToken) {
+        console.warn('[WhatsApp Webhook] Unauthorized attempt (Invalid or missing x-bridge-token)');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 

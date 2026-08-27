@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { projects, projectBriefings } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getAuth, isAdmin } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-// Middleware checks (admin validation)
+// Server-side admin validation (session-cookie based, not spoofable headers).
 async function validateAdmin(req: NextRequest, projectId: number) {
-  const walletAddress = req.headers.get("x-wallet-address")?.toLowerCase();
-  
-  if (!walletAddress) {
-    return { authorized: false, error: "Unauthorized: Missing wallet address" };
+  const { session, isVerified } = await getAuth(req.headers);
+  const walletAddress = session?.address;
+
+  if (!isVerified || !walletAddress) {
+    return { authorized: false, error: "Unauthorized: No verified session", status: 401 };
   }
 
   const project = await db.query.projects.findFirst({
@@ -18,13 +20,14 @@ async function validateAdmin(req: NextRequest, projectId: number) {
   });
 
   if (!project) {
-    return { authorized: false, error: "Project not found" };
+    return { authorized: false, error: "Project not found", status: 404 };
   }
 
-  const isCreator = project.applicantWalletAddress?.toLowerCase() === walletAddress;
+  const isCreator = project.applicantWalletAddress?.toLowerCase() === walletAddress.toLowerCase();
+  const isPlatformAdmin = await isAdmin(walletAddress);
 
-  if (!isCreator) {
-    return { authorized: false, error: "Unauthorized: You are not an admin of this project" };
+  if (!isCreator && !isPlatformAdmin) {
+    return { authorized: false, error: "Unauthorized: You are not an admin of this project", status: 403 };
   }
 
   return { authorized: true, project };
@@ -39,7 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
 
     const auth = await validateAdmin(req, projectId);
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: 401 });
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
     const briefingsList = await db.query.projectBriefings.findMany({
@@ -62,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
 
     const auth = await validateAdmin(req, projectId);
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: 401 });
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
     const body = await req.json();
@@ -125,7 +128,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ p
 
     const auth = await validateAdmin(req, projectId);
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: 401 });
+      return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
     }
 
     const { searchParams } = new URL(req.url);

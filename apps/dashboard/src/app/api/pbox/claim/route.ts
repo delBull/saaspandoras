@@ -13,7 +13,7 @@ const PBOX_TOKEN_ADDRESS = process.env.PBOX_TOKEN_ADDRESS || '';
 const MINTER_PRIVATE_KEY = process.env.MINTER_PRIVATE_KEY || '';
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://rpc.sepolia-api.lisk.com'; // Default Lisk Sepolia
 const MIN_CLAIM_THRESHOLD = 50; // Minimum points required to claim
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * POST /api/pbox/claim
@@ -22,6 +22,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
  */
 async function handler(request: NextRequest) {
     try {
+        if (!JWT_SECRET) {
+            return NextResponse.json({ error: "Server Configuration Error: Missing JWT_SECRET" }, { status: 500 });
+        }
+
         console.log("🚀 [PBOX Claim API] Received claim request");
 
         // 1. Authenticate Request

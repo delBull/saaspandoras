@@ -3,13 +3,20 @@ import { db } from '@/db';
 import { protocolConfigQueues, protocolConfigs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { validateAdminSession } from '@/lib/admin-auth';
 
 /**
  * POST /api/v1/admin/agora/governance/propose
  * Proposes a new monetary policy configuration with a time-delay.
+ * Restricted to verified platform admins (server-side check).
  */
 export async function POST(request: Request) {
     try {
+        const auth = await validateAdminSession(request.headers);
+        if (auth.errorResponse) {
+            return auth.errorResponse;
+        }
+
         const body = await request.json();
         const {
             protocolId,

@@ -7,10 +7,14 @@ import { eq, and, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-dev-key";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function POST(request: Request) {
     try {
+        if (!JWT_SECRET) {
+            return NextResponse.json({ error: "Server Configuration Error: Missing JWT_SECRET" }, { status: 500 });
+        }
+
         const token = (await cookies()).get("auth_token")?.value;
         if (!token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
