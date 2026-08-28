@@ -22,12 +22,12 @@ fi
 # 2. Verificaciones de Calidad Obligatorias (TypeScript + Tests)
 echo ""
 echo "🧪 [1/4] Verificando compilación TypeScript..."
-~/.bun/bin/bun x tsc --noEmit
+(cd apps/dashboard && ~/.bun/bin/bun x tsc --noEmit)
 echo "✅ TypeScript: 0 errores."
 
 echo ""
 echo "🧪 [2/4] Ejecutando suite de tests de Hermes & Seguridad..."
-~/.bun/bin/bun test src/lib/pandoras/core/domains/hermes/runtime/policy/__tests__/snarai-transparency.test.ts src/lib/pandoras/core/domains/hermes/runtime/__tests__/snarai-transparency.test.ts
+(cd apps/dashboard && ~/.bun/bin/bun test src/lib/pandoras/core/domains/hermes/runtime/policy/__tests__/snarai-transparency.test.ts src/lib/pandoras/core/domains/hermes/runtime/__tests__/snarai-transparency.test.ts)
 echo "✅ Tests: 100% pasando."
 
 # 3. Integración a STAGING
