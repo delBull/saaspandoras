@@ -29,6 +29,8 @@ export type SecurityEventType =
   | 'PROVENANCE_RECEIPT_DEGRADED'
   | 'CREDENTIAL_ISSUED'
   | 'CREDENTIAL_REVOKED'
+  | 'A2A_MESSAGE_RECEIVED'
+  | 'A2A_ESCALATION_TRIGGERED'
   | 'TENANT_UNRESOLVED';
 
 export type SecuritySeverity = 'INFO' | 'WARN' | 'CRITICAL';
