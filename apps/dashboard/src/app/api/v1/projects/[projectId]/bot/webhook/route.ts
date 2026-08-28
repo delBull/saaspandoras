@@ -45,7 +45,8 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     
     // Fallback: Check if it's stored in tenantRuntimeConfig
     if (!botToken && projectRecord.tenantRuntimeConfig) {
-      botToken = (projectRecord.tenantRuntimeConfig as any).telegramBotToken;
+      const trc = projectRecord.tenantRuntimeConfig as any;
+      botToken = trc.secrets?.telegramBotToken || trc.telegramBotToken;
     }
     
     // Per-slug env override (TELEGRAM_<SLUG>_BOT_TOKEN) for token rotation
