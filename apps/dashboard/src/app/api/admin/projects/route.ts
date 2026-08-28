@@ -155,18 +155,20 @@ export async function GET(request: Request) {
 
       // Fallback: Try to get all columns using raw SQL
       try {
-        const fallbackProjects = await db.execute(sql`
+        const fallbackResult = await db.execute(sql`
           SELECT * FROM projects 
           WHERE business_category IS DISTINCT FROM 'infrastructure'
           AND is_deleted = false
           ORDER BY created_at DESC
         `);
-        console.log(`📊 Admin API: Fallback query found ${fallbackProjects.length} projects`);
+        const fallbackRows = Array.isArray(fallbackResult) ? fallbackResult : ((fallbackResult as any)?.rows || []);
+        console.log(`📊 Admin API: Fallback query found ${fallbackRows.length} projects`);
 
         // Convert snake_case to camelCase for consistency
-        const formattedProjects = fallbackProjects.map(project => ({
+        const formattedProjects = fallbackRows.map((project: any) => ({
           id: project.id,
           title: project.title,
+          slug: project.slug,
           description: project.description,
           website: project.website,
           whitepaperUrl: project.whitepaper_url,
@@ -199,7 +201,7 @@ export async function GET(request: Request) {
         } : 'No projects');
 
         const formattedProjectsWithBindings = await Promise.all(
-          formattedProjects.map(async (p) => ({
+          formattedProjects.map(async (p: any) => ({
             ...p,
             hermesBinding: await getHermesBinding(Number(p.id)),
           }))
