@@ -314,13 +314,14 @@ export class WhatsAppDispatcher {
     }
 
     try {
-      const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+      console.log(`🚀 [WhatsAppDispatcher] Dispatching reply to ${to} via PhoneID ${phoneId}...`);
+      const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           messaging_product: 'whatsapp',
           recipient_type: 'individual',
@@ -333,10 +334,13 @@ export class WhatsAppDispatcher {
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error(`[WhatsAppDispatcher] Direct Meta dispatch failed (${res.status}):`, errorText);
+        console.error(`❌ [WhatsAppDispatcher] Direct Meta dispatch failed (${res.status}):`, errorText);
+      } else {
+        const resultData = await res.json();
+        console.log(`✅ [WhatsAppDispatcher] Direct Meta dispatch SUCCESS for ${to}:`, resultData);
       }
     } catch (err) {
-      console.error('[WhatsAppDispatcher] sendReply error:', err);
+      console.error('❌ [WhatsAppDispatcher] sendReply error:', err);
     }
   }
 }
