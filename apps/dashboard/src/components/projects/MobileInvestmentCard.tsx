@@ -1,7 +1,7 @@
 'use client';
 
 import type { ProjectData } from "@/app/()/projects/types";
-import { getTargetAmount } from "@/lib/project-utils";
+import { getTargetAmount, sanitizeUrl } from "@/lib/project-utils";
 
 interface MobileInvestmentCardProps {
   project: ProjectData;
@@ -23,11 +23,11 @@ export default function MobileInvestmentCard({ project, targetAmount: targetAmou
     <div className="lg:hidden mb-8">
       <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
         {/* Access Card for Mobile */}
-        {project.w2eConfig?.accessCardImage && (
+        {(project.w2eConfig?.accessCardImage || project.image_url) && (
           <div className="mb-6 rounded-lg overflow-hidden border border-zinc-700/50 aspect-square relative shadow-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={project.w2eConfig.accessCardImage}
+              src={sanitizeUrl(project.w2eConfig?.accessCardImage || project.image_url)!}
               alt="Access Card"
               className="w-full h-full object-cover"
             />

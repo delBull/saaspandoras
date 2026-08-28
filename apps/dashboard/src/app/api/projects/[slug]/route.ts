@@ -166,12 +166,27 @@ export async function GET(
         // Use the Centralized Harmonizer for all technical fields
         const harmonizedProject = harmonizeProject(projectResult);
 
+        // Safely resolve any nested accessCardImage in w2eConfig
+        if (parsedW2eConfig && typeof parsedW2eConfig === 'object') {
+          if (parsedW2eConfig.accessCardImage) {
+            if (typeof parsedW2eConfig.accessCardImage === 'string' && parsedW2eConfig.accessCardImage.includes('snarai.aztecaz.xyz/snarai_cov.png')) {
+              parsedW2eConfig.accessCardImage = '/images/snarai_cov.png';
+            } else {
+              parsedW2eConfig.accessCardImage = resolveIpfs(parsedW2eConfig.accessCardImage);
+            }
+          }
+        }
+
         // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
         // but now enriched by the harmonizer's logic (chain_id, treasury_address, etc.)
         const mappedProject = {
           ...harmonizedProject,
+          w2eConfig: parsedW2eConfig,
+          w2e_config: parsedW2eConfig,
           logo_url: resolveIpfs(harmonizedProject.logoUrl || (projectResult as any).logo_url) || null,
+          logoUrl: resolveIpfs(harmonizedProject.logoUrl || (projectResult as any).logo_url) || null,
           cover_photo_url: resolveIpfs(harmonizedProject.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
+          coverPhotoUrl: resolveIpfs(harmonizedProject.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
           tagline: harmonizedProject.tagline || null,
           description: harmonizedProject.description || '',
           business_category: harmonizedProject.businessCategory || null,
@@ -216,7 +231,8 @@ export async function GET(
           verification_agreement: harmonizedProject.verificationAgreement ?? false,
           integration_details: harmonizedProject.integrationDetails || null,
           legal_entity_help: harmonizedProject.legalEntityHelp ?? false,
-          image_url: harmonizedProject.imageUrl || null,
+          image_url: resolveIpfs(harmonizedProject.imageUrl || (projectResult as any).image_url) || null,
+          imageUrl: resolveIpfs(harmonizedProject.imageUrl || (projectResult as any).image_url) || null,
           raised_amount: harmonizedProject.raisedAmount || "0.00",
           returns_paid: harmonizedProject.returnsPaid || "0.00",
           featured_button_text: harmonizedProject.featuredButtonText || null,

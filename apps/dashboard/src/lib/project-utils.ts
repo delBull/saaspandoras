@@ -217,6 +217,11 @@ export function sanitizeUrl(url: any): string | null {
       return resolveIpfsUrl(path);
     }
 
+    // Route legacy broken aztecaz domains for S'Narai cover to local dashboard asset
+    if (cleanUrl.includes('snarai.aztecaz.xyz/snarai_cov.png')) {
+      return '/images/snarai_cov.png';
+    }
+
     // Safety check: if the url is something like http://logo-gold.png (which happens if mistakenly entered),
     // we should treat it as a relative filename instead of a domain.
     try {
