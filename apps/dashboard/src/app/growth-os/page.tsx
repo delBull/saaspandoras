@@ -102,6 +102,14 @@ export default function PandorasPlatformLandingPage() {
             <Cpu className="w-4 h-4 text-amber-400" />
             <span>Ver Hermes Agent Infrastructure</span>
           </Link>
+
+          <Link
+            href="/media"
+            className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-sm font-light transition-all flex items-center justify-center gap-2"
+          >
+            <Radio className="w-4 h-4 text-purple-400" />
+            <span>Media Co</span>
+          </Link>
         </div>
 
         {/* PARADIGM SHIFT BANNER */}

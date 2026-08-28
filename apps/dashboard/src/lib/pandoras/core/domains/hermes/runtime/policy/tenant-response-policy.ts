@@ -229,7 +229,18 @@ export class TenantResponsePolicyGate {
       for (const rule of policy.forbiddenAssertions) {
         const reg = typeof rule.pattern === 'string' ? new RegExp(rule.pattern, 'i') : rule.pattern;
         if (reg.test(sanitized)) {
-          if (this.isPositiveAssertion(sanitized, reg)) {
+          const isPositive = this.isPositiveAssertion(sanitized, reg);
+          
+          // Logging para depuración de policy gate (solo en desarrollo)
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[PolicyGate] Tenant=${cleanTenant} Rule=${rule.code}`, {
+              isPositive,
+              matchedText: sanitized.match(reg)?.[0],
+              action: isPositive ? 'BLOCK' : (policy.forbiddenEchoTerms ? 'REWRITE' : 'ALLOW'),
+            });
+          }
+          
+          if (isPositive) {
             violations.push({ code: rule.code, message: rule.message });
           } else if (policy.forbiddenEchoTerms) {
             sanitized = this.applyEchoSanitizers(sanitized, policy.forbiddenEchoTerms);
@@ -287,7 +298,7 @@ export class TenantResponsePolicyGate {
   }
 
   /**
-   * Distinguishes positive assertions from explicit denials
+   * Distinguishes positive assertions from explicit denials, disclaimers, or transparent limitation explanations.
    */
   private static isPositiveAssertion(text: string, pattern: RegExp): boolean {
     const match = text.match(pattern);
@@ -295,13 +306,33 @@ export class TenantResponsePolicyGate {
 
     const lower = text.toLowerCase();
     const denialPatterns = [
-      /no\s+(?:es|opera|ofrece|incluye|utiliza|contempla|existe)/i,
-      /no\s+(?:manejamos|tenemos|manejamos)/i,
-      /sin\s+(?:garantía|fideicomiso|noches)/i,
+      // Negaciones directas de estado/operación (primera y tercera persona)
+      /no\s+(?:es|opera|ofrece|incluye|utiliza|contempla|existe|cuenta|manejamos|tenemos|disponemos|aplica|está|ha\s+obtenido|debe|posee|requiere|necesita|dispone|tiene|utilizan|manejan)/i,
+      // Negaciones de obligación/deber
+      /no\s+debe\s+(?:presentarse|considerarse|afirmarse|entenderse|interpretarse|tomarse|verse|asumirse)/i,
+      // Negaciones de posesión/disponibilidad (todas las personas)
+      /no\s+(?:contamos\s+con|disponemos\s+de|se\s+cuenta\s+con|está\s+certificado|posee|tiene\s+|ha\s+obtenido|ha\s+sido|disponen\s+de|cuentan\s+con)/i,
+      // Ausencia o carencia
+      /sin\s+(?:garantía|fideicomiso|noches|certificación|rendimiento|respaldo|aval|autorización|licencia|permiso)/i,
+      // Estados temporales pendientes
+      /todavía\s+no|aún\s+no|en\s+proceso(?:\s+de)?|en\s+trámite|pendiente\s+de|a\s+la\s+espera\s+de/i,
+      // Negaciones impersonales
+      /no\s+se\s+(?:ha\s+obtenido|garantiza|ofrece|maneja|presenta|cuenta|dispone|certifica|autoriza)/i,
+      // Aclaraciones de no-certificación
+      /no\s+(?:debe\s+presentarse\s+como|debe\s+interpretarse\s+como|constituye|representa|implica)\s+(?:certificación|garantía|aval|respaldo)/i,
+      // Declaraciones transparentes de limitación (nom/certificación en cualquier posición)
+      /no\s+(?:disponemos\s+de|contamos\s+con|tenemos\s+|existe\s+|se\s+cuenta\s+con|dispone\s+de|tiene\s+)\s+(?:nom|certificación|registro|autorización|licencia|fideicomiso)/i,
+      // Negaciones con "nunca" o "jamás"
+      /nunca\s+(?:hemos|se\s+ha|se\s+ofrece|se\s+garantiza)|jamás\s+(?:hemos|se\s+ha)/i,
+      // Frases de transparencia regulatoria
+      /no\s+debe\s+presentarse\s+como\s+(?:certificación|garantía|aval)\s+(?:existente|obtenida|vigente)|no\s+certificado|no\s+autorizado/i,
+      // Patrón genérico: "no" seguido de concepto prohibido en 10 palabras
+      /no\s+(?:\w+\s+){0,10}(?:nom|fideicomiso|certificación|garantía|rendimiento|liquidez)/i,
     ];
 
+    // Ampliamos el contexto para capturar negaciones que puedan estar más lejos del match
     const matchIndex = match.index || 0;
-    const snippet = lower.substring(Math.max(0, matchIndex - 40), Math.min(lower.length, matchIndex + 60));
+    const snippet = lower.substring(Math.max(0, matchIndex - 150), Math.min(lower.length, matchIndex + 200));
 
     return !denialPatterns.some(dp => dp.test(snippet));
   }

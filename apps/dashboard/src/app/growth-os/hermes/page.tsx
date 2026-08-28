@@ -29,7 +29,8 @@ import {
   Sliders,
   Workflow,
   KeyRound,
-  LayoutDashboard
+  LayoutDashboard,
+  LogIn
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,22 +70,16 @@ export default function HermesEnterpriseLandingPage() {
 
           <div className="hidden md:flex items-center gap-8 text-xs text-zinc-400 font-light">
             <a href="#ecosystem" className="hover:text-white transition-colors">Ecosistema</a>
+            <Link href="/growth-os/hermes/architecture" className="hover:text-purple-400 transition-colors">Arquitectura</Link>
             <a href="#packs" className="hover:text-white transition-colors">Domain Packs</a>
             <a href="#whitelabel" className="hover:text-white transition-colors">White-Label Platform</a>
             <a href="#web3-vault" className="hover:text-purple-400 transition-colors flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
               Web3 & IPFS Vault
             </a>
-            <Link href="/media" className="hover:text-white transition-colors">Media Co</Link>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link 
-              href="/portal/login"
-              className="text-xs text-zinc-400 hover:text-white font-light transition-colors"
-            >
-              Accede
-            </Link>
             <Button 
               onClick={() => handleOpenCTA('hermes_nav_cta')}
               className="border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all"
@@ -92,6 +87,13 @@ export default function HermesEnterpriseLandingPage() {
               <span className="hidden sm:inline">Solicitar Enterprise Assessment</span>
               <span className="sm:hidden">Assessment</span>
             </Button>
+            <Link 
+              href="/portal/login"
+              title="Acceder al Portal"
+              className="p-2.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white hover:border-purple-500/40 transition-all flex items-center justify-center"
+            >
+              <LogIn className="w-4 h-4 text-purple-400" />
+            </Link>
           </div>
         </div>
       </header>
@@ -475,6 +477,129 @@ export default function HermesEnterpriseLandingPage() {
             </div>
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 font-mono text-[11px] text-amber-300">
               Decentralized Frontend Ready
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TELEGRAM COMMAND CENTER & TMA MINI APP SECTION */}
+      <section id="telegram-mesh" className="py-24 px-6 max-w-7xl mx-auto border-t border-zinc-800/80">
+        <div className="text-center mb-16">
+          <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-xs px-3 py-1 font-mono mb-4">
+            Telegram Control Plane & TMA Mesh
+          </Badge>
+          <h2 className="text-3xl md:text-5xl font-light text-white mb-6">
+            Command Center en Telegram: <span className="bg-gradient-to-r from-purple-300 via-purple-400 to-purple-500 bg-clip-text text-transparent font-normal">Bot Operador & Mini App Nativa</span>
+          </h2>
+          <p className="text-base md:text-lg text-zinc-400 font-light max-w-3xl mx-auto leading-relaxed">
+            Supervisa, valida y conmute la inteligencia de tus organizaciones desde la palma de tu mano. El bot operador <strong>@pandorasHermes_bot</strong> y la Telegram Mini App (TMA) te permiten gobernar hechos, embudos y add-ons con validación criptográfica en 1 tap.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          {/* Card 1: Bot Operator Interface */}
+          <div className="border border-zinc-800 rounded-3xl bg-zinc-950/70 p-8 flex flex-col justify-between hover:border-purple-500/30 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-400">
+                  <Bot className="w-6 h-6" />
+                </div>
+                <Badge className="bg-purple-500/10 text-purple-400 font-mono text-[10px]">@pandorasHermes_bot</Badge>
+              </div>
+              <h3 className="text-xl font-medium text-white mb-3">Operator Bot Plane</h3>
+              <p className="text-xs text-zinc-400 font-light leading-relaxed mb-6">
+                Interactúa mediante comandos conversacionales protegidos por membresía. Diagnostica la salud de la infraestructura, consulta embudos y conmuta workspaces en segundos.
+              </p>
+              <div className="space-y-2 font-mono text-xs text-zinc-300 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800">
+                <div className="flex items-center justify-between"><span className="text-purple-400">/start</span><span className="text-[10px] text-zinc-500">Sesión & Workspaces</span></div>
+                <div className="flex items-center justify-between"><span className="text-purple-400">/status</span><span className="text-[10px] text-zinc-500">Diagnóstico Postgres & IPFS</span></div>
+                <div className="flex items-center justify-between"><span className="text-purple-400">/journeys</span><span className="text-[10px] text-zinc-500">Embudos & Etapas</span></div>
+                <div className="flex items-center justify-between"><span className="text-purple-400">/addons</span><span className="text-[10px] text-zinc-500">Estrategias Cognitivas</span></div>
+                <div className="flex items-center justify-between"><span className="text-purple-400">/switch</span><span className="text-[10px] text-zinc-500">Conmutar Organización</span></div>
+              </div>
+            </div>
+            <div className="pt-6">
+              <a 
+                href="https://t.me/pandorasHermes_bot" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full py-2.5 px-4 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-semibold flex items-center justify-center gap-2 transition"
+              >
+                <span>Abrir @pandorasHermes_bot</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Card 2: Interactive TMA Hub */}
+          <div className="border border-purple-500/30 rounded-3xl bg-gradient-to-b from-purple-500/10 via-zinc-950 to-zinc-950 p-8 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="p-3 rounded-2xl bg-purple-500/20 border border-purple-500/40 text-purple-300">
+                  <LayoutDashboard className="w-6 h-6" />
+                </div>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  ● TMA Live Ready
+                </span>
+              </div>
+              <h3 className="text-xl font-medium text-white mb-3">Telegram Mini App (TMA)</h3>
+              <p className="text-xs text-zinc-300 font-light leading-relaxed mb-6">
+                Una interfaz táctil de alta velocidad integrada directamente en el menú de Telegram. Gestiona la bóveda de conocimientos, aprueba hechos en 1 tap y supervisa incidentes de seguridad 24/7.
+              </p>
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs flex items-center gap-3">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-zinc-300"><strong>Bóveda KNOW:</strong> Aprobación y rechazo 1-Tap con feedback háptico.</span>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs flex items-center gap-3">
+                  <Workflow className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span className="text-zinc-300"><strong>Journeys en Vivo:</strong> Pausa y reactivación de embudos comerciales.</span>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs flex items-center gap-3">
+                  <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span className="text-zinc-300"><strong>Add-Ons:</strong> Activación instantánea de playbooks y estrategias.</span>
+                </div>
+              </div>
+            </div>
+            <div className="pt-6">
+              <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/80 font-mono text-[11px] text-purple-300 text-center">
+                HMAC-SHA256 InitData Tokenized Auth
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Sovereign Multi-Tenant Isolation */}
+          <div className="border border-zinc-800 rounded-3xl bg-zinc-950/70 p-8 flex flex-col justify-between hover:border-purple-500/30 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <Badge className="bg-indigo-500/10 text-indigo-400 font-mono text-[10px]">Zero-Leakage</Badge>
+              </div>
+              <h3 className="text-xl font-medium text-white mb-3">Multi-Tenant Switching</h3>
+              <p className="text-xs text-zinc-400 font-light leading-relaxed mb-6">
+                Administra múltiples desarrollos o clientes desde una única sesión de Telegram. El firewall formal previene fugas cruzadas de datos con validación criptográfica estricta.
+              </p>
+              <div className="space-y-2.5">
+                <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">S&apos;Narai Riviera Nayarit</span>
+                  <span className="text-[10px] font-mono text-emerald-400">OWNER</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">Pandoras Core</span>
+                  <span className="text-[10px] font-mono text-purple-400">ADMIN</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">Custom Enterprise Tenant</span>
+                  <span className="text-[10px] font-mono text-indigo-400">OPERATOR</span>
+                </div>
+              </div>
+            </div>
+            <div className="pt-6">
+              <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/80 font-mono text-[11px] text-zinc-400 text-center">
+                Strict Row-Level Isolation (RLS)
+              </div>
             </div>
           </div>
         </div>

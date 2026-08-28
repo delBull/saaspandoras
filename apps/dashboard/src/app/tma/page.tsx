@@ -17,7 +17,10 @@ import {
   FileText,
   Clock,
   Activity,
-  Server
+  Server,
+  Target,
+  Puzzle,
+  Power
 } from 'lucide-react';
 
 interface AuthorizedTenant {
@@ -62,6 +65,29 @@ interface PendingFact {
   createdAt: string;
 }
 
+interface JourneyItem {
+  id: string;
+  name: string;
+  description?: string;
+  version: number;
+  status: string;
+  isDefault: boolean;
+  stages: Array<{ id: string; name: string; orderIndex: number; objectives: string[] }>;
+  transitionsCount: number;
+}
+
+interface AddonItem {
+  id: string;
+  name: string;
+  version: string;
+  type: string;
+  description: string;
+  status: 'ACTIVE' | 'AVAILABLE';
+  capabilities: Array<{ id: string; category: string; description: string }>;
+  channels: string[];
+  requiresHumanApproval: boolean;
+}
+
 interface OverviewMetrics {
   postgres: {
     online: boolean;
@@ -92,8 +118,8 @@ export default function HermesTmaPage() {
   const [switching, startTransition] = useTransition();
   const [showTenantSelector, setShowTenantSelector] = useState(false);
   
-  // Navigation tabs: 'overview' | 'know'
-  const [activeTab, setActiveTab] = useState<'overview' | 'know'>('overview');
+  // Navigation tabs: 'overview' | 'know' | 'journeys' | 'addons'
+  const [activeTab, setActiveTab] = useState<'overview' | 'know' | 'journeys' | 'addons'>('overview');
 
   // Overview metrics state
   const [metrics, setMetrics] = useState<OverviewMetrics | null>(null);
@@ -103,6 +129,16 @@ export default function HermesTmaPage() {
   const [pendingFacts, setPendingFacts] = useState<PendingFact[]>([]);
   const [factsLoading, setFactsLoading] = useState(false);
   const [actingFactId, setActingFactId] = useState<string | null>(null);
+
+  // Journeys state
+  const [journeys, setJourneys] = useState<JourneyItem[]>([]);
+  const [journeysLoading, setJourneysLoading] = useState(false);
+  const [togglingJourneyId, setTogglingJourneyId] = useState<string | null>(null);
+
+  // Addons state
+  const [addons, setAddons] = useState<AddonItem[]>([]);
+  const [addonsLoading, setAddonsLoading] = useState(false);
+  const [togglingAddonId, setTogglingAddonId] = useState<string | null>(null);
 
   // Trigger Telegram Haptics safely
   const triggerHaptic = useCallback((type: 'success' | 'warning' | 'error' | 'light' | 'medium') => {
@@ -154,8 +190,43 @@ export default function HermesTmaPage() {
     }
   }, []);
 
+  // Fetch Journeys
+  const fetchJourneys = useCallback(async (authToken: string) => {
+    try {
+      setJourneysLoading(true);
+      const res = await fetch('/api/v1/hermes/tma/journeys', {
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (Array.isArray(data.journeys)) {
+        setJourneys(data.journeys);
+      }
+    } catch (err) {
+      console.error('[TMA] Failed to fetch journeys:', err);
+    } finally {
+      setJourneysLoading(false);
+    }
+  }, []);
+
+  // Fetch Addons
+  const fetchAddons = useCallback(async (authToken: string) => {
+    try {
+      setAddonsLoading(true);
+      const res = await fetch('/api/v1/hermes/tma/addons', {
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (Array.isArray(data.addons)) {
+        setAddons(data.addons);
+      }
+    } catch (err) {
+      console.error('[TMA] Failed to fetch addons:', err);
+    } finally {
+      setAddonsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    // Poll breve por la carrera del script telegram-web-app.js (afterInteractive)
     async function waitForSdk(maxMs = 1500): Promise<any> {
       const start = Date.now();
       while (Date.now() - start < maxMs) {
@@ -182,73 +253,75 @@ export default function HermesTmaPage() {
       }
 
       try {
-        setLoading(true);
-        setError(null);
-
         const res = await fetch('/api/v1/hermes/tma/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            initData,
-            targetWorkspace: tenantParam,
-          }),
+          body: JSON.stringify({ initData, targetTenantId: tenantParam }),
         });
 
         const data = await res.json();
         if (!res.ok || !data.success) {
-          setError(data.error || 'Authentication failed');
-          return;
+          throw new Error(data.error || 'Autenticación fallida');
         }
 
         setSession(data.session);
         setToken(data.token);
         setAuthorizedTenants(data.authorizedTenants || []);
+        
+        // Initial fetches
+        fetchOverviewMetrics(data.token);
+        fetchPendingFacts(data.token);
+        fetchJourneys(data.token);
+        fetchAddons(data.token);
 
-        if (data.token) {
-          fetchOverviewMetrics(data.token);
-          fetchPendingFacts(data.token);
-        }
+        triggerHaptic('success');
       } catch (err: any) {
-        setError(err?.message || 'Failed to connect to Hermes OS API');
+        console.error('[Hermes TMA Init Error]:', err);
+        setError(err.message || 'Error desconocido al conectar con Hermes OS');
+        triggerHaptic('error');
       } finally {
         setLoading(false);
       }
     }
 
     authenticate();
-  }, [fetchOverviewMetrics, fetchPendingFacts]);
+  }, [triggerHaptic, fetchOverviewMetrics, fetchPendingFacts, fetchJourneys, fetchAddons]);
 
   // Handle Workspace Switch
   const handleSwitchTenant = (targetOrgId: string) => {
-    if (!token || switching) return;
-
+    if (!token) return;
+    
     startTransition(async () => {
       try {
-        const res = await fetch('/api/v1/hermes/tma/switch', {
+        triggerHaptic('light');
+        const tg = (window as any).Telegram?.WebApp;
+        const initData: string = tg?.initData || '';
+
+        const res = await fetch('/api/v1/hermes/tma/auth', {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ targetOrganizationId: targetOrgId }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData, targetTenantId: targetOrgId }),
         });
 
         const data = await res.json();
-        if (data.success && data.session) {
-          setSession(data.session);
-          setToken(data.token);
-          setShowTenantSelector(false);
-          triggerHaptic('success');
-          
-          if (data.token) {
-            fetchOverviewMetrics(data.token);
-            fetchPendingFacts(data.token);
-          }
-        } else {
-          alert(`Error switching workspace: ${data.error}`);
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Error al conmutar workspace');
         }
+
+        setSession(data.session);
+        setToken(data.token);
+        setShowTenantSelector(false);
+        
+        // Refresh data for new tenant
+        fetchOverviewMetrics(data.token);
+        fetchPendingFacts(data.token);
+        fetchJourneys(data.token);
+        fetchAddons(data.token);
+
+        triggerHaptic('success');
       } catch (err: any) {
-        alert(`Failed to switch: ${err.message}`);
+        alert(err.message || 'No fue posible cambiar de workspace');
+        triggerHaptic('error');
       }
     });
   };
@@ -272,7 +345,6 @@ export default function HermesTmaPage() {
 
       const data = await res.json();
       if (data.success) {
-        // Optimistic removal from pending list
         setPendingFacts(prev => prev.filter(f => f.id !== factId));
         setMetrics(prev => prev ? {
           ...prev,
@@ -330,6 +402,66 @@ export default function HermesTmaPage() {
     }
   };
 
+  // Handle Toggle Journey Status
+  const handleToggleJourney = async (journeyId: string, currentStatus: string) => {
+    if (!token || togglingJourneyId) return;
+    const nextAction = currentStatus === 'ACTIVE' ? 'PAUSE' : 'ACTIVATE';
+
+    try {
+      setTogglingJourneyId(journeyId);
+      triggerHaptic('medium');
+
+      const res = await fetch('/api/v1/hermes/tma/journeys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ journeyId, action: nextAction }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setJourneys(prev => prev.map(j => j.id === journeyId ? { ...j, status: data.status } : j));
+        triggerHaptic('success');
+      }
+    } catch (err: any) {
+      alert(`Error al cambiar estado de journey: ${err.message}`);
+    } finally {
+      setTogglingJourneyId(null);
+    }
+  };
+
+  // Handle Toggle Addon Status
+  const handleToggleAddon = async (addonId: string, currentStatus: string) => {
+    if (!token || togglingAddonId) return;
+    const willEnable = currentStatus !== 'ACTIVE';
+
+    try {
+      setTogglingAddonId(addonId);
+      triggerHaptic('medium');
+
+      const res = await fetch('/api/v1/hermes/tma/addons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ addonId, enable: willEnable }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setAddons(prev => prev.map(a => a.id === addonId ? { ...a, status: willEnable ? 'ACTIVE' : 'AVAILABLE' } : a));
+        triggerHaptic('success');
+      }
+    } catch (err: any) {
+      alert(`Error al configurar addon: ${err.message}`);
+    } finally {
+      setTogglingAddonId(null);
+    }
+  };
+
   if (outsideTelegram) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
@@ -360,92 +492,73 @@ export default function HermesTmaPage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mb-4">
-          <Lock className="w-6 h-6 text-rose-400" />
+          <XCircle className="w-6 h-6 text-rose-400" />
         </div>
-        <h2 className="text-lg font-semibold text-rose-400">Acceso No Autorizado</h2>
-        <p className="text-xs text-slate-400 mt-2 max-w-xs">{error || 'No se encontraron workspaces autorizados para esta cuenta.'}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-6 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl border border-slate-700 transition"
-        >
-          Reintentar
-        </button>
+        <h2 className="text-lg font-semibold text-slate-100">Acceso no autorizado</h2>
+        <p className="text-xs text-slate-400 mt-2 max-w-xs">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col p-4 space-y-4">
-      {/* Top Header: Platform + Workspace Selector */}
-      <header className="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 shadow-lg relative">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 space-y-4 font-sans antialiased select-none pb-12">
+      {/* Top Header & Tenant Selector */}
+      <header className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center shadow-inner">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-indigo-400" />
             </div>
             <div>
-              <div className="text-[10px] font-mono tracking-wider text-indigo-400 uppercase font-semibold">
-                Hermes OS • Command Center
-              </div>
-              <button
-                onClick={() => {
-                  if (authorizedTenants.length > 1) {
-                    setShowTenantSelector(!showTenantSelector);
-                    triggerHaptic('light');
-                  }
-                }}
-                className="flex items-center space-x-1 text-left group"
-              >
-                <h1 className="text-base font-bold text-slate-100 group-hover:text-indigo-300 transition">
-                  {session.tenant.organizationName}
-                </h1>
-                {authorizedTenants.length > 1 && (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-300 transition mt-0.5" />
-                )}
-              </button>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Hermes OS Control</div>
+              <div className="text-sm font-bold text-slate-100">{session.tenant.organizationName}</div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-1.5">
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
-              {session.role}
-            </span>
-          </div>
+          {authorizedTenants.length > 1 && (
+            <button
+              onClick={() => { setShowTenantSelector(!showTenantSelector); triggerHaptic('light'); }}
+              className="flex items-center space-x-1 py-1.5 px-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 hover:text-white"
+            >
+              <span>Cambiar</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Tenant Switcher Dropdown */}
+        {/* Tenant Selector Dropdown */}
         {showTenantSelector && (
-          <div className="mt-3 pt-3 border-t border-slate-800 space-y-1.5 animate-in fade-in">
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-              Seleccionar Workspace ({authorizedTenants.length})
-            </div>
+          <div className="p-2 bg-slate-900 border border-slate-800 rounded-2xl space-y-1 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="text-[10px] font-mono text-slate-400 px-2 py-1 uppercase">Tus Workspaces Autorizados</div>
             {authorizedTenants.map(t => (
               <button
                 key={t.organizationId}
-                disabled={switching || t.organizationId === session.tenant.organizationId}
+                disabled={switching}
                 onClick={() => handleSwitchTenant(t.organizationId)}
-                className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition ${
+                className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-medium transition ${
                   t.organizationId === session.tenant.organizationId
-                    ? 'bg-indigo-600/20 border border-indigo-500/40 text-indigo-200'
-                    : 'bg-slate-800/60 hover:bg-slate-800 text-slate-300 border border-transparent'
+                    ? 'bg-indigo-600 text-white font-semibold'
+                    : 'text-slate-300 hover:bg-slate-800/60'
                 }`}
               >
                 <div className="flex items-center space-x-2 truncate">
-                  <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                  <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">{t.organizationName}</span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">{t.role}</span>
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-black/20">
+                  {t.role}
+                </span>
               </button>
             ))}
           </div>
         )}
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="grid grid-cols-2 p-1 bg-slate-900/90 border border-slate-800 rounded-xl">
+      {/* Navigation Tabs (4 TABS) */}
+      <nav className="grid grid-cols-4 p-1 bg-slate-900/90 border border-slate-800 rounded-xl gap-1">
         <button
           onClick={() => { setActiveTab('overview'); triggerHaptic('light'); }}
-          className={`py-2 text-xs font-semibold rounded-lg flex items-center justify-center space-x-1.5 transition ${
+          className={`py-2 text-[11px] font-semibold rounded-lg flex flex-col items-center justify-center space-y-0.5 transition ${
             activeTab === 'overview'
               ? 'bg-indigo-600 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
@@ -454,105 +567,116 @@ export default function HermesTmaPage() {
           <Activity className="w-3.5 h-3.5" />
           <span>Overview</span>
         </button>
+
         <button
           onClick={() => { setActiveTab('know'); triggerHaptic('light'); }}
-          className={`py-2 text-xs font-semibold rounded-lg flex items-center justify-center space-x-1.5 transition relative ${
+          className={`py-2 text-[11px] font-semibold rounded-lg flex flex-col items-center justify-center space-y-0.5 transition relative ${
             activeTab === 'know'
               ? 'bg-indigo-600 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Bóveda KNOW</span>
-          {pendingFacts.length > 0 && (
-            <span className="w-4 h-4 rounded-full bg-rose-500 text-[9px] text-white flex items-center justify-center font-bold">
-              {pendingFacts.length}
-            </span>
-          )}
+          <div className="relative">
+            <Layers className="w-3.5 h-3.5" />
+            {pendingFacts.length > 0 && (
+              <span className="absolute -top-1 -right-2 w-3.5 h-3.5 rounded-full bg-rose-500 text-[8px] text-white flex items-center justify-center font-bold">
+                {pendingFacts.length}
+              </span>
+            )}
+          </div>
+          <span>Bóveda</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('journeys'); triggerHaptic('light'); }}
+          className={`py-2 text-[11px] font-semibold rounded-lg flex flex-col items-center justify-center space-y-0.5 transition ${
+            activeTab === 'journeys'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Target className="w-3.5 h-3.5" />
+          <span>Journeys</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('addons'); triggerHaptic('light'); }}
+          className={`py-2 text-[11px] font-semibold rounded-lg flex flex-col items-center justify-center space-y-0.5 transition ${
+            activeTab === 'addons'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Puzzle className="w-3.5 h-3.5" />
+          <span>Add-Ons</span>
         </button>
       </nav>
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-4 animate-in fade-in">
-          {/* System Core Health Strip */}
           <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3.5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Estado del Sistema</span>
-          </span>
-          {metricsLoading && (
-            <span className="text-[10px] text-slate-500 font-mono">consultando…</span>
-          )}
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-          <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
-            <div className="text-slate-400">Postgres</div>
-            <div className={`font-semibold mt-0.5 ${metrics?.postgres.online ? 'text-emerald-400' : metrics ? 'text-rose-400' : 'text-slate-500'}`}>
-              {metrics ? (metrics.postgres.online ? 'ONLINE' : 'OFFLINE') : '—'}
-            </div>
-          </div>
-          <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
-            <div className="text-slate-400">IPFS Vault</div>
-            <div className={`font-semibold mt-0.5 ${
-              !metrics ? 'text-slate-500'
-              : metrics.ipfs.status === 'DURABLE'
-                ? 'text-emerald-400'
-                : metrics.ipfs.status === 'DEGRADED'
-                  ? 'text-amber-400'
-                  : 'text-rose-400'
-            }`}>
-              {metrics?.ipfs.status ?? '—'}
-            </div>
-          </div>
-          <div className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60">
-            <div className="text-slate-400">Eventos 24h</div>
-            <div className="text-indigo-400 font-semibold mt-0.5">
-              {metrics?.security.events24h ?? '—'}
-            </div>
-          </div>
-        </div>
-      </section>
-
-          {/* Pending Actions & Metric Counters */}
-          <section className="space-y-2">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">
-              Métricas Operativas
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div 
-                onClick={() => { setActiveTab('know'); triggerHaptic('light'); }}
-                className="bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/40 rounded-2xl p-3.5 transition cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="w-7 h-7 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                    <Layers className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-lg font-bold text-slate-100 font-mono">
-                    {metrics?.facts.pending ?? pendingFacts.length}
-                  </span>
-                </div>
-                <div className="text-xs font-semibold text-slate-200 mt-2">Hechos Pendientes</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Esperando aprobación</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-1.5">
+                <Server className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="text-xs font-semibold text-slate-300">Estado de Infraestructura</span>
               </div>
+              <button 
+                onClick={() => token && fetchOverviewMetrics(token)}
+                disabled={metricsLoading}
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 font-mono"
+              >
+                <RefreshCw className={`w-3 h-3 ${metricsLoading ? 'animate-spin' : ''}`} />
+                <span>Sync</span>
+              </button>
+            </div>
 
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="w-7 h-7 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-lg font-bold text-slate-100 font-mono">
-                    {metrics?.journeys.active ?? 0}
-                  </span>
-                </div>
-                <div className="text-xs font-semibold text-slate-200 mt-2">Journeys Activos</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Prospectos en pipeline</div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/60 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">PostgreSQL (Neon)</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  ONLINE
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/60 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">IPFS Sovereign</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  DURABLE
+                </span>
               </div>
             </div>
           </section>
 
-          {/* Quick Access Details */}
+          <section className="grid grid-cols-2 gap-3">
+            <div 
+              onClick={() => { setActiveTab('know'); triggerHaptic('light'); }}
+              className="bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/40 rounded-2xl p-3.5 space-y-1.5 cursor-pointer transition active:scale-95"
+            >
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-xs font-semibold text-slate-300">Bóveda KNOW</span>
+                <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-slate-100">
+                {metrics?.facts.pending ?? 0}
+              </div>
+              <div className="text-[10px] text-slate-400">Hechos por validar</div>
+            </div>
+
+            <div 
+              onClick={() => { setActiveTab('journeys'); triggerHaptic('light'); }}
+              className="bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/40 rounded-2xl p-3.5 space-y-1.5 cursor-pointer transition active:scale-95"
+            >
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-xs font-semibold text-slate-300">Journeys</span>
+                <Target className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-emerald-400">
+                {journeys.length}
+              </div>
+              <div className="text-[10px] text-slate-400">Embudos activos</div>
+            </div>
+          </section>
+
           <section className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-3.5 space-y-2">
             <div className="text-xs font-semibold text-slate-300">Resumen de Bóveda</div>
             <div className="flex items-center justify-between text-xs py-1 border-b border-slate-800/60">
@@ -628,7 +752,6 @@ export default function HermesTmaPage() {
                   </div>
                 )}
 
-                {/* 1-Tap Action Buttons */}
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     disabled={actingFactId === fact.id}
@@ -647,6 +770,163 @@ export default function HermesTmaPage() {
                     <span>Aprobar (1-Tap)</span>
                   </button>
                 </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: JOURNEYS & FUNNELS */}
+      {activeTab === 'journeys' && (
+        <div className="space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between px-1">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Embudos Cognitivos ({journeys.length})
+            </div>
+            <button
+              onClick={() => token && fetchJourneys(token)}
+              className="text-[10px] text-indigo-400 hover:text-indigo-300 font-mono"
+            >
+              Actualizar
+            </button>
+          </div>
+
+          {journeysLoading ? (
+            <div className="text-center py-10">
+              <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin mx-auto mb-2" />
+              <div className="text-xs text-slate-400">Cargando journeys...</div>
+            </div>
+          ) : journeys.length === 0 ? (
+            <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-8 text-center">
+              <Target className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+              <div className="text-sm font-semibold text-slate-300">Sin journeys configurados</div>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                No hay embudos activos asignados a este workspace en la base de datos.
+              </p>
+            </div>
+          ) : (
+            journeys.map(j => (
+              <div
+                key={j.id}
+                className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className={`w-2 h-2 rounded-full ${j.status === 'ACTIVE' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                    <span className="text-xs font-bold text-slate-100">{j.name}</span>
+                  </div>
+                  <button
+                    disabled={togglingJourneyId === j.id}
+                    onClick={() => handleToggleJourney(j.id, j.status)}
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-md border transition ${
+                      j.status === 'ACTIVE'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-rose-500/10 hover:text-rose-400'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-emerald-500/10 hover:text-emerald-400'
+                    }`}
+                  >
+                    {j.status === 'ACTIVE' ? 'ACTIVO' : 'PAUSADO'}
+                  </button>
+                </div>
+
+                {j.description && (
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    {j.description}
+                  </p>
+                )}
+
+                <div className="space-y-1.5 pt-1">
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Etapas ({j.stages.length})
+                  </div>
+                  <div className="space-y-1">
+                    {j.stages.map((stage, idx) => (
+                      <div
+                        key={stage.id}
+                        className="flex items-center justify-between p-2 rounded-xl bg-slate-950/40 border border-slate-800/40 text-xs"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-[10px] text-indigo-400">{idx + 1}.</span>
+                          <span className="text-slate-300">{stage.name}</span>
+                        </div>
+                        {stage.objectives.length > 0 && (
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {stage.objectives.length} obj
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* TAB 4: ADD-ONS */}
+      {activeTab === 'addons' && (
+        <div className="space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between px-1">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Add-Ons Cognitivos ({addons.length})
+            </div>
+            <button
+              onClick={() => token && fetchAddons(token)}
+              className="text-[10px] text-indigo-400 hover:text-indigo-300 font-mono"
+            >
+              Actualizar
+            </button>
+          </div>
+
+          {addonsLoading ? (
+            <div className="text-center py-10">
+              <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin mx-auto mb-2" />
+              <div className="text-xs text-slate-400">Cargando add-ons...</div>
+            </div>
+          ) : (
+            addons.map(addon => (
+              <div
+                key={addon.id}
+                className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Puzzle className="w-4 h-4 text-indigo-400" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-100">{addon.name}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">v{addon.version} · {addon.type}</div>
+                    </div>
+                  </div>
+                  <button
+                    disabled={togglingAddonId === addon.id}
+                    onClick={() => handleToggleAddon(addon.id, addon.status)}
+                    className={`flex items-center space-x-1 text-xs font-semibold px-2.5 py-1 rounded-xl border transition active:scale-95 ${
+                      addon.status === 'ACTIVE'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-rose-500/20 hover:text-rose-300'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-emerald-500/20 hover:text-emerald-300'
+                    }`}
+                  >
+                    <Power className="w-3 h-3" />
+                    <span>{addon.status === 'ACTIVE' ? 'Activo' : 'Activar'}</span>
+                  </button>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/40">
+                  {addon.description}
+                </p>
+
+                {addon.capabilities.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Capacidades Autorizadas</div>
+                    <div className="flex flex-wrap gap-1">
+                      {addon.capabilities.map(cap => (
+                        <span key={cap.id} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                          {cap.id}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}

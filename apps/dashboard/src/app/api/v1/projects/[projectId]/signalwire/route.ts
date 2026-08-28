@@ -251,17 +251,27 @@ export async function POST(
         return NextResponse.json({ success: true, otpReceived: true, body: bodyText });
       }
 
-      const botResponseObj = await generateBotResponse({
-        projectName: projectRecord.title,
-        userMessage: bodyText,
-        projectContext: {
-          title: projectRecord.title,
-          slug: projectRecord.slug,
-          industry: (projectRecord as any).tenantRuntimeConfig?.industry || 'real_estate'
+      const { getDefaultRuntime } = await import('@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime');
+      const runtime = getDefaultRuntime();
+      const runtimeResponse = await runtime.respond({
+        organizationId: projectRecord.slug,
+        conversationId: `conv_sms_${projectRecord.slug}_${fromNumber.replace(/\+/g, '')}`,
+        message: {
+          id: `sms_${Date.now()}`,
+          role: 'USER',
+          content: bodyText,
+          createdAt: new Date(),
         },
-        chatId: `sms-${fromNumber.replace(/\+/g, '')}`
+        controlPlaneContext: {
+          actorId: `sms_actor_${fromNumber.replace(/\+/g, '')}`,
+          organizationId: projectRecord.slug,
+          role: 'ADMIN',
+          permissions: ['view_overview', 'view_governance'],
+          sessionId: `sms_sess_${projectRecord.slug}_${Date.now()}`,
+        }
       });
-      const botResponseText = botResponseObj.replyText || '';
+
+      const botResponseText = runtimeResponse.content || 'Gracias por tu mensaje. Estamos procesando tu solicitud.';
 
       // Reply back via SignalWire REST SMS
       await SignalWireService.sendSMS({

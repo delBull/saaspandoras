@@ -22,7 +22,38 @@ export async function GET(request: Request) {
     const organization = await OrganizationSDK.resolve(session.projectId, session.product as any);
     const intelligenceScores = await CognitiveContextBuilder.getIntelligenceScores(session.projectId.toString());
 
-    return NextResponse.json({ organization, intelligenceScores });
+    // Check if tenant has active facts in hermes_knowledge (e.g. newly provisioned tenant without injected info)
+    let activeFactsCount = 0;
+    try {
+      const { db } = await import('@/db');
+      const { hermesKnowledge } = await import('@/db/schema');
+      const { eq, or } = await import('drizzle-orm');
+      
+      const orgId = organization?.organizationId || session.projectId.toString();
+      const orgSlug = organization?.slug || '';
+      
+      const facts = await db
+        .select()
+        .from(hermesKnowledge)
+        .where(
+          or(
+            eq(hermesKnowledge.organizationId, orgId),
+            eq(hermesKnowledge.organizationId, orgSlug)
+          )
+        );
+      activeFactsCount = facts.length;
+    } catch {
+      // Fallback
+    }
+
+    const needsOnboarding = activeFactsCount === 0;
+
+    return NextResponse.json({ 
+      organization, 
+      intelligenceScores,
+      activeFactsCount,
+      needsOnboarding 
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Failed to fetch session' }, { status: 500 });
   }

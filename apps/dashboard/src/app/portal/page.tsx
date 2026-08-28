@@ -22,7 +22,9 @@ export default function PortalRedirect() {
       })
       .then(data => {
         const org = data.organization ?? data.org;
-        if (org && org.slug) {
+        if (data.needsOnboarding && org && org.slug) {
+          router.push(`/onboarding/${org.slug}`);
+        } else if (org && org.slug) {
           router.push(`/portal/${org.slug}`);
         } else if (org && org.projectId) {
           router.push(`/portal/${org.projectId}`);

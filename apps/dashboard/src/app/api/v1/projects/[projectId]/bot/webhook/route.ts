@@ -65,27 +65,44 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     body.projectRecord = projectRecord;
     body.metadata = metadata;
 
-    // 3. Parse request into ExecutionContext via Channel Adapter
-    const context = TelegramAdapter.parse(projectId, body);
-    
-    // Ignore updates that have no content or we don't care about
-    if (!context.payload.userMessage && !context.payload.raw?.callback_query) {
+    const userMessage = body?.message?.text?.trim() || '';
+    const chatId = String(body?.message?.chat?.id || '');
+    const messageId = String(body?.message?.message_id || `tg_${Date.now()}`);
+
+    // Ignore empty updates
+    if (!userMessage && !body?.callback_query) {
       return NextResponse.json({ success: true, note: 'Ignored non-message update' });
     }
 
-    // 3. Delegate to the Kernel (Unified Execution API)
-    const engine = new HermesExecutionEngine();
-    const result = await engine.execute(context);
+    // 3. Delegate to the Governed HermesRuntime (Runtime Parity & Tenant Boundary)
+    const { getDefaultRuntime } = await import('@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime');
+    const runtime = getDefaultRuntime();
+    const runtimeResponse = await runtime.respond({
+      organizationId: projectSlug,
+      conversationId: `conv_tg_${projectSlug}_${chatId}`,
+      message: {
+        id: messageId,
+        role: 'USER',
+        content: userMessage || 'start',
+        createdAt: new Date(),
+      },
+      controlPlaneContext: {
+        actorId: `tg_actor_${chatId}`,
+        organizationId: projectSlug,
+        role: 'ADMIN',
+        permissions: ['view_overview', 'view_governance'],
+        sessionId: `tg_sess_${projectSlug}_${chatId}`,
+      }
+    });
 
-    // 4. Render the ExecutionResult back to the Channel
-    const reply = TelegramAdapter.render(result);
+    const reply = runtimeResponse.content || "Gracias por tu mensaje. Estamos procesando tu consulta con base en nuestra información oficial.";
 
-    // 6. Send back to Telegram
+    // 4. Send back to Telegram
     if (botToken && reply) {
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: context.payload.chatId, text: reply })
+        body: JSON.stringify({ chat_id: chatId, text: reply })
       }).catch(e => console.error('[Webhook Telegram Send Error]:', e));
     }
 

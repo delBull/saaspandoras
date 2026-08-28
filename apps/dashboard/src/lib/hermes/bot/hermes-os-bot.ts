@@ -4,6 +4,10 @@ import {
 } from '@/lib/hermes/auth';
 import { sendTelegramMessage, setTelegramChatMenuButton } from '@/lib/hermes/telegram-runtime/router';
 import { collectSystemStatus, buildStatusMessage } from '@/lib/hermes/bot/system-status';
+import { db } from '@/db';
+import { hermesJourneys, hermesJourneyStages, hermesAddonInstallations } from '@/db/schema';
+import { eq, or, asc } from 'drizzle-orm';
+import { CANONICAL_ADDONS, ensureCanonicalAddOnsRegistered } from '@/lib/pandoras/core/domains/hermes/addons/catalog';
 
 export interface TelegramUpdate {
   update_id: number;
@@ -126,6 +130,14 @@ export class HermesOSBotAdapter {
       return this.executeSwitchCommand(chatId, telegramUserId);
     }
 
+    if (command === '/journeys') {
+      return this.executeJourneysCommand(chatId, telegramUserId);
+    }
+
+    if (command === '/addons') {
+      return this.executeAddonsCommand(chatId, telegramUserId);
+    }
+
     // Default Fallback
     return this.executeHelpCommand(chatId);
   }
@@ -136,6 +148,8 @@ export class HermesOSBotAdapter {
       `• <code>/start</code> — Menú principal e inicio de sesión en tu Workspace.\n` +
       `• <code>/portal</code> o <code>/tma</code> — Abrir la Mini App de Hermes OS.\n` +
       `• <code>/status</code> — Diagnóstico de salud (Postgres, IPFS y Bóvedas).\n` +
+      `• <code>/journeys</code> — Embudos de conversión, etapas e hitos en vivo.\n` +
+      `• <code>/addons</code> — Estrategias y Add-Ons cognitivos activos.\n` +
       `• <code>/switch</code> — Conmutar entre organizaciones/workspaces autorizados.\n` +
       `• <code>/help</code> — Guía de comandos y operación.\n\n` +
       `💡 <i>Para vincular tu Telegram a un Workspace, ingresa al Dashboard Web con tu wallet autorizada o agrega tu Telegram ID.</i>`;
@@ -306,6 +320,14 @@ export class HermesOSBotAdapter {
       return this.executeSwitchCommand(chatId, telegramUserId);
     }
 
+    if (data === 'cmd:journeys') {
+      return this.executeJourneysCommand(chatId, telegramUserId);
+    }
+
+    if (data === 'cmd:addons') {
+      return this.executeAddonsCommand(chatId, telegramUserId);
+    }
+
     if (data.startsWith('switch:')) {
       const targetOrgId = data.replace('switch:', '');
       try {
@@ -328,7 +350,11 @@ export class HermesOSBotAdapter {
               { text: '🚀 Abrir Command Center (TMA)', web_app: { url: tmaUrl } }
             ],
             [
-              { text: '📊 Estado del Sistema', callback_data: 'cmd:status' },
+              { text: '📊 Estado', callback_data: 'cmd:status' },
+              { text: '🎯 Journeys', callback_data: 'cmd:journeys' },
+              { text: '🧩 Add-Ons', callback_data: 'cmd:addons' }
+            ],
+            [
               { text: '🔄 Cambiar Workspace', callback_data: 'cmd:switch' }
             ]
           ]
@@ -346,5 +372,122 @@ export class HermesOSBotAdapter {
     }
 
     return { handled: false };
+  }
+
+  private async executeJourneysCommand(chatId: number, telegramUserId: string): Promise<HermesBotExecutionResult> {
+    const tenants = await this.membershipService.getAuthorizedTenants(telegramUserId);
+    if (tenants.length === 0) {
+      await sendTelegramMessage(this.botToken, chatId, `⚠️ No tienes workspaces autorizados en Hermes OS.`);
+      return { handled: true, action: 'JOURNEYS_UNAUTHORIZED' };
+    }
+
+    const activeTenant = tenants[0]!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+
+    try {
+      const journeys = await db
+        .select()
+        .from(hermesJourneys)
+        .where(
+          or(
+            eq(hermesJourneys.organizationId, activeTenant.organizationId),
+            eq(hermesJourneys.organizationId, cleanTenant)
+          )
+        )
+        .orderBy(asc(hermesJourneys.createdAt));
+
+      let msg = `🎯 <b>Journeys & Funnels — ${escapeHtml(activeTenant.organizationName)}</b>\n\n`;
+
+      if (journeys.length === 0) {
+        msg += `<i>No hay journeys configurados para este workspace.</i>\n`;
+      } else {
+        for (const j of journeys) {
+          const stages = await db
+            .select()
+            .from(hermesJourneyStages)
+            .where(eq(hermesJourneyStages.journeyId, j.id))
+            .orderBy(asc(hermesJourneyStages.orderIndex));
+
+          const statusEmoji = j.status === 'ACTIVE' ? '🟢' : '⏸️';
+          msg += `${statusEmoji} <b>${escapeHtml(j.name)}</b> (v${j.version || 1})\n`;
+          if (j.description) msg += `   <i>${escapeHtml(j.description)}</i>\n`;
+          msg += `   <b>Etapas (${stages.length}):</b>\n`;
+          for (const s of stages) {
+            msg += `   • <code>${s.orderIndex + 1}.</code> ${escapeHtml(s.name)}\n`;
+          }
+          msg += `\n`;
+        }
+      }
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '📱 Administrar Journeys en TMA', web_app: { url: tmaUrl } }],
+          [{ text: '🔄 Actualizar', callback_data: 'cmd:journeys' }]
+        ]
+      };
+
+      await sendTelegramMessage(this.botToken, chatId, msg, keyboard);
+      return { handled: true, action: 'JOURNEYS_SUCCESS' };
+    } catch (err: any) {
+      console.error('[HermesOSBotAdapter] Journeys command error:', err);
+      await sendTelegramMessage(this.botToken, chatId, `❌ Error al consultar journeys.`);
+      return { handled: true, action: 'JOURNEYS_ERROR' };
+    }
+  }
+
+  private async executeAddonsCommand(chatId: number, telegramUserId: string): Promise<HermesBotExecutionResult> {
+    const tenants = await this.membershipService.getAuthorizedTenants(telegramUserId);
+    if (tenants.length === 0) {
+      await sendTelegramMessage(this.botToken, chatId, `⚠️ No tienes workspaces autorizados en Hermes OS.`);
+      return { handled: true, action: 'ADDONS_UNAUTHORIZED' };
+    }
+
+    const activeTenant = tenants[0]!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+
+    try {
+      await ensureCanonicalAddOnsRegistered();
+
+      const installations = await db
+        .select()
+        .from(hermesAddonInstallations)
+        .where(
+          or(
+            eq(hermesAddonInstallations.organizationId, activeTenant.organizationId),
+            eq(hermesAddonInstallations.organizationId, cleanTenant)
+          )
+        );
+
+      const installedSet = new Set(
+        installations.filter(i => i.status === 'ACTIVE').map(i => i.addonId)
+      );
+
+      let msg = `🧩 <b>Add-Ons & Estrategias Cognitivas — ${escapeHtml(activeTenant.organizationName)}</b>\n\n`;
+
+      for (const addon of CANONICAL_ADDONS) {
+        const isActive = installedSet.has(addon.id);
+        const icon = isActive ? '✅' : '⚪';
+        const statusText = isActive ? 'ACTIVO' : 'DISPONIBLE';
+        msg += `${icon} <b>${escapeHtml(addon.name)}</b> [<code>${statusText}</code>]\n`;
+        msg += `   <i>${escapeHtml(addon.description)}</i>\n`;
+        msg += `   Tipo: <code>${addon.type}</code> · v${addon.version}\n\n`;
+      }
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '⚡ Activar / Desactivar en TMA', web_app: { url: tmaUrl } }],
+          [{ text: '🔄 Actualizar', callback_data: 'cmd:addons' }]
+        ]
+      };
+
+      await sendTelegramMessage(this.botToken, chatId, msg, keyboard);
+      return { handled: true, action: 'ADDONS_SUCCESS' };
+    } catch (err: any) {
+      console.error('[HermesOSBotAdapter] Addons command error:', err);
+      await sendTelegramMessage(this.botToken, chatId, `❌ Error al consultar addons.`);
+      return { handled: true, action: 'ADDONS_ERROR' };
+    }
   }
 }
