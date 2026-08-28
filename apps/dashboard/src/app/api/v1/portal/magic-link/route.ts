@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { projects, installedProducts, users, accessRequests, marketingLeads } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, or, sql } from 'drizzle-orm';
 import { generatePortalToken } from '@/lib/platform/portal-auth';
 import { sendEmail } from '@/lib/email/client';
 
@@ -53,40 +53,72 @@ export async function POST(req: NextRequest) {
     const [user] = await db.select().from(users).where(eq(users.email, cleanEmail)).limit(1);
     const [approvedRequest] = await db.select().from(accessRequests).where(eq(accessRequests.email, cleanEmail)).limit(1);
 
+    // 2. Resolve the tenant's project strictly without cross-tenant leakage.
+    // Priority 1: installedProducts where operator email matches
+    let project: typeof projects.$inferSelect | undefined;
+    let installedId: string | undefined;
+
+    const allInstalled = await db.select().from(installedProducts);
+    const userProduct = allInstalled.find((p) => {
+      const cfg = (p.config as any) || {};
+      const manifest = (p.runtimeManifest as any) || {};
+      return (
+        (cfg.email && String(cfg.email).trim().toLowerCase() === cleanEmail) ||
+        (manifest.context?.adminEmail && String(manifest.context.adminEmail).trim().toLowerCase() === cleanEmail)
+      );
+    });
+
+    if (userProduct?.projectId) {
+      [project] = await db.select().from(projects).where(eq(projects.id, userProduct.projectId)).limit(1);
+      if (project) installedId = userProduct.id;
+    }
+
+    // Priority 2: projects.applicantEmail
+    if (!project) {
+      [project] = await db.select().from(projects).where(eq(projects.applicantEmail, cleanEmail)).limit(1);
+    }
+
+    // Priority 3: accessRequests
+    if (!project && approvedRequest) {
+      const meta = (approvedRequest.metadata ?? {}) as { projectId?: number; projectSlug?: string };
+      if (meta.projectId) {
+        [project] = await db.select().from(projects).where(eq(projects.id, Number(meta.projectId))).limit(1);
+      } else if (meta.projectSlug) {
+        [project] = await db.select().from(projects).where(or(
+          eq(projects.slug, String(meta.projectSlug)),
+          eq(sql`lower(${projects.slug})`, String(meta.projectSlug).toLowerCase())
+        )).limit(1);
+      }
+    }
+
+    // Priority 4: B2B Growth OS leads (never general B2C leads)
+    if (!project) {
+      const leads = await db
+        .select({ projectId: marketingLeads.projectId, metadata: marketingLeads.metadata })
+        .from(marketingLeads)
+        .where(eq(marketingLeads.email, cleanEmail))
+        .orderBy(desc(marketingLeads.createdAt));
+      
+      const b2bLead = leads.find((l) => {
+        const m = (l.metadata as any) || {};
+        return m.type === 'growth_os_signup' || m.tags?.includes('B2B_GROWTH_OS');
+      });
+
+      if (b2bLead?.projectId) {
+        [project] = await db.select().from(projects).where(eq(projects.id, b2bLead.projectId)).limit(1);
+      }
+    }
+
     const isApproved = Boolean(
+      project ||
       user || 
       (approvedRequest && (approvedRequest.status === 'approved' || approvedRequest.status === 'granted'))
     );
 
     if (!isApproved) {
-      // Generic anti-enumeration message: never reveal whether the account exists
       return NextResponse.json({ 
         error: 'Si tu acceso ya fue aprobado, recibirás tu enlace en tu correo. Si no lo recibes, contacta a soporte en la página principal.' 
       }, { status: 403 });
-    }
-
-    // 2. Resolve the tenant's project WITHOUT hardcoded defaults.
-    //    Priority: metadata on the approved request → lead record (email).
-    const meta = (approvedRequest?.metadata ?? {}) as { projectId?: number; projectSlug?: string };
-    let project: typeof projects.$inferSelect | undefined;
-    let installedId: string | undefined;
-
-    if (meta.projectId) {
-      [project] = await db.select().from(projects).where(eq(projects.id, Number(meta.projectId))).limit(1);
-    } else if (meta.projectSlug) {
-      [project] = await db.select().from(projects).where(eq(projects.slug, String(meta.projectSlug))).limit(1);
-    }
-
-    if (!project) {
-      const [lead] = await db
-        .select({ projectId: marketingLeads.projectId })
-        .from(marketingLeads)
-        .where(eq(marketingLeads.email, cleanEmail))
-        .orderBy(desc(marketingLeads.createdAt))
-        .limit(1);
-      if (lead?.projectId) {
-        [project] = await db.select().from(projects).where(eq(projects.id, lead.projectId)).limit(1);
-      }
     }
 
     let token = '';
@@ -94,42 +126,40 @@ export async function POST(req: NextRequest) {
 
     if (activeProjectId && project) {
       // User has an explicit project
-      let installedId;
-      const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);
-      
-      if (products && products.length > 0) {
-        installedId = products[0]!.id;
-      } else {
-        // Must insert the installedProduct to satisfy EXP-014 (no virtual sessions fallback)
-        const [newProduct] = await db.insert(installedProducts).values({
-          projectId: activeProjectId,
-          product: 'HERMES',
-          productFamily: 'GROWTH_OS',
-          plan: 'sandbox',
-          status: 'trial'
-        }).returning({ id: installedProducts.id });
-        installedId = newProduct!.id;
+      if (!installedId) {
+        const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);
+        if (products && products.length > 0) {
+          installedId = products[0]!.id;
+        } else {
+          const [newProduct] = await db.insert(installedProducts).values({
+            projectId: activeProjectId,
+            product: 'HERMES',
+            productFamily: 'GROWTH_OS',
+            plan: 'sandbox',
+            status: 'trial'
+          }).returning({ id: installedProducts.id });
+          installedId = newProduct!.id;
+        }
       }
       
       token = generatePortalToken(installedId, activeProjectId, 'hermes');
     } else {
-      // 3. O1 - First login provisioning & O2 - Concurrent provisioning handling
-      // User does NOT have an active commercial project. Let's auto-provision or load their bootstrap workspace.
+      // Auto-provision their bootstrap workspace
       const { ensureInitialWorkspace } = await import('@/lib/platform/workspace-bootstrap');
       const bootstrap = await ensureInitialWorkspace(cleanEmail);
       token = bootstrap.portalToken;
     }
 
-    // 4. Generate Magic Link
+    // 4. Generate Magic Link with proper return destination
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
-    const returnQuery = safeReturn ? `&return=${encodeURIComponent(safeReturn)}` : '';
-    const magicLink = `${baseUrl}/portal/login?token=${token}${returnQuery}`;
+    const destination = safeReturn || (project?.slug ? `/onboarding/${project.slug}` : '/portal');
+    const magicLink = `${baseUrl}/portal/login?token=${token}&return=${encodeURIComponent(destination)}`;
 
-    console.info(`[MagicLink API] Magic Link generated for ${cleanEmail}: ${magicLink}`);
+    console.info(`[MagicLink API] Magic Link generated for ${cleanEmail} (Target: ${destination}): ${magicLink}`);
 
-    // Send the magic link via Resend with the Hermes branded identity + design
+    // Send the magic link via Resend with mobile-optimized email design
     try {
-      const firstName = user?.name?.split(' ')[0] || 'Cliente';
+      const firstName = user?.name?.split(' ')[0] || (project?.title?.split(' ')[0]) || 'Cliente';
       const emailRes = await sendEmail({
         to: cleanEmail,
         from: `Pandora's Group <hello@pandoras.finance>`,
@@ -141,65 +171,64 @@ export async function POST(req: NextRequest) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hermes OS — Acceso</title>
 </head>
-<body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080C;min-height:100vh;">
+<body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080C;margin:0 auto;">
     <tr>
-      <td align="center" style="padding:48px 16px;">
-        <table width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;background:#0F0F18;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;">
+      <td align="center" style="padding:24px 12px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:540px;background:#0F0F18;border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;">
           <tr>
-            <td style="background:linear-gradient(135deg,#1a0533 0%,#0a0a1a 100%);padding:32px 40px 28px;">
+            <td style="background:linear-gradient(135deg,#1a0533 0%,#0a0a1a 100%);padding:28px 32px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <div style="font-size:11px;letter-spacing:4px;text-transform:uppercase;color:rgba(160,120,255,0.7);margin-bottom:10px;">PANDORA'S PLATFORM OS</div>
-                    <div style="font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;line-height:1.2;">Hermes OS</div>
-                    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:0.5px;">Tu Centro de Operaciones</div>
+                    <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(160,120,255,0.8);margin-bottom:8px;font-weight:600;">PANDORA'S PLATFORM OS</div>
+                    <div style="font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;line-height:1.2;">Hermes OS</div>
+                    <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">${project?.title || 'Centro de Operaciones'}</div>
                   </td>
                   <td align="right" valign="top">
-                    <img src="https://dash.pandoras.finance/apple-touch-icon.png" alt="Pandora's" width="48" height="48" style="border-radius:10px;object-fit:contain;background:#111;display:block;padding:4px;"/>
+                    <img src="https://dash.pandoras.finance/apple-touch-icon.png" alt="Pandora's" width="42" height="42" style="border-radius:8px;object-fit:contain;background:#111;display:block;padding:2px;"/>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
           <tr>
-            <td style="padding:36px 40px;">
-              <p style="margin:0 0 8px;font-size:15px;color:rgba(255,255,255,0.5);letter-spacing:0.3px;">Hola,</p>
-              <p style="margin:0 0 28px;font-size:22px;font-weight:600;color:#ffffff;">${firstName},</p>
-              <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:rgba(255,255,255,0.65);">
-                Has solicitado acceso a tu consola de
+            <td style="padding:28px 32px;">
+              <p style="margin:0 0 6px;font-size:14px;color:rgba(255,255,255,0.5);">Hola,</p>
+              <p style="margin:0 0 20px;font-size:20px;font-weight:600;color:#ffffff;">${firstName}</p>
+              <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:rgba(255,255,255,0.7);">
+                Has solicitado acceso a tu consola operativa de 
                 <strong style="color:#a78bfa;">Hermes OS</strong>.
-                Usa el botón de abajo para entrar de forma segura:
+                Haz clic en el siguiente botón para iniciar sesión de forma segura:
               </p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center">
+                  <td align="center" style="padding:8px 0 16px;">
                     <a href="${magicLink}" target="_blank"
-                       style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:16px 40px;border-radius:10px;letter-spacing:0.3px;">
+                       style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:10px;letter-spacing:0.3px;">
                       Entrar a Hermes OS →
                     </a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;">
-                Este enlace es de un solo uso y expira en 7 días.<br/>
+              <p style="margin:16px 0 0;font-size:12px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.5;">
+                Este enlace es de uso personal y expira en 7 días.<br/>
                 Si no solicitaste este acceso, puedes ignorar este correo.
               </p>
             </td>
           </tr>
           <tr>
-            <td style="background:#080810;padding:24px 40px;border-top:1px solid rgba(255,255,255,0.05);">
+            <td style="background:#080810;padding:18px 32px;border-top:1px solid rgba(255,255,255,0.05);">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.25);line-height:1.7;">
-                      <strong style="color:rgba(255,255,255,0.4);">Pandora's Platform OS</strong><br/>
-                      Enterprise Infrastructure for Intelligent Assets<br/>
-                      <a href="https://pandoras.finance" style="color:rgba(124,58,237,0.7);text-decoration:none;">pandoras.finance</a>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.3);line-height:1.6;">
+                      <strong style="color:rgba(255,255,255,0.5);">Pandora's Platform OS</strong><br/>
+                      <a href="https://pandoras.finance" style="color:rgba(124,58,237,0.8);text-decoration:none;">pandoras.finance</a>
                     </div>
                   </td>
                   <td align="right">
-                    <div style="font-size:10px;color:rgba(255,255,255,0.18);letter-spacing:2px;text-transform:uppercase;">Hermes OS</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:2px;text-transform:uppercase;">HERMES OS</div>
                   </td>
                 </tr>
               </table>
@@ -216,6 +245,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.warn('[MagicLink API] Email dispatch failed:', e);
     }
+
 
     return NextResponse.json({
       success: true,

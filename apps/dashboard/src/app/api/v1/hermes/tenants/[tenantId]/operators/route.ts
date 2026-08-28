@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 const TELEGRAM_NUMERIC_ID = /^\d{3,20}$/;
 
 async function resolveTenant(slugOrId: string) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slugOrId);
   const projs = await db
     .select({
       id: projects.id,
@@ -18,7 +19,10 @@ async function resolveTenant(slugOrId: string) {
       slug: projects.slug,
     })
     .from(projects)
-    .where(or(eq(projects.slug, slugOrId), eq(projects.organizationId, slugOrId)))
+    .where(or(
+      eq(projects.slug, slugOrId),
+      ...(isUuid ? [eq(projects.organizationId, slugOrId)] : [])
+    ))
     .limit(1);
 
   return projs[0] || null;
