@@ -259,8 +259,8 @@ export class WhatsAppDispatcher {
       }
     }
 
-    // ── 2. Route to Pandora's Core Acquisition Flow ─────────────────────────
-    console.log(`🌐 [WhatsAppDispatcher] Routing message to PANDORA'S ACQUISITION FUNNEL`);
+    // ── 2. Route to Pandora's Acquisition / Hermes Cognitive Engine ────────
+    console.log(`🌐 [WhatsAppDispatcher] Routing message to PANDORA'S COGNITIVE RUNTIME`);
     const routerPayload = {
       from: phone,
       id: messageId,
@@ -270,7 +270,41 @@ export class WhatsAppDispatcher {
       flowFromLanding: null,
     };
 
-    const result = await routeSimpleMessage(routerPayload);
+    let result = await routeSimpleMessage(routerPayload);
+
+    // If the legacy flow is already completed or user is sending general conversation, delegate directly to Hermes AI Runtime
+    if (!result.handled || result.isCompleted || result.action === 'flow_completed' || messageText.toLowerCase().includes('hola') || messageText.toLowerCase().includes('test')) {
+      try {
+        const runtime = getDefaultRuntime();
+        const runtimeResponse = await runtime.respond({
+          organizationId: 'pandoras',
+          conversationId: `conv_wa_pandoras_${phone}`,
+          message: {
+            id: messageId,
+            role: 'USER',
+            content: messageText,
+            createdAt: new Date(),
+          },
+          controlPlaneContext: {
+            actorId: `wa_actor_${phone}`,
+            organizationId: 'pandoras',
+            role: 'ADMIN',
+            permissions: ['view_overview'],
+            sessionId: `wa_sess_pandoras_${phone}`,
+          }
+        });
+
+        if (runtimeResponse.content) {
+          result = {
+            handled: true,
+            flowType: 'hermes_cognitive',
+            response: runtimeResponse.content,
+          };
+        }
+      } catch (err) {
+        console.warn('[WhatsAppDispatcher] Hermes runtime fallback for master WhatsApp failed:', err);
+      }
+    }
 
     if (result.response && result.handled) {
       await sendWhatsAppMessage(phone, result.response, messageId);
