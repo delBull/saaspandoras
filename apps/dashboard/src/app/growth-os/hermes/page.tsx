@@ -80,7 +80,7 @@ export default function HermesEnterpriseLandingPage() {
 
           <div className="flex items-center gap-3">
             <Link 
-              href="/portal"
+              href="/portal/login"
               className="text-xs text-zinc-400 hover:text-white font-light transition-colors"
             >
               Accede
