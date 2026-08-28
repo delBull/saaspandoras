@@ -94,7 +94,8 @@ export class WhatsAppDispatcher {
       for (const p of allProjects) {
         const runtimeConfig = (p.tenantRuntimeConfig as any) || {};
         const w2e = (p.w2eConfig as any) || {};
-        const tenantPhoneId = runtimeConfig.secrets?.whatsappPhoneId || w2e.whatsappPhoneId;
+        const envPhoneId = process.env[`META_PHONE_NUMBER_ID_${p.slug}`] || process.env[`META_PHONE_NUMBER_ID_${p.slug.toUpperCase()}`];
+        const tenantPhoneId = runtimeConfig.secrets?.whatsappPhoneId || w2e.whatsappPhoneId || envPhoneId;
         
         if (
           tenantPhoneId && 
@@ -105,7 +106,11 @@ export class WhatsAppDispatcher {
             id: p.id,
             slug: p.slug,
             title: p.title,
-            secrets: runtimeConfig.secrets || {}
+            secrets: {
+              ...(runtimeConfig.secrets || {}),
+              whatsappPhoneId: String(tenantPhoneId).trim(),
+              whatsappToken: runtimeConfig.secrets?.whatsappToken || process.env[`META_WHATSAPP_TOKEN_${p.slug}`] || process.env[`META_WHATSAPP_TOKEN_${p.slug.toUpperCase()}`]
+            }
           };
         }
       }

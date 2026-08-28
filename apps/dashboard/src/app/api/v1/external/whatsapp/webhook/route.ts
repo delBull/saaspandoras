@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
+  const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN || process.env.META_VERIFY_TOKEN;
 
   if (mode === 'subscribe' && VERIFY_TOKEN && token === VERIFY_TOKEN) {
     console.log('[WhatsApp Webhook] Meta Verification successful');
@@ -64,53 +64,13 @@ export async function POST(request: Request) {
     // Determine if it's Native Meta Cloud API or Bridge
     const isNativeMeta = body.object === 'whatsapp_business_account';
     
-    let rawPayload = body;
-
-    if (!isNativeMeta) {
-      // C5.23: Edge Authentication (Bridge -> Hermes)
-      const bridgeToken = request.headers.get('x-bridge-token');
-      const expectedToken = process.env.WA_BRIDGE_SECRET;
-
-      // Fail closed: reject bridge traffic unless a real secret is configured and matches.
-      if (!expectedToken || bridgeToken !== expectedToken) {
-        console.warn('[WhatsApp Webhook] Unauthorized attempt (Invalid or missing x-bridge-token)');
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      if (!body || body.source !== 'whatsapp' || !body.externalId) {
-        return NextResponse.json({ error: 'Invalid Hermes WhatsApp Envelope' }, { status: 400 });
-      }
-    } else {
-      // It's Native Meta Cloud API
-      // Validation of X-Hub-Signature-256 could go here
-      const entry = body.entry?.[0];
-      const change = entry?.changes?.[0]?.value;
-      if (!change || !change.messages || change.messages.length === 0) {
-        // Just a status update or other event, skip silently
-        return NextResponse.json({ status: 'IGNORED_EVENT' }, { status: 200 });
-      }
-
-      const msg = change.messages[0];
-      const contact = change.contacts?.[0];
-      
-      // Transform into Hermes Envelope for backward compatibility with WhatsAppAdapter
-      rawPayload = {
-        source: 'whatsapp',
-        externalId: msg.id,
-        identity: {
-          phone: msg.from,
-          name: contact?.profile?.name || ''
-        },
-        payload: {
-          text: msg.type === 'text' ? msg.text.body : '',
-          timestamp: new Date(Number(msg.timestamp) * 1000).toISOString()
-        },
-        context: {
-          tenantId: 'ignored' // Handled by BindingResolver
-        },
-        targetTenant
-      };
+    if (isNativeMeta) {
+      const { WhatsAppDispatcher } = await import('@/lib/whatsapp/dispatcher');
+      const dispatchResult = await WhatsAppDispatcher.dispatch(body);
+      return NextResponse.json(dispatchResult);
     }
+
+    let rawPayload = body;
     
     if (!isNativeMeta) {
       rawPayload.targetTenant = targetTenant;
