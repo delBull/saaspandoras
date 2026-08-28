@@ -24,10 +24,7 @@ export async function checkRateLimit(
   const redis = getRedis();
 
   if (!redis) {
-    // In-memory fallback (dev only). Fail open in dev, but never exceed in prod:
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('[SOVEREIGN_SIGN] FAIL CLOSED: Redis is required for rate limiting in production.');
-    }
+    // In-memory fallback with sliding window
     const cur = memoryStore.get(key);
     if (cur) {
       if (now > cur.resetTime) {
