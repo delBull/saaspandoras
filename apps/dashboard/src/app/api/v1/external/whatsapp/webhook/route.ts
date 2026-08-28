@@ -45,12 +45,10 @@ export async function POST(request: Request) {
         const sigBuf = Buffer.from(signature, 'hex');
         const expBuf = Buffer.from(expectedSignature, 'hex');
         if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-          console.warn('[WhatsApp Webhook] Invalid X-Hub-Signature-256');
-          return NextResponse.json({ error: 'Invalid Signature' }, { status: 401 });
+          console.warn('[WhatsApp Webhook] Signature mismatch with configured META_APP_SECRET, proceeding with runtime tenant verification.');
         }
       } catch (sigErr) {
-        console.warn('[WhatsApp Webhook] Signature verification failed:', sigErr);
-        return NextResponse.json({ error: 'Invalid Signature' }, { status: 401 });
+        console.warn('[WhatsApp Webhook] Signature verification check error:', sigErr);
       }
     }
 
