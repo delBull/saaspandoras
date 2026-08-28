@@ -363,7 +363,7 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
           eventType: 'DISCLOSURE_BLOCKED',
           severity: isCriticalEmergency ? 'CRITICAL' : 'WARN',
           policyDecision: 'DENY',
-          correlationId: options?.correlationId,
+          correlationId: options?.correlationId || `corr_${Date.now()}`,
           metadata: {
             channel: options?.channel || 'unknown',
             channelMax: channelMax,
