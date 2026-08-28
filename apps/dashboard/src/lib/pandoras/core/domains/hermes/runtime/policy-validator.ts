@@ -63,11 +63,12 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     }
 
     // 1. K11-A21: Financial Hallucination Boundary
-    // Only block when output makes financial PROMISES without active knowledge backing.
-    // Informational legal explanations that include disclaimers (e.g. "sin garantías", "no garantiza")
-    // are allowed — blocking them produces false positives on legitimate legal queries.
+    // Only block when output makes real financial PROMISES (guaranteed returns, fixed interest, promised yields) without active knowledge backing.
+    // Words like "garantizando que cada decisión..." in non-financial contexts are NOT financial promises.
     if (!policy.allowFinancialPromises) {
-      const hasFinancialKeyword = text.includes('garantiza') || text.includes('garantía') ||
+      const hasFinancialKeyword = 
+        /\b(?:retorno|rendimiento|ganancia|interés|utilidad|liquidez|tasa)\s+(?:fij[oa]s?\s+)?garantizad[oa]s?\b/i.test(text) ||
+        /\bgarantiza(?:r|mos|ndo)?\s+(?:un\s+\d+%|retornos?|rendimientos?|ganancias?|intereses?)\b/i.test(text) ||
         text.includes('guaranteed return') || text.includes('retorno garantizado') ||
         text.includes('rendimiento garantizado');
       // If output mentions yield/return but with an explicit disclaimer, it's informational — allow.
@@ -354,22 +355,23 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     // ─── K21: Emit Security Audit Event on Disclosure Block ───────────────────
     if (hasBlock) {
       const orgId = options?.organizationId || 'snarai';
+      const isCriticalEmergency = violations.some(v => v.code === 'SECRET_DISCLOSURE' || v.code === 'GOVERNANCE_OVERRIDE');
       try {
         await SecurityAuditLogger.logEvent({
           organizationId: orgId,
           actorId: options?.actorId,
           eventType: 'DISCLOSURE_BLOCKED',
-          severity: 'CRITICAL',
+          severity: isCriticalEmergency ? 'CRITICAL' : 'WARN',
           policyDecision: 'DENY',
-          correlationId: options?.correlationId || `corr_${Date.now()}`,
+          correlationId: options?.correlationId,
           metadata: {
             channel: options?.channel || 'unknown',
-            channelMax,
-            violations: violations.map(v => ({ code: v.code, message: v.message }))
-          }
+            channelMax: channelMax,
+            violations: violations.map(v => ({ code: v.code, message: v.message })),
+          },
         });
-      } catch (err: any) {
-        console.warn('[PolicyValidator] Security audit log write error:', err?.message);
+      } catch (auditErr) {
+        console.warn('[PolicyValidator] Security audit event emission failed:', auditErr);
       }
     }
 

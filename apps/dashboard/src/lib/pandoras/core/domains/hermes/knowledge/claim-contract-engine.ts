@@ -250,6 +250,71 @@ export const SNARAI_CANONICAL_CLAIM_CONTRACT: TenantClaimContract = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 1.1 CANONICAL PANDORAS / HERMES OS CLAIM CONTRACT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const PANDORAS_CANONICAL_CLAIM_CONTRACT: TenantClaimContract = {
+  tenantId: 'pandoras',
+  version: 1,
+  governanceStatus: 'ACTIVE',
+  contractHash: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
+  ipfsCid: 'bafkreigpandorasgrowthoscoreintel0123456789abcdef0123456789abcdef',
+  ipfsUri: 'ipfs://bafkreigpandorasgrowthoscoreintel0123456789abcdef0123456789abcdef',
+  updatedAt: new Date().toISOString(),
+  claims: [
+    {
+      claimId: 'claim_hermes_growth_intelligence',
+      category: 'FACT',
+      canonicalAssertion: "Hermes es el sistema operativo cognitivo y de inteligencia de crecimiento de Pandora's Growth OS.",
+      permittedPhrasings: [
+        'inteligencia de crecimiento de Pandora',
+        'sistema operativo cognitivo Hermes OS',
+        'oficial de inteligencia de crecimiento',
+        'infraestructura de agentes autónomos',
+      ],
+      provenance: {
+        artifactId: 'pandoras-hermes-core',
+        contentHash: '1111111111111111111111111111111111111111111111111111111111111111',
+        ipfsCid: 'bafkreighermescoreintelligencefact0123456789abcdef0123456789abc',
+        version: 1,
+      },
+    },
+    {
+      claimId: 'claim_pandoras_platform_capabilities',
+      category: 'FACT',
+      canonicalAssertion: "Pandora's Growth OS permite a empresas desplegar ecosistemas de agentes autónomos, gobernanza y tokenización de activos bajo su propia marca.",
+      permittedPhrasings: [
+        'plataforma de infraestructura para empresas autónomas',
+        'tokenización de activos y gobernanza descentralizada',
+        'soporte de marketing, tokenomics y activos inmobiliarios',
+      ],
+      provenance: {
+        artifactId: 'pandoras-platform-capabilities',
+        contentHash: '2222222222222222222222222222222222222222222222222222222222222222',
+        ipfsCid: 'bafkreigpandorasplatformcapabilities0123456789abcdef012345678',
+        version: 1,
+      },
+    },
+    {
+      claimId: 'claim_sovereign_knowledge_vault',
+      category: 'FACT',
+      canonicalAssertion: "Hermes OS custodia la información de cada proyecto mediante bóvedas soberanas en IPFS con cifrado de grado institucional y firmas EIP-712.",
+      permittedPhrasings: [
+        'bóvedas soberanas en IPFS',
+        'cifrado institucional y firmas criptográficas',
+        'cero alucinaciones respaldado por contratos de hechos',
+      ],
+      provenance: {
+        artifactId: 'pandoras-sovereign-vault',
+        contentHash: '3333333333333333333333333333333333333333333333333333333333333333',
+        ipfsCid: 'bafkreigsovereignknowledgevaultfact0123456789abcdef0123456789',
+        version: 1,
+      },
+    },
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2. SOVEREIGN CLAIM CONTRACT ENGINE
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -257,6 +322,11 @@ export class ClaimContractEngine {
   private static registeredContracts: Map<string, TenantClaimContract> = new Map([
     ['snarai', SNARAI_CANONICAL_CLAIM_CONTRACT],
     ['org_snarai', SNARAI_CANONICAL_CLAIM_CONTRACT],
+    ['pandoras', PANDORAS_CANONICAL_CLAIM_CONTRACT],
+    ['org_pandoras', PANDORAS_CANONICAL_CLAIM_CONTRACT],
+    ['hermes', PANDORAS_CANONICAL_CLAIM_CONTRACT],
+    ['global', PANDORAS_CANONICAL_CLAIM_CONTRACT],
+    ['generic', PANDORAS_CANONICAL_CLAIM_CONTRACT],
   ]);
 
   private static historicalContracts: Map<string, TenantClaimContract[]> = new Map();

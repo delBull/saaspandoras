@@ -107,4 +107,28 @@ describe('S\x27Narai Transparency & Policy Parity Suite', () => {
     expect(gateRes.action).toBe('ALLOW');
     expect(gateRes.violations.length).toBe(0);
   });
+
+  it('11. Non-financial use of "garantizando" (e.g. data backed decisions) is ALLOWED', async () => {
+    const text = "Hermes está aquí para acompañarte, garantizando que cada decisión esté respaldada por datos y estrategia.";
+    const res = await validator.validate(
+      { content: text, meta: mockMeta },
+      { tenantIdentity: { organizationId: 'pandoras', organizationName: "Pandoras" } } as any,
+      RUNTIME_POLICY,
+      { organizationId: 'pandoras' }
+    );
+    expect(res.decision.action).toBe('ALLOW');
+    expect(res.decision.violations.some(v => v.code === 'FINANCIAL_PROMISE')).toBe(false);
+  });
+
+  it('12. Platform overview query for Pandora/Hermes passes with PANDORAS claim contract', async () => {
+    const text = "Hermes es el sistema operativo cognitivo y de inteligencia de crecimiento de Pandora's Growth OS.";
+    const res = await validator.validate(
+      { content: text, meta: mockMeta },
+      { tenantIdentity: { organizationId: 'pandoras', organizationName: "Pandoras" } } as any,
+      RUNTIME_POLICY,
+      { organizationId: 'pandoras' }
+    );
+    expect(res.decision.action).toBe('ALLOW');
+    expect(res.decision.violations.length).toBe(0);
+  });
 });

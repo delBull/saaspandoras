@@ -405,7 +405,9 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           responseId: `blocked_${crypto.randomUUID()}`,
           organizationId,
           conversationId,
-          content: 'I am unable to fulfill that request. [Policy Block]',
+          content: decision.output && decision.output !== 'Message blocked by Hermes Governance Policy.'
+            ? decision.output
+            : 'Como inteligencia oficial del proyecto, me ciño estrictamente a la información y políticas institucionales verificadas. ¿Hay algún aspecto específico sobre el modelo, etapas o documentación que te gustaría consultar?',
           suggestedActions,
           providerMeta: { ...reasoningOutput.meta, durationMs: Date.now() - start },
           trace,

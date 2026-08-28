@@ -686,8 +686,8 @@ async function logWhatsAppMessage(phone: string, direction: 'incoming' | 'outgoi
   try {
     if (messageId) {
       await sql`
-        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, incoming_wamid, timestamp)
-        SELECT s.id, ${direction}, ${body}, 'text', ${messageId}, now()
+        INSERT INTO whatsapp_messages (id, session_id, direction, body, message_type, incoming_wamid, timestamp)
+        SELECT gen_random_uuid(), s.id, ${direction}, ${body}, 'text', ${messageId}, now()
         FROM whatsapp_sessions s
         JOIN whatsapp_users u ON s.user_id = u.id
         WHERE u.phone = ${phone} AND s.is_active = true
@@ -695,8 +695,8 @@ async function logWhatsAppMessage(phone: string, direction: 'incoming' | 'outgoi
       `;
     } else {
       await sql`
-        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, timestamp)
-        SELECT s.id, ${direction}, ${body}, 'text', now()
+        INSERT INTO whatsapp_messages (id, session_id, direction, body, message_type, timestamp)
+        SELECT gen_random_uuid(), s.id, ${direction}, ${body}, 'text', now()
         FROM whatsapp_sessions s
         JOIN whatsapp_users u ON s.user_id = u.id
         WHERE u.phone = ${phone} AND s.is_active = true
@@ -707,8 +707,8 @@ async function logWhatsAppMessage(phone: string, direction: 'incoming' | 'outgoi
     // Non-blocking fallback
     try {
       await sql`
-        INSERT INTO whatsapp_messages (session_id, direction, body, message_type, timestamp)
-        SELECT s.id, ${direction}, ${body}, 'text', now()
+        INSERT INTO whatsapp_messages (id, session_id, direction, body, message_type, timestamp)
+        SELECT gen_random_uuid(), s.id, ${direction}, ${body}, 'text', now()
         FROM whatsapp_sessions s
         JOIN whatsapp_users u ON s.user_id = u.id
         WHERE u.phone = ${phone} AND s.is_active = true
