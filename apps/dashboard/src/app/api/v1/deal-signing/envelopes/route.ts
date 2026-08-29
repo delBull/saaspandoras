@@ -6,6 +6,17 @@ import { eq, and, desc } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9_-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'sovereign';
+}
+
 /**
  * POST /api/v1/deal-signing/envelopes
  * Creates a new Sovereign Document Envelope from PDF upload & signer specifications
@@ -14,7 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
-    const organizationId = formData.get('organizationId') as string | null;
+    const organizationInput = (formData.get('organizationId') as string | null) || (formData.get('companyName') as string | null);
     const title = formData.get('title') as string | null;
     const description = (formData.get('description') as string) || undefined;
     const signingPolicy = (formData.get('signingPolicy') as any) || 'PARALLEL';
@@ -27,18 +38,15 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'MISSING_ORG', message: 'organizationId is mandatory.' },
-        { status: 400 }
-      );
-    }
     if (!title) {
       return NextResponse.json(
         { success: false, error: 'MISSING_TITLE', message: 'title is mandatory.' },
         { status: 400 }
       );
     }
+
+    // Auto-generate organization slug if not provided, based on company name or title
+    const organizationId = organizationInput ? slugify(organizationInput) : slugify(title);
 
     let signers: any[] = [];
     try {
@@ -85,8 +93,8 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * GET /api/v1/deal-signing/envelopes?organizationId=snarai&status=COMPLETED
- * Lists envelopes for an organization
+ * GET /api/v1/deal-signing/envelopes?organizationId=...&status=COMPLETED
+ * Lists envelopes for an organization or lists recent sovereign envelopes
  */
 export async function GET(req: NextRequest) {
   try {
@@ -94,24 +102,23 @@ export async function GET(req: NextRequest) {
     const organizationId = searchParams.get('organizationId');
     const status = searchParams.get('status');
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'MISSING_ORG', message: 'Query param [organizationId] is required.' },
-        { status: 400 }
-      );
+    const conditions: any[] = [];
+    if (organizationId && organizationId !== 'all') {
+      conditions.push(eq(dealEnvelopes.organizationId, slugify(organizationId)));
     }
-
-    const conditions = [eq(dealEnvelopes.organizationId, organizationId)];
     if (status) {
       conditions.push(eq(dealEnvelopes.status, status));
     }
 
-    const rows = await db
+    const query = db
       .select()
       .from(dealEnvelopes)
-      .where(and(...conditions))
       .orderBy(desc(dealEnvelopes.createdAt))
       .limit(50);
+
+    const rows = conditions.length > 0 
+      ? await query.where(and(...conditions))
+      : await query;
 
     return NextResponse.json({
       success: true,

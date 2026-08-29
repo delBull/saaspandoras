@@ -22,8 +22,29 @@ export interface A2AValidationResult {
 }
 
 export class A2ASecurityValidator {
-  private static getHmacSecret(): string {
-    return process.env.SOFIA_BRIDGE_HMAC_SECRET || process.env.BRIDGE_HMAC_SECRET || 'pandoras_a2a_shared_hmac_secret_production_v1';
+  /**
+   * Resolves the A2A transport secret from environment only.
+   * FAIL-CLOSED: there is NO hardcoded fallback secret. If none is configured,
+   * all HMAC computation/validation refuses to operate.
+   */
+  public static getHmacSecret(): string {
+    const secret =
+      process.env.A2A_HMAC_SECRET ||
+      process.env.SOFIA_BRIDGE_HMAC_SECRET ||
+      process.env.BRIDGE_HMAC_SECRET;
+
+    if (!secret) {
+      throw new Error(
+        '[A2ASecurityValidator] No A2A_HMAC_SECRET configured. Refusing to compute/validate transport HMAC without a secret (fail-closed).'
+      );
+    }
+    return secret;
+  }
+
+  public static computeTransportHmac(method: string, pathNorm: string, timestampMs: string, rawBody: string): string {
+    const secret = this.getHmacSecret();
+    const input = `${method.toUpperCase()}\n${pathNorm}\n${timestampMs}\n${rawBody}`;
+    return crypto.createHmac('sha256', secret).update(input).digest('hex');
   }
 
   public static computePayloadCanonicalHash(message: Omit<A2AMessage, 'security'>): string {
@@ -34,6 +55,7 @@ export class A2ASecurityValidator {
       correlationId: message.correlationId,
       from: message.from,
       to: message.to,
+      tenantId: message.tenantId,
       type: message.type,
       createdAt: message.createdAt,
       expiresAt: message.expiresAt,
@@ -50,7 +72,7 @@ export class A2ASecurityValidator {
 
   public static validate(message: A2AMessage): A2AValidationResult {
     // 1. Protocol & Version Check
-    if (message.protocol !== 'pandoras-a2a' || message.version !== '1.0') {
+    if (message.protocol !== 'pandoras-a2a' || (message.version !== '1.0' && message.version !== '1.1')) {
       return { valid: false, errorCode: 'INVALID_PROTOCOL', errorMessage: 'Unsupported protocol or version' };
     }
 
@@ -85,6 +107,7 @@ export class A2ASecurityValidator {
       correlationId: message.correlationId,
       from: message.from,
       to: message.to,
+      tenantId: message.tenantId,
       type: message.type,
       createdAt: message.createdAt,
       expiresAt: message.expiresAt,
@@ -92,16 +115,31 @@ export class A2ASecurityValidator {
       payload: message.payload,
     });
 
-    // 6. Transport HMAC Validation
-    const expectedHmac = this.computeHmac(canonicalHash);
-    if (message.security.hmac !== expectedHmac) {
-      // In dev/test, warn if env secret isn't matching, otherwise fail closed
-      if (process.env.NODE_ENV === 'production') {
-        return { valid: false, errorCode: 'INVALID_HMAC', errorMessage: 'Transport HMAC signature verification failed' };
-      }
+    // 6. Transport HMAC Validation (fail-closed in ALL environments)
+    let expectedHmac: string;
+    try {
+      expectedHmac = this.computeHmac(canonicalHash);
+    } catch (err: any) {
+      return {
+        valid: false,
+        errorCode: 'HMAC_SECRET_UNCONFIGURED',
+        errorMessage: err?.message || 'A2A HMAC secret is not configured',
+      };
+    }
+    if (!message.security.hmac || message.security.hmac !== expectedHmac) {
+      return { valid: false, errorCode: 'INVALID_HMAC', errorMessage: 'Transport HMAC signature verification failed' };
     }
 
     // 7. Sovereign Wallet Signature Validation (EIP-191)
+    //    In production, a missing/mock signature is NEVER accepted.
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction && (!message.security.signature || message.security.signature === 'mock_sig')) {
+      return {
+        valid: false,
+        errorCode: 'REQUIRED_WALLET_SIGNATURE',
+        errorMessage: 'Production A2A messages must carry a real EIP-191 wallet signature',
+      };
+    }
     if (message.security.signature && message.security.signature !== 'mock_sig') {
       try {
         const verifyFn = (ethers as any).verifyMessage || ethers.utils?.verifyMessage;

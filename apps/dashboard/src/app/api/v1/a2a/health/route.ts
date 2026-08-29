@@ -14,7 +14,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ACTIVE',
     protocol: 'pandoras-a2a',
-    version: '1.0',
+    version: '1.1',
     agent: hermes?.displayName,
     wallet: hermes?.walletAddress,
     registeredPeers: [

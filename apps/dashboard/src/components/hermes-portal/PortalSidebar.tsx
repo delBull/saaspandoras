@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Boxes,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavItem {
@@ -42,6 +43,13 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Overview',
     href: '',
     icon: LayoutDashboard,
+    requiredPermission: 'organization.read',
+    section: 'primary',
+  },
+  {
+    label: 'Media Studio',
+    href: '/media',
+    icon: Sparkles,
     requiredPermission: 'organization.read',
     section: 'primary',
   },

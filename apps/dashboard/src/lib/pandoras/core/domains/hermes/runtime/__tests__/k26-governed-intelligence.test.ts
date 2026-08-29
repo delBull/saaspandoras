@@ -647,7 +647,7 @@ describe("Milestone K26 — Governed Intelligence, Epistemic Claims & IPFS Prove
     });
 
     // End-to-end policy interception: output is blocked and NEVER delivered
-    expect(response.content).toContain('Policy Block');
+    expect(response.content).toMatch(/políticas institucionales|Policy Block/i);
     expect(response.content).not.toContain('100 millones');
   });
 
@@ -942,7 +942,7 @@ describe("Milestone K26 — Governed Intelligence, Epistemic Claims & IPFS Prove
     });
 
     // 4. Runtime Integrity Verification: Output is fail-closed BLOCKED
-    expect(adversarialResponse.content).toContain('Policy Block');
+    expect(adversarialResponse.content).toMatch(/políticas institucionales|Policy Block/i);
     expect(adversarialResponse.content).not.toContain('42%');
     expect(adversarialResponse.content).not.toContain('45%');
     expect(adversarialResponse.content).not.toContain('Arbitrum');

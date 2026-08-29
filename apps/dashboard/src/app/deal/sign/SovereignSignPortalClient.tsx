@@ -38,7 +38,7 @@ export function SovereignSignPortalClient() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [organizationId, setOrganizationId] = useState('snarai');
+  const [companyName, setCompanyName] = useState('');
   const [signingPolicy, setSigningPolicy] = useState<SigningPolicy>('PARALLEL');
   const [thresholdM, setThresholdM] = useState<number>(2);
   const [signers, setSigners] = useState<SignerInput[]>([
@@ -48,9 +48,18 @@ export function SovereignSignPortalClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Auto-calculated sovereign namespace slug
+  const autoSlug = (companyName.trim() || title.trim() || 'pandoras')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9_-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'pandoras';
+
   // Lookup State
   const [lookupEnvelopeId, setLookupEnvelopeId] = useState('');
-  const [lookupOrgId, setLookupOrgId] = useState('snarai');
+  const [lookupOrgId, setLookupOrgId] = useState('');
   const [recentEnvelopes, setRecentEnvelopes] = useState<any[]>([]);
   const [isFetchingRecent, setIsFetchingRecent] = useState(false);
 
@@ -100,10 +109,10 @@ export function SovereignSignPortalClient() {
 
   // Fetch recent envelopes when switching to LOOKUP or logging in
   useEffect(() => {
-    if (session && activeTab === 'LOOKUP') {
+    if (activeTab === 'LOOKUP') {
       fetchOrgEnvelopes();
     }
-  }, [session, activeTab]);
+  }, [activeTab]);
 
   const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,10 +181,6 @@ export function SovereignSignPortalClient() {
       setFormError('El título del documento es obligatorio.');
       return;
     }
-    if (!organizationId.trim()) {
-      setFormError('El identificador de organización (Slug) es obligatorio.');
-      return;
-    }
     
     // Validate signers
     const validSigners = signers.filter(s => s.name.trim() && s.email.trim());
@@ -192,7 +197,8 @@ export function SovereignSignPortalClient() {
       formData.append('file', file);
       formData.append('title', title.trim());
       if (description.trim()) formData.append('description', description.trim());
-      formData.append('organizationId', organizationId.trim().toLowerCase());
+      formData.append('organizationId', autoSlug);
+      if (companyName.trim()) formData.append('companyName', companyName.trim());
       formData.append('signingPolicy', signingPolicy);
       if (signingPolicy === 'M_OF_N') {
         formData.append('thresholdM', thresholdM.toString());
@@ -221,10 +227,12 @@ export function SovereignSignPortalClient() {
   };
 
   const fetchOrgEnvelopes = async () => {
-    if (!lookupOrgId.trim()) return;
     setIsFetchingRecent(true);
     try {
-      const res = await fetch(`/api/v1/deal-signing/envelopes?organizationId=${lookupOrgId.trim().toLowerCase()}`);
+      const url = lookupOrgId.trim() 
+        ? `/api/v1/deal-signing/envelopes?organizationId=${lookupOrgId.trim().toLowerCase()}`
+        : `/api/v1/deal-signing/envelopes`;
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setRecentEnvelopes(data.envelopes || []);
@@ -513,15 +521,18 @@ export function SovereignSignPortalClient() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-mono text-zinc-400 block">
-                          Organización / Proyecto (Slug) *
+                        <label className="text-xs font-mono text-zinc-400 flex items-center justify-between">
+                          <span>Empresa / Emisor (Opcional)</span>
+                          <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            Slug: {autoSlug}
+                          </span>
                         </label>
                         <input
                           type="text"
-                          placeholder="snarai"
-                          value={organizationId}
-                          onChange={(e) => setOrganizationId(e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white font-mono focus:border-amber-400 focus:outline-none"
+                          placeholder="Ej: Pandoras Finance, Acme Corp o personal"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white focus:border-amber-400 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -711,15 +722,15 @@ export function SovereignSignPortalClient() {
                   <div className="bg-[#0D0D14] border border-white/[0.08] rounded-2xl p-6 shadow-2xl space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white font-mono">
-                        DOCUMENTOS DE LA ORGANIZACIÓN
+                        DOCUMENTOS DE LA PLATAFORMA
                       </h3>
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
-                          placeholder="Slug (ej. snarai)"
+                          placeholder="Filtrar por Org / Slug (opcional)"
                           value={lookupOrgId}
                           onChange={(e) => setLookupOrgId(e.target.value)}
-                          className="w-28 px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-white"
+                          className="w-48 px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-white"
                         />
                         <button
                           onClick={fetchOrgEnvelopes}

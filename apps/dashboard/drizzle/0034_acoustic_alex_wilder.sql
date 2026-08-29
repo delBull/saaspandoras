@@ -1,0 +1,1 @@
+ALTER TABLE "deal_envelopes" DROP CONSTRAINT IF EXISTS "deal_envelopes_organization_id_projects_slug_fk";

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { SovereignIpfsStatusWidget } from './SovereignIpfsStatusWidget';
+import { HermesMediaGovernancePanel } from './HermesMediaGovernancePanel';
 
 export function HermesTenantsAdminView() {
   const [tenants, setTenants] = useState<any[]>([]);
@@ -175,6 +176,11 @@ export function HermesTenantsAdminView() {
                     </Button>
                   )}
                 </div>
+
+                {/* Media Co Capability Approval (Admin-only toggle surface) */}
+                {isProvisioned && (
+                  <HermesMediaGovernancePanel key={`gov-${t.slug}`} tenantSlug={t.slug} />
+                )}
               </div>
             );
           })}

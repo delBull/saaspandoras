@@ -58,6 +58,13 @@ export interface SecurityAlertPayload {
   detail: string;
 }
 
+export interface MediaCoActivationPayload {
+  capability: string;
+  label: string;
+  requestedBy: string;
+  requestId: string;
+}
+
 export interface NotifiableOperator {
   telegramUserId: string;
   name?: string;
@@ -371,6 +378,38 @@ export class HermesNotificationDispatcher {
       operators,
       messageHtml,
       this.buildWebAppKeyboard('📱 Abrir Command Center', organizationId)
+    );
+  }
+
+  /**
+   * Dispatches a notification when a tenant requests activation of a Media Co
+   * capability (self-service request flow routed to operators + opted-in admins).
+   * @returns number of operators notified (0 = none configured or muted by dedupe).
+   */
+  async dispatchMediaCoActivationRequest(
+    organizationId: string,
+    organizationName: string,
+    payload: MediaCoActivationPayload
+  ): Promise<number> {
+    const dedupeKey = `media_activation:${organizationId}:${payload.requestId}`;
+    if (!this.checkDedupe(dedupeKey)) {
+      return 0;
+    }
+
+    const operators = await this.getNotifiableOperators(organizationId);
+    if (operators.length === 0 || !this.botToken) return 0;
+
+    const messageHtml =
+      `🎨 <b>Solicitud de Activación — Media Co</b>\n\n` +
+      `🏢 <b>Workspace:</b> <code>${escapeHtml(organizationName)}</code>\n` +
+      `🛠️ <b>Capacidad:</b> <b>${escapeHtml(payload.label)}</b> (<code>${escapeHtml(payload.capability)}</code>)\n` +
+      `🎫 <b>Req:</b> <code>${escapeHtml(payload.requestId)}</code>\n\n` +
+      `⚡ <i>La activación será aprobada por el equipo Hermes. Esta será una capacidad paga.</i>`;
+
+    return this.deliverToOperators(
+      operators,
+      messageHtml,
+      this.buildWebAppKeyboard('🎨 Abrir Media Studio', organizationId)
     );
   }
 

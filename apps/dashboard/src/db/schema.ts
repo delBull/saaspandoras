@@ -3868,9 +3868,7 @@ export const hermesClaimContracts = pgTable("hermes_claim_contracts", {
 
 export const dealEnvelopes = pgTable("deal_envelopes", {
   id: uuid("id").defaultRandom().primaryKey(),
-  organizationId: varchar("organization_id", { length: 256 })
-    .notNull()
-    .references(() => projects.slug, { onDelete: 'cascade' }),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
   title: varchar("title", { length: 256 }).notNull(),
   description: text("description"),
   documentHash: varchar("document_hash", { length: 64 }).notNull(),
@@ -3893,4 +3891,69 @@ export const dealEnvelopes = pgTable("deal_envelopes", {
 }, (t) => ({
   orgStatusIdx: index("deal_envelopes_org_status_idx").on(t.organizationId, t.status),
   docHashIdx: index("deal_envelopes_doc_hash_idx").on(t.documentHash),
+}));
+
+// ── PANDORA'S A2A v1.1 CAPABILITY GOVERNANCE & MEDIA ARTIFACTS ───────────────
+
+export const hermesCapabilityGrants = pgTable("hermes_capability_grants", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  grantId: varchar("grant_id", { length: 128 }).notNull(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  issuerAgentId: varchar("issuer_agent_id", { length: 64 }).notNull().default('pandoras'),
+  granteeAgentId: varchar("grantee_agent_id", { length: 64 }).notNull().default('sofia'),
+  capability: varchar("capability", { length: 128 }).notNull(), // 'media.image.create', 'media.video.create', etc.
+  status: varchar("status", { length: 32 }).notNull().default('ACTIVE'), // 'ACTIVE', 'SUSPENDED', 'REVOKED', 'EXPIRED'
+  constraintsJson: jsonb("constraints_json"),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdBy: varchar("created_by", { length: 128 }),
+  updatedBy: varchar("updated_by", { length: 128 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantCapStatusIdx: index("hermes_cap_grant_tcs_idx").on(t.tenantId, t.capability, t.status),
+  grantIdIdx: uniqueIndex("hermes_cap_grant_id_unique").on(t.grantId),
+}));
+
+export const hermesMediaRequests = pgTable("hermes_media_requests", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  requestId: varchar("request_id", { length: 128 }).notNull(),
+  correlationId: varchar("correlation_id", { length: 128 }),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  capability: varchar("capability", { length: 128 }).notNull(),
+  requestedBy: varchar("requested_by", { length: 128 }),
+  provider: varchar("provider", { length: 64 }).default('sofia'),
+  status: varchar("status", { length: 32 }).notNull().default('REQUESTED'), // 'REQUESTED', 'ACCEPTED', 'PROCESSING', 'COMPLETED', 'REJECTED', 'FAILED', 'CANCELLED'
+  prompt: text("prompt"),
+  briefJson: jsonb("brief_json"),
+  artifactId: varchar("artifact_id", { length: 128 }),
+  failureCode: varchar("failure_code", { length: 64 }),
+  failureMessage: text("failure_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, (t) => ({
+  tenantStatusIdx: index("hermes_media_req_ts_idx").on(t.tenantId, t.status),
+  requestIdIdx: uniqueIndex("hermes_media_req_id_unique").on(t.requestId),
+}));
+
+export const hermesArtifacts = pgTable("hermes_artifacts", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  artifactId: varchar("artifact_id", { length: 128 }).notNull(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  sourceAgent: varchar("source_agent", { length: 64 }).notNull().default('sofia'),
+  producer: varchar("producer", { length: 64 }).default('pixel'),
+  artifactType: varchar("artifact_type", { length: 64 }).notNull(), // 'image', 'video', 'copy', 'newsletter', 'podcast', 'research_report'
+  title: varchar("title", { length: 256 }),
+  cid: varchar("cid", { length: 256 }).notNull(),
+  ipfsUri: varchar("ipfs_uri", { length: 512 }),
+  sha256: varchar("sha256", { length: 128 }).notNull(),
+  mimeType: varchar("mime_type", { length: 128 }).notNull().default('image/png'),
+  sizeBytes: integer("size_bytes"),
+  provenanceJson: jsonb("provenance_json"),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantTypeIdx: index("hermes_artifacts_tt_idx").on(t.tenantId, t.artifactType),
+  tenantCidIdx: uniqueIndex("hermes_artifacts_tenant_cid_unique").on(t.tenantId, t.cid),
 }));

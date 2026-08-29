@@ -46,16 +46,13 @@ export class EnvelopeService {
       throw new Error('At least one signer is required.');
     }
 
-    // 1. Verify tenant organization exists
-    const [project] = await db
-      .select({ id: projects.id, slug: projects.slug })
-      .from(projects)
-      .where(eq(projects.slug, input.organizationId))
-      .limit(1);
-
-    if (!project) {
-      throw new Error(`Organization '${input.organizationId}' not found.`);
-    }
+    // 1. Normalize sovereign organization namespace / slug
+    const orgSlug = (input.organizationId || 'pandoras')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'pandoras';
 
     // 2. Canonical SHA-256 Hashing of raw PDF buffer
     const documentHash = DocumentHasher.hashBuffer(input.pdfBuffer);
@@ -67,14 +64,14 @@ export class EnvelopeService {
         artifactType: 'SOVEREIGN_DOCUMENT_PDF',
         documentHash,
         title: input.title,
-        organizationId: input.organizationId,
+        organizationId: orgSlug,
         sizeBytes: documentSize,
         createdAt: new Date().toISOString(),
       },
       {
         name: `envelope_${documentHash.slice(0, 12)}.json`,
         category: 'LEGAL_AGREEMENT',
-        tenantId: input.organizationId,
+        tenantId: orgSlug,
       }
     );
 
@@ -100,7 +97,7 @@ export class EnvelopeService {
 
     const envelopeRecord: typeof dealEnvelopes.$inferInsert = {
       id: envelopeId,
-      organizationId: input.organizationId,
+      organizationId: orgSlug,
       title: input.title,
       description: input.description || null,
       documentHash,
