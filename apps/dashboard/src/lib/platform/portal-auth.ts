@@ -75,22 +75,17 @@ export function generatePortalToken(
  * Returns a PortalSession on success, throws on invalid/used/expired token.
  */
 export async function consumePortalToken(token: string): Promise<PortalSession> {
-  // 1. Verify JWT signature & expiry (with configured secret variants only)
+  // 1. Verify JWT signature & expiry with ONLY the single configured secret.
+  //    Fail-closed: no legacy alias fallbacks (NEXTAUTH_SECRET/JWT_SECRET) are
+  //    accepted, so rotating PORTAL_JWT_SECRET revokes every previously issued
+  //    magic link (signature-alias attack / stale-token vector).
   let payload: PortalTokenPayload | null = null;
   const configuredSecret = requirePortalSecret();
-  const secretsToTry = [
-    configuredSecret,
-    process.env.NEXTAUTH_SECRET,
-    process.env.JWT_SECRET
-  ].filter(Boolean) as string[];
 
-  for (const secret of secretsToTry) {
-    try {
-      payload = jwt.verify(token, secret) as PortalTokenPayload;
-      if (payload) break;
-    } catch {
-      // Continue trying fallback secrets
-    }
+  try {
+    payload = jwt.verify(token, configuredSecret) as PortalTokenPayload;
+  } catch {
+    payload = null;
   }
 
   if (!payload) {
@@ -125,7 +120,11 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
     console.warn(`[PortalAuth] Skipping installedProducts query because sub (${payload.sub}) is not a valid UUID, falling back to payload context.`);
   }
 
-  const actualProjectId = installed?.projectId || payload.projectId || 9;
+  const actualProjectId = installed?.projectId || payload.projectId;
+  if (!actualProjectId) {
+    throw new Error('[PortalAuth] Unable to resolve valid projectId from portal token');
+  }
+
   // Embed the projectId in the session token so validatePortalSession can recover it if it's virtual
   const sessionToken = `ps_v_${actualProjectId}_${randomUUID().replace(/-/g, '')}`;
   const expiresAt = new Date();
@@ -145,7 +144,7 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
   return {
     sessionToken,
     installedProductId: installed?.id || payload.sub,
-    projectId: installed?.projectId || payload.projectId || 9,
+    projectId: actualProjectId,
     product: installed?.product || payload.product || 'HERMES',
     expiresAt,
   };
@@ -180,10 +179,14 @@ export async function validatePortalSession(sessionToken: string): Promise<{
     }
 
     // 2. Recovery for embedded virtual/project sessions (ps_v_<projectId>_<hash>)
+    //    FAIL-CLOSED: never trust the projectId embedded in the token for protected
+    //    tenants (S'Narai & flagship tokenization). This kills legacy/copied cookies
+    //    of the form ps_v_17_... even if they were never written to the DB.
+    const PROTECTED_PROJECT_IDS = new Set([2, 17, 15]);
     const match = sessionToken.match(/^ps_v_(\d+)_[a-f0-9]{32}$/i);
     if (match && match[1]) {
       const projectId = parseInt(match[1], 10);
-      if (!isNaN(projectId) && projectId > 0) {
+      if (!isNaN(projectId) && projectId > 0 && !PROTECTED_PROJECT_IDS.has(projectId)) {
         // Check if installedProduct exists for this project
         const productRow = await db.query.installedProducts.findFirst({
           where: eq(installedProducts.projectId, projectId),

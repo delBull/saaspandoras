@@ -25,20 +25,17 @@ export function generateDealToken(roomId: string, publicId: string, email: strin
 }
 
 export function verifyDealToken(token: string): DealTokenPayload | null {
-  const secretsToTry = [
-    DEAL_TOKEN_SECRET,
-    process.env.PORTAL_JWT_SECRET,
-    process.env.NEXTAUTH_SECRET,
-  ].filter(Boolean) as string[];
-  for (const secret of secretsToTry) {
-    try {
-      const payload = jwt.verify(token, secret) as DealTokenPayload;
-      if (payload && payload.type === "deal_access") return payload;
-    } catch {
-      // try next secret
-    }
+  // FAIL-CLOSED: verify with the canonical deal secret only. No legacy alias
+  // fallbacks (PORTAL_JWT_SECRET/NEXTAUTH_SECRET) — rotating NEXUS_DEAL_TOKEN_SECRET
+  // must revoke every previously issued deal token.
+  if (!DEAL_TOKEN_SECRET) return null;
+  try {
+    const payload = jwt.verify(token, DEAL_TOKEN_SECRET) as DealTokenPayload;
+    if (payload && payload.type === "deal_access") return payload;
+    return null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 /**

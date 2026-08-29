@@ -64,8 +64,15 @@ function PortalLoginContent() {
           localStorage.setItem('pandoras_portal_session', data.sessionToken);
           document.cookie = `pandoras_portal_session=${data.sessionToken}; Max-Age=${60 * 60 * 24 * 30}; Path=/; SameSite=Lax`;
           
-          // Redirect
-          const target = returnPath.startsWith('/') ? returnPath : '/portal';
+          // Determine specific target URL
+          let target = returnPath && returnPath.startsWith('/') && returnPath !== '/portal' ? returnPath : '';
+          if (!target && data.organization?.slug) {
+            const isDraft = data.organization.projectStatus === 'draft' || data.organization.onboardingStage;
+            target = isDraft ? `/onboarding/${data.organization.slug}` : `/portal/${data.organization.slug}`;
+          }
+          if (!target) {
+            target = '/portal';
+          }
           window.location.href = target;
         } else {
           throw new Error('No se recibió token de sesión válido.');

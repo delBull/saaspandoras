@@ -47,8 +47,15 @@ export async function ensureInitialWorkspace(email: string): Promise<BootstrapRe
         hermesInstanceId: `hermes_inst_${existingProject.id}`,
         capabilities: { intelligence: true, knowledge: true, channels: true } as any,
         connectors: {} as any,
-        config: {} as any,
-        runtimeManifest: {} as any,
+        config: {
+          email: cleanEmail,
+          companyName: existingProject.title || 'Workspace'
+        } as any,
+        runtimeManifest: {
+          context: {
+            adminEmail: cleanEmail
+          }
+        } as any,
         portalToken: '',
         portalTokenUsed: false,
       }).returning();
@@ -85,6 +92,7 @@ export async function ensureInitialWorkspace(email: string): Promise<BootstrapRe
       title: "Workspace en configuración",
       slug: slugTarget,
       description: `Auto-provisioned workspace for ${cleanEmail}`,
+      applicantEmail: cleanEmail,
       status: 'draft' as any, // DRAFT maps to ONBOARDING
       allowedDomains: [] as any,
       legalConfig: {} as any,
@@ -106,8 +114,15 @@ export async function ensureInitialWorkspace(email: string): Promise<BootstrapRe
       hermesInstanceId: `hermes_inst_${newProject.id}`,
       capabilities: { intelligence: true, knowledge: true, channels: false } as any, // Channels locked until onboarding is done
       connectors: {} as any,
-      config: {} as any,
-      runtimeManifest: {} as any,
+      config: {
+        email: cleanEmail,
+        companyName: 'Workspace'
+      } as any,
+      runtimeManifest: {
+        context: {
+          adminEmail: cleanEmail
+        }
+      } as any,
       portalToken: '',
       portalTokenUsed: false,
     }).returning();

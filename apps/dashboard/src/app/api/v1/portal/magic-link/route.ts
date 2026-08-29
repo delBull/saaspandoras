@@ -49,23 +49,35 @@ export async function POST(req: NextRequest) {
       ipHit.count += 1;
     }
 
+    // Protected Project IDs and Slugs (S'Narai and flagship public tokenization projects)
+    // NEVER grant portal access to these via generic B2C leads or without explicit operator authorization
+    const PROTECTED_PROJECT_IDS = [2, 17, 15];
+    const PROTECTED_PROJECT_SLUGS = ['snarai', 'snarai-protocol', 'narai', 'pandoras_access'];
+    const PROTECTED_PROJECT_OPERATOR_EMAIL = 'marco.munoz9@gmail.com';
+
     // 1. Find user or approved access request by email
     const [user] = await db.select().from(users).where(eq(users.email, cleanEmail)).limit(1);
     const [approvedRequest] = await db.select().from(accessRequests).where(eq(accessRequests.email, cleanEmail)).limit(1);
 
     // 2. Resolve the tenant's project strictly without cross-tenant leakage.
-    // Priority 1: installedProducts where operator email matches
     let project: typeof projects.$inferSelect | undefined;
     let installedId: string | undefined;
 
+    // Priority 1: installedProducts where operator email matches
     const allInstalled = await db.select().from(installedProducts);
     const userProduct = allInstalled.find((p) => {
       const cfg = (p.config as any) || {};
       const manifest = (p.runtimeManifest as any) || {};
-      return (
+      const matchesEmail = (
         (cfg.email && String(cfg.email).trim().toLowerCase() === cleanEmail) ||
         (manifest.context?.adminEmail && String(manifest.context.adminEmail).trim().toLowerCase() === cleanEmail)
       );
+      if (!matchesEmail) return false;
+      // If matching a protected project (e.g. S'Narai), verify it's the verified admin
+      if (PROTECTED_PROJECT_IDS.includes(p.projectId)) {
+        return cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL;
+      }
+      return true;
     });
 
     if (userProduct?.projectId) {
@@ -73,17 +85,22 @@ export async function POST(req: NextRequest) {
       if (project) installedId = userProduct.id;
     }
 
-    // Priority 2: projects.applicantEmail
+    // Priority 2: projects.applicantEmail (Direct project owner)
     if (!project) {
-      [project] = await db.select().from(projects).where(eq(projects.applicantEmail, cleanEmail)).limit(1);
+      const [matchedProject] = await db.select().from(projects).where(eq(projects.applicantEmail, cleanEmail)).limit(1);
+      if (matchedProject) {
+        if (!PROTECTED_PROJECT_IDS.includes(matchedProject.id) || cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL) {
+          project = matchedProject;
+        }
+      }
     }
 
-    // Priority 3: accessRequests
+    // Priority 3: accessRequests with explicit approved status
     if (!project && approvedRequest) {
       const meta = (approvedRequest.metadata ?? {}) as { projectId?: number; projectSlug?: string };
-      if (meta.projectId) {
+      if (meta.projectId && !PROTECTED_PROJECT_IDS.includes(Number(meta.projectId))) {
         [project] = await db.select().from(projects).where(eq(projects.id, Number(meta.projectId))).limit(1);
-      } else if (meta.projectSlug) {
+      } else if (meta.projectSlug && !PROTECTED_PROJECT_SLUGS.includes(String(meta.projectSlug).toLowerCase())) {
         [project] = await db.select().from(projects).where(or(
           eq(projects.slug, String(meta.projectSlug)),
           eq(sql`lower(${projects.slug})`, String(meta.projectSlug).toLowerCase())
@@ -91,7 +108,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Priority 4: B2B Growth OS leads (never general B2C leads)
+    // Priority 4: B2B Growth OS leads (ONLY dedicated client workspaces, NEVER protected B2C projects)
     if (!project) {
       const leads = await db
         .select({ projectId: marketingLeads.projectId, metadata: marketingLeads.metadata })
@@ -101,7 +118,9 @@ export async function POST(req: NextRequest) {
       
       const b2bLead = leads.find((l) => {
         const m = (l.metadata as any) || {};
-        return m.type === 'growth_os_signup' || m.tags?.includes('B2B_GROWTH_OS');
+        const isB2B = m.type === 'growth_os_signup' || m.tags?.includes('B2B_GROWTH_OS');
+        const notProtected = l.projectId && !PROTECTED_PROJECT_IDS.includes(l.projectId);
+        return isB2B && notProtected;
       });
 
       if (b2bLead?.projectId) {
@@ -123,9 +142,10 @@ export async function POST(req: NextRequest) {
 
     let token = '';
     let activeProjectId = project?.id;
+    let activeProjectSlug = project?.slug;
 
-    if (activeProjectId && project) {
-      // User has an explicit project
+    if (activeProjectId && project && !PROTECTED_PROJECT_IDS.includes(activeProjectId)) {
+      // User has an explicit tenant workspace
       if (!installedId) {
         const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);
         if (products && products.length > 0) {
@@ -136,7 +156,9 @@ export async function POST(req: NextRequest) {
             product: 'HERMES',
             productFamily: 'GROWTH_OS',
             plan: 'sandbox',
-            status: 'trial'
+            status: 'trial',
+            config: { email: cleanEmail, companyName: project.title },
+            runtimeManifest: { context: { adminEmail: cleanEmail } },
           }).returning({ id: installedProducts.id });
           installedId = newProduct!.id;
         }
@@ -148,11 +170,19 @@ export async function POST(req: NextRequest) {
       const { ensureInitialWorkspace } = await import('@/lib/platform/workspace-bootstrap');
       const bootstrap = await ensureInitialWorkspace(cleanEmail);
       token = bootstrap.portalToken;
+      activeProjectId = bootstrap.projectId;
+      activeProjectSlug = bootstrap.projectSlug;
+      project = {
+        id: bootstrap.projectId,
+        slug: bootstrap.projectSlug,
+        title: 'Workspace',
+        status: 'draft',
+      } as any;
     }
 
     // 4. Generate Magic Link with proper return destination
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
-    const destination = safeReturn || (project?.slug ? `/onboarding/${project.slug}` : '/portal');
+    const destination = safeReturn || (activeProjectSlug ? `/onboarding/${activeProjectSlug}` : '/portal');
     const magicLink = `${baseUrl}/portal/login?token=${token}&return=${encodeURIComponent(destination)}`;
 
     console.info(`[MagicLink API] Magic Link generated for ${cleanEmail} (Target: ${destination}): ${magicLink}`);
