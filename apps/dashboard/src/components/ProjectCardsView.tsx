@@ -19,7 +19,6 @@ interface ProjectCardsViewProps {
   setExpandedProject: (id: string | null) => void;
   setStatusDropdown: (id: string | null) => void;
   statusDropdown: string | null;
-  onOpenDetail?: (project: Project) => void;
 }
 
 export function ProjectCardsView({
