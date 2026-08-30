@@ -549,8 +549,8 @@ async function getExistingFlow(phone: string): Promise<FlowType | null> {
 async function assignFlow(phone: string, flowType: FlowType, name?: string, projectId?: number | null): Promise<void> {
   // Crear usuario
   await sql`
-    INSERT INTO whatsapp_users (phone, name, priority_level)
-    VALUES (${phone}, ${name || null}, 'normal')
+    INSERT INTO whatsapp_users (id, phone, name, priority_level)
+    VALUES (gen_random_uuid()::text, ${phone}, ${name || null}, 'normal')
     ON CONFLICT (phone)
     DO NOTHING
   `;
@@ -563,8 +563,8 @@ async function assignFlow(phone: string, flowType: FlowType, name?: string, proj
   if (user) {
     // Crear sesión activa para este flujo
     await sql`
-      INSERT INTO whatsapp_sessions (user_id, flow_type, state, current_step, is_active)
-      VALUES (${user.id}, ${flowType}, ${JSON.stringify({ projectId: projectId || null })}::jsonb, 0, true)
+      INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active)
+      VALUES (gen_random_uuid()::text, ${user.id}, ${flowType}, ${JSON.stringify({ projectId: projectId || null })}::jsonb, 0, true)
       ON CONFLICT (user_id, flow_type)
       DO UPDATE SET is_active = true, updated_at = now()
     `;
@@ -829,8 +829,8 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
 
         // 2. Activar/Crear sesión del nuevo flujo
         await sql`
-          INSERT INTO whatsapp_sessions (user_id, flow_type, state, current_step, is_active)
-          SELECT id, ${newFlow}, '{}'::jsonb, 0, true
+          INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active)
+          SELECT gen_random_uuid()::text, id, ${newFlow}, '{}'::jsonb, 0, true
           FROM whatsapp_users WHERE phone = ${phone}
           ON CONFLICT (user_id, flow_type)
           DO UPDATE SET is_active = true, current_step = 0, state = '{}'::jsonb, updated_at = now()

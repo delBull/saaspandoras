@@ -5,7 +5,7 @@ import {
 import { sendTelegramMessage, setTelegramChatMenuButton } from '@/lib/hermes/telegram-runtime/router';
 import { collectSystemStatus, buildStatusMessage } from '@/lib/hermes/bot/system-status';
 import { db } from '@/db';
-import { hermesJourneys, hermesJourneyStages, hermesAddonInstallations } from '@/db/schema';
+import { hermesJourneys, hermesJourneyStages, hermesAddonInstallations, projects } from '@/db/schema';
 import { eq, or, asc } from 'drizzle-orm';
 import { CANONICAL_ADDONS, ensureCanonicalAddOnsRegistered } from '@/lib/pandoras/core/domains/hermes/addons/catalog';
 
@@ -138,8 +138,12 @@ export class HermesOSBotAdapter {
       return this.executeAddonsCommand(chatId, telegramUserId);
     }
 
-    // Default Fallback
-    return this.executeHelpCommand(chatId);
+    if (command === '/help') {
+      return this.executeHelpCommand(chatId);
+    }
+
+    // Conversational Chat Fallback (Natural Language with Hermes Cognitive Runtime)
+    return this.executeConversationalMessage(chatId, telegramUserId, text);
   }
 
   private async executeHelpCommand(chatId: number): Promise<HermesBotExecutionResult> {
@@ -490,4 +494,95 @@ export class HermesOSBotAdapter {
       return { handled: true, action: 'ADDONS_ERROR' };
     }
   }
+
+  private async executeConversationalMessage(
+    chatId: number,
+    telegramUserId: string,
+    text: string
+  ): Promise<HermesBotExecutionResult> {
+    const tenants = await this.membershipService.getAuthorizedTenants(telegramUserId);
+    if (tenants.length === 0) {
+      const helpText = `🤖 <b>Hermes OS</b>\n\n` +
+        `Hola. Tu cuenta de Telegram (ID: <code>${escapeHtml(telegramUserId)}</code>) no está vinculada a ningún Workspace activo en Hermes OS.\n\n` +
+        `Usa <code>/start</code> para ver opciones o ingresa al Dashboard para vincular tu Telegram.`;
+      await sendTelegramMessage(this.botToken, chatId, helpText);
+      return { handled: true, action: 'UNAUTHORIZED_CHAT' };
+    }
+
+    const activeTenant = tenants[0]!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+
+    try {
+      // Find matching project in DB
+      let projectRecord = await db.query.projects.findFirst({
+        where: or(
+          eq(projects.slug, cleanTenant),
+          eq(projects.slug, activeTenant.organizationId)
+        ),
+      });
+
+      if (!projectRecord) {
+        const numId = parseInt(activeTenant.organizationId, 10);
+        if (!isNaN(numId)) {
+          projectRecord = await db.query.projects.findFirst({
+            where: eq(projects.id, numId),
+          });
+        }
+      }
+
+      if (projectRecord) {
+        const { HermesExecutionEngine } = await import('@/lib/hermes/kernel/execution/execution-api');
+        const { TelegramAdapter } = await import('@/lib/hermes/adapters/telegram-adapter');
+
+        const engine = new HermesExecutionEngine();
+        const fakeUpdate = {
+          message: {
+            text,
+            chat: { id: chatId },
+            from: { id: parseInt(telegramUserId, 10) || 0 },
+          },
+          botToken: this.botToken,
+          projectRecord,
+          metadata: (projectRecord.w2eConfig as any) || {},
+        };
+
+        const context = TelegramAdapter.parse(projectRecord.id, fakeUpdate);
+        const result = await engine.execute(context);
+        const reply = TelegramAdapter.render(result);
+
+        if (reply && reply.trim()) {
+          const keyboard = {
+            inline_keyboard: [
+              [{ text: '🚀 Abrir Command Center (TMA)', web_app: { url: tmaUrl } }],
+              [{ text: '📊 Estado', callback_data: 'cmd:status' }]
+            ]
+          };
+          await sendTelegramMessage(this.botToken, chatId, reply, keyboard);
+          return { handled: true, action: 'CONVERSATIONAL_REPLY', data: result };
+        }
+      }
+
+      // Fallback if no specific project execution was rendered
+      const fallbackMsg = `🤖 <b>Hermes OS [${escapeHtml(activeTenant.organizationName)}]</b>\n\n` +
+        `Recibí tu consulta: <i>"${escapeHtml(text)}"</i>.\n\n` +
+        `Puedes consultar el estado con <code>/status</code>, gestionar embudos con <code>/journeys</code> o abrir la Mini App para interactuar con tus agentes.`;
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🚀 Abrir Command Center (TMA)', web_app: { url: tmaUrl } }],
+          [{ text: '📊 Estado del Sistema', callback_data: 'cmd:status' }],
+          [{ text: '🎯 Journeys', callback_data: 'cmd:journeys' }]
+        ]
+      };
+
+      await sendTelegramMessage(this.botToken, chatId, fallbackMsg, keyboard);
+      return { handled: true, action: 'CONVERSATIONAL_FALLBACK' };
+    } catch (err: any) {
+      console.error('[HermesOSBotAdapter] Conversational message processing error:', err);
+      await sendTelegramMessage(this.botToken, chatId, `⚠️ Ocurrió un error al procesar tu mensaje con Hermes OS.`);
+      return { handled: true, action: 'CONVERSATIONAL_ERROR', error: err?.message };
+    }
+  }
 }
+

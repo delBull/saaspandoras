@@ -18,11 +18,14 @@ export async function POST(req: NextRequest) {
   try {
     // C1 fail-closed: sin secret configurado en producción, rechazar siempre.
     const expectedSecret =
-      process.env.HERMES_BOT_WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET || '';
+      process.env.HERMES_WEBHOOK_SECRET ||
+      process.env.HERMES_BOT_WEBHOOK_SECRET ||
+      process.env.TELEGRAM_WEBHOOK_SECRET ||
+      '';
 
     if (!expectedSecret) {
       if (process.env.NODE_ENV === 'production') {
-        console.error('[API /api/hermes/bot/webhook] HERMES_BOT_WEBHOOK_SECRET not configured in production.');
+        console.error('[API /api/hermes/bot/webhook] Webhook secret (HERMES_WEBHOOK_SECRET or HERMES_BOT_WEBHOOK_SECRET) not configured in production.');
         return NextResponse.json({ ok: false, error: 'Service Unavailable' }, { status: 503 });
       }
       console.warn('[API /api/hermes/bot/webhook] No webhook secret configured (non-production).');

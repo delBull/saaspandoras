@@ -8,7 +8,7 @@ import { IpfsProvider, IpfsHealthStatus, IpfsProviderType } from './contracts';
 
 export class MockIpfsProvider implements IpfsProvider {
   public readonly providerType: IpfsProviderType = 'MOCK';
-  private storage: Map<string, string> = new Map();
+  private static readonly globalStorage: Map<string, string> = new Map();
 
   /**
    * Computes a canonical RFC4648 CIDv1 base32 multihash (bafkrei...) for arbitrary JSON or buffer
@@ -39,12 +39,12 @@ export class MockIpfsProvider implements IpfsProvider {
   public async pinJson(data: unknown, _name?: string): Promise<string> {
     const cid = MockIpfsProvider.computeCanonicalCidV1(data);
     const serialized = typeof data === 'string' ? data : JSON.stringify(data);
-    this.storage.set(cid, serialized);
+    MockIpfsProvider.globalStorage.set(cid, serialized);
     return cid;
   }
 
   public async fetchJson<T = unknown>(cid: string): Promise<T> {
-    const item = this.storage.get(cid);
+    const item = MockIpfsProvider.globalStorage.get(cid);
     if (!item) {
       throw new Error(`[MockIpfsProvider] CID '${cid}' not found in in-memory vault.`);
     }
@@ -52,7 +52,7 @@ export class MockIpfsProvider implements IpfsProvider {
   }
 
   public async exists(cid: string): Promise<boolean> {
-    return this.storage.has(cid);
+    return MockIpfsProvider.globalStorage.has(cid);
   }
 
   public async healthCheck(): Promise<IpfsHealthStatus> {
@@ -65,6 +65,7 @@ export class MockIpfsProvider implements IpfsProvider {
   }
 
   public clear(): void {
-    this.storage.clear();
+    MockIpfsProvider.globalStorage.clear();
   }
 }
+

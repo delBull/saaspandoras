@@ -84,6 +84,7 @@ export class HermesNotificationDispatcher {
 
   constructor(opts?: { botToken?: string; tmaBaseUrl?: string; dedupeWindowMs?: number }) {
     this.botToken = opts?.botToken ||
+      process.env.HERMES_TELEGRAM_BOT_TOKEN ||
       process.env.HERMES_BOT_TOKEN ||
       process.env.TELEGRAM_BOT_TOKEN ||
       '';

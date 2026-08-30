@@ -173,8 +173,8 @@ export async function POST(request: Request) {
                     // Initialize Session in DB for 'protocol_application' flow
                     // This ensures the next reply is routed correctly
                     await db.execute(sql`
-                    INSERT INTO whatsapp_users (phone, name, priority_level)
-                    VALUES (${phone}, ${projectName || 'Lead'}, 'normal')
+                    INSERT INTO whatsapp_users (id, phone, name, priority_level)
+                    VALUES (gen_random_uuid()::text, ${phone}, ${projectName || 'Lead'}, 'normal')
                     ON CONFLICT (phone) DO UPDATE SET name = ${projectName || 'Lead'};
                 `);
 
@@ -185,8 +185,8 @@ export async function POST(request: Request) {
                     if (user) {
                         // Set Active Session to 'protocol_application'
                         await db.execute(sql`
-                        INSERT INTO whatsapp_sessions (user_id, flow_type, state, current_step, is_active)
-                        VALUES (${user.id}, 'protocol_application', '{}'::jsonb, 1, true)
+                        INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active)
+                        VALUES (gen_random_uuid()::text, ${user.id}, 'protocol_application', '{}'::jsonb, 1, true)
                         ON CONFLICT (user_id, flow_type)
                         DO UPDATE SET is_active = true, current_step = 1, updated_at = now();
                     `);
