@@ -1,12 +1,12 @@
-# 🌐 Pandora's Sovereign IPFS Reverse Proxy (Unified Port for Railway / Cloud)
+# 🌐 Pandora's Sovereign IPFS Reverse Proxy (Multi-Port Listener for Railway)
 {
     auto_https off
 }
 
-:{$PORT:8080} {
+:80, :8080, :5000, :{$PORT:8080} {
     encode gzip zstd
 
-    # Route 1: Private RPC API (Hermes & Deal Signing Control Plane)
+    # Route 1: Private RPC API (rpc.ipfs.pandoras.finance)
     @rpc {
         header_regexp host Host ^rpc\.
     }
@@ -17,15 +17,10 @@
         }
         respond @unauthorized "Unauthorized Sovereign RPC Access" 401
 
-        reverse_proxy 127.0.0.1:5001 {
-            header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
+        reverse_proxy 127.0.0.1:5001
     }
 
-    # Route 2: Public Read-Only Gateway (Web3 Frontends & IPFS Downloads)
+    # Route 2: Public Read-Only Gateway (ipfs.pandoras.finance)
     handle {
         header {
             Access-Control-Allow-Origin *
@@ -39,11 +34,6 @@
         }
         respond @options 204
 
-        reverse_proxy 127.0.0.1:8080 {
-            header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
+        reverse_proxy 127.0.0.1:8080
     }
 }

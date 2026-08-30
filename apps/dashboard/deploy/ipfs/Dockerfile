@@ -18,6 +18,6 @@ RUN chmod +x /app/entrypoint-railway.sh
 
 ENV IPFS_PATH=/data/ipfs
 
-EXPOSE 80 443 4001 5001 8080
+EXPOSE 8080 80
 
 ENTRYPOINT ["/app/entrypoint-railway.sh"]
