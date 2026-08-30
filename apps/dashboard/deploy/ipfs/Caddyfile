@@ -1,52 +1,49 @@
-# 🌐 Pandora's Sovereign IPFS Reverse Proxy Configuration (Railway Edge Ready)
+# 🌐 Pandora's Sovereign IPFS Reverse Proxy (Unified Port for Railway / Cloud)
 {
     auto_https off
 }
 
-# 1. Public Gateway (Read Only - Content Addressed)
-http://ipfs.pandoras.finance {
+:{$PORT:8080} {
     encode gzip zstd
 
-    # CORS Headers for Web3 Frontends
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
-        Access-Control-Allow-Headers "Range"
-        X-Content-Type-Options "nosniff"
+    # Route 1: Private RPC API (Hermes & Deal Signing Control Plane)
+    @rpc {
+        header_regexp host Host ^rpc\.
+    }
+    handle @rpc {
+        @unauthorized {
+            not header Authorization "Bearer {$PANDORAS_KUBO_API_KEY}"
+            not header X-API-Key "{$PANDORAS_KUBO_API_KEY}"
+        }
+        respond @unauthorized "Unauthorized Sovereign RPC Access" 401
+
+        reverse_proxy 127.0.0.1:5001 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
     }
 
-    # Handle Preflight
-    @options {
-        method OPTIONS
-    }
-    respond @options 204
+    # Route 2: Public Read-Only Gateway (Web3 Frontends & IPFS Downloads)
+    handle {
+        header {
+            Access-Control-Allow-Origin *
+            Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+            Access-Control-Allow-Headers "Range"
+            X-Content-Type-Options "nosniff"
+        }
 
-    # Reverse proxy to local Kubo Gateway
-    reverse_proxy 127.0.0.1:8080 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
+        @options {
+            method OPTIONS
+        }
+        respond @options 204
+
+        reverse_proxy 127.0.0.1:8080 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
     }
 }
-
-# 2. Private RPC API (Hermes Control Plane Only)
-http://rpc.ipfs.pandoras.finance, :80 {
-    encode gzip zstd
-
-    # Authentication Gate: Check Bearer token or X-API-Key
-    @unauthorized {
-        not header Authorization "Bearer {$PANDORAS_KUBO_API_KEY}"
-        not header X-API-Key "{$PANDORAS_KUBO_API_KEY}"
-    }
-    respond @unauthorized "Unauthorized Sovereign RPC Access" 401
-
-    # Reverse proxy to local Kubo RPC API
-    reverse_proxy 127.0.0.1:5001 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
-    }
-}
-
