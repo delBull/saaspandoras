@@ -38,34 +38,26 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
   if (lower === superAdmin && superAdmin !== "0x_undefined_admin") return true;
 
   try {
-    const getCachedAdmin = unstable_cache(
-      async (wallet: string) => {
-        // 1. Check administrators table (case-insensitive)
-        const adminResult = await db
-          .select({ id: administrators.id })
-          .from(administrators)
-          .where(sql`lower(${administrators.walletAddress}) = ${wallet}`)
-          .limit(1);
-        if (adminResult.length > 0) return true;
+    // 1. Check administrators table (case-insensitive)
+    const adminResult = await db
+      .select({ id: administrators.id })
+      .from(administrators)
+      .where(sql`lower(${administrators.walletAddress}) = ${lower}`)
+      .limit(1);
+    if (adminResult.length > 0) return true;
 
-        // 2. Check users table for admin/superadmin/operator role (case-insensitive)
-        const userResult = await db
-          .select({ id: users.id, role: users.role })
-          .from(users)
-          .where(sql`lower(${users.walletAddress}) = ${wallet}`)
-          .limit(1);
-        if (userResult.length > 0) {
-          const r = (userResult[0]?.role || '').toLowerCase();
-          if (r === 'admin' || r === 'superadmin' || r === 'operator') return true;
-        }
+    // 2. Check users table for admin/superadmin/operator role (case-insensitive)
+    const userResult = await db
+      .select({ id: users.id, role: users.role })
+      .from(users)
+      .where(sql`lower(${users.walletAddress}) = ${lower}`)
+      .limit(1);
+    if (userResult.length > 0) {
+      const r = (userResult[0]?.role || '').toLowerCase();
+      if (r === 'admin' || r === 'superadmin' || r === 'operator') return true;
+    }
 
-        return false;
-      },
-      [`admin-check-${lower}`],
-      { revalidate: 60 } // Cache for 1 minute
-    );
-
-    return await getCachedAdmin(lower);
+    return false;
   } catch (error) {
     console.error("💥 isAdmin: Database query FAILED for", lower, ":", error);
     return false;

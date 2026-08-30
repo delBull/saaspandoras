@@ -19,8 +19,15 @@ export async function validateAdminSession(reqHeaders?: Headers): Promise<{ sess
   const actualHeaders = reqHeaders || await headers();
   
   try {
-    const { session, isVerified } = await getAuth(actualHeaders);
-    const address = session?.address || session?.address;
+    const clientWallet = actualHeaders.get('x-thirdweb-address') || 
+                         actualHeaders.get('x-wallet-address') || 
+                         actualHeaders.get('x-user-address') || 
+                         undefined;
+
+    const { session, isVerified } = await getAuth(actualHeaders, clientWallet);
+    const address = (clientWallet && /^0x[a-fA-F0-9]{40}$/.test(clientWallet)) 
+      ? clientWallet.toLowerCase() 
+      : session?.address?.toLowerCase();
 
     if (!isVerified || !address) {
       logger.warn({
