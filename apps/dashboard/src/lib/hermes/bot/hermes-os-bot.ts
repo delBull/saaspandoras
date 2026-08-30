@@ -72,7 +72,7 @@ export class HermesOSBotAdapter {
   private membershipService: HermesTenantMembershipService;
 
   constructor(options: { botToken?: string; tmaBaseUrl?: string } = {}) {
-    this.botToken = options.botToken || process.env.HERMES_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
+    this.botToken = options.botToken || process.env.HERMES_TELEGRAM_BOT_TOKEN || process.env.HERMES_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
     this.tmaBaseUrl = options.tmaBaseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
     this.membershipService = new HermesTenantMembershipService();
   }
