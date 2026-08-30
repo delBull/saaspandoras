@@ -1,21 +1,34 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { HermesIntelligencePanel } from '@/components/hermes-portal/overview/HermesIntelligencePanel';
 import { motion } from 'framer-motion';
-import { Loader2, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, ArrowRight, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function OnboardingClient({ organizationSlug, organizationName }: { organizationSlug: string, organizationName: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isResetRequested = searchParams.get('reset') === 'true';
+
   const [isVerifying, setIsVerifying] = useState(true);
   const [isActivating, setIsActivating] = useState(false);
 
   useEffect(() => {
-    // 1. Verificar el estado actual del Onboarding Workflow de Hermes
+    // 1. If reset parameter is present, reset state first
     async function checkState() {
       try {
+        if (isResetRequested) {
+          await fetch('/api/v1/internal/portal/onboarding/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ organizationSlug }),
+          });
+          setIsVerifying(false);
+          return;
+        }
+
         const res = await fetch(`/api/v1/internal/portal/messages?organizationSlug=${encodeURIComponent(organizationSlug)}`);
         if (res.ok) {
           const data = await res.json();
@@ -34,9 +47,11 @@ export function OnboardingClient({ organizationSlug, organizationName }: { organ
     checkState();
 
     // 2. Poll state occasionally to perform automatic handoff if state changes
-    const interval = setInterval(checkState, 10000);
-    return () => clearInterval(interval);
-  }, [organizationSlug, router]);
+    if (!isResetRequested) {
+      const interval = setInterval(checkState, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [organizationSlug, router, isResetRequested]);
 
   const handleBulkActivate = async () => {
     setIsActivating(true);

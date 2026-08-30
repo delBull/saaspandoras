@@ -1,6 +1,6 @@
 import { db } from "~/db";
-import { administrators } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { administrators, users } from "~/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { SUPER_ADMIN_WALLET } from "./constants";
 import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import jwt from "jsonwebtoken";
@@ -40,14 +40,29 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
   try {
     const getCachedAdmin = unstable_cache(
       async (wallet: string) => {
-        const result = await db
-          .select()
+        // 1. Check administrators table (case-insensitive)
+        const adminResult = await db
+          .select({ id: administrators.id })
           .from(administrators)
-          .where(eq(administrators.walletAddress, wallet));
-        return result.length > 0;
+          .where(sql`lower(${administrators.walletAddress}) = ${wallet}`)
+          .limit(1);
+        if (adminResult.length > 0) return true;
+
+        // 2. Check users table for admin/superadmin/operator role (case-insensitive)
+        const userResult = await db
+          .select({ id: users.id, role: users.role })
+          .from(users)
+          .where(sql`lower(${users.walletAddress}) = ${wallet}`)
+          .limit(1);
+        if (userResult.length > 0) {
+          const r = (userResult[0]?.role || '').toLowerCase();
+          if (r === 'admin' || r === 'superadmin' || r === 'operator') return true;
+        }
+
+        return false;
       },
       [`admin-check-${lower}`],
-      { revalidate: 300 } // Cache for 5 minutes
+      { revalidate: 60 } // Cache for 1 minute
     );
 
     return await getCachedAdmin(lower);

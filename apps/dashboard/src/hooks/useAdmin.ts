@@ -19,14 +19,34 @@ export function useAdmin() {
   const isStaging = branchName === 'staging' || process.env.NEXT_PUBLIC_APP_ENV === "staging";
   
   const superAdminWallet = (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET)?.toLowerCase();
-  const adminWallets = (process.env.NEXT_PUBLIC_ADMIN_WALLETS || "").toLowerCase().split(",");
+  const adminWallets = (process.env.NEXT_PUBLIC_ADMIN_WALLETS || "").toLowerCase().split(",").filter(Boolean);
   
   const isSuperAdmin = !!account && !!superAdminWallet && account.address.toLowerCase() === superAdminWallet;
   const isListedAdmin = !!account && adminWallets.includes(account.address.toLowerCase());
 
-  // ✅ STRICT DETERMINISTIC ACCESS:
-  // Only SuperAdmin or ListedAdmin (from server-side env) are allowed.
-  const isAdmin = isSuperAdmin || isListedAdmin;
+  const [isDbAdmin, setIsDbAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!account?.address) {
+      setIsDbAdmin(false);
+      return;
+    }
+    if (isSuperAdmin || isListedAdmin) {
+      setIsDbAdmin(true);
+      return;
+    }
+    fetch('/api/admin/verify', {
+      headers: { 'x-thirdweb-address': account.address }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data?.isAdmin || data?.isSuperAdmin) setIsDbAdmin(true);
+      })
+      .catch(() => {});
+  }, [account?.address, isSuperAdmin, isListedAdmin]);
+
+  // ✅ STRICT DETERMINISTIC ACCESS + DB ADMIN VERIFICATION
+  const isAdmin = isSuperAdmin || isListedAdmin || isDbAdmin;
 
   return {
     isAdmin,

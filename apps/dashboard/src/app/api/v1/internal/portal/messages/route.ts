@@ -24,26 +24,38 @@ interface OrganizationOnboardingState {
   messages: PortalChatMessage[];
 }
 
-function getTopicChips(topicId: string, orgName: string): string[] {
+function getTopicChips(topicId: string, orgName: string, orgSlug?: string): string[] {
+  const isKnownSnarai = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
+
   switch (topicId) {
     case 'marketing':
-      return [
+      return isKnownSnarai ? [
         '🚀 Plan de Lanzamiento Founder',
         '💎 Propuesta de Valor ($50 USD)',
         '🎯 Segmentación Inversionistas VIP',
         '📊 Campaña Meta & Funnels'
+      ] : [
+        `🚀 Plan de Crecimiento ${orgName}`,
+        '💎 Propuesta de Valor',
+        '🎯 Segmentación de Audiencia',
+        '📊 Campañas y Canales'
       ];
     case 'tokenomics':
-      return [
+      return isKnownSnarai ? [
         '📜 Estructura de CPs y Fideicomiso',
         '🏖️ Noches de Estancia por Nivel',
         '💰 Distribución Pro-Rata USDC',
         '🛡️ Respaldo RWA en Bucerías'
+      ] : [
+        `📜 Estructura de Activos — ${orgName}`,
+        '💰 Modelo de Rendimiento y Utilidad',
+        '🛡️ Respaldo y Custodia',
+        '⚖️ Reglas de Gobernanza'
       ];
     case 'journeys':
       return [
-        '🚨 Reglas de Escalación (> $25k USD)',
-        '📋 Funnel de Cualificación de Leads',
+        '🚨 Reglas de Escalación Humana',
+        '📋 Cualificación de Prospectos',
         '📱 Flujo WhatsApp Concierge',
         '💬 Asistente Telegram'
       ];
@@ -51,7 +63,7 @@ function getTopicChips(topicId: string, orgName: string): string[] {
     default:
       return [
         '📊 Resumen de Rendimiento',
-        '💎 Diagnóstico de Bóveda RWA',
+        '💎 Diagnóstico de Bóveda',
         '🤖 Configurar Nuevo Journey',
         '🔧 Políticas Institucionales'
       ];
@@ -59,7 +71,7 @@ function getTopicChips(topicId: string, orgName: string): string[] {
 }
 
 function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: string): PortalChatMessage {
-  const isKnownOrg = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
+  const isKnownSnarai = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
   const now = new Date().toISOString();
 
   switch (topicId) {
@@ -67,37 +79,41 @@ function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: strin
       return {
         id: `welcome_marketing_${Date.now()}`,
         role: 'hermes',
-        content: `🎯 **Estrategia de Marketing & Lanzamiento — ${orgName}**\n\nConozco el dossier confidencial, el pool de capitalización de **$100M MXN** y las tres fases de certificados:\n\n1. 💎 **Fase Founder:** $50 USD / CP\n2. 📈 **Fase Estratégica:** $75 USD / CP\n3. 🏛️ **Fase General:** $100 USD / CP\n\n¿Qué aspecto de la campaña, embudo o segmentación de inversionistas deseas estructurar hoy?`,
+        content: isKnownSnarai
+          ? `🎯 **Estrategia de Marketing & Lanzamiento — ${orgName}**\n\nConozco el dossier confidencial, el pool de capitalización de **$100M MXN** y las tres fases de certificados:\n\n1. 💎 **Fase Founder:** $50 USD / CP\n2. 📈 **Fase Estratégica:** $75 USD / CP\n3. 🏛️ **Fase General:** $100 USD / CP\n\n¿Qué aspecto de la campaña, embudo o segmentación de inversionistas deseas estructurar hoy?`
+          : `🎯 **Estrategia de Marketing & Crecimiento — ${orgName}**\n\nEstoy listo para calibrar tus canales de adquisición, copies publicitarios y embudos de prospección institucionales para **${orgName}**.\n\n¿Qué objetivo de marketing o campaña deseas trabajar hoy?`,
         timestamp: now,
-        chips: getTopicChips('marketing', orgName)
+        chips: getTopicChips('marketing', orgName, orgSlug)
       };
     case 'tokenomics':
       return {
         id: `welcome_tokenomics_${Date.now()}`,
         role: 'hermes',
-        content: `🏛️ **Estructura RWA & Certificados de Participación — ${orgName}**\n\nEste canal está enfocado en la ingeniería patrimonial de la **Zona Dorada de Bucerías**:\n\n- 💰 **5% Yield Operativo Pro-Rata en USDC**\n- 🏖️ **Derechos de Estancia:** Explorer ($500), Resident ($2,500), Ambassador ($10,000), Riviera Owner ($50,000)\n- 🛡️ **Fideicomiso Bancario Mexicano**\n\n¿Qué consulta tienes sobre el activo o los rendimientos?`,
+        content: isKnownSnarai
+          ? `🏛️ **Estructura RWA & Certificados de Participación — ${orgName}**\n\nEste canal está enfocado en la ingeniería patrimonial de la **Zona Dorada de Bucerías**:\n\n- 💰 **5% Yield Operativo Pro-Rata en USDC**\n- 🏖️ **Derechos de Estancia:** Explorer ($500), Resident ($2,500), Ambassador ($10,000), Riviera Owner ($50,000)\n- 🛡️ **Fideicomiso Bancario Mexicano**\n\n¿Qué consulta tienes sobre el activo o los rendimientos?`
+          : `🏛️ **Modelo de Negocio & Tokenomics — ${orgName}**\n\nEste canal analiza la estructura de capital, incentivos y economía de **${orgName}** según los contratos y la bóveda de conocimiento activa.\n\n¿Qué consulta tienes sobre el modelo o las reglas de distribución?`,
         timestamp: now,
-        chips: getTopicChips('tokenomics', orgName)
+        chips: getTopicChips('tokenomics', orgName, orgSlug)
       };
     case 'journeys':
       return {
         id: `welcome_journeys_${Date.now()}`,
         role: 'hermes',
-        content: `🤖 **Automatizaciones & Embudo de Prospección — ${orgName}**\n\nControl de flujos conversacionales multicanal:\n\n- 📞 **Cualificación de Leads en WhatsApp y Telegram**\n- 🚨 **Escalación Humana Inmediata** para compras corporativas (> $25,000 USD)\n- 📅 **Agendamiento de Llamadas Patrimoniales**\n\n¿Qué flujo deseas calibrar o activar?`,
+        content: `🤖 **Automatizaciones & Embudo de Prospección — ${orgName}**\n\nControl de flujos conversacionales multicanal para **${orgName}**:\n\n- 📞 **Cualificación de Leads en WhatsApp y Telegram**\n- 🚨 **Escalación Humana Inmediata**\n- 📅 **Agendamiento y Cierre Asistido**\n\n¿Qué flujo deseas calibrar o activar?`,
         timestamp: now,
-        chips: getTopicChips('journeys', orgName)
+        chips: getTopicChips('journeys', orgName, orgSlug)
       };
     case 'general':
     default:
-      const initialContent = isKnownOrg 
+      const initialContent = isKnownSnarai 
         ? `Hola. Soy **Hermes**, tu Asesor Patrimonial y Growth Intelligence Officer para **${orgName}**.\n\nConozco a fondo el modelo de Fractional Real Estate, la bóveda de conocimiento y los canales conectados. ¿En qué objetivo estratégico nos enfocamos hoy?`
-        : `Hola. Soy **Hermes**, tu asistente institucional para **${orgName}**. ¿En qué puedo ayudarte hoy?`;
+        : `Hola. Soy **Hermes**, el agente inteligente y sistema operativo de **${orgName}**.\n\nEstoy conectado a tu bóveda de conocimiento y canales activos. ¿En qué objetivo o consulta estratégica deseas enfocarte hoy?`;
       return {
         id: `welcome_general_${Date.now()}`,
         role: 'hermes',
         content: initialContent,
         timestamp: now,
-        chips: getTopicChips('general', orgName)
+        chips: getTopicChips('general', orgName, orgSlug)
       };
   }
 }
@@ -191,6 +207,8 @@ export async function GET(request: Request) {
 
     const currentStage: OnboardingStage = (onboardingRows[0]?.stage as OnboardingStage) || 'BUSINESS_DISCOVERY';
 
+    const isKnownSnarai = tenantSlug === 'snarai' || orgName.toLowerCase().includes('narai');
+
     // 1. Fetch persisted messages from hermesConversationMessages
     const dbMessages = await db
       .select()
@@ -200,7 +218,7 @@ export async function GET(request: Request) {
           or(
             eq(hermesConversationMessages.organizationId, tenantSlug),
             eq(hermesConversationMessages.organizationId, orgId),
-            eq(hermesConversationMessages.organizationId, 'snarai')
+            ...(isKnownSnarai ? [eq(hermesConversationMessages.organizationId, 'snarai')] : [])
           ),
           or(
             eq(hermesConversationMessages.conversationId, conversationId),
@@ -224,7 +242,7 @@ export async function GET(request: Request) {
         topicId,
         stage: currentStage,
         messages: mappedMessages,
-        chips: getTopicChips(topicId, orgName)
+        chips: getTopicChips(topicId, orgName, tenantSlug)
       });
     }
 
@@ -235,7 +253,7 @@ export async function GET(request: Request) {
       topicId,
       stage: currentStage,
       messages: [topicInitial],
-      chips: getTopicChips(topicId, orgName)
+      chips: getTopicChips(topicId, orgName, tenantSlug)
     });
   } catch (error: any) {
     console.error('[Portal Messages GET] Error:', error);
