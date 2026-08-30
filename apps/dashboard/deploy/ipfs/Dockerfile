@@ -17,7 +17,6 @@ COPY entrypoint-railway.sh /app/entrypoint-railway.sh
 RUN chmod +x /app/entrypoint-railway.sh
 
 ENV IPFS_PATH=/data/ipfs
-VOLUME /data/ipfs
 
 EXPOSE 80 443 4001 5001 8080
 
