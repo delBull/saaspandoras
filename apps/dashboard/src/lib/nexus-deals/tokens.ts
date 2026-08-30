@@ -82,3 +82,49 @@ export async function verifyUnlockToken(token: string): Promise<boolean> {
     return false;
   }
 }
+
+export interface AcademyTokenVerification {
+  valid: boolean;
+  email?: string;
+  role?: 'admin' | 'manager';
+}
+
+export async function generateAcademyToken(email: string, role: 'admin' | 'manager' = 'manager'): Promise<string> {
+  // 24h validity for Academy Manager / Admin Magic Links
+  const exp = Date.now() + 24 * 60 * 60 * 1000;
+  const sig = await hmacSign(`${email}:${role}:academy:${exp}`);
+  const raw = JSON.stringify({ email, role, scope: "academy-control-plane", exp, sig });
+  return Buffer.from(raw)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export async function verifyAcademyToken(token: string): Promise<AcademyTokenVerification> {
+  if (!token) return { valid: false };
+  try {
+    const raw = Buffer.from(token.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
+    const parsed = JSON.parse(raw) as { email: string; role?: 'admin' | 'manager'; scope: string; exp: number; sig: string };
+    
+    // Support legacy nexus-deal-rooms tokens as admin
+    if (parsed.scope === "nexus-deal-rooms") {
+      if (Date.now() > parsed.exp) return { valid: false };
+      const expected = await hmacSign(`${parsed.email}:nexus-deal-rooms:${parsed.exp}`);
+      if (expected === parsed.sig) {
+        return { valid: true, email: parsed.email, role: 'admin' };
+      }
+      return { valid: false };
+    }
+
+    if (parsed.scope !== "academy-control-plane") return { valid: false };
+    if (Date.now() > parsed.exp) return { valid: false };
+    const role = parsed.role || 'manager';
+    const expected = await hmacSign(`${parsed.email}:${role}:academy:${parsed.exp}`);
+    if (expected !== parsed.sig) return { valid: false };
+
+    return { valid: true, email: parsed.email, role };
+  } catch {
+    return { valid: false };
+  }
+}

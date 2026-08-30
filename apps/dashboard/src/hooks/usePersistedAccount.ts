@@ -167,9 +167,12 @@ export function usePersistedAccount() {
         localStorage.removeItem("wallet-session");
         localStorage.removeItem("wallet-address");
 
-        // Clear wallet cookies
+        // Clear wallet and session cookies completely
         document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "__pbox_sid=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "pbox_session_v3=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
         setSession(null);
       }

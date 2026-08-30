@@ -5,7 +5,7 @@
 
 import { NextRequest } from 'next/server';
 import { getAuth, isAdmin } from '@/lib/auth';
-import { verifyUnlockToken } from '@/lib/nexus-deals/tokens';
+import { verifyUnlockToken, verifyAcademyToken } from '@/lib/nexus-deals/tokens';
 import { headers } from 'next/headers';
 
 export async function verifyAdminRequest(req?: NextRequest | Request): Promise<boolean> {
@@ -34,9 +34,11 @@ export async function verifyAdminRequest(req?: NextRequest | Request): Promise<b
     return true;
   }
 
-  // 2. Check Discord HMAC Unlock Token (from query param or custom header)
+  // 2. Check Academy / Discord HMAC Unlock Token (from query param or custom header)
   const unlockToken = unlockQuery || unlockHeader;
   if (unlockToken) {
+    const academyAuth = await verifyAcademyToken(unlockToken);
+    if (academyAuth.valid) return true;
     const isUnlocked = await verifyUnlockToken(unlockToken);
     if (isUnlocked) return true;
   }

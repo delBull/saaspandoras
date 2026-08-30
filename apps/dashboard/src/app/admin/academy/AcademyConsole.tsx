@@ -181,7 +181,13 @@ async function apiFetch(path: string, options: RequestInit = {}) {
   return fetch(url, { ...options, headers });
 }
 
-export default function AcademyConsole() {
+interface AcademyConsoleProps {
+  role?: "admin" | "manager";
+  userEmail?: string;
+  unlockToken?: string;
+}
+
+export default function AcademyConsole({ role = "admin", userEmail, unlockToken }: AcademyConsoleProps) {
   const [activeTab, setActiveTab] = useState<"PROGRAMS" | "CANDIDATES" | "SIMULATOR" | "METRICS">("CANDIDATES");
   const [selectedTrack, setSelectedTrack] = useState<AcademyTrack>(ACADEMY_TRACKS[0]!);
 
@@ -352,13 +358,18 @@ export default function AcademyConsole() {
             <div className="min-w-0">
               <div className="flex items-center gap-2.5">
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-widest bg-purple-500/10 border border-purple-500/30 text-purple-300 font-bold">
-                  INSTITUTIONAL CONTROL PLANE
+                  {role === "manager" ? "ACADEMY MANAGER" : "INSTITUTIONAL ADMIN"}
                 </span>
-                <span className="hidden sm:inline-block text-xs font-mono text-zinc-500">v2.0 · MULTI-TRACK</span>
+                {userEmail && (
+                  <span className="hidden sm:inline-block text-xs font-mono text-zinc-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                    {userEmail}
+                  </span>
+                )}
+                <span className="hidden md:inline-block text-xs font-mono text-zinc-500">v2.0 · MULTI-TRACK</span>
               </div>
               <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight mt-1 truncate flex items-center gap-2.5">
                 <GraduationCap className="w-6 h-6 text-purple-400 shrink-0" />
-                Pandora's Academy · Certificaciones & Tracks
+                Pandora&apos;s Academy · Certificaciones &amp; Tracks
               </h1>
             </div>
           </div>

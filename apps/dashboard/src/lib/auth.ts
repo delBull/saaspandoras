@@ -121,9 +121,13 @@ export async function getAuth(headersData?: any, userAddress?: string) {
       console.log(`🕵️ [Auth] verifyJWT resolved in ${Date.now() - decodeStartTime}ms`);
       
       if (decoded) {
-          // 🔥 INSTITUTIONAL FIX: Any valid JWT is a valid session.
-          // Extract address if available, but don't fail if it's missing.
-          const finalAddr = (decoded.address || (decoded as any).walletAddress)?.toLowerCase() || null;
+          const decodedAddr = (decoded.address || (decoded as any).walletAddress)?.toLowerCase() || null;
+          
+          // 🔥 SYNC FIX: If the caller explicitly provided the currently connected wallet address,
+          // use the actively connected wallet address instead of being hijacked by a stale JWT cookie.
+          const finalAddr = (userAddress && /^0x[a-fA-F0-9]{40}$/.test(userAddress.toLowerCase()))
+            ? userAddress.toLowerCase()
+            : decodedAddr;
           
           return {
               session: {
@@ -134,6 +138,18 @@ export async function getAuth(headersData?: any, userAddress?: string) {
               isVerified: true,
           };
       }
+    }
+
+    // 4. Fallback from connected wallet parameter
+    if (userAddress && /^0x[a-fA-F0-9]{40}$/.test(userAddress.toLowerCase())) {
+      return {
+        session: {
+          userId: null,
+          address: userAddress.toLowerCase(),
+          unverifiedAddress: null,
+        },
+        isVerified: true,
+      };
     }
 
     // 4. Unverified Fallback (For UI only)

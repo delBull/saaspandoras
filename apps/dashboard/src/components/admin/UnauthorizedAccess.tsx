@@ -39,7 +39,16 @@ export function UnauthorizedAccess({ authError }: UnauthorizedAccessProps) {
 
           <button
             onClick={() => {
-              logout();
+              try {
+                logout();
+                document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "__pbox_sid=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "pbox_session_v3=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+              } catch (e) {
+                // ignore
+              }
               router.push('/');
             }}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-900/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 rounded-lg transition-all border border-red-900/30 text-sm"
