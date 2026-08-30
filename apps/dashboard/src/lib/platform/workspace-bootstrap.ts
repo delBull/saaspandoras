@@ -76,79 +76,75 @@ export async function ensureInitialWorkspace(email: string): Promise<BootstrapRe
     };
   }
 
-  // 2. Provision new Bootstrap Workspace transactionally
-  return await db.transaction(async (tx) => {
-    // Double check to prevent race conditions
-    const raceCheck = await tx.query.projects.findFirst({
-      where: eq(projects.slug, slugTarget)
-    });
-    if (raceCheck) {
-      // Very rare race condition: return standard flow using the newly created one
-      throw new Error("Workspace created concurrently. Please retry.");
-    }
-
-    // Create the organization/tenant record
-    const insertedProject = await tx.insert(projects).values({
-      title: "Workspace en configuración",
-      slug: slugTarget,
-      description: `Auto-provisioned workspace for ${cleanEmail}`,
-      applicantEmail: cleanEmail,
-      status: 'draft' as any, // DRAFT maps to ONBOARDING
-      allowedDomains: [] as any,
-      legalConfig: {} as any,
-      extraConfig: {} as any,
-      featured: false,
-    }).returning();
-    
-    const newProject = insertedProject[0];
-    if (!newProject) throw new Error("Failed to insert new project");
-
-    // Create Bootstrap Installation (NOT a commercial subscription)
-    const insertedInstall = await tx.insert(installedProducts).values({
-      projectId: newProject.id,
-      product: 'HERMES',
-      productFamily: 'GROWTH_OS',
-      plan: 'bootstrap', 
-      status: 'trial',
-      bindingMode: 'provisioned' as any,
-      hermesInstanceId: `hermes_inst_${newProject.id}`,
-      capabilities: { intelligence: true, knowledge: true, channels: false } as any, // Channels locked until onboarding is done
-      connectors: {} as any,
-      config: {
-        email: cleanEmail,
-        companyName: 'Workspace'
-      } as any,
-      runtimeManifest: {
-        context: {
-          adminEmail: cleanEmail
-        }
-      } as any,
-      portalToken: '',
-      portalTokenUsed: false,
-    }).returning();
-    
-    const newInstall = insertedInstall[0];
-    if (!newInstall) throw new Error("Failed to insert new install");
-
-    // Initialize Onboarding State
-    await tx.insert(portalOnboardingState).values({
-      tenantId: newProject.id.toString(),
-      stage: 'BUSINESS_DISCOVERY',
-      contextData: { 
-        ownerEmail: cleanEmail,
-        startedAt: new Date().toISOString()
-      },
-      updatedAt: new Date()
-    } as any);
-
-    const token = generatePortalToken(newInstall.id, newProject.id, 'HERMES');
-    
-    return {
-      projectId: newProject.id,
-      projectSlug: newProject.slug,
-      installedProductId: newInstall.id,
-      isNew: true,
-      portalToken: token
-    };
+  // 2. Provision new Bootstrap Workspace sequentially (Neon HTTP compatible)
+  const raceCheck = await db.query.projects.findFirst({
+    where: eq(projects.slug, slugTarget)
   });
+  if (raceCheck) {
+    throw new Error("Workspace created concurrently. Please retry.");
+  }
+
+  // Create the organization/tenant record
+  const insertedProject = await db.insert(projects).values({
+    title: "Workspace en configuración",
+    slug: slugTarget,
+    description: `Auto-provisioned workspace for ${cleanEmail}`,
+    applicantEmail: cleanEmail,
+    status: 'draft' as any, // DRAFT maps to ONBOARDING
+    allowedDomains: [] as any,
+    legalConfig: {} as any,
+    extraConfig: {} as any,
+    featured: false,
+  }).returning();
+  
+  const newProject = insertedProject[0];
+  if (!newProject) throw new Error("Failed to insert new project");
+
+  // Create Bootstrap Installation (NOT a commercial subscription)
+  const insertedInstall = await db.insert(installedProducts).values({
+    projectId: newProject.id,
+    product: 'HERMES',
+    productFamily: 'GROWTH_OS',
+    plan: 'bootstrap', 
+    status: 'trial',
+    bindingMode: 'provisioned' as any,
+    hermesInstanceId: `hermes_inst_${newProject.id}`,
+    capabilities: { intelligence: true, knowledge: true, channels: false } as any, // Channels locked until onboarding is done
+    connectors: {} as any,
+    config: {
+      email: cleanEmail,
+      companyName: 'Workspace'
+    } as any,
+    runtimeManifest: {
+      context: {
+        adminEmail: cleanEmail
+      }
+    } as any,
+    portalToken: '',
+    portalTokenUsed: false,
+  }).returning();
+  
+  const newInstall = insertedInstall[0];
+  if (!newInstall) throw new Error("Failed to insert new install");
+
+  // Initialize Onboarding State
+  await db.insert(portalOnboardingState).values({
+    tenantId: newProject.id.toString(),
+    stage: 'BUSINESS_DISCOVERY',
+    contextData: { 
+      ownerEmail: cleanEmail,
+      startedAt: new Date().toISOString()
+    },
+    updatedAt: new Date()
+  } as any);
+
+  const token = generatePortalToken(newInstall.id, newProject.id, 'HERMES');
+  
+  return {
+    projectId: newProject.id,
+    projectSlug: newProject.slug,
+    installedProductId: newInstall.id,
+    isNew: true,
+    portalToken: token
+  };
 }

@@ -63,26 +63,44 @@ export async function POST(req: NextRequest) {
     let project: typeof projects.$inferSelect | undefined;
     let installedId: string | undefined;
 
-    // Priority 1: installedProducts where operator email matches
-    const allInstalled = await db.select().from(installedProducts);
-    const userProduct = allInstalled.find((p) => {
-      const cfg = (p.config as any) || {};
-      const manifest = (p.runtimeManifest as any) || {};
-      const matchesEmail = (
-        (cfg.email && String(cfg.email).trim().toLowerCase() === cleanEmail) ||
-        (manifest.context?.adminEmail && String(manifest.context.adminEmail).trim().toLowerCase() === cleanEmail)
-      );
-      if (!matchesEmail) return false;
-      // If matching a protected project (e.g. S'Narai), verify it's the verified admin
-      if (PROTECTED_PROJECT_IDS.includes(p.projectId)) {
-        return cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL;
+    // Priority 0: Protected project operator resolution (e.g. Marco requesting S'Narai)
+    if (!project && cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL) {
+      const requestedSlug = safeReturn ? safeReturn.split('/')[2] : 'snarai';
+      if (requestedSlug) {
+        [project] = await db
+          .select()
+          .from(projects)
+          .where(or(
+            eq(projects.slug, requestedSlug),
+            eq(projects.slug, 'snarai'),
+            eq(projects.slug, 'snarai-protocol')
+          ))
+          .limit(1);
       }
-      return true;
-    });
+    }
 
-    if (userProduct?.projectId) {
-      [project] = await db.select().from(projects).where(eq(projects.id, userProduct.projectId)).limit(1);
-      if (project) installedId = userProduct.id;
+    // Priority 1: installedProducts where operator email matches
+    if (!project) {
+      const allInstalled = await db.select().from(installedProducts);
+      const userProduct = allInstalled.find((p) => {
+        const cfg = (p.config as any) || {};
+        const manifest = (p.runtimeManifest as any) || {};
+        const matchesEmail = (
+          (cfg.email && String(cfg.email).trim().toLowerCase() === cleanEmail) ||
+          (manifest.context?.adminEmail && String(manifest.context.adminEmail).trim().toLowerCase() === cleanEmail)
+        );
+        if (!matchesEmail) return false;
+        // If matching a protected project (e.g. S'Narai), verify it's the verified admin
+        if (PROTECTED_PROJECT_IDS.includes(p.projectId)) {
+          return cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL;
+        }
+        return true;
+      });
+
+      if (userProduct?.projectId) {
+        [project] = await db.select().from(projects).where(eq(projects.id, userProduct.projectId)).limit(1);
+        if (project) installedId = userProduct.id;
+      }
     }
 
     // Priority 2: projects.applicantEmail (Direct project owner)
@@ -98,9 +116,9 @@ export async function POST(req: NextRequest) {
     // Priority 3: accessRequests with explicit approved status
     if (!project && approvedRequest) {
       const meta = (approvedRequest.metadata ?? {}) as { projectId?: number; projectSlug?: string };
-      if (meta.projectId && !PROTECTED_PROJECT_IDS.includes(Number(meta.projectId))) {
+      if (meta.projectId && (!PROTECTED_PROJECT_IDS.includes(Number(meta.projectId)) || cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL)) {
         [project] = await db.select().from(projects).where(eq(projects.id, Number(meta.projectId))).limit(1);
-      } else if (meta.projectSlug && !PROTECTED_PROJECT_SLUGS.includes(String(meta.projectSlug).toLowerCase())) {
+      } else if (meta.projectSlug && (!PROTECTED_PROJECT_SLUGS.includes(String(meta.projectSlug).toLowerCase()) || cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL)) {
         [project] = await db.select().from(projects).where(or(
           eq(projects.slug, String(meta.projectSlug)),
           eq(sql`lower(${projects.slug})`, String(meta.projectSlug).toLowerCase())
@@ -144,7 +162,7 @@ export async function POST(req: NextRequest) {
     let activeProjectId = project?.id;
     let activeProjectSlug = project?.slug;
 
-    if (activeProjectId && project && !PROTECTED_PROJECT_IDS.includes(activeProjectId)) {
+    if (activeProjectId && project && (!PROTECTED_PROJECT_IDS.includes(activeProjectId) || cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL)) {
       // User has an explicit tenant workspace
       if (!installedId) {
         const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);

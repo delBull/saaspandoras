@@ -24,11 +24,26 @@ export async function POST(request: Request) {
 
     let activatedCount = 0;
 
-    // 1. Execute within a database transaction for strict atomic consistency
-    await db.transaction(async (tx) => {
-      const pendingItems = await tx
-        .select()
-        .from(hermesKnowledge)
+    // 1. Execute sequentially for neon-http driver compatibility
+    const pendingItems = await db
+      .select()
+      .from(hermesKnowledge)
+      .where(
+        and(
+          or(
+            eq(hermesKnowledge.organizationId, orgId),
+            eq(hermesKnowledge.organizationId, organizationSlug),
+            eq(hermesKnowledge.organizationId, tenantSlug)
+          ),
+          inArray(hermesKnowledge.status, ['DISCOVERED', 'PENDING_REVIEW'])
+        )
+      );
+
+    for (const item of pendingItems) {
+      // Deactivate any existing active knowledge with the same dimension & key
+      await db
+        .update(hermesKnowledge)
+        .set({ status: 'SUPERSEDED', updatedAt: new Date() })
         .where(
           and(
             or(
@@ -36,56 +51,39 @@ export async function POST(request: Request) {
               eq(hermesKnowledge.organizationId, organizationSlug),
               eq(hermesKnowledge.organizationId, tenantSlug)
             ),
-            inArray(hermesKnowledge.status, ['DISCOVERED', 'PENDING_REVIEW'])
+            eq(hermesKnowledge.dimension, item.dimension),
+            eq(hermesKnowledge.key, item.key),
+            eq(hermesKnowledge.status, 'ACTIVE')
           )
         );
 
-      for (const item of pendingItems) {
-        // Deactivate any existing active knowledge with the same dimension & key
-        await tx
-          .update(hermesKnowledge)
-          .set({ status: 'SUPERSEDED', updatedAt: new Date() })
-          .where(
-            and(
-              or(
-                eq(hermesKnowledge.organizationId, orgId),
-                eq(hermesKnowledge.organizationId, organizationSlug),
-                eq(hermesKnowledge.organizationId, tenantSlug)
-              ),
-              eq(hermesKnowledge.dimension, item.dimension),
-              eq(hermesKnowledge.key, item.key),
-              eq(hermesKnowledge.status, 'ACTIVE')
-            )
-          );
+      // Promote to ACTIVE with TENANT_PROVIDED authority upon 1-click tenant approval
+      await db
+        .update(hermesKnowledge)
+        .set({
+          status: 'ACTIVE',
+          authority: item.authority === 'INFERRED_UNVERIFIED' ? 'TENANT_PROVIDED' : item.authority,
+          updatedAt: new Date(),
+        })
+        .where(eq(hermesKnowledge.id, item.id));
 
-        // Promote to ACTIVE with TENANT_PROVIDED authority upon 1-click tenant approval
-        await tx
-          .update(hermesKnowledge)
-          .set({
-            status: 'ACTIVE',
-            authority: item.authority === 'INFERRED_UNVERIFIED' ? 'TENANT_PROVIDED' : item.authority,
-            updatedAt: new Date(),
-          })
-          .where(eq(hermesKnowledge.id, item.id));
+      // Insert immutable governance audit log
+      await db.insert(hermesGovernanceAudit).values({
+        id: crypto.randomUUID(),
+        organizationId: orgId,
+        knowledgeId: item.id,
+        version: item.version,
+        eventType: 'APPROVE_BULK',
+        actorId: context.tenant.actorId || 'tenant_owner',
+        actorType: 'USER',
+        oldStatus: item.status,
+        newStatus: 'ACTIVE',
+        reason: '1-Click Onboarding Knowledge Activation by Tenant Owner',
+        metadata: { dimension: item.dimension, key: item.key },
+      });
 
-        // Insert immutable governance audit log
-        await tx.insert(hermesGovernanceAudit).values({
-          id: crypto.randomUUID(),
-          organizationId: orgId,
-          knowledgeId: item.id,
-          version: item.version,
-          eventType: 'APPROVE_BULK',
-          actorId: context.tenant.actorId || 'tenant_owner',
-          actorType: 'USER',
-          oldStatus: item.status,
-          newStatus: 'ACTIVE',
-          reason: '1-Click Onboarding Knowledge Activation by Tenant Owner',
-          metadata: { dimension: item.dimension, key: item.key },
-        });
-
-        activatedCount++;
-      }
-    });
+      activatedCount++;
+    }
 
     // 2. Fetch all ACTIVE knowledge facts to compile sovereign Claim Contract & policies
     const allActiveKnowledge = await db
