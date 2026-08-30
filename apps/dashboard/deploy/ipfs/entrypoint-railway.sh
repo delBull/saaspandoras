@@ -12,14 +12,14 @@ mkdir -p "${IPFS_PATH}" /data/caddy_data /data/caddy_config
 if [ ! -f "${IPFS_PATH}/config" ]; then
     echo "📦 Initializing Kubo IPFS repo with 'server' profile..."
     ipfs init --profile server
-    
-    echo "🔒 Applying Pandora's Sovereign IPFS Configurations..."
-    ipfs config --json Gateway.NoFetch true
-    ipfs config --json Datastore.StorageMax '"100GB"'
-    ipfs config --json Datastore.StorageGCWatermark 90
-    ipfs config Addresses.API '/ip4/127.0.0.1/tcp/5001'
-    ipfs config Addresses.Gateway '/ip4/127.0.0.1/tcp/8080'
 fi
+
+echo "🔒 Applying Pandora's Sovereign IPFS Configurations..."
+ipfs config --json Gateway.NoFetch true
+ipfs config --json Datastore.StorageMax '"100GB"'
+ipfs config --json Datastore.StorageGCWatermark 90
+ipfs config Addresses.API '/ip4/127.0.0.1/tcp/5001'
+ipfs config Addresses.Gateway '/ip4/127.0.0.1/tcp/8082'
 
 # 2. Start Kubo daemon in the background
 echo "🚀 Starting Kubo IPFS Daemon..."

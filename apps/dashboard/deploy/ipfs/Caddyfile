@@ -3,7 +3,7 @@
     auto_https off
 }
 
-:80, :8080, :5000, :{$PORT:8080} {
+:80, :{$PORT:8080} {
     encode gzip zstd
 
     # Route 1: Private RPC API (rpc.ipfs.pandoras.finance)
@@ -34,6 +34,6 @@
         }
         respond @options 204
 
-        reverse_proxy 127.0.0.1:8080
+        reverse_proxy 127.0.0.1:8082
     }
 }

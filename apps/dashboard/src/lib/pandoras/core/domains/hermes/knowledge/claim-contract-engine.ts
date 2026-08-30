@@ -779,6 +779,12 @@ export class ClaimContractEngine {
 
           let isClauseCovered = false;
 
+          // Markdown headers, table separators and structure rows
+          const isStructuralMarkdown = /^(\s*\||\s*#+\s+|\s*[-*:]+\s*$)/.test(clause) && !/\d/.test(clause);
+          if (isStructuralMarkdown) {
+            continue;
+          }
+
           if (!hasForbiddenExtrapolation) {
             if (isTransactional) {
               isClauseCovered = true;
@@ -788,8 +794,8 @@ export class ClaimContractEngine {
                 const phrasingMatch = claim.permittedPhrasings.some(p => clause.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(clause.toLowerCase()));
                 const keywords = claim.canonicalAssertion
                   .split(/\s+/)
-                  .map(w => w.replace(/[^\wáéíóúÁÉÍÓÚñÑ]/g, ''))
-                  .filter(w => w.length > 4);
+                  .map(w => w.replace(/[^\wáéíóúÁÉÍÓÚñÑ0-9]/g, ''))
+                  .filter(w => w.length >= 3 || /^\d+$/.test(w));
                 const kwMatches = keywords.filter(kw => new RegExp(`\\b${kw}\\b`, 'i').test(clause)).length;
 
                 if (phrasingMatch || kwMatches >= 2) {
@@ -807,12 +813,13 @@ export class ClaimContractEngine {
           if (!isClauseCovered && options?.additionalSources?.length) {
             const clauseKeywords = clause
               .split(/\s+/)
-              .map(w => w.replace(/[^\wáéíóúÁÉÍÓÚñÑ]/g, ''))
-              .filter(w => w.length > 4);
-            if (clauseKeywords.length >= 3) {
-              const grounded = options.additionalSources.some(src =>
-                clauseKeywords.filter(kw => src.toLowerCase().includes(kw.toLowerCase())).length >= 3
-              );
+              .map(w => w.replace(/[^\wáéíóúÁÉÍÓÚñÑ0-9]/g, ''))
+              .filter(w => w.length >= 3 || /^\d+$/.test(w));
+            if (clauseKeywords.length >= 2) {
+              const grounded = options.additionalSources.some(src => {
+                const srcLower = src.toLowerCase();
+                return clauseKeywords.filter(kw => srcLower.includes(kw.toLowerCase())).length >= 2;
+              });
               if (grounded) {
                 isClauseCovered = true;
                 matchedClaimsCount++;
