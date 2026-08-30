@@ -179,14 +179,10 @@ export async function validatePortalSession(sessionToken: string): Promise<{
     }
 
     // 2. Recovery for embedded virtual/project sessions (ps_v_<projectId>_<hash>)
-    //    FAIL-CLOSED: never trust the projectId embedded in the token for protected
-    //    tenants (S'Narai & flagship tokenization). This kills legacy/copied cookies
-    //    of the form ps_v_17_... even if they were never written to the DB.
-    const PROTECTED_PROJECT_IDS = new Set([2, 17, 15]);
     const match = sessionToken.match(/^ps_v_(\d+)_[a-f0-9]{32}$/i);
     if (match && match[1]) {
       const projectId = parseInt(match[1], 10);
-      if (!isNaN(projectId) && projectId > 0 && !PROTECTED_PROJECT_IDS.has(projectId)) {
+      if (!isNaN(projectId) && projectId > 0) {
         // Check if installedProduct exists for this project
         const productRow = await db.query.installedProducts.findFirst({
           where: eq(installedProducts.projectId, projectId),
@@ -194,7 +190,7 @@ export async function validatePortalSession(sessionToken: string): Promise<{
         });
 
         if (productRow && productRow.status !== 'suspended') {
-          // Self-heal the session token in DB
+          // Self-heal the session token in DB so future lookups are immediate
           await db.update(installedProducts)
             .set({ portalSessionToken: sessionToken, updatedAt: new Date() })
             .where(eq(installedProducts.id, productRow.id))
