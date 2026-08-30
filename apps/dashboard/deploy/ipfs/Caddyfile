@@ -1,7 +1,10 @@
-# 🌐 Pandora's Sovereign IPFS Reverse Proxy Configuration
+# 🌐 Pandora's Sovereign IPFS Reverse Proxy Configuration (Railway Edge Ready)
+{
+    auto_https off
+}
 
 # 1. Public Gateway (Read Only - Content Addressed)
-ipfs.pandoras.finance {
+http://ipfs.pandoras.finance {
     encode gzip zstd
 
     # CORS Headers for Web3 Frontends
@@ -28,7 +31,7 @@ ipfs.pandoras.finance {
 }
 
 # 2. Private RPC API (Hermes Control Plane Only)
-rpc.ipfs.pandoras.finance {
+http://rpc.ipfs.pandoras.finance, :80 {
     encode gzip zstd
 
     # Authentication Gate: Check Bearer token or X-API-Key
@@ -46,3 +49,4 @@ rpc.ipfs.pandoras.finance {
         header_up X-Forwarded-Proto {scheme}
     }
 }
+
