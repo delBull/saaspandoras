@@ -368,21 +368,36 @@ export default function AdminDashboardPage() {
     }));
   }, [projects]);
 
+  // Base list of Tokenization Protocols (excludes system infrastructure and pure Hermes workspaces)
+  const protocolProjects = useMemo(() => {
+    return enhancedProjects.filter(project => {
+      // 1. Exclude system infrastructure (e.g. ID 15 Pandora's Access)
+      if (
+        String(project.id) === '15' || 
+        project.slug === 'pandoras_access' || 
+        project.businessCategory === 'infrastructure'
+      ) {
+        return false;
+      }
+
+      // 2. Exclude pure Hermes workspaces / tenants that are not tokenization protocols
+      if (
+        project.businessCategory === 'hermes_tenant' || 
+        project.slug === 'eld' || 
+        project.slug === 'pandoras-corporate' || 
+        project.slug?.startsWith('org-') || 
+        project.slug?.startsWith('cert')
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [enhancedProjects]);
+
   // Filter and sort projects based on all filters
   const filteredProjects = useMemo(() => {
-    let filtered = enhancedProjects;
-
-    // Exclude Hermes-only tenants, but keep hybrid Pandoras projects such as S'Narai.
-    // A hybrid project has Hermes plus at least one tokenization contract.
-    filtered = filtered.filter(project => {
-      const hasTokenization = Boolean(
-        project.licenseContractAddress ||
-        project.utilityContractAddress ||
-        project.loomContractAddress ||
-        project.governorContractAddress
-      );
-      return !(project.hermesBinding && !hasTokenization);
-    });
+    let filtered = protocolProjects;
 
     // Apply status filter
     if (statusFilter !== 'all') {
@@ -441,7 +456,7 @@ export default function AdminDashboardPage() {
     });
 
     return sorted;
-  }, [enhancedProjects, statusFilter, productFilter, searchQuery, sortBy, sortOrder]);
+  }, [protocolProjects, statusFilter, productFilter, searchQuery, sortBy, sortOrder]);
 
   // Paginated slice of protocols
   const paginatedProjects = useMemo(() => {
@@ -450,7 +465,7 @@ export default function AdminDashboardPage() {
   }, [filteredProjects, protocolsPage]);
   const totalProtocolPages = Math.max(1, Math.ceil(filteredProjects.length / PROTOCOLS_PER_PAGE));
 
-  // Get status counts for filter badges
+  // Get status counts for filter badges computed from all protocol projects (stable totals)
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {
       pending: 0,
@@ -458,10 +473,10 @@ export default function AdminDashboardPage() {
       live: 0,
       completed: 0,
       rejected: 0,
-      draft: 0, // Add draft status to counts
+      draft: 0,
     };
 
-    filteredProjects.forEach(project => {
+    protocolProjects.forEach(project => {
       if (project.status && project.status in counts) {
         counts[project.status] = (counts[project.status] ?? 0) + 1;
       } else {
@@ -470,17 +485,18 @@ export default function AdminDashboardPage() {
     });
 
     console.log('🔧 Status counts breakdown:', {
-      total: filteredProjects.length,
+      total: protocolProjects.length,
       pending: counts.pending,
       approved: counts.approved,
       live: counts.live,
       completed: counts.completed,
       rejected: counts.rejected,
-      detailed: filteredProjects.map(p => ({ id: p.id, status: p.status }))
+      draft: counts.draft,
+      detailed: protocolProjects.map(p => ({ id: p.id, status: p.status }))
     });
 
     return counts;
-  }, [filteredProjects]);
+  }, [protocolProjects]);
 
   // Find current user ID based on wallet
   const currentUserId = useMemo(() => {
@@ -624,7 +640,7 @@ export default function AdminDashboardPage() {
                             : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
                             }`}
                         >
-                          Todos ({filteredProjects.length})
+                          Todos ({protocolProjects.length})
                         </button>
                         {Object.entries(statusCounts).map(([status, count]) => (
                           count > 0 && (
