@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import type { Project } from '@/types/admin';
 import type { DeploymentConfig } from '@/types/deployment';
+import { getProjectStatusConfig } from '@/lib/project-status';
 
 import { 
   Tooltip,
@@ -143,20 +144,20 @@ export function ProjectTableView({
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="relative">
-                      <button
-                        onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
-                        className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
-                          p.status === "approved" ? "bg-blue-600 hover:bg-blue-700" :
-                            p.status === "live" ? "bg-green-600 hover:bg-green-700" :
-                              p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
-                                "bg-red-600 hover:bg-red-700"
-                          } text-white flex items-center gap-1`}
-                      >
-                        <span>{p.status}</span>
-                        <svg className="w-3 h-3 transition-transform" style={{ transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
+                      {(() => {
+                        const cfg = getProjectStatusConfig(p.status);
+                        return (
+                          <button
+                            onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
+                            className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition-all border ${cfg.badgeClass} flex items-center gap-1.5`}
+                          >
+                            <span>{cfg.shortLabel}</span>
+                            <svg className="w-3 h-3 transition-transform opacity-70" style={{ transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        );
+                      })()}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">

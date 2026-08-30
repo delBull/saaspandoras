@@ -20,7 +20,8 @@ import { LegalTab } from './tabs/LegalTab';
 import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { NetworkTab } from './tabs/NetworkTab';
-import { SparklesIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, UsersIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { ProtocolSandboxPreviewModal } from '@/components/projects/ProtocolSandboxPreviewModal';
 
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
@@ -44,6 +45,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
     const [activeTab, setActiveTab] = useState<'overview' | 'network' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'legal' | 'dao' | 'resource_hub'>('overview');
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     const account = useActiveAccount();
 
@@ -112,7 +114,14 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                         <p className="text-zinc-500 text-sm font-medium">Panel de Control del Fundador</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <button
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="px-4 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-all text-sm font-bold flex items-center gap-2"
+                    >
+                        <EyeIcon className="w-4 h-4" />
+                        PREVIEW SANDBOX
+                    </button>
                     <Link href={`/profile/projects/${project.slug}/premium`} className="px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-400 rounded-lg hover:bg-amber-600/30 transition-all text-sm font-bold">
                         PDF PREMIUM
                     </Link>
@@ -120,9 +129,9 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                         VER PÁGINA PÚBLICA
                     </Link>
                     {hasGrowthOs && (
-                        <Link href={`/growth-os/organizations/${project.slug}`} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all text-sm font-bold flex items-center gap-2">
+                        <Link href={`/portal/${project.slug}`} className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg transition-all text-sm font-bold flex items-center gap-2 shadow-lg shadow-purple-600/20">
                             <SparklesIcon className="w-4 h-4" />
-                            OPEN GROWTH OS
+                            ABRIR HERMES OS ↗
                         </Link>
                     )}
                 </div>
@@ -189,6 +198,13 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                     </motion.div>
                 </AnimatePresence>
             </div>
+
+            {/* Protocol Sandbox Preview Modal */}
+            <ProtocolSandboxPreviewModal
+                project={project}
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+            />
         </div>
     );
 }

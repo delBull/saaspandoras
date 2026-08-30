@@ -3,6 +3,7 @@
 import React from 'react';
 import { useFeaturedProjects } from '@/hooks/useFeaturedProjects';
 import type { Project } from '@/types/admin';
+import { getProjectStatusConfig } from '@/lib/project-status';
 
 import {
   Tooltip,
@@ -18,6 +19,7 @@ interface ProjectCardsViewProps {
   setExpandedProject: (id: string | null) => void;
   setStatusDropdown: (id: string | null) => void;
   statusDropdown: string | null;
+  onOpenDetail?: (project: Project) => void;
 }
 
 export function ProjectCardsView({
@@ -37,7 +39,9 @@ export function ProjectCardsView({
           <div className="text-gray-400 text-lg font-medium mb-2">No hay proyectos registrados</div>
         </div>
       ) : (
-        projects.map((p) => (
+        projects.map((p) => {
+          const statusCfg = getProjectStatusConfig(p.status);
+          return (
           <div key={p.id} className="bg-zinc-800/50 rounded-lg p-6 border border-zinc-700 hover:border-zinc-600 transition-colors">
             {/* Header con título y estado */}
             <div className="flex justify-between items-start mb-4">
@@ -46,15 +50,9 @@ export function ProjectCardsView({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
-                    className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${
-                      p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
-                      p.status === "approved" ? "bg-blue-600 hover:bg-blue-700" :
-                      p.status === "live" ? "bg-green-600 hover:bg-green-700" :
-                      p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
-                      "bg-red-600 hover:bg-red-700"
-                    } text-white`}
+                    className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition-all border ${statusCfg.badgeClass}`}
                   >
-                    {p.status}
+                    {statusCfg.shortLabel}
                   </button>
                   {isFeatured(Number(p.id)) && (
                     <span className="text-xs bg-lime-500 text-black px-2 py-1 rounded flex items-center gap-1">
@@ -207,10 +205,11 @@ export function ProjectCardsView({
                 </div>
               </div>
             )}
-            </div>
-          ))
-        )}
-      </div>
-    </TooltipProvider>
+          </div>
+        );
+      })
+    )}
+  </div>
+</TooltipProvider>
   );
 }

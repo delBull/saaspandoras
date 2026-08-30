@@ -28,6 +28,8 @@ import {
   ChevronRight,
   Boxes,
   Sparkles,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 
 interface NavItem {
@@ -209,6 +211,24 @@ export function PortalSidebar({
               );
             })}
           </ul>
+
+          {/* ── INSTITUTIONAL NAVIGATION LAYER (MOBILE DRAWER) ── */}
+          <div className="mt-6 pt-4 border-t border-white/[0.08] px-1">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2 px-2">
+              Pandora&apos;s Mesh
+            </div>
+            <Link
+              href={`/profile/projects/${organizationSlug}/manage`}
+              onClick={() => onNavClick?.()}
+              className="flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 transition-all text-xs font-medium min-h-[44px] group shadow-sm"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <FileText size={16} className="text-indigo-400 shrink-0" />
+                <span className="truncate font-medium">Protocol Tokenomics</span>
+              </div>
+              <ExternalLink size={13} className="text-indigo-400/70 group-hover:text-indigo-300 shrink-0" />
+            </Link>
+          </div>
         </nav>
       </aside>
 
@@ -276,6 +296,34 @@ export function PortalSidebar({
                     </Link>
                 );
             })}
+
+            {/* ── INSTITUTIONAL NAVIGATION LAYER (DESKTOP SIDEBAR) ── */}
+            <div className={`w-full mt-3 pt-3 border-t border-white/10 ${collapsed ? 'flex flex-col items-center' : 'px-1'}`}>
+              {!collapsed && (
+                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1.5 px-2">
+                  Pandora&apos;s Mesh
+                </div>
+              )}
+              <Link
+                href={`/profile/projects/${organizationSlug}/manage`}
+                className={`relative flex ${
+                  collapsed 
+                    ? 'flex-col items-center justify-center p-3 w-14 h-14' 
+                    : 'items-center justify-between px-3 py-2.5 w-full'
+                } rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 transition-all group shadow-sm`}
+                title={collapsed ? "Gestionar Protocolo & Tokenomics" : undefined}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <FileText className="w-5 h-5 text-indigo-400 shrink-0" />
+                  {!collapsed && <span className="text-xs font-medium truncate">Protocol Tokenomics</span>}
+                </div>
+                {collapsed ? (
+                  <span className="text-[8px] font-mono text-indigo-300 mt-1">RWA</span>
+                ) : (
+                  <ExternalLink size={12} className="text-indigo-400/70 group-hover:text-indigo-300 shrink-0" />
+                )}
+              </Link>
+            </div>
         </div>
         
         <div className={`mt-auto mb-4 border-t border-white/10 pt-4 w-full flex ${collapsed ? 'justify-center' : 'justify-end px-4'}`}>

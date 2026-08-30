@@ -75,21 +75,22 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
   return (
     <>
       <div className="border-b border-zinc-700 mb-6 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
-        <nav className="flex space-x-4 sm:space-x-6 min-w-max">
-          <button onClick={() => setTab('projects')} className={`pb-2 px-1 text-sm sm:text-base font-semibold transition-colors ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
-            Protocolos
+        <nav className="flex space-x-3 sm:space-x-5 min-w-max items-center">
+          <button onClick={() => setTab('projects')} className={`pb-2.5 px-2 text-sm sm:text-base font-semibold transition-all flex items-center gap-2 ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400 hover:text-white'}`}>
+            <span>📜 Protocolos RWA</span>
           </button>
-          <button onClick={() => setTab('users')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('hermes')} className={`pb-2.5 px-2 text-sm sm:text-base font-semibold transition-all flex items-center gap-2 ${activeTab === 'hermes' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}>
+            <span>🤖 Hermes OS Tenants</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">AI Mesh</span>
+          </button>
+          <button onClick={() => setTab('users')} className={`pb-2.5 px-2 text-sm sm:text-base font-semibold transition-all ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400 hover:text-white'} flex items-center gap-2`}>
             Usuarios
           </button>
-          <button onClick={() => setTab('nft')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('nft')} className={`pb-2.5 px-2 text-sm sm:text-base font-semibold transition-all ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400 hover:text-white'} flex items-center gap-2`}>
             NFT Lab
           </button>
-          <button onClick={() => setTab('clients')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('clients')} className={`pb-2.5 px-2 text-sm sm:text-base font-semibold transition-all ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'} flex items-center gap-2`}>
             Clientes
-          </button>
-          <button onClick={() => setTab('hermes')} className={`pb-2 px-1 text-sm sm:text-base font-semibold ${activeTab === 'hermes' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-1.5`}>
-            🔑 Hermes Tenants
           </button>
 
           {showMarketing && (

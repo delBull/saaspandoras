@@ -31,6 +31,7 @@ import { EventsTab } from '@/components/shared/tabs/EventsTab';
 import { ResourceHubTab } from '@/app/()/profile/projects/[slug]/manage/tabs/ResourceHubTab';
 import { KnowledgeCenterTab } from '@/components/shared/tabs/KnowledgeCenterTab';
 import type { Project } from '@/types/admin';
+import { getProjectStatusConfig } from '@/lib/project-status';
 
 interface MissionControlProps {
     projects: Project[];
@@ -139,22 +140,24 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                             </h1>
                         )}
 
-                        <div className="flex items-center gap-3 mt-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${project.status === 'live' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                project.status === 'approved' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                    'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                                }`}>
-                                {project.status}
-                            </span>
+                        {(() => {
+                            const statusCfg = getProjectStatusConfig(project.status);
+                            return (
+                                <div className="flex items-center gap-3 mt-4">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${statusCfg.badgeClass}`}>
+                                        {statusCfg.label}
+                                    </span>
 
-                            <Link href={`/projects/${project.slug || project.id}`} target="_blank" className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors">
-                                <EyeIcon className="w-4 h-4" /> Ver Página Pública
-                            </Link>
-                            
-                            <Link href={`/portal/${project.slug || project.id}`} className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors ml-auto md:ml-4">
-                                <Cog6ToothIcon className="w-4 h-4" /> Hermes Portal
-                            </Link>
-                        </div>
+                                    <Link href={`/projects/${project.slug || project.id}`} target="_blank" className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors">
+                                        <EyeIcon className="w-4 h-4" /> Ver Página Pública
+                                    </Link>
+                                    
+                                    <Link href={`/portal/${project.slug || project.id}`} className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors ml-auto md:ml-4">
+                                        <Cog6ToothIcon className="w-4 h-4" /> Hermes Portal
+                                    </Link>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
 

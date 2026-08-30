@@ -13,6 +13,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useProjectActions } from "@/hooks/useProjectActions";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
 import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
+import { getProjectStatusConfig } from "@/lib/project-status";
 import { ProjectApplicationButton } from "@/components/ProjectApplicationButton";
 import { ProjectTableView } from "@/components/ProjectTableView";
 import { ProjectCardsView } from "@/components/ProjectCardsView";
@@ -642,26 +643,24 @@ export default function AdminDashboardPage() {
                         >
                           Todos ({protocolProjects.length})
                         </button>
-                        {Object.entries(statusCounts).map(([status, count]) => (
-                          count > 0 && (
+                        {Object.entries(statusCounts).map(([status, count]) => {
+                          if (count <= 0) return null;
+                          const cfg = getProjectStatusConfig(status);
+                          const isActive = statusFilter === status;
+                          return (
                             <button
                               key={status}
                               onClick={() => setStatusFilter(status)}
-                              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === status
-                                ? 'bg-lime-500 text-black shadow-lg'
-                                : `${status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
-                                  status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
-                                    status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
-                                      status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
-                                        status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
-                                          'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
-                                } bg-zinc-700 hover:bg-zinc-600`
-                                }`}
+                              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                                isActive
+                                  ? 'bg-lime-500 text-black shadow-lg font-bold'
+                                  : `${cfg.badgeClass} hover:opacity-90`
+                              }`}
                             >
-                              {status?.charAt(0)?.toUpperCase() + status?.slice(1) || status} ({count})
+                              {cfg.shortLabel} ({count})
                             </button>
-                          )
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
