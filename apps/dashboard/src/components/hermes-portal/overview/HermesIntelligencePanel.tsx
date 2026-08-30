@@ -26,7 +26,10 @@ import {
   Reply,
   X,
   SendHorizontal,
-  ExternalLink
+  ExternalLink,
+  Maximize2,
+  Minimize2,
+  ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -82,10 +85,23 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Lock body scroll when full screen is active
+  useEffect(() => {
+    if (isFullScreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullScreen]);
 
   // Seamless auto-scroll (WhatsApp style)
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
@@ -357,31 +373,59 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
   const activeChips = latestHermesMessage?.chips || [];
 
   return (
-    <div className="flex flex-col w-full h-full bg-[#12121A] border border-indigo-500/20 rounded-2xl overflow-hidden relative shadow-2xl">
-      {/* ── TOP HEADER: IDENTITY & STATUS ── */}
-      <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0">
-            <Brain size={16} className="text-indigo-400" />
+    <div className={`flex flex-col ${
+      isFullScreen
+        ? 'fixed inset-0 z-[99999] w-full h-[100dvh] bg-[#0A0A10] shadow-none rounded-none'
+        : 'w-full h-full bg-[#12121A] border border-indigo-500/20 rounded-2xl relative shadow-2xl overflow-hidden'
+    }`}>
+      {/* ── TOP HEADER: IDENTITY & STATUS (TELEGRAM APP BAR IN FULLSCREEN) ── */}
+      <div className={`flex items-center justify-between px-3 sm:px-5 py-3 border-b border-white/[0.06] bg-[#0C0C12] shrink-0 ${
+        isFullScreen ? 'pt-[max(0.75rem,env(safe-area-inset-top))]' : ''
+      }`}>
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {isFullScreen && (
+            <button
+              type="button"
+              onClick={() => setIsFullScreen(false)}
+              className="p-1.5 -ml-1 text-neutral-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors shrink-0"
+              title="Volver al Portal"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 flex items-center justify-center border border-indigo-500/30 shrink-0 shadow-inner">
+            <Brain size={16} className="text-indigo-300" />
           </div>
           <div className="min-w-0">
             <h3 className="text-white font-medium text-sm tracking-wide truncate">Hermes Intelligence</h3>
-            <p className="text-indigo-400/70 text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1.5 truncate">
+            <p className="text-indigo-400/80 text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1.5 truncate font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              Patrimonial Growth Officer • {activeTopic.title}
+              {isFullScreen ? `En línea • ${activeTopic.title}` : `Growth Officer • ${activeTopic.title}`}
             </p>
           </div>
         </div>
 
-        {/* Clear Memory Button */}
-        <button
-          type="button"
-          onClick={handleClearHistory}
-          title="Reiniciar conversación de este tema"
-          className="text-neutral-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors shrink-0"
-        >
-          <Trash2 size={15} />
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Full Screen Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            title={isFullScreen ? "Minimizar chat" : "Pantalla completa (Modo App)"}
+            className="text-neutral-400 hover:text-indigo-300 p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+          >
+            {isFullScreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
+
+          {/* Clear Memory Button */}
+          <button
+            type="button"
+            onClick={handleClearHistory}
+            title="Reiniciar conversación de este tema"
+            className="text-neutral-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
       </div>
 
       {/* ── TOPICS SELECTOR BAR ── */}
@@ -616,8 +660,10 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
         </div>
       )}
 
-      {/* ── INPUT AREA (Clean WhatsApp-Grade Layout) ── */}
-      <div className="p-3 bg-[#0C0C12] border-t border-white/[0.06] shrink-0 flex flex-col gap-1.5">
+      {/* ── INPUT AREA (Clean WhatsApp/Telegram-Grade Layout) ── */}
+      <div className={`p-3 bg-[#0C0C12] border-t border-white/[0.06] shrink-0 flex flex-col gap-1.5 ${
+        isFullScreen ? 'pb-[max(0.75rem,env(safe-area-inset-bottom))]' : ''
+      }`}>
         <div className="relative flex items-center gap-2">
           <textarea
             ref={textareaRef}
