@@ -17,8 +17,8 @@ export class AgentRegistry {
   }
 
   private static initDefaultRegistry(): void {
-    const sofiaWallet = (process.env.SOFIA_WALLET_ADDRESS || '0x19F3e224b55ff38c33a577E43000f83B14207f8e').toLowerCase();
-    const hermesWallet = (process.env.HERMES_WALLET_ADDRESS || '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa').toLowerCase();
+    const sofiaWallet = (process.env.SOFIA_WALLET_ADDRESS || process.env.A2A_SOFIA_WALLET || '0x19F3e224b55ff38c33a577E43000f83B14207f8e').toLowerCase();
+    const hermesWallet = (process.env.HERMES_WALLET_ADDRESS || '0x76CA36103286dd320981133826425270e9902722').toLowerCase();
 
     // 👩🏻 SOFÍA — Media Co / Chief of Staff Agent
     this.registry.set('sofia', {

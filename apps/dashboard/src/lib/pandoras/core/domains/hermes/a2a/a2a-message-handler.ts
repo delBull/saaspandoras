@@ -367,6 +367,36 @@ export class A2AMessageHandler {
       },
     });
 
+    // 3b. Emit outbound `capability.completed` to Media Co so its dashboard reflects
+    //     finalized generations. Fire-and-forget + fail-safe behind
+    //     A2A_OUTBOUND_EVENTS_ENABLED=true.
+    if (process.env.A2A_OUTBOUND_EVENTS_ENABLED === 'true') {
+      try {
+        const { A2AOutboundDispatcher } = await import('./a2a-outbound-dispatcher');
+        const capability = (artifact.metadata?.capability as string | undefined) || 'media.asset.create';
+        A2AOutboundDispatcher.dispatch(
+          'capability.completed',
+          {
+            grantId: message.correlationId || artifact.artifactId,
+            tenantId,
+            providerId: 'pandoras-media-co',
+            granteeAgentId: 'sofia',
+            capability,
+            artifactId: artifact.artifactId,
+            cid: artifact.cid,
+            ipfsUri: artifact.ipfsUri || `ipfs://${artifact.cid}`,
+            sha256: artifact.sha256,
+            mimeType: artifact.mimeType,
+            status: 'COMPLETED',
+            completedAt: new Date().toISOString(),
+          },
+          { tenantId, correlationId: message.correlationId }
+        ).catch(err => console.warn('[A2AMessageHandler] capability.completed dispatch warning:', err));
+      } catch (err) {
+        console.warn('[A2AMessageHandler] capability.completed emission error:', err);
+      }
+    }
+
     return {
       success: true,
       messageId: `resp_${crypto.randomUUID()}`,

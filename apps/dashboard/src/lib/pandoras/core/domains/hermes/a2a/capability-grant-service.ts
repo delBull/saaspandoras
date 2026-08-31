@@ -203,6 +203,33 @@ export class CapabilityGrantService {
       console.warn('[CapabilityGrantService] Audit log error:', err);
     }
 
+    // 4. Emit outbound A2A grant event to Media Co (opt-in) so the provider learns
+    //    which tenant authorized which capability. Fire-and-forget + fail-safe: a
+    //    dispatch error never breaks the grant lifecycle. Gated behind
+    //    A2A_OUTBOUND_EVENTS_ENABLED=true to avoid network noise in tests/sync flows.
+    if (process.env.A2A_OUTBOUND_EVENTS_ENABLED === 'true') {
+      try {
+        const { A2AOutboundDispatcher } = await import('./a2a-outbound-dispatcher');
+        A2AOutboundDispatcher.dispatch(
+          enabled ? 'capability.accepted' : 'capability.rejected',
+          {
+            grantId,
+            tenantId: normalizedTenant,
+            providerId: 'pandoras-media-co',
+            granteeAgentId: 'sofia',
+            capability,
+            status,
+            scope: `${capability.split('.')[0]}.*`,
+            authorizedBy,
+            changedAt: now.toISOString(),
+          },
+          { tenantId: normalizedTenant, correlationId: grantId }
+        ).catch(err => console.warn('[CapabilityGrantService] Grant event dispatch warning:', err));
+      } catch (err) {
+        console.warn('[CapabilityGrantService] Grant event emission error:', err);
+      }
+    }
+
     return grant;
   }
 

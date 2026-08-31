@@ -14,20 +14,30 @@ import { SafeHttpClient } from '../runtime/egress-guard';
 
 export class A2AOutboundDispatcher {
   /**
-   * Dispatches a typed A2A message to Sofía's public Tailscale/Production webhook.
+   * Dispatches a typed A2A message to a registered sovereign agent.
+   *
+   * The transport HMAC path is derived from the target endpoint's URL pathname by
+   * default (so pointing Hermes at Media Co's inbox — e.g. `/api/a2a/inbox` — keeps
+   * the `x-bridge-signature` verifiable by the receiver). Pass `pathNorm` to override.
    */
-  public static async sendToSofia<T = unknown>(
+  public static async dispatch<T = unknown>(
     type: A2AMessageType,
     payload: T,
     options?: {
+      toAgentId?: string;
       tenantId?: string;
       correlationId?: string;
       expiresInMs?: number;
+      endpoint?: string;
+      pathNorm?: string;
+      extraHeaders?: Record<string, string>;
     }
   ): Promise<A2AProcessingResult> {
-    const sofia = AgentRegistry.getAgent('sofia');
-    if (!sofia || !sofia.endpoint) {
-      throw new Error('[A2AOutboundDispatcher] Sofia endpoint is not configured in AgentRegistry');
+    const toAgentId = options?.toAgentId || 'sofia';
+    const agent = options?.endpoint ? { endpoint: options.endpoint } : AgentRegistry.getAgent(toAgentId as any);
+    const endpoint = agent?.endpoint;
+    if (!endpoint) {
+      throw new Error(`[A2AOutboundDispatcher] No endpoint configured for agent '${toAgentId}'`);
     }
 
     const now = Date.now();
@@ -44,7 +54,7 @@ export class A2AOutboundDispatcher {
       messageId,
       correlationId: options?.correlationId,
       from: 'hermes',
-      to: 'sofia',
+      to: toAgentId as any,
       tenantId: options?.tenantId,
       type,
       createdAt,
@@ -73,19 +83,29 @@ export class A2AOutboundDispatcher {
       },
     };
 
-    // 3. Compute HTTP Transport HMAC header
+    // 3. Compute HTTP Transport HMAC header — path derived from the real endpoint
+    //    URL pathname unless explicitly overridden (keeps old default identical).
     const rawBody = JSON.stringify(fullEnvelope);
     const tsMs = String(now);
-    const pathNorm = '/api/v1/sofia/a2a/webhook';
+    const pathNorm =
+      options?.pathNorm ??
+      (() => {
+        try {
+          return new URL(endpoint).pathname;
+        } catch {
+          return '/api/v1/sofia/a2a/webhook';
+        }
+      })();
     const transportHmac = A2ASecurityValidator.computeTransportHmac('POST', pathNorm, tsMs, rawBody);
 
     // 4. Dispatch HTTP Request
-    const response = await SafeHttpClient.fetch(sofia.endpoint, {
+    const response = await SafeHttpClient.fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-a2a-timestamp': tsMs,
         'x-bridge-signature': transportHmac,
+        ...(options?.extraHeaders || {}),
       },
       body: rawBody,
     });
@@ -106,5 +126,23 @@ export class A2AOutboundDispatcher {
             detail: responseData,
           },
     };
+  }
+
+  /**
+   * Backwards-compatible dispatch to Sofía's registered endpoint.
+   */
+  public static async sendToSofia<T = unknown>(
+    type: A2AMessageType,
+    payload: T,
+    options?: {
+      tenantId?: string;
+      correlationId?: string;
+      expiresInMs?: number;
+      endpoint?: string;
+      pathNorm?: string;
+      extraHeaders?: Record<string, string>;
+    }
+  ): Promise<A2AProcessingResult> {
+    return this.dispatch(type, payload, { toAgentId: 'sofia', ...options });
   }
 }

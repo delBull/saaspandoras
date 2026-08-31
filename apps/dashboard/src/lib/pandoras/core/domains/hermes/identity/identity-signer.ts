@@ -25,8 +25,8 @@ export class HermesIdentitySigner {
       if (process.env.NODE_ENV === 'production') {
         throw new Error('[HermesIdentitySigner] HERMES_IDENTITY_PRIVATE_KEY is required in production.');
       }
-      // Deterministic dev/testing key
-      key = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f360fe2';
+      // Deterministic dev/testing key (matches Hermes identity 0x76CA...)
+      key = '0xfc97c6ba902d611156f910d183d76f2810cc2cf0cac9bfb02754e2f2f2b33424';
     }
     if (!key.startsWith('0x')) {
       key = `0x${key}`;
