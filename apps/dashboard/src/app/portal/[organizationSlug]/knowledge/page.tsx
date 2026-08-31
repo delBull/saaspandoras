@@ -1,10 +1,8 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { GetKnowledgeOverviewQuery } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { KnowledgePageClient } from './KnowledgePageClient';
-
-import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
+import { DashApi } from '@/lib/dash-api';
 
 export default async function KnowledgePage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
@@ -14,16 +12,25 @@ export default async function KnowledgePage({ params }: { params: Promise<{ orga
     notFound();
   }
 
-  const cpCtx = new ControlPlaneContext(
-    portalCtx.tenant.sessionId,
-    portalCtx.tenant.actorId,
-    portalCtx.tenant.role as any,
-    portalCtx.tenant.permissions as any,
-    [{ organizationId: portalCtx.tenant.organizationId, role: portalCtx.tenant.role as any }]
-  );
+  // Fetch knowledge overview strictly via Dash API Service Boundary (Decoupled from DB/ControlPlane internals)
+  let overview: any = {
+    totalSources: 0,
+    readySources: 0,
+    processingSources: 0,
+    failedSources: 0,
+    knowledgeHealth: 'EMPTY',
+    sources: [],
+    facts: [],
+  };
 
-  const query = new GetKnowledgeOverviewQuery();
-  const overview = await query.execute(cpCtx, portalCtx.tenant.organizationId);
+  try {
+    const data: any = await DashApi.knowledge.getOverview(organizationSlug);
+    if (data?.overview) {
+      overview = data.overview;
+    }
+  } catch (err) {
+    console.error('[KnowledgePage] Error fetching via DashApi:', err);
+  }
 
   return (
     <div className="min-h-screen bg-black">

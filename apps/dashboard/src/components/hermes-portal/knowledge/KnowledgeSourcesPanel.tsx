@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, FileText, Globe, MessageCircle, Building2, ShieldAlert, ChevronDown, ChevronRight } from 'lucide-react';
-import type { KnowledgeSourceView } from '@/lib/pandoras/core/domains/control-plane/view-models';
+import type { KnowledgeSourceView } from '@/lib/dash-contracts/knowledge';
 
 const COLLAPSED_VISIBLE_COUNT = 4;
 

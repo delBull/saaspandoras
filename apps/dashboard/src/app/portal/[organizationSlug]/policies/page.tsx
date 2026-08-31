@@ -1,11 +1,9 @@
 import React from 'react';
-import { db } from '@/db';
-import { hermesKnowledge } from '@/db/schema';
-import { eq, and, or } from 'drizzle-orm';
 import { PoliciesDashboard } from '@/components/hermes-portal/policies/PoliciesDashboard';
 import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { savePolicy } from './actions';
+import { DashApi } from '@/lib/dash-api';
 
 interface PoliciesPageProps {
   params: Promise<{ organizationSlug: string }>;
@@ -14,43 +12,26 @@ interface PoliciesPageProps {
 export default async function PoliciesPage({ params }: PoliciesPageProps) {
   const { organizationSlug } = await params;
 
-  // Auth context first: null → clean 404 instead of silently rendering an empty page
+  // 1. Auth context verification (Fail-Closed: null → clean 404)
   const portalCtx = await tryResolvePortalContext(organizationSlug);
   if (!portalCtx) {
     notFound();
   }
 
-  let dbPolicies: any[] = [];
+  // 2. Fetch policies strictly via Dash API Service Boundary (Decoupled from DB/SQL)
+  let mappedPolicies: Array<{ id: string; key: string; content: string; status: string; updatedAt: Date }> = [];
   try {
-    const context = portalCtx;
-    const targetSlug = context.tenant.organizationSlug || organizationSlug;
-    const orgId = context.tenant.organizationId;
-
-    dbPolicies = await db
-      .select()
-      .from(hermesKnowledge)
-      .where(
-        and(
-          or(
-            eq(hermesKnowledge.organizationId, organizationSlug),
-            eq(hermesKnowledge.organizationId, targetSlug),
-            eq(hermesKnowledge.organizationId, orgId),
-            eq(hermesKnowledge.organizationId, 'snarai')
-          ),
-          eq(hermesKnowledge.dimension, 'policy')
-        )
-      );
+    const rawPolicies = await DashApi.policies.list(organizationSlug);
+    mappedPolicies = rawPolicies.map(p => ({
+      id: p.id,
+      key: p.key,
+      content: p.content,
+      status: p.status,
+      updatedAt: new Date(p.updatedAt),
+    }));
   } catch (error) {
-    console.warn("Failed to fetch policies:", error);
+    console.warn("Failed to fetch policies via DashApi:", error);
   }
-
-  const mappedPolicies = dbPolicies.map(p => ({
-    id: p.id,
-    key: p.key,
-    content: p.content,
-    status: p.status,
-    updatedAt: p.updatedAt,
-  }));
 
   const handleSave = async (key: string, content: string) => {
     'use server';
@@ -59,9 +40,9 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
 
   return (
     <PoliciesDashboard 
-      policies={mappedPolicies}
-      organizationSlug={organizationSlug}
-      onSavePolicy={handleSave}
+      policies={mappedPolicies} 
+      organizationSlug={organizationSlug} 
+      onSavePolicy={handleSave} 
     />
   );
 }

@@ -1,54 +1,21 @@
 'use server';
 
-import { db } from '@/db';
-import { hermesConversations, hermesConversationMessages, hermesEscalations } from '@/db/schema';
-import { eq, desc, and, or } from 'drizzle-orm';
 import type { MessageView } from '@/components/hermes-portal/conversations/ConversationsDashboard';
-import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { DashApi } from '@/lib/dash-api';
 import { EscalationService } from '@/lib/hermes/escalation/escalation-service';
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export async function getConversationMessages(organizationSlug: string, conversationId: string): Promise<MessageView[]> {
   try {
-    const ctx = await resolvePortalContext(organizationSlug);
-    const orgId = ctx.tenant.organizationId;
-    const orgSlug = ctx.tenant.organizationSlug || organizationSlug;
-
-    const messages = await db
-      .select()
-      .from(hermesConversationMessages)
-      .where(
-        and(
-          or(
-            eq(hermesConversationMessages.organizationId, orgSlug),
-            eq(hermesConversationMessages.organizationId, orgId),
-            eq(hermesConversationMessages.organizationId, organizationSlug)
-          ),
-          eq(hermesConversationMessages.conversationId, conversationId)
-        )
-      )
-      .orderBy(hermesConversationMessages.sequence);
-
-    return messages.map(msg => {
-      let content = msg.content;
-      // Sanitize RUNTIME ACTIVITY to prevent leaking internal logic
-      if (msg.role === 'ACTIVITY' || msg.role === 'SYSTEM') {
-        return {
-          id: msg.id,
-          role: 'ACTIVITY',
-          content: msg.content || 'Hermes evaluated cognitive context.',
-          createdAt: msg.createdAt,
-        };
-      }
-
-      return {
-        id: msg.id,
-        role: msg.role as 'USER' | 'ASSISTANT' | 'SYSTEM' | 'OPERATOR',
-        content,
-        createdAt: msg.createdAt,
-      };
-    });
+    const rawMessages = await DashApi.conversations.getMessages(organizationSlug, conversationId);
+    return rawMessages.map(msg => ({
+      id: msg.id,
+      role: msg.role as any,
+      content: msg.content,
+      createdAt: new Date(msg.createdAt),
+    }));
   } catch (error) {
-    console.error("Error fetching messages:", error);
+    console.error("Error fetching messages via DashApi:", error);
     return [];
   }
 }

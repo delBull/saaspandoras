@@ -2,9 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { SettingsClient, TenantSettingsData, ApiKeyItem } from './SettingsClient';
-import { db } from '@/db';
-import { projects, integrationClients } from '@/db/schema';
-import { eq, or, desc } from 'drizzle-orm';
+import { DashApi } from '@/lib/dash-api';
 
 export default async function SettingsPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
@@ -14,54 +12,57 @@ export default async function SettingsPage({ params }: { params: Promise<{ organ
     notFound();
   }
 
-  const projectId = portalCtx.organization.projectId;
-  const isUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-
-  // Load project details
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(
-      or(
-        eq(projects.slug, organizationSlug),
-        ...(projectId ? [eq(projects.id, Number(projectId))] : []),
-        ...(isUuid(organizationSlug) ? [eq(projects.organizationId, organizationSlug)] : [])
-      )
-    )
-    .limit(1);
-
-  if (!project) {
-    notFound();
-  }
-
-  // Load active API keys for this project
-  const rawKeys = await db
-    .select()
-    .from(integrationClients)
-    .where(eq(integrationClients.projectId, project.id))
-    .orderBy(desc(integrationClients.createdAt));
-
-  const apiKeys: ApiKeyItem[] = rawKeys.map((k) => ({
-    id: k.id,
-    name: k.name,
-    keyFingerprint: k.keyFingerprint,
-    permissions: (k.permissions as string[]) || [],
-    isActive: k.isActive,
-    lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : null,
-    createdAt: k.createdAt.toISOString(),
-  }));
-
-  const initialData: TenantSettingsData = {
-    title: project.title || '',
-    tagline: project.tagline || '',
-    description: project.description || '',
-    website: project.website || '',
-    whatsappPhone: project.whatsappPhone || '',
-    telegramUrl: project.telegramUrl || '',
-    logoUrl: project.logoUrl || '',
-    runtimeConfig: (project.tenantRuntimeConfig as any) || {},
-    apiKeys,
+  // Load Settings and API Keys strictly via Dash API Service Boundary (Decoupled from DB/SQL)
+  let initialData: TenantSettingsData = {
+    title: portalCtx.organization.name || organizationSlug,
+    tagline: '',
+    description: '',
+    website: '',
+    whatsappPhone: '',
+    telegramUrl: '',
+    logoUrl: portalCtx.organization.logoUrl || '',
+    runtimeConfig: {
+      language: 'es',
+      tonePreset: 'institutional_concierge',
+      humanHandoffContact: '',
+      maxResponseTokens: 1024,
+    },
+    apiKeys: [],
   };
+
+  try {
+    const data = await DashApi.settings.get(organizationSlug);
+    if (data?.settings) {
+      const keys: ApiKeyItem[] = (data.apiKeys || []).map(k => ({
+        id: k.id,
+        name: k.name,
+        keyFingerprint: k.keyFingerprint,
+        permissions: k.permissions || [],
+        isActive: k.isActive,
+        lastUsedAt: k.lastUsedAt || null,
+        createdAt: k.createdAt,
+      }));
+
+      initialData = {
+        title: data.settings.title || portalCtx.organization.name || organizationSlug,
+        tagline: data.settings.tagline || '',
+        description: data.settings.description || '',
+        website: data.settings.website || '',
+        whatsappPhone: data.settings.whatsappPhone || '',
+        telegramUrl: data.settings.telegramUrl || '',
+        logoUrl: portalCtx.organization.logoUrl || '',
+        runtimeConfig: {
+          language: 'es',
+          tonePreset: 'institutional_concierge',
+          humanHandoffContact: '',
+          maxResponseTokens: 1024,
+        },
+        apiKeys: keys,
+      };
+    }
+  } catch (err) {
+    console.error('[SettingsPage] Error fetching settings via DashApi:', err);
+  }
 
   return (
     <div className="min-h-screen bg-black">

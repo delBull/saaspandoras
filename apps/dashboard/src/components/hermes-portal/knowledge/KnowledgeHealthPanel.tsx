@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KnowledgeOverviewView } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
+import type { KnowledgeOverviewView } from '@/lib/dash-contracts/knowledge';
 
 export function KnowledgeHealthPanel({ overview }: { overview: KnowledgeOverviewView }) {
   // If telemetry isn't fully implemented in backend yet, we follow K2.11 rule: No fake metrics.

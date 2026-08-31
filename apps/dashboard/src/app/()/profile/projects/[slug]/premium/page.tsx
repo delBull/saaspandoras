@@ -1,17 +1,13 @@
 'use server';
 
 import { notFound } from "next/navigation";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { ProjectRepository } from "@/lib/domain/project-repository";
 import type { Metadata } from "next";
 import { PDFClient } from "@/components/premium/PDFClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
-    const project = await db.query.projects.findFirst({
-        where: eq(projects.slug, slug),
-    });
+    const project = await ProjectRepository.findBySlug(slug);
     if (!project) return { title: "Premium PDF" };
 
     return {
@@ -34,13 +30,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function PremiumPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
-    const project = await db.query.projects.findFirst({
-        where: eq(projects.slug, slug),
-    });
+    const project = await ProjectRepository.findBySlug(slug);
     if (!project) notFound();
 
     return (
-        <div className="w-full min-h-screen bg-black text-white">
+        <div className="w-full min-h-screen bg-black text-white p-4 sm:p-6 md:p-8 md:pt-10">
             <PDFClient project={project} />
         </div>
     );

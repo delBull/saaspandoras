@@ -18,4 +18,10 @@ export class ProjectRepository {
       .set({ extraConfig: config })
       .where(eq(projects.id, projectId));
   }
+
+  static async updateTenantRuntimeConfig(slug: string, tenantRuntimeConfig: any) {
+    await db.update(projects)
+      .set({ tenantRuntimeConfig, updatedAt: new Date() })
+      .where(ilike(projects.slug, slug));
+  }
 }

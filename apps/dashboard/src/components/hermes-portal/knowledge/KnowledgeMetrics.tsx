@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KnowledgeOverviewView } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
+import type { KnowledgeOverviewView } from '@/lib/dash-contracts/knowledge';
 
 export function KnowledgeMetrics({ overview }: { overview: KnowledgeOverviewView }) {
   // KnowledgeHealth resolution

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { KnowledgeDashboard } from '@/components/hermes-portal/knowledge/KnowledgeDashboard';
-import type { KnowledgeOverviewView } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
+import type { KnowledgeOverviewView } from '@/lib/dash-contracts/knowledge';
 import { addKnowledgeAction, approveKnowledgeFact, rejectKnowledgeFact } from './actions';
 
 export function KnowledgePageClient({ 

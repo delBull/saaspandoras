@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import type { KnowledgeOverviewView } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
-import type { KnowledgeSourceView } from '@/lib/pandoras/core/domains/control-plane/view-models';
+import type { KnowledgeOverviewView, KnowledgeSourceView } from '@/lib/dash-contracts/knowledge';
 
 import { KnowledgeHeader } from './KnowledgeHeader';
 import { KnowledgeMetrics } from './KnowledgeMetrics';

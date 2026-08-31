@@ -1,8 +1,7 @@
-import { db } from "@/db";
-import { marketingLeads, projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import HermesCheckoutClient from "./HermesCheckoutClient";
+import { LeadRepository } from "@/lib/domain/lead-repository";
+import { ProjectRepository } from "@/lib/domain/project-repository";
 
 export default async function HermesCheckoutPage({ searchParams }: { searchParams: Promise<{ leadId?: string, plan?: string }> }) {
     const params = await searchParams;
@@ -12,17 +11,13 @@ export default async function HermesCheckoutPage({ searchParams }: { searchParam
         return notFound();
     }
 
-    // Attempt to load the lead
-    const lead = await db.query.marketingLeads.findFirst({
-        where: eq(marketingLeads.id, leadId)
-    });
+    // Attempt to load the lead via Domain Repository
+    const lead = await LeadRepository.findById(leadId);
 
     // Alternatively, attempt to load an existing project if leadId is actually a project slug
     let project = null;
     if (!lead) {
-        project = await db.query.projects.findFirst({
-            where: eq(projects.slug, leadId)
-        });
+        project = await ProjectRepository.findBySlug(leadId);
     }
 
     if (!lead && !project) {

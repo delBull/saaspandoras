@@ -1,16 +1,14 @@
 import { EventsTab } from '@/components/shared/tabs/EventsTab';
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
-
-import { getOrganizationOverview } from '../actions';
+import { ProjectRepository } from "@/lib/domain/project-repository";
+import { DashApi } from '@/lib/dash-api';
 
 export default async function ActivityPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const orgId = `org_${resolvedParams.id}`;
-  const overview = await getOrganizationOverview(orgId);
-  const project = await db.query.projects.findFirst({ where: eq(projects.slug, resolvedParams.id) });
 
+  // Security Check & Overview via Service Boundary
+  await DashApi.controlPlane.getOverview(orgId);
+  const project = await ProjectRepository.findBySlug(resolvedParams.id);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">

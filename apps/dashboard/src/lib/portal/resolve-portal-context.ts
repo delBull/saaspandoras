@@ -124,3 +124,31 @@ export async function tryResolvePortalContext(
     return null;
   }
 }
+
+/**
+ * Check onboarding stage for a tenant context without leaking db into layout components.
+ */
+export async function getTenantOnboardingStage(context: PortalContext, requestedSlug: string): Promise<string | null> {
+  try {
+    const { db } = await import('@/db');
+    const { portalOnboardingState } = await import('@/db/schema');
+    const { eq, or } = await import('drizzle-orm');
+
+    const [onboarding] = await db
+      .select({ stage: portalOnboardingState.stage })
+      .from(portalOnboardingState)
+      .where(
+        or(
+          eq(portalOnboardingState.tenantId, context.tenant.organizationId),
+          eq(portalOnboardingState.tenantId, context.tenant.organizationSlug),
+          eq(portalOnboardingState.tenantId, requestedSlug),
+          eq(portalOnboardingState.tenantId, String(context.organization.projectId))
+        )
+      )
+      .limit(1);
+
+    return onboarding?.stage || null;
+  } catch {
+    return null;
+  }
+}

@@ -2,10 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { AddonsClient, AddOnItem } from './AddonsClient';
-import { CANONICAL_ADDONS, ensureCanonicalAddOnsRegistered } from '@/lib/pandoras/core/domains/hermes/addons/catalog';
-import { db } from '@/db';
-import { hermesAddonInstallations } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { DashApi } from '@/lib/dash-api';
 
 export default async function AddonsPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
@@ -15,47 +12,26 @@ export default async function AddonsPage({ params }: { params: Promise<{ organiz
     notFound();
   }
 
-  const orgId = portalCtx.tenant.organizationId;
-  const tenantSlug = portalCtx.tenant.organizationSlug || portalCtx.organization.slug || organizationSlug;
   const orgName = portalCtx.organization.name || organizationSlug;
 
-  await ensureCanonicalAddOnsRegistered();
-
-  // Load installations for this tenant
-  const installations = await db
-    .select()
-    .from(hermesAddonInstallations)
-    .where(
-      or(
-        eq(hermesAddonInstallations.organizationId, tenantSlug),
-        eq(hermesAddonInstallations.organizationId, orgId),
-        eq(hermesAddonInstallations.organizationId, organizationSlug)
-      )
-    );
-
-  const installationMap = new Map<string, string>();
-  for (const inst of installations) {
-    installationMap.set(inst.addonId, inst.status);
-  }
-
-  const addonItems: AddOnItem[] = CANONICAL_ADDONS.map((addon) => {
-    const status = (installationMap.get(addon.id) as any) || 'AVAILABLE';
-    return {
-      id: addon.id,
+  // Load addons strictly via Dash API Service Boundary (Decoupled from DB/SQL)
+  let addonItems: AddOnItem[] = [];
+  try {
+    const rawAddons = await DashApi.addons.list(organizationSlug);
+    addonItems = rawAddons.map((addon) => ({
+      id: addon.addonId,
       name: addon.name,
       version: addon.version,
-      type: addon.type,
+      type: addon.category || 'CAPABILITY',
       description: addon.description,
-      capabilities: (addon.capabilities || []).map((c) => ({
-        id: c.id,
-        category: c.category,
-        description: c.description,
-      })),
-      status: status === 'ACTIVE' ? 'ACTIVE' : 'AVAILABLE',
-      requiresHumanApproval: Boolean(addon.governanceRequirements?.requiresHumanApproval),
-      channels: addon.governanceRequirements?.allowedChannels || ['web', 'whatsapp', 'telegram'],
-    };
-  });
+      capabilities: [],
+      status: addon.status as any,
+      requiresHumanApproval: false,
+      channels: ['web', 'whatsapp', 'telegram'],
+    }));
+  } catch (err) {
+    console.error('[AddonsPage] Error fetching via DashApi:', err);
+  }
 
   return (
     <div className="min-h-screen bg-black">

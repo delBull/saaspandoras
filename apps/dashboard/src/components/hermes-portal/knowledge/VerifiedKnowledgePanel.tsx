@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, AlertCircle, Check, X, FileCode, Tag, Hash, Lock, ChevronDown, ChevronUp } from 'lucide-react';
-import type { KnowledgeFactView } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
+import type { KnowledgeFactView } from '@/lib/dash-contracts/knowledge';
 
 interface VerifiedKnowledgePanelProps {
   facts?: KnowledgeFactView[];

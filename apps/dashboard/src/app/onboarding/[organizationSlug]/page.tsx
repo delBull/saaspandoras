@@ -1,22 +1,16 @@
 import React from 'react';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import { OnboardingClient } from './OnboardingClient';
 import { redirect } from 'next/navigation';
+import { ProjectRepository } from '@/lib/domain/project-repository';
 
 export default async function OnboardingPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
 
-  const [project] = await db.select({ name: projects.title })
-    .from(projects)
-    .where(eq(projects.slug, organizationSlug))
-    .limit(1);
+  const project = await ProjectRepository.findBySlug(organizationSlug);
 
   if (!project) {
     redirect('/portal/error');
   }
 
-  return <OnboardingClient organizationSlug={organizationSlug} organizationName={project.name} />;
+  return <OnboardingClient organizationSlug={organizationSlug} organizationName={project.title || organizationSlug} />;
 }
-

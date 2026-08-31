@@ -1,170 +1,30 @@
-/**
- * Portal Overview — Phase 6.2 Mission Control
- * /portal/[organizationSlug]/page.tsx
- * 
- * "Mission Control for an AI Operating System."
- * 
- * Authorization was already enforced by layout.tsx.
- * This page operates within the authorized tenant context and transforms
- * the application-level OrganizationOverviewView into the presentation-safe
- * HermesOverviewView contract.
- */
-
-import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
-import { getOverviewQuery } from '@/lib/pandoras/composition/control-plane-composition';
-import { GetKnowledgeOverviewQuery } from '@/lib/pandoras/core/domains/control-plane/application/queries/get-knowledge-overview';
+import React from 'react';
+import { notFound } from 'next/navigation';
+import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewDashboard';
-import type { HermesOverviewView, SystemStatus, ActivityEventView } from '@/lib/portal/portal-types';
-import type { OrganizationOverviewView } from '@/lib/pandoras/core/domains/control-plane/view-models';
-import { db } from '@/db';
-import { projects, hermesJourneys, hermesConversationMessages } from '@/db/schema';
-import { eq, desc, or } from 'drizzle-orm';
+import { DashApi } from '@/lib/dash-api';
+import type { HermesOverviewView } from '@/lib/portal/portal-types';
 
 export default async function PortalOverviewPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
   
-  // 1. Context already guaranteed safe by layout, but we resolve it to pass downward
-  const context = await resolvePortalContext(organizationSlug);
+  // 1. Verify auth context (Fail-Closed: null → clean 404)
+  const portalCtx = await tryResolvePortalContext(organizationSlug);
+  if (!portalCtx) {
+    notFound();
+  }
 
-  // 2. Fetch the real application data
-  let rawOverview: OrganizationOverviewView | null = null;
-  let knowledgeHealth: SystemStatus = 'READY';
-  let dynamicChannelsStatus: SystemStatus = 'NOT_CONFIGURED';
-  let dynamicJourneysStatus: SystemStatus = 'NOT_CONFIGURED';
-  let journeyRows: any[] = [];
+  // 2. Fetch overview strictly via Dash API Service Boundary (Decoupled from DB/SQL)
+  let overview: HermesOverviewView | null = null;
 
   try {
-    const cpCtx = new ControlPlaneContext(
-      context.tenant.sessionId,
-      context.tenant.actorId,
-      context.tenant.role as any,
-      context.tenant.permissions as any,
-      [{ organizationId: context.tenant.organizationId, role: context.tenant.role as any }]
-    );
-    
-    rawOverview = await getOverviewQuery.execute(cpCtx, context.tenant.organizationId);
-    
-    const knowledgeQuery = new GetKnowledgeOverviewQuery();
-    const kOverview = await knowledgeQuery.execute(cpCtx, context.tenant.organizationId);
-    knowledgeHealth = kOverview.knowledgeHealth === 'EMPTY' ? 'NOT_CONFIGURED' : kOverview.knowledgeHealth as SystemStatus;
-
-    // Check Channels
-    const targetSlug = context.tenant.organizationSlug || organizationSlug;
-    const orgId = context.tenant.organizationId;
-
-    const isUuid = (val?: string): boolean => 
-      Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
-
-    const [project] = await db.select().from(projects).where(
-      or(
-        eq(projects.slug, targetSlug),
-        ...(isUuid(orgId) ? [eq(projects.organizationId, orgId)] : []),
-        ...(isUuid(targetSlug) ? [eq(projects.organizationId, targetSlug)] : []),
-        eq(projects.slug, 'snarai')
-      )
-    ).limit(1);
-    const config = project?.tenantRuntimeConfig as any;
-    if (config?.secrets?.telegramBotToken || config?.secrets?.whatsappToken) {
-      dynamicChannelsStatus = 'READY';
+    const data = await DashApi.overview.get(organizationSlug);
+    if (data?.overview) {
+      overview = data.overview;
     }
-
-    // Check Journeys
-    journeyRows = await db.select().from(hermesJourneys).where(
-      or(
-        eq(hermesJourneys.organizationId, orgId),
-        eq(hermesJourneys.organizationId, targetSlug),
-        eq(hermesJourneys.organizationId, organizationSlug)
-      )
-    );
-    if (journeyRows.length > 0) {
-      dynamicJourneysStatus = 'READY';
-    } else if (rawOverview && rawOverview.metrics.activeGoals > 0) {
-      dynamicJourneysStatus = 'ACTIVE';
-    }
-
-  } catch (error) {
-    console.error('[PortalOverview] Failed to fetch overview data:', error);
+  } catch (err) {
+    console.error('[PortalOverviewPage] Error fetching overview via DashApi:', err);
   }
 
-  // Fetch recent messages for Live Activity Feed
-  let recentActivities: ActivityEventView[] = [];
-  try {
-    const orgId = context.tenant.organizationId;
-    const targetSlug = context.tenant.organizationSlug || organizationSlug;
-
-    const messages = await db.select()
-      .from(hermesConversationMessages)
-      .where(
-        or(
-          eq(hermesConversationMessages.organizationId, orgId),
-          eq(hermesConversationMessages.organizationId, targetSlug),
-          eq(hermesConversationMessages.organizationId, organizationSlug)
-        )
-      )
-      .orderBy(desc(hermesConversationMessages.createdAt))
-      .limit(5);
-
-    recentActivities = messages.map(msg => ({
-      id: msg.id,
-      type: msg.role === 'USER' ? 'MESSAGE_RECEIVED' : 'MESSAGE_SENT',
-      description: msg.content.length > 60 ? msg.content.substring(0, 60) + '...' : msg.content,
-      timestamp: msg.createdAt,
-      channel: 'Web',
-    }));
-  } catch (error) {
-    console.error('[PortalOverview] Failed to fetch recent messages:', error);
-  }
-
-  // 3. Map application data to presentation-safe view model
-  let overviewView: HermesOverviewView | null = null;
-  
-  if (rawOverview) {
-    // Derive subsystem status based on metrics & strategic activity for Phase 6.2
-    // Future phases will inject real runtime statuses here.
-    const hasGoals = rawOverview.metrics.activeGoals > 0;
-    
-    // Identity is considered READY if the tenant exists
-    const identityStatus: SystemStatus = 'READY';
-    const knowledgeStatus: SystemStatus = knowledgeHealth;
-    
-    const channelsStatus: SystemStatus = dynamicChannelsStatus;
-    const journeysStatus: SystemStatus = dynamicJourneysStatus;
-    
-    const govStatus: SystemStatus = rawOverview.metrics.pendingDecisions > 0 ? 'PROCESSING' : 'READY';
-    const cognitiveStatus: SystemStatus = 'READY'; 
-    const executionStatus: SystemStatus = 'READY';
-
-    overviewView = {
-      organization: {
-        id: rawOverview.organizationId,
-        name: rawOverview.name,
-      },
-      systemStatus: (knowledgeHealth === 'READY' && dynamicJourneysStatus === 'READY') ? 'READY' : (rawOverview.systemStatus || 'READY'),
-      journeyStatus: dynamicJourneysStatus === 'READY' ? 'ACTIVE' : (rawOverview.journeyStatus || 'ACTIVE'),
-      system: {
-        identity: identityStatus,
-        knowledge: knowledgeStatus,
-        channels: channelsStatus,
-        journeys: journeysStatus,
-        governance: govStatus,
-        cognitive: cognitiveStatus,
-        execution: executionStatus,
-      },
-      strategicActivity: {
-        active: !!rawOverview.currentStrategicActivity || journeyRows.length > 0,
-        title: rawOverview.currentStrategicActivity?.missionName || (journeyRows.length > 0 ? journeyRows[0].name : 'Ecosistema de Participación'),
-        stage: rawOverview.currentStrategicActivity?.phase || 'Stage 1: Discovery & Qualification',
-        progress: rawOverview.currentStrategicActivity?.progressPercentage || 68,
-      },
-      metrics: {
-        activeJourneys: journeyRows.length > 0 ? journeyRows.length : rawOverview.metrics.activeMissions,
-        pendingDecisions: rawOverview.metrics.pendingDecisions,
-      },
-      activity: recentActivities,
-    };
-  }
-
-  // 4. Render Mission Control
-  return <OverviewDashboard context={context} overview={overviewView} />;
+  return <OverviewDashboard context={portalCtx} overview={overview} />;
 }

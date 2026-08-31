@@ -1,30 +1,14 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
-import { getOrganizationOverview } from './actions';
-import { db } from '@/db';
-import { installedProducts, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { DashApi } from '@/lib/dash-api';
 
 export default async function ControlPlaneLayout({ children, params }: { children: ReactNode, params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const slugId = resolvedParams?.id;
   const orgId = `org_${slugId}`;
 
-  // This layout is a server component, we can authorize and fetch capabilities here
-  await getOrganizationOverview(orgId);
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.slug, slugId || '')
-  });
-
-  // Check capabilities
-  const hermesInstall = project ? await db.query.installedProducts.findFirst({
-      where: and(
-          eq(installedProducts.projectId, project.id),
-          eq(installedProducts.productFamily, 'HERMES')
-      )
-  }) : null;
-  
-  const hasHermes = !!hermesInstall;
+  const overview = await DashApi.controlPlane.getOverview(orgId);
+  const hasHermes = overview.hasHermes;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -58,27 +42,37 @@ export default async function ControlPlaneLayout({ children, params }: { childre
                 Hermes Overview
               </Link>
               <Link href={`/growth-os/organizations/${slugId}/hermes/conversations`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors pl-6">
-                Conversations & Leads
+                Conversations
               </Link>
               <Link href={`/growth-os/organizations/${slugId}/hermes/knowledge`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors pl-6">
-                Knowledge & Soul
-              </Link>
-              <Link href={`/growth-os/organizations/${slugId}/hermes/integrations`} className="block px-4 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors pl-6">
-                Integrations
+                Knowledge Base
               </Link>
             </>
           )}
         </nav>
-
-        <div className="p-4 border-t border-slate-800 text-xs">
-          Organization ID:
-          <div className="font-mono text-slate-500 truncate mt-1">{orgId}</div>
-        </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {children}
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+          <div className="flex items-center space-x-4">
+            <span className="font-semibold text-gray-700">{overview.name}</span>
+            <span className="text-xs bg-emerald-100 text-emerald-700 font-medium px-2 py-0.5 rounded-full">
+              Active Context
+            </span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Link 
+              href={`/profile/projects/${slugId}/manage`}
+              className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-lg border border-slate-300 transition-colors"
+            >
+              Manage Project
+            </Link>
+          </div>
+        </header>
+        <div className="flex-1">
+          {children}
+        </div>
       </main>
     </div>
   );

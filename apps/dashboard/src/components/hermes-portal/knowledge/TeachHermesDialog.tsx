@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Globe, MessageCircle, Building2, ShieldAlert, ArrowLeft, Terminal, LayoutGrid, Send, Paperclip } from 'lucide-react';
-import type { KnowledgeSourceView } from '@/lib/pandoras/core/domains/control-plane/view-models';
+import type { KnowledgeSourceView } from '@/lib/dash-contracts/knowledge';
 
 interface TeachPayload {
   type: KnowledgeSourceView['type'];

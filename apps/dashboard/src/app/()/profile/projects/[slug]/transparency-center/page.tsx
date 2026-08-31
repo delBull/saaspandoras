@@ -1,15 +1,11 @@
 import { notFound } from "next/navigation";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { ProjectRepository } from "@/lib/domain/project-repository";
 import TransparencyCenterClient from "./client";
 
 export default async function TransparencyCenterPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
 
-    const project = await db.query.projects.findFirst({
-        where: eq(projects.slug, slug),
-    });
+    const project = await ProjectRepository.findBySlug(slug);
 
     if (!project) {
         notFound();
