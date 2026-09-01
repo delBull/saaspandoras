@@ -115,7 +115,11 @@ export async function GET() {
         };
       });
 
-      return NextResponse.json(sanitizedProjects);
+      return NextResponse.json(sanitizedProjects, {
+        headers: {
+          'Cache-Control': userWallet ? 'private, no-cache' : 'public, s-maxage=60, stale-while-revalidate=300',
+        }
+      });
     } catch (queryError) {
       console.error('❌ Projects API: Query failed:', queryError);
       return NextResponse.json({ message: "Error al consultar proyectos" }, { status: 500 });

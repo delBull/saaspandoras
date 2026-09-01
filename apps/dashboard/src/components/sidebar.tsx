@@ -754,6 +754,7 @@ export function Sidebar({
                   <Tooltip.Root key={link.label}>
                     <Tooltip.Trigger asChild>
                       <Link
+                        prefetch={false}
                         href={link.href}
                         className={cn(
                           "relative flex items-center rounded-lg py-3 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 w-full justify-center",
@@ -786,6 +787,7 @@ export function Sidebar({
                   </Tooltip.Root>
                 ) : (
                       <Link
+                        prefetch={false}
                         key={link.label}
                         href={link.href}
                         className={cn(
@@ -1209,6 +1211,7 @@ export function Sidebar({
                 <div className="flex flex-col gap-2">
                   {links.map((link) => (
                     <Link
+                      prefetch={false}
                       key={`mobile - ${link.label} `}
                       href={link.href}
                       className={cn(

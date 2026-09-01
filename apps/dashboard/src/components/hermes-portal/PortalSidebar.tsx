@@ -184,6 +184,7 @@ export function PortalSidebar({
               return (
                 <li key={item.href}>
                   <Link
+                    prefetch={false}
                     href={`${basePath}${item.href}`}
                     onClick={() => onNavClick?.()}
                     className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px] ${
@@ -206,6 +207,7 @@ export function PortalSidebar({
               return (
                 <li key={item.href}>
                   <Link
+                    prefetch={false}
                     href={`${basePath}${item.href}`}
                     onClick={() => onNavClick?.()}
                     className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px] ${
@@ -226,6 +228,7 @@ export function PortalSidebar({
               Capacidades de Negocio
             </div>
             <Link
+              prefetch={false}
               href={`/growth-os/organizations/${organizationSlug}`}
               onClick={() => onNavClick?.()}
               className="flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 active:bg-violet-500/30 border border-violet-500/30 text-violet-200 transition-all text-xs font-medium min-h-[44px] group shadow-sm"
@@ -237,6 +240,7 @@ export function PortalSidebar({
               <ExternalLink size={13} className="text-violet-400/70 group-hover:text-violet-300 shrink-0" />
             </Link>
             <Link
+              prefetch={false}
               href={`/profile/projects/${organizationSlug}/manage`}
               onClick={() => onNavClick?.()}
               className="flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 transition-all text-xs font-medium min-h-[44px] group shadow-sm"
