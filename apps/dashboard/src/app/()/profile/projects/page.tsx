@@ -56,7 +56,8 @@ export default function ProfileProjectsPage() {
           return Promise.all([usersRes.json(), projectsRes.json()]);
         })
         .then((data) => {
-          const [userProfile, projects] = data as [UserData | null, Project[]];
+          const [userProfile, rawProjects] = data as [UserData | null, any];
+          const projectsList = Array.isArray(rawProjects) ? rawProjects : [];
 
           // 🏦 WALLET-BASED FILTERING ONLY
           const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
@@ -64,18 +65,18 @@ export default function ProfileProjectsPage() {
 
           let filteredProjects: Project[] = [];
           if (isSuperAdmin) {
-            filteredProjects = projects;
+            filteredProjects = projectsList;
           } else {
-            filteredProjects = projects.filter(p => {
-              const projectWallet = p.applicantWalletAddress?.toLowerCase();
-              const userWallet = walletAddress.toLowerCase();
-              return projectWallet === userWallet;
+            filteredProjects = projectsList.filter((p: Project) => {
+              const projectWallet = p?.applicantWalletAddress?.toLowerCase()?.trim();
+              const userWallet = walletAddress.toLowerCase().trim();
+              return Boolean(projectWallet && userWallet && projectWallet === userWallet);
             });
           }
 
           setUserProjects(filteredProjects);
         })
-        .catch(err => {
+        .catch(() => {
           // If profile API fails, still try to get projects
           fetch('/api/projects', {
             headers: {
@@ -86,28 +87,30 @@ export default function ProfileProjectsPage() {
             }
           })
             .then(res => res.json())
-            .then((projects: Project[]) => {
+            .then((rawProjects) => {
+              const projectsList = Array.isArray(rawProjects) ? rawProjects : [];
               const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
               const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase());
 
               let filteredProjects: Project[] = [];
               if (isSuperAdmin) {
-                filteredProjects = projects.filter((p: Project) =>
-                  ['pending', 'approved', 'live', 'completed'].includes(p.status)
+                filteredProjects = projectsList.filter((p: Project) =>
+                  ['pending', 'approved', 'live', 'completed'].includes(p?.status)
                 );
               } else {
-                filteredProjects = projects.filter((p: Project) => {
-                  const projectWallet = p.applicantWalletAddress?.toLowerCase().trim();
+                filteredProjects = projectsList.filter((p: Project) => {
+                  const projectWallet = p?.applicantWalletAddress?.toLowerCase()?.trim();
                   const userWallet = walletAddress.toLowerCase().trim();
+                  if (!projectWallet || !userWallet) return false;
                   return projectWallet === userWallet ||
                     projectWallet === userWallet.replace('0x', '') ||
-                    (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8))) ||
-                    (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-10)));
+                    projectWallet.endsWith(userWallet.slice(-8)) ||
+                    projectWallet.endsWith(userWallet.slice(-10));
                 });
               }
               setUserProjects(filteredProjects);
             })
-            .catch(projectErr => {
+            .catch(() => {
               setUserProjects([]);
             });
         })
@@ -144,11 +147,12 @@ export default function ProfileProjectsPage() {
   const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
   const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase());
 
-  const activeProjects = userProjects.filter(p => ['approved', 'live', 'completed'].includes(p.status));
-  const pendingProjects = userProjects.filter(p => ['pending'].includes(p.status));
-  const activeClientProjects = userProjects.filter(p => ['active_client'].includes(p.status));
-  const draftProjects = userProjects.filter(p => ['draft', 'incomplete'].includes(p.status));
-  const rejectedProjects = userProjects.filter(p => ['rejected'].includes(p.status));
+  const safeProjects = Array.isArray(userProjects) ? userProjects : [];
+  const activeProjects = safeProjects.filter(p => ['approved', 'live', 'completed'].includes(p?.status));
+  const pendingProjects = safeProjects.filter(p => ['pending'].includes(p?.status));
+  const activeClientProjects = safeProjects.filter(p => ['active_client'].includes(p?.status));
+  const draftProjects = safeProjects.filter(p => ['draft', 'incomplete'].includes(p?.status));
+  const rejectedProjects = safeProjects.filter(p => ['rejected'].includes(p?.status));
 
   // 1. Pending Review State
   if (!isSuperAdmin && activeProjects.length === 0 && pendingProjects.length > 0) {
