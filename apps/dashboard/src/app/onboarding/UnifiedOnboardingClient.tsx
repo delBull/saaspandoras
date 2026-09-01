@@ -544,3 +544,5 @@ export function UnifiedOnboardingClient() {
     </div>
   );
 }
+
+export default UnifiedOnboardingClient;
