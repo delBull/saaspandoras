@@ -30,6 +30,7 @@ import {
   Sparkles,
   FileText,
   ExternalLink,
+  Layers,
 } from 'lucide-react';
 
 interface NavItem {
@@ -41,6 +42,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  {
+    label: 'Ecosistema Hub',
+    href: '/ecosystem',
+    icon: Layers,
+    requiredPermission: 'organization.read',
+    section: 'primary',
+  },
   {
     label: 'Overview',
     href: '',
