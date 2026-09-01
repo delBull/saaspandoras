@@ -5,7 +5,7 @@
 
 import type { ControlPlaneOverviewDTO, GetPendingIntentsResponseDTO, OperationalIntentDTO } from '@/lib/dash-contracts/control-plane';
 import type { DashApiError } from '@/lib/dash-contracts/journeys';
-import { resolveApiBaseUrl } from './utils';
+import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiControlPlaneClient {
   private readonly baseUrl: string;
@@ -15,12 +15,14 @@ export class DashApiControlPlaneClient {
   }
 
   async getOverview(organizationId: string, init?: RequestInit): Promise<ControlPlaneOverviewDTO> {
+    const authHeaders = await getServerAuthHeaders();
     const url = `${this.baseUrl}/api/v1/control-plane/overview?organizationId=${encodeURIComponent(organizationId)}`;
     const res = await fetch(url, {
       ...init,
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...(init?.headers || {}),
       },
       cache: 'no-store',
@@ -38,12 +40,14 @@ export class DashApiControlPlaneClient {
   }
 
   async getPendingIntents(organizationId: string, init?: RequestInit): Promise<OperationalIntentDTO[]> {
+    const authHeaders = await getServerAuthHeaders();
     const url = `${this.baseUrl}/api/v1/control-plane/intents?organizationId=${encodeURIComponent(organizationId)}`;
     const res = await fetch(url, {
       ...init,
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...(init?.headers || {}),
       },
       cache: 'no-store',
@@ -62,12 +66,14 @@ export class DashApiControlPlaneClient {
   }
 
   async approveIntent(organizationId: string, intentId: string, reason?: string, init?: RequestInit): Promise<{ success: boolean }> {
+    const authHeaders = await getServerAuthHeaders();
     const url = `${this.baseUrl}/api/v1/control-plane/intents`;
     const res = await fetch(url, {
       ...init,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...(init?.headers || {}),
       },
       body: JSON.stringify({ action: 'APPROVE', organizationId, intentId, reason }),
@@ -85,12 +91,14 @@ export class DashApiControlPlaneClient {
   }
 
   async rejectIntent(organizationId: string, intentId: string, reason?: string, init?: RequestInit): Promise<{ success: boolean }> {
+    const authHeaders = await getServerAuthHeaders();
     const url = `${this.baseUrl}/api/v1/control-plane/intents`;
     const res = await fetch(url, {
       ...init,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...(init?.headers || {}),
       },
       body: JSON.stringify({ action: 'REJECT', organizationId, intentId, reason }),
@@ -108,12 +116,14 @@ export class DashApiControlPlaneClient {
   }
 
   async simulateIntent(organizationId: string, init?: RequestInit): Promise<{ success: boolean; intentId: string }> {
+    const authHeaders = await getServerAuthHeaders();
     const url = `${this.baseUrl}/api/v1/control-plane/intents`;
     const res = await fetch(url, {
       ...init,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...(init?.headers || {}),
       },
       body: JSON.stringify({ action: 'SIMULATE', organizationId }),

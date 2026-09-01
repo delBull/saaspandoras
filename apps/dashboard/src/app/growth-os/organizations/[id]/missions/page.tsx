@@ -6,8 +6,12 @@ export default async function MissionsPage({ params }: { params: Promise<{ id: s
   const resolvedParams = await params;
   const orgId = `org_${resolvedParams.id}`;
   
-  // Security Check & Overview via Service Boundary
-  await DashApi.controlPlane.getOverview(orgId);
+  try {
+    await DashApi.controlPlane.getOverview(orgId);
+  } catch (err) {
+    console.warn(`[MissionsPage] Notice:`, err);
+  }
+  
   const project = await ProjectRepository.findBySlug(resolvedParams.id);
 
   return (

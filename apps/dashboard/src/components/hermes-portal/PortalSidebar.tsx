@@ -213,10 +213,21 @@ export function PortalSidebar({
           </ul>
 
           {/* ── INSTITUTIONAL NAVIGATION LAYER (MOBILE DRAWER) ── */}
-          <div className="mt-6 pt-4 border-t border-white/[0.08] px-1">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2 px-2">
-              Pandora&apos;s Mesh
+          <div className="mt-6 pt-4 border-t border-white/[0.08] px-1 space-y-2">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1 px-2">
+              Capacidades de Negocio
             </div>
+            <Link
+              href={`/growth-os/organizations/${organizationSlug}`}
+              onClick={() => onNavClick?.()}
+              className="flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 active:bg-violet-500/30 border border-violet-500/30 text-violet-200 transition-all text-xs font-medium min-h-[44px] group shadow-sm"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Boxes size={16} className="text-violet-400 shrink-0" />
+                <span className="truncate font-medium">Growth OS Hub</span>
+              </div>
+              <ExternalLink size={13} className="text-violet-400/70 group-hover:text-violet-300 shrink-0" />
+            </Link>
             <Link
               href={`/profile/projects/${organizationSlug}/manage`}
               onClick={() => onNavClick?.()}
@@ -298,12 +309,31 @@ export function PortalSidebar({
             })}
 
             {/* ── INSTITUTIONAL NAVIGATION LAYER (DESKTOP SIDEBAR) ── */}
-            <div className={`w-full mt-3 pt-3 border-t border-white/10 ${collapsed ? 'flex flex-col items-center' : 'px-1'}`}>
+            <div className={`w-full mt-3 pt-3 border-t border-white/10 ${collapsed ? 'flex flex-col items-center gap-1.5' : 'px-1 space-y-1.5'}`}>
               {!collapsed && (
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1.5 px-2">
-                  Pandora&apos;s Mesh
+                  Capacidades de Negocio
                 </div>
               )}
+              <Link
+                href={`/growth-os/organizations/${organizationSlug}`}
+                className={`relative flex ${
+                  collapsed 
+                    ? 'flex-col items-center justify-center p-3 w-14 h-14' 
+                    : 'items-center justify-between px-3 py-2.5 w-full'
+                } rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-200 transition-all group shadow-sm`}
+                title={collapsed ? "Growth OS — Misiones, CRM & Tools" : undefined}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Boxes className="w-5 h-5 text-violet-400 shrink-0" />
+                  {!collapsed && <span className="text-xs font-medium truncate">Growth OS Hub</span>}
+                </div>
+                {collapsed ? (
+                  <span className="text-[8px] font-mono text-violet-300 mt-1">GROW</span>
+                ) : (
+                  <ExternalLink size={12} className="text-violet-400/70 group-hover:text-violet-300 shrink-0" />
+                )}
+              </Link>
               <Link
                 href={`/profile/projects/${organizationSlug}/manage`}
                 className={`relative flex ${

@@ -9,7 +9,9 @@ import {
     Cog6ToothIcon,
     ArrowLeftIcon,
     ClipboardDocumentIcon,
-    EnvelopeIcon
+    EnvelopeIcon,
+    Bars3Icon,
+    XMarkIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -46,6 +48,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
     const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
     const [pendingCount, setPendingCount] = useState(0);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
     const account = useActiveAccount();
 
@@ -103,68 +106,181 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
 
     return (
         <div className="w-full space-y-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => router.back()} className="p-2 bg-zinc-900 rounded-lg border border-zinc-800 hover:bg-zinc-800 transition-colors">
-                        <ArrowLeftIcon className="w-5 h-5 text-zinc-400" />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">{project.title}</h1>
-                        <p className="text-zinc-500 text-sm font-medium">Panel de Control del Fundador</p>
+            {/* Mobile Slide-Over Drawer */}
+            {isMobileDrawerOpen && (
+                <div className="md:hidden fixed inset-0 z-50 flex">
+                    <div
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                        onClick={() => setIsMobileDrawerOpen(false)}
+                    />
+                    <div className="relative flex-1 flex flex-col max-w-[290px] w-full bg-zinc-950 border-r border-zinc-800 text-zinc-300 z-50 h-full shadow-2xl">
+                        <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-800">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                                    P
+                                </div>
+                                <span className="text-white font-bold text-sm tracking-tight truncate">{project.title}</span>
+                            </div>
+                            <button
+                                onClick={() => setIsMobileDrawerOpen(false)}
+                                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+                            <div className="px-2 pb-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                                Módulos del Protocolo
+                            </div>
+                            {[
+                                { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                                { id: 'network', label: 'Gestores Patrimoniales', icon: <UsersIcon className="w-4 h-4" /> },
+                                { id: 'purchases', label: 'Reconciliación (Fast Lane)', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+                                { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                                { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                                { id: 'dao', label: 'DAO Treasury', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                                { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                                { id: 'resource_hub', label: 'Hub de Recursos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                                { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        setActiveTab(tab.id as any);
+                                        setIsMobileDrawerOpen(false);
+                                    }}
+                                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                                        activeTab === tab.id
+                                            ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-semibold'
+                                            : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className={activeTab === tab.id ? 'text-indigo-400' : 'text-zinc-500'}>{tab.icon}</span>
+                                        <span>{tab.label}</span>
+                                    </div>
+                                    {tab.id === 'purchases' && pendingCount > 0 && (
+                                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-yellow-400/20 text-yellow-300 rounded-full">
+                                            {pendingCount}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+
+                            {/* Cross-Plane Hybrid Links */}
+                            <div className="pt-4 mt-4 border-t border-zinc-800 space-y-1.5">
+                                <div className="px-2 pb-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                                    Capacidades de Negocio
+                                </div>
+                                <Link
+                                    href={`/growth-os/organizations/${project.slug}`}
+                                    onClick={() => setIsMobileDrawerOpen(false)}
+                                    className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold hover:bg-violet-500/20 transition-all"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <UsersIcon className="w-4 h-4 text-violet-400" />
+                                        <span>Growth OS Hub</span>
+                                    </div>
+                                    <span className="text-[10px] text-violet-400 font-mono">GROW</span>
+                                </Link>
+                                {hasGrowthOs && (
+                                    <Link
+                                        href={`/portal/${project.slug}`}
+                                        onClick={() => setIsMobileDrawerOpen(false)}
+                                        className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/20 transition-all"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <SparklesIcon className="w-4 h-4 text-emerald-400" />
+                                            <span>Hermes Portal</span>
+                                        </div>
+                                        <span className="text-[10px] text-emerald-400 font-mono">AI</span>
+                                    </Link>
+                                )}
+                            </div>
+                        </nav>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+            )}
+
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => router.back()} className="p-2 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
+                            <ArrowLeftIcon className="w-5 h-5 text-zinc-400" />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{project.title}</h1>
+                            <p className="text-zinc-500 text-xs sm:text-sm font-medium">Panel de Control del Fundador</p>
+                        </div>
+                    </div>
+                    {/* Mobile Hamburger Drawer Trigger */}
+                    <button
+                        onClick={() => setIsMobileDrawerOpen(true)}
+                        className="md:hidden p-2.5 bg-zinc-900 rounded-xl border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
+                        aria-label="Abrir Menú de Módulos"
+                    >
+                        <Bars3Icon className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
                     <button
                         onClick={() => setIsPreviewOpen(true)}
-                        className="px-4 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-all text-sm font-bold flex items-center gap-2"
+                        className="px-3.5 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-xl hover:bg-purple-600/30 transition-all text-xs font-bold flex items-center gap-1.5"
                     >
                         <EyeIcon className="w-4 h-4" />
-                        PREVIEW SANDBOX
+                        PREVIEW
                     </button>
-                    <Link href={`/profile/projects/${project.slug}/premium`} className="px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-400 rounded-lg hover:bg-amber-600/30 transition-all text-sm font-bold">
+                    <Link href={`/profile/projects/${project.slug}/premium`} className="px-3.5 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-400 rounded-xl hover:bg-amber-600/30 transition-all text-xs font-bold">
                         PDF PREMIUM
                     </Link>
-                    <Link href={`/projects/${project.slug}`} target="_blank" className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-800 transition-all text-sm font-bold">
-                        VER PÁGINA PÚBLICA
+                    <Link href={`/projects/${project.slug}`} target="_blank" className="px-3.5 py-2 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl hover:bg-zinc-800 transition-all text-xs font-bold">
+                        VER PÁGINA
+                    </Link>
+                    <Link href={`/growth-os/organizations/${project.slug}`} className="px-3.5 py-2 bg-violet-600/20 border border-violet-500/30 hover:bg-violet-600/30 text-violet-300 rounded-xl transition-all text-xs font-bold flex items-center gap-1.5">
+                        <UsersIcon className="w-4 h-4 text-violet-400" />
+                        GROWTH OS ↗
                     </Link>
                     {hasGrowthOs && (
-                        <Link href={`/portal/${project.slug}`} className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg transition-all text-sm font-bold flex items-center gap-2 shadow-lg shadow-purple-600/20">
+                        <Link href={`/portal/${project.slug}`} className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl transition-all text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
                             <SparklesIcon className="w-4 h-4" />
-                            ABRIR HERMES OS ↗
+                            HERMES OS ↗
                         </Link>
                     )}
                 </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl w-fit">
-                {[
-                    { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
-                    { id: 'network', label: 'Gestores Patrimoniales', icon: <UsersIcon className="w-4 h-4" /> },
-                    { id: 'purchases', label: 'Reconciliación (Fast Lane)', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
-                    { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
-                    { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                    { id: 'dao', label: 'DAO Treasury', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
-                    { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                    { id: 'resource_hub', label: 'Hub de Recursos', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                    { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
-                ].map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id
-                                ? 'bg-zinc-800 text-white shadow-lg'
-                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                            }`}
-                    >
-                        {tab.icon}
-                        {tab.label}
-                        {tab.id === 'purchases' && pendingCount > 0 && (
-                            <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-                        )}
-                    </button>
-                ))}
+            {/* Navigation Tabs (Responsive Horizontal Scroll) */}
+            <div className="w-full overflow-x-auto pb-2 -mb-2 scrollbar-thin scrollbar-thumb-zinc-800">
+                <div className="flex items-center gap-1.5 p-1.5 bg-zinc-900/60 border border-zinc-800 rounded-2xl w-max min-w-full sm:min-w-0">
+                    {[
+                        { id: 'overview', label: 'Resumen', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                        { id: 'network', label: 'Gestores Patrimoniales', icon: <UsersIcon className="w-4 h-4" /> },
+                        { id: 'purchases', label: 'Reconciliación (Fast Lane)', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+                        { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                        { id: 'governance', label: 'Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                        { id: 'dao', label: 'DAO Treasury', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                        { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                        { id: 'resource_hub', label: 'Hub de Recursos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                        { id: 'settings', label: 'Configuración', icon: <Cog6ToothIcon className="w-4 h-4" /> },
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id
+                                    ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50'
+                                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
+                                }`}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                            {tab.id === 'purchases' && pendingCount > 0 && (
+                                <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Content Area */}

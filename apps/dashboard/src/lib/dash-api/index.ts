@@ -17,6 +17,9 @@ import { dashActivityApi, DashApiActivityClient } from './activity';
 import { dashSettingsApi, DashApiSettingsClient } from './settings';
 import { dashIdentityApi, DashApiIdentityClient } from './identity';
 import { dashControlPlaneApi, DashApiControlPlaneClient } from './control-plane';
+import { DashApiGrowth } from './growth';
+
+const dashGrowthApi = new DashApiGrowth();
 
 export const DashApi = {
   journeys: dashJourneysApi,
@@ -30,6 +33,7 @@ export const DashApi = {
   settings: dashSettingsApi,
   identity: dashIdentityApi,
   controlPlane: dashControlPlaneApi,
+  growth: dashGrowthApi,
 };
 
 export {
@@ -44,4 +48,5 @@ export {
   DashApiSettingsClient,
   DashApiIdentityClient,
   DashApiControlPlaneClient,
+  DashApiGrowth,
 };

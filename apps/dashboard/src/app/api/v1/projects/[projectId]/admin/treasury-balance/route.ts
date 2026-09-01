@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getAuth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+import { getTreasuryBalances } from '@/lib/growth/treasury-onchain';
 
 async function handler(
     req: Request,
@@ -28,12 +29,21 @@ async function handler(
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        const treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
+        const treasury = await getTreasuryBalances(project);
 
         return NextResponse.json({
-            balance: "0.00",
-            treasuryAddress,
-            note: "On-chain balance fetch requires RPC call. Set PANDORAS_RPC_URL for live balance."
+            balance: treasury ? treasury.balanceUsdc.toFixed(2) : "0.00",
+            treasuryAddress: treasury?.treasuryAddress || project.treasuryAddress || project.applicantWalletAddress,
+            smartAccountAddress: treasury?.smartAccountAddress || null,
+            nativeBalance: treasury?.balanceNative ?? 0,
+            nativeSymbol: treasury?.nativeSymbol || "ETH",
+            usdcBalance: treasury?.balanceUsdc ?? 0,
+            usdcSymbol: treasury?.usdcSymbol || "USDC",
+            chainId: treasury?.chainId ?? project.chainId ?? null,
+            source: treasury?.source || "fallback",
+            note: treasury?.source === "onchain"
+                ? "Live on-chain balance."
+                : "On-chain balance unavailable (no treasury address or RPC).",
         });
 
     } catch (error: any) {

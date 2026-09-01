@@ -4,7 +4,16 @@ import GovernanceButtons from './components/GovernanceButtons';
 export default async function GovernanceCenterPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await Promise.resolve(params);
   const requestedOrganizationId = `org_${id}`;
-  const data = await getPendingIntents(requestedOrganizationId);
+  
+  let data = { pendingIntents: [] as any[] };
+  let errorMsg: string | null = null;
+
+  try {
+    data = await getPendingIntents(requestedOrganizationId);
+  } catch (err: any) {
+    console.warn(`[GovernanceCenterPage] Notice:`, err.message);
+    errorMsg = err.message;
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto font-sans">
@@ -12,6 +21,12 @@ export default async function GovernanceCenterPage({ params }: { params: Promise
         <h1 className="text-3xl font-bold text-gray-900">Governance Center</h1>
         <p className="text-gray-500">Authority surface for Organization {requestedOrganizationId}</p>
       </header>
+
+      {errorMsg && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 flex items-center justify-between">
+          <span>{errorMsg.includes('UNAUTHENTICATED') ? 'Sesión no verificada. Inicia sesión en el portal o conecta tu wallet de fundador.' : errorMsg}</span>
+        </div>
+      )}
 
       {data.pendingIntents.length === 0 ? (
         <div className="bg-gray-50 rounded-xl p-12 text-center border border-gray-200">
