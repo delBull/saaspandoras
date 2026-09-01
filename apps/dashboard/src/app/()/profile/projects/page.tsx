@@ -304,10 +304,83 @@ export default function ProfileProjectsPage() {
 
   // If user has a single project with a slug, seamlessly navigate to the modern manage console
   useEffect(() => {
-    if (projectsToDisplay.length === 1 && projectsToDisplay[0]?.slug) {
-      router.replace(`/profile/projects/${projectsToDisplay[0].slug}/manage`);
+    if (!loading && projectsToDisplay.length === 1 && projectsToDisplay[0]?.slug) {
+      window.location.replace(`/profile/projects/${projectsToDisplay[0].slug}/manage`);
     }
-  }, [projectsToDisplay, router]);
+  }, [loading, projectsToDisplay]);
+
+  if (projectsToDisplay.length === 1 && projectsToDisplay[0]?.slug) {
+    const singleProj = projectsToDisplay[0];
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-white/[0.02] border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
+          <div className="w-12 h-12 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-black text-white mb-2">{singleProj.title || 'Tu Proyecto'}</h2>
+          <p className="text-zinc-400 text-xs mb-6">Ingresando a la Consola de Administración Soberana...</p>
+          <a
+            href={`/profile/projects/${singleProj.slug}/manage`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-emerald-600/20"
+          >
+            Abrir Consola de Gestión ↗
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (projectsToDisplay.length > 1) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12">
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+              Sovereign Ecosystems
+            </span>
+            <h1 className="text-3xl font-black tracking-tight text-white mt-3">Mis Protocolos & Organizaciones</h1>
+            <p className="text-zinc-400 text-sm mt-1">Selecciona una organización para gestionar sus módulos, tesorería y gobernanza.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projectsToDisplay.map((p) => {
+              const statusCfg = getProjectStatusConfig(p.status);
+              return (
+                <div
+                  key={p.id}
+                  className="bg-white/[0.02] border border-white/10 hover:border-zinc-700 rounded-3xl p-6 backdrop-blur-xl transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex justify-between items-start gap-2 mb-4">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase ${statusCfg.badgeClass}`}>
+                        {statusCfg.label}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-1">{p.title}</h3>
+                    <p className="text-xs text-zinc-400 line-clamp-2">{p.description || 'Organización Soberana'}</p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between gap-2">
+                    <a
+                      href={`/profile/projects/${p.slug || p.id}/manage`}
+                      className="flex-1 text-center py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold transition-colors"
+                    >
+                      Gestionar ↗
+                    </a>
+                    <a
+                      href={`/portal/${p.slug || p.id}/ecosystem`}
+                      className="px-3.5 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold transition-colors"
+                      title="Abrir Sovereign Mesh Hub"
+                    >
+                      Hub
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return <MissionControlDashboard projects={projectsToDisplay} />;
 }

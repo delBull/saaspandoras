@@ -13,7 +13,11 @@ interface Collaborator {
   createdAt: string;
 }
 
-export default function NexusSettingsPage() {
+interface SettingsClientProps {
+  isUserAdmin?: boolean;
+}
+
+export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClientProps) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
