@@ -3,7 +3,7 @@
  * apps/dashboard/src/app/api/v1/internal/onboarding/provision/route.ts
  *
  * HTTP entrypoint delegating strictly to TenantProvisioningService.
- * Zero business logic inside the route handler.
+ * Enforces fail-closed session-bound wallet verification against spoofing.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,14 +15,30 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await getAuth();
-    const actorWallet = req.headers.get('x-wallet-address') || 
-                        req.headers.get('x-thirdweb-address') || 
-                        auth.session?.address;
+    const auth = await getAuth(req.headers);
+    const sessionWallet = auth.session?.address?.toLowerCase();
+    const headerWallet = (
+      req.headers.get('x-wallet-address') || req.headers.get('x-thirdweb-address')
+    )?.toLowerCase();
+
+    // 🛡️ SECURITY GUARD: Fail-closed session wallet resolution
+    let actorWallet = sessionWallet;
+
+    // If header is provided, it must strictly match authenticated session
+    if (headerWallet && sessionWallet && headerWallet !== sessionWallet) {
+      return NextResponse.json(
+        { error: 'FORBIDDEN_WALLET_MISMATCH: Provided wallet header does not match authenticated session.' },
+        { status: 403 }
+      );
+    }
+
+    if (!actorWallet && headerWallet && auth.isVerified) {
+      actorWallet = headerWallet;
+    }
 
     if (!actorWallet || !tenantProvisioningService.isValidWalletAddress(actorWallet)) {
       return NextResponse.json(
-        { error: 'UNAUTHORIZED_ACTOR: A valid connected wallet is required to provision a tenant.' },
+        { error: 'UNAUTHORIZED_ACTOR: An authenticated and verified wallet session is required to provision a tenant.' },
         { status: 401 }
       );
     }

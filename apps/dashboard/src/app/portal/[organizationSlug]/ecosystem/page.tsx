@@ -2,7 +2,6 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { DashApi } from '@/lib/dash-api';
-import { ProjectRepository } from '@/lib/domain/project-repository';
 import { EcosystemHubClient } from './EcosystemHubClient';
 import type { TenantGrowthProfileDTO, GrowthOverviewDTO } from '@/lib/dash-contracts/growth';
 
@@ -36,7 +35,7 @@ export default async function EcosystemHubPage({
       DashApi.growth.getCapabilities(orgId),
       DashApi.growth.getOverview(orgId),
       DashApi.overview.get(organizationSlug),
-      ProjectRepository.findBySlug(organizationSlug),
+      DashApi.controlPlane.getTenantProject(organizationSlug),
       setupProgressService.getEcosystemSetupState(organizationSlug),
     ]);
 

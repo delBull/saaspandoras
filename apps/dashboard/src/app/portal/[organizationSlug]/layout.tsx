@@ -1,8 +1,8 @@
 /**
- * Portal Layout — Phase 6.1
+ * Portal Layout — Sovereign Mesh Control Plane
  * /portal/[organizationSlug]/layout.tsx
  * 
- * THE tenant boundary for the Customer Operating Console.
+ * THE tenant boundary for the Sovereign Operating Console.
  * 
  * Responsibilities:
  * 1. Receive route organizationSlug (routing context — NOT authorization)
@@ -10,12 +10,10 @@
  * 3. Reject unauthorized access → redirect to login
  * 4. Render PortalShell with authorized context
  * 5. Render children within that authorized scope
- * 
- * The Browser NEVER authorizes itself here. The server does.
  */
 
 import { redirect } from 'next/navigation';
-import { resolvePortalContext, getTenantOnboardingStage } from '@/lib/portal/resolve-portal-context';
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { PortalShell } from '@/components/hermes-portal/PortalShell';
 import { TourEngine } from '@/components/onboarding/TourEngine';
@@ -42,15 +40,6 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
     }
     // Unexpected error
     redirect('/portal/error');
-  }
-
-  // Enforce Onboarding Boundary
-  const stage = await getTenantOnboardingStage(context, organizationSlug);
-
-  if (stage && stage !== 'ACTIVATION') {
-    redirect(`/onboarding/${organizationSlug}`);
-  } else if (!stage && organizationSlug !== 'snarai') {
-    redirect(`/onboarding/${organizationSlug}`);
   }
 
   return (

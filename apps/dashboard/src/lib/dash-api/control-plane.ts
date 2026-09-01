@@ -139,6 +139,24 @@ export class DashApiControlPlaneClient {
 
     return await res.json();
   }
+
+  async getTenantProject(slug: string, init?: RequestInit): Promise<any> {
+    const authHeaders = await getServerAuthHeaders();
+    const url = `${this.baseUrl}/api/v1/control-plane/tenant-project?slug=${encodeURIComponent(slug)}`;
+    const res = await fetch(url, {
+      ...init,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+        ...(init?.headers || {}),
+      },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  }
 }
 
 export const dashControlPlaneApi = new DashApiControlPlaneClient();
