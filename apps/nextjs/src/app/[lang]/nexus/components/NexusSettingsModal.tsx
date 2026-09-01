@@ -49,9 +49,28 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
     };
   }, [isOpen, onClose]);
 
+  const getWalletHeaders = (): Record<string, string> => {
+    if (typeof window === 'undefined') return {};
+    const wallet = 
+      localStorage.getItem('snarai_wallet') ||
+      localStorage.getItem('user_wallet') ||
+      localStorage.getItem('walletAddress') ||
+      localStorage.getItem('thirdweb:active-account') ||
+      (window as any).ethereum?.selectedAddress ||
+      '';
+    if (!wallet) return {};
+    return {
+      'x-wallet-address': wallet,
+      'x-thirdweb-address': wallet,
+    };
+  };
+
   const loadCollaborators = async () => {
     try {
       const res = await fetch('https://dash.pandoras.finance/api/nexus/collaborators/list', {
+        headers: {
+          ...getWalletHeaders(),
+        },
         credentials: 'include',
       });
       if (res.ok) {
@@ -73,7 +92,10 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
     try {
       const res = await fetch('https://dash.pandoras.finance/api/nexus/collaborators/request', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getWalletHeaders(),
+        },
         credentials: 'include',
         body: JSON.stringify({ name: name.trim(), email: email.trim() }),
       });

@@ -10,10 +10,25 @@ import {
   requireNexusAdmin,
 } from '@/lib/nexus/collaborators-service';
 
+function getCorsHeaders(req: NextRequest) {
+  const origin = req.headers.get('origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-wallet-address, x-thirdweb-address, x-user-address',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: getCorsHeaders(req) });
+}
+
 export async function POST(req: NextRequest) {
+  const cors = getCorsHeaders(req);
   try {
     if (!(await requireNexusAdmin(req))) {
-      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
+      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403, headers: cors });
     }
     const body = await req.json();
     const { name, email } = body as { name?: string; email?: string };
@@ -21,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!name || !email) {
       return NextResponse.json(
         { error: 'Name and email are required' },
-        { status: 400 }
+        { status: 400, headers: cors }
       );
     }
 
@@ -39,7 +54,7 @@ export async function POST(req: NextRequest) {
     if (!sendResult.ok) {
       return NextResponse.json(
         { error: sendResult.error, collaborator },
-        { status: 500 }
+        { status: 500, headers: cors }
       );
     }
 
@@ -52,12 +67,12 @@ export async function POST(req: NextRequest) {
         email: collaborator.email,
         expiresAt: collaborator.expiresAt,
       },
-    });
+    }, { headers: cors });
   } catch (error: any) {
     console.error('[Nexus Collaborators Request] Error:', error);
     return NextResponse.json(
       { error: error?.message || 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: cors }
     );
   }
 }
