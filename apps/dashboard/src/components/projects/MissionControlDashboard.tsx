@@ -10,7 +10,11 @@ import {
     ClipboardDocumentIcon,
     ChevronDownIcon,
     FolderIcon,
-    EyeIcon
+    EyeIcon,
+    Bars3Icon,
+    XMarkIcon,
+    SparklesIcon,
+    UsersIcon
 } from '@heroicons/react/24/outline';
 import {
     ClockIcon,
@@ -46,6 +50,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
         initialProject?.id || (projects.length > 0 ? projects[0]?.id ?? '' : '')
     );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'purchases' | 'treasury' | 'tokenomics' | 'governance' | 'legal' | 'ambassadors' | 'events' | 'hub' | 'knowledge_center'>('overview');
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -88,111 +93,249 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
     const governorAddress = config.governorAddress || (project as any).governorContractAddress;
 
     return (
-        <div className="min-h-screen  text-white selection:bg-purple-500/30 font-sans pb-24 relative overflow-hidden">
+        <div className="min-h-screen text-white selection:bg-purple-500/30 font-sans pb-24 relative overflow-hidden bg-[#07080D]">
             {/* Background Ambient Glows */}
             <div className="absolute w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
+            {/* Mobile Slide-Over Drawer */}
+            {isMobileDrawerOpen && (
+                <div className="md:hidden fixed inset-0 z-50 flex">
+                    <div
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                        onClick={() => setIsMobileDrawerOpen(false)}
+                    />
+                    <div className="relative flex-1 flex flex-col max-w-[290px] w-full bg-zinc-950 border-r border-zinc-800 text-zinc-300 z-50 h-full shadow-2xl">
+                        <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-800">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                                    P
+                                </div>
+                                <span className="text-white font-bold text-sm tracking-tight truncate">{project.title}</span>
+                            </div>
+                            <button
+                                onClick={() => setIsMobileDrawerOpen(false)}
+                                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+                            <div className="px-2 pb-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                                Módulos del Protocolo
+                            </div>
+                            {[
+                                { id: 'overview', label: 'Overview', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                                { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+                                { id: 'ambassadors', label: 'Gestores Patrimoniales', icon: <UserIcon className="w-4 h-4" /> },
+                                { id: 'events', label: 'Eventos & Calendario', icon: <ClockIcon className="w-4 h-4" /> },
+                                { id: 'hub', label: 'Centro de Archivos', icon: <FolderIcon className="w-4 h-4" /> },
+                                { id: 'knowledge_center', label: 'Knowledge Center', icon: <DocumentTextIcon className="w-4 h-4 text-purple-400" /> },
+                                { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                                { id: 'tokenomics', label: 'Tokenomics & Bots', icon: <Cog6ToothIcon className="w-4 h-4" /> },
+                                { id: 'governance', label: 'DAO & Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                                { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        setActiveTab(tab.id as any);
+                                        setIsMobileDrawerOpen(false);
+                                    }}
+                                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                                        activeTab === tab.id
+                                            ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-semibold'
+                                            : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className={activeTab === tab.id ? 'text-indigo-400' : 'text-zinc-500'}>{tab.icon}</span>
+                                        <span>{tab.label}</span>
+                                    </div>
+                                    {tab.id === 'purchases' && pendingCount > 0 && (
+                                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-yellow-400/20 text-yellow-300 rounded-full">
+                                            {pendingCount}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+
+                            {/* Cross-Plane Hybrid Links */}
+                            <div className="pt-4 mt-4 border-t border-zinc-800 space-y-1.5">
+                                <div className="px-2 pb-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                                    Capacidades de Negocio
+                                </div>
+                                <Link
+                                    href={`/portal/${project.slug || project.id}/ecosystem`}
+                                    onClick={() => setIsMobileDrawerOpen(false)}
+                                    className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold hover:bg-violet-500/20 transition-all"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <SparklesIcon className="w-4 h-4 text-violet-400" />
+                                        <span>Ecosistema Hub</span>
+                                    </div>
+                                    <span className="text-[10px] text-violet-400 font-mono">HUB</span>
+                                </Link>
+                                <Link
+                                    href={`/growth-os/organizations/${project.slug || project.id}`}
+                                    onClick={() => setIsMobileDrawerOpen(false)}
+                                    className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold hover:bg-violet-500/20 transition-all"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <UsersIcon className="w-4 h-4 text-violet-400" />
+                                        <span>Growth OS Hub</span>
+                                    </div>
+                                    <span className="text-[10px] text-violet-400 font-mono">GROW</span>
+                                </Link>
+                                <Link
+                                    href={`/portal/${project.slug || project.id}`}
+                                    onClick={() => setIsMobileDrawerOpen(false)}
+                                    className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/20 transition-all"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <SparklesIcon className="w-4 h-4 text-emerald-400" />
+                                        <span>Hermes Portal</span>
+                                    </div>
+                                    <span className="text-[10px] text-emerald-400 font-mono">AI</span>
+                                </Link>
+                            </div>
+                        </nav>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 relative z-10">
 
                 {/* Header & Switcher */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-                    <div className="relative">
-                        <p className="text-xs font-black tracking-widest text-zinc-500 uppercase mb-2">Mission Control</p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                        <div className="relative">
+                            <p className="text-xs font-black tracking-widest text-zinc-500 uppercase mb-1">Mission Control</p>
 
-                        {projects.length > 1 ? (
-                            <div className="relative">
-                                <button
-                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    className="flex items-center gap-3 group"
-                                >
-                                    <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 group-hover:to-zinc-200 transition-all">
-                                        {project.title}
-                                    </h1>
-                                    <ChevronDownIcon className="w-6 h-6 text-zinc-500 group-hover:text-white transition-colors" />
-                                </button>
+                            {projects.length > 1 ? (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="flex items-center gap-3 group"
+                                    >
+                                        <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 group-hover:to-zinc-200 transition-all">
+                                            {project.title}
+                                        </h1>
+                                        <ChevronDownIcon className="w-6 h-6 text-zinc-500 group-hover:text-white transition-colors" />
+                                    </button>
 
-                                <AnimatePresence>
-                                    {isDropdownOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="absolute top-full left-0 mt-4 w-72 bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl p-2 z-50 shadow-2xl"
-                                        >
-                                            {projects.map(p => (
-                                                <button
-                                                    key={p.id}
-                                                    onClick={() => { setSelectedProjectId(p.id); setIsDropdownOpen(false); }}
-                                                    className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${p.id === project.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'}`}
-                                                >
-                                                    <span className="block font-bold">{p.title}</span>
-                                                    <span className="text-xs opacity-70 capitalize">{p.status}</span>
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        ) : (
-                            <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400">
-                                {project.title}
-                            </h1>
-                        )}
-
-                        {(() => {
-                            const statusCfg = getProjectStatusConfig(project.status);
-                            return (
-                                <div className="flex items-center gap-3 mt-4">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${statusCfg.badgeClass}`}>
-                                        {statusCfg.label}
-                                    </span>
-
-                                    <Link href={`/projects/${project.slug || project.id}`} target="_blank" className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors">
-                                        <EyeIcon className="w-4 h-4" /> Ver Página Pública
-                                    </Link>
-                                    
-                                    <Link href={`/portal/${project.slug || project.id}`} className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors ml-auto md:ml-4">
-                                        <Cog6ToothIcon className="w-4 h-4" /> Hermes Portal
-                                    </Link>
+                                    <AnimatePresence>
+                                        {isDropdownOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="absolute top-full left-0 mt-4 w-72 bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl p-2 z-50 shadow-2xl"
+                                            >
+                                                {projects.map(p => (
+                                                    <button
+                                                        key={p.id}
+                                                        onClick={() => { setSelectedProjectId(p.id); setIsDropdownOpen(false); }}
+                                                        className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${p.id === project.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'}`}
+                                                    >
+                                                        <span className="block font-bold">{p.title}</span>
+                                                        <span className="text-xs opacity-70 capitalize">{p.status}</span>
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
-                            );
-                        })()}
+                            ) : (
+                                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400">
+                                    {project.title}
+                                </h1>
+                            )}
+
+                            {(() => {
+                                const statusCfg = getProjectStatusConfig(project.status);
+                                return (
+                                    <div className="flex flex-wrap items-center gap-3 mt-3">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${statusCfg.badgeClass}`}>
+                                            {statusCfg.label}
+                                        </span>
+
+                                        <Link href={`/projects/${project.slug || project.id}`} target="_blank" className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white transition-colors">
+                                            <EyeIcon className="w-4 h-4" /> Ver Página Pública
+                                        </Link>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* Mobile Hamburger Drawer Trigger */}
+                        <button
+                            onClick={() => setIsMobileDrawerOpen(true)}
+                            className="md:hidden p-2.5 bg-zinc-900 rounded-xl border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
+                            aria-label="Abrir Menú de Módulos"
+                        >
+                            <Bars3Icon className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Desktop Cross-Plane Quick Launch Actions */}
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        <Link
+                            href={`/portal/${project.slug || project.id}/ecosystem`}
+                            className="px-3.5 py-2 bg-violet-600/20 border border-violet-500/30 hover:bg-violet-600/30 text-violet-300 rounded-xl transition-all text-xs font-bold flex items-center gap-1.5"
+                        >
+                            <SparklesIcon className="w-4 h-4" /> Ecosistema Hub ↗
+                        </Link>
+                        <Link
+                            href={`/growth-os/organizations/${project.slug || project.id}`}
+                            className="px-3.5 py-2 bg-violet-600/20 border border-violet-500/30 hover:bg-violet-600/30 text-violet-300 rounded-xl transition-all text-xs font-bold flex items-center gap-1.5"
+                        >
+                            <UsersIcon className="w-4 h-4 text-violet-400" /> Growth OS ↗
+                        </Link>
+                        <Link
+                            href={`/portal/${project.slug || project.id}`}
+                            className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl transition-all text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20"
+                        >
+                            <SparklesIcon className="w-4 h-4" /> Hermes Portal ↗
+                        </Link>
                     </div>
                 </div>
 
-                {/* Glass Tabs */}
-                <div className="flex flex-wrap items-center gap-2 mb-8 p-1.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl w-fit">
-                    {[
-                        { id: 'overview', label: 'Overview', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
-                        { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
-                        { id: 'ambassadors', label: 'Gestores Patrimoniales', icon: <UserIcon className="w-4 h-4" /> },
-                        { id: 'events', label: 'Eventos & Calendario', icon: <ClockIcon className="w-4 h-4" /> },
-                        { id: 'hub', label: 'Centro de Archivos', icon: <FolderIcon className="w-4 h-4" /> },
-                        { id: 'knowledge_center', label: 'Knowledge Center', icon: <DocumentTextIcon className="w-4 h-4 text-purple-400" /> },
-                        { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
-                        { id: 'tokenomics', label: 'Tokenomics & Bots', icon: <Cog6ToothIcon className="w-4 h-4" /> },
-                        { id: 'governance', label: 'DAO & Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                        { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === tab.id
-                                ? 'bg-zinc-800 text-white shadow-lg shadow-black/50 border border-zinc-700'
-                                : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
-                                }`}
-                        >
-                            {tab.icon}
-                            {tab.label}
-                            {tab.id === 'purchases' && pendingCount > 0 && (
-                                <span className="flex h-2 w-2 relative">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-                                </span>
-                            )}
-                        </button>
-                    ))}
+                {/* Responsive Glass Tabs (Horizontal Scrollable) */}
+                <div className="w-full overflow-x-auto pb-2 mb-6 scrollbar-thin scrollbar-thumb-zinc-800">
+                    <div className="flex items-center gap-1.5 p-1.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl w-max min-w-full sm:min-w-0">
+                        {[
+                            { id: 'overview', label: 'Overview', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                            { id: 'purchases', label: 'Inversiones', icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+                            { id: 'ambassadors', label: 'Gestores Patrimoniales', icon: <UserIcon className="w-4 h-4" /> },
+                            { id: 'events', label: 'Eventos & Calendario', icon: <ClockIcon className="w-4 h-4" /> },
+                            { id: 'hub', label: 'Centro de Archivos', icon: <FolderIcon className="w-4 h-4" /> },
+                            { id: 'knowledge_center', label: 'Knowledge Center', icon: <DocumentTextIcon className="w-4 h-4 text-purple-400" /> },
+                            { id: 'treasury', label: 'Tesorería', icon: <BuildingLibraryIcon className="w-4 h-4" /> },
+                            { id: 'tokenomics', label: 'Tokenomics & Bots', icon: <Cog6ToothIcon className="w-4 h-4" /> },
+                            { id: 'governance', label: 'DAO & Gobernanza', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                            { id: 'legal', label: 'Legal & Riesgos', icon: <DocumentTextIcon className="w-4 h-4" /> },
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 ${activeTab === tab.id
+                                    ? 'bg-zinc-800 text-white shadow-lg shadow-black/50 border border-zinc-700'
+                                    : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
+                                    }`}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                                {tab.id === 'purchases' && pendingCount > 0 && (
+                                    <span className="flex h-2 w-2 relative">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Content Area */}
@@ -228,8 +371,10 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
 // ----------------------------------------------------------------------
 
 function OverviewTab({ project, config }: { project: any, config: any }) {
-    const raised = Number(project.raisedAmount || project.raised_amount || 0);
-    const target = Number(project.targetAmount || project.target_amount || 1);
+    const rawRaised = Number(project.raisedAmount || project.raised_amount || 0);
+    const rawTarget = Number(project.targetAmount || project.target_amount || project.totalValuationUsd || 100000);
+    const raised = isNaN(rawRaised) ? 0 : rawRaised;
+    const target = isNaN(rawTarget) || rawTarget <= 0 ? 100000 : rawTarget;
     const progress = Math.min((raised / target) * 100, 100);
     const [daoMemberCount, setDaoMemberCount] = useState<number | null>(null);
 

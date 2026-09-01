@@ -4,10 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { removeCollaborator } from '@/lib/nexus/collaborators-service';
+import { removeCollaborator, requireNexusAdmin } from '@/lib/nexus/collaborators-service';
 
 export async function DELETE(req: NextRequest) {
   try {
+    if (!(await requireNexusAdmin())) {
+      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
+    }
     const { searchParams } = new URL(req.url);
     const email = searchParams.get('email');
 

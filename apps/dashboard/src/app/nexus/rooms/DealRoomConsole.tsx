@@ -523,6 +523,13 @@ export default function DealRoomConsole() {
             <GraduationCap className="w-3.5 h-3.5" />
             <span>ACADEMY HUB</span>
           </Link>
+          <Link
+            href="/nexus/settings"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700 text-[10px] font-mono transition-colors"
+            title="Gestionar colaboradores del Nexus"
+          >
+            <span>SETTINGS</span>
+          </Link>
           <span className="hidden lg:flex items-center gap-1.5 text-[10px] text-zinc-500">
             <Activity className="w-3 h-3 text-amber-300" />
             {rooms.length} ROOM{rooms.length !== 1 ? "S" : ""}

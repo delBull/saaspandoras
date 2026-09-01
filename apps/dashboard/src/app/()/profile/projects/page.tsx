@@ -298,5 +298,12 @@ export default function ProfileProjectsPage() {
   // Pass active projects to dashboard (or all if super admin)
   const projectsToDisplay = isSuperAdmin ? userProjects : (activeProjects.length > 0 ? activeProjects : userProjects);
 
+  // If user has a single project with a slug, seamlessly navigate to the modern manage console
+  useEffect(() => {
+    if (projectsToDisplay.length === 1 && projectsToDisplay[0]?.slug) {
+      router.replace(`/profile/projects/${projectsToDisplay[0].slug}/manage`);
+    }
+  }, [projectsToDisplay, router]);
+
   return <MissionControlDashboard projects={projectsToDisplay} />;
 }
