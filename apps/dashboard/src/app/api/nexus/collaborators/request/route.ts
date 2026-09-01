@@ -7,10 +7,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   createOrUpdateCollaborator,
   sendCollaboratorMagicLink,
+  requireNexusAdmin,
 } from '@/lib/nexus/collaborators-service';
 
 export async function POST(req: NextRequest) {
   try {
+    if (!(await requireNexusAdmin())) {
+      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
+    }
     const body = await req.json();
     const { name, email } = body as { name?: string; email?: string };
 

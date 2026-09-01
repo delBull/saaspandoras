@@ -11,9 +11,15 @@ import { nexusCollaborators } from '@/db/schema';
 import { eq, lt, or, and, sql } from 'drizzle-orm';
 import { resend } from '@/lib/resend';
 import crypto from 'crypto';
+import { getAuth, isAdmin } from '@/lib/auth';
 
 const TOKEN_EXPIRY_HOURS = 24;
 const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+
+export async function requireNexusAdmin(): Promise<boolean> {
+  const { session, isVerified } = await getAuth();
+  return Boolean(isVerified && session?.address && await isAdmin(session.address));
+}
 
 export interface CollaboratorDTO {
   id: number;

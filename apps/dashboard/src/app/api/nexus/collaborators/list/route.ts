@@ -4,10 +4,13 @@
  */
 
 import { NextResponse } from 'next/server';
-import { listCollaborators } from '@/lib/nexus/collaborators-service';
+import { listCollaborators, requireNexusAdmin } from '@/lib/nexus/collaborators-service';
 
 export async function GET() {
   try {
+    if (!(await requireNexusAdmin())) {
+      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
+    }
     const collaborators = await listCollaborators();
     return NextResponse.json({ ok: true, collaborators });
   } catch (error: any) {
