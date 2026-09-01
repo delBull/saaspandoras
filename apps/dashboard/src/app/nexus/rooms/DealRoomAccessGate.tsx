@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Handshake, Lock, RefreshCw } from "lucide-react";
+import { Handshake, Lock, RefreshCw, Mail } from "lucide-react";
 
 export default function DealRoomAccessGate() {
   const [loading, setLoading] = useState(false);
@@ -67,20 +67,30 @@ export default function DealRoomAccessGate() {
         </p>
 
         {!sent ? (
-          <button
-            onClick={handleRequest}
-            disabled={loading}
-            className="w-full bg-amber-500/[0.08] hover:bg-amber-500/[0.14] border border-amber-500/20 rounded-xl px-4 py-3.5 text-sm text-amber-200 transition-all duration-200 disabled:opacity-40 font-light tracking-wide flex items-center justify-center gap-2"
-          >
-            <Handshake className="w-4 h-4" />
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" /> Solicitando...
-              </>
-            ) : (
-              "Desbloquear Deal Room"
-            )}
-          </button>
+          <div className="space-y-3 w-full">
+            <button
+              onClick={handleRequest}
+              disabled={loading}
+              className="w-full bg-amber-500/[0.08] hover:bg-amber-500/[0.14] border border-amber-500/20 rounded-xl px-4 py-3.5 text-sm text-amber-200 transition-all duration-200 disabled:opacity-40 font-light tracking-wide flex items-center justify-center gap-2"
+            >
+              <Handshake className="w-4 h-4" />
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Solicitando...
+                </>
+              ) : (
+                "Desbloquear Deal Room"
+              )}
+            </button>
+
+            <a
+              href="/nexus/settings"
+              className="w-full bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-sm text-zinc-300 transition-all duration-200 font-light tracking-wide flex items-center justify-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              Acceso de Colaborador
+            </a>
+          </div>
         ) : (
           <motion.div
             initial={{ opacity: 0 }}

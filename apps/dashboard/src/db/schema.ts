@@ -3957,3 +3957,17 @@ export const hermesArtifacts = pgTable("hermes_artifacts", {
   tenantTypeIdx: index("hermes_artifacts_tt_idx").on(t.tenantId, t.artifactType),
   tenantCidIdx: uniqueIndex("hermes_artifacts_tenant_cid_unique").on(t.tenantId, t.cid),
 }));
+
+// ── Nexus Collaborators (Magic Link Email Access) ───────────────────────────────
+export const nexusCollaborators = pgTable("nexus_collaborators", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  lastAccessAt: timestamp("last_access_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  emailIdx: uniqueIndex("nexus_collaborators_email_unique").on(t.email),
+  tokenIdx: uniqueIndex("nexus_collaborators_token_unique").on(t.token),
+}));
