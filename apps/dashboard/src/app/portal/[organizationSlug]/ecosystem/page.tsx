@@ -6,6 +6,8 @@ import { ProjectRepository } from '@/lib/domain/project-repository';
 import { EcosystemHubClient } from './EcosystemHubClient';
 import type { TenantGrowthProfileDTO, GrowthOverviewDTO } from '@/lib/dash-contracts/growth';
 
+import { setupProgressService, type EcosystemSetupSummary } from '@/lib/mesh/setup-progress.service';
+
 export default async function EcosystemHubPage({
   params,
 }: {
@@ -27,13 +29,15 @@ export default async function EcosystemHubPage({
   let growthOverview: GrowthOverviewDTO | null = null;
   let hermesOverview: any = null;
   let projectData: any = null;
+  let setupSummary: EcosystemSetupSummary | null = null;
 
   try {
-    const [profileRes, overviewRes, hermesRes, projectRes] = await Promise.allSettled([
+    const [profileRes, overviewRes, hermesRes, projectRes, setupRes] = await Promise.allSettled([
       DashApi.growth.getCapabilities(orgId),
       DashApi.growth.getOverview(orgId),
       DashApi.overview.get(organizationSlug),
       ProjectRepository.findBySlug(organizationSlug),
+      setupProgressService.getEcosystemSetupState(organizationSlug),
     ]);
 
     if (profileRes.status === 'fulfilled' && profileRes.value) {
@@ -48,6 +52,9 @@ export default async function EcosystemHubPage({
     if (projectRes.status === 'fulfilled') {
       projectData = projectRes.value;
     }
+    if (setupRes.status === 'fulfilled') {
+      setupSummary = setupRes.value;
+    }
   } catch (err) {
     console.warn('[EcosystemHubPage] Non-fatal notice during data aggregation:', err);
   }
@@ -60,6 +67,7 @@ export default async function EcosystemHubPage({
       growthOverview={growthOverview}
       hermesOverview={hermesOverview}
       projectData={projectData}
+      initialSetupSummary={setupSummary}
     />
   );
 }

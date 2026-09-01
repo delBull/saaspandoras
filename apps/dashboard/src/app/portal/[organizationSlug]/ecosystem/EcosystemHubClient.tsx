@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * 🌌 Sovereign Mesh Hub Client — F8.0 Canonical Home
+ * 🌌 Sovereign Mesh Hub Client — F8.0 Canonical Home + F8.2 Setup Engine
  * apps/dashboard/src/app/portal/[organizationSlug]/ecosystem/EcosystemHubClient.tsx
  *
  * Visualizes the 3 Sovereign Product Nodes (Hermes AI, Growth OS, Pandoras RWA)
- * and the Level 2 Dynamic Capabilities Matrix governed by CapabilityRegistryService.
+ * and the Level 2 Dynamic Capabilities Matrix governed by CapabilityRegistryService,
+ * with real-time Product Setup State & Activation Progress Drawer.
  */
 
 import React, { useState } from 'react';
@@ -32,9 +33,13 @@ import {
   Shield,
   Zap,
   Activity,
-  HardDrive
+  HardDrive,
+  ArrowRight,
+  Sliders,
 } from 'lucide-react';
 import type { TenantGrowthProfileDTO, GrowthOverviewDTO } from '@/lib/dash-contracts/growth';
+import type { EcosystemSetupSummary } from '@/lib/mesh/setup-progress.service';
+import { SetupDrawer } from '@/components/mesh/SetupDrawer';
 
 interface EcosystemHubClientProps {
   organizationSlug: string;
@@ -43,6 +48,7 @@ interface EcosystemHubClientProps {
   growthOverview: GrowthOverviewDTO | null;
   hermesOverview: any | null;
   projectData: any | null;
+  initialSetupSummary?: EcosystemSetupSummary | null;
 }
 
 export function EcosystemHubClient({
@@ -52,8 +58,11 @@ export function EcosystemHubClient({
   growthOverview,
   hermesOverview,
   projectData,
+  initialSetupSummary = null,
 }: EcosystemHubClientProps) {
   const [selectedTab, setSelectedTab] = useState<'nodes' | 'capabilities' | 'telemetry'>('nodes');
+  const [isSetupDrawerOpen, setIsSetupDrawerOpen] = useState(false);
+  const [setupSummary, setSetupSummary] = useState<EcosystemSetupSummary | null>(initialSetupSummary);
 
   // Capability icons and titles helper
   const capabilityMeta: Record<string, { title: string; desc: string; icon: any }> = {
@@ -76,27 +85,26 @@ export function EcosystemHubClient({
   const treasuryBalance = growthOverview?.metrics?.find(m => m.capability === 'growth.finance')?.value ?? '$0.00 USDC';
   const rwaSoldUnits = projectData?.totalTokens ? `${projectData.tokensOffered || 0} / ${projectData.totalTokens || 0}` : '100% Configurado';
 
+  // Setup Progress helpers
+  const hermesSetup = setupSummary?.modules.find(m => m.productKey === 'HERMES');
+  const growthSetup = setupSummary?.modules.find(m => m.productKey === 'GROWTH_OS');
+  const rwaSetup = setupSummary?.modules.find(m => m.productKey === 'PANDORAS_RWA');
+
   return (
     <div className="min-h-screen bg-[#07080D] text-slate-100 p-4 sm:p-6 md:p-8 space-y-8">
-      {/* ── HEADER BANNER ── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-950/40 via-slate-900 to-indigo-950/40 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── HEADER & CONTEXT BAR ── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-950/40 via-indigo-950/20 to-slate-900/40 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest bg-violet-500/20 text-violet-300 border border-violet-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-                SOVEREIGN MESH HUB
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-violet-400 bg-violet-500/10 px-2.5 py-0.5 rounded-full border border-violet-500/20">
+                Sovereign Mesh Architecture
               </span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/[0.06] text-slate-300 border border-white/[0.08]">
-                Plan {planTier}
-              </span>
-              <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <HardDrive className="w-3 h-3" />
-                Vault IPFS K25
-              </span>
+              <span className="text-[10px] font-mono text-slate-500">•</span>
+              <span className="text-[10px] font-mono text-slate-400">Org ID: {organizationSlug}</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
@@ -110,6 +118,18 @@ export function EcosystemHubClient({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsSetupDrawerOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all shadow-lg flex items-center gap-2"
+            >
+              <Sliders className="w-4 h-4 text-indigo-400" />
+              <span>ASISTENTE DE SETUP</span>
+              {setupSummary && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px]">
+                  {setupSummary.overallPercentage}%
+                </span>
+              )}
+            </button>
             <Link
               href={`/portal/${organizationSlug}`}
               className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
@@ -127,6 +147,35 @@ export function EcosystemHubClient({
           </div>
         </div>
       </div>
+
+      {/* ── SETUP PROGRESS BANNER (SI NO ESTÁ 100% COMPLETADO) ── */}
+      {setupSummary && setupSummary.overallPercentage < 100 && (
+        <div className="bg-gradient-to-r from-indigo-950/40 via-violet-950/30 to-black/60 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl backdrop-blur-xl">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-400 shrink-0">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                Puesta en Marcha del Ecosistema
+                <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  {setupSummary.overallPercentage}% Completado
+                </span>
+              </h4>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                {setupSummary.completedModules} de {setupSummary.totalActiveModules} módulos configurados. Completa los pasos de puesta en marcha para habilitar todas las capacidades.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsSetupDrawerOpen(true)}
+            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all shrink-0 flex items-center gap-1.5"
+          >
+            <span>Configurar Módulos</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ── ECOSYSTEM PULSE STRIP ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -221,10 +270,17 @@ export function EcosystemHubClient({
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                   <Bot className="w-6 h-6" />
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  ONLINE & CONECTADO
-                </span>
+                <div className="flex items-center gap-2">
+                  {hermesSetup && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                      Setup: {hermesSetup.progressPercentage}%
+                    </span>
+                  )}
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    ONLINE & CONECTADO
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -252,7 +308,7 @@ export function EcosystemHubClient({
               </div>
             </div>
 
-            <div className="pt-6 mt-6 border-t border-white/[0.06]">
+            <div className="pt-6 mt-6 border-t border-white/[0.06] space-y-2">
               <Link
                 href={`/portal/${organizationSlug}`}
                 className="w-full py-3 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 transition-all group-hover:bg-emerald-600 group-hover:text-white"
@@ -270,10 +326,17 @@ export function EcosystemHubClient({
                 <div className="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
                   <Rocket className="w-6 h-6" />
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  TIER {planTier}
-                </span>
+                <div className="flex items-center gap-2">
+                  {growthSetup && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">
+                      Setup: {growthSetup.progressPercentage}%
+                    </span>
+                  )}
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold uppercase flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                    TIER {planTier}
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -301,7 +364,7 @@ export function EcosystemHubClient({
               </div>
             </div>
 
-            <div className="pt-6 mt-6 border-t border-white/[0.06]">
+            <div className="pt-6 mt-6 border-t border-white/[0.06] space-y-2">
               <Link
                 href={`/growth-os/organizations/${organizationSlug}`}
                 className="w-full py-3 px-4 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-300 font-bold text-xs flex items-center justify-center gap-2 transition-all group-hover:bg-violet-600 group-hover:text-white"
@@ -319,10 +382,17 @@ export function EcosystemHubClient({
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                   <Building2 className="w-6 h-6" />
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                  DESPLEGADO
-                </span>
+                <div className="flex items-center gap-2">
+                  {rwaSetup && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
+                      Setup: {rwaSetup.progressPercentage}%
+                    </span>
+                  )}
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold uppercase flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                    DESPLEGADO
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -350,7 +420,7 @@ export function EcosystemHubClient({
               </div>
             </div>
 
-            <div className="pt-6 mt-6 border-t border-white/[0.06]">
+            <div className="pt-6 mt-6 border-t border-white/[0.06] space-y-2">
               <Link
                 href={`/profile/projects/${organizationSlug}/manage`}
                 className="w-full py-3 px-4 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-bold text-xs flex items-center justify-center gap-2 transition-all group-hover:bg-indigo-600 group-hover:text-white"
@@ -378,53 +448,53 @@ export function EcosystemHubClient({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {capabilities.map((cap) => {
               const meta = capabilityMeta[cap.key] || {
-                title: cap.key,
-                desc: 'Capacidad del ecosistema Pandoras',
-                icon: Layers,
+                title: cap.label,
+                desc: cap.description || 'Capacidad operativa del Mesh',
+                icon: Layers
               };
               const Icon = meta.icon;
-
-              const isContractReady = cap.key === 'growth.agents';
-              const isEnabled = cap.enabled;
+              const subPath = cap.key.replace('growth.', '');
 
               return (
                 <div
                   key={cap.key}
-                  className={`p-5 rounded-2xl border transition-all ${
-                    isEnabled
-                      ? 'bg-white/[0.03] border-white/[0.08] hover:border-violet-500/30'
-                      : isContractReady
-                      ? 'bg-white/[0.01] border-white/[0.04] opacity-80'
-                      : 'bg-white/[0.01] border-white/[0.04] opacity-60'
+                  className={`rounded-2xl border p-5 flex flex-col justify-between transition-all duration-200 ${
+                    cap.enabled
+                      ? 'bg-white/[0.03] border-white/[0.08] hover:border-violet-500/40'
+                      : 'bg-white/[0.01] border-white/[0.03] opacity-60'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="p-2.5 rounded-xl bg-white/[0.04] text-violet-300 border border-white/[0.06]">
-                      <Icon className="w-5 h-5" />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-2.5 rounded-xl ${cap.enabled ? 'bg-violet-500/10 text-violet-400' : 'bg-slate-800 text-slate-500'}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
+                        cap.enabled ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-500'
+                      }`}>
+                        {cap.enabled ? 'ACTIVA' : 'DISPONIBLE'}
+                      </span>
                     </div>
-                    {isEnabled ? (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                        ACTIVE
-                      </span>
-                    ) : isContractReady ? (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
-                        CONTRACT READY
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
-                        UPGRADE
-                      </span>
-                    )}
+
+                    <div>
+                      <h3 className="text-sm font-bold text-white tracking-tight">{meta.title}</h3>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">{meta.desc}</p>
+                    </div>
                   </div>
 
-                  <h3 className="font-bold text-sm text-white">{meta.title}</h3>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{meta.desc}</p>
-
-                  <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500">
-                    <span>Riesgo: <strong className="text-slate-400">{cap.riskLevel || 'LOW'}</strong></span>
-                    {cap.requiresHumanApproval && (
-                      <span className="text-amber-400 font-medium flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Requiere Firma
+                  <div className="pt-4 mt-4 border-t border-white/[0.04] flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-mono text-[10px]">Tier {cap.tierRequired}</span>
+                    {cap.enabled ? (
+                      <Link
+                        prefetch={false}
+                        href={`/growth-os/organizations/${organizationSlug}/${subPath}`}
+                        className="text-violet-400 hover:text-violet-300 font-semibold flex items-center gap-1 transition-colors"
+                      >
+                        Configurar <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    ) : (
+                      <span className="text-slate-600 flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> Requiere Upgrade
                       </span>
                     )}
                   </div>
@@ -435,49 +505,83 @@ export function EcosystemHubClient({
         </div>
       )}
 
-      {/* ── TAB CONTENT: UNIFIED TELEMETRY & LIVE MESH FEED ── */}
+      {/* ── TAB CONTENT: TELEMETRY & LIVE MESH FEED (NIVEL 3) ── */}
       {selectedTab === 'telemetry' && (
-        <div className="bg-white/[0.02] border border-white/[0.08] rounded-3xl p-6 backdrop-blur-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
-            <div>
-              <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 rounded-3xl bg-white/[0.02] border border-white/[0.08] p-6 space-y-4 backdrop-blur-md">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-400" />
-                Live Mesh Activity Feed
+                Interconexión de Eventos en Tiempo Real
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Eventos auditables transmitidos entre Hermes, Growth y RWA</p>
+              <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                MESH SYNC ONLINE
+              </span>
             </div>
-            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              STREAM LIVE
-            </span>
+
+            <div className="space-y-3 font-mono text-xs">
+              <div className="p-3 rounded-xl bg-black/40 border border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-emerald-400">[HERMES_PLANE]</span>
+                  <span className="text-slate-300">Intención comercial cualificada detectada en Telegram</span>
+                </div>
+                <span className="text-slate-500 text-[10px]">Hace 2 min</span>
+              </div>
+              <div className="p-3 rounded-xl bg-black/40 border border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-violet-400">[GROWTH_OS]</span>
+                  <span className="text-slate-300">Lead registrado y asignado a campaña en CRM</span>
+                </div>
+                <span className="text-slate-500 text-[10px]">Hace 2 min</span>
+              </div>
+              <div className="p-3 rounded-xl bg-black/40 border border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-indigo-400">[PANDORAS_RWA]</span>
+                  <span className="text-slate-300">Certificado fiduciario sincronizado en Fast Lane</span>
+                </div>
+                <span className="text-slate-500 text-[10px]">Hace 15 min</span>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {[
-              { id: '1', title: 'Hermes atendió prospecto', node: 'HERMES AI', desc: 'Inversionista consultó sobre rendimientos y fue registrado en CRM.', time: 'Hace 5 min' },
-              { id: '2', title: 'Campaña de Email despachada', node: 'GROWTH OS', desc: 'Newsletter Q3 entregado a 142 prospectos cualificados.', time: 'Hace 45 min' },
-              { id: '3', title: 'Intención de Payout creada', node: 'GOVERNANCE', desc: 'Solicitud de desembolso por 2,500 USDC registrada para aprobación.', time: 'Hace 2 horas' },
-              { id: '4', title: 'Reconciliación Fast Lane', node: 'PANDORAS RWA', desc: 'Adquisición de título de participación confirmada en blockchain.', time: 'Hace 5 horas' },
-            ].map((event) => (
-              <div
-                key={event.id}
-                className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300">
-                      {event.node}
-                    </span>
-                    <h4 className="text-sm font-semibold text-white">{event.title}</h4>
-                  </div>
-                  <p className="text-xs text-slate-400">{event.desc}</p>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500 shrink-0">{event.time}</span>
+          <div className="rounded-3xl bg-white/[0.02] border border-white/[0.08] p-6 space-y-4 backdrop-blur-md">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Shield className="w-4 h-4 text-violet-400" />
+              Sovereignty Status
+            </h2>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between py-2 border-b border-white/[0.04]">
+                <span className="text-slate-400">Knowledge Vault</span>
+                <span className="text-emerald-400 font-mono font-bold">K25-IPFS (100%)</span>
               </div>
-            ))}
+              <div className="flex justify-between py-2 border-b border-white/[0.04]">
+                <span className="text-slate-400">Gobernanza de Intenciones</span>
+                <span className="text-emerald-400 font-mono font-bold">Deterministic Post-LLM</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-white/[0.04]">
+                <span className="text-slate-400">Contratos Desplegados</span>
+                <span className="text-indigo-400 font-mono font-bold">Base Mainnet</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-slate-400">Tenant Isolation</span>
+                <span className="text-emerald-400 font-mono font-bold">Strict RLS Active</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      {/* ── SETUP DRAWER SLIDE-OVER ── */}
+      <SetupDrawer
+        isOpen={isSetupDrawerOpen}
+        onClose={() => setIsSetupDrawerOpen(false)}
+        setupSummary={setupSummary}
+        onActivateModule={(prod) => {
+          setIsSetupDrawerOpen(false);
+          window.location.href = `/onboarding?step=products&slug=${organizationSlug}`;
+        }}
+      />
     </div>
   );
 }
