@@ -333,45 +333,98 @@ function OverviewTab({ project, config, onTogglePhase, loadingPhase }: {
     onTogglePhase: (id: string, status: boolean) => void,
     loadingPhase: string | null
 }) {
+    const chainName = project?.chainId === 8453 ? 'Base Mainnet (8453)' 
+      : project?.chainId === 84532 ? 'Base Sepolia (84532)'
+      : project?.chainId === 1 ? 'Ethereum Mainnet (1)'
+      : project?.chainId === 11155111 ? 'Ethereum Sepolia (11155111)'
+      : 'Base L2 Network';
+
+    const creationDate = project?.createdAt || project?.created_at
+      ? new Date(project.createdAt || project.created_at).toLocaleDateString()
+      : 'Activo';
+
+    const raised = Number(project?.raised_amount || project?.raisedAmount || 0);
+    const target = Number(project?.target_amount || project?.targetAmount || project?.totalValuationUsd || 0);
+    const progressPercent = target > 0 ? Math.min(100, Math.round((raised / target) * 100)) : 0;
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="col-span-2 space-y-6">
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4">Estado del Protocolo</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-zinc-800 rounded-lg">
-                            <p className="text-sm text-gray-400">Total Recaudado</p>
-                            <p className="text-2xl font-mono text-green-400">${Number(project?.raised_amount || project?.raisedAmount || 0).toLocaleString()}</p>
+                {/* Protocol Capital State */}
+                <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Estado del Protocolo RWA
+                        </h3>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                            {project?.status?.toUpperCase() || 'LIVE'}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl space-y-1">
+                            <p className="text-xs font-mono text-zinc-400">Total Recaudado</p>
+                            <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+                                ${raised.toLocaleString()} <span className="text-xs text-zinc-500">USDC</span>
+                            </p>
+                            <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mt-3">
+                                <div 
+                                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                            <p className="text-[10px] text-zinc-500 font-mono text-right pt-1">{progressPercent}% del objetivo</p>
                         </div>
-                        <div className="p-4 bg-zinc-800 rounded-lg">
-                            <p className="text-sm text-gray-400">Objetivo</p>
-                            <p className="text-2xl font-mono text-white">${Number(project?.target_amount || project?.targetAmount || project?.totalValuationUsd || 0).toLocaleString()}</p>
+                        <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl space-y-1">
+                            <p className="text-xs font-mono text-zinc-400">Valuación Objetivo</p>
+                            <p className="text-2xl sm:text-3xl font-black font-mono text-white">
+                                ${target.toLocaleString()} <span className="text-xs text-zinc-500">USD</span>
+                            </p>
+                            <p className="text-[11px] text-zinc-500 pt-2 font-mono">
+                                Tipo: {project?.tokenType || 'PAS-721 / ERC-20'}
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4">Fases de Venta Activas</h3>
+                {/* Token Sale Phases */}
+                <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Fases de Venta Activas</h3>
+                        <span className="text-xs text-zinc-500 font-mono">Fast Lane Protocol</span>
+                    </div>
+
                     <div className="space-y-3">
                         {config.phases?.length > 0 ? config.phases.map((phase: any) => (
-                            <div key={phase.id} className="flex justify-between items-center p-3 bg-zinc-800/50 rounded border border-zinc-700">
+                            <div key={phase.id} className="flex justify-between items-center p-4 bg-white/[0.02] hover:bg-white/[0.04] rounded-2xl border border-white/5 transition-colors">
                                 <div>
-                                    <p className="font-medium text-white flex items-center gap-2">
+                                    <p className="font-bold text-white text-sm flex items-center gap-2">
                                         {phase.name}
-                                        {phase.isSoftCap && <span className="text-[10px] bg-blue-900/50 text-blue-400 px-1.5 rounded border border-blue-500/20">Soft Cap</span>}
+                                        {phase.isSoftCap && (
+                                            <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                                                Soft Cap
+                                            </span>
+                                        )}
                                     </p>
-                                    <p className="text-xs text-gray-400">{phase.type === 'time' ? `${phase.limit} días` : `$${phase.limit} USD`} • {phase.tokenPrice ? `$${phase.tokenPrice}` : 'N/A'}</p>
+                                    <p className="text-xs text-zinc-400 font-mono pt-1">
+                                        {phase.type === 'time' ? `${phase.limit} días` : `$${phase.limit} USD`} • {phase.tokenPrice ? `$${phase.tokenPrice} USDC` : 'Precio Fijo'}
+                                    </p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className={`px-2 py-1 rounded text-xs ${phase.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700 text-gray-500'}`}>
-                                        {phase.isActive ? 'Activa' : 'Inactiva'}
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold ${
+                                        phase.isActive 
+                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                                            : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
+                                    }`}>
+                                        {phase.isActive ? 'ACTIVA' : 'INACTIVA'}
                                     </span>
                                     <button
                                         onClick={() => onTogglePhase(phase.id, phase.isActive)}
                                         disabled={loadingPhase === phase.id}
-                                        className={`px-3 py-1 rounded text-xs font-bold transition-all ${phase.isActive
-                                            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30'
-                                            : 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30'
+                                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${phase.isActive
+                                            ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
+                                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
                                             }`}
                                     >
                                         {loadingPhase === phase.id ? '...' : (phase.isActive ? 'Detener' : 'Iniciar')}
@@ -379,29 +432,37 @@ function OverviewTab({ project, config, onTogglePhase, loadingPhase }: {
                                 </div>
                             </div>
                         )) : (
-                            <p className="text-gray-500 italic">No hay fases configuradas.</p>
+                            <div className="p-8 text-center bg-white/[0.01] border border-dashed border-white/10 rounded-2xl">
+                                <p className="text-xs text-zinc-500 font-mono">No hay fases de venta configuradas.</p>
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
 
             <div className="space-y-6">
-                {/* Quick Links / Status */}
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Despliegue</h3>
-                    <div className="space-y-4">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-400">Red</span>
-                            <span className="text-white">Sepolia (Testnet)</span>
+                {/* On-Chain Deployment Info */}
+                <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-2xl space-y-4">
+                    <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest font-mono">Despliegue On-Chain</h3>
+                    <div className="space-y-3 font-mono text-xs">
+                        <div className="flex justify-between items-center py-1 border-b border-white/5">
+                            <span className="text-zinc-500">Red</span>
+                            <span className="text-emerald-400 font-bold">{chainName}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-400">Fecha</span>
-                            <span className="text-white">{new Date().toLocaleDateString()}</span>
+                        <div className="flex justify-between items-center py-1 border-b border-white/5">
+                            <span className="text-zinc-500">Fecha Registro</span>
+                            <span className="text-zinc-300">{creationDate}</span>
                         </div>
-                        <div className="pt-4 border-t border-zinc-800">
+                        <div className="flex justify-between items-center py-1 border-b border-white/5">
+                            <span className="text-zinc-500">Smart Contract</span>
+                            <span className="text-zinc-300 font-mono">
+                                {project.contractAddress ? `${project.contractAddress.slice(0, 6)}...${project.contractAddress.slice(-4)}` : 'Sin Desplegar'}
+                            </span>
+                        </div>
+                        <div className="pt-3">
                             <Link href={`/projects/${project.slug}`} target="_blank">
-                                <button className="w-full py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors text-sm font-medium">
-                                    Ver Página Pública
+                                <button className="w-full py-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 hover:from-violet-600/30 hover:to-indigo-600/30 text-violet-300 border border-violet-500/30 rounded-xl transition-all text-xs font-bold shadow-lg">
+                                    Ver Página Pública ↗
                                 </button>
                             </Link>
                         </div>

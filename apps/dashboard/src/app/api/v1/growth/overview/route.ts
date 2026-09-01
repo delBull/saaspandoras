@@ -14,6 +14,7 @@ import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
 import { isWalletAuthorizedForTenant } from '@/lib/hermes/auth/wallet-tenant-membership';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
+import { getTreasuryBalances, isDeployedContract } from '@/lib/growth/treasury-onchain';
 import type { GrowthOverviewDTO } from '@/lib/dash-contracts/growth';
 
 export const dynamic = 'force-dynamic';
@@ -139,40 +140,59 @@ export async function GET(req: NextRequest) {
     const profile = await capabilityRegistry.getTenantProfile(orgParam || `org_${cleanSlug}`);
     const enabledKeys = profile.capabilities.filter((c) => c.enabled).map((c) => c.key);
 
+    const treasury = await getTreasuryBalances(project);
+    const treasuryValue = treasury
+      ? `$${treasury.balanceUsdc.toLocaleString()} USDC`
+      : 'Sin Tesorería Configurada';
+    const treasuryStatus = treasury?.source === 'onchain'
+      ? 'LIVE'
+      : treasury?.source === 'fallback'
+      ? 'UNAVAILABLE'
+      : 'NOT_CONFIGURED';
+
+    const chainId = project.chainId || (process.env.NODE_ENV === 'production' ? 8453 : 11155111);
+    const isNftDeployed = await isDeployedContract(project.contractAddress, chainId);
+    const nftValue = isNftDeployed ? 'Contrato Verificado' : 'Sin Contrato Verificado';
+    const nftStatus = isNftDeployed ? 'LIVE' : project.contractAddress ? 'UNAVAILABLE' : 'NOT_CONFIGURED';
+
     const response: GrowthOverviewDTO = {
       organizationId: auth.organizationId,
       organizationName: project.title || cleanSlug.toUpperCase(),
       organizationSlug: cleanSlug,
+      planTier: profile.planTier || 'Starter',
       hasHermes: Boolean(hermesInstall),
       enabledCapabilities: enabledKeys,
       metrics: [
         {
           id: 'metric_pipeline',
           title: 'Prospectos en Pipeline',
-          value: realLeadsCount,
-          changePercent: realLeadsCount > 0 ? 12.5 : undefined,
-          trend: 'UP',
+          value: realLeadsCount > 0 ? `${realLeadsCount} Leads` : '0 Leads',
+          trend: realLeadsCount > 0 ? 'UP' : 'NEUTRAL',
+          status: realLeadsCount > 0 ? 'DATABASE' : 'NOT_CONFIGURED',
           capability: 'growth.crm',
         },
         {
           id: 'metric_intents',
           title: 'Intenciones Gobernadas',
-          value: realIntentsCount,
+          value: realIntentsCount > 0 ? `${realIntentsCount} Intenciones` : '0 Intenciones',
           trend: 'NEUTRAL',
+          status: realIntentsCount > 0 ? 'DATABASE' : 'NOT_CONFIGURED',
           capability: 'growth.governance',
         },
         {
           id: 'metric_treasury',
           title: 'Tesorería On-Chain',
-          value: project.applicantWalletAddress ? `${project.applicantWalletAddress.slice(0, 6)}...${project.applicantWalletAddress.slice(-4)}` : 'Safe Active',
+          value: treasuryValue,
           trend: 'NEUTRAL',
+          status: treasuryStatus,
           capability: 'growth.finance',
         },
         {
           id: 'metric_nfts',
           title: 'Colección Smart Pass',
-          value: project.contractAddress ? `${project.contractAddress.slice(0, 6)}...${project.contractAddress.slice(-4)}` : 'Deploy Ready',
-          trend: 'UP',
+          value: nftValue,
+          trend: isNftDeployed ? 'UP' : 'NEUTRAL',
+          status: nftStatus,
           capability: 'growth.nft',
         },
       ],
@@ -206,16 +226,9 @@ export async function GET(req: NextRequest) {
           iconName: 'Sparkles',
         },
       ],
-      recentActivities: [
-        {
-          id: 'act_1',
-          title: 'Sincronización de Pipeline',
-          description: `${realLeadsCount} prospectos vinculados a ${project.title || cleanSlug}.`,
-          capability: 'growth.crm',
-          actor: 'Hermes Runtime',
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      // No synthetic activity: the feed remains empty until a real event source
+      // is connected for this tenant.
+      recentActivities: [],
     };
 
     return NextResponse.json(response);

@@ -11,6 +11,7 @@ export interface GrowthMetricCardDTO {
   value: string | number;
   changePercent?: number;
   trend?: 'UP' | 'DOWN' | 'NEUTRAL';
+  status?: 'LIVE' | 'DATABASE' | 'NOT_CONFIGURED' | 'PENDING' | 'UNAVAILABLE';
   capability: GrowthCapabilityKey;
 }
 
@@ -35,6 +36,7 @@ export interface GrowthOverviewDTO {
   organizationId: string;
   organizationName: string;
   organizationSlug: string;
+  planTier?: string;
   hasHermes: boolean;
   enabledCapabilities: GrowthCapabilityKey[];
   metrics: GrowthMetricCardDTO[];

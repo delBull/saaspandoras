@@ -3,7 +3,7 @@
  * src/lib/dash-contracts/growth/finance.ts
  */
 
-export type WalletMode = 'PANDORAS_MANAGED' | 'CUSTOM_EXTERNAL' | 'MULTISIG_VAULT';
+export type WalletMode = 'PANDORAS_MANAGED' | 'CUSTOM_EXTERNAL' | 'MULTISIG_VAULT' | 'NOT_CONFIGURED';
 
 export interface TenantWalletConfigDTO {
   organizationId: string;

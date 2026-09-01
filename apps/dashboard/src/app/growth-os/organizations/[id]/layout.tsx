@@ -17,7 +17,7 @@ export default async function ControlPlaneLayout({
     id: orgId,
     name: slugId ? slugId.toUpperCase() : 'Organization',
     slug: slugId,
-    hasHermes: true,
+    hasHermes: false,
   };
 
   try {
@@ -30,13 +30,13 @@ export default async function ControlPlaneLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row">
       <GrowthOsSidebar 
         slugId={slugId} 
         orgName={overview.name} 
         hasHermes={overview.hasHermes} 
       />
-      <main className="flex-1 min-w-0 bg-slate-50 text-slate-900 overflow-y-auto">
+      <main className="flex-1 min-w-0 bg-[#050505] text-zinc-100 overflow-y-auto">
         {children}
       </main>
     </div>

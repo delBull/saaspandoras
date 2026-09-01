@@ -37,7 +37,8 @@ describe('🏛️ Phase 8.2 Invariant Test Suite: Setup State & Activation Progr
       website: 'https://snarai.com',
       treasuryAddress: '0xsafe1234567890',
       contractAddress: '0xcontract12345',
-      extraConfig: { widgetEnabled: true },
+      deploymentStatus: 'deployed',
+      extraConfig: { widgetEnabled: true, emailVerified: true },
     };
 
     // 2. Mock installed products (Hermes + Growth OS active)

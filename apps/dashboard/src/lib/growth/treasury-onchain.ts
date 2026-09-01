@@ -20,6 +20,8 @@ import { client } from '@/lib/thirdweb-client';
 import { defineChain } from 'thirdweb';
 import { getWalletBalance } from 'thirdweb/wallets';
 import { getUsdcAddress } from '@/lib/treasury/usdc-contract';
+import { createPublicClient, http, type Address } from 'viem';
+import { base, baseSepolia, mainnet, polygon, polygonAmoy, sepolia } from 'viem/chains';
 
 const CHAIN_ID_MAINNET = 8453; // Base
 const CHAIN_ID_SEPOLIA = 11155111;
@@ -33,6 +35,7 @@ export interface TreasuryOnchainResult {
   usdcSymbol: string;
   chainId: number;
   source: 'onchain' | 'fallback';
+  addressSource: 'SAFE' | 'TREASURY' | 'DESTINATION' | 'CREATOR' | 'FOUNDER';
 }
 
 type ProjectLike = {
@@ -59,6 +62,15 @@ export function resolveTreasuryAddress(project: ProjectLike): string {
   ).trim();
 }
 
+export function resolveTreasuryAddressSource(project: ProjectLike): TreasuryOnchainResult['addressSource'] | null {
+  if (project.allowanceControllerAddress?.trim()) return 'SAFE';
+  if (project.treasuryAddress?.trim()) return 'TREASURY';
+  if (project.destinationWallet?.trim()) return 'DESTINATION';
+  if (project.creatorWallet?.trim()) return 'CREATOR';
+  if (project.applicantWalletAddress?.trim()) return 'FOUNDER';
+  return null;
+}
+
 /**
  * Resolve chain id for a project, falling back to the deployed network context.
  */
@@ -81,6 +93,7 @@ export async function getTreasuryBalances(
 
   const chainId = resolveTreasuryChainId(project);
   const chain = defineChain(chainId);
+  const addressSource = resolveTreasuryAddressSource(project);
 
   try {
     const usdcAddress = getUsdcAddress() as string | undefined;
@@ -92,27 +105,58 @@ export async function getTreasuryBalances(
         : Promise.resolve(null),
     ]);
 
+    const source = native || usdc ? 'onchain' : 'fallback';
     return {
       treasuryAddress,
-      smartAccountAddress: treasuryAddress,
+      smartAccountAddress: addressSource === 'SAFE' ? treasuryAddress : '',
       balanceUsdc: usdc ? Number(usdc.displayValue) : 0,
       balanceNative: native ? Number(native.displayValue) : 0,
       nativeSymbol: native?.symbol || 'ETH',
       usdcSymbol: usdc?.symbol || 'USDC',
       chainId,
-      source: 'onchain',
+      source,
+      addressSource: addressSource!,
     };
   } catch (err: any) {
     console.error('[TreasuryOnchain] Balance fetch failed:', err?.message || err);
     return {
       treasuryAddress,
-      smartAccountAddress: treasuryAddress,
+      smartAccountAddress: addressSource === 'SAFE' ? treasuryAddress : '',
       balanceUsdc: 0,
       balanceNative: 0,
       nativeSymbol: 'ETH',
       usdcSymbol: 'USDC',
       chainId,
       source: 'fallback',
+      addressSource: addressSource!,
     };
+  }
+}
+
+function resolveViemChain(chainId: number) {
+  switch (chainId) {
+    case 1: return mainnet;
+    case 137: return polygon;
+    case 80002: return polygonAmoy;
+    case 8453: return base;
+    case 84532: return baseSepolia;
+    case 11155111: return sepolia;
+    default: return undefined;
+  }
+}
+
+/** Verify that an address contains deployed contract bytecode on the project chain. */
+export async function isDeployedContract(address: string | null | undefined, chainId: number): Promise<boolean> {
+  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) return false;
+  const chain = resolveViemChain(chainId);
+  if (!chain) return false;
+
+  try {
+    const publicClient = createPublicClient({ chain, transport: http() });
+    const bytecode = await publicClient.getBytecode({ address: address as Address });
+    return Boolean(bytecode && bytecode !== '0x');
+  } catch (err: any) {
+    console.warn('[TreasuryOnchain] Contract verification failed:', err?.message || err);
+    return false;
   }
 }

@@ -154,7 +154,7 @@ export class SetupProgressService {
         id: 'hermes-widget',
         title: 'Web Widget Interactivo',
         description: 'Incrustación del asistente en tu sitio web corporativo.',
-        isCompleted: Boolean(extra.widgetEnabled || extra.widgetInstalled || (project.website && extra.widgetDomain)),
+        isCompleted: Boolean(extra.widgetInstalled === true || extra.widgetEnabled === true),
         actionUrl: `/portal/${cleanSlug}/widget`,
         actionLabel: 'Obtener Código',
       },
@@ -188,7 +188,11 @@ export class SetupProgressService {
         id: 'growth-email',
         title: 'Email Marketing Institucional',
         description: 'Plantillas y remitente de correos configurados para la organización.',
-        isCompleted: Boolean(project.applicantEmail || extra.emailSenderConfigured || extra.resendApiKey),
+        isCompleted: Boolean(
+          extra.emailSenderConfigured === true ||
+          extra.resendDomainVerified === true ||
+          (Boolean(project.applicantEmail) && extra.emailVerified === true)
+        ),
         actionUrl: `/growth-os/organizations/${cleanSlug}/email`,
         actionLabel: 'Configurar Email',
       },
@@ -196,7 +200,12 @@ export class SetupProgressService {
         id: 'growth-treasury',
         title: 'Tesorería Soberana (Safe Vault)',
         description: 'Billetera multi-firma o contrato de tesorería vinculado.',
-        isCompleted: Boolean(project.treasuryAddress || extra.allowanceControllerAddress || extra.safeAddress),
+        isCompleted: Boolean(
+          project.treasuryAddress ||
+          project.allowanceControllerAddress ||
+          extra.allowanceControllerAddress ||
+          extra.safeAddress
+        ),
         actionUrl: `/growth-os/organizations/${cleanSlug}/finance`,
         actionLabel: 'Asignar Safe',
       },
@@ -204,7 +213,12 @@ export class SetupProgressService {
         id: 'growth-nft',
         title: 'Pases de Acceso & VIP NFTs',
         description: 'Contratos ERC-721 para membresías y tiers de inversores.',
-        isCompleted: Boolean(project.contractAddress || extra.nftPassConfigured || extra.nftContractAddress),
+        isCompleted: Boolean(
+          (project.contractAddress && project.deploymentStatus === 'deployed') ||
+          extra.nftContractAddress ||
+          extra.nftPassConfigured ||
+          extra.nftPassDeployed
+        ),
         actionUrl: `/growth-os/organizations/${cleanSlug}/nft-lab`,
         actionLabel: 'Crear Pase VIP',
       },

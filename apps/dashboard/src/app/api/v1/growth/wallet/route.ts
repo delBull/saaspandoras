@@ -121,24 +121,33 @@ export async function GET(req: NextRequest) {
 
     // 🔗 Resolve REAL on-chain sovereign treasury (Safe proxy + live balances)
     const treasury = project ? await getTreasuryBalances(project) : null;
-    const primaryAddress = treasury?.treasuryAddress || (project as any)?.destinationWallet || (project as any)?.creatorWallet || project?.applicantWalletAddress || '0x71C8F79D3A8b5774E906F2997e0C25553e1644B2';
-    const smartAccountAddress = treasury?.smartAccountAddress || (project?.allowanceControllerAddress ? project.allowanceControllerAddress : `0xSafe_${cleanSlug.slice(0, 8)}_${primaryAddress.slice(2, 6)}`);
+    const primaryAddress = treasury?.treasuryAddress || (project as any)?.destinationWallet || (project as any)?.creatorWallet || project?.applicantWalletAddress || '';
+    const smartAccountAddress = treasury?.smartAccountAddress || project?.allowanceControllerAddress || '';
+    const isConfigured = Boolean(primaryAddress || smartAccountAddress);
+    const extraConfig = project?.extraConfig && typeof project.extraConfig === 'object'
+      ? project.extraConfig as Record<string, unknown>
+      : {};
+    const dailySpendLimitUsdc = Number(extraConfig.dailySpendLimitUsdc || 0);
+    const spentTodayUsdc = Number(extraConfig.spentTodayUsdc || 0);
+    const withdrawalAllowlist = Array.isArray(extraConfig.withdrawalAllowlist)
+      ? extraConfig.withdrawalAllowlist.filter((value): value is string => typeof value === 'string')
+      : (primaryAddress ? [primaryAddress] : []);
 
     const response: TenantWalletConfigDTO = {
       organizationId: orgParam || `org_${cleanSlug}`,
-      walletMode: 'PANDORAS_MANAGED',
+      walletMode: isConfigured ? 'PANDORAS_MANAGED' : 'NOT_CONFIGURED',
       primaryAddress,
       smartAccountAddress,
-      dailySpendLimitUsdc: 2500,
-      spentTodayUsdc: 0,
-      withdrawalAllowlist: [primaryAddress],
+      dailySpendLimitUsdc: isConfigured ? dailySpendLimitUsdc : 0,
+      spentTodayUsdc: isConfigured ? spentTodayUsdc : 0,
+      withdrawalAllowlist,
       requiresMultiSig: realSignerCount > 1,
-      signerCount: realSignerCount,
+      signerCount: isConfigured ? realSignerCount : 0,
       balanceUsdc: treasury?.balanceUsdc ?? 0,
       balanceNative: treasury?.balanceNative ?? 0,
       nativeSymbol: treasury?.nativeSymbol || 'ETH',
       isIsolated: true,
-      lastAuditedAt: new Date().toISOString(),
+      lastAuditedAt: undefined,
     };
 
     return NextResponse.json(response);
