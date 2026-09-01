@@ -341,11 +341,11 @@ function OverviewTab({ project, config, onTogglePhase, loadingPhase }: {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-zinc-800 rounded-lg">
                             <p className="text-sm text-gray-400">Total Recaudado</p>
-                            <p className="text-2xl font-mono text-green-400">${Number(project.raised_amount || 0).toLocaleString()}</p>
+                            <p className="text-2xl font-mono text-green-400">${Number(project?.raised_amount || project?.raisedAmount || 0).toLocaleString()}</p>
                         </div>
                         <div className="p-4 bg-zinc-800 rounded-lg">
                             <p className="text-sm text-gray-400">Objetivo</p>
-                            <p className="text-2xl font-mono text-white">${Number(project.target_amount || 0).toLocaleString()}</p>
+                            <p className="text-2xl font-mono text-white">${Number(project?.target_amount || project?.targetAmount || project?.totalValuationUsd || 0).toLocaleString()}</p>
                         </div>
                     </div>
                 </div>

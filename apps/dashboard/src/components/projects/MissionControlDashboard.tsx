@@ -371,21 +371,26 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
 // ----------------------------------------------------------------------
 
 function OverviewTab({ project, config }: { project: any, config: any }) {
-    const rawRaised = Number(project.raisedAmount || project.raised_amount || 0);
-    const rawTarget = Number(project.targetAmount || project.target_amount || project.totalValuationUsd || 100000);
+    const rawRaised = Number(project?.raisedAmount || project?.raised_amount || 0);
+    const rawTarget = Number(project?.targetAmount || project?.target_amount || project?.totalValuationUsd || 100000);
     const raised = isNaN(rawRaised) ? 0 : rawRaised;
     const target = isNaN(rawTarget) || rawTarget <= 0 ? 100000 : rawTarget;
     const progress = Math.min((raised / target) * 100, 100);
     const [daoMemberCount, setDaoMemberCount] = useState<number | null>(null);
 
     useEffect(() => {
+        if (!project?.id) return;
         fetch(`/api/dao/metrics?projectId=${project.id}`)
-            .then(r => r.json())
+            .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (data?.members !== undefined) setDaoMemberCount(Number(data.members));
             })
             .catch(() => setDaoMemberCount(0));
-    }, [project.id]);
+    }, [project?.id]);
+
+    const contractAddr = typeof project?.contractAddress === 'string'
+        ? project.contractAddress
+        : (typeof config?.artifacts?.[0]?.address === 'string' ? config.artifacts[0].address : '');
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -439,14 +444,14 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                             <span className="text-sm text-zinc-400">Red Base</span>
                             <span className="text-sm font-bold text-white bg-white/10 px-2 py-1 rounded">
-                                {(project as any).chainId === 8453 ? 'Base (Mainnet)' : 'Base (Testnet)'}
+                                {(project as any)?.chainId === 8453 ? 'Base (Mainnet)' : 'Base (Testnet)'}
                             </span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                             <span className="text-sm text-zinc-400">Smart Contract</span>
                             <span className="text-sm font-mono text-zinc-300">
-                                {((project as any).contractAddress || (project as any)?.w2eConfig?.artifacts?.[0]?.address) 
-                                    ? `${((project as any).contractAddress || (project as any)?.w2eConfig?.artifacts?.[0]?.address).slice(0, 6)}...${((project as any).contractAddress || (project as any)?.w2eConfig?.artifacts?.[0]?.address).slice(-4)}` 
+                                {contractAddr 
+                                    ? `${contractAddr.slice(0, 6)}...${contractAddr.slice(-4)}` 
                                     : 'Pendiente'}
                             </span>
                         </div>
