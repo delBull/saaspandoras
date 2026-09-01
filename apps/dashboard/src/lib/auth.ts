@@ -29,6 +29,14 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
     return false; 
   }
 
+  // ⚡ CANONICAL ADMIN WALLETS
+  const CANONICAL_ADMIN_WALLETS = [
+    '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
+    '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
+    '0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba'
+  ];
+  if (CANONICAL_ADMIN_WALLETS.includes(lower)) return true;
+
   // ⚡ ADMIN BYPASS: Marco's Admin Wallet (from env var)
   const MARCO_ADMIN = (process.env.MARCO_ADMIN_WALLET || "").toLowerCase();
   if (MARCO_ADMIN && lower === MARCO_ADMIN) return true;

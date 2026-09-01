@@ -120,6 +120,28 @@ export default function ProfileProjectsPage() {
     }
   }, [walletAddress]);
 
+  const safeProjects = Array.isArray(userProjects) ? userProjects : [];
+  const SUPER_ADMIN_WALLETS = [
+    '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
+    '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
+    '0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba'
+  ];
+  const isSuperAdmin = Boolean(walletAddress && SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase()));
+
+  const activeProjects = safeProjects.filter(p => ['approved', 'live', 'completed'].includes(p?.status));
+  const pendingProjects = safeProjects.filter(p => ['pending'].includes(p?.status));
+  const activeClientProjects = safeProjects.filter(p => ['active_client'].includes(p?.status));
+  const draftProjects = safeProjects.filter(p => ['draft', 'incomplete'].includes(p?.status));
+  const rejectedProjects = safeProjects.filter(p => ['rejected'].includes(p?.status));
+  const projectsToDisplay = isSuperAdmin ? safeProjects : (activeProjects.length > 0 ? activeProjects : safeProjects);
+
+  // If user has a single project with a slug, seamlessly navigate to the modern manage console
+  useEffect(() => {
+    if (!loading && walletAddress && projectsToDisplay.length === 1 && projectsToDisplay[0]?.slug) {
+      window.location.replace(`/profile/projects/${projectsToDisplay[0].slug}/manage`);
+    }
+  }, [loading, walletAddress, projectsToDisplay]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -143,16 +165,6 @@ export default function ProfileProjectsPage() {
       </div>
     );
   }
-
-  const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
-  const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase());
-
-  const safeProjects = Array.isArray(userProjects) ? userProjects : [];
-  const activeProjects = safeProjects.filter(p => ['approved', 'live', 'completed'].includes(p?.status));
-  const pendingProjects = safeProjects.filter(p => ['pending'].includes(p?.status));
-  const activeClientProjects = safeProjects.filter(p => ['active_client'].includes(p?.status));
-  const draftProjects = safeProjects.filter(p => ['draft', 'incomplete'].includes(p?.status));
-  const rejectedProjects = safeProjects.filter(p => ['rejected'].includes(p?.status));
 
   // 1. Pending Review State
   if (!isSuperAdmin && activeProjects.length === 0 && pendingProjects.length > 0) {
@@ -298,16 +310,6 @@ export default function ProfileProjectsPage() {
       </div>
     );
   }
-
-  // Pass active projects to dashboard (or all if super admin)
-  const projectsToDisplay = isSuperAdmin ? userProjects : (activeProjects.length > 0 ? activeProjects : userProjects);
-
-  // If user has a single project with a slug, seamlessly navigate to the modern manage console
-  useEffect(() => {
-    if (!loading && projectsToDisplay.length === 1 && projectsToDisplay[0]?.slug) {
-      window.location.replace(`/profile/projects/${projectsToDisplay[0].slug}/manage`);
-    }
-  }, [loading, projectsToDisplay]);
 
   if (projectsToDisplay.length === 1 && projectsToDisplay[0]?.slug) {
     const singleProj = projectsToDisplay[0];

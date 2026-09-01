@@ -18,6 +18,7 @@ import {
   Settings,
 } from "lucide-react";
 import { OperationsHubModal } from "./OperationsHubModal";
+import { NexusSettingsModal } from "./NexusSettingsModal";
 import TasksPanel from "./TasksPanel";
 import { INITIAL_TASKS, TaskItem } from "./taskTypes";
 
@@ -182,6 +183,7 @@ const cardVariants: Variants = {
 
 export default function NexusClient() {
   const [isIpModalOpen, setIsIpModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
     if (typeof window === "undefined") return INITIAL_TASKS;
@@ -204,6 +206,11 @@ export default function NexusClient() {
         onClose={() => setIsIpModalOpen(false)}
         tasks={tasks}
         setTasks={setTasks}
+      />
+
+      <NexusSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
       />
 
       {/* Ambient background */}
@@ -269,16 +276,14 @@ export default function NexusClient() {
                 <GraduationCap className="w-3 h-3" />
                 ACADEMY
               </a>
-              <a
-                href="https://dash.pandoras.finance/nexus/settings"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setIsSettingsModalOpen(true)}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-300 text-[10px] tracking-wider hover:bg-zinc-700 transition-colors"
                 title="Configuración y Gestión de Colaboradores"
               >
                 <Settings className="w-3 h-3 text-zinc-400" />
                 SETTINGS
-              </a>
+              </button>
             </div>
           </div>
         </header>

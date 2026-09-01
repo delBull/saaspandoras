@@ -12,7 +12,7 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!(await requireNexusAdmin())) {
+    if (!(await requireNexusAdmin(req))) {
       return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
     }
     const body = await req.json();

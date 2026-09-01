@@ -15,10 +15,31 @@ import { getAuth, isAdmin } from '@/lib/auth';
 
 const TOKEN_EXPIRY_HOURS = 24;
 const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+import { headers as nextHeaders } from 'next/headers';
 
-export async function requireNexusAdmin(): Promise<boolean> {
-  const { session, isVerified } = await getAuth();
-  return Boolean(isVerified && session?.address && await isAdmin(session.address));
+export async function requireNexusAdmin(req?: Request | Headers): Promise<boolean> {
+  try {
+    let reqHeaders: Headers;
+    if (req instanceof Headers) {
+      reqHeaders = req;
+    } else if (req && 'headers' in req) {
+      reqHeaders = req.headers as Headers;
+    } else {
+      reqHeaders = await nextHeaders();
+    }
+
+    const { session, isVerified } = await getAuth(reqHeaders);
+    if (isVerified && session?.address && await isAdmin(session.address)) return true;
+
+    // Fallback: check thirdweb/wallet headers
+    const walletHeader = reqHeaders.get('x-thirdweb-address') || reqHeaders.get('x-wallet-address') || reqHeaders.get('x-user-address');
+    if (walletHeader && await isAdmin(walletHeader)) return true;
+
+    return false;
+  } catch (err) {
+    console.error('[requireNexusAdmin] Check error:', err);
+    return false;
+  }
 }
 
 export interface CollaboratorDTO {

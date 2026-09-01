@@ -3,12 +3,12 @@
  * List all active collaborators.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { listCollaborators, requireNexusAdmin } from '@/lib/nexus/collaborators-service';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    if (!(await requireNexusAdmin())) {
+    if (!(await requireNexusAdmin(req))) {
       return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
     }
     const collaborators = await listCollaborators();
