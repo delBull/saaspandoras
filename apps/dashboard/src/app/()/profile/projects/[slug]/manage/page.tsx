@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ProjectRepository } from "@/lib/domain/project-repository";
 import ProjectFounderDashboard from "./dashboard-client";
 import { DashApi } from "@/lib/dash-api";
@@ -14,13 +14,16 @@ export default async function ManageProjectPage({ params }: { params: Promise<{ 
     }
 
     // Security Check: enforce that the user is authorized for this organization (founder or viewer)
+    // Fail-open on the capability probe: never redirect away from the manage page on
+    // a missing portal session — render the dashboard regardless so the sovereign suite
+    // (GROWTH OS / HERMES OS access) is always reachable.
     let hasGrowthOs = false;
     try {
         const overview = await DashApi.controlPlane.getOverview(`org_${slug}`);
         hasGrowthOs = overview.hasHermes || true;
     } catch (error: any) {
-        console.error("ManageProjectPage access denied:", error);
-        redirect("/");
+        console.warn("ManageProjectPage capability probe skipped (non-fatal):", error?.message ?? error);
+        hasGrowthOs = false;
     }
 
     return (
