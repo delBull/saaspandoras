@@ -71,7 +71,7 @@ export default async function SovereignFinancePage({ params }: { params: Promise
           </div>
 
           <Link
-            href={`/portal/${slugId}/ecosystem`}
+            href={`/ecosystem/${slugId}`}
             className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all backdrop-blur-sm self-start md:self-auto"
           >
             <Layers className="w-4 h-4 text-zinc-400" />

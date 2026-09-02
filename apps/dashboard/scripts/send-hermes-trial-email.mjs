@@ -8,7 +8,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = 'hello@pandoras.finance';
 const SANDBOX_URL = 'https://dash.pandoras.finance/hermes';
 
-const toEmail = process.argv[2] || 'marco.munoz9@gmail.com';
+const toEmail = process.argv[2] || process.env.ADMIN_EMAIL || '';
 const toName  = process.argv[3] || 'Marco';
 
 if (!RESEND_API_KEY) {

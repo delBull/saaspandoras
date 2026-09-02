@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     // NEVER grant portal access to these via generic B2C leads or without explicit operator authorization
     const PROTECTED_PROJECT_IDS = [2, 17, 15];
     const PROTECTED_PROJECT_SLUGS = ['snarai', 'snarai-protocol', 'narai', 'pandoras_access'];
-    const PROTECTED_PROJECT_OPERATOR_EMAIL = (process.env.ADMIN_EMAIL || process.env.OPERATOR_EMAIL || 'marco.munoz9@gmail.com').toLowerCase();
+    const PROTECTED_PROJECT_OPERATOR_EMAIL = (process.env.ADMIN_EMAIL || process.env.OPERATOR_EMAIL || '').toLowerCase();
 
     // 1. Find user or approved access request by email
     const [user] = await db.select().from(users).where(eq(users.email, cleanEmail)).limit(1);

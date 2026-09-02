@@ -368,7 +368,7 @@ export default function ProfileProjectsPage() {
                       Gestionar ↗
                     </a>
                     <a
-                      href={`/portal/${p.slug || p.id}/ecosystem`}
+                      href={`/ecosystem/${p.slug || p.id}`}
                       className="px-3.5 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold transition-colors"
                       title="Abrir Sovereign Mesh Hub"
                     >

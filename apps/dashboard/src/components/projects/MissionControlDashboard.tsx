@@ -167,7 +167,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                                     Capacidades de Negocio
                                 </div>
                                 <Link
-                                    href={`/portal/${project.slug || project.id}/ecosystem`}
+                                    href={`/ecosystem/${project.slug || project.id}`}
                                     onClick={() => setIsMobileDrawerOpen(false)}
                                     className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold hover:bg-violet-500/20 transition-all"
                                 >
@@ -282,7 +282,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
                     {/* Desktop Cross-Plane Quick Launch Actions */}
                     <div className="flex flex-wrap items-center gap-2.5">
                         <Link
-                            href={`/portal/${project.slug || project.id}/ecosystem`}
+                            href={`/ecosystem/${project.slug || project.id}`}
                             className="px-3.5 py-2 bg-violet-600/20 border border-violet-500/30 hover:bg-violet-600/30 text-violet-300 rounded-xl transition-all text-xs font-bold flex items-center gap-1.5"
                         >
                             <SparklesIcon className="w-4 h-4" /> Ecosistema Hub ↗

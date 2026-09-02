@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { PortalOrganization } from '@/lib/portal/portal-types';
-import { Shield, Radio, Activity } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 interface EcosystemFooterProps {
   organization: PortalOrganization;

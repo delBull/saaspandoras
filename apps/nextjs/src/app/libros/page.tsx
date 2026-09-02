@@ -111,7 +111,7 @@ function BookCard({ book, index, activeToken }: { book: typeof BOOKS[0]; index: 
       await fetch('/api/books/request-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'marco.munoz9@gmail.com', bookSlug: book.slug }),
+        body: JSON.stringify({ email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || '', bookSlug: book.slug }),
       });
       setSent(true);
     } finally {

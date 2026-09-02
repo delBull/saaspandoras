@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL ?? process.env.NEXUS_ADMIN_EMAIL ?? 'marco.munoz9@gmail.com').toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL ?? process.env.NEXUS_ADMIN_EMAIL ?? '').toLowerCase();
 const MAGIC_LINK_SECRET = process.env.BOOKS_MAGIC_LINK_SECRET ?? 'pandoras_books_secret_2026';
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pandoras.finance';
 const TOKEN_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours

@@ -8,7 +8,7 @@ interface NexusAccessGateProps {
   children: React.ReactNode;
 }
 
-const DEFAULT_ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'marco.munoz9@gmail.com';
+const DEFAULT_ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || '';
 const API_BASE_URL = 'https://dash.pandoras.finance';
 
 export function NexusAccessGate({ children }: NexusAccessGateProps) {

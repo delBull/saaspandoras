@@ -6,5 +6,5 @@ export default async function LegacyOnboardingRedirectPage({
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
-  redirect(`/portal/${organizationSlug || ''}/ecosystem?setup=true`);
+  redirect(`/ecosystem/${organizationSlug || ''}?setup=true`);
 }

@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://dash.pandoras.finance";
-const ADMIN_EMAIL = (process.env.NEXUS_ADMIN_EMAIL ?? "marco.munoz9@gmail.com").toLowerCase();
+const ADMIN_EMAIL = (process.env.NEXUS_ADMIN_EMAIL ?? process.env.ADMIN_EMAIL ?? "").toLowerCase();
 
 export async function POST() {
   const { session, isVerified } = await getAuth(await headers());

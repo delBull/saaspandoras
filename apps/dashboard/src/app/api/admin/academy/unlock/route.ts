@@ -15,13 +15,11 @@ export const dynamic = "force-dynamic";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://dash.pandoras.finance";
 const ADMIN_EMAILS = [
-  "marco.munoz9@gmail.com",
   (process.env.NEXUS_ADMIN_EMAIL ?? "").toLowerCase(),
   (process.env.ADMIN_EMAIL ?? "").toLowerCase()
 ].filter(Boolean);
 
 const MANAGER_EMAILS = [
-  "escuelalibredigital@proton.me",
   ...(process.env.ACADEMY_MANAGERS ? process.env.ACADEMY_MANAGERS.split(',').map(e => e.trim().toLowerCase()) : [])
 ].filter(Boolean);
 
@@ -46,8 +44,8 @@ export async function POST(req: NextRequest) {
       // Body may be empty if clicked default unlock button
     }
 
-    if (!targetEmail) {
-      targetEmail = ADMIN_EMAILS[0] || "marco.munoz9@gmail.com";
+    if (!targetEmail && ADMIN_EMAILS[0]) {
+      targetEmail = ADMIN_EMAILS[0];
     }
 
     // 3. Resolve role & authorization

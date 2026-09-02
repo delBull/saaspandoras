@@ -166,7 +166,7 @@ export function UnifiedOnboardingClient() {
       }
 
       toast.success('¡Ecosistema Soberano Aprovisionado con Éxito!', { id: 'prov-toast' });
-      router.push(data.redirectUrl || `/portal/${orgSlug}/ecosystem`);
+      router.push(data.redirectUrl || `/ecosystem/${orgSlug}`);
     } catch (err: any) {
       console.error('Provisioning error:', err);
       toast.error(err.message || 'Fallo durante el aprovisionamiento', { id: 'prov-toast' });

@@ -45,7 +45,7 @@ describe('🚀 Phase 8.1 — Unified Product-Aware Tenant Provisioning Certifica
     expect(res.installedProducts.some((p) => p.productFamily === 'HERMES')).toBe(true);
     expect(res.installedProducts.some((p) => p.productFamily === 'GROWTH_OS')).toBe(true);
     expect(res.installedProducts.some((p) => p.productFamily === 'CAPITAL')).toBe(true);
-    expect(res.redirectUrl).toBe(`/portal/${uniqueSlug}/ecosystem`);
+    expect(res.redirectUrl).toBe(`/ecosystem/${uniqueSlug}`);
   });
 
   it('ONBOARD-02: Slug Sanitization handles special characters and enforces clean formatting', () => {

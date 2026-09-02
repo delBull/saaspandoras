@@ -72,8 +72,8 @@ export default async function GrowthOverviewPage({ params }: { params: Promise<{
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href={`/portal/${slugId}/ecosystem`}
-              className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all backdrop-blur-sm"
+              href={`/ecosystem/${slugId}`}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30 text-xs font-semibold transition-all shadow-sm group backdrop-blur-sm"
             >
               <Layers className="w-4 h-4 text-zinc-400" />
               Sovereign Mesh Hub

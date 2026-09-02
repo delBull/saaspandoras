@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import type { PortalOrganization } from '@/lib/portal/portal-types';
-import { Layers, Bot, Rocket, Landmark, ExternalLink, ShieldCheck, LogOut } from 'lucide-react';
+import { Layers, Bot, Rocket, Landmark, ShieldCheck, LogOut } from 'lucide-react';
 
 interface EcosystemHeaderProps {
   organization: PortalOrganization;
@@ -69,7 +69,7 @@ export function EcosystemHeader({ organization, organizationSlug }: EcosystemHea
         </div>
         <button
           onClick={handleLogout}
-          className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors"
+          className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
           title="Cerrar Sesión"
         >
           <LogOut className="w-4 h-4" />

@@ -162,7 +162,7 @@ export class TenantProvisioningService {
             plan: p.plan,
             status: p.status,
           })),
-          redirectUrl: `/portal/${cleanSlug}/ecosystem`,
+          redirectUrl: `/ecosystem/${cleanSlug}`,
           isIdempotentReplay: true,
         };
       }
@@ -276,7 +276,7 @@ export class TenantProvisioningService {
           status: p.status,
           trialEndsAt,
         })),
-        redirectUrl: `/portal/${cleanSlug}/ecosystem`,
+        redirectUrl: `/ecosystem/${cleanSlug}`,
         isIdempotentReplay: false,
       };
     } catch (err) {

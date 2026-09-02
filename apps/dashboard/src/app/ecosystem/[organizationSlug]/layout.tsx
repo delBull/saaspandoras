@@ -1,8 +1,8 @@
 import React from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { EcosystemHeader } from './components/EcosystemHeader';
-import { EcosystemFooter } from './components/EcosystemFooter';
+import { EcosystemHeader } from '@/components/ecosystem/EcosystemHeader';
+import { EcosystemFooter } from '@/components/ecosystem/EcosystemFooter';
 
 export const dynamic = 'force-dynamic';
 

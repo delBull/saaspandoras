@@ -15,9 +15,9 @@ import { getAuth, isAdmin } from '@/lib/auth';
 import { headers as nextHeaders } from 'next/headers';
 
 const TOKEN_EXPIRY_HOURS = 24;
-const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'https://pandoras.finance';
+const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_MARKETING_URL || process.env.NEXT_PUBLIC_LANDING_URL || 'https://pandoras.finance';
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || 'marco.munoz9@gmail.com')
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
   .toLowerCase()
   .split(',')
   .map((e) => e.trim());
