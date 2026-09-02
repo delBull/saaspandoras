@@ -17,6 +17,7 @@ import { PortalInspector } from '@/components/hermes-portal/PortalInspector';
 import { HermesTerminalBar } from '@/components/hermes-portal/HermesTerminalBar';
 import { Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { InspectorProvider } from './InspectorContext';
 
 interface PortalShellProps {
   context: PortalContext;
@@ -60,7 +61,8 @@ export function PortalShell({ context, children }: PortalShellProps) {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="min-h-screen bg-[#08080A] text-white font-sans flex relative overflow-x-hidden">
+    <InspectorProvider>
+      <div className="min-h-screen bg-[#08080A] text-white font-sans flex relative overflow-x-hidden">
       
       {/* Mobile Top Bar */}
       <div className="md:hidden flex items-center justify-between px-4 h-14 bg-[#0C0C12] border-b border-white/[0.08] fixed top-0 w-full z-40 backdrop-blur-md">
@@ -142,5 +144,6 @@ export function PortalShell({ context, children }: PortalShellProps) {
       <HermesTerminalBar sidebarCollapsed={desktopCollapsed} />
 
     </div>
+    </InspectorProvider>
   );
 }

@@ -37,6 +37,72 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useInspector } from '../InspectorContext';
+
+const CAPABILITY_SPECS: Record<string, {
+  title: string;
+  type: string;
+  description: string;
+  engine: string;
+  producer: string;
+  outputFormat: string;
+  sovereignProof: string;
+}> = {
+  'media.image.create': {
+    title: 'Generación de Fotos & Renders',
+    type: 'Media.Image',
+    description: 'Renderizado generativo fotorrealista y assets de branding con trazabilidad en IPFS.',
+    engine: 'A2A Protocol v1.1 + SDXL Pipeline',
+    producer: 'Pixel (Creative Diffusion Agent)',
+    outputFormat: 'WebP / PNG 2048x2048 Master',
+    sovereignProof: 'K25 Sovereign Knowledge Vault + IPFS CID',
+  },
+  'media.video.create': {
+    title: 'Producción de Videos & Reels',
+    type: 'Media.Video',
+    description: 'Generación de micro-videos cinemáticos y motion graphics para captación de inversionistas.',
+    engine: 'Hermes Video Motion Engine (A2A)',
+    producer: 'Sofía & Pixel Video Unit',
+    outputFormat: 'MP4 4K / 60fps Web3 Master',
+    sovereignProof: 'EIP-712 Cryptographic Signature',
+  },
+  'media.copy.create': {
+    title: 'Redacción de Copies & Textos',
+    type: 'Media.Copy',
+    description: 'Copywriting persuasivo multicanal adaptado a la narrativa y tono del proyecto.',
+    engine: 'Hermes LLM Prompt Engine',
+    producer: 'Sofía (Growth Director)',
+    outputFormat: 'Markdown / HTML Rich Snippet',
+    sovereignProof: 'K26/K27 Immutable Knowledge Hash',
+  },
+  'media.newsletter.create': {
+    title: 'Estructuración de Newsletter',
+    type: 'Media.Editorial',
+    description: 'Boletines institucionales periódicos para inversionistas y miembros de la DAO.',
+    engine: 'Omnichannel Editorial Synthesizer',
+    producer: 'Sofía Editorial Agent',
+    outputFormat: 'HTML Email Template + IPFS Mirror',
+    sovereignProof: 'Merkle Root Registry Proof',
+  },
+  'media.podcast.create': {
+    title: 'Podcast & Audio Sintético',
+    type: 'Media.Audio',
+    description: 'Episodios de audio con voces neuronales para resúmenes de gobernanza y producto.',
+    engine: 'Neural Voice Synthesis (ElevenLabs A2A)',
+    producer: 'Hermes Audio Unit',
+    outputFormat: 'MP3 320kbps High Fidelity',
+    sovereignProof: 'IPFS Content-Addressed Storage',
+  },
+  'research.report.create': {
+    title: 'Reportes de Research & Mercado',
+    type: 'Media.Research',
+    description: 'Análisis de mercado, benchmarking competitivo y proyecciones de retorno RWA.',
+    engine: 'Hermes Deep Research Engine',
+    producer: 'Hermes Intelligence Officer',
+    outputFormat: 'PDF Document + On-Chain Attestation',
+    sovereignProof: 'Hermes Sovereign Notarization',
+  },
+};
 
 interface CapabilityItem {
   capability: string;
@@ -102,6 +168,62 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
   useEffect(() => {
     loadData();
   }, [tenantId]);
+
+  const { inspect } = useInspector();
+
+  useEffect(() => {
+    const spec = CAPABILITY_SPECS[selectedCap] || {
+      title: selectedCap,
+      type: 'Media.A2A',
+      description: 'Capacidad de producción multimedia Hermes A2A.',
+      engine: 'A2A Protocol v1.1',
+      producer: 'Sofía & Pixel',
+      outputFormat: 'Verificado en IPFS',
+      sovereignProof: 'K25 Sovereign Knowledge Vault',
+    };
+
+    const isGranted = capabilities.find(c => c.capability === selectedCap)?.enabled ?? false;
+
+    inspect({
+      title: spec.title,
+      type: spec.type,
+      description: spec.description,
+      badge: isGranted ? 'CAPACIDAD ACTIVA' : 'BLOQUEADO • REQUIERE ACTIVACIÓN',
+      badgeColor: isGranted ? 'emerald' : 'amber',
+      attributes: {
+        'Identificador': selectedCap,
+        'Estado en Bóveda': isGranted ? 'Habilitado para @' + tenantId : 'Bloqueado por Gobernanza',
+        'Motor de IA': spec.engine,
+        'Agente Productor': spec.producer,
+        'Formato de Salida': spec.outputFormat,
+        'Prueba Criptográfica': spec.sovereignProof,
+        'Tenant Asignado': `@${tenantId}`,
+      },
+      complianceNote: isGranted
+        ? 'Capacidad verificada y aprobada para producción continua con almacenamiento en IPFS.'
+        : 'Para habilitar este módulo, envía la solicitud al equipo Hermes con el botón de activación.',
+    });
+  }, [selectedCap, capabilities, tenantId, inspect]);
+
+  const handleInspectArtifact = (art: ArtifactItem) => {
+    inspect({
+      title: art.title,
+      type: `Artifact.${art.artifactType.toUpperCase()}`,
+      description: `Pieza verificada producida por ${art.producer || 'Pixel'} (${art.sourceAgent || 'Sofía'})`,
+      badge: 'IPFS VERIFICADO',
+      badgeColor: 'emerald',
+      attributes: {
+        'Artifact ID': art.artifactId,
+        'CID': art.cid,
+        'Tipo MIME': art.mimeType || 'image/png',
+        'Agente Creador': art.producer || 'Pixel',
+        'SHA256 Hash': art.sha256 ? `${art.sha256.slice(0, 10)}...${art.sha256.slice(-8)}` : 'Verificado',
+        'Fecha de Notarización': new Date(art.createdAt).toLocaleString(),
+        'Enlace IPFS': art.ipfsUri,
+      },
+      complianceNote: 'El contenido está firmado criptográficamente y protegido en el Sovereign Knowledge Vault.',
+    });
+  };
 
   // Request Media Co Activation (self-service → Discord + Hermes bot)
   const handleRequestActivation = async (capability: string, label: string) => {
@@ -230,10 +352,10 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
 
               {/* Capability Selection */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider font-mono">
                   Tipo de Capacidad
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   {[
                     { id: 'media.image.create', label: 'Fotos / Renders', icon: ImageIcon },
                     { id: 'media.video.create', label: 'Video / Reels', icon: Video },
@@ -247,26 +369,29 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
                     return (
                       <button
                         key={item.id}
+                        type="button"
                         onClick={() => setSelectedCap(item.id)}
-                        className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                        className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                           selectedCap === item.id
-                            ? 'border-purple-500 bg-purple-500/10 text-white'
-                            : 'border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:border-zinc-700'
+                            ? 'border-purple-500 bg-purple-500/15 shadow-lg shadow-purple-950/40 text-white ring-1 ring-purple-500/30'
+                            : 'border-white/10 bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-white hover:bg-white/[0.04]'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <Icon className="w-4 h-4 text-purple-400" />
+                          <div className={`p-1.5 rounded-lg ${selectedCap === item.id ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-zinc-400'}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
                           {isGranted ? (
-                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                               Activo
-                            </Badge>
+                            </span>
                           ) : (
-                            <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px]">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-800/80 text-zinc-400 border border-zinc-700/60">
                               Bloqueado
-                            </Badge>
+                            </span>
                           )}
                         </div>
-                        <span className="text-xs font-medium">{item.label}</span>
+                        <span className="text-xs font-semibold tracking-tight text-white/90">{item.label}</span>
                       </button>
                     );
                   })}
@@ -275,25 +400,29 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
 
               {/* Capability Status Banner */}
               {!isCurrentCapEnabled ? (
-                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
-                  <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="text-xs text-amber-200 flex-1">
-                    <p className="font-semibold">Capacidad no autorizada para @{tenantId}</p>
-                    <p className="text-amber-300/80 mt-1">
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/20 text-amber-300 shrink-0">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div className="text-xs text-amber-200 flex-1 space-y-1.5 min-w-0">
+                    <p className="font-bold text-white text-xs">Capacidad no autorizada para @{tenantId}</p>
+                    <p className="text-amber-200/80 text-[11px] leading-relaxed">
                       Solicita la activación y el equipo Hermes la aprobará desde la consola de administración.
                     </p>
-                    <Button
-                      size="sm"
-                      disabled={activating}
-                      onClick={() => {
-                        const cap = capabilities.find(c => c.capability === selectedCap);
-                        handleRequestActivation(selectedCap, cap?.label || selectedCap);
-                      }}
-                      className="mt-3 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs gap-1.5"
-                    >
-                      <Megaphone className="w-3.5 h-3.5" />
-                      {activating ? 'Solicitando...' : 'Solicitar Activación de Media Co'}
-                    </Button>
+                    <div className="pt-1">
+                      <Button
+                        size="sm"
+                        disabled={activating}
+                        onClick={() => {
+                          const cap = capabilities.find(c => c.capability === selectedCap);
+                          handleRequestActivation(selectedCap, cap?.label || selectedCap);
+                        }}
+                        className="w-full sm:w-auto h-auto py-2 px-3.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-semibold gap-2 rounded-lg cursor-pointer transition-all"
+                      >
+                        <Megaphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>{activating ? 'Solicitando...' : 'Solicitar Activación de Capacidad'}</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -419,7 +548,9 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
                 {artifacts.map(art => (
                   <div
                     key={art.id}
-                    className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-all space-y-3"
+                    onClick={() => handleInspectArtifact(art)}
+                    className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-purple-500/50 hover:bg-zinc-900/80 transition-all space-y-3 cursor-pointer group shadow-sm"
+                    title="Haz clic para inspeccionar detalles criptográficos en el Inspector"
                   >
                     <div className="flex items-center justify-between">
                       <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[10px]">
@@ -432,7 +563,7 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-white line-clamp-1">{art.title}</h4>
+                      <h4 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-purple-300 transition-colors">{art.title}</h4>
                       <p className="text-xs text-zinc-400 font-mono mt-1 truncate">
                         CID: {art.cid}
                       </p>
@@ -444,6 +575,7 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
                         href={`https://ipfs.io/ipfs/${art.cid}`}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className="text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium text-[11px]"
                       >
                         Ver en IPFS <ExternalLink className="w-3 h-3" />

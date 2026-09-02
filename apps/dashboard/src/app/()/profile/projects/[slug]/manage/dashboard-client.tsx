@@ -177,7 +177,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
       : 'EVM Sovereign Network';
 
   return (
-    <div className="h-screen w-screen bg-[#050505] text-zinc-300 font-sans flex flex-col overflow-hidden select-none selection:bg-indigo-500/20 selection:text-indigo-300">
+    <div className="fixed inset-0 bg-[#050505] text-zinc-300 font-sans flex flex-col overflow-hidden select-none selection:bg-indigo-500/20 selection:text-indigo-300 z-20">
       {/* ── TOP NAVBAR (FULL WIDTH HEADER) ── */}
       <header className="h-12 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-xs font-mono z-30 backdrop-blur-xl">
         {/* Left: Brand Identity & Tenant */}

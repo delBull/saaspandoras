@@ -119,24 +119,28 @@ function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: strin
 }
 
 async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: string, orgId?: string): Promise<OrganizationOnboardingState> {
-  const rows = await db
-    .select()
-    .from(portalOnboardingState)
-    .where(
-      or(
-        eq(portalOnboardingState.tenantId, tenantId),
-        eq(portalOnboardingState.tenantId, orgSlug),
-        ...(orgId ? [eq(portalOnboardingState.tenantId, orgId)] : [])
+  try {
+    const rows = await db
+      .select()
+      .from(portalOnboardingState)
+      .where(
+        or(
+          eq(portalOnboardingState.tenantId, tenantId),
+          eq(portalOnboardingState.tenantId, orgSlug),
+          ...(orgId ? [eq(portalOnboardingState.tenantId, orgId)] : [])
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  const existing = rows[0];
-  if (existing) {
-    return {
-      stage: existing.stage as OnboardingStage,
-      messages: (existing.messages ?? []) as PortalChatMessage[]
-    };
+    const existing = rows[0];
+    if (existing) {
+      return {
+        stage: existing.stage as OnboardingStage,
+        messages: (existing.messages ?? []) as PortalChatMessage[]
+      };
+    }
+  } catch (err) {
+    console.warn('[loadOrCreateState] query notice:', err);
   }
 
   const initial = getTopicInitialMessage('general', orgName, orgSlug);
@@ -145,30 +149,38 @@ async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: str
     messages: [initial]
   };
 
-  await db.insert(portalOnboardingState).values({
-    tenantId,
-    stage: initialState.stage,
-    messages: initialState.messages as unknown as object
-  });
+  try {
+    await db.insert(portalOnboardingState).values({
+      tenantId,
+      stage: initialState.stage,
+      messages: initialState.messages as unknown as object
+    });
+  } catch (err) {
+    console.warn('[loadOrCreateState] insert notice:', err);
+  }
   return initialState;
 }
 
 async function saveState(tenantId: string, state: OrganizationOnboardingState): Promise<void> {
-  await db
-    .insert(portalOnboardingState)
-    .values({
-      tenantId,
-      stage: state.stage,
-      messages: state.messages as unknown as object
-    })
-    .onConflictDoUpdate({
-      target: portalOnboardingState.tenantId,
-      set: {
+  try {
+    await db
+      .insert(portalOnboardingState)
+      .values({
+        tenantId,
         stage: state.stage,
-        messages: state.messages as unknown as object,
-        updatedAt: new Date()
-      }
-    });
+        messages: state.messages as unknown as object
+      })
+      .onConflictDoUpdate({
+        target: portalOnboardingState.tenantId,
+        set: {
+          stage: state.stage,
+          messages: state.messages as unknown as object,
+          updatedAt: new Date()
+        }
+      });
+  } catch (err) {
+    console.warn('[saveState] update notice:', err);
+  }
 }
 
 export async function GET(request: Request) {
@@ -192,42 +204,54 @@ export async function GET(request: Request) {
     const conversationId = `portal_${tenantSlug}_${topicId}`;
 
     // 0. Fetch actual onboarding stage from portalOnboardingState
-    const onboardingRows = await db
-      .select({ stage: portalOnboardingState.stage })
-      .from(portalOnboardingState)
-      .where(
-        or(
-          eq(portalOnboardingState.tenantId, tenantSlug),
-          eq(portalOnboardingState.tenantId, orgId),
-          eq(portalOnboardingState.tenantId, organizationSlug),
-          eq(portalOnboardingState.tenantId, String(context.organization.projectId))
+    let currentStage: OnboardingStage = 'BUSINESS_DISCOVERY';
+    try {
+      const onboardingRows = await db
+        .select({ stage: portalOnboardingState.stage })
+        .from(portalOnboardingState)
+        .where(
+          or(
+            eq(portalOnboardingState.tenantId, tenantSlug),
+            eq(portalOnboardingState.tenantId, orgId),
+            eq(portalOnboardingState.tenantId, organizationSlug),
+            eq(portalOnboardingState.tenantId, String(context.organization.projectId))
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    const currentStage: OnboardingStage = (onboardingRows[0]?.stage as OnboardingStage) || 'BUSINESS_DISCOVERY';
+      if (onboardingRows[0]?.stage) {
+        currentStage = onboardingRows[0].stage as OnboardingStage;
+      }
+    } catch (err) {
+      console.warn('[Portal Messages GET] onboardingRows fallback:', err);
+    }
 
     const isKnownSnarai = tenantSlug === 'snarai' || orgName.toLowerCase().includes('narai');
 
     // 1. Fetch persisted messages from hermesConversationMessages
-    const dbMessages = await db
-      .select()
-      .from(hermesConversationMessages)
-      .where(
-        and(
-          or(
-            eq(hermesConversationMessages.organizationId, tenantSlug),
-            eq(hermesConversationMessages.organizationId, orgId),
-            ...(isKnownSnarai ? [eq(hermesConversationMessages.organizationId, 'snarai')] : [])
-          ),
-          or(
-            eq(hermesConversationMessages.conversationId, conversationId),
-            eq(hermesConversationMessages.conversationId, `portal_${orgId}_${topicId}`),
-            ...(topicId === 'general' ? [eq(hermesConversationMessages.conversationId, `portal_${orgId}`)] : [])
+    let dbMessages: any[] = [];
+    try {
+      dbMessages = await db
+        .select()
+        .from(hermesConversationMessages)
+        .where(
+          and(
+            or(
+              eq(hermesConversationMessages.organizationId, tenantSlug),
+              eq(hermesConversationMessages.organizationId, orgId),
+              ...(isKnownSnarai ? [eq(hermesConversationMessages.organizationId, 'snarai')] : [])
+            ),
+            or(
+              eq(hermesConversationMessages.conversationId, conversationId),
+              eq(hermesConversationMessages.conversationId, `portal_${orgId}_${topicId}`),
+              ...(topicId === 'general' ? [eq(hermesConversationMessages.conversationId, `portal_${orgId}`)] : [])
+            )
           )
         )
-      )
-      .orderBy(asc(hermesConversationMessages.sequence));
+        .orderBy(asc(hermesConversationMessages.sequence));
+    } catch (err) {
+      console.warn('[Portal Messages GET] dbMessages fallback:', err);
+    }
 
     if (dbMessages.length > 0) {
       const mappedMessages: PortalChatMessage[] = dbMessages.map(m => ({

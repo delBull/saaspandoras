@@ -15,12 +15,32 @@ export function resolveApiBaseUrl(): string {
 export async function getServerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window !== 'undefined') return {};
   try {
-    const { cookies } = await import('next/headers');
+    const { cookies, headers } = await import('next/headers');
     const cookieStore = await cookies();
+    const reqHeaders = await headers();
+
+    const headersToSend: Record<string, string> = {};
+    const cookieParts: string[] = [];
+
     const sessionCookie = cookieStore.get('pandoras_portal_session')?.value;
-    if (sessionCookie) {
-      return { cookie: `pandoras_portal_session=${sessionCookie}` };
+    if (sessionCookie) cookieParts.push(`pandoras_portal_session=${sessionCookie}`);
+
+    const walletCookie = cookieStore.get('wallet-address')?.value || cookieStore.get('thirdweb:wallet-address')?.value;
+    if (walletCookie) {
+      cookieParts.push(`wallet-address=${walletCookie}`);
+      headersToSend['x-wallet-address'] = walletCookie;
     }
+
+    const clientWallet = reqHeaders.get('x-wallet-address') || reqHeaders.get('x-thirdweb-address');
+    if (clientWallet) {
+      headersToSend['x-wallet-address'] = clientWallet;
+    }
+
+    if (cookieParts.length > 0) {
+      headersToSend['cookie'] = cookieParts.join('; ');
+    }
+
+    return headersToSend;
   } catch {
     // Ignored in client components or test contexts
   }

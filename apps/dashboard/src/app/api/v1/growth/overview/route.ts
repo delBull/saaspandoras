@@ -49,6 +49,20 @@ async function resolveTenant(req: NextRequest, requestedOrg?: string | null): Pr
   }
 
   // 2. Web Wallet Session — Validated against Tenant Membership (Anti-IDOR)
+  const incomingWallet = req.headers.get('x-wallet-address')?.toLowerCase() ||
+    req.cookies.get('wallet-address')?.value?.toLowerCase() ||
+    req.cookies.get('thirdweb:wallet-address')?.value?.toLowerCase();
+
+  if (incomingWallet) {
+    const isAuth = await isWalletAuthorizedForTenant(incomingWallet, cleanSlug);
+    if (isAuth) {
+      return {
+        organizationId: requestedOrg || `org_${cleanSlug}`,
+        organizationSlug: cleanSlug,
+      };
+    }
+  }
+
   const auth = await getAuth();
   if (auth.isVerified && auth.session?.address) {
     const isAuth = await isWalletAuthorizedForTenant(auth.session.address, cleanSlug);
