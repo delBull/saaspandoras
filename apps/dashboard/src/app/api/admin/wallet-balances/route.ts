@@ -13,7 +13,7 @@ const MONITORED_WALLETS = [
   },
   {
     label: 'Oracle',
-    address: '0xc52BB6f53C91ff7134e7508B102E5A22BA415954',
+    address: process.env.PANDORA_ORACLE_ADDRESS || process.env.PANDORAS_ADMIN_WALLET || '0xc52BB6f53C91ff7134e7508B102E5A22BA415954',
     description: 'Oracle principal del protocolo',
     icon: '🔮',
   },

@@ -11,7 +11,7 @@ import { sendPaymentNotification } from "@/lib/discord/notifier";
 // USDC addresses (native) per chain
 const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-const MERCHANT_WALLET = "0xc52BB6f53C91ff7134e7508B102E5A22BA415954";
+const MERCHANT_WALLET = (process.env.PANDORAS_ADMIN_WALLET || "0xc52BB6f53C91ff7134e7508B102E5A22BA415954").toLowerCase();
 
 const ERC20_TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 

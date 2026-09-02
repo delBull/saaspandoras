@@ -14,6 +14,13 @@ describe('💳 HERMES TENANT BILLING & DEPOSIT SUITE', () => {
     ).rejects.toThrow('El monto mínimo de recarga es de $5.00 USD');
   });
 
+  it('TB-0: New tenant initializes with $5.00 USD Sandbox courtesy test balance', async () => {
+    const testTenant = `billing_new_${Date.now()}`;
+    const credits = await TenantCreditLedgerService.getOrCreateCredits(testTenant);
+    expect(credits.sandboxBalanceUsd).toBe(5.0);
+    expect(credits.creditBalanceUsd).toBe(0.0);
+  });
+
   it('TB-2: Acredits deposit to Sandbox balance and isolates from production', async () => {
     const testTenant = `billing_sandbox_${Date.now()}`;
     const result = await TenantBillingService.processDeposit({
@@ -27,13 +34,13 @@ describe('💳 HERMES TENANT BILLING & DEPOSIT SUITE', () => {
     expect(result.ok).toBe(true);
     expect(result.isSandbox).toBe(true);
     expect(result.amountCreditedUsd).toBe(10.0);
-    expect(result.newBalanceUsd).toBe(10.0);
+    expect(result.newBalanceUsd).toBe(15.0); // 5.0 courtesy + 10.0 deposit
     expect(result.platformCommissionUsd).toBeGreaterThan(0);
     expect(result.treasuryWallet).toBeDefined();
 
     // Verify through ledger service
     const credits = await TenantCreditLedgerService.getOrCreateCredits(testTenant);
-    expect(credits.sandboxBalanceUsd).toBe(10.0);
+    expect(credits.sandboxBalanceUsd).toBe(15.0);
     expect(credits.creditBalanceUsd).toBe(0); // Production untouched
   });
 
@@ -58,7 +65,7 @@ describe('💳 HERMES TENANT BILLING & DEPOSIT SUITE', () => {
     // Verify through ledger service
     const credits = await TenantCreditLedgerService.getOrCreateCredits(testTenant);
     expect(credits.creditBalanceUsd).toBe(25.0);
-    expect(credits.sandboxBalanceUsd).toBe(0); // Sandbox untouched
+    expect(credits.sandboxBalanceUsd).toBe(5.0); // Courtesy sandbox untouched
   });
 
   it('TB-4: Resolves configured Pandoras treasury wallet', () => {

@@ -1082,7 +1082,7 @@ interface WalletInfo {
 }
 
 const OPERATION_WALLETS: WalletInfo[] = [
-  { address: "0xc52BB6f53C91ff7134e7508B102E5A22BA415954", label: "Admin Wallet", description: "Admin general del protocolo y fee collector" },
+  { address: process.env.NEXT_PUBLIC_PANDORAS_ADMIN_WALLET || "0xc52BB6f53C91ff7134e7508B102E5A22BA415954", label: "Admin Wallet", description: "Admin general del protocolo y fee collector" },
   { address: "0x5aeaE3D13F480a4231dD09D873f5A094424A2ed6", label: "Deployer Wallet", description: "Firma y despliegue de contratos SCaaS desde el dashboard" },
   { address: "0xaBA8a0d027FbaFa7316fBc08C5f4F2a78Be4f0E9", label: "Oracle 2", description: "Oráculo de allowances y operaciones diarias del protocolo" },
   { address: "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9", label: "Super Admin / Fee", description: "Super admin multisig, swap fees y резерв" },

@@ -79,7 +79,7 @@ export function DeploymentConfigModal({
         teamAllocationBps: 1500, // 15% default
         pandorasAllocationBps: 500, // 5% default
         teamWallet: applicantWalletAddress || '',
-        pandorasWallet: '0xc52BB6f53C91ff7134e7508B102E5A22BA415954', // Default Pandoras Treasury
+        pandorasWallet: process.env.NEXT_PUBLIC_PANDORAS_ADMIN_WALLET || '0xc52BB6f53C91ff7134e7508B102E5A22BA415954', // Default Pandoras Treasury
     });
     const [economicSchedule, setEconomicSchedule] = useState({
         phase1APY: 500,
@@ -127,7 +127,7 @@ export function DeploymentConfigModal({
                 teamAllocationBps: 1500, // 15% default
                 pandorasAllocationBps: 500, // 5% default
                 teamWallet: applicantWalletAddress || '',
-                pandorasWallet: '0xc52BB6f53C91ff7134e7508B102E5A22BA415954', // Default Pandoras Treasury
+                pandorasWallet: process.env.NEXT_PUBLIC_PANDORAS_ADMIN_WALLET || '0xc52BB6f53C91ff7134e7508B102E5A22BA415954', // Default Pandoras Treasury
             });
             setEconomicSchedule({ phase1APY: 500, phase2APY: 1000, phase3APY: 2000, royaltyBPS: 500 });
             setPackages([]);
