@@ -250,6 +250,19 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                   </div>
                   <ExternalLink className="w-3 h-3 text-indigo-400/70" />
                 </Link>
+                <a
+                  href={project.whitepaper_url || "/whitepaper"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-zinc-400 text-xs font-medium hover:text-white transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-zinc-400" />
+                    <span>Documentación & Docs</span>
+                  </div>
+                  <ExternalLink className="w-3 h-3 text-zinc-500" />
+                </a>
               </div>
             </nav>
           </div>
@@ -340,6 +353,18 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
               </div>
               <ExternalLink className="w-3 h-3 text-indigo-400/70 shrink-0" />
             </Link>
+            <a
+              href={project.whitepaper_url || "/whitepaper"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 text-zinc-400 hover:text-white transition-all text-xs font-medium"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <FileText className="w-4 h-4 text-zinc-400 shrink-0" />
+                <span className="truncate">Documentación & Docs</span>
+              </div>
+              <ExternalLink className="w-3 h-3 text-zinc-500 shrink-0" />
+            </a>
           </div>
         </nav>
 
