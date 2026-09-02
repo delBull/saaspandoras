@@ -42,7 +42,7 @@ export function PortalShell({ context, children }: PortalShellProps) {
   };
   
   // Inspector is hidden on the Overview page so the Hermes Intelligence Chat can take its place
-  const isOverview = pathname === `/portal/${context.organization.slug}`;
+  const isOverview = pathname === `/portal/${context.organization.slug}` || pathname === `/portal/${context.organization.slug}/overview`;
 
   // Mobile drawer: Escape-to-close + body scroll-lock while the slide-over is open
   useEffect(() => {

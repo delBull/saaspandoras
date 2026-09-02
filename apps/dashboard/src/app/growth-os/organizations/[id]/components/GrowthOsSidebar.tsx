@@ -164,7 +164,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside
-        className={`hidden md:flex flex-col shrink-0 bg-[#050505] border-r border-white/10 text-zinc-300 transition-all duration-300 backdrop-blur-xl ${
+        className={`hidden md:flex flex-col shrink-0 bg-[#050505] border-r border-white/10 text-zinc-300 transition-all duration-300 backdrop-blur-xl h-full overflow-hidden ${
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -242,10 +242,10 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
         </nav>
 
         {/* Collapse toggle button */}
-        <div className="p-3 border-t border-white/10 flex justify-end">
+        <div className="p-3 border-t border-white/10 flex justify-end shrink-0 bg-[#050505] z-10">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
             title={isCollapsed ? 'Expandir Menú' : 'Colapsar Menú'}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}

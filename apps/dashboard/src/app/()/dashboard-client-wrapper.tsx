@@ -108,6 +108,17 @@ export function DashboardClientWrapper({
   const isBusinessManageRoute = pathname?.startsWith('/profile/projects/') && pathname?.includes('/manage');
   const hideSidebar = (isRoot && !hasAccess) || isBusinessManageRoute;
 
+  // Dedicated sovereign business console bypasses DashboardShell entirely for true edge-to-edge layout
+  if (isBusinessManageRoute) {
+    return (
+      <TokenPriceProvider>
+        <TermsModalProvider>
+          {children}
+        </TermsModalProvider>
+      </TokenPriceProvider>
+    );
+  }
+
   return (
     <TokenPriceProvider>
       <TermsModalProvider>

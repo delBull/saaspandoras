@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Rocket, Shield, Activity } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 
 interface GrowthOsFooterProps {
   slugId: string;
@@ -9,7 +9,7 @@ interface GrowthOsFooterProps {
 
 export function GrowthOsFooter({ slugId }: GrowthOsFooterProps) {
   return (
-    <footer className="h-10 bg-[#060608] border-t border-white/10 flex items-center justify-between px-4 sm:px-6 fixed bottom-0 left-0 right-0 z-20 text-[11px] font-mono text-zinc-500 backdrop-blur-md">
+    <footer className="h-10 bg-[#060608] border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 text-[11px] font-mono text-zinc-500 backdrop-blur-md select-none">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1.5 text-zinc-400">
           <Rocket className="w-3.5 h-3.5 text-violet-400" />

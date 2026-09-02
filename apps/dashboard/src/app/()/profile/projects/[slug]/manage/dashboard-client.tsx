@@ -22,7 +22,7 @@ import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { NetworkTab } from './tabs/NetworkTab';
 import { ProtocolSandboxPreviewModal } from '@/components/projects/ProtocolSandboxPreviewModal';
-import { useActiveAccount, useDisconnect } from 'thirdweb/react';
+import { useActiveAccount, useDisconnect, useActiveWallet } from 'thirdweb/react';
 import {
   Layers,
   Bot,
@@ -83,6 +83,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
   const [govSubTab, setGovSubTab] = useState<'governance' | 'legal'>('governance');
 
   const account = useActiveAccount();
+  const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
 
   const fetchPendingCount = async () => {
@@ -143,6 +144,17 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
     }
   };
 
+  const handleLogout = () => {
+    try {
+      if (wallet) disconnect(wallet);
+    } catch {}
+    document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
+    document.cookie = 'wallet-address=; Max-Age=0; path=/';
+    document.cookie = 'thirdweb:wallet-address=; Max-Age=0; path=/';
+    localStorage.setItem('wallet-logged-out', 'true');
+    window.location.href = '/portal/login';
+  };
+
   const menuItems = [
     { id: 'overview' as MainTab, label: 'Resumen General', icon: BuildingLibraryIcon, short: 'RES' },
     { id: 'network' as MainTab, label: 'Gestores Patrimoniales', icon: UsersIcon, short: 'GES' },
@@ -165,9 +177,9 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
       : 'EVM Sovereign Network';
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans flex flex-col relative overflow-x-hidden selection:bg-indigo-500/20 selection:text-indigo-300">
+    <div className="h-screen w-screen bg-[#050505] text-zinc-300 font-sans flex flex-col overflow-hidden select-none selection:bg-indigo-500/20 selection:text-indigo-300">
       {/* ── TOP NAVBAR (FULL WIDTH HEADER) ── */}
-      <header className="h-12 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-xs font-mono z-30 sticky top-0 backdrop-blur-xl">
+      <header className="h-12 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-xs font-mono z-30 backdrop-blur-xl">
         {/* Left: Brand Identity & Tenant */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
@@ -246,6 +258,13 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
             <Cog6ToothIcon className="w-4 h-4" />
           </button>
           <button
+            onClick={handleLogout}
+            className="p-1.5 rounded-lg text-white/30 hover:text-white/80 hover:bg-white/[0.06] transition-all cursor-pointer"
+            title="Cerrar Sesión"
+          >
+            <LogOut size={14} />
+          </button>
+          <button
             onClick={() => setIsMobileDrawerOpen(true)}
             className="md:hidden p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06]"
           >
@@ -255,10 +274,10 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
       </header>
 
       {/* ── WORKSPACE CORE (SIDEBAR + MAIN CONTENT) ── */}
-      <div className="flex-1 flex flex-row min-w-0 pb-12">
+      <div className="flex-1 flex flex-row min-w-0 overflow-hidden relative">
         {/* DESKTOP COLLAPSIBLE SIDEBAR */}
         <aside
-          className={`hidden md:flex flex-col shrink-0 bg-[#09090C] border-r border-white/10 select-none transition-all duration-300 ${
+          className={`hidden md:flex flex-col shrink-0 bg-[#09090C] border-r border-white/10 select-none transition-all duration-300 h-full overflow-hidden ${
             isSidebarCollapsed ? 'w-16 items-center' : 'w-60 items-start px-3'
           }`}
         >
@@ -371,9 +390,9 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
         )}
 
         {/* RIGHT MAIN CONTENT AREA */}
-        <main className="flex-1 flex flex-col min-w-0 px-4 sm:px-6 lg:px-8 py-6 space-y-6 overflow-y-auto">
+        <main className="flex-1 h-full overflow-y-auto min-w-0 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           {/* Active Tab Viewport */}
-          <div className="min-h-[500px]">
+          <div className="min-h-[500px] pb-10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -477,7 +496,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
       </div>
 
       {/* ── BOTTOM FOOTBAR (TERMINAL STATUS BAR) ── */}
-      <footer className="h-10 bg-[#07070A] border-t border-white/10 flex items-center justify-between px-4 sm:px-6 fixed bottom-0 left-0 right-0 z-30 text-[11px] font-mono text-zinc-500 backdrop-blur-md">
+      <footer className="h-10 bg-[#07070A] border-t border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 text-[11px] font-mono text-zinc-500 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-zinc-400">
             <Shield className="w-3.5 h-3.5 text-indigo-400" />

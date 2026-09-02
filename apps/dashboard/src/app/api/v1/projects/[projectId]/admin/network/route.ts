@@ -38,23 +38,33 @@ async function handlerGet(
 
         const projectIdNum = project.id;
 
-        const network = await db.query.ambassadors.findMany({
-            where: eq(ambassadors.projectId, projectIdNum),
-            with: {
-                manager: {
-                    columns: {
-                        fullName: true,
-                        referralCode: true,
+        let network: any[] = [];
+        try {
+            network = await db.query.ambassadors.findMany({
+                where: eq(ambassadors.projectId, projectIdNum),
+                with: {
+                    manager: {
+                        columns: {
+                            fullName: true,
+                            referralCode: true,
+                        }
                     }
                 }
+            });
+        } catch (dbErr) {
+            console.warn('[Network API] Falling back to basic ambassadors query:', dbErr);
+            try {
+                network = await db.select().from(ambassadors).where(eq(ambassadors.projectId, projectIdNum));
+            } catch {
+                network = [];
             }
-        });
+        }
 
         return NextResponse.json({
             network,
             rates: {
                 ambassadorCommissionRate: project.ambassadorCommissionRate || "4.00",
-                managerCommissionRate: project.managerCommissionRate || "3.00",
+                managerCommissionRate: project.managerCommissionRate || "4.00",
             }
         });
     } catch (error) {

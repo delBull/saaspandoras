@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Rocket, Layers, Bot, Landmark, ShieldCheck, Zap } from 'lucide-react';
+import { Rocket, Layers, Bot, Landmark, LogOut } from 'lucide-react';
 
 interface GrowthOsHeaderProps {
   slugId: string;
@@ -10,8 +10,16 @@ interface GrowthOsHeaderProps {
 }
 
 export function GrowthOsHeader({ slugId, orgName }: GrowthOsHeaderProps) {
+  const handleLogout = () => {
+    document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
+    document.cookie = 'wallet-address=; Max-Age=0; path=/';
+    document.cookie = 'thirdweb:wallet-address=; Max-Age=0; path=/';
+    localStorage.setItem('wallet-logged-out', 'true');
+    window.location.href = '/portal/login';
+  };
+
   return (
-    <header className="h-12 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-xs font-mono z-30 sticky top-0 backdrop-blur-xl">
+    <header className="h-12 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-xs font-mono z-30 backdrop-blur-xl">
       {/* Left: Brand Identity & Tenant */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 bg-violet-500/10 px-2.5 py-1 rounded-lg border border-violet-500/20">
@@ -56,11 +64,18 @@ export function GrowthOsHeader({ slugId, orgName }: GrowthOsHeaderProps) {
         </Link>
       </div>
 
-      {/* Right User State */}
+      {/* Right User State & Logout */}
       <div className="flex items-center gap-2.5">
         <div className="px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 rounded-lg text-violet-300 text-[10px] font-mono">
           ⚡ ACQUISITION ACTIVE
         </div>
+        <button
+          onClick={handleLogout}
+          className="p-1.5 rounded-lg text-white/30 hover:text-white/80 hover:bg-white/[0.06] transition-all cursor-pointer"
+          title="Cerrar Sesión"
+        >
+          <LogOut size={14} />
+        </button>
       </div>
     </header>
   );
