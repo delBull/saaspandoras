@@ -22,6 +22,18 @@ import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { NetworkTab } from './tabs/NetworkTab';
 import { ProtocolSandboxPreviewModal } from '@/components/projects/ProtocolSandboxPreviewModal';
+import GovernancePage from '@/components/governance/GovernancePage';
+import { useProfile } from '@/hooks/useProfile';
+import {
+  WalletInfo,
+  WalletSecurity,
+  KycInfo,
+  AddressInfo,
+  AccountStatus,
+  TelegramLinkCard,
+  KycModal,
+} from '@/components/profile';
+import { ReferralShareCard } from '@/components/ReferralShareCard';
 import { useActiveAccount, useDisconnect, useActiveWallet } from 'thirdweb/react';
 import {
   Layers,
@@ -40,6 +52,7 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  Vote,
 } from 'lucide-react';
 
 interface ProjectFounderDashboardProps {
@@ -80,7 +93,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
 
   // Sub-tab states for consolidated views
   const [treasurySubTab, setTreasurySubTab] = useState<'treasury' | 'dao'>('treasury');
-  const [govSubTab, setGovSubTab] = useState<'governance' | 'legal'>('governance');
+  const [govSubTab, setGovSubTab] = useState<'project_gov' | 'pandoras_gov' | 'legal'>('project_gov');
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
@@ -447,20 +460,31 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                 )}
                 {activeTab === 'governance_legal' && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5 w-fit">
+                    <div className="flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5 w-fit flex-wrap">
                       <button
-                        onClick={() => setGovSubTab('governance')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                          govSubTab === 'governance'
+                        onClick={() => setGovSubTab('project_gov')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          govSubTab === 'project_gov'
                             ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
                             : 'text-zinc-400 hover:text-white'
                         }`}
                       >
-                        Gobernanza On-Chain
+                        Gobernanza del Proyecto
+                      </button>
+                      <button
+                        onClick={() => setGovSubTab('pandoras_gov')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          govSubTab === 'pandoras_gov'
+                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                            : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        <Vote className="w-3.5 h-3.5" />
+                        <span>Gobernanza Pandoras OS</span>
                       </button>
                       <button
                         onClick={() => setGovSubTab('legal')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           govSubTab === 'legal'
                             ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
                             : 'text-zinc-400 hover:text-white'
@@ -470,9 +494,33 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                       </button>
                     </div>
 
-                    {govSubTab === 'governance' ? (
+                    {govSubTab === 'project_gov' && (
                       <GovernanceTab address={governorAddress} project={project} />
-                    ) : (
+                    )}
+
+                    {govSubTab === 'pandoras_gov' && (
+                      <div className="space-y-6">
+                        <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold">
+                              <Vote className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-bold text-white">Gobernanza Global de Pandoras OS</h3>
+                              <p className="text-xs text-zinc-400 font-mono">Consenso On-Chain, propuestas y staking del protocolo general</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            DAO ON-CHAIN
+                          </span>
+                        </div>
+                        <div className="border border-white/5 rounded-2xl bg-black/40 p-2 sm:p-4">
+                          <GovernancePage />
+                        </div>
+                      </div>
+                    )}
+
+                    {govSubTab === 'legal' && (
                       <LegalTab project={project} />
                     )}
                   </div>
@@ -561,73 +609,156 @@ function ProfileTab({
   copiedWallet: boolean;
   onOpenPreview: () => void;
 }) {
-  const { disconnect } = useDisconnect();
+  const { profile, isLoading: profileLoading } = useProfile();
+  const [kycModalOpen, setKycModalOpen] = useState(false);
+  const [profileSubTab, setProfileSubTab] = useState<'identity' | 'compliance' | 'security' | 'referrals'>('identity');
 
   return (
     <div className="space-y-6">
-      <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-2xl space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 font-mono text-lg font-bold">
-              {account?.address ? account.address.slice(2, 4).toUpperCase() : 'W'}
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white">Perfil de Operador & Fundador</h3>
-              <p className="text-xs text-zinc-400 font-mono">Consola de Autenticación & Llaves Soberanas</p>
-            </div>
-          </div>
-          <span className="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-            CONECTADO
-          </span>
+      {/* Profile Header & Top Nav */}
+      <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-white/10">
+        <div className="flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5 flex-wrap">
+          <button
+            onClick={() => setProfileSubTab('identity')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              profileSubTab === 'identity'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Identidad & Operador
+          </button>
+          <button
+            onClick={() => setProfileSubTab('compliance')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              profileSubTab === 'compliance'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            KYC & Cumplimiento
+          </button>
+          <button
+            onClick={() => setProfileSubTab('security')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              profileSubTab === 'security'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Seguridad & Telegram
+          </button>
+          <button
+            onClick={() => setProfileSubTab('referrals')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              profileSubTab === 'referrals'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Afiliados & Socios
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
-            <span className="text-xs font-mono text-zinc-400">Dirección de Wallet Activa</span>
-            <div className="flex items-center justify-between">
-              <p className="font-mono text-sm text-white truncate">
-                {account?.address || 'No detectada'}
-              </p>
-              {account?.address && (
-                <button
-                  onClick={onCopyAddress}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
-                  title="Copiar Dirección"
-                >
-                  {copiedWallet ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
-            <span className="text-xs font-mono text-zinc-400">Red Conectada</span>
-            <p className="font-mono text-sm text-emerald-400 font-bold">{chainName}</p>
-          </div>
-        </div>
-
-        {/* Acciones Rápidas */}
-        <div className="pt-4 border-t border-white/5 space-y-3">
-          <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-mono">Herramientas & Simulador</h4>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={onOpenPreview}
-              className="px-4 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl transition-all text-xs font-bold flex items-center gap-2"
-            >
-              <EyeIcon className="w-4 h-4" />
-              Abrir Sandbox Simulator
-            </button>
-            <Link
-              href={`/projects/${project.slug}`}
-              target="_blank"
-              className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white border border-white/10 rounded-xl transition-all text-xs font-bold flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Página Pública del Protocolo
-            </Link>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenPreview}
+            className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <EyeIcon className="w-3.5 h-3.5" />
+            <span>Sandbox Simulator</span>
+          </button>
+          <Link
+            href={`/projects/${project.slug}`}
+            target="_blank"
+            className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white border border-white/10 rounded-xl transition-all text-xs font-bold flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Página Pública</span>
+          </Link>
         </div>
       </div>
+
+      {/* Subtab 1: Identity & Operator */}
+      {profileSubTab === 'identity' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <WalletInfo
+              walletAddress={account?.address}
+              profileWalletAddress={profile?.walletAddress ?? undefined}
+              kycCompleted={profile?.kycCompleted}
+              kycLevel={profile?.kycLevel ?? undefined}
+              onKycModalOpen={() => setKycModalOpen(true)}
+            />
+          </div>
+          <div className="space-y-4">
+            <AccountStatus
+              role={profile?.role || 'OPERATOR'}
+              connectionCount={profile?.connectionCount ?? (profile as any)?.connection_count ?? 1}
+              kycCompleted={profile?.kycCompleted ?? (profile as any)?.kyc_completed ?? false}
+              lastConnectionAt={profile?.lastConnectionAt ?? (profile as any)?.last_connection_at}
+              projectCount={profile?.totalProjects ?? profile?.projectCount ?? 1}
+              hasPandorasKey={profile?.hasPandorasKey ?? (profile as any)?.has_pandoras_key ?? true}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Subtab 2: KYC & Compliance */}
+      {profileSubTab === 'compliance' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <KycInfo
+              fullName={profile?.kycData?.fullName}
+              phoneNumber={profile?.kycData?.phoneNumber}
+              dateOfBirth={profile?.kycData?.dateOfBirth}
+              nationality={profile?.kycData?.nationality}
+            />
+          </div>
+          <div className="space-y-4">
+            <AddressInfo address={profile?.kycData?.address} />
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-2xl flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white">Validación de Identidad Institucional</h4>
+                <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                  Requerido para emisión de contratos de capital y retiros de tesorería
+                </p>
+              </div>
+              <button
+                onClick={() => setKycModalOpen(true)}
+                className="px-3.5 py-2 bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                {profile?.kycCompleted ? 'Ver Certificado' : 'Iniciar KYC'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Subtab 3: Security & Telegram */}
+      {profileSubTab === 'security' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <WalletSecurity />
+          </div>
+          <div className="space-y-4">
+            <TelegramLinkCard />
+          </div>
+        </div>
+      )}
+
+      {/* Subtab 4: Referrals & Partners */}
+      {profileSubTab === 'referrals' && (
+        <div className="max-w-2xl mx-auto space-y-6">
+          <ReferralShareCard />
+        </div>
+      )}
+
+      {/* Kyc Modal */}
+      <KycModal
+        isOpen={kycModalOpen}
+        onClose={() => setKycModalOpen(false)}
+      />
     </div>
   );
 }

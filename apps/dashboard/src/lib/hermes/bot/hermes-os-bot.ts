@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { hermesJourneys, hermesJourneyStages, hermesAddonInstallations, projects } from '@/db/schema';
 import { eq, or, asc } from 'drizzle-orm';
 import { CANONICAL_ADDONS, ensureCanonicalAddOnsRegistered } from '@/lib/pandoras/core/domains/hermes/addons/catalog';
+import { TenantCreditLedgerService } from '@/lib/hermes/compute/tenant-credit-ledger.service';
 
 export interface TelegramUpdate {
   update_id: number;
@@ -138,6 +139,10 @@ export class HermesOSBotAdapter {
       return this.executeAddonsCommand(chatId, telegramUserId);
     }
 
+    if (command === '/recargar' || command === '/credits' || command === '/topup') {
+      return this.executeTopupCommand(chatId, telegramUserId);
+    }
+
     if (command === '/help') {
       return this.executeHelpCommand(chatId);
     }
@@ -151,6 +156,7 @@ export class HermesOSBotAdapter {
       `<b>Comandos de Operación:</b>\n` +
       `• <code>/start</code> — Menú principal e inicio de sesión en tu Workspace.\n` +
       `• <code>/portal</code> o <code>/tma</code> — Abrir la Mini App de Hermes OS.\n` +
+      `• <code>/recargar</code> — Recargar créditos de GPU serverless (Thirdweb Pay).\n` +
       `• <code>/status</code> — Diagnóstico de salud (Postgres, IPFS y Bóvedas).\n` +
       `• <code>/journeys</code> — Embudos de conversión, etapas e hitos en vivo.\n` +
       `• <code>/addons</code> — Estrategias y Add-Ons cognitivos activos.\n` +
@@ -495,11 +501,59 @@ export class HermesOSBotAdapter {
     }
   }
 
+  private async executeTopupCommand(chatId: number, telegramUserId: string): Promise<HermesBotExecutionResult> {
+    const tenants = await this.membershipService.getAuthorizedTenants(telegramUserId);
+    if (tenants.length === 0) {
+      const msg = `⚠️ Tu cuenta de Telegram no tiene organizaciones vinculadas en Hermes OS. Vincula tu cuenta desde el Dashboard web para recargar créditos.`;
+      await sendTelegramMessage(this.botToken, chatId, msg);
+      return { handled: true, action: 'TOPUP_UNAUTHORIZED' };
+    }
+
+    const activeTenant = tenants[0]!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const credits = await TenantCreditLedgerService.getOrCreateCredits(cleanTenant);
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+    const topupUrl = `${baseUrl}/portal/${cleanTenant}/media?topup=true`;
+
+    const text = `💳 <b>Hermes Billing & Créditos de Cómputo</b>\n` +
+      `🏢 Workspace: <b>${escapeHtml(activeTenant.organizationName)}</b> (@${escapeHtml(cleanTenant)})\n\n` +
+      `<b>Estado de Créditos:</b>\n` +
+      `• Saldo Producción: <code>$${credits.creditBalanceUsd.toFixed(2)} USD</code>\n` +
+      `• Saldo Sandbox (Test): <code>$${credits.sandboxBalanceUsd.toFixed(2)} USD</code>\n` +
+      `• Margen Aplicado: <code>${credits.markupPercentage}%</code>\n\n` +
+      `⚡ <i>Powered by Thirdweb Pay • Acepta Tarjeta (Débito/Crédito) y Cripto (USDC on-chain).\n` +
+      `Mínimo de recarga: $5.00 USD con garantía scale-to-zero serverless.</i>`;
+
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '💳 Recargar en Mini App', web_app: { url: topupUrl } }],
+        [{ text: '🌐 Recargar en Portal Web', url: topupUrl }],
+        [{ text: '📊 Estado del Sistema', callback_data: 'cmd:status' }],
+      ],
+    };
+
+    await sendTelegramMessage(this.botToken, chatId, text, keyboard);
+    return { handled: true, action: 'TOPUP_MENU' };
+  }
+
   private async executeConversationalMessage(
     chatId: number,
     telegramUserId: string,
     text: string
   ): Promise<HermesBotExecutionResult> {
+    const lower = text.toLowerCase();
+    if (
+      lower.includes('recargar') || 
+      lower.includes('crédito') || 
+      lower.includes('credito') || 
+      lower.includes('saldo') || 
+      lower.includes('topup') || 
+      lower.includes('comprar')
+    ) {
+      return this.executeTopupCommand(chatId, telegramUserId);
+    }
+
     const tenants = await this.membershipService.getAuthorizedTenants(telegramUserId);
     if (tenants.length === 0) {
       const helpText = `🤖 <b>Hermes OS</b>\n\n` +

@@ -192,7 +192,7 @@ export function PortalInspector({
   }
 
   return (
-    <aside className="flex w-full bg-[#12121A] border border-white/[0.08] rounded-2xl flex-col shrink-0 font-sans h-full overflow-hidden shadow-2xl relative">
+    <aside className="flex w-full bg-[#12121A] border border-white/[0.08] rounded-2xl flex-col shrink-0 font-sans h-full min-h-0 overflow-hidden shadow-2xl relative">
       <div className="h-12 px-4 border-b border-white/[0.06] flex items-center justify-between bg-[#0C0C12] shrink-0">
         <div className="flex items-center gap-2">
           {handleToggle && (
@@ -214,7 +214,7 @@ export function PortalInspector({
         </span>
       </div>
 
-      <div className="p-4 flex-1 flex flex-col space-y-5 overflow-y-auto">
+      <div className="p-4 flex-1 flex flex-col space-y-5 overflow-y-auto min-h-0">
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-bold text-white tracking-tight">{dynamicTitle}</h3>

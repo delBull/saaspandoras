@@ -62,10 +62,10 @@ export function PortalShell({ context, children }: PortalShellProps) {
 
   return (
     <InspectorProvider>
-      <div className="min-h-screen bg-[#08080A] text-white font-sans flex relative overflow-x-hidden">
+      <div className="h-screen w-screen bg-[#08080A] text-white font-sans flex relative overflow-hidden">
       
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex items-center justify-between px-4 h-14 bg-[#0C0C12] border-b border-white/[0.08] fixed top-0 w-full z-40 backdrop-blur-md">
+      <div className="md:hidden flex items-center justify-between px-4 h-14 bg-[#0C0C12] border-b border-white/[0.08] fixed top-0 w-full z-40 backdrop-blur-md shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-md">
             <span className="text-white text-xs font-bold">H</span>
@@ -95,7 +95,7 @@ export function PortalShell({ context, children }: PortalShellProps) {
         aria-modal="true"
         aria-label="Navegación del portal"
         className={`
-          fixed top-0 bottom-0 left-0 z-50 transition-transform duration-300 md:relative md:translate-x-0
+          fixed top-0 bottom-0 left-0 z-50 transition-transform duration-300 md:relative md:translate-x-0 h-full shrink-0
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
@@ -110,10 +110,10 @@ export function PortalShell({ context, children }: PortalShellProps) {
       </div>
 
       {/* Main content area (including Header and Inspector) */}
-      <div className="flex-1 flex flex-col min-h-screen w-full relative pt-14 md:pt-0">
+      <div className="flex-1 flex flex-col h-screen max-h-screen w-full relative pt-14 md:pt-0 overflow-hidden min-w-0">
         
         {/* Global Top Bar (Spans full width above Inspector) */}
-        <div className="hidden md:block z-20 sticky top-0">
+        <div className="hidden md:block z-30 shrink-0 border-b border-white/[0.06]">
           <PortalHeader
             organization={context.organization}
             role={context.tenant.role}
@@ -122,14 +122,14 @@ export function PortalShell({ context, children }: PortalShellProps) {
         </div>
 
         {/* Content Row: Main Page + Optional Inspector */}
-        <div className="flex-1 flex flex-row overflow-hidden relative">
-          <main className="flex-1 overflow-y-auto pb-20 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-3rem)] mr-0 sm:mr-2">
+        <div className="flex-1 flex flex-row overflow-hidden relative min-h-0 min-w-0">
+          <main className="flex-1 h-full overflow-y-auto pb-12 mr-0 sm:mr-2 min-w-0">
             {children}
           </main>
 
           {/* Desktop Right Inspector - Hidden on Overview */}
           {!isOverview && (
-            <div className={`hidden xl:block shrink-0 pr-6 pl-2 pt-6 pb-20 transition-all duration-300 ${inspectorExpanded ? 'w-[400px]' : 'w-[80px]'}`}>
+            <div className={`hidden xl:flex flex-col h-full shrink-0 pr-6 pl-2 pt-4 pb-12 transition-all duration-300 min-h-0 overflow-hidden ${inspectorExpanded ? 'w-[400px]' : 'w-[80px]'}`}>
               <PortalInspector 
                 organization={context.organization} 
                 expanded={inspectorExpanded}

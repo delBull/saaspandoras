@@ -528,7 +528,7 @@ function AccessV2Inner() {
                   whileHover={{ backgroundColor: hasAccess ? '#fff' : '#27272a' }}
                   className={`w-full py-4 text-[10px] tracking-[0.4em] uppercase border transition-all font-bold flex items-center justify-center gap-3 group ${
                     hasAccess
-                      ? 'border-white/20 bg-transparent text-white'
+                      ? 'border-white/20 bg-transparent text-white hover:bg-white hover:text-black'
                       : 'border-zinc-800 bg-zinc-900/50 text-zinc-600'
                   }`}
                 >
@@ -536,13 +536,25 @@ function AccessV2Inner() {
                     <>
                       {projectSlug && PROJECT_META[projectSlug]
                         ? `Ir a ${PROJECT_META[projectSlug]!.name}`
-                        : 'Ver oportunidades disponibles'}
+                        : 'Entrar al Sovereign Hub'}
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </>
                   ) : (
                     'Verificar estado de acceso'
                   )}
                 </motion.button>
+
+                {hasAccess && !projectSlug && (
+                  <motion.button
+                    onClick={() => router.push('/onboarding')}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full py-3.5 text-[10px] tracking-[0.25em] uppercase border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 transition-all font-bold flex items-center justify-center gap-2 rounded-xl cursor-pointer"
+                  >
+                    <span>+ Aprovisionar Nuevo Ecosistema</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </motion.button>
+                )}
               </motion.div>
             )}
           </div>

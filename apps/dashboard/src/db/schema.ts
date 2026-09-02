@@ -3971,3 +3971,64 @@ export const nexusCollaborators = pgTable("nexus_collaborators", {
   emailIdx: uniqueIndex("nexus_collaborators_email_unique").on(t.email),
   tokenIdx: uniqueIndex("nexus_collaborators_token_unique").on(t.token),
 }));
+
+// ── HERMES RUNPOD SERVERLESS & TENANT CREDIT LEDGER ──────────────────────────
+
+/**
+ * 💡 ADMIN CONSOLE INTEGRATION NOTE:
+ * Future integration required in `admin.pandoras.finance`:
+ * Provide a UI for Pandoras Operations to:
+ * 1. Adjust `markupPercentage` per tenant (override default 35%).
+ * 2. Manually credit/debit tenant balances (`creditBalanceUsd`, `sandboxBalanceUsd`).
+ * 3. Audit real GPU costs vs total charges.
+ */
+export const hermesTenantCredits = pgTable("hermes_tenant_credits", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull().unique(),
+  creditBalanceUsd: decimal("credit_balance_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
+  totalDepositedUsd: decimal("total_deposited_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
+  totalSpentUsd: decimal("total_spent_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
+  markupPercentage: integer("markup_percentage").notNull().default(35), // Dynamic markup (default 35%), configurable in admin
+  isSandboxEnabled: boolean("is_sandbox_enabled").notNull().default(true),
+  sandboxBalanceUsd: decimal("sandbox_balance_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"), // Inicia en $0.00 (Mínimo de recarga: $5.00 USD)
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantIdx: uniqueIndex("hermes_tenant_credits_tenant_unique").on(t.tenantId),
+}));
+
+export const hermesComputeUsageEvents = pgTable("hermes_compute_usage_events", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  requestId: varchar("request_id", { length: 128 }),
+  capability: varchar("capability", { length: 128 }).notNull(),
+  provider: varchar("provider", { length: 64 }).notNull().default("runpod"),
+  endpointId: varchar("endpoint_id", { length: 128 }),
+  executionSeconds: decimal("execution_seconds", { precision: 8, scale: 3 }).default("0.000"),
+  rawCostUsd: decimal("raw_cost_usd", { precision: 10, scale: 5 }).notNull().default("0.00000"),
+  markupCostUsd: decimal("markup_cost_usd", { precision: 10, scale: 5 }).notNull().default("0.00000"),
+  totalChargedUsd: decimal("total_charged_usd", { precision: 10, scale: 5 }).notNull().default("0.00000"),
+  currency: varchar("currency", { length: 16 }).default("USD"),
+  status: varchar("status", { length: 32 }).default("SETTLED"), // 'RESERVED', 'SETTLED', 'REFUNDED', 'FAILED'
+  isSandbox: boolean("is_sandbox").notNull().default(false), // Explicitly tags sandbox media tests
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantIdx: index("hermes_compute_events_tenant_idx").on(t.tenantId),
+  requestIdx: index("hermes_compute_events_req_idx").on(t.requestId),
+}));
+
+export const hermesRunpodEndpoints = pgTable("hermes_runpod_endpoints", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 128 }), // Nullable: null = shared pool, set = dedicated tenant pod
+  endpointId: varchar("endpoint_id", { length: 128 }).notNull(),
+  endpointName: varchar("endpoint_name", { length: 128 }).notNull(),
+  modelType: varchar("model_type", { length: 64 }).notNull(), // 'flux', 'sdxl', 'comfyui', 'whisper', etc.
+  gpuType: varchar("gpu_type", { length: 64 }).default("NVIDIA RTX A4000"),
+  perSecondCostUsd: decimal("per_second_cost_usd", { precision: 10, scale: 6 }).default("0.000350"),
+  status: varchar("status", { length: 32 }).default("ACTIVE"), // 'ACTIVE', 'PAUSED', 'PROVISIONING', 'TERMINATED'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  endpointIdIdx: uniqueIndex("hermes_runpod_endpoints_ep_unique").on(t.endpointId),
+  tenantIdx: index("hermes_runpod_endpoints_tenant_idx").on(t.tenantId),
+}));

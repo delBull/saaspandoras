@@ -34,10 +34,14 @@ import {
   Send,
   AlertCircle,
   Megaphone,
+  FlaskConical,
+  Coins,
+  Cpu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useInspector } from '../InspectorContext';
+import { CreditTopupModal } from './CreditTopupModal';
 
 const CAPABILITY_SPECS: Record<string, {
   title: string;
@@ -124,6 +128,9 @@ interface ArtifactItem {
   producer: string;
   sourceAgent: string;
   createdAt: string;
+  provenanceJson?: Record<string, any> | null;
+  metadataJson?: Record<string, any> | null;
+  isSandbox?: boolean;
 }
 
 export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: string }) {
@@ -141,7 +148,17 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
   const [activationStatus, setActivationStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [activating, setActivating] = useState(false);
 
-  // Load capabilities and artifacts
+  // Tenant Credits & Sandbox Mode State
+  const [credits, setCredits] = useState<{
+    creditBalanceUsd: number;
+    sandboxBalanceUsd: number;
+    markupPercentage: number;
+    isSandboxEnabled: boolean;
+  } | null>(null);
+  const [isSandboxMode, setIsSandboxMode] = useState<boolean>(true);
+  const [topupModalOpen, setTopupModalOpen] = useState<boolean>(false);
+
+  // Load capabilities, artifacts, and credits
   const loadData = async () => {
     setLoading(true);
     try {
@@ -157,6 +174,13 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
       const artData = await artRes.json();
       if (artData.ok) {
         setArtifacts(artData.artifacts || []);
+      }
+
+      // 3. Fetch Tenant Credits & Sandbox Status
+      const credsRes = await fetch(`/api/v1/hermes/media/credits?tenantId=${tenantId}`);
+      const credsData = await credsRes.json();
+      if (credsData.ok && credsData.credits) {
+        setCredits(credsData.credits);
       }
     } catch (err) {
       console.error('Error loading media dashboard data:', err);
@@ -206,22 +230,26 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
   }, [selectedCap, capabilities, tenantId, inspect]);
 
   const handleInspectArtifact = (art: ArtifactItem) => {
+    const isTest = Boolean(art.provenanceJson?.isSandbox || art.metadataJson?.isSandbox);
     inspect({
       title: art.title,
       type: `Artifact.${art.artifactType.toUpperCase()}`,
       description: `Pieza verificada producida por ${art.producer || 'Pixel'} (${art.sourceAgent || 'Sofía'})`,
-      badge: 'IPFS VERIFICADO',
-      badgeColor: 'emerald',
+      badge: isTest ? 'TEST • MODO SANDBOX' : 'IPFS VERIFICADO',
+      badgeColor: isTest ? 'amber' : 'emerald',
       attributes: {
         'Artifact ID': art.artifactId,
         'CID': art.cid,
+        'Ambiente': isTest ? 'Prueba / Sandbox (No oficial)' : 'Producción Soberana',
         'Tipo MIME': art.mimeType || 'image/png',
         'Agente Creador': art.producer || 'Pixel',
         'SHA256 Hash': art.sha256 ? `${art.sha256.slice(0, 10)}...${art.sha256.slice(-8)}` : 'Verificado',
         'Fecha de Notarización': new Date(art.createdAt).toLocaleString(),
         'Enlace IPFS': art.ipfsUri,
       },
-      complianceNote: 'El contenido está firmado criptográficamente y protegido en el Sovereign Knowledge Vault.',
+      complianceNote: isTest
+        ? 'Pieza generada en ambiente de pruebas (Sandbox). No computa en métricas de producción ni en campañas oficiales.'
+        : 'El contenido está firmado criptográficamente y protegido en el Sovereign Knowledge Vault.',
     });
   };
 
@@ -271,6 +299,7 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
           tenantId,
           capability: selectedCap,
           prompt,
+          isSandbox: isSandboxMode,
           options: {
             aspectRatio,
             requestedAt: new Date().toISOString(),
@@ -323,8 +352,57 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
           </div>
         </div>
 
-        {/* Tenant Scope & Refresh */}
-        <div className="flex items-center gap-3">
+        {/* Tenant Scope, Sandbox Switcher, Credits & Refresh */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Mode Switcher */}
+          <button
+            onClick={() => setIsSandboxMode(!isSandboxMode)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
+              isSandboxMode
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+            }`}
+            title="Cambiar entre modo Sandbox de prueba y producción real"
+          >
+            {isSandboxMode ? (
+              <>
+                <FlaskConical className="w-3.5 h-3.5 text-amber-400" />
+                <span>Modo Prueba (Sandbox)</span>
+              </>
+            ) : (
+              <>
+                <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Modo Producción</span>
+              </>
+            )}
+          </button>
+
+          {/* Balance Pill */}
+          <div
+            className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 ${
+              isSandboxMode
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+            }`}
+          >
+            <Coins className="w-3.5 h-3.5" />
+            <span>
+              {isSandboxMode
+                ? `Test: $${credits ? credits.sandboxBalanceUsd.toFixed(2) : '0.00'} USD`
+                : `Créditos: $${credits ? credits.creditBalanceUsd.toFixed(2) : '0.00'} USD`}
+            </span>
+          </div>
+
+          {/* Topup Button */}
+          <Button
+            size="sm"
+            onClick={() => setTopupModalOpen(true)}
+            className="h-8 px-3 rounded-xl border border-purple-500/40 bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+          >
+            <Coins className="w-3.5 h-3.5 text-purple-400" />
+            <span>Recargar</span>
+          </Button>
+
           <Badge className="bg-purple-500/10 text-purple-300 border-purple-500/30 font-mono text-xs px-3 py-1.5">
             @{tenantId}
           </Badge>
@@ -345,10 +423,50 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
           {/* Studio Composer */}
           <div className="lg:col-span-5 space-y-6">
             <div className="p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-xl space-y-5">
-              <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
-                <Sliders className="w-5 h-5 text-purple-400" />
-                Compositor Creativo
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
+                  <Sliders className="w-5 h-5 text-purple-400" />
+                  Compositor Creativo
+                </h2>
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                  isSandboxMode
+                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                    : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                }`}>
+                  {isSandboxMode ? 'SANDBOX ACTIVO' : 'PRODUCCIÓN RUNPOD'}
+                </span>
+              </div>
+
+              {/* Sandbox vs Prod banner */}
+              {isSandboxMode ? (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Modo Pruebas Sandbox (Mínimo de recarga: $5 USD). Aislado de producción.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTopupModalOpen(true)}
+                    className="underline font-bold text-amber-300 hover:text-amber-100 shrink-0 text-xs cursor-pointer ml-2"
+                  >
+                    + Recargar
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-300 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>RunPod Serverless activo (scale-to-zero). Descuenta de tus créditos oficiales.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTopupModalOpen(true)}
+                    className="underline font-bold text-emerald-300 hover:text-emerald-100 shrink-0 text-xs cursor-pointer ml-2"
+                  >
+                    + Recargar
+                  </button>
+                </div>
+              )}
 
               {/* Capability Selection */}
               <div className="space-y-2">
@@ -400,30 +518,28 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
 
               {/* Capability Status Banner */}
               {!isCurrentCapEnabled ? (
-                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/20 text-amber-300 shrink-0">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs text-amber-200 flex-1 space-y-1.5 min-w-0">
-                    <p className="font-bold text-white text-xs">Capacidad no autorizada para @{tenantId}</p>
-                    <p className="text-amber-200/80 text-[11px] leading-relaxed">
-                      Solicita la activación y el equipo Hermes la aprobará desde la consola de administración.
-                    </p>
-                    <div className="pt-1">
-                      <Button
-                        size="sm"
-                        disabled={activating}
-                        onClick={() => {
-                          const cap = capabilities.find(c => c.capability === selectedCap);
-                          handleRequestActivation(selectedCap, cap?.label || selectedCap);
-                        }}
-                        className="w-full sm:w-auto h-auto py-2 px-3.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-semibold gap-2 rounded-lg cursor-pointer transition-all"
-                      >
-                        <Megaphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span>{activating ? 'Solicitando...' : 'Solicitar Activación de Capacidad'}</span>
-                      </Button>
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col gap-3 w-full overflow-hidden">
+                  <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                    <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 shrink-0">
+                      <Lock className="w-3.5 h-3.5" />
                     </div>
+                    <span className="truncate">Capacidad no autorizada para @{tenantId}</span>
                   </div>
+                  <p className="text-amber-200/80 text-[11px] leading-relaxed">
+                    Solicita la activación para que el equipo Hermes habilite la producción de este formato en tu espacio.
+                  </p>
+                  <Button
+                    size="sm"
+                    disabled={activating}
+                    onClick={() => {
+                      const cap = capabilities.find(c => c.capability === selectedCap);
+                      handleRequestActivation(selectedCap, cap?.label || selectedCap);
+                    }}
+                    className="w-full h-auto py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-semibold gap-2 rounded-lg cursor-pointer transition-all flex items-center justify-center"
+                  >
+                    <Megaphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>{activating ? 'Solicitando...' : 'Solicitar Activación'}</span>
+                  </Button>
                 </div>
               ) : null}
 
@@ -553,9 +669,16 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
                     title="Haz clic para inspeccionar detalles criptográficos en el Inspector"
                   >
                     <div className="flex items-center justify-between">
-                      <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[10px]">
-                        {art.artifactType.toUpperCase()}
-                      </Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[10px]">
+                          {art.artifactType.toUpperCase()}
+                        </Badge>
+                        {(art.provenanceJson?.isSandbox || art.metadataJson?.isSandbox) && (
+                          <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[9px] font-mono">
+                            TEST / SANDBOX
+                          </Badge>
+                        )}
+                      </div>
                       <span className="text-[10px] text-zinc-500 flex items-center gap-1 font-mono">
                         <Clock className="w-3 h-3" />
                         {new Date(art.createdAt).toLocaleDateString()}
@@ -587,6 +710,15 @@ export function MediaStudioDashboard({ organizationSlug }: { organizationSlug: s
             )}
           </div>
         </div>
+
+      {/* Credit Topup Modal */}
+      <CreditTopupModal
+        isOpen={topupModalOpen}
+        onClose={() => setTopupModalOpen(false)}
+        tenantId={tenantId}
+        defaultSandbox={isSandboxMode}
+        onSuccess={loadData}
+      />
     </div>
   );
 }

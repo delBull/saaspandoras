@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Users,
 } from 'lucide-react';
+import { SetupCompletionWidget } from '@/components/ecosystem/SetupCompletionWidget';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,9 @@ export default async function EcosystemPage({ params }: EcosystemPageProps) {
           </p>
         </div>
       </div>
+
+      {/* ── SETUP COMPLETION ENGINE ── */}
+      <SetupCompletionWidget organizationSlug={organizationSlug} />
 
       {/* ── THE 3 PRIMARY PLANES (NODES) ── */}
       <div>

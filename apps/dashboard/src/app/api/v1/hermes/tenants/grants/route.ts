@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CapabilityGrantService } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
+import { CapabilityGrantService, SUPPORTED_MEDIA_CAPABILITIES } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
 import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { validateAdminSession } from '@/lib/admin-auth';
+import { HermesNotificationDispatcher } from '@/lib/hermes/notifications/notification-dispatcher';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,6 +128,20 @@ export async function POST(req: NextRequest) {
       enabled,
       actorId
     );
+
+    if (enabled) {
+      try {
+        const known = SUPPORTED_MEDIA_CAPABILITIES.find(c => c.id === capability);
+        const dispatcher = new HermesNotificationDispatcher();
+        await dispatcher.dispatchMediaCoCapabilityGranted(
+          canonical.canonicalOrgId,
+          canonical.title || canonical.projectSlug,
+          { capability, label: known?.label || capability }
+        );
+      } catch (notifyErr: any) {
+        console.warn('[GrantsAPI] Failed to dispatch capability granted notification to tenant bot:', notifyErr?.message);
+      }
+    }
 
     return NextResponse.json({
       ok: true,

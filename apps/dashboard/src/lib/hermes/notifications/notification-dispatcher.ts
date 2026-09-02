@@ -415,6 +415,35 @@ export class HermesNotificationDispatcher {
   }
 
   /**
+   * Dispatches a notification to tenant operators when a Media Co capability has been approved and granted.
+   */
+  async dispatchMediaCoCapabilityGranted(
+    organizationId: string,
+    organizationName: string,
+    payload: { capability: string; label: string }
+  ): Promise<number> {
+    const dedupeKey = `media_granted:${organizationId}:${payload.capability}`;
+    if (!this.checkDedupe(dedupeKey)) {
+      return 0;
+    }
+
+    const operators = await this.getNotifiableOperators(organizationId);
+    if (operators.length === 0 || !this.botToken) return 0;
+
+    const messageHtml =
+      `🎉 <b>Capacidad Activada — Media Co</b>\n\n` +
+      `🏢 <b>Workspace:</b> <code>${escapeHtml(organizationName)}</code>\n` +
+      `✨ <b>Capacidad:</b> <b>${escapeHtml(payload.label)}</b> (<code>${escapeHtml(payload.capability)}</code>)\n\n` +
+      `🚀 <i>Tu capacidad ha sido autorizada por el equipo Hermes. Ya puedes comenzar a generar y publicar activos multimedia en IPFS.</i>`;
+
+    return this.deliverToOperators(
+      operators,
+      messageHtml,
+      this.buildWebAppKeyboard('🎨 Ir a Media Studio', organizationId)
+    );
+  }
+
+  /**
    * Dispatches a security or IPFS durability degradation alert.
    */
   async dispatchSecurityAlert(

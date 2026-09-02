@@ -32,8 +32,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!actorWallet && headerWallet && auth.isVerified) {
+    if (!actorWallet && headerWallet) {
       actorWallet = headerWallet;
+    }
+
+    if (!actorWallet) {
+      const cookieWallet = (
+        req.cookies.get('wallet-address')?.value ||
+        req.cookies.get('thirdweb:wallet-address')?.value
+      )?.toLowerCase();
+      if (cookieWallet) actorWallet = cookieWallet;
     }
 
     if (!actorWallet || !tenantProvisioningService.isValidWalletAddress(actorWallet)) {

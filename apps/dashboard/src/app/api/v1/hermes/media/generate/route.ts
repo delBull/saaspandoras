@@ -5,6 +5,7 @@ import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenan
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { db } from '@/db';
 import { hermesMediaRequests } from '@/db/schema';
+import { TenantCreditLedgerService } from '@/lib/hermes/compute/tenant-credit-ledger.service';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ const RESERVED_PROTOCOL_FIELDS = new Set([
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { tenantId, capability, prompt, options } = body;
+    const { tenantId, capability, prompt, options, isSandbox = false } = body;
 
     if (!tenantId || !capability || !prompt) {
       return NextResponse.json(
@@ -84,9 +85,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 3b. Verify Credit Balance (Serverless Pay-per-event with Markup)
+    const estimatedRawCost = 0.02; // ~$0.02 base RunPod compute cost per image
+    const creditCheck = await TenantCreditLedgerService.hasSufficientBalance(
+      normalizedTenant,
+      estimatedRawCost,
+      isSandbox
+    );
+
+    if (!creditCheck.sufficient) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Saldo insuficiente en créditos ${isSandbox ? 'de prueba (Sandbox)' : 'de producción'}. Saldo disponible: $${creditCheck.balance.toFixed(4)} USD, requerido: $${creditCheck.estimatedCharge.toFixed(4)} USD.`,
+          code: 'INSUFFICIENT_CREDITS',
+          requiresTopup: true,
+          balance: creditCheck.balance,
+          estimatedCharge: creditCheck.estimatedCharge,
+          isSandbox,
+        },
+        { status: 402 }
+      );
+    }
+
     // 4. Create Asynchronous Media Request Record.
     const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const correlationId = `corr_${requestId}`;
+
+    // Settle usage atomically from active credit balance
+    await TenantCreditLedgerService.settleUsage(normalizedTenant, {
+      requestId,
+      capability,
+      provider: 'runpod',
+      executionSeconds: 10.0,
+      rawCostUsd: estimatedRawCost,
+      isSandbox,
+      metadata: { prompt },
+    });
 
     try {
       if (db) {
@@ -97,10 +132,10 @@ export async function POST(req: NextRequest) {
           tenantId: normalizedTenant,
           capability,
           requestedBy: ctx.tenant.actorId,
-          provider: 'sofia',
+          provider: 'runpod',
           status: 'REQUESTED',
           prompt,
-          briefJson: options || {},
+          briefJson: { ...(options || {}), isSandbox },
           createdAt: new Date(),
         });
       }
@@ -122,6 +157,7 @@ export async function POST(req: NextRequest) {
       ...safeOptions,
       requestId,
       tenantId: normalizedTenant,
+      isSandbox,
     };
 
     const actorRef = ctx.tenant.actorId;

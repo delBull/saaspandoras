@@ -18,15 +18,16 @@ export function ReferralShareCard() {
   const account = useActiveAccount();
   const [showQR, setShowQR] = useState(false);
 
-  // Detectar si vino de un shortlink
-  const urlParams = new URLSearchParams(window.location.search);
+  // Detectar si vino de un shortlink de manera segura para SSR
+  const isBrowser = typeof window !== 'undefined';
+  const urlParams = isBrowser ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const shortlinkSlug = urlParams.get('via_shortlink');
-  const shortlinkDomain = urlParams.get('via_domain') || window.location.hostname;
+  const shortlinkDomain = isBrowser ? (urlParams.get('via_domain') || window.location.hostname) : '';
 
   // Usar shortlink para compartir si está disponible, sino usar página actual
-  const shareBaseUrl = shortlinkSlug ?
-    `${window.location.protocol}//${shortlinkDomain}/${shortlinkSlug}` :
-    window.location.origin;
+  const shareBaseUrl = isBrowser
+    ? (shortlinkSlug ? `${window.location.protocol}//${shortlinkDomain}/${shortlinkSlug}` : window.location.origin)
+    : 'https://dash.pandoras.finance';
 
   // Generar enlace de referido
   const referralLink = account?.address ?
