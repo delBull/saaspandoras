@@ -8,6 +8,7 @@ import {
   createOrUpdateCollaborator,
   sendCollaboratorMagicLink,
   requireNexusAdmin,
+  isNexusAdminEmail,
 } from '@/lib/nexus/collaborators-service';
 
 function getCorsHeaders(req: NextRequest) {
@@ -27,26 +28,37 @@ export async function OPTIONS(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const cors = getCorsHeaders(req);
   try {
-    if (!(await requireNexusAdmin(req))) {
-      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403, headers: cors });
-    }
     const body = await req.json();
     const { name, email } = body as { name?: string; email?: string };
 
-    if (!name || !email) {
+    if (!email) {
       return NextResponse.json(
-        { error: 'Name and email are required' },
+        { error: 'Email is required' },
         { status: 400, headers: cors }
       );
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName: string = (name && typeof name === 'string' && name.trim()) ? name.trim() : (isNexusAdminEmail(cleanEmail) ? 'Admin' : (cleanEmail.split('@')[0] || 'Collaborator'));
+
+    // Authorized if caller is an admin wallet OR if target email is an admin email
+    const isAdminCaller = await requireNexusAdmin(req);
+    const isAdminTarget = isNexusAdminEmail(cleanEmail);
+
+    if (!isAdminCaller && !isAdminTarget) {
+      return NextResponse.json(
+        { error: 'Admin authentication required to invite external collaborators' },
+        { status: 403, headers: cors }
+      );
+    }
+
     const { collaborator, magicLink } = await createOrUpdateCollaborator(
-      name.trim(),
-      email.trim().toLowerCase()
+      cleanName,
+      cleanEmail
     );
 
     const sendResult = await sendCollaboratorMagicLink(
-      collaborator.name,
+      collaborator.name || cleanName || 'Collaborator',
       collaborator.email,
       magicLink
     );
@@ -60,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      message: 'Magic link sent to collaborator',
+      message: 'Magic link sent to email',
       collaborator: {
         id: collaborator.id,
         name: collaborator.name,

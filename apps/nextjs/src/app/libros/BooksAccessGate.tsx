@@ -16,7 +16,7 @@ const BOOK_LABELS: Record<string, string> = {
 };
 
 export default function BooksAccessGate({ bookSlug }: { bookSlug: string }) {
-  const [email, setEmail] = useState('marco.munoz9@gmail.com');
+  const [email, setEmail] = useState(process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'marco.munoz9@gmail.com');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 

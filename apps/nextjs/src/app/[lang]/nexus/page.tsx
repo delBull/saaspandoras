@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import NexusClient from "./components/NexusClient";
+import { NexusAccessGate } from "./components/NexusAccessGate";
 
 export const metadata: Metadata = {
   title: "Pandora's Nexus",
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 export default function NexusPage() {
   return (
     <main className="fixed inset-0 z-50 overflow-hidden bg-[#08080A] text-zinc-100 flex items-center justify-center">
-      <NexusClient />
+      <NexusAccessGate>
+        <NexusClient />
+      </NexusAccessGate>
     </main>
   );
 }
