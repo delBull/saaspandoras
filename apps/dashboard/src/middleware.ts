@@ -9,15 +9,23 @@ export function middleware(request: NextRequest) {
   // 0. Global OPTIONS Handling (CORS Preflight)
   if (request.method === "OPTIONS") {
     const origin = request.headers.get("origin") || "*";
-    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public') || pathname.startsWith('/api/v1/deal-signing');
+    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public') || pathname.startsWith('/api/v1/deal-signing') || pathname.startsWith('/api/nexus');
+    const isAllowed = 
+      origin === "https://pandoras.finance" || 
+      origin === "http://pandoras.finance" || 
+      origin.endsWith(".pandoras.finance") || 
+      origin === "https://pandoras.org" ||
+      origin.endsWith(".pandoras.org") || 
+      origin.startsWith("http://localhost:") || 
+      origin.startsWith("https://localhost:") ||
+      isPublicMarketingApi;
+
     return new NextResponse(null, {
       status: 204,
       headers: {
-        "Access-Control-Allow-Origin": isPublicMarketingApi ? (origin) : (origin.endsWith(".pandoras.finance") || origin.endsWith(".pandoras.org") || origin.startsWith("http://localhost:") ? origin : "https://dash.pandoras.finance"),
+        "Access-Control-Allow-Origin": isAllowed ? origin : "https://dash.pandoras.finance",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": isPublicMarketingApi 
-          ? "Content-Type, Authorization, x-api-key, x-stress-test"
-          : "Content-Type, Authorization, x-thirdweb-address, x-wallet-address",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key, x-thirdweb-address, x-wallet-address, x-user-address, x-stress-test",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400",
       },
@@ -164,6 +172,27 @@ export function middleware(request: NextRequest) {
     response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-thirdweb-address, x-wallet-address');
+  }
+
+  // 🛡️ CORS Response Headers for Cross-Origin Subdomains
+  if (pathname.startsWith('/api')) {
+    const origin = request.headers.get('origin');
+    if (origin) {
+      const isAllowed =
+        origin === 'https://pandoras.finance' ||
+        origin === 'http://pandoras.finance' ||
+        origin.endsWith('.pandoras.finance') ||
+        origin === 'https://pandoras.org' ||
+        origin.endsWith('.pandoras.org') ||
+        origin.startsWith('http://localhost:') ||
+        origin.startsWith('https://localhost:');
+      if (isAllowed) {
+        response.headers.set('Access-Control-Allow-Origin', origin);
+        response.headers.set('Access-Control-Allow-Credentials', 'true');
+        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-thirdweb-address, x-wallet-address, x-user-address');
+      }
+    }
   }
 
   response.headers.set('X-Content-Type-Options', 'nosniff');

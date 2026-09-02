@@ -9,7 +9,7 @@ import { HermesNotificationDispatcher } from '@/lib/hermes/notifications/notific
 
 export const dynamic = 'force-dynamic';
 
-export const ACTIVATION_CAPABILITY = 'hermes.media.activation';
+const ACTIVATION_CAPABILITY = 'hermes.media.activation';
 
 /**
  * POST /api/v1/hermes/media/activate
