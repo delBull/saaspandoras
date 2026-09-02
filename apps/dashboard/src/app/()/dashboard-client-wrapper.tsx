@@ -103,9 +103,10 @@ export function DashboardClientWrapper({
     );
   }
 
-  // Determinar si debemos ocultar el sidebar (Narrativa Genesis en Root)
+  // Determinar si debemos ocultar el sidebar (Narrativa Genesis en Root o Gestión de Negocio Soberano)
   const isRoot = pathname === '/';
-  const hideSidebar = isRoot && !hasAccess;
+  const isBusinessManageRoute = pathname?.startsWith('/profile/projects/') && pathname?.includes('/manage');
+  const hideSidebar = (isRoot && !hasAccess) || isBusinessManageRoute;
 
   return (
     <TokenPriceProvider>
@@ -121,28 +122,34 @@ export function DashboardClientWrapper({
               sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
               hideSidebar={hideSidebar}
             >
-              {/* Mobile Header - Visible only on mobile */}
-              <MobileHeader
-                onMenuClick={() => setIsMobileSidebarOpen(true)}
-                profileImage={profile?.image ?? undefined}
-              />
+              {/* Mobile Header - Visible only on mobile when not in dedicated business console */}
+              {!isBusinessManageRoute && (
+                <MobileHeader
+                  onMenuClick={() => setIsMobileSidebarOpen(true)}
+                  profileImage={profile?.image ?? undefined}
+                />
+              )}
 
               {/* Mobile Sidebar (Drawer) */}
-              <MobileSidebar
-                isOpen={isMobileSidebarOpen}
-                onClose={() => setIsMobileSidebarOpen(false)}
-                isAdmin={isAdmin || isSuperAdmin}
-              />
-
-              {/* Top Navbar with Profile - Superior derecha - OK */}
-              <div className="relative md:block hidden">
-                <TopNavbar
-                  wallet={account?.address}
-                  userName={userName ?? undefined}
-                  isAdmin={isAdmin}
-                  isSuperAdmin={isSuperAdmin}
+              {!isBusinessManageRoute && (
+                <MobileSidebar
+                  isOpen={isMobileSidebarOpen}
+                  onClose={() => setIsMobileSidebarOpen(false)}
+                  isAdmin={isAdmin || isSuperAdmin}
                 />
-              </div>
+              )}
+
+              {/* Top Navbar with Profile - Superior derecha - Oculto en consola de gestión de negocio */}
+              {!isBusinessManageRoute && (
+                <div className="relative md:block hidden">
+                  <TopNavbar
+                    wallet={account?.address}
+                    userName={userName ?? undefined}
+                    isAdmin={isAdmin}
+                    isSuperAdmin={isSuperAdmin}
+                  />
+                </div>
+              )}
 
               <AnimatePresence mode="wait">
                 <motion.div

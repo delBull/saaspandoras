@@ -24,9 +24,11 @@
  * On failure, throws PortalAuthorizationError — never silently downgrades.
  */
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { validatePortalSession } from '@/lib/platform/portal-auth';
 import { OrganizationSDK } from '@/lib/platform/organization-sdk';
+import { getAuth, isAdmin } from '@/lib/auth';
+import { isWalletAuthorizedForTenant } from '@/lib/hermes/auth/wallet-tenant-membership';
 import {
   PortalTenantContext,
   PortalOrganization,
@@ -51,6 +53,48 @@ export async function resolvePortalContext(
   const sessionToken = cookieStore.get(PORTAL_SESSION_COOKIE)?.value;
 
   if (!sessionToken) {
+    // 1.5 Fallback: Web3 Wallet / Admin Dashboard Session
+    try {
+      const reqHeaders = await headers();
+      const auth = await getAuth(reqHeaders);
+      const callerWallet = auth.session?.address?.toLowerCase() ||
+        reqHeaders.get('x-wallet-address')?.toLowerCase() ||
+        reqHeaders.get('x-thirdweb-address')?.toLowerCase();
+
+      if (callerWallet) {
+        const isUserAdmin = await isAdmin(callerWallet);
+        const isTenantAuthorized = await isWalletAuthorizedForTenant(callerWallet, requestedOrganizationSlug);
+
+        if (isUserAdmin || isTenantAuthorized) {
+          const organization = await OrganizationSDK.resolve(requestedOrganizationSlug, 'HERMES');
+          const role: PortalRole = 'owner';
+          const permissions = PORTAL_ROLE_PERMISSIONS[role];
+
+          const tenant: PortalTenantContext = {
+            actorId: `wallet_${callerWallet.slice(0, 10)}`,
+            sessionId: `wallet_session_${callerWallet}`,
+            organizationId: organization.organizationId,
+            organizationSlug: organization.slug,
+            role,
+            permissions,
+          };
+
+          const portalOrg: PortalOrganization = {
+            id: organization.organizationId,
+            slug: organization.slug,
+            name: organization.name,
+            logoUrl: organization.logoUrl ?? null,
+            projectId: organization.projectId,
+            activeProduct: 'HERMES',
+          };
+
+          return { tenant, organization: portalOrg };
+        }
+      }
+    } catch (e) {
+      console.warn('[resolvePortalContext] Wallet fallback probe:', e);
+    }
+
     throw new PortalAuthorizationError('NO_SESSION', 'No portal session found.');
   }
 
