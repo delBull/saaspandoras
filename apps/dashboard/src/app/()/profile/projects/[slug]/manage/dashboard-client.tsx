@@ -10,7 +10,6 @@ import {
   ArrowLeftIcon,
   Bars3Icon,
   XMarkIcon,
-  SparklesIcon,
   UsersIcon,
   EyeIcon,
   ShieldCheckIcon,
@@ -23,16 +22,24 @@ import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { NetworkTab } from './tabs/NetworkTab';
 import { ProtocolSandboxPreviewModal } from '@/components/projects/ProtocolSandboxPreviewModal';
-import { useActiveAccount } from 'thirdweb/react';
+import { useActiveAccount, useDisconnect } from 'thirdweb/react';
 import {
   Layers,
   Bot,
+  Rocket,
+  Landmark,
   ExternalLink,
   Wallet,
   Copy,
   CheckCircle2,
-  FileCode2,
   FileText,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  User,
+  Settings,
+  LogOut,
+  Sparkles,
 } from 'lucide-react';
 
 interface ProjectFounderDashboardProps {
@@ -51,18 +58,32 @@ function parseSafeNumber(val: any): number {
   return 0;
 }
 
+type MainTab =
+  | 'overview'
+  | 'network'
+  | 'purchases'
+  | 'treasury_dao'
+  | 'governance_legal'
+  | 'resource_hub'
+  | 'profile'
+  | 'settings';
+
 export default function ProjectFounderDashboard({ project, hasGrowthOs }: ProjectFounderDashboardProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'network' | 'treasury' | 'governance' | 'settings' | 'purchases' | 'legal' | 'dao' | 'resource_hub'
-  >('overview');
+  const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [copiedWallet, setCopiedWallet] = useState(false);
 
+  // Sub-tab states for consolidated views
+  const [treasurySubTab, setTreasurySubTab] = useState<'treasury' | 'dao'>('treasury');
+  const [govSubTab, setGovSubTab] = useState<'governance' | 'legal'>('governance');
+
   const account = useActiveAccount();
+  const { disconnect } = useDisconnect();
 
   const fetchPendingCount = async () => {
     if (!account?.address) return;
@@ -123,363 +144,476 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
   };
 
   const menuItems = [
-    { id: 'overview', label: 'Resumen General', icon: BuildingLibraryIcon },
-    { id: 'network', label: 'Gestores Patrimoniales', icon: UsersIcon },
-    { id: 'purchases', label: 'Reconciliación (Fast Lane)', icon: CurrencyDollarIcon },
-    { id: 'treasury', label: 'Tesorería On-Chain', icon: BuildingLibraryIcon },
-    { id: 'governance', label: 'Gobernanza del Protocolo', icon: DocumentTextIcon },
-    { id: 'dao', label: 'DAO Treasury', icon: BuildingLibraryIcon },
-    { id: 'legal', label: 'Legal & Riesgos', icon: DocumentTextIcon },
-    { id: 'resource_hub', label: 'Hub de Recursos', icon: DocumentTextIcon },
-    { id: 'settings', label: 'Configuración', icon: Cog6ToothIcon },
+    { id: 'overview' as MainTab, label: 'Resumen General', icon: BuildingLibraryIcon, short: 'RES' },
+    { id: 'network' as MainTab, label: 'Gestores Patrimoniales', icon: UsersIcon, short: 'GES' },
+    { id: 'purchases' as MainTab, label: 'Reconciliación', icon: CurrencyDollarIcon, short: 'REC', count: pendingCount },
+    { id: 'treasury_dao' as MainTab, label: 'Tesorería & DAO', icon: Landmark, short: 'TES' },
+    { id: 'governance_legal' as MainTab, label: 'Gobernanza & Legal', icon: DocumentTextIcon, short: 'GOB' },
+    { id: 'resource_hub' as MainTab, label: 'Hub de Recursos', icon: FileText, short: 'DOC' },
+    { id: 'profile' as MainTab, label: 'Mi Perfil & Wallet', icon: User, short: 'PER' },
   ];
 
+  const chainName =
+    project?.chainId === 8453
+      ? 'Base Mainnet (8453)'
+      : project?.chainId === 84532
+      ? 'Base Sepolia (84532)'
+      : project?.chainId === 1
+      ? 'Ethereum Mainnet (1)'
+      : project?.chainId === 11155111
+      ? 'Ethereum Sepolia (11155111)'
+      : 'EVM Sovereign Network';
+
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#050505] text-zinc-300 font-sans">
-      {/* ── MOBILE HEADER (NAVBAR) ── */}
-      <div className="md:hidden flex items-center justify-between h-16 px-4 bg-[#050505] border-b border-white/10 shrink-0 sticky top-0 z-30 backdrop-blur-xl">
+    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans flex flex-col relative overflow-x-hidden selection:bg-indigo-500/20 selection:text-indigo-300">
+      {/* ── TOP NAVBAR (FULL WIDTH HEADER) ── */}
+      <header className="h-12 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 shrink-0 text-xs font-mono z-30 sticky top-0 backdrop-blur-xl">
+        {/* Left: Brand Identity & Tenant */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-700 flex items-center justify-center text-white font-bold text-xs shadow-md">
-            P
+          <div className="flex items-center gap-2 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
+            <Landmark className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="font-bold text-indigo-300 tracking-wider">TOKENOMICS</span>
+            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-mono">CONSOLE</span>
           </div>
-          <div>
-            <h2 className="text-white font-bold text-sm leading-tight truncate max-w-[160px]">{project.title}</h2>
-            <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider">Protocol Console</p>
+
+          <div className="hidden sm:flex items-center gap-2 text-zinc-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] text-zinc-300 font-semibold">{project.title}</span>
           </div>
         </div>
-        <button
-          onClick={() => setIsMobileDrawerOpen(true)}
-          className="p-2 rounded-xl bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-colors border border-white/10"
-          aria-label="Abrir Menú"
+
+        {/* Center: Cross-Plane Seamless Switcher */}
+        <div className="hidden md:flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5">
+          <Link
+            href={`/ecosystem/${project.slug}`}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-amber-300 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all text-[11px] font-medium"
+            title="Ecosystem Hub Central"
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <span>Ecosystem Hub</span>
+          </Link>
+          <div className="h-3 w-px bg-white/10" />
+          <Link
+            href={`/portal/${project.slug}`}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all text-[11px] font-medium"
+            title="Hermes AI OS"
+          >
+            <Bot className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Hermes AI</span>
+          </Link>
+          <div className="h-3 w-px bg-white/10" />
+          <Link
+            href={`/growth-os/organizations/${project.slug}`}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-violet-300 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20 transition-all text-[11px] font-medium"
+            title="Growth OS Hub"
+          >
+            <Rocket className="w-3.5 h-3.5 text-violet-400" />
+            <span>Growth OS</span>
+          </Link>
+        </div>
+
+        {/* Right: Actions & Settings */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsPreviewOpen(true)}
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-lg hover:bg-purple-600/30 transition-all text-[10px] font-bold"
+          >
+            <EyeIcon className="w-3.5 h-3.5" />
+            PREVIEW
+          </button>
+          <Link
+            href={`/profile/projects/${project.slug}/premium`}
+            className="hidden sm:inline-block px-2.5 py-1 bg-amber-600/20 border border-amber-600/30 text-amber-300 rounded-lg hover:bg-amber-600/30 transition-all text-[10px] font-bold"
+          >
+            PDF PREMIUM
+          </Link>
+          <Link
+            href={`/projects/${project.slug}`}
+            target="_blank"
+            className="hidden sm:inline-block px-2.5 py-1 bg-white/[0.04] border border-white/10 text-zinc-300 rounded-lg hover:bg-white/[0.08] hover:text-white transition-all text-[10px] font-bold"
+          >
+            VER PÁGINA ↗
+          </Link>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`p-1.5 rounded-lg transition-all ${
+              activeTab === 'settings'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+            }`}
+            title="Configuración de Protocolo"
+          >
+            <Cog6ToothIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsMobileDrawerOpen(true)}
+            className="md:hidden p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+          >
+            <Bars3Icon className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {/* ── WORKSPACE CORE (SIDEBAR + MAIN CONTENT) ── */}
+      <div className="flex-1 flex flex-row min-w-0 pb-12">
+        {/* DESKTOP COLLAPSIBLE SIDEBAR */}
+        <aside
+          className={`hidden md:flex flex-col shrink-0 bg-[#09090C] border-r border-white/10 select-none transition-all duration-300 ${
+            isSidebarCollapsed ? 'w-16 items-center' : 'w-60 items-start px-3'
+          }`}
         >
-          <Bars3Icon className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* ── MOBILE DRAWER ── */}
-      {isMobileDrawerOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
-            onClick={() => setIsMobileDrawerOpen(false)}
-          />
-          <div className="relative flex-1 flex flex-col max-w-[290px] w-full bg-[#050505] border-r border-white/10 text-zinc-300 z-50 h-full shadow-2xl">
-            <div className="flex items-center justify-between h-16 px-4 border-b border-white/10">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                  P
-                </div>
-                <span className="text-white font-bold text-sm tracking-tight truncate">{project.title}</span>
+          <nav className="flex-1 py-4 space-y-1 w-full overflow-y-auto">
+            {!isSidebarCollapsed && (
+              <div className="px-2 pb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
+                Módulos de Capital
               </div>
-              <button
-                onClick={() => setIsMobileDrawerOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
-              <div className="px-2 pb-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
-                Módulos de Protocolo
-              </div>
-              {menuItems.map((tab) => {
-                const Icon = tab.icon;
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id as any);
-                      setIsMobileDrawerOpen(false);
-                    }}
-                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      active
-                        ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 ${active ? 'text-violet-400' : 'text-zinc-400'}`} />
-                      <span>{tab.label}</span>
-                    </div>
-                    {tab.id === 'purchases' && pendingCount > 0 && (
-                      <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
-                        {pendingCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* Cross-Plane Links (Mobile) */}
-              <div className="pt-4 mt-4 border-t border-white/10 space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-2 font-mono">
-                  Capacidades de Negocio
-                </div>
-                <Link
-                  href={`/portal/${project.slug}/ecosystem`}
-                  onClick={() => setIsMobileDrawerOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold hover:bg-violet-500/20 transition-all"
+            )}
+            {menuItems.map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  title={isSidebarCollapsed ? tab.label : undefined}
+                  className={`flex items-center ${
+                    isSidebarCollapsed ? 'justify-center p-3 w-12 h-12 mx-auto' : 'justify-between px-3 py-2.5 w-full'
+                  } rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 shadow-sm font-bold'
+                      : 'text-zinc-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                  }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-violet-400" />
-                    <span>Ecosistema Hub</span>
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Icon className={`w-4 h-4 ${active ? 'text-indigo-400' : 'text-zinc-400'} shrink-0`} />
+                    {!isSidebarCollapsed && <span className="truncate">{tab.label}</span>}
                   </div>
-                  <ExternalLink className="w-3 h-3 text-violet-400/70" />
-                </Link>
-                <Link
-                  href={`/portal/${project.slug}/overview`}
-                  onClick={() => setIsMobileDrawerOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/20 transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <Bot className="w-4 h-4 text-emerald-400" />
-                    <span>Hermes AI OS</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-emerald-400/70" />
-                </Link>
-                <Link
-                  href={`/growth-os/organizations/${project.slug}`}
-                  onClick={() => setIsMobileDrawerOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/20 transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <UsersIcon className="w-4 h-4 text-indigo-400" />
-                    <span>Growth OS</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-indigo-400/70" />
-                </Link>
-                <a
-                  href={project.whitepaper_url || "/whitepaper"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsMobileDrawerOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-zinc-400 text-xs font-medium hover:text-white transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-zinc-400" />
-                    <span>Documentación & Docs</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-zinc-500" />
-                </a>
-              </div>
-            </nav>
-          </div>
-        </div>
-      )}
+                  {!isSidebarCollapsed && tab.count && tab.count > 0 ? (
+                    <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
+                      {tab.count}
+                    </span>
+                  ) : null}
+                  {isSidebarCollapsed && (
+                    <span className="text-[8px] font-mono text-zinc-500 absolute bottom-1">{tab.short}</span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-      {/* ── DESKTOP DEDICATED BUSINESS DRAWER / SIDEBAR ── */}
-      <aside className="hidden md:flex flex-col shrink-0 w-64 bg-[#050505] border-r border-white/10 text-zinc-300 min-h-screen backdrop-blur-xl">
-        {/* Brand Header */}
-        <div className="p-5 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
-              P
-            </div>
-            <div className="overflow-hidden">
-              <h2 className="text-white font-bold text-base tracking-tight truncate">{project.title}</h2>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">Protocol Console</span>
-              </div>
-            </div>
+          {/* Sidebar Collapse Toggle */}
+          <div className="p-3 border-t border-white/10 w-full flex justify-end">
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-colors cursor-pointer"
+              title={isSidebarCollapsed ? 'Expandir Menú' : 'Colapsar Menú'}
+            >
+              {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
           </div>
-        </div>
+        </aside>
 
-        {/* Modules Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <div className="px-2 pt-1 pb-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
-            Módulos de Protocolo
-          </div>
-          {menuItems.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center justify-between w-full gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  active
-                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 shadow-sm'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Icon className={`w-4 h-4 ${active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
-                  <span className="truncate">{tab.label}</span>
-                </div>
-                {tab.id === 'purchases' && pendingCount > 0 && (
-                  <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-
-          {/* Cross-Plane Hybrid Links (Desktop) */}
-          <div className="mt-5 pt-4 border-t border-white/10 space-y-1.5">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 px-2 font-mono">
-              Capacidades de Negocio
-            </div>
-            <Link
-              href={`/portal/${project.slug}/ecosystem`}
-              className="flex items-center justify-between px-3 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-300 transition-all text-xs font-semibold"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <Layers className="w-4 h-4 text-violet-400 shrink-0" />
-                <span className="truncate">Ecosistema Hub</span>
-              </div>
-              <ExternalLink className="w-3 h-3 text-violet-400/70 shrink-0" />
-            </Link>
-            <Link
-              href={`/portal/${project.slug}/overview`}
-              className="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 transition-all text-xs font-semibold"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="truncate">Hermes AI OS</span>
-              </div>
-              <ExternalLink className="w-3 h-3 text-emerald-400/70 shrink-0" />
-            </Link>
-            <Link
-              href={`/growth-os/organizations/${project.slug}`}
-              className="flex items-center justify-between px-3 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 transition-all text-xs font-semibold"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <UsersIcon className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span className="truncate">Growth OS</span>
-              </div>
-              <ExternalLink className="w-3 h-3 text-indigo-400/70 shrink-0" />
-            </Link>
-            <a
-              href={project.whitepaper_url || "/whitepaper"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 text-zinc-400 hover:text-white transition-all text-xs font-medium"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <FileText className="w-4 h-4 text-zinc-400 shrink-0" />
-                <span className="truncate">Documentación & Docs</span>
-              </div>
-              <ExternalLink className="w-3 h-3 text-zinc-500 shrink-0" />
-            </a>
-          </div>
-        </nav>
-
-        {/* Integrated Profile & Wallet Footer */}
-        <div className="p-3 border-t border-white/10 bg-white/[0.01]">
-          {account?.address ? (
-            <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-violet-600/30 border border-violet-500/40 flex items-center justify-center text-[10px] text-violet-300 font-mono">
-                    W
+        {/* MOBILE DRAWER */}
+        {isMobileDrawerOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            <div
+              className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
+              onClick={() => setIsMobileDrawerOpen(false)}
+            />
+            <div className="relative flex-1 flex flex-col max-w-[280px] w-full bg-[#09090C] border-r border-white/10 text-zinc-300 z-50 h-full shadow-2xl">
+              <div className="flex items-center justify-between h-14 px-4 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                    P
                   </div>
-                  <span className="text-xs font-mono text-zinc-300">
-                    {account.address.slice(0, 6)}...{account.address.slice(-4)}
-                  </span>
+                  <span className="text-white font-bold text-sm tracking-tight truncate">{project.title}</span>
                 </div>
                 <button
-                  onClick={copyAddress}
-                  className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors"
-                  title="Copiar Wallet"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white"
                 >
-                  {copiedWallet ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px] font-mono">
-                <span className="text-emerald-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Conectado
-                </span>
-                <span className="text-zinc-500">Fundador</span>
-              </div>
+
+              <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                {menuItems.map((tab) => {
+                  const Icon = tab.icon;
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsMobileDrawerOpen(false);
+                      }}
+                      className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                        active
+                          ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={`w-4 h-4 ${active ? 'text-indigo-400' : 'text-zinc-400'}`} />
+                        <span>{tab.label}</span>
+                      </div>
+                      {tab.count && tab.count > 0 ? (
+                        <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 rounded-full">
+                          {tab.count}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        )}
+
+        {/* RIGHT MAIN CONTENT AREA */}
+        <main className="flex-1 flex flex-col min-w-0 px-4 sm:px-6 lg:px-8 py-6 space-y-6 overflow-y-auto">
+          {/* Active Tab Viewport */}
+          <div className="min-h-[500px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                {activeTab === 'overview' && (
+                  <OverviewTab
+                    project={project}
+                    config={config}
+                    onTogglePhase={handleTogglePhase}
+                    loadingPhase={isLoadingPhase}
+                  />
+                )}
+                {activeTab === 'network' && <NetworkTab project={project} />}
+                {activeTab === 'purchases' && (
+                  <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />
+                )}
+                {activeTab === 'treasury_dao' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5 w-fit">
+                      <button
+                        onClick={() => setTreasurySubTab('treasury')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                          treasurySubTab === 'treasury'
+                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                            : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Tesorería On-Chain
+                      </button>
+                      <button
+                        onClick={() => setTreasurySubTab('dao')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                          treasurySubTab === 'dao'
+                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                            : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        DAO Treasury & Miembros
+                      </button>
+                    </div>
+
+                    {treasurySubTab === 'treasury' ? (
+                      <TreasuryTab project={project} address={treasuryAddress} />
+                    ) : (
+                      <DaoTreasuryTab project={project} />
+                    )}
+                  </div>
+                )}
+                {activeTab === 'governance_legal' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5 w-fit">
+                      <button
+                        onClick={() => setGovSubTab('governance')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                          govSubTab === 'governance'
+                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                            : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Gobernanza On-Chain
+                      </button>
+                      <button
+                        onClick={() => setGovSubTab('legal')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                          govSubTab === 'legal'
+                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                            : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        Legal & Riesgos
+                      </button>
+                    </div>
+
+                    {govSubTab === 'governance' ? (
+                      <GovernanceTab address={governorAddress} project={project} />
+                    ) : (
+                      <LegalTab project={project} />
+                    )}
+                  </div>
+                )}
+                {activeTab === 'resource_hub' && <ResourceHubTab project={project} />}
+                {activeTab === 'profile' && (
+                  <ProfileTab
+                    project={project}
+                    account={account}
+                    chainName={chainName}
+                    onCopyAddress={copyAddress}
+                    copiedWallet={copiedWallet}
+                    onOpenPreview={() => setIsPreviewOpen(true)}
+                  />
+                )}
+                {activeTab === 'settings' && <SettingsTab project={project} />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
+
+      {/* ── BOTTOM FOOTBAR (TERMINAL STATUS BAR) ── */}
+      <footer className="h-10 bg-[#07070A] border-t border-white/10 flex items-center justify-between px-4 sm:px-6 fixed bottom-0 left-0 right-0 z-30 text-[11px] font-mono text-zinc-500 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-zinc-400">
+            <Shield className="w-3.5 h-3.5 text-indigo-400" />
+            <span>TOKENOMICS PLANE V9.0</span>
+          </div>
+          <span className="hidden sm:inline text-zinc-700">•</span>
+          <span className="hidden sm:inline text-zinc-500">Red: <strong className="text-emerald-400">{chainName}</strong></span>
+          <span className="hidden sm:inline text-zinc-700">•</span>
+          <span className="hidden sm:inline text-zinc-500">
+            Smart Contract:{' '}
+            <strong className="text-zinc-300">
+              {project.contractAddress
+                ? `${project.contractAddress.slice(0, 6)}...${project.contractAddress.slice(-4)}`
+                : 'Sin Desplegar'}
+            </strong>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {account?.address ? (
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 font-semibold">{account.address.slice(0, 6)}...{account.address.slice(-4)}</span>
+              <button
+                onClick={copyAddress}
+                className="p-1 rounded text-zinc-500 hover:text-white"
+                title="Copiar Wallet"
+              >
+                {copiedWallet ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+              </button>
             </div>
           ) : (
-            <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10 text-center">
-              <p className="text-xs text-zinc-400">Wallet no detectada</p>
-            </div>
+            <span className="text-zinc-500">Wallet no conectada</span>
           )}
         </div>
-      </aside>
+      </footer>
 
-      {/* ── RIGHT MAIN CONTENT WORKSPACE ── */}
-      <main className="flex-1 flex flex-col min-w-0 p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto">
-        {/* Top Action Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{project.title}</h1>
-            <p className="text-zinc-400 text-xs sm:text-sm mt-0.5">Consola de Tokenomics, Capital y Asignación Patrimonial</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setIsPreviewOpen(true)}
-              className="px-3.5 py-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-xl hover:bg-purple-600/30 transition-all text-xs font-bold flex items-center gap-1.5 shadow-sm"
-            >
-              <EyeIcon className="w-4 h-4" />
-              PREVIEW
-            </button>
-            <Link
-              href={`/profile/projects/${project.slug}/premium`}
-              className="px-3.5 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-300 rounded-xl hover:bg-amber-600/30 transition-all text-xs font-bold shadow-sm"
-            >
-              PDF PREMIUM
-            </Link>
-            <Link
-              href={`/projects/${project.slug}`}
-              target="_blank"
-              className="px-3.5 py-2 bg-white/[0.04] border border-white/10 text-zinc-300 rounded-xl hover:bg-white/[0.08] hover:text-white transition-all text-xs font-bold"
-            >
-              VER PÁGINA PÚBLICA ↗
-            </Link>
-          </div>
-        </div>
-
-        {/* Tab Viewport */}
-        <div className="min-h-[500px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              {activeTab === 'overview' && (
-                <OverviewTab
-                  project={project}
-                  config={config}
-                  onTogglePhase={handleTogglePhase}
-                  loadingPhase={isLoadingPhase}
-                />
-              )}
-              {activeTab === 'network' && <NetworkTab project={project} />}
-              {activeTab === 'treasury' && <TreasuryTab project={project} address={treasuryAddress} />}
-              {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
-              {activeTab === 'dao' && <DaoTreasuryTab project={project} />}
-              {activeTab === 'legal' && <LegalTab project={project} />}
-              {activeTab === 'resource_hub' && <ResourceHubTab project={project} />}
-              {activeTab === 'settings' && <SettingsTab project={project} />}
-              {activeTab === 'purchases' && (
-                <PurchasesTab project={project} onUpdatePending={fetchPendingCount} />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Protocol Sandbox Preview Modal */}
-        <ProtocolSandboxPreviewModal
-          project={project}
-          isOpen={isPreviewOpen}
-          onClose={() => setIsPreviewOpen(false)}
-        />
-      </main>
+      {/* Protocol Sandbox Preview Modal */}
+      <ProtocolSandboxPreviewModal
+        project={project}
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+      />
     </div>
   );
 }
 
-// ── SUB-TABS & HELPERS ─────────────────────────────────────────────────────────
+// ── DEDICATED PROFILE & WALLET TAB ──────────────────────────────────────────
+
+function ProfileTab({
+  project,
+  account,
+  chainName,
+  onCopyAddress,
+  copiedWallet,
+  onOpenPreview,
+}: {
+  project: any;
+  account: any;
+  chainName: string;
+  onCopyAddress: () => void;
+  copiedWallet: boolean;
+  onOpenPreview: () => void;
+}) {
+  const { disconnect } = useDisconnect();
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-2xl space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 font-mono text-lg font-bold">
+              {account?.address ? account.address.slice(2, 4).toUpperCase() : 'W'}
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Perfil de Operador & Fundador</h3>
+              <p className="text-xs text-zinc-400 font-mono">Consola de Autenticación & Llaves Soberanas</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+            CONECTADO
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
+            <span className="text-xs font-mono text-zinc-400">Dirección de Wallet Activa</span>
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-sm text-white truncate">
+                {account?.address || 'No detectada'}
+              </p>
+              {account?.address && (
+                <button
+                  onClick={onCopyAddress}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+                  title="Copiar Dirección"
+                >
+                  {copiedWallet ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
+            <span className="text-xs font-mono text-zinc-400">Red Conectada</span>
+            <p className="font-mono text-sm text-emerald-400 font-bold">{chainName}</p>
+          </div>
+        </div>
+
+        {/* Acciones Rápidas */}
+        <div className="pt-4 border-t border-white/5 space-y-3">
+          <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-mono">Herramientas & Simulador</h4>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={onOpenPreview}
+              className="px-4 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl transition-all text-xs font-bold flex items-center gap-2"
+            >
+              <EyeIcon className="w-4 h-4" />
+              Abrir Sandbox Simulator
+            </button>
+            <Link
+              href={`/projects/${project.slug}`}
+              target="_blank"
+              className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white border border-white/10 rounded-xl transition-all text-xs font-bold flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Página Pública del Protocolo
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── OVERVIEW TAB & SUB-COMPONENTS ──────────────────────────────────────────
 
 function OverviewTab({
   project,
@@ -750,7 +884,7 @@ function TreasuryTab({ project, address }: { project: any; address?: string }) {
                 value={distAmount}
                 onChange={(e) => setDistAmount(e.target.value)}
                 placeholder="Ej. 5000"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm outline-none focus:border-violet-500/60"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm outline-none focus:border-indigo-500/60"
               />
             </div>
             <div>
@@ -760,7 +894,7 @@ function TreasuryTab({ project, address }: { project: any; address?: string }) {
                 value={distDesc}
                 onChange={(e) => setDistDesc(e.target.value)}
                 placeholder="Ej. Rendimiento Q3 2026"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm outline-none focus:border-violet-500/60"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm outline-none focus:border-indigo-500/60"
               />
             </div>
           </div>

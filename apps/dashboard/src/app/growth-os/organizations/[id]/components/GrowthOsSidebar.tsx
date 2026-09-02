@@ -157,46 +157,6 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
                   </Link>
                 );
               })}
-
-              {/* Cross-Plane Hybrid Links (Mobile) */}
-              <div className="pt-4 mt-4 border-t border-white/10 space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-2 font-mono">
-                  Capacidades de Negocio
-                </div>
-                <Link
-                  href={`/portal/${slugId}/ecosystem`}
-                  onClick={() => setIsMobileOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold hover:bg-violet-500/20 transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-violet-400" />
-                    <span>Ecosistema Hub</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-violet-400/70" />
-                </Link>
-                <Link
-                  href={`/portal/${slugId}/overview`}
-                  onClick={() => setIsMobileOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/20 transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <Bot className="w-4 h-4 text-emerald-400" />
-                    <span>Hermes AI OS</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-emerald-400/70" />
-                </Link>
-                <Link
-                  href={`/profile/projects/${slugId}/manage`}
-                  onClick={() => setIsMobileOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/20 transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-indigo-400" />
-                    <span>Tokenomics & RWA</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-indigo-400/70" />
-                </Link>
-              </div>
             </nav>
           </div>
         </div>
@@ -279,60 +239,13 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
             );
           })}
 
-          {/* Cross-Plane Hybrid Links (Desktop) */}
-          <div className={`mt-5 pt-4 border-t border-white/10 ${isCollapsed ? 'px-0 space-y-2' : 'px-1 space-y-1.5'}`}>
-            {!isCollapsed && (
-              <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 px-1 font-mono">
-                Capacidades de Negocio
-              </div>
-            )}
-            <Link
-              href={`/portal/${slugId}/ecosystem`}
-              title={isCollapsed ? 'Ecosistema Hub' : undefined}
-              className={`flex items-center ${
-                isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-              } rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-300 transition-all text-xs font-semibold`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <Layers className="w-4 h-4 text-violet-400 shrink-0" />
-                {!isCollapsed && <span className="truncate">Ecosistema Hub</span>}
-              </div>
-              {!isCollapsed && <ExternalLink className="w-3 h-3 text-violet-400/70 shrink-0" />}
-            </Link>
-            <Link
-              href={`/portal/${slugId}/overview`}
-              title={isCollapsed ? 'Hermes AI OS' : undefined}
-              className={`flex items-center ${
-                isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-              } rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 transition-all text-xs font-semibold`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
-                {!isCollapsed && <span className="truncate">Hermes AI OS</span>}
-              </div>
-              {!isCollapsed && <ExternalLink className="w-3 h-3 text-emerald-400/70 shrink-0" />}
-            </Link>
-            <Link
-              href={`/profile/projects/${slugId}/manage`}
-              title={isCollapsed ? 'Protocol Tokenomics' : undefined}
-              className={`flex items-center ${
-                isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-              } rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 transition-all text-xs font-semibold`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
-                {!isCollapsed && <span className="truncate">Tokenomics</span>}
-              </div>
-              {!isCollapsed && <ExternalLink className="w-3 h-3 text-indigo-400/70 shrink-0" />}
-            </Link>
-          </div>
         </nav>
 
         {/* Collapse toggle button */}
         <div className="p-3 border-t border-white/10 flex justify-end">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
             title={isCollapsed ? 'Expandir Menú' : 'Colapsar Menú'}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}

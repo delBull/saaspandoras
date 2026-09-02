@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * PortalSidebar — Phase 6.1 & 6.5.2.2 Mobile Polish
+ * PortalSidebar — Canonical Hermes Operating System Navigation
+ * src/components/hermes-portal/PortalSidebar.tsx
  * 
- * Navigation for the Hermes Customer Operating Console.
- * Item visibility depends on permissions (UX only — server still enforces).
- * No hardcoded tenants. Identical structure for every organization.
+ * Clean, compact icon-focused navigation for the Hermes Customer Operating Console.
+ * Media Studio is included as the canonical Phase 7+ AI media generation suite.
  */
 
 import React from 'react';
@@ -28,9 +28,7 @@ import {
   ChevronRight,
   Boxes,
   Sparkles,
-  FileText,
-  ExternalLink,
-  Layers,
+  Zap,
 } from 'lucide-react';
 
 interface NavItem {
@@ -42,13 +40,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    label: 'Ecosistema Hub',
-    href: '/ecosystem',
-    icon: Layers,
-    requiredPermission: 'organization.read',
-    section: 'primary',
-  },
   {
     label: 'Overview',
     href: '',
@@ -123,7 +114,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Add-ons',
     href: '/addons',
     icon: Boxes,
-    requiredPermission: 'organization.read', // Allow everyone to at least see the marketplace
+    requiredPermission: 'organization.read',
     section: 'secondary',
   },
 ];
@@ -148,110 +139,61 @@ export function PortalSidebar({
   const pathname = usePathname();
   const basePath = `/portal/${organizationSlug}`;
 
-  const visibleItems = NAV_ITEMS.filter(item =>
+  const isActive = (href: string) => {
+    const fullPath = `${basePath}${href}`;
+    if (href === '') {
+      return pathname === basePath || pathname === `${basePath}/`;
+    }
+    return pathname.startsWith(fullPath);
+  };
+
+  const visibleItems = NAV_ITEMS.filter((item) =>
     permissions.includes(item.requiredPermission)
   );
 
-  const primaryItems = visibleItems.filter(i => i.section === 'primary');
-  const secondaryItems = visibleItems.filter(i => i.section === 'secondary');
-
-  const isActive = (href: string) => {
-    const fullPath = `${basePath}${href}`;
-    return href === '' ? pathname === basePath : pathname.startsWith(fullPath);
-  };
+  const primaryItems = visibleItems.filter((i) => i.section === 'primary' || !i.section);
+  const secondaryItems = visibleItems.filter((i) => i.section === 'secondary');
 
   return (
     <>
-      {/* MOBILE SIDEBAR (Drawer) */}
+      {/* MOBILE DRAWER CONTENT */}
       <aside
-        className="md:hidden h-screen bg-[#0C0C12] border-r border-white/[0.08] flex flex-col z-30 w-[260px]"
+        className="md:hidden flex flex-col w-[280px] h-full bg-[#0C0C12] border-r border-white/[0.08] text-white p-4 overflow-y-auto"
+        role="navigation"
+        aria-label="Menú principal móvil"
       >
-        <div className="flex items-center h-16 px-4 border-b border-white/[0.06] shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shrink-0 shadow-lg">
+        <div className="flex items-center gap-3 px-2 py-3 mb-4 border-b border-white/[0.08]">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-md">
             <span className="text-white text-xs font-bold">H</span>
           </div>
-          <div className="ml-3 overflow-hidden">
-            <p className="text-white font-semibold text-sm leading-tight truncate">Hermes</p>
-            <p className="text-white/40 text-xs truncate">{organization.name}</p>
+          <div className="overflow-hidden">
+            <p className="font-semibold text-sm truncate text-white">{organization.name}</p>
+            <p className="text-[10px] text-zinc-400 font-mono">Hermes AI OS</p>
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-2">
-          <ul className="space-y-1">
-            {primaryItems.map(item => {
-              const active = isActive(item.href);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    prefetch={false}
-                    href={`${basePath}${item.href}`}
-                    onClick={() => onNavClick?.()}
-                    className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px] ${
-                      active ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
-                    }`}
-                  >
-                    <Icon size={18} className={active ? 'text-violet-400 shrink-0' : 'shrink-0'} />
-                    <span className="truncate font-medium">{item.label}</span>
-                    {active && <span className="ml-auto w-2 h-2 rounded-full bg-violet-400 shrink-0" />}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          {secondaryItems.length > 0 && <div className="my-3 mx-3 border-t border-white/[0.06]" />}
-          <ul className="space-y-1">
-            {secondaryItems.map(item => {
-              const active = isActive(item.href);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    prefetch={false}
-                    href={`${basePath}${item.href}`}
-                    onClick={() => onNavClick?.()}
-                    className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm transition-all duration-150 min-h-[44px] ${
-                      active ? 'bg-white/[0.08] text-white font-medium' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
-                    }`}
-                  >
-                    <Icon size={18} className="shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* ── INSTITUTIONAL NAVIGATION LAYER (MOBILE DRAWER) ── */}
-          <div className="mt-6 pt-4 border-t border-white/[0.08] px-1 space-y-2">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1 px-2">
-              Capacidades de Negocio
-            </div>
-            <Link
-              prefetch={false}
-              href={`/growth-os/organizations/${organizationSlug}`}
-              onClick={() => onNavClick?.()}
-              className="flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 active:bg-violet-500/30 border border-violet-500/30 text-violet-200 transition-all text-xs font-medium min-h-[44px] group shadow-sm"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Boxes size={16} className="text-violet-400 shrink-0" />
-                <span className="truncate font-medium">Growth OS Hub</span>
-              </div>
-              <ExternalLink size={13} className="text-violet-400/70 group-hover:text-violet-300 shrink-0" />
-            </Link>
-            <Link
-              prefetch={false}
-              href={`/profile/projects/${organizationSlug}/manage`}
-              onClick={() => onNavClick?.()}
-              className="flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 transition-all text-xs font-medium min-h-[44px] group shadow-sm"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <FileText size={16} className="text-indigo-400 shrink-0" />
-                <span className="truncate font-medium">Protocol Tokenomics</span>
-              </div>
-              <ExternalLink size={13} className="text-indigo-400/70 group-hover:text-indigo-300 shrink-0" />
-            </Link>
-          </div>
+        <nav className="flex-1 flex flex-col gap-1">
+          {visibleItems.map((item) => {
+            const active = isActive(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={`${basePath}${item.href}`}
+                onClick={() => onNavClick?.()}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px]
+                  ${active
+                    ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
+                  }
+                `}
+              >
+                <Icon size={18} className={active ? 'text-purple-400' : 'text-zinc-400'} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
       </aside>
 
@@ -263,7 +205,7 @@ export function PortalSidebar({
             </div>
             {!collapsed && (
               <div className="flex-1 overflow-hidden">
-                <div className="text-sm font-semibold text-white truncate">Hermes</div>
+                <div className="text-sm font-semibold text-white truncate">Hermes OS</div>
                 <div className="text-[10px] text-zinc-500 font-mono truncate">{organization.name}</div>
               </div>
             )}
@@ -319,59 +261,12 @@ export function PortalSidebar({
                     </Link>
                 );
             })}
-
-            {/* ── INSTITUTIONAL NAVIGATION LAYER (DESKTOP SIDEBAR) ── */}
-            <div className={`w-full mt-3 pt-3 border-t border-white/10 ${collapsed ? 'flex flex-col items-center gap-1.5' : 'px-1 space-y-1.5'}`}>
-              {!collapsed && (
-                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1.5 px-2">
-                  Capacidades de Negocio
-                </div>
-              )}
-              <Link
-                href={`/growth-os/organizations/${organizationSlug}`}
-                className={`relative flex ${
-                  collapsed 
-                    ? 'flex-col items-center justify-center p-3 w-14 h-14' 
-                    : 'items-center justify-between px-3 py-2.5 w-full'
-                } rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-200 transition-all group shadow-sm`}
-                title={collapsed ? "Growth OS — Misiones, CRM & Tools" : undefined}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Boxes className="w-5 h-5 text-violet-400 shrink-0" />
-                  {!collapsed && <span className="text-xs font-medium truncate">Growth OS Hub</span>}
-                </div>
-                {collapsed ? (
-                  <span className="text-[8px] font-mono text-violet-300 mt-1">GROW</span>
-                ) : (
-                  <ExternalLink size={12} className="text-violet-400/70 group-hover:text-violet-300 shrink-0" />
-                )}
-              </Link>
-              <Link
-                href={`/profile/projects/${organizationSlug}/manage`}
-                className={`relative flex ${
-                  collapsed 
-                    ? 'flex-col items-center justify-center p-3 w-14 h-14' 
-                    : 'items-center justify-between px-3 py-2.5 w-full'
-                } rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 transition-all group shadow-sm`}
-                title={collapsed ? "Gestionar Protocolo & Tokenomics" : undefined}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileText className="w-5 h-5 text-indigo-400 shrink-0" />
-                  {!collapsed && <span className="text-xs font-medium truncate">Protocol Tokenomics</span>}
-                </div>
-                {collapsed ? (
-                  <span className="text-[8px] font-mono text-indigo-300 mt-1">RWA</span>
-                ) : (
-                  <ExternalLink size={12} className="text-indigo-400/70 group-hover:text-indigo-300 shrink-0" />
-                )}
-              </Link>
-            </div>
         </div>
         
         <div className={`mt-auto mb-4 border-t border-white/10 pt-4 w-full flex ${collapsed ? 'justify-center' : 'justify-end px-4'}`}>
             <button 
                 onClick={onToggle}
-                className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-white/5"
+                className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-white/5 cursor-pointer"
                 title={collapsed ? "Expandir Menú" : "Colapsar Menú"}
             >
                 {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
