@@ -258,20 +258,10 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
             </div>
 
             {/* Footer */}
-            <div className="p-4 px-6 border-t border-zinc-800/80 bg-zinc-900/30 flex items-center justify-between">
-              <a
-                href="https://dash.pandoras.finance/nexus/settings"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors"
-              >
-                <span>Abrir consola completa</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-
+            <div className="p-4 px-6 border-t border-zinc-800/80 bg-zinc-900/30 flex items-center justify-end">
               <button
                 onClick={onClose}
-                className="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition-colors"
+                className="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
               >
                 Cerrar
               </button>
