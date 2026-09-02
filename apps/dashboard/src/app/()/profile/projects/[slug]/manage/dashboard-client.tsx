@@ -13,6 +13,7 @@ import {
   UsersIcon,
   EyeIcon,
   ShieldCheckIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,10 @@ import { LegalTab } from './tabs/LegalTab';
 import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
 import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { NetworkTab } from './tabs/NetworkTab';
+import { EventsTab } from '@/components/shared/tabs/EventsTab';
+import { ProjectDaoProtocolSection } from './components/ProjectDaoProtocolSection';
+import { TokenomicsBotsTab } from './tabs/TokenomicsBotsTab';
+import { UnifiedResourceHubTab } from './tabs/UnifiedResourceHubTab';
 import { ProtocolSandboxPreviewModal } from '@/components/projects/ProtocolSandboxPreviewModal';
 import GovernancePage from '@/components/governance/GovernancePage';
 import { useProfile } from '@/hooks/useProfile';
@@ -73,13 +78,17 @@ function parseSafeNumber(val: any): number {
 
 type MainTab =
   | 'overview'
-  | 'network'
   | 'purchases'
+  | 'network'
+  | 'events'
   | 'treasury_dao'
-  | 'governance_legal'
+  | 'governance'
+  | 'tokenomics_bots'
+  | 'legal'
   | 'resource_hub'
   | 'profile'
-  | 'settings';
+  | 'settings'
+  | 'pandoras_governance';
 
 export default function ProjectFounderDashboard({ project, hasGrowthOs }: ProjectFounderDashboardProps) {
   const router = useRouter();
@@ -88,12 +97,11 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
   const [pendingCount, setPendingCount] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [copiedWallet, setCopiedWallet] = useState(false);
 
   // Sub-tab states for consolidated views
   const [treasurySubTab, setTreasurySubTab] = useState<'treasury' | 'dao'>('treasury');
-  const [govSubTab, setGovSubTab] = useState<'project_gov' | 'pandoras_gov' | 'legal'>('project_gov');
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
@@ -170,11 +178,14 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
 
   const menuItems = [
     { id: 'overview' as MainTab, label: 'Resumen General', icon: BuildingLibraryIcon, short: 'RES' },
+    { id: 'purchases' as MainTab, label: 'Inversiones', icon: CurrencyDollarIcon, short: 'INV', count: pendingCount },
     { id: 'network' as MainTab, label: 'Gestores Patrimoniales', icon: UsersIcon, short: 'GES' },
-    { id: 'purchases' as MainTab, label: 'Reconciliación', icon: CurrencyDollarIcon, short: 'REC', count: pendingCount },
-    { id: 'treasury_dao' as MainTab, label: 'Tesorería & DAO', icon: Landmark, short: 'TES' },
-    { id: 'governance_legal' as MainTab, label: 'Gobernanza & Legal', icon: DocumentTextIcon, short: 'GOB' },
-    { id: 'resource_hub' as MainTab, label: 'Hub de Recursos', icon: FileText, short: 'DOC' },
+    { id: 'events' as MainTab, label: 'Eventos & Calendario', icon: ClockIcon, short: 'EVE' },
+    { id: 'treasury_dao' as MainTab, label: 'Tesorería', icon: Landmark, short: 'TES' },
+    { id: 'governance' as MainTab, label: 'Gobernanza del Proyecto', icon: Vote, short: 'GOB' },
+    { id: 'tokenomics_bots' as MainTab, label: 'Tokenomics & Bots', icon: Cog6ToothIcon, short: 'TOK' },
+    { id: 'legal' as MainTab, label: 'Legal & Riesgos', icon: Shield, short: 'LEG' },
+    { id: 'resource_hub' as MainTab, label: 'Hub de Recursos', icon: FileText, short: 'HUB' },
     { id: 'profile' as MainTab, label: 'Mi Perfil & Wallet', icon: User, short: 'PER' },
   ];
 
@@ -291,7 +302,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
         {/* DESKTOP COLLAPSIBLE SIDEBAR */}
         <aside
           className={`hidden md:flex flex-col shrink-0 bg-[#09090C] border-r border-white/10 select-none transition-all duration-300 h-full overflow-hidden ${
-            isSidebarCollapsed ? 'w-16 items-center' : 'w-60 items-start px-3'
+            isSidebarCollapsed ? 'w-16 items-center' : 'w-64 items-start px-3'
           }`}
         >
           <nav className="flex-1 py-4 space-y-1 w-full overflow-y-auto">
@@ -333,8 +344,26 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
             })}
           </nav>
 
+          {/* Standalone bottom button: Gobernanza Pandoras OS */}
+          <div className="pt-2 pb-1 border-t border-white/10 w-full px-1">
+            <button
+              onClick={() => setActiveTab('pandoras_governance')}
+              title={isSidebarCollapsed ? 'Gobernanza Pandoras' : undefined}
+              className={`flex items-center ${
+                isSidebarCollapsed ? 'justify-center p-3 w-12 h-12 mx-auto' : 'justify-start px-3 py-2.5 w-full gap-2.5'
+              } rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'pandoras_governance'
+                  ? 'bg-purple-600/25 text-purple-300 border border-purple-500/40 shadow-sm shadow-purple-500/20 font-bold'
+                  : 'text-zinc-400 hover:text-purple-300 hover:bg-purple-500/10 border border-transparent'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+              {!isSidebarCollapsed && <span className="truncate">Gobernanza Pandoras</span>}
+            </button>
+          </div>
+
           {/* Sidebar Collapse Toggle */}
-          <div className="p-3 border-t border-white/10 w-full flex justify-end">
+          <div className={`p-3 border-t border-white/10 w-full flex ${isSidebarCollapsed ? 'justify-center' : 'justify-end'}`}>
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-colors cursor-pointer"
@@ -349,14 +378,14 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
         {isMobileDrawerOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
             <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
               onClick={() => setIsMobileDrawerOpen(false)}
             />
-            <div className="relative flex-1 flex flex-col max-w-[280px] w-full bg-[#09090C] border-r border-white/10 text-zinc-300 z-50 h-full shadow-2xl">
-              <div className="flex items-center justify-between h-14 px-4 border-b border-white/10">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">
-                    P
+            <div className="relative flex flex-col w-72 max-w-[80vw] bg-[#09090D] border-r border-white/10 h-full z-10">
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-xs">
+                    T
                   </div>
                   <span className="text-white font-bold text-sm tracking-tight truncate">{project.title}</span>
                 </div>
@@ -397,6 +426,24 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                     </button>
                   );
                 })}
+
+                {/* Mobile: Standalone Pandoras Governance */}
+                <div className="pt-3 mt-2 border-t border-white/10">
+                  <button
+                    onClick={() => {
+                      setActiveTab('pandoras_governance');
+                      setIsMobileDrawerOpen(false);
+                    }}
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                      activeTab === 'pandoras_governance'
+                        ? 'bg-purple-600/25 text-purple-300 border border-purple-500/40 shadow-sm font-bold'
+                        : 'text-zinc-400 hover:text-purple-300 hover:bg-purple-500/10'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span>Gobernanza Pandoras</span>
+                  </button>
+                </div>
               </nav>
             </div>
           </div>
@@ -458,74 +505,38 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
                     )}
                   </div>
                 )}
-                {activeTab === 'governance_legal' && (
+                {activeTab === 'events' && <EventsTab project={project} />}
+                {activeTab === 'governance' && <ProjectDaoProtocolSection project={project} />}
+                {activeTab === 'tokenomics_bots' && <TokenomicsBotsTab project={project} />}
+                {activeTab === 'legal' && <LegalTab project={project} />}
+                {activeTab === 'resource_hub' && <UnifiedResourceHubTab project={project} />}
+                {activeTab === 'pandoras_governance' && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 p-1 bg-black/40 rounded-2xl border border-white/5 w-fit flex-wrap">
-                      <button
-                        onClick={() => setGovSubTab('project_gov')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          govSubTab === 'project_gov'
-                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        Gobernanza del Proyecto
-                      </button>
-                      <button
-                        onClick={() => setGovSubTab('pandoras_gov')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          govSubTab === 'pandoras_gov'
-                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        <Vote className="w-3.5 h-3.5" />
-                        <span>Gobernanza Pandoras OS</span>
-                      </button>
-                      <button
-                        onClick={() => setGovSubTab('legal')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          govSubTab === 'legal'
-                            ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        Legal & Riesgos
-                      </button>
-                    </div>
-
-                    {govSubTab === 'project_gov' && (
-                      <GovernanceTab address={governorAddress} project={project} />
-                    )}
-
-                    {govSubTab === 'pandoras_gov' && (
-                      <div className="space-y-6">
-                        <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold">
-                              <Vote className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-bold text-white">Gobernanza Global de Pandoras OS</h3>
-                              <p className="text-xs text-zinc-400 font-mono">Consenso On-Chain, propuestas y staking del protocolo general</p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                            DAO ON-CHAIN
-                          </span>
+                    <div className="p-5 bg-gradient-to-r from-purple-950/40 via-zinc-900/60 to-black border border-purple-500/20 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 backdrop-blur-xl shadow-xl">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold shadow-lg shadow-purple-500/10 shrink-0">
+                          <Vote className="w-6 h-6" />
                         </div>
-                        <div className="border border-white/5 rounded-2xl bg-black/40 p-2 sm:p-4">
-                          <GovernancePage />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-bold text-white tracking-tight">
+                              Gobernanza Global de Pandoras OS
+                            </h2>
+                            <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-mono font-bold">
+                              DAO ON-CHAIN
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-400 font-mono mt-1">
+                            Consenso On-Chain, propuestas y staking del protocolo general de Pandoras.
+                          </p>
                         </div>
                       </div>
-                    )}
-
-                    {govSubTab === 'legal' && (
-                      <LegalTab project={project} />
-                    )}
+                    </div>
+                    <div className="border border-white/5 rounded-2xl bg-black/40 p-2 sm:p-4">
+                      <GovernancePage />
+                    </div>
                   </div>
                 )}
-                {activeTab === 'resource_hub' && <ResourceHubTab project={project} />}
                 {activeTab === 'profile' && (
                   <ProfileTab
                     project={project}

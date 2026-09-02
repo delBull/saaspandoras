@@ -18,6 +18,7 @@ import {
   HandoffAlertConfig 
 } from './actions';
 import { toast } from 'sonner';
+import { useInspector } from '@/components/hermes-portal/InspectorContext';
 
 export default function ChannelsDashboard({ organizationSlug }: { organizationSlug: string }) {
   const [telegramToken, setTelegramToken] = useState('');
@@ -48,6 +49,74 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
   const [waTestResult, setWaTestResult] = useState<any>(null);
 
   const [testingAlert, setTestingAlert] = useState(false);
+  const { inspect } = useInspector();
+
+  // Inspect active channel when alertChannel or details change
+  useEffect(() => {
+    const CHANNEL_SPECS: Record<string, any> = {
+      email: {
+        title: 'Canal de Escalación: Email',
+        type: 'Channel.Email',
+        badge: 'SMTP / SES',
+        badgeColor: 'amber',
+        description: 'Notificaciones y alertas directas al equipo de operaciones vía correo transaccional.',
+        attributes: {
+          'Protocolo': 'SMTP / AWS SES Direct',
+          'Destino': alertEmail || 'No configurado',
+          'Tipo de Notificación': 'Alerta Inmediata Handoff',
+          'Latencia': '< 15 segundos',
+          'Cifrado': 'TLS Enforced',
+        },
+        complianceNote: 'El canal de Email almacena logs de envío en hermes_jobs para auditoría legal.',
+      },
+      telegram: {
+        title: 'Canal de Escalación: Telegram',
+        type: 'Channel.Telegram',
+        badge: 'REAL-TIME',
+        badgeColor: 'blue',
+        description: 'Alertas en vivo a grupo o chat de operadores vía Hermes OS Bot (@pandorasHermes_bot).',
+        attributes: {
+          'Bot Asignado': '@pandorasHermes_bot',
+          'Chat ID': alertTgChatId || 'No configurado',
+          'Modo': 'Notificación Push Instantánea',
+          'Acción': 'Botones Inline de Intervención Humana',
+          'Seguridad': 'x-telegram-bot-api-secret-token',
+        },
+        complianceNote: 'Las alertas a Telegram son firmadas con HMAC y registradas en el auditor K26.',
+      },
+      whatsapp: {
+        title: 'Canal de Escalación: WhatsApp',
+        type: 'Channel.WhatsApp',
+        badge: 'META WABA',
+        badgeColor: 'emerald',
+        description: 'Handoff de alta prioridad a operadores en WhatsApp Cloud API oficial de Meta.',
+        attributes: {
+          'Proveedor': 'Meta Cloud API v20.0',
+          'Teléfono Notificado': alertWaPhone || 'No configurado',
+          'Plantilla': 'hermes_human_escalation_v1',
+          'Webhook Status': 'Escuchando en vivo',
+        },
+        complianceNote: 'Mensajes con opt-in y política de privacidad de WhatsApp Business Platform.',
+      },
+      discord: {
+        title: 'Canal de Escalación: Discord',
+        type: 'Channel.Discord',
+        badge: 'WEBHOOK',
+        badgeColor: 'violet',
+        description: 'Alertas de escalación a canal privado de Discord para equipos distribuidos.',
+        attributes: {
+          'Destino Webhook': alertDiscordUrl ? 'Configurado' : 'Pendiente',
+          'Canal Sugerido': '#soporte-escalaciones',
+          'Formato': 'Rich Embed con Datos del Lead',
+        },
+        complianceNote: 'Los mensajes se entregan con rate-limiting automático para prevenir saturación.',
+      },
+    };
+
+    if (CHANNEL_SPECS[alertChannel]) {
+      inspect(CHANNEL_SPECS[alertChannel]);
+    }
+  }, [alertChannel, alertEmail, alertTgChatId, alertWaPhone, alertDiscordUrl, inspect]);
 
   useEffect(() => {
     Promise.all([

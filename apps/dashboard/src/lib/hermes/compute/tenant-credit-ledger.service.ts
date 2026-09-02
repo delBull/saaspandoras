@@ -48,6 +48,21 @@ export interface SettlementResult {
 export class TenantCreditLedgerService {
   public static readonly DEFAULT_MARKUP_PERCENTAGE = Number(process.env.HERMES_DEFAULT_MARKUP_PERCENTAGE || 35);
   public static readonly MIN_TOPUP_AMOUNT_USD = 5.0000; // $5 USD mínimo de recarga permitido
+  private static inMemoryCredits: Map<string, TenantCreditsDTO> = new Map();
+
+  public static updateInMemoryCredits(tenantId: string, updates: Partial<TenantCreditsDTO>): void {
+    const normalizedTenant = tenantId.toLowerCase().trim();
+    const current = this.inMemoryCredits.get(normalizedTenant) || {
+      tenantId: normalizedTenant,
+      creditBalanceUsd: 0,
+      totalDepositedUsd: 0,
+      totalSpentUsd: 0,
+      markupPercentage: this.DEFAULT_MARKUP_PERCENTAGE,
+      isSandboxEnabled: true,
+      sandboxBalanceUsd: 0,
+    };
+    this.inMemoryCredits.set(normalizedTenant, { ...current, ...updates });
+  }
 
   /**
    * Retrieves or initializes the credit ledger entry for a tenant.
@@ -107,15 +122,18 @@ export class TenantCreditLedgerService {
     }
 
     // Graceful fallback for dev or pending migration
-    return {
-      tenantId: normalizedTenant,
-      creditBalanceUsd: 0,
-      totalDepositedUsd: 0,
-      totalSpentUsd: 0,
-      markupPercentage: this.DEFAULT_MARKUP_PERCENTAGE,
-      isSandboxEnabled: true,
-      sandboxBalanceUsd: 0,
-    };
+    if (!this.inMemoryCredits.has(normalizedTenant)) {
+      this.inMemoryCredits.set(normalizedTenant, {
+        tenantId: normalizedTenant,
+        creditBalanceUsd: 0,
+        totalDepositedUsd: 0,
+        totalSpentUsd: 0,
+        markupPercentage: this.DEFAULT_MARKUP_PERCENTAGE,
+        isSandboxEnabled: true,
+        sandboxBalanceUsd: 0,
+      });
+    }
+    return this.inMemoryCredits.get(normalizedTenant)!;
   }
 
   /**

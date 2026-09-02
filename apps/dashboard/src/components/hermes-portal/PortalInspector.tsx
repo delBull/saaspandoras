@@ -20,9 +20,26 @@ export function PortalInspector({
   onToggle 
 }: any) {
   const pathname = usePathname() || '';
-  const { data: contextData, toggle: contextToggle } = useInspector();
+  const { data: contextData, inspect, toggle: contextToggle } = useInspector();
   
   const handleToggle = onToggle || contextToggle;
+
+  // Reset inspector context when transitioning across different portal sections
+  const prevSectionRef = React.useRef<string>('');
+  React.useEffect(() => {
+    // pathname format: /portal/[slug]/[section] or /portal/[slug]
+    const segments = pathname.split('/').filter(Boolean);
+    const currentSection = segments[2] || 'overview';
+    const prevSection = prevSectionRef.current;
+
+    // If section changed, clear previous section's stale inspection
+    if (prevSection && prevSection !== currentSection) {
+      if (contextData) {
+        inspect(null);
+      }
+    }
+    prevSectionRef.current = currentSection;
+  }, [pathname, inspect, contextData]);
 
   // Fallback dynamic definitions based on route
   let dynamicTitle = title;

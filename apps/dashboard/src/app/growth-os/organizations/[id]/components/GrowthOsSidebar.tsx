@@ -39,7 +39,7 @@ interface GrowthOsSidebarProps {
 export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarProps) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const basePath = `/growth-os/organizations/${slugId}`;
 
@@ -164,13 +164,13 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside
-        className={`hidden md:flex flex-col shrink-0 bg-[#050505] border-r border-white/10 text-zinc-300 transition-all duration-300 backdrop-blur-xl h-full overflow-hidden ${
-          isCollapsed ? 'w-20' : 'w-64'
+        className={`hidden md:flex flex-col shrink-0 bg-[#050505] border-r border-white/10 text-zinc-300 transition-all duration-300 backdrop-blur-xl h-full overflow-hidden select-none ${
+          isCollapsed ? 'w-16 items-center' : 'w-64'
         }`}
       >
-        <div className="p-5 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
+        <div className={`border-b border-white/10 w-full ${isCollapsed ? 'p-3.5 flex justify-center' : 'p-5'}`}>
+          <div className="flex items-center justify-between w-full">
+            <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-3 min-w-0'}`}>
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
                 G
               </div>
@@ -184,7 +184,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+        <nav className={`flex-1 py-4 space-y-1.5 overflow-y-auto w-full ${isCollapsed ? 'px-1 items-center' : 'px-3'}`}>
           {!isCollapsed && (
             <div className="px-2 pt-1 pb-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">
               Operaciones
@@ -199,7 +199,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
                 href={`${basePath}${item.href}`}
                 title={isCollapsed ? item.label : undefined}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center p-3' : 'gap-3 px-3 py-2.5'
+                  isCollapsed ? 'justify-center p-3 w-12 h-12 mx-auto' : 'gap-3 px-3 py-2.5'
                 } rounded-xl text-sm font-medium transition-all ${
                   active
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm'
@@ -226,7 +226,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
                 href={`${basePath}${item.href}`}
                 title={isCollapsed ? item.label : undefined}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center p-3' : 'gap-3 px-3 py-2.5'
+                  isCollapsed ? 'justify-center p-3 w-12 h-12 mx-auto' : 'gap-3 px-3 py-2.5'
                 } rounded-xl text-sm font-medium transition-all ${
                   active
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm'
@@ -242,7 +242,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
         </nav>
 
         {/* Collapse toggle button */}
-        <div className="p-3 border-t border-white/10 flex justify-end shrink-0 bg-[#050505] z-10">
+        <div className={`p-3 border-t border-white/10 flex w-full shrink-0 bg-[#050505] z-10 ${isCollapsed ? 'justify-center' : 'justify-end'}`}>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"

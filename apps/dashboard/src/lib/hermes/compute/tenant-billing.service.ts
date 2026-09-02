@@ -63,6 +63,8 @@ export interface HermesInternalAccountingEntry {
 }
 
 export class TenantBillingService {
+  private static inMemoryLedger: any[] = [];
+
   /**
    * Pandoras Admin / Treasury Wallet resolution.
    * STRICT FAIL-CLOSED: Resolves exclusively from environment variables,
@@ -165,6 +167,30 @@ export class TenantBillingService {
       console.error('[TenantBillingService] Error saving deposit to DB:', err);
     }
 
+    // Always mirror to in-memory ledger for immediate audit resilience
+    this.inMemoryLedger.unshift({
+      id: depositId,
+      timestamp: new Date().toISOString(),
+      tenantId: normalizedTenant,
+      eventType: 'billing.credit.deposit',
+      amountUsd,
+      rawCostUsd: netComputeUsd,
+      markupCostUsd: platformCommissionUsd,
+      destinationWallet: treasuryWallet,
+      reason: `Fondeo de créditos ${isSandbox ? 'Sandbox (Pruebas)' : 'Producción'} con margen ${markupPct}%`,
+      status: 'FUNDED',
+      isSandbox,
+      transactionHash: transactionHash || null,
+      payerWallet: payerWallet || null,
+    });
+
+    // Always mirror to in-memory credit ledger
+    TenantCreditLedgerService.updateInMemoryCredits(normalizedTenant, {
+      sandboxBalanceUsd: isSandbox ? newBalanceUsd : currentCredits.sandboxBalanceUsd,
+      creditBalanceUsd: !isSandbox ? newBalanceUsd : currentCredits.creditBalanceUsd,
+      totalDepositedUsd: newTotalDeposited,
+    });
+
     return {
       ok: true,
       depositId,
@@ -211,7 +237,7 @@ export class TenantBillingService {
       const rows = await query;
       const treasury = this.getTreasuryWallet();
 
-      return rows.map(r => {
+      const mapped = rows.map(r => {
         const meta = (r.metadataJson as Record<string, any>) || {};
         return {
           id: r.id,
@@ -229,9 +255,17 @@ export class TenantBillingService {
           payerWallet: meta.payerWallet,
         };
       });
+
+      if (rows.length === 0 && this.inMemoryLedger.length > 0) {
+        const tenantFilter = options?.tenantId ? options.tenantId.toLowerCase().trim() : null;
+        return this.inMemoryLedger.filter(e => !tenantFilter || e.tenantId === tenantFilter);
+      }
+
+      return mapped;
     } catch (err) {
-      console.error('[TenantBillingService] Error fetching internal accounting ledger:', err);
-      return [];
+      console.warn('[TenantBillingService] Notice fetching DB accounting ledger, utilizing audit mirror:', err);
+      const tenantFilter = options?.tenantId ? options.tenantId.toLowerCase().trim() : null;
+      return this.inMemoryLedger.filter(e => !tenantFilter || e.tenantId === tenantFilter);
     }
   }
 }
