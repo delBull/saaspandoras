@@ -91,7 +91,7 @@ export class TenantCreditLedgerService {
           };
         }
 
-        // Initialize tenant ledger with $5.00 USD courtesy Sandbox balance for free trial compute
+        // Initialize tenant ledger with $0.00 USD balance (tenant must fund their own credits, minimum $5.00 USD)
         const newRecord = {
           id: `cred_${normalizedTenant}`,
           tenantId: normalizedTenant,
@@ -100,7 +100,7 @@ export class TenantCreditLedgerService {
           totalSpentUsd: '0.0000',
           markupPercentage: this.DEFAULT_MARKUP_PERCENTAGE,
           isSandboxEnabled: true,
-          sandboxBalanceUsd: '5.0000',
+          sandboxBalanceUsd: '0.0000',
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -114,7 +114,7 @@ export class TenantCreditLedgerService {
           totalSpentUsd: 0,
           markupPercentage: this.DEFAULT_MARKUP_PERCENTAGE,
           isSandboxEnabled: true,
-          sandboxBalanceUsd: 5.0,
+          sandboxBalanceUsd: 0,
         };
       }
     } catch (err) {
@@ -130,7 +130,7 @@ export class TenantCreditLedgerService {
         totalSpentUsd: 0,
         markupPercentage: this.DEFAULT_MARKUP_PERCENTAGE,
         isSandboxEnabled: true,
-        sandboxBalanceUsd: 5.0,
+        sandboxBalanceUsd: 0,
       });
     }
     return this.inMemoryCredits.get(normalizedTenant)!;
