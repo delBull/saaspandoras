@@ -201,6 +201,29 @@ export class PlatformCapabilityRegistryService {
       def.riskLevel === 'CRITICAL_A' || 
       def.riskLevel === 'CRITICAL_B';
 
+    // ── Invariante 1: Agentes Autónomos (F9.10) ──
+    // Los agentes delegados tienen estrictamente prohibida la ejecución autónoma de HIGH y CRITICAL
+    if (actor.actorType === 'AGENT_DELEGATE') {
+      if (def.riskLevel === 'HIGH' || isCritical) {
+        return {
+          ...baseResult,
+          granted: false,
+          reason: `Los agentes delegados (AGENT_DELEGATE) tienen estrictamente prohibida la ejecución de capacidades ${def.riskLevel} sin mediación humana directa.`,
+        };
+      }
+    }
+
+    // ── Invariante 2: Aislamiento de Scope de Recursos (F9.10) ──
+    if (typeof targetScope === 'object' && (targetScope.tenantId || targetScope.projectId)) {
+      if (!def.allowedScopes.includes('scoped')) {
+        return {
+          ...baseResult,
+          granted: false,
+          reason: `La capacidad '${capability}' es de ámbito global ('all') y no admite invocación sobre un tenant o proyecto individual.`,
+        };
+      }
+    }
+
     // 1. SUPER_ADMIN tiene autoridad sobre todo
     if (actor.role === 'SUPER_ADMIN') {
       // Si la acción es crítica (A o B) y requiere 2FA Discord o Timelock, verificar 2FA
