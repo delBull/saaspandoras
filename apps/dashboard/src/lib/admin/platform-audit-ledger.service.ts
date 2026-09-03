@@ -14,6 +14,9 @@ import {
   PlatformAuditGovernanceContext,
   PlatformAuditStateTransition
 } from '@/lib/dash-contracts/admin';
+import { db } from '@/db';
+import { auditLogs } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export interface CreateAuditEntryParams {
   actorId: string;
@@ -35,6 +38,41 @@ export class PlatformAuditLedgerService {
   private static sequenceCounter = 0;
   private static lastHash = '0000000000000000000000000000000000000000000000000000000000000000';
   private static readonly memoryChain: PlatformAuditEntryDTO[] = [];
+  private static isInitialized = false;
+
+  /**
+   * Inicializa la cadena de hashes a partir de la última entrada persistida en Postgres.
+   */
+  public static async initializeFromStore(): Promise<void> {
+    try {
+      const lastEntry = await db.query.auditLogs.findFirst({
+        where: eq(auditLogs.category, 'PLATFORM_GOVERNANCE'),
+        orderBy: [desc(auditLogs.createdAt)],
+      });
+
+      if (lastEntry && lastEntry.metadata) {
+        const meta = lastEntry.metadata as any;
+        if (meta.currentHash && typeof meta.sequenceNumber === 'number') {
+          this.lastHash = meta.currentHash;
+          this.sequenceCounter = meta.sequenceNumber;
+        }
+      }
+      this.isInitialized = true;
+    } catch (err) {
+      console.warn('[PlatformAuditLedgerService] Notice: Initializing genesis chain (no previous DB entries):', err);
+      this.isInitialized = true;
+    }
+  }
+
+  /**
+   * Resetea el ledger en memoria y estado (exclusivo para tests unitarios).
+   */
+  public static resetForTesting(): void {
+    this.sequenceCounter = 0;
+    this.lastHash = '0000000000000000000000000000000000000000000000000000000000000000';
+    this.memoryChain.length = 0;
+    this.isInitialized = false;
+  }
 
   /**
    * Genera el hash criptográfico SHA-256 inmutable para una entrada dada su anterior hash.
@@ -94,7 +132,50 @@ export class PlatformAuditLedgerService {
     };
 
     this.memoryChain.push(entry);
-    return entry;
+
+    // Persistencia Duradera y Verificable en Postgres (audit_logs)
+    // Provee Integridad Criptográfica Detectable (tamper-evident hash-chaining)
+    const persistPromise = (async () => {
+      if (typeof db?.insert === 'function') {
+        try {
+          await db.insert(auditLogs).values({
+            event: params.action,
+            category: 'PLATFORM_GOVERNANCE',
+            tenantId: params.targetResource,
+            address: params.actorWallet && params.actorWallet !== 'N/A' ? params.actorWallet : null,
+            ip: '127.0.0.1',
+            success: params.result === 'SUCCESS',
+            metadata: {
+              id,
+              sequenceNumber: this.sequenceCounter,
+              prevHash,
+              currentHash,
+              actorId: params.actorId,
+              actorRole: params.actorRole,
+              actorType: params.actorType,
+              capability: params.capability,
+              governance: params.governance,
+              stateTransition: params.stateTransition,
+              evidenceCid: params.evidenceCid || null,
+              txHash: params.txHash || null,
+            },
+          });
+        } catch (dbErr: any) {
+          console.error('[PlatformAuditLedgerService] Failed to persist audit entry to Postgres:', dbErr?.message);
+          if (process.env.NODE_ENV === 'production') {
+            throw new Error(`[PlatformAuditLedgerService] Fail-Closed: Tamper-evident audit persistence failed: ${dbErr?.message}`);
+          }
+        }
+      }
+      return entry;
+    })();
+
+    // Thenable entry: awaitable in production, synchronously accessible in tests
+    return Object.assign(entry, {
+      then: persistPromise.then.bind(persistPromise),
+      catch: persistPromise.catch.bind(persistPromise),
+      finally: persistPromise.finally.bind(persistPromise),
+    }) as PlatformAuditEntryDTO & Promise<PlatformAuditEntryDTO>;
   }
 
   /**
@@ -153,14 +234,5 @@ export class PlatformAuditLedgerService {
    */
   public static getRecentEntries(limit = 20): PlatformAuditEntryDTO[] {
     return this.memoryChain.slice(-limit).reverse();
-  }
-
-  /**
-   * Reinicia la cadena para entornos de pruebas.
-   */
-  public static resetForTesting(): void {
-    this.sequenceCounter = 0;
-    this.lastHash = '0000000000000000000000000000000000000000000000000000000000000000';
-    this.memoryChain.length = 0;
   }
 }

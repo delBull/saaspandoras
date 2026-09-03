@@ -7,7 +7,8 @@
  * role-to-capability validation.
  */
 
-import { PlatformRole, PlatformActor } from '@/lib/dash-contracts/admin';
+import type { PlatformRole, PlatformActor } from '@/lib/dash-contracts/admin';
+export type { PlatformRole, PlatformActor };
 
 export type PlatformCapability =
   | 'platform.tenants.read'
@@ -22,7 +23,23 @@ export type PlatformCapability =
   | 'platform.collaborators.manage'
   | 'platform.identity.admins.manage'
   | 'platform.security.audit'
-  | 'platform.books.unlock';
+  | 'platform.books.unlock'
+  | 'admin.whitelabel'
+  // Dominio Comercial (HQ CRM)
+  | 'hq.crm.read'
+  | 'hq.crm.enrich'
+  | 'hq.crm.outreach'
+  | 'hq.crm.classify'
+  | 'hq.crm.deal.close'
+  // Dominio Tenant Hermes
+  | 'tenant.hermes.outreach'
+  // Dominio Integración (Developer Hub & Webhooks)
+  | 'platform.integration.webhook.intake'
+  | 'platform.integration.keys.read'
+  | 'platform.integration.keys.manage'
+  // Dominio Operaciones & Provisioning
+  | 'ops.tenant.provision'
+  | 'ops.tenant.bootstrap';
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL_A' | 'CRITICAL_B' | 'CRITICAL';
 
@@ -40,7 +57,7 @@ export type PlatformResourceScope =
 
 export interface PlatformCapabilityDefinition {
   capability: PlatformCapability;
-  resource: 'Platform' | 'Tenant' | 'RWA Project' | 'Treasury' | 'Identity' | 'Audit';
+  resource: 'Platform' | 'Tenant' | 'RWA Project' | 'Treasury' | 'Identity' | 'Audit' | 'HQ CRM' | 'Integration' | 'Operations';
   allowedScopes: Array<'all' | 'assigned' | 'scoped'>;
   riskLevel: RiskLevel;
   governanceRequirement: GovernanceRequirement;
@@ -157,12 +174,111 @@ export class PlatformCapabilityRegistryService {
     },
     'platform.books.unlock': {
       capability: 'platform.books.unlock',
-      resource: 'Platform',
+      resource: 'Audit',
       allowedScopes: ['all'],
       riskLevel: 'CRITICAL_B',
       governanceRequirement: 'DUAL_KEY_TIME_WINDOW',
-      description: 'Desbloquear acceso a los Libros Constitucionales con 2FA Discord de Super Admin',
+      description: 'Desbloqueo de libros contables de la plataforma con quórum multifirma (Libro Constitucional)',
     },
+    'admin.whitelabel': {
+      capability: 'admin.whitelabel',
+      resource: 'Tenant',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'HIGH',
+      governanceRequirement: 'REINFORCED_AUTH',
+      description: 'Configurar parámetros Whitelabel (dominio, colores, logo) para un Tenant',
+    },
+    'hq.crm.read': {
+      capability: 'hq.crm.read',
+      resource: 'HQ CRM',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Leer contexto de los prospectos B2B (HQ Leads)',
+    },
+    'hq.crm.enrich': {
+      capability: 'hq.crm.enrich',
+      resource: 'HQ CRM',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Actualizar metadatos no sensibles y deduplicar leads',
+    },
+    'hq.crm.outreach': {
+      capability: 'hq.crm.outreach',
+      resource: 'HQ CRM',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'MEDIUM',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Iniciar conversaciones automatizadas o manuales (nurturing) con HQ Leads',
+    },
+    'hq.crm.classify': {
+      capability: 'hq.crm.classify',
+      resource: 'HQ CRM',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Cambiar la calificación de un HQ Lead (NEW -> QUALIFIED)',
+    },
+    'hq.crm.deal.close': {
+      capability: 'hq.crm.deal.close',
+      resource: 'HQ CRM',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'HIGH',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Cierre formal de un acuerdo comercial (CLOSED_WON)',
+    },
+    // Dominio Tenant Hermes
+    'tenant.hermes.outreach': {
+      capability: 'tenant.hermes.outreach',
+      resource: 'Tenant',
+      allowedScopes: ['scoped'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Envío de mensajes conversacionales de outreach o bienvenida a prospectos propios del tenant',
+    },
+    // Dominio Integración
+    'platform.integration.webhook.intake': {
+      capability: 'platform.integration.webhook.intake',
+      resource: 'Integration',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Ingesta pública o autenticada de prospectos vía Webhook',
+    },
+    'platform.integration.keys.read': {
+      capability: 'platform.integration.keys.read',
+      resource: 'Integration',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'MEDIUM',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Visualización de credenciales de API en Developer Hub',
+    },
+    'platform.integration.keys.manage': {
+      capability: 'platform.integration.keys.manage',
+      resource: 'Integration',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'HIGH',
+      governanceRequirement: 'REINFORCED_AUTH',
+      description: 'Generación, rotación o revocación de API Keys de integración',
+    },
+    // Dominio Operaciones & Provisioning
+    'ops.tenant.provision': {
+      capability: 'ops.tenant.provision',
+      resource: 'Operations',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'CRITICAL_B',
+      governanceRequirement: 'SECOND_APPROVAL',
+      description: 'Creación y aprovisionamiento formal de un tenant en infraestructura viva',
+    },
+    'ops.tenant.bootstrap': {
+      capability: 'ops.tenant.bootstrap',
+      resource: 'Operations',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'HIGH',
+      governanceRequirement: 'REINFORCED_AUTH',
+      description: 'Inicialización de Sovereign Knowledge Vault y namespaces del tenant',
+    }
   };
 
   /**
@@ -211,6 +327,10 @@ export class PlatformCapabilityRegistryService {
           reason: `Los agentes delegados (AGENT_DELEGATE) tienen estrictamente prohibida la ejecución de capacidades ${def.riskLevel} sin mediación humana directa.`,
         };
       }
+      // Los agentes delegados están explícitamente autorizados para sus capabilities de outreach (LOW)
+      if (capability === 'hq.crm.outreach' || capability === 'tenant.hermes.outreach') {
+        return { ...baseResult, granted: true };
+      }
     }
 
     // ── Invariante 2: Aislamiento de Scope de Recursos (F9.10) ──
@@ -250,7 +370,14 @@ export class PlatformCapabilityRegistryService {
 
     // 3. PLATFORM_ADMIN
     if (actor.role === 'PLATFORM_ADMIN') {
-      // Puede ejecutar LOW, MEDIUM y HIGH
+      if (def.governanceRequirement === 'REINFORCED_AUTH' && !actor.isDiscord2faVerified) {
+        return {
+          ...baseResult,
+          granted: false,
+          reason: `La capacidad '${capability}' (${def.riskLevel}) requiere verificación 2FA Discord previa para PLATFORM_ADMIN.`,
+        };
+      }
+      // Puede ejecutar capacidades sin REINFORCED_AUTH
       return { ...baseResult, granted: true };
     }
 

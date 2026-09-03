@@ -294,9 +294,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         else if (stage === 'CLOSED_WON') mappedStage = 'CLOSED_WON';
         else if (stage === 'CLOSED_LOST') mappedStage = 'CLOSED_LOST';
 
-        // Use conversionValue from DB if available
-        const estimatedValue = l.conversionValue ? parseFloat(l.conversionValue) : 
-          (mappedStage === 'CLOSED_WON' ? 25000 : mappedStage === 'NEGOTIATION' ? 15000 : 5000);
+        // Use conversionValue from DB if available. Default to 0 if not set.
+        const estimatedValue = l.conversionValue ? parseFloat(l.conversionValue) : 0;
 
         if (['PROSPECT', 'CONTACTED', 'DEMO', 'DUE_DILIGENCE', 'NEGOTIATION'].includes(mappedStage)) {
           activeDealsCount++;

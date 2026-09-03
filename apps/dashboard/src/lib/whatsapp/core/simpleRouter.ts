@@ -13,6 +13,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { notifySupportRequest } from "@/lib/discord"; // Dynamic or direct import
 import { sendWhatsAppMessage, sendInteractiveMessage } from "../utils/client";
 import { syncLeadAsClient } from "@/actions/leads";
+import { maskPhoneNumber } from "../utils/conversation-id";
 
 /**
  * INTERFACES SIMPLIFICADAS
@@ -116,7 +117,7 @@ async function handleUtilityFlow(message: string, step = 0, phone?: string, proj
 
         if (syncRes.success && syncRes.data) {
           await MarketingEngine.startCampaign('Utility Protocol Follow-up', { leadId: syncRes.data.id });
-          console.log(`[Utility] 🚀 Campaign triggered for ${phone}`);
+          console.log(`[Utility] 🚀 Campaign triggered for ${maskPhoneNumber(phone)}`);
         }
       } catch (e) { console.error('[Utility] Campaign Error:', e); }
     }
@@ -232,7 +233,7 @@ async function handleHighTicketFlow(message: string, step = 0, phone?: string, p
 
         if (syncRes.success && syncRes.data) {
           await MarketingEngine.startCampaign('Founders Nurture', { leadId: syncRes.data.id });
-          console.log(`[Founders] 🚀 Campaign triggered for ${phone}`);
+          console.log(`[Founders] 🚀 Campaign triggered for ${maskPhoneNumber(phone)}`);
         }
       } catch (e) { console.error('[Founders] Campaign Error:', e); }
     }
@@ -315,7 +316,7 @@ async function handleCreatorFlow(message: string, step = 0, phone?: string): Pro
 
         if (syncRes.success && syncRes.data) {
           await MarketingEngine.startCampaign('Start Creator Nurture', { leadId: syncRes.data.id });
-          console.log(`[Creator] 🚀 Campaign triggered for ${phone}`);
+          console.log(`[Creator] 🚀 Campaign triggered for ${maskPhoneNumber(phone)}`);
         }
       } catch (e) { console.error('[Creator] Campaign Error:', e); }
     }
@@ -483,7 +484,7 @@ async function handleProtocolApplicationFlow(message: string, step = 0, phone?: 
           console.log(`[Protocol App] 🎯 Starting Hot Leads campaign for lead ${syncRes.data.id}`);
           await MarketingEngine.startCampaign('ApplyProtocol Hot Leads', { leadId: syncRes.data.id });
         } else {
-          console.warn(`[Protocol App] ⚠️ Could not sync lead for phone ${phone}, cannot start campaign`);
+          console.warn(`[Protocol App] ⚠️ Could not sync lead for phone ${maskPhoneNumber(phone)}, cannot start campaign`);
         }
       } catch (error) {
         console.error('[Protocol App] ❌ Failed to start marketing campaign:', error);
@@ -729,7 +730,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
   const messageText = text?.body?.trim() || '';
 
   try {
-    console.log(`🔄 [SIMPLE-ROUTER] Mensaje de ${phone}: "${messageText.substring(0, 50)}..."`);
+    console.log(`🔄 [SIMPLE-ROUTER] Mensaje de ${maskPhoneNumber(phone)}: "${messageText.substring(0, 50)}..."`);
 
     // 1. IDEMPOTENCY: Verificar si ya procesamos este mensaje
     try {
@@ -752,7 +753,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
     const existingFlow = await getExistingFlow(phone);
 
     if (existingFlow) {
-      console.log(`🔄 [SIMPLE-ROUTER] Usuario ${phone} ya tiene flujo: ${existingFlow}`);
+      console.log(`🔄 [SIMPLE-ROUTER] Usuario ${maskPhoneNumber(phone)} ya tiene flujo: ${existingFlow}`);
 
       // Solo procesar si es un mensaje válido
       if (!messageText) {
@@ -764,7 +765,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
 
       if (!currentState) {
         // Error: usuario tiene flujo pero no estado
-        console.error(`❌ [SIMPLE-ROUTER] Inconsistencia: usuario ${phone} tiene flujo pero no estado`);
+        console.error(`❌ [SIMPLE-ROUTER] Inconsistencia: usuario ${maskPhoneNumber(phone)} tiene flujo pero no estado`);
         return {
           handled: true,
           flowType: existingFlow,
@@ -773,7 +774,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         };
       }
 
-      console.log(`📊 [FLOW-STATE] Usuario ${phone}: flow=${existingFlow}, currentStep=${currentState.step}, projectId=${currentState.state?.projectId || 'Global'}`);
+      console.log(`📊 [FLOW-STATE] Usuario ${maskPhoneNumber(phone)}: flow=${existingFlow}, currentStep=${currentState.step}, projectId=${currentState.state?.projectId || 'Global'}`);
 
       const sessionProjectId = currentState.state?.projectId || null;
 
@@ -817,7 +818,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       // If user wants to switch flows, do it immediately
       if (requestedSwitch && flowSwitchCommands[requestedSwitch as keyof typeof flowSwitchCommands] !== existingFlow) {
         const newFlow = flowSwitchCommands[requestedSwitch as keyof typeof flowSwitchCommands];
-        console.log(`🔄 [FLOW-SWITCH] Usuario ${phone} cambiando de ${existingFlow} a ${newFlow}`);
+        console.log(`🔄 [FLOW-SWITCH] Usuario ${maskPhoneNumber(phone)} cambiando de ${existingFlow} a ${newFlow}`);
 
         // 1. Desactivar sesión actual evitando colisiones
         await sql`
@@ -954,7 +955,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
     const detectedFlow = detectFlowFromLanding(payload, messageText);
     const detectedProjectId = await detectProject(messageText);
     
-    console.log(`🆕 [SIMPLE-ROUTER] Nuevo usuario ${phone} → Asignando flujo: "${detectedFlow}", Proyecto: ${detectedProjectId || 'Global'}`);
+    console.log(`🆕 [SIMPLE-ROUTER] Nuevo usuario ${maskPhoneNumber(phone)} → Asignando flujo: "${detectedFlow}", Proyecto: ${detectedProjectId || 'Global'}`);
 
     // Asignar flujo con contexto de proyecto
     await assignFlow(phone, detectedFlow, payload.contactName || null, detectedProjectId);

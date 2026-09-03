@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
 import { DefaultCognitiveChannelDispatcher } from '@/lib/pandoras/core/domains/channels/channel-dispatcher';
 import { DuplicateMessageError, InvalidChannelPayloadError } from '@/lib/pandoras/core/domains/channels/channel-errors';
+import { verifyMetaSignature } from '@/app/api/whatsapp/simple/route';
 
 const omnichannelGateway = new DefaultOmnichannelGateway();
 const channelDispatcher = new DefaultCognitiveChannelDispatcher();
@@ -29,39 +30,41 @@ export async function POST(request: Request) {
     const targetTenant = searchParams.get('tenant') || searchParams.get('organizationId');
 
     const bodyText = await request.text();
-
-    // Verify Meta X-Hub-Signature-256 if secret is configured
-    const metaAppSecret = process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET;
+    const metaAppSecret = (process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '').trim();
     const signatureHeader = request.headers.get('x-hub-signature-256');
 
-    if (metaAppSecret && signatureHeader) {
-      const signature = signatureHeader.replace(/^sha256=/, '');
-      const expectedSignature = crypto
-        .createHmac('sha256', metaAppSecret)
-        .update(bodyText, 'utf8')
-        .digest('hex');
-
-      try {
-        const sigBuf = Buffer.from(signature, 'hex');
-        const expBuf = Buffer.from(expectedSignature, 'hex');
-        if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-          console.warn('[WhatsApp Webhook] Signature mismatch with configured META_APP_SECRET, proceeding with runtime tenant verification.');
-        }
-      } catch (sigErr) {
-        console.warn('[WhatsApp Webhook] Signature verification check error:', sigErr);
-      }
-    }
-
-    let body;
+    let body: any;
     try {
       body = JSON.parse(bodyText);
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
-    // Determine if it's Native Meta Cloud API or Bridge
     const isNativeMeta = body.object === 'whatsapp_business_account';
-    
+
+    // 🔒 Cyber Security: Enforce strict fail-closed HMAC for Meta Webhooks
+    if (signatureHeader || isNativeMeta) {
+      if (!metaAppSecret) {
+        if (process.env.NODE_ENV === 'production') {
+          console.error('❌ [WhatsApp Webhook] META_APP_SECRET missing in production.');
+          return NextResponse.json({ error: 'Server configuration error: missing secret' }, { status: 500 });
+        }
+        console.warn('⚠️ [WhatsApp Webhook] Non-production environment missing META_APP_SECRET.');
+      } else {
+        if (!signatureHeader) {
+          console.warn('🔒 [WhatsApp Webhook] Missing x-hub-signature-256 header.');
+          return NextResponse.json({ error: 'Missing x-hub-signature-256 header' }, { status: 401 });
+        }
+
+        const isValid = verifyMetaSignature(bodyText, signatureHeader, metaAppSecret);
+        if (!isValid) {
+          console.warn('🔒 [WhatsApp Webhook] Invalid HMAC signature or tampered body.');
+          return NextResponse.json({ error: 'Invalid HMAC signature' }, { status: 401 });
+        }
+      }
+    }
+
+    // Determine if it's Native Meta Cloud API or Bridge
     if (isNativeMeta) {
       const { WhatsAppDispatcher } = await import('@/lib/whatsapp/dispatcher');
       const dispatchResult = await WhatsAppDispatcher.dispatch(body);

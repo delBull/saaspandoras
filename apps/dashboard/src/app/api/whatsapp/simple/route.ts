@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 /**
  * Validates Meta X-Hub-Signature-256 if META_APP_SECRET or WHATSAPP_APP_SECRET is configured.
  */
-function verifyMetaSignature(rawBody: string, signatureHeader: string | null, appSecret: string): boolean {
+export function verifyMetaSignature(rawBody: string, signatureHeader: string | null, appSecret: string): boolean {
   if (!signatureHeader || !signatureHeader.startsWith('sha256=')) {
     return false;
   }
@@ -34,15 +34,26 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text();
     const appSecret = (process.env.WHATSAPP_APP_SECRET || process.env.META_APP_SECRET || '').trim();
 
-    // 1. Cyber Security: Verify HMAC signature (Fail-Closed in production)
+    // 1. Cyber Security: Verify HMAC signature (Strict Fail-Closed)
     if (!appSecret) {
-      console.warn('⚠️ [SIMPLE-WHATSAPP] WHATSAPP_APP_SECRET not configured in environment. Skipping signature verification.');
+      if (process.env.NODE_ENV === 'production') {
+        console.error('❌ [SIMPLE-WHATSAPP] WHATSAPP_APP_SECRET missing in production.');
+        return NextResponse.json(
+          { status: 'error', error: 'Server configuration error: WHATSAPP_APP_SECRET missing' },
+          { status: 500 }
+        );
+      }
+      console.warn('⚠️ [SIMPLE-WHATSAPP] Non-production environment missing WHATSAPP_APP_SECRET. Proceeding constrained.');
     } else {
       const signature = request.headers.get('x-hub-signature-256');
-      const isValid = verifyMetaSignature(rawBody, signature, appSecret);
+      if (!signature) {
+        console.warn('🔒 [SIMPLE-WHATSAPP] Cabecera X-Hub-Signature-256 ausente.');
+        return NextResponse.json({ status: 'unauthorized', error: 'Missing x-hub-signature-256 header' }, { status: 401 });
+      }
 
+      const isValid = verifyMetaSignature(rawBody, signature, appSecret);
       if (!isValid) {
-        console.warn('🔒 [SIMPLE-WHATSAPP] Firma X-Hub-Signature-256 inválida o ausente. Solicitud rechazada.');
+        console.warn('🔒 [SIMPLE-WHATSAPP] Firma X-Hub-Signature-256 inválida o payload alterado.');
         return NextResponse.json({ status: 'unauthorized', error: 'Invalid HMAC signature' }, { status: 401 });
       }
     }

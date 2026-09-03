@@ -23,6 +23,7 @@ import {
   Layers
 } from 'lucide-react';
 import { AdminTenantLensDTO } from '@/lib/dash-contracts/admin';
+import { AdminWhitelabelConfig } from './AdminWhitelabelConfig';
 
 interface AdminTenantLensProps {
   tenant: AdminTenantLensDTO;
@@ -181,6 +182,14 @@ export function AdminTenantLens({ tenant }: AdminTenantLensProps) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Whitelabel Configuration */}
+      <div className="space-y-2">
+        <h5 className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+          Whitelabel Config (Pandora's HQ)
+        </h5>
+        <AdminWhitelabelConfig tenantSlug={tenant.slug} />
       </div>
 
       {/* Quick Launch Buttons */}

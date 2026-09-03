@@ -876,7 +876,9 @@ export const whatsappMessages = pgTable("whatsapp_messages", {
   messageType: text("message_type").default("text").notNull(), // "text", "image", "audio"
   incomingWamid: text("incoming_wamid"),
   timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  incomingWamidIdx: uniqueIndex("idx_whatsapp_messages_incoming_wamid_unique").on(table.incomingWamid),
+}));
 
 // Export types
 export type Project = typeof projects.$inferSelect;
