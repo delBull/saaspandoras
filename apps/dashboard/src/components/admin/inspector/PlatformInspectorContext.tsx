@@ -16,7 +16,8 @@ export type PlatformInspectorTargetType =
   | 'RWA_DEAL' 
   | 'COLLABORATOR' 
   | 'ENDPOINT'
-  | 'SYSTEM_METRIC';
+  | 'SYSTEM_METRIC'
+  | 'CRM_LEAD';
 
 export interface PlatformInspectorData {
   type: PlatformInspectorTargetType;

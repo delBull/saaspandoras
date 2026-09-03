@@ -14,9 +14,10 @@ import {
   hermesComputeUsageEvents, 
   hermesRunpodEndpoints,
   hermesKnowledge,
-  administrators
+  administrators,
+  marketingLeads
 } from '@/db/schema';
-import { desc, sql } from 'drizzle-orm';
+import { desc, sql, eq } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { AdminOverviewView } from '@/components/admin/views/AdminOverviewView';
@@ -25,13 +26,16 @@ import { AdminBillingView } from '@/components/admin/views/AdminBillingView';
 import { AdminRwaView } from '@/components/admin/views/AdminRwaView';
 import { AdminSecurityView } from '@/components/admin/views/AdminSecurityView';
 import { AdminOperationsView } from '@/components/admin/views/AdminOperationsView';
+import { AdminCrmView } from '@/components/admin/views/AdminCrmView';
 import { AdminAccessGate } from './AdminAccessGate';
 import { 
   PlatformActor, 
   PlatformGlobalKpis, 
   InfrastructureHealth,
   AdminTenantLensDTO,
-  RwaDealSummaryDTO
+  RwaDealSummaryDTO,
+  PlatformB2bLeadDTO,
+  B2bPipelineMetricsDTO
 } from '@/lib/dash-contracts/admin';
 
 interface AdminPageProps {
@@ -75,6 +79,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   let totalGpuSeconds = 0;
   let totalRetainedMargin = 0;
   let totalRawGpuCost = 0;
+  let b2bLeadsList: PlatformB2bLeadDTO[] = [];
+  let b2bMetrics: B2bPipelineMetricsDTO = { totalProspects: 0, activeDeals: 0, pipelineValueUsd: 0, conversionRate: 0 };
 
   try {
     if (db) {
@@ -265,6 +271,66 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         .from(hermesKnowledge);
 
       totalVaultDocuments = Number(docsCount[0]?.count || 0);
+
+      // Query B2B Leads for CRM
+      const leadsRows = await db
+        .select()
+        .from(marketingLeads)
+        .where(eq(marketingLeads.scope, 'b2b'))
+        .orderBy(desc(marketingLeads.createdAt));
+
+      let activeDealsCount = 0;
+      let totalPipelineValue = 0;
+      let closedWonCount = 0;
+
+      b2bLeadsList = leadsRows.map((l) => {
+        // Map crmStage to PlatformB2bLeadStage
+        let mappedStage: any = 'PROSPECT';
+        const stage = l.crmStage || '';
+        if (stage === 'LEAD') mappedStage = 'PROSPECT';
+        else if (stage === 'QUALIFIED') mappedStage = 'DEMO';
+        else if (stage === 'ASSESSMENT') mappedStage = 'DUE_DILIGENCE';
+        else if (stage === 'PROPOSAL') mappedStage = 'NEGOTIATION';
+        else if (stage === 'CLOSED_WON') mappedStage = 'CLOSED_WON';
+        else if (stage === 'CLOSED_LOST') mappedStage = 'CLOSED_LOST';
+
+        // Use conversionValue from DB if available
+        const estimatedValue = l.conversionValue ? parseFloat(l.conversionValue) : 
+          (mappedStage === 'CLOSED_WON' ? 25000 : mappedStage === 'NEGOTIATION' ? 15000 : 5000);
+
+        if (['PROSPECT', 'CONTACTED', 'DEMO', 'DUE_DILIGENCE', 'NEGOTIATION'].includes(mappedStage)) {
+          activeDealsCount++;
+          totalPipelineValue += estimatedValue;
+        }
+        if (mappedStage === 'CLOSED_WON') {
+          closedWonCount++;
+        }
+        
+        const metadata = (l.metadata as any) || {};
+
+        return {
+          id: l.id,
+          name: l.name || 'Desconocido',
+          companyName: metadata.company || metadata.companyName || l.name || 'Desconocido',
+          email: l.email || null,
+          phone: l.phoneNumber || null,
+          stage: mappedStage,
+          source: l.source || 'Inbound',
+          estimatedValueUsd: estimatedValue,
+          notes: metadata.notes || l.lastAction || null,
+          createdAt: l.createdAt ? new Date(l.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: l.updatedAt ? new Date(l.updatedAt).toISOString() : new Date().toISOString(),
+          assignedOperatorId: null,
+          assignedOperatorName: null,
+        };
+      });
+
+      b2bMetrics = {
+        totalProspects: leadsRows.length,
+        activeDeals: activeDealsCount,
+        pipelineValueUsd: totalPipelineValue,
+        conversionRate: leadsRows.length > 0 ? Math.round((closedWonCount / leadsRows.length) * 100) : 0,
+      };
     }
   } catch (err) {
     console.error('⚠️ [AdminPage] Error querying platform metrics:', err);
@@ -331,6 +397,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           isDiscord2faActive={!!process.env.DISCORD_SECURITY_WEBHOOK_URL}
           administrators={administratorsList}
         />
+      ) : activeTab === 'crm' ? (
+        <AdminCrmView initialLeads={b2bLeadsList} metrics={b2bMetrics} />
       ) : activeTab === 'operations' ? (
         <AdminOperationsView endpoints={endpointsList} />
       ) : (

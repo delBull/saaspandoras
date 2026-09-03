@@ -26,6 +26,7 @@ import {
   Layers,
   Sparkles,
   Zap,
+  Briefcase,
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
@@ -55,6 +56,13 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=billing',
       icon: Cpu,
       active: activeSection === 'billing' || pathname.includes('tab=billing'),
+    },
+    {
+      id: 'crm',
+      label: 'HQ Deal Room',
+      href: '/admin?tab=crm',
+      icon: Briefcase,
+      active: activeSection === 'crm' || pathname.includes('tab=crm'),
     },
     {
       id: 'identity',
@@ -230,6 +238,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
                 {activeSection === 'billing' && 'Hermes GPU Compute & Internal Billing'}
                 {activeSection === 'tenants' && 'Directorio Maestro de Tenants'}
                 {activeSection === 'rwa' && 'Pipeline RWA & Capital Structuring'}
+                {activeSection === 'crm' && 'HQ Deal Room (B2B CRM)'}
                 {activeSection === 'security' && 'Seguridad & Bóveda Soberana K25'}
                 {activeSection === 'operations' && 'Operaciones & Serverless Fleet'}
               </h1>

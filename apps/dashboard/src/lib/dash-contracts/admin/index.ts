@@ -13,3 +13,4 @@ export * from './security';
 export * from './rwa';
 export * from './treasury';
 export * from './audit';
+export * from './crm';
