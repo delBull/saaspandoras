@@ -14,7 +14,9 @@ import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { AdminOverviewView } from '@/components/admin/views/AdminOverviewView';
 import { AdminTenantsView } from '@/components/admin/views/AdminTenantsView';
+import { AdminBillingView } from '@/components/admin/views/AdminBillingView';
 import { AdminAccessGate } from './AdminAccessGate';
+import { hermesRunpodEndpoints } from '@/db/schema';
 import { 
   PlatformActor, 
   PlatformGlobalKpis, 
@@ -51,6 +53,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   let totalTenants = 0;
   let rwaCount = 0;
   let enrichedTenantsList: AdminTenantLensDTO[] = [];
+  let creditsRawList: any[] = [];
+  let recentEventsList: any[] = [];
+  let endpointsList: any[] = [];
   let totalDeposited = 0;
   let totalSpent = 0;
   let circulatingCredits = 0;
@@ -72,6 +77,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           isSandbox: hermesTenantCredits.isSandboxEnabled,
         })
         .from(hermesTenantCredits);
+
+      creditsRawList = creditsRows.map((c) => ({
+        tenantId: c.tenantId,
+        creditBalanceUsd: parseFloat(c.balance || '0'),
+        sandboxBalanceUsd: parseFloat(c.sandboxBalance || '0'),
+        totalDepositedUsd: parseFloat(c.deposited || '0'),
+        totalSpentUsd: parseFloat(c.spent || '0'),
+        markupPercentage: c.markup ?? 35,
+        isSandboxEnabled: c.isSandbox ?? true,
+      }));
 
       const creditsMap = new Map<string, typeof creditsRows[0]>();
       creditsRows.forEach((c) => {
@@ -136,7 +151,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         };
       });
 
-      // Query Hermes Compute Events
+      // Query Hermes Compute Events Aggregates
       const eventsAgg = await db
         .select({
           totalSeconds: sql<string>`COALESCE(SUM(execution_seconds), '0')`,
@@ -150,6 +165,42 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         totalRawGpuCost = parseFloat(eventsAgg[0].totalRaw || '0');
         totalRetainedMargin = parseFloat(eventsAgg[0].totalMarkup || '0');
       }
+
+      // Query Recent Compute Events Rows
+      const recentEventsRows = await db
+        .select()
+        .from(hermesComputeUsageEvents)
+        .orderBy(desc(hermesComputeUsageEvents.createdAt))
+        .limit(30);
+
+      recentEventsList = recentEventsRows.map((ev) => ({
+        id: ev.id,
+        tenantId: ev.tenantId,
+        capability: ev.capability,
+        executionSeconds: parseFloat(ev.executionSeconds || '0'),
+        rawCostUsd: parseFloat(ev.rawCostUsd || '0'),
+        markupCostUsd: parseFloat(ev.markupCostUsd || '0'),
+        totalChargedUsd: parseFloat(ev.totalChargedUsd || '0'),
+        status: ev.status || 'SETTLED',
+        isSandbox: ev.isSandbox,
+        createdAt: ev.createdAt ? new Date(ev.createdAt).toISOString() : new Date().toISOString(),
+      }));
+
+      // Query RunPod Endpoints
+      const endpointsRows = await db
+        .select()
+        .from(hermesRunpodEndpoints)
+        .limit(20);
+
+      endpointsList = endpointsRows.map((ep) => ({
+        id: ep.id,
+        endpointId: ep.endpointId,
+        endpointName: ep.endpointName,
+        modelType: ep.modelType,
+        gpuType: ep.gpuType || 'NVIDIA RTX A4000',
+        perSecondCostUsd: parseFloat(ep.perSecondCostUsd || '0.00035'),
+        status: ep.status || 'ACTIVE',
+      }));
     }
   } catch (err) {
     console.error('⚠️ [AdminPage] Error querying platform metrics:', err);
@@ -191,10 +242,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     isDiscord2faVerified: auth.role === 'SUPER_ADMIN',
   };
 
+  const treasuryAddress = process.env.PANDORAS_ADMIN_WALLET || '0xc52BB6f53C91ff7134e7508B102E5A22BA415954';
+
   return (
     <PlatformAdminShell actor={actor} activeSection={activeTab}>
       {activeTab === 'tenants' ? (
         <AdminTenantsView tenants={enrichedTenantsList} />
+      ) : activeTab === 'billing' ? (
+        <AdminBillingView
+          credits={creditsRawList}
+          events={recentEventsList}
+          endpoints={endpointsList}
+          totalDeposited={totalDeposited}
+          totalRawCost={totalRawGpuCost}
+          totalMargin={totalRetainedMargin}
+          totalCirculating={circulatingCredits}
+          treasuryWallet={treasuryAddress}
+        />
       ) : (
         <AdminOverviewView
           kpis={kpis}
