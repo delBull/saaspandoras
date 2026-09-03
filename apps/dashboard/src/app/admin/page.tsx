@@ -13,11 +13,13 @@ import { desc, sql } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { AdminOverviewView } from '@/components/admin/views/AdminOverviewView';
+import { AdminTenantsView } from '@/components/admin/views/AdminTenantsView';
 import { AdminAccessGate } from './AdminAccessGate';
 import { 
   PlatformActor, 
   PlatformGlobalKpis, 
-  InfrastructureHealth 
+  InfrastructureHealth,
+  AdminTenantLensDTO
 } from '@/lib/dash-contracts/admin';
 
 interface AdminPageProps {
@@ -48,7 +50,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   // 2. Query Live Metrics from Neon DB
   let totalTenants = 0;
   let rwaCount = 0;
-  let recentTenantsList: any[] = [];
+  let enrichedTenantsList: AdminTenantLensDTO[] = [];
   let totalDeposited = 0;
   let totalSpent = 0;
   let circulatingCredits = 0;
@@ -58,6 +60,27 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   try {
     if (db) {
+      // Query Hermes Tenant Credits Map
+      const creditsRows = await db
+        .select({
+          tenantId: hermesTenantCredits.tenantId,
+          balance: hermesTenantCredits.creditBalanceUsd,
+          sandboxBalance: hermesTenantCredits.sandboxBalanceUsd,
+          deposited: hermesTenantCredits.totalDepositedUsd,
+          spent: hermesTenantCredits.totalSpentUsd,
+          markup: hermesTenantCredits.markupPercentage,
+          isSandbox: hermesTenantCredits.isSandboxEnabled,
+        })
+        .from(hermesTenantCredits);
+
+      const creditsMap = new Map<string, typeof creditsRows[0]>();
+      creditsRows.forEach((c) => {
+        creditsMap.set(c.tenantId.toLowerCase().trim(), c);
+        circulatingCredits += parseFloat(c.balance || '0');
+        totalDeposited += parseFloat(c.deposited || '0');
+        totalSpent += parseFloat(c.spent || '0');
+      });
+
       // Query Projects
       const projectsRows = await db
         .select({
@@ -67,45 +90,50 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           category: projects.businessCategory,
           applicantWallet: projects.applicantWalletAddress,
           extraConfig: projects.extraConfig,
+          status: projects.status,
           createdAt: projects.createdAt,
+          updatedAt: projects.updatedAt,
         })
         .from(projects)
         .orderBy(desc(projects.createdAt))
-        .limit(20);
+        .limit(50);
 
       totalTenants = projectsRows.length;
-      recentTenantsList = projectsRows.map((p) => {
+      enrichedTenantsList = projectsRows.map((p) => {
         const extra = (p.extraConfig as Record<string, any>) || {};
         const prods = (extra.installed_products || extra.installedProducts || {}) as Record<string, boolean>;
+        const intents = (extra.intents || extra.strategicIntents || []) as string[];
+        const cred = creditsMap.get(p.slug.toLowerCase().trim());
+
+        if (prods.tokenomics_rwa) rwaCount++;
+
         return {
           id: String(p.id),
           slug: p.slug,
           name: p.title || p.slug,
-          category: p.category || 'Tenant',
+          category: p.category || 'General',
+          lifecycleState: (p.status === 'approved' ? 'ACTIVE' : p.status === 'pending' ? 'TRIAL' : 'PROVISIONED') as any,
+          riskRating: 'LOW',
           creatorWallet: p.applicantWallet || '',
           products: {
             hermesAiMesh: !!prods.hermes_ai_mesh,
             growthOsCrm: !!prods.growth_os_crm,
             tokenomicsRwa: !!prods.tokenomics_rwa,
           },
-          creditBalanceUsd: 0,
+          intents,
+          compute: {
+            creditBalanceUsd: parseFloat(cred?.balance || '0.00'),
+            sandboxBalanceUsd: parseFloat(cred?.sandboxBalance || '0.00'),
+            totalDepositedUsd: parseFloat(cred?.deposited || '0.00'),
+            totalSpentUsd: parseFloat(cred?.spent || '0.00'),
+            markupPercentage: cred?.markup ?? 35,
+            isSandboxEnabled: cred?.isSandbox ?? true,
+            totalEventsCount: 0,
+          },
+          knowledgeDocsCount: 0,
           createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
         };
-      });
-
-      // Query Hermes Tenant Credits
-      const creditsRows = await db
-        .select({
-          balance: hermesTenantCredits.creditBalanceUsd,
-          deposited: hermesTenantCredits.totalDepositedUsd,
-          spent: hermesTenantCredits.totalSpentUsd,
-        })
-        .from(hermesTenantCredits);
-
-      creditsRows.forEach((c) => {
-        circulatingCredits += parseFloat(c.balance || '0');
-        totalDeposited += parseFloat(c.deposited || '0');
-        totalSpent += parseFloat(c.spent || '0');
       });
 
       // Query Hermes Compute Events
@@ -165,11 +193,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <PlatformAdminShell actor={actor} activeSection={activeTab}>
-      <AdminOverviewView
-        kpis={kpis}
-        health={health}
-        recentTenants={recentTenantsList}
-      />
+      {activeTab === 'tenants' ? (
+        <AdminTenantsView tenants={enrichedTenantsList} />
+      ) : (
+        <AdminOverviewView
+          kpis={kpis}
+          health={health}
+          recentTenants={enrichedTenantsList.slice(0, 5).map(t => ({
+            id: t.id,
+            slug: t.slug,
+            name: t.name,
+            category: t.category,
+            creatorWallet: t.creatorWallet,
+            products: t.products,
+            creditBalanceUsd: t.compute.creditBalanceUsd,
+            createdAt: t.createdAt,
+          }))}
+        />
+      )}
     </PlatformAdminShell>
   );
 }
