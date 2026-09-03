@@ -125,6 +125,7 @@ export function NexusCommandCenter({ auth }: NexusCommandCenterProps) {
   ];
 
   const quickLinks = [
+    { name: "Platform Governance Plane", href: "/admin", note: "HQ Admin Console, GPU Accounting & Tenant Lens" },
     { name: "S'Narai Portal", href: "/portal/snarai", note: "Interactive In-Portal Experience" },
     { name: "Growth OS Commercial Engine", href: "/growth-os/organizations/snarai", note: "CRM Pipeline & Leads" },
     { name: "Tokenomics & Capital RWA", href: "/profile/projects/snarai/manage", note: "Phases & Safe Treasury" },
