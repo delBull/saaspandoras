@@ -1,4 +1,6 @@
-import { redirect } from "next/navigation";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { NexusCommandCenter } from "./NexusCommandCenter";
+import { NexusLoginGate } from "./NexusLoginGate";
 
 export const dynamic = "force-dynamic";
 
@@ -7,16 +9,13 @@ export default async function NexusRootPage({
 }: {
   searchParams: Promise<{ unlock?: string; token?: string }>;
 }) {
-  const { unlock, token } = await searchParams;
+  const { token } = await searchParams;
 
-  if (token) {
-    const marketingBase = process.env.NEXT_PUBLIC_MARKETING_URL || "https://pandoras.finance";
-    redirect(`${marketingBase}/en/nexus?token=${encodeURIComponent(token)}`);
+  const auth = await getNexusAuthContext(null, token);
+
+  if (auth.isAuthenticated) {
+    return <NexusCommandCenter auth={auth} />;
   }
 
-  if (unlock) {
-    redirect(`/nexus/rooms?unlock=${encodeURIComponent(unlock)}`);
-  }
-
-  redirect("/nexus/rooms");
+  return <NexusLoginGate />;
 }

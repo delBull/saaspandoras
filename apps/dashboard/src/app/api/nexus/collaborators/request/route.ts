@@ -29,7 +29,12 @@ export async function POST(req: NextRequest) {
   const cors = getCorsHeaders(req);
   try {
     const body = await req.json();
-    const { name, email } = body as { name?: string; email?: string };
+    const { name, email, role, permissions } = body as {
+      name?: string;
+      email?: string;
+      role?: string;
+      permissions?: any;
+    };
 
     if (!email) {
       return NextResponse.json(
@@ -54,7 +59,9 @@ export async function POST(req: NextRequest) {
 
     const { collaborator, magicLink } = await createOrUpdateCollaborator(
       cleanName,
-      cleanEmail
+      cleanEmail,
+      role || 'COLLABORATOR',
+      permissions || {}
     );
 
     const sendResult = await sendCollaboratorMagicLink(

@@ -1,9 +1,4 @@
-/**
- * 🎓 Pandora's Academy Control Plane
- * apps/dashboard/src/app/admin/academy/page.tsx
- */
-
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getNexusAuthContext, checkNexusPermission } from "@/lib/nexus/nexus-rbac";
 import { verifyAcademyToken, verifyUnlockToken } from "@/lib/nexus-deals/tokens";
 import AcademyAccessGate from "./AcademyAccessGate";
 import AcademyConsole from "./AcademyConsole";
@@ -13,22 +8,18 @@ export const dynamic = "force-dynamic";
 export default async function AdminAcademyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ unlock?: string }>;
+  searchParams: Promise<{ unlock?: string; token?: string }>;
 }) {
-  const { unlock } = await searchParams;
-  const { session, isVerified } = await getAuth();
+  const { unlock, token } = await searchParams;
 
-  let unlocked = false;
-  let userRole: "admin" | "manager" = "admin";
-  let userEmail: string | undefined;
+  const auth = await getNexusAuthContext(null, token);
 
-  // 1) Sesión de administrador autenticado vía Web3 → acceso directo como admin
-  if (isVerified && session?.address && (await isAdmin(session.address))) {
-    unlocked = true;
-    userRole = "admin";
-  }
+  let unlocked = checkNexusPermission(auth, "academyAdmin");
+  let userRole: "admin" | "manager" =
+    auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" ? "admin" : "manager";
+  let userEmail: string | undefined = auth.email || undefined;
 
-  // 2) Token de desbloqueo firmado (Magic Link por email o Discord HMAC)
+  // Legacy fallback: Token de desbloqueo firmado (Magic Link por email o Discord HMAC)
   if (!unlocked && typeof unlock === "string" && unlock) {
     const academyAuth = await verifyAcademyToken(unlock);
     if (academyAuth.valid) {

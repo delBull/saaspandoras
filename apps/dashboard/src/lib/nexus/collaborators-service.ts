@@ -52,10 +52,14 @@ export async function requireNexusAdmin(req?: Request | Headers): Promise<boolea
   }
 }
 
+import type { NexusPermissionsOverride } from '@/db/schema';
+
 export interface CollaboratorDTO {
   id: number;
   name: string;
   email: string;
+  role: string;
+  permissions?: NexusPermissionsOverride;
   expiresAt: Date;
   lastAccessAt?: Date | null;
   createdAt: Date;
@@ -73,7 +77,9 @@ function generateToken(): string {
  */
 export async function createOrUpdateCollaborator(
   name: string,
-  email: string
+  email: string,
+  role: string = 'COLLABORATOR',
+  permissions: NexusPermissionsOverride = {}
 ): Promise<{ collaborator: CollaboratorDTO; magicLink: string }> {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
@@ -84,6 +90,8 @@ export async function createOrUpdateCollaborator(
       name,
       email: email.toLowerCase(),
       token,
+      role,
+      permissions,
       expiresAt,
       lastAccessAt: null,
     })
@@ -91,6 +99,8 @@ export async function createOrUpdateCollaborator(
       target: nexusCollaborators.email,
       set: {
         token,
+        role,
+        permissions,
         expiresAt,
         lastAccessAt: null,
       },
@@ -109,6 +119,8 @@ export async function createOrUpdateCollaborator(
       id: record.id,
       name: record.name,
       email: record.email,
+      role: record.role || 'COLLABORATOR',
+      permissions: (record.permissions as NexusPermissionsOverride) || {},
       expiresAt: record.expiresAt,
       lastAccessAt: record.lastAccessAt,
       createdAt: record.createdAt,
@@ -224,6 +236,8 @@ export async function verifyCollaboratorToken(
     id: record.id,
     name: record.name,
     email: record.email,
+    role: record.role || 'COLLABORATOR',
+    permissions: (record.permissions as NexusPermissionsOverride) || {},
     expiresAt: record.expiresAt,
     lastAccessAt: record.lastAccessAt,
     createdAt: record.createdAt,
@@ -245,10 +259,48 @@ export async function listCollaborators(): Promise<CollaboratorDTO[]> {
     id: r.id,
     name: r.name,
     email: r.email,
+    role: r.role || 'COLLABORATOR',
+    permissions: (r.permissions as NexusPermissionsOverride) || {},
     expiresAt: r.expiresAt,
     lastAccessAt: r.lastAccessAt,
     createdAt: r.createdAt,
   }));
+}
+
+/**
+ * Update role and granular permissions override for an existing collaborator.
+ */
+export async function updateCollaboratorPermissions(
+  email: string,
+  role: string,
+  permissions: NexusPermissionsOverride
+): Promise<{ success: boolean; collaborator?: CollaboratorDTO }> {
+  const [record] = await db
+    .update(nexusCollaborators)
+    .set({
+      role,
+      permissions,
+    })
+    .where(eq(nexusCollaborators.email, email.toLowerCase()))
+    .returning();
+
+  if (!record) {
+    return { success: false };
+  }
+
+  return {
+    success: true,
+    collaborator: {
+      id: record.id,
+      name: record.name,
+      email: record.email,
+      role: record.role,
+      permissions: (record.permissions as NexusPermissionsOverride) || {},
+      expiresAt: record.expiresAt,
+      lastAccessAt: record.lastAccessAt,
+      createdAt: record.createdAt,
+    },
+  };
 }
 
 /**

@@ -3958,12 +3958,21 @@ export const hermesArtifacts = pgTable("hermes_artifacts", {
   tenantCidIdx: uniqueIndex("hermes_artifacts_tenant_cid_unique").on(t.tenantId, t.cid),
 }));
 
-// ── Nexus Collaborators (Magic Link Email Access) ───────────────────────────────
+export interface NexusPermissionsOverride {
+  dealRoom?: boolean;
+  academyAdmin?: boolean;
+  settings?: boolean;
+  hermesQa?: boolean;
+}
+
+// ── Nexus Collaborators (Magic Link Email Access & RBAC) ───────────────────────────────
 export const nexusCollaborators = pgTable("nexus_collaborators", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   token: varchar("token", { length: 128 }).notNull().unique(),
+  role: varchar("role", { length: 32 }).default("COLLABORATOR").notNull(),
+  permissions: jsonb("permissions").$type<NexusPermissionsOverride>().default({}),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   lastAccessAt: timestamp("last_access_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

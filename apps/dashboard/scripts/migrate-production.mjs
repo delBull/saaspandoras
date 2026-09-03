@@ -37,13 +37,15 @@ async function runMigrations() {
   console.log("⚡ [Pandoras Migration Runner] Connecting to database...");
   
   // 1. nexus_collaborators table
-  console.log("📦 Applying nexus_collaborators DDL...");
+  console.log("📦 Applying nexus_collaborators DDL & RBAC columns...");
   await sql`
     CREATE TABLE IF NOT EXISTS "nexus_collaborators" (
       "id" SERIAL PRIMARY KEY,
       "name" VARCHAR(255) NOT NULL,
       "email" VARCHAR(255) NOT NULL,
       "token" VARCHAR(128) NOT NULL,
+      "role" VARCHAR(32) DEFAULT 'COLLABORATOR' NOT NULL,
+      "permissions" JSONB DEFAULT '{}'::jsonb,
       "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL,
       "last_access_at" TIMESTAMP WITH TIME ZONE,
       "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -51,6 +53,8 @@ async function runMigrations() {
       CONSTRAINT "nexus_collaborators_token_unique" UNIQUE("token")
     );
   `;
+  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "role" VARCHAR(32) DEFAULT 'COLLABORATOR' NOT NULL;`;
+  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "permissions" JSONB DEFAULT '{}'::jsonb;`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_email_unique" ON "nexus_collaborators" ("email");`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_token_unique" ON "nexus_collaborators" ("token");`;
 
