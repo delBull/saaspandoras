@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { db } from '@/db';
-import { hermesConversationMessages, portalOnboardingState } from '@/db/schema';
+import { hermesConversationMessages, portalOnboardingState, projects } from '@/db/schema';
 import { eq, and, or, asc } from 'drizzle-orm';
 import { OnboardingStage } from '@/lib/pandoras/core/domains/hermes/onboarding-workflow';
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
@@ -24,7 +24,7 @@ interface OrganizationOnboardingState {
   messages: PortalChatMessage[];
 }
 
-function getTopicChips(topicId: string, orgName: string, orgSlug?: string): string[] {
+function getTopicChips(topicId: string, orgName: string, orgSlug: string): string[] {
   const isKnownSnarai = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
 
   switch (topicId) {
@@ -70,7 +70,7 @@ function getTopicChips(topicId: string, orgName: string, orgSlug?: string): stri
   }
 }
 
-function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: string): PortalChatMessage {
+function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: string, customWelcome?: string): PortalChatMessage {
   const isKnownSnarai = orgSlug === 'snarai' || orgName.toLowerCase().includes('narai');
   const now = new Date().toISOString();
 
@@ -105,9 +105,11 @@ function getTopicInitialMessage(topicId: string, orgName: string, orgSlug: strin
       };
     case 'general':
     default:
-      const initialContent = isKnownSnarai 
+      const initialContent = customWelcome
+        ? customWelcome
+        : isKnownSnarai 
         ? `Hola. Soy **Hermes**, tu Asesor Patrimonial y Growth Intelligence Officer para **${orgName}**.\n\nConozco a fondo el modelo de Fractional Real Estate, la bóveda de conocimiento y los canales conectados. ¿En qué objetivo estratégico nos enfocamos hoy?`
-        : `Hola. Soy **Hermes**, el agente inteligente y sistema operativo de **${orgName}**.\n\nEstoy conectado a tu bóveda de conocimiento y canales activos. ¿En qué objetivo o consulta estratégica deseas enfocarte hoy?`;
+        : `Hola. Soy **Hermes**, el Concierge inteligente y sistema operativo de **${orgName}**.\n\nEstoy conectado a tu bóveda de conocimiento y canales activos. ¿En qué objetivo o consulta estratégica deseas enfocarte hoy?`;
       return {
         id: `welcome_general_${Date.now()}`,
         role: 'hermes',
@@ -143,7 +145,36 @@ async function loadOrCreateState(tenantId: string, orgName: string, orgSlug: str
     console.warn('[loadOrCreateState] query notice:', err);
   }
 
-  const initial = getTopicInitialMessage('general', orgName, orgSlug);
+  // Attempt to read strategic intent from projects to tailor the Concierge welcome
+  let conciergeWelcome: string | undefined;
+  try {
+    const [proj] = await db
+      .select({ extraConfig: projects.extraConfig })
+      .from(projects)
+      .where(
+        or(
+          eq(projects.slug, orgSlug),
+          eq(projects.slug, tenantId),
+          ...(orgId && !isNaN(Number(orgId)) ? [eq(projects.id, Number(orgId))] : [])
+        )
+      )
+      .limit(1);
+
+    const intents = (proj?.extraConfig as any)?.intents;
+    if (intents?.hermesPriority) {
+      let priorityFocus = 'la atención estratégica a tu comunidad';
+      if (intents.hermesPriority === 'INVESTOR_RELATIONS') priorityFocus = 'la atención e información a inversionistas';
+      else if (intents.hermesPriority === 'CLIENT_SUPPORT') priorityFocus = 'la atención y resolución a clientes';
+      else if (intents.hermesPriority === 'LEAD_GENERATION') priorityFocus = 'la captación y cualificación de prospectos';
+      else if (intents.hermesPriority === 'FAQ_AUTOMATION') priorityFocus = 'el soporte institucional y preguntas frecuentes';
+
+      conciergeWelcome = `Hola. Soy **Hermes**, el Concierge y Sistema Operativo de **${orgName}**.\n\nVeo que tu prioridad inicial es **${priorityFocus}**. Ya conozco la estructura básica de tu organización y estamos listos para configurarla juntos sin fricción.\n\n¿Qué debería saber primero sobre tu negocio o propuesta de valor?`;
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+
+  const initial = getTopicInitialMessage('general', orgName, orgSlug, conciergeWelcome);
   const initialState: OrganizationOnboardingState = {
     stage: 'BUSINESS_DISCOVERY',
     messages: [initial]

@@ -16,6 +16,9 @@ import {
   Loader2,
   Lock,
   Wallet,
+  Bot,
+  Compass,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useActiveAccount } from 'thirdweb/react';
@@ -35,37 +38,37 @@ interface ProductOption {
 const PRODUCTS: ProductOption[] = [
   {
     key: 'HERMES',
-    title: 'Inteligencia Relacional',
-    subtitle: 'Hermes AI OS',
-    description: 'Atención 24/7 en Telegram y Web respaldada por Knowledge Vault soberano (K25).',
+    title: 'Hermes',
+    subtitle: 'Inteligencia Relacional',
+    description: 'Habla con tus clientes, inversionistas y comunidad mediante una IA que conoce tu organización.',
     badge: 'CONVERSATIONAL PLANE',
     badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    icon: <Sparkles className="w-5 h-5 text-emerald-400" />,
+    icon: <Bot className="w-5 h-5 text-emerald-400" />,
     features: [
       'Agente conversacional en Telegram y Widget Web',
-      'Knowledge Vault con anclaje criptográfico',
-      'Trazabilidad epistémica de reclamos (K26)',
+      'Knowledge Vault con anclaje criptográfico (K25)',
+      'Trazabilidad epistémica de reclamos institucionales (K26)',
     ],
   },
   {
     key: 'GROWTH_OS',
-    title: 'Growth Commercial Engine',
-    subtitle: 'Growth OS',
-    description: 'Pipeline CRM de prospectos, campañas de email, tesorería Safe y pases VIP.',
+    title: 'Growth OS',
+    subtitle: 'Operaciones Comerciales',
+    description: 'Convierte conversaciones en oportunidades, administra prospectos, campañas y operaciones comerciales.',
     badge: 'COMMERCIAL OPERATIONS',
     badgeColor: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
     icon: <TrendingUp className="w-5 h-5 text-violet-400" />,
     features: [
       'Pipeline de cualificación e inversores relacionales',
       'Email marketing institucional con cuota mensual',
-      'Tesorería soberana con guardias de retiro diarias',
+      'Tesorería soberana Safe con guardias de retiro',
     ],
   },
   {
     key: 'PANDORAS_RWA',
     title: 'RWA & Tokenomics',
-    subtitle: 'Pandoras Protocol Engine',
-    description: 'Tokenización de activos, participaciones DAO y contratos notarizados EIP-712.',
+    subtitle: 'Capital On-Chain',
+    description: 'Tokeniza activos, estructura participaciones y opera economías on-chain.',
     badge: 'CAPITAL & TOKENOMICS',
     badgeColor: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
     icon: <Layers className="w-5 h-5 text-sky-400" />,
@@ -92,6 +95,9 @@ export function UnifiedOnboardingClient() {
     'HERMES',
     'GROWTH_OS',
   ]);
+  const [hermesPriority, setHermesPriority] = useState<string>('INVESTOR_RELATIONS');
+  const [growthPriority, setGrowthPriority] = useState<string>('ACQUIRE_LEADS');
+  const [rwaPriority, setRwaPriority] = useState<string>('TOKENIZE_ASSET');
   const [isProvisioning, setIsProvisioning] = useState(false);
 
   // Auto-generate clean slug on name input
@@ -111,7 +117,7 @@ export function UnifiedOnboardingClient() {
   const toggleProduct = (key: OnboardingProductKey) => {
     if (selectedProducts.includes(key)) {
       if (selectedProducts.length === 1) {
-        toast.warning('Debes seleccionar al menos un producto para tu ecosistema.');
+        toast.warning('Debes seleccionar al menos una capacidad para tu ecosistema.');
         return;
       }
       setSelectedProducts(selectedProducts.filter((p) => p !== key));
@@ -133,7 +139,7 @@ export function UnifiedOnboardingClient() {
     }
 
     setIsProvisioning(true);
-    const toastId = toast.loading('Aprovisionando organización en el Sovereign Mesh...', { id: 'prov-toast' });
+    const toastId = toast.loading('Aprovisionando ecosistema con Hermes...', { id: 'prov-toast' });
 
     try {
       const idempotencyKey = `idem_${orgSlug}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -148,6 +154,11 @@ export function UnifiedOnboardingClient() {
         },
         products: selectedProducts,
         idempotencyKey,
+        intents: {
+          hermesPriority: selectedProducts.includes('HERMES') ? hermesPriority : undefined,
+          growthPriority: selectedProducts.includes('GROWTH_OS') ? growthPriority : undefined,
+          rwaPriority: selectedProducts.includes('PANDORAS_RWA') ? rwaPriority : undefined,
+        },
       };
 
       const res = await fetch('/api/v1/internal/onboarding/provision', {
@@ -199,8 +210,8 @@ export function UnifiedOnboardingClient() {
         <div className="flex items-center justify-center gap-3 mb-8">
           {[
             { num: 1, label: 'Identidad' },
-            { num: 2, label: 'Módulos' },
-            { num: 3, label: 'Confirmación' },
+            { num: 2, label: 'Ecosistema' },
+            { num: 3, label: 'Intención' },
           ].map((s) => (
             <div key={s.num} className="flex items-center gap-2">
               <div
@@ -237,10 +248,10 @@ export function UnifiedOnboardingClient() {
                 <div>
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-indigo-400" />
-                    1. Identidad de tu Organización
+                    1. Cuéntanos sobre tu Organización
                   </h2>
                   <p className="text-zinc-400 text-xs mt-1">
-                    Define el nombre comercial y el slug canónico con el que operará tu tenant.
+                    Define la identidad comercial y el enlace soberano que identificará a tu ecosistema.
                   </p>
                 </div>
 
@@ -277,18 +288,18 @@ export function UnifiedOnboardingClient() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-                        Categoría de Negocio
+                        Categoría Principal
                       </label>
                       <select
                         value={businessCategory}
                         onChange={(e) => setBusinessCategory(e.target.value)}
                         className="w-full bg-black/40 border border-zinc-700/70 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-zinc-200 transition-all"
                       >
-                        <option value="technology">Tecnología & IA</option>
-                        <option value="real_estate">Bienes Raíces & Hospitality</option>
-                        <option value="finance">Finanzas & DeFi</option>
-                        <option value="e_commerce">Comercio & Retail</option>
-                        <option value="services">Servicios Corporativos</option>
+                        <option value="technology">Tecnología, IA & SaaS</option>
+                        <option value="real_estate">Bienes Raíces, RWA & Hospitality</option>
+                        <option value="finance">Finanzas, DeFi & Fondos</option>
+                        <option value="services">Energía, Infraestructura & Corporativo</option>
+                        <option value="other">Otro / Explorando</option>
                       </select>
                     </div>
 
@@ -311,13 +322,13 @@ export function UnifiedOnboardingClient() {
 
                   <div>
                     <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-                      Descripción Ejecutiva (Opcional)
+                      ¿Qué hace tu organización? (Descripción corta)
                     </label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={2}
-                      placeholder="Breve resumen de la actividad comercial o propósito de la organización..."
+                      placeholder="Breve resumen de la actividad comercial, propuesta de valor o activos principales..."
                       className="w-full bg-black/40 border border-zinc-700/70 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 transition-all resize-none"
                     />
                   </div>
@@ -332,16 +343,16 @@ export function UnifiedOnboardingClient() {
                       }
                       setStep(2);
                     }}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
                   >
-                    <span>Siguiente: Módulos del Ecosistema</span>
+                    <span>Siguiente: Diseña tu Ecosistema</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </motion.div>
             )}
 
-            {/* STEP 2: WHAT DO YOU WANT TO BUILD? */}
+            {/* STEP 2: DESIGN YOUR ECOSYSTEM */}
             {step === 2 && (
               <motion.div
                 key="step-2"
@@ -352,11 +363,11 @@ export function UnifiedOnboardingClient() {
               >
                 <div>
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-indigo-400" />
-                    2. ¿Qué quieres construir en tu Ecosistema?
+                    <Compass className="w-5 h-5 text-indigo-400" />
+                    2. Diseña tu Ecosistema
                   </h2>
                   <p className="text-zinc-400 text-xs mt-1">
-                    Selecciona las soluciones modulares que se instalarán en tu organización.
+                    Selecciona las capacidades que quieres activar ahora. Puedes agregar las demás posteriormente.
                   </p>
                 </div>
 
@@ -381,11 +392,12 @@ export function UnifiedOnboardingClient() {
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="text-sm font-bold text-white">{prod.title}</h3>
+                                <span className="text-xs text-zinc-400">· {prod.subtitle}</span>
                                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${prod.badgeColor}`}>
                                   {prod.badge}
                                 </span>
                               </div>
-                              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{prod.description}</p>
+                              <p className="text-xs text-zinc-300 mt-1 leading-relaxed">{prod.description}</p>
                             </div>
                           </div>
 
@@ -417,7 +429,7 @@ export function UnifiedOnboardingClient() {
                 <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
                   <button
                     onClick={() => setStep(1)}
-                    className="text-xs font-semibold text-zinc-400 hover:text-white px-4 py-2.5 rounded-xl transition-colors flex items-center gap-1.5"
+                    className="text-xs font-semibold text-zinc-400 hover:text-white px-4 py-2.5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Atrás</span>
@@ -425,16 +437,16 @@ export function UnifiedOnboardingClient() {
 
                   <button
                     onClick={() => setStep(3)}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
                   >
-                    <span>Siguiente: Revisión y Confirmación</span>
+                    <span>Siguiente: Define tu Prioridad</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </motion.div>
             )}
 
-            {/* STEP 3: CONFIRM & PROVISION */}
+            {/* STEP 3: STRATEGIC INTENT & FAST LAUNCH */}
             {step === 3 && (
               <motion.div
                 key="step-3"
@@ -445,74 +457,146 @@ export function UnifiedOnboardingClient() {
               >
                 <div>
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                    3. Resumen y Aprovisionamiento
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                    3. Prioridad Inicial e Intención
                   </h2>
                   <p className="text-zinc-400 text-xs mt-1">
-                    Revisa la configuración antes de inicializar la organización en el Sovereign Mesh.
+                    Hermes utilizará esta intención para darte la bienvenida y guiarte de forma personalizada en el Sovereign Mesh Hub.
                   </p>
                 </div>
 
-                {/* Summary Card */}
-                <div className="bg-black/40 border border-zinc-800 rounded-2xl p-5 space-y-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Organización</p>
-                      <h3 className="text-lg font-bold text-white">{orgName}</h3>
-                      <p className="text-xs text-indigo-400 font-mono">portal/{orgSlug}</p>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      TRIAL 14 DÍAS
-                    </span>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-2">
-                      Módulos Instalados ({selectedProducts.length})
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProducts.map((p) => {
-                        const info = PRODUCTS.find((x) => x.key === p);
-                        return (
+                {/* Intent questions per selected product */}
+                <div className="space-y-5">
+                  {/* Hermes Intent */}
+                  {selectedProducts.includes('HERMES') && (
+                    <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 sm:p-5 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                        <Bot className="w-4 h-4" />
+                        <span>¿Qué quieres que Hermes haga primero?</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {[
+                          { id: 'INVESTOR_RELATIONS', label: 'Atención e información a inversionistas' },
+                          { id: 'CLIENT_SUPPORT', label: 'Atención y soporte a clientes' },
+                          { id: 'LEAD_GENERATION', label: 'Captación y cualificación de prospectos' },
+                          { id: 'FAQ_AUTOMATION', label: 'Soporte institucional & FAQ' },
+                          { id: 'EXPLORING', label: 'Todavía explorando capacidades' },
+                        ].map((opt) => (
                           <div
-                            key={p}
-                            className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-medium text-zinc-200"
+                            key={opt.id}
+                            onClick={() => setHermesPriority(opt.id)}
+                            className={`px-3 py-2.5 rounded-xl border text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                              hermesPriority === opt.id
+                                ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40 shadow-sm'
+                                : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                            }`}
                           >
-                            {info?.icon}
-                            <span>{info?.title}</span>
+                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                              hermesPriority === opt.id ? 'border-emerald-400 bg-emerald-400' : 'border-zinc-600'
+                            }`}>
+                              {hermesPriority === opt.id && <Check className="w-2.5 h-2.5 text-black stroke-[3]" />}
+                            </div>
+                            <span className="truncate">{opt.label}</span>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Connected Wallet Verification */}
-                  <div className="pt-3 border-t border-zinc-800 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 text-zinc-400">
-                      <Wallet className="w-4 h-4 text-emerald-400" />
-                      <span>Wallet Firmante:</span>
+                  {/* Growth OS Intent */}
+                  {selectedProducts.includes('GROWTH_OS') && (
+                    <div className="bg-black/40 border border-violet-500/20 rounded-2xl p-4 sm:p-5 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-violet-400">
+                        <TrendingUp className="w-4 h-4" />
+                        <span>¿Cuál es tu prioridad comercial inicial?</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {[
+                          { id: 'ACQUIRE_LEADS', label: 'Conseguir nuevos prospectos' },
+                          { id: 'CONVERT_LEADS', label: 'Convertir prospectos existentes' },
+                          { id: 'MARKETING_AUTOMATION', label: 'Automatizar marketing & emails' },
+                          { id: 'INVESTOR_PIPELINE', label: 'Administrar pipeline de inversionistas' },
+                          { id: 'OPERATIONS', label: 'Centralizar operaciones comerciales' },
+                        ].map((opt) => (
+                          <div
+                            key={opt.id}
+                            onClick={() => setGrowthPriority(opt.id)}
+                            className={`px-3 py-2.5 rounded-xl border text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                              growthPriority === opt.id
+                                ? 'bg-violet-500/20 text-violet-200 border-violet-500/40 shadow-sm'
+                                : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                              growthPriority === opt.id ? 'border-violet-400 bg-violet-400' : 'border-zinc-600'
+                            }`}>
+                              {growthPriority === opt.id && <Check className="w-2.5 h-2.5 text-black stroke-[3]" />}
+                            </div>
+                            <span className="truncate">{opt.label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <span className="font-mono font-bold text-zinc-300">
+                  )}
+
+                  {/* RWA Intent */}
+                  {selectedProducts.includes('PANDORAS_RWA') && (
+                    <div className="bg-black/40 border border-sky-500/20 rounded-2xl p-4 sm:p-5 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-sky-400">
+                        <Layers className="w-4 h-4" />
+                        <span>¿Qué quieres hacer con Pandoras?</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {[
+                          { id: 'TOKENIZE_ASSET', label: 'Tokenizar un activo real (inmueble, energía)' },
+                          { id: 'RAISE_CAPITAL', label: 'Levantar capital privado' },
+                          { id: 'FRACTIONAL_SHARES', label: 'Crear participaciones fraccionales' },
+                          { id: 'CREATE_DAO', label: 'Crear una DAO y modelo de gobernanza' },
+                          { id: 'EXPLORING', label: 'Todavía estoy explorando viabilidad' },
+                        ].map((opt) => (
+                          <div
+                            key={opt.id}
+                            onClick={() => setRwaPriority(opt.id)}
+                            className={`px-3 py-2.5 rounded-xl border text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                              rwaPriority === opt.id
+                                ? 'bg-sky-500/20 text-sky-200 border-sky-500/40 shadow-sm'
+                                : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                              rwaPriority === opt.id ? 'border-sky-400 bg-sky-400' : 'border-zinc-600'
+                            }`}>
+                              {rwaPriority === opt.id && <Check className="w-2.5 h-2.5 text-black stroke-[3]" />}
+                            </div>
+                            <span className="truncate">{opt.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Compact Wallet & Identity Summary */}
+                <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-4 flex items-center justify-between text-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Ecosistema Destino</span>
+                    <p className="font-bold text-white">{orgName} <span className="text-indigo-400 font-mono font-normal">(@{orgSlug})</span></p>
+                  </div>
+                  <div className="text-right space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Wallet Firmante</span>
+                    <p className="font-mono text-zinc-300">
                       {account?.address
                         ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}`
                         : 'No conectada'}
-                    </span>
+                    </p>
                   </div>
-                </div>
-
-                {/* Governance & Security Note */}
-                <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3.5 text-xs text-indigo-200/90 leading-relaxed flex items-start gap-2.5">
-                  <Lock className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                  <span>
-                    El aprovisionamiento creará las filas de identidad y módulos en el entorno seguro de Neon DB con registro auditable. Podrás configurar cada módulo y su base de conocimiento en el Sovereign Mesh Hub.
-                  </span>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
                   <button
                     onClick={() => setStep(2)}
                     disabled={isProvisioning}
-                    className="text-xs font-semibold text-zinc-400 hover:text-white px-4 py-2.5 rounded-xl transition-colors flex items-center gap-1.5"
+                    className="text-xs font-semibold text-zinc-400 hover:text-white px-4 py-2.5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Atrás</span>
@@ -521,7 +605,7 @@ export function UnifiedOnboardingClient() {
                   <button
                     onClick={handleProvision}
                     disabled={isProvisioning}
-                    className="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-bold text-xs px-8 py-3.5 rounded-xl flex items-center gap-2 shadow-xl shadow-emerald-600/20 transition-all disabled:opacity-50"
+                    className="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-bold text-xs px-8 py-3.5 rounded-xl flex items-center gap-2 shadow-xl shadow-emerald-600/20 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {isProvisioning ? (
                       <>
@@ -531,7 +615,8 @@ export function UnifiedOnboardingClient() {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        <span>Aprovisionar Ecosistema</span>
+                        <span>Aprovisionar Ecosistema con Hermes</span>
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>

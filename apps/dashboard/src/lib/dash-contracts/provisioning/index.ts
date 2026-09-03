@@ -27,10 +27,17 @@ export interface TenantOrganizationDTO {
   applicantPhone?: string;
 }
 
+export interface EcosystemIntentDTO {
+  hermesPriority?: string;
+  growthPriority?: string;
+  rwaPriority?: string;
+}
+
 export interface ProvisioningRequestDTO {
   organization: TenantOrganizationDTO;
   products: OnboardingProductKey[];
   idempotencyKey: string;
+  intents?: EcosystemIntentDTO;
 }
 
 export interface InstalledProductSummaryDTO {

@@ -196,6 +196,7 @@ export class TenantProvisioningService {
               provisionedAt: new Date().toISOString(),
               provisionedBy: cleanWallet,
               initialProducts: productsToInstall,
+              intents: req.intents || {},
             },
           })
           .returning({ id: projects.id });
@@ -251,6 +252,12 @@ export class TenantProvisioningService {
               config: {
                 provisionedAt: new Date().toISOString(),
                 trialEndsAt,
+                initialIntent:
+                  productKey === 'HERMES'
+                    ? req.intents?.hermesPriority
+                    : productKey === 'GROWTH_OS'
+                    ? req.intents?.growthPriority
+                    : req.intents?.rwaPriority || null,
               },
               runtimeManifest: {},
             })

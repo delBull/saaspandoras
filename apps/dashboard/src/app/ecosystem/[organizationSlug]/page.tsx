@@ -19,6 +19,7 @@ import {
   Users,
 } from 'lucide-react';
 import { SetupCompletionWidget } from '@/components/ecosystem/SetupCompletionWidget';
+import { setupProgressService } from '@/lib/mesh/setup-progress.service';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,16 +46,12 @@ export default async function EcosystemPage({ params }: EcosystemPageProps) {
     console.warn('[EcosystemPage] Project query notice:', err);
   }
 
-  let knowledgeDocCount = 0;
+  // Load real-time dynamic setup progress signals from database
+  let setupSummary = null;
   try {
-    const docs = await db
-      .select({ id: hermesKnowledge.id })
-      .from(hermesKnowledge)
-      .where(eq(hermesKnowledge.organizationId, organizationSlug));
-    knowledgeDocCount = docs.length;
-  } catch {
-    // Graceful fallback if table is pending migration
-    knowledgeDocCount = 4;
+    setupSummary = await setupProgressService.getEcosystemSetupState(organizationSlug);
+  } catch (err) {
+    console.warn('[EcosystemPage] Setup summary fetch notice:', err);
   }
 
   return (
@@ -82,8 +79,8 @@ export default async function EcosystemPage({ params }: EcosystemPageProps) {
         </div>
       </div>
 
-      {/* ── SETUP COMPLETION ENGINE ── */}
-      <SetupCompletionWidget organizationSlug={organizationSlug} />
+      {/* ── SETUP COMPLETION ENGINE (REAL-TIME SIGNALS) ── */}
+      <SetupCompletionWidget organizationSlug={organizationSlug} initialSummary={setupSummary} />
     </div>
   );
 }

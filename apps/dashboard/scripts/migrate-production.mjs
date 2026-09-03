@@ -13,10 +13,13 @@ import path from 'path';
 const envParsed = dotenv.config({ path: '.env' }).parsed || {};
 const stagingParsed = dotenv.config({ path: '.env.staging' }).parsed || {};
 const localParsed = dotenv.config({ path: '.env.local' }).parsed || {};
+const prodParsed = dotenv.config({ path: '.env.production' }).parsed || {};
 
 // Prioritize remote Neon databases (staging or production pooler), never localhost for neon driver
 const dbUrl = 
   process.env.DATABASE_URL_OVERRIDE ||
+  prodParsed.DATABASE_URL_OVERRIDE ||
+  prodParsed.DATABASE_URL ||
   process.env.DATABASE_URL_STAGING ||
   localParsed.DATABASE_URL_STAGING ||
   envParsed.DATABASE_URL ||
