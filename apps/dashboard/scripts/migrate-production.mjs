@@ -10,24 +10,27 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
+const prodParsed = dotenv.config({ path: '.env.production' }).parsed || {};
 const envParsed = dotenv.config({ path: '.env' }).parsed || {};
 const stagingParsed = dotenv.config({ path: '.env.staging' }).parsed || {};
 const localParsed = dotenv.config({ path: '.env.local' }).parsed || {};
-const prodParsed = dotenv.config({ path: '.env.production' }).parsed || {};
 
-// Prioritize remote Neon databases (staging or production pooler), never localhost for neon driver
-const dbUrl = 
-  process.env.DATABASE_URL_OVERRIDE ||
-  prodParsed.DATABASE_URL_OVERRIDE ||
-  prodParsed.DATABASE_URL ||
-  process.env.DATABASE_URL_STAGING ||
-  localParsed.DATABASE_URL_STAGING ||
-  envParsed.DATABASE_URL ||
-  stagingParsed.DATABASE_URL ||
-  process.env.DATABASE_URL;
+// Strict priority: Explicit override -> .env.production -> .env (Production Neon ep-spring-mountain) -> remote staging -> process.env
+const candidates = [
+  process.env.DATABASE_URL_OVERRIDE,
+  prodParsed.DATABASE_URL_OVERRIDE,
+  prodParsed.DATABASE_URL,
+  envParsed.DATABASE_URL,
+  process.env.DATABASE_URL_STAGING,
+  stagingParsed.DATABASE_URL,
+  process.env.DATABASE_URL,
+  localParsed.DATABASE_URL_STAGING,
+];
 
-if (!dbUrl || dbUrl.includes('localhost')) {
-  console.error("❌ Fatal: Valid Neon DATABASE_URL is missing in environment.");
+const dbUrl = candidates.find((url) => url && !url.includes('localhost') && !url.includes('127.0.0.1'));
+
+if (!dbUrl) {
+  console.error("❌ Fatal: Valid remote Neon DATABASE_URL is missing in environment (localhost rejected).");
   process.exit(1);
 }
 
