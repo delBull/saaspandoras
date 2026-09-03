@@ -1,0 +1,287 @@
+/**
+ * 🏛️ PLATFORM CAPABILITY REGISTRY & AUTHORIZATION ENGINE (F9.2)
+ * apps/dashboard/src/lib/admin/platform-capability-registry.service.ts
+ *
+ * Enforces Platform Governance authority with resourceScope,
+ * risk classification (LOW, MEDIUM, HIGH, CRITICAL), and strict
+ * role-to-capability validation.
+ */
+
+import { PlatformRole, PlatformActor } from '@/lib/dash-contracts/admin';
+
+export type PlatformCapability =
+  | 'platform.tenants.read'
+  | 'platform.tenants.markup.update'
+  | 'platform.tenants.suspend'
+  | 'platform.rwa.review'
+  | 'platform.rwa.approve'
+  | 'platform.contract.deploy'
+  | 'platform.treasury.read'
+  | 'platform.credits.adjust'
+  | 'platform.treasury.sweep'
+  | 'platform.collaborators.manage'
+  | 'platform.identity.admins.manage'
+  | 'platform.security.audit'
+  | 'platform.books.unlock';
+
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export type GovernanceRequirement = 
+  | 'DIRECT_EXECUTION' 
+  | 'REINFORCED_AUTH' 
+  | 'SECOND_APPROVAL' 
+  | 'MULTI_PARTY_2FA';
+
+export type PlatformResourceScope = 
+  | 'all' 
+  | 'assigned' 
+  | { tenantId?: string; projectId?: string };
+
+export interface PlatformCapabilityDefinition {
+  capability: PlatformCapability;
+  resource: 'Platform' | 'Tenant' | 'RWA Project' | 'Treasury' | 'Identity' | 'Audit';
+  allowedScopes: Array<'all' | 'assigned' | 'scoped'>;
+  riskLevel: RiskLevel;
+  governanceRequirement: GovernanceRequirement;
+  description: string;
+}
+
+export interface AuthorizationEvaluationResult {
+  granted: boolean;
+  capability: PlatformCapability;
+  actorRole: PlatformRole;
+  effectiveScope: PlatformResourceScope;
+  riskLevel: RiskLevel;
+  governanceRequirement: GovernanceRequirement;
+  reason?: string;
+}
+
+export class PlatformCapabilityRegistryService {
+  private static readonly CAPABILITY_CATALOG: Record<PlatformCapability, PlatformCapabilityDefinition> = {
+    'platform.tenants.read': {
+      capability: 'platform.tenants.read',
+      resource: 'Tenant',
+      allowedScopes: ['all', 'assigned', 'scoped'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Observabilidad de organizaciones, estados y productos en Tenant Lens',
+    },
+    'platform.tenants.markup.update': {
+      capability: 'platform.tenants.markup.update',
+      resource: 'Tenant',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'MEDIUM',
+      governanceRequirement: 'REINFORCED_AUTH',
+      description: 'Ajustar el porcentaje de margen sobre cómputo para un tenant',
+    },
+    'platform.tenants.suspend': {
+      capability: 'platform.tenants.suspend',
+      resource: 'Tenant',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'HIGH',
+      governanceRequirement: 'SECOND_APPROVAL',
+      description: 'Suspender temporalmente el acceso y cómputo de un tenant',
+    },
+    'platform.rwa.review': {
+      capability: 'platform.rwa.review',
+      resource: 'RWA Project',
+      allowedScopes: ['all', 'assigned', 'scoped'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Revisión técnica y debida diligencia de proyectos de tokenización RWA',
+    },
+    'platform.rwa.approve': {
+      capability: 'platform.rwa.approve',
+      resource: 'RWA Project',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'HIGH',
+      governanceRequirement: 'SECOND_APPROVAL',
+      description: 'Aprobar formalmente el paso de un proyecto RWA a fase de despliegue',
+    },
+    'platform.contract.deploy': {
+      capability: 'platform.contract.deploy',
+      resource: 'RWA Project',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'CRITICAL',
+      governanceRequirement: 'MULTI_PARTY_2FA',
+      description: 'Desplegar smart contracts de tokenización y gobernanza en red Base',
+    },
+    'platform.treasury.read': {
+      capability: 'platform.treasury.read',
+      resource: 'Treasury',
+      allowedScopes: ['all'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Consultar balances globales, depósitos y contabilidad interna de GPU',
+    },
+    'platform.credits.adjust': {
+      capability: 'platform.credits.adjust',
+      resource: 'Treasury',
+      allowedScopes: ['all', 'scoped'],
+      riskLevel: 'HIGH',
+      governanceRequirement: 'SECOND_APPROVAL',
+      description: 'Acreditar o debitar saldo manualmente a un tenant con auditoría obligatoria',
+    },
+    'platform.treasury.sweep': {
+      capability: 'platform.treasury.sweep',
+      resource: 'Treasury',
+      allowedScopes: ['all'],
+      riskLevel: 'CRITICAL',
+      governanceRequirement: 'MULTI_PARTY_2FA',
+      description: 'Ejecutar transferencia o barrido de fondos hacia la tesorería de Pandora',
+    },
+    'platform.collaborators.manage': {
+      capability: 'platform.collaborators.manage',
+      resource: 'Identity',
+      allowedScopes: ['all'],
+      riskLevel: 'MEDIUM',
+      governanceRequirement: 'REINFORCED_AUTH',
+      description: 'Invitar colaboradores y configurar permisos desde el Drawer RBAC',
+    },
+    'platform.identity.admins.manage': {
+      capability: 'platform.identity.admins.manage',
+      resource: 'Identity',
+      allowedScopes: ['all'],
+      riskLevel: 'CRITICAL',
+      governanceRequirement: 'MULTI_PARTY_2FA',
+      description: 'Alta o baja de billeteras en la whitelist de administradores de plataforma',
+    },
+    'platform.security.audit': {
+      capability: 'platform.security.audit',
+      resource: 'Audit',
+      allowedScopes: ['all'],
+      riskLevel: 'LOW',
+      governanceRequirement: 'DIRECT_EXECUTION',
+      description: 'Consultar logs de auditoría hash-chain y eventos de seguridad',
+    },
+    'platform.books.unlock': {
+      capability: 'platform.books.unlock',
+      resource: 'Platform',
+      allowedScopes: ['all'],
+      riskLevel: 'CRITICAL',
+      governanceRequirement: 'MULTI_PARTY_2FA',
+      description: 'Desbloquear acceso a los Libros Constitucionales con 2FA Discord de Super Admin',
+    },
+  };
+
+  /**
+   * Obtiene la definición de una capacidad de plataforma.
+   */
+  public static getDefinition(capability: PlatformCapability): PlatformCapabilityDefinition {
+    const def = this.CAPABILITY_CATALOG[capability];
+    if (!def) {
+      throw new Error(`[PlatformCapabilityRegistry] Unknown capability: ${capability}`);
+    }
+    return def;
+  }
+
+  /**
+   * Evalúa si un actor tiene autoridad para ejecutar una capability sobre un scope determinado.
+   */
+  public static evaluateAuthorization(
+    actor: PlatformActor,
+    capability: PlatformCapability,
+    targetScope: PlatformResourceScope = 'all'
+  ): AuthorizationEvaluationResult {
+    const def = this.getDefinition(capability);
+
+    // Fail-closed por defecto
+    const baseResult: AuthorizationEvaluationResult = {
+      granted: false,
+      capability,
+      actorRole: actor.role,
+      effectiveScope: targetScope,
+      riskLevel: def.riskLevel,
+      governanceRequirement: def.governanceRequirement,
+    };
+
+    // 1. SUPER_ADMIN tiene autoridad sobre todo
+    if (actor.role === 'SUPER_ADMIN') {
+      // Si la acción es CRITICAL y requiere 2FA Discord, verificar que esté validado
+      if (def.riskLevel === 'CRITICAL' && def.governanceRequirement === 'MULTI_PARTY_2FA') {
+        if (!actor.isDiscord2faVerified) {
+          return {
+            ...baseResult,
+            granted: false,
+            reason: `La capacidad crítica '${capability}' requiere verificación 2FA Discord previa.`,
+          };
+        }
+      }
+      return { ...baseResult, granted: true };
+    }
+
+    // 2. Acciones CRITICAL están estrictamente prohibidas para roles inferiores a SUPER_ADMIN
+    if (def.riskLevel === 'CRITICAL') {
+      return {
+        ...baseResult,
+        granted: false,
+        reason: `La capacidad crítica '${capability}' es exclusiva de SUPER_ADMIN.`,
+      };
+    }
+
+    // 3. PLATFORM_ADMIN
+    if (actor.role === 'PLATFORM_ADMIN') {
+      // Puede ejecutar LOW, MEDIUM y HIGH
+      return { ...baseResult, granted: true };
+    }
+
+    // 4. OPERATOR
+    if (actor.role === 'OPERATOR') {
+      // OPERATOR solo puede ejecutar LOW y ciertas MEDIUM operativas
+      const operatorAllowed: PlatformCapability[] = [
+        'platform.tenants.read',
+        'platform.tenants.markup.update',
+        'platform.rwa.review',
+        'platform.security.audit',
+        'platform.collaborators.manage',
+      ];
+      if (operatorAllowed.includes(capability)) {
+        return { ...baseResult, granted: true };
+      }
+      return {
+        ...baseResult,
+        granted: false,
+        reason: `El rol OPERATOR no posee privilegios para '${capability}'.`,
+      };
+    }
+
+    // 5. AUDITOR
+    if (actor.role === 'AUDITOR') {
+      // Solo lecturas LOW
+      if (def.riskLevel === 'LOW') {
+        return { ...baseResult, granted: true };
+      }
+      return {
+        ...baseResult,
+        granted: false,
+        reason: `El rol AUDITOR posee privilegios estrictamente de solo lectura (LOW).`,
+      };
+    }
+
+    return baseResult;
+  }
+
+  /**
+   * Garantía fail-closed para Server Actions y API Routes.
+   * Lanza excepción tipada si el actor no posee la capacidad.
+   */
+  public static requireCapability(
+    actor: PlatformActor,
+    capability: PlatformCapability,
+    targetScope: PlatformResourceScope = 'all'
+  ): void {
+    const result = this.evaluateAuthorization(actor, capability, targetScope);
+    if (!result.granted) {
+      throw new Error(
+        `[PlatformAuth] 403 Forbidden: ${result.reason || `Actor no autorizado para '${capability}'.`}`
+      );
+    }
+  }
+
+  /**
+   * Retorna todo el catálogo de capabilities de plataforma.
+   */
+  public static getAllDefinitions(): PlatformCapabilityDefinition[] {
+    return Object.values(this.CAPABILITY_CATALOG);
+  }
+}

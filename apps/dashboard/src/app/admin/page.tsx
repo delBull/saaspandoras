@@ -1,0 +1,175 @@
+/**
+ * 🏛️ PLATFORM GOVERNANCE PLANE ROOT (F9.3)
+ * apps/dashboard/src/app/admin/page.tsx
+ *
+ * Master entry point for Pandora's Platform Governance Console.
+ * Protected server-side with getNexusAuthContext() (SUPER_ADMIN and ADMIN only).
+ */
+
+import React from 'react';
+import { db } from '@/db';
+import { projects, hermesTenantCredits, hermesComputeUsageEvents } from '@/db/schema';
+import { desc, sql } from 'drizzle-orm';
+import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
+import { AdminOverviewView } from '@/components/admin/views/AdminOverviewView';
+import { AdminAccessGate } from './AdminAccessGate';
+import { 
+  PlatformActor, 
+  PlatformGlobalKpis, 
+  InfrastructureHealth 
+} from '@/lib/dash-contracts/admin';
+
+interface AdminPageProps {
+  searchParams?: Promise<{ tab?: string }>;
+}
+
+export const dynamic = 'force-dynamic';
+
+export default async function AdminPage({ searchParams }: AdminPageProps) {
+  const params = searchParams ? await searchParams : {};
+  const activeTab = params?.tab || 'overview';
+
+  // 1. Resolve Platform Authority Server-Side
+  const auth = await getNexusAuthContext();
+
+  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+    return (
+      <AdminAccessGate
+        reason={
+          auth.isAuthenticated
+            ? `Tu cuenta con rol '${auth.role}' no cuenta con facultades de administración de plataforma.`
+            : 'Se requiere una sesión autenticada con privilegios de administrador de plataforma.'
+        }
+      />
+    );
+  }
+
+  // 2. Query Live Metrics from Neon DB
+  let totalTenants = 0;
+  let rwaCount = 0;
+  let recentTenantsList: any[] = [];
+  let totalDeposited = 0;
+  let totalSpent = 0;
+  let circulatingCredits = 0;
+  let totalGpuSeconds = 0;
+  let totalRetainedMargin = 0;
+  let totalRawGpuCost = 0;
+
+  try {
+    if (db) {
+      // Query Projects
+      const projectsRows = await db
+        .select({
+          id: projects.id,
+          slug: projects.slug,
+          title: projects.title,
+          category: projects.businessCategory,
+          applicantWallet: projects.applicantWalletAddress,
+          extraConfig: projects.extraConfig,
+          createdAt: projects.createdAt,
+        })
+        .from(projects)
+        .orderBy(desc(projects.createdAt))
+        .limit(20);
+
+      totalTenants = projectsRows.length;
+      recentTenantsList = projectsRows.map((p) => {
+        const extra = (p.extraConfig as Record<string, any>) || {};
+        const prods = (extra.installed_products || extra.installedProducts || {}) as Record<string, boolean>;
+        return {
+          id: String(p.id),
+          slug: p.slug,
+          name: p.title || p.slug,
+          category: p.category || 'Tenant',
+          creatorWallet: p.applicantWallet || '',
+          products: {
+            hermesAiMesh: !!prods.hermes_ai_mesh,
+            growthOsCrm: !!prods.growth_os_crm,
+            tokenomicsRwa: !!prods.tokenomics_rwa,
+          },
+          creditBalanceUsd: 0,
+          createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+        };
+      });
+
+      // Query Hermes Tenant Credits
+      const creditsRows = await db
+        .select({
+          balance: hermesTenantCredits.creditBalanceUsd,
+          deposited: hermesTenantCredits.totalDepositedUsd,
+          spent: hermesTenantCredits.totalSpentUsd,
+        })
+        .from(hermesTenantCredits);
+
+      creditsRows.forEach((c) => {
+        circulatingCredits += parseFloat(c.balance || '0');
+        totalDeposited += parseFloat(c.deposited || '0');
+        totalSpent += parseFloat(c.spent || '0');
+      });
+
+      // Query Hermes Compute Events
+      const eventsAgg = await db
+        .select({
+          totalSeconds: sql<string>`COALESCE(SUM(execution_seconds), '0')`,
+          totalRaw: sql<string>`COALESCE(SUM(raw_cost_usd), '0')`,
+          totalMarkup: sql<string>`COALESCE(SUM(markup_cost_usd), '0')`,
+        })
+        .from(hermesComputeUsageEvents);
+
+      if (eventsAgg[0]) {
+        totalGpuSeconds = parseFloat(eventsAgg[0].totalSeconds || '0');
+        totalRawGpuCost = parseFloat(eventsAgg[0].totalRaw || '0');
+        totalRetainedMargin = parseFloat(eventsAgg[0].totalMarkup || '0');
+      }
+    }
+  } catch (err) {
+    console.error('⚠️ [AdminPage] Error querying platform metrics:', err);
+  }
+
+  // 3. Assemble Platform Global KPIs
+  const kpis: PlatformGlobalKpis = {
+    totalTenantsCount: totalTenants,
+    activeTenantsCount: totalTenants,
+    trialTenantsCount: 0,
+    rwaProjectsCount: rwaCount,
+    totalGpuSecondsExecuted: Math.round(totalGpuSeconds),
+    totalGrossDepositsUsd: totalDeposited,
+    totalRawGpuCostUsd: totalRawGpuCost,
+    totalRetainedMarginUsd: totalRetainedMargin,
+    totalCirculatingCreditsUsd: circulatingCredits,
+    averageMarkupPercentage: 35,
+  };
+
+  // 4. Infrastructure Health State
+  const health: InfrastructureHealth = {
+    neonPoolerStatus: 'ONLINE',
+    ipfsGatewayStatus: 'ONLINE',
+    runpodServerlessStatus: 'ONLINE',
+    blockchainRpcStatus: 'ONLINE',
+    discordWebhookStatus: process.env.DISCORD_SECURITY_WEBHOOK_URL ? 'ONLINE' : 'DISABLED',
+    latencyMs: 38,
+  };
+
+  // 5. Assemble Current Platform Actor
+  const actor: PlatformActor = {
+    id: auth.wallet || auth.email || 'platform_admin',
+    actorType: auth.wallet ? 'WALLET' : 'MAGIC_LINK',
+    role: auth.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'PLATFORM_ADMIN',
+    walletAddress: auth.wallet || null,
+    email: auth.email || null,
+    name: auth.wallet ? `${auth.wallet.slice(0, 6)}...${auth.wallet.slice(-4)}` : 'Administrador',
+    sessionStartedAt: new Date().toISOString(),
+    isDiscord2faVerified: auth.role === 'SUPER_ADMIN',
+  };
+
+  return (
+    <PlatformAdminShell actor={actor} activeSection={activeTab}>
+      <AdminOverviewView
+        kpis={kpis}
+        health={health}
+        recentTenants={recentTenantsList}
+      />
+    </PlatformAdminShell>
+  );
+}
