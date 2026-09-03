@@ -58,7 +58,7 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
     expect(all.length).toBe(13);
   });
 
-  it('PCAP-02: SUPER_ADMIN with 2FA has authority over all capabilities including CRITICAL', () => {
+  it('PCAP-02: SUPER_ADMIN with 2FA has authority over all capabilities including CRITICAL (A and B)', () => {
     const criticalCaps: PlatformCapability[] = [
       'platform.contract.deploy',
       'platform.treasury.sweep',
@@ -69,8 +69,11 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
     for (const cap of criticalCaps) {
       const result = PlatformCapabilityRegistryService.evaluateAuthorization(superAdminWith2fa, cap);
       expect(result.granted).toBe(true);
-      expect(result.riskLevel).toBe('CRITICAL');
-      expect(result.governanceRequirement).toBe('MULTI_PARTY_2FA');
+      expect(result.riskLevel.startsWith('CRITICAL')).toBe(true);
+      expect(
+        result.governanceRequirement === 'MULTI_PARTY_2FA' || 
+        result.governanceRequirement === 'DUAL_KEY_TIME_WINDOW'
+      ).toBe(true);
     }
   });
 

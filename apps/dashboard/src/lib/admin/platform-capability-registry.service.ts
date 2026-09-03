@@ -24,13 +24,14 @@ export type PlatformCapability =
   | 'platform.security.audit'
   | 'platform.books.unlock';
 
-export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL_A' | 'CRITICAL_B' | 'CRITICAL';
 
 export type GovernanceRequirement = 
   | 'DIRECT_EXECUTION' 
   | 'REINFORCED_AUTH' 
   | 'SECOND_APPROVAL' 
-  | 'MULTI_PARTY_2FA';
+  | 'MULTI_PARTY_2FA'
+  | 'DUAL_KEY_TIME_WINDOW';
 
 export type PlatformResourceScope = 
   | 'all' 
@@ -102,8 +103,8 @@ export class PlatformCapabilityRegistryService {
       capability: 'platform.contract.deploy',
       resource: 'RWA Project',
       allowedScopes: ['all', 'scoped'],
-      riskLevel: 'CRITICAL',
-      governanceRequirement: 'MULTI_PARTY_2FA',
+      riskLevel: 'CRITICAL_B',
+      governanceRequirement: 'DUAL_KEY_TIME_WINDOW',
       description: 'Desplegar smart contracts de tokenización y gobernanza en red Base',
     },
     'platform.treasury.read': {
@@ -126,8 +127,8 @@ export class PlatformCapabilityRegistryService {
       capability: 'platform.treasury.sweep',
       resource: 'Treasury',
       allowedScopes: ['all'],
-      riskLevel: 'CRITICAL',
-      governanceRequirement: 'MULTI_PARTY_2FA',
+      riskLevel: 'CRITICAL_B',
+      governanceRequirement: 'DUAL_KEY_TIME_WINDOW',
       description: 'Ejecutar transferencia o barrido de fondos hacia la tesorería de Pandora',
     },
     'platform.collaborators.manage': {
@@ -142,7 +143,7 @@ export class PlatformCapabilityRegistryService {
       capability: 'platform.identity.admins.manage',
       resource: 'Identity',
       allowedScopes: ['all'],
-      riskLevel: 'CRITICAL',
+      riskLevel: 'CRITICAL_A',
       governanceRequirement: 'MULTI_PARTY_2FA',
       description: 'Alta o baja de billeteras en la whitelist de administradores de plataforma',
     },
@@ -158,8 +159,8 @@ export class PlatformCapabilityRegistryService {
       capability: 'platform.books.unlock',
       resource: 'Platform',
       allowedScopes: ['all'],
-      riskLevel: 'CRITICAL',
-      governanceRequirement: 'MULTI_PARTY_2FA',
+      riskLevel: 'CRITICAL_B',
+      governanceRequirement: 'DUAL_KEY_TIME_WINDOW',
       description: 'Desbloquear acceso a los Libros Constitucionales con 2FA Discord de Super Admin',
     },
   };
@@ -195,15 +196,20 @@ export class PlatformCapabilityRegistryService {
       governanceRequirement: def.governanceRequirement,
     };
 
+    const isCritical = 
+      def.riskLevel === 'CRITICAL' || 
+      def.riskLevel === 'CRITICAL_A' || 
+      def.riskLevel === 'CRITICAL_B';
+
     // 1. SUPER_ADMIN tiene autoridad sobre todo
     if (actor.role === 'SUPER_ADMIN') {
-      // Si la acción es CRITICAL y requiere 2FA Discord, verificar que esté validado
-      if (def.riskLevel === 'CRITICAL' && def.governanceRequirement === 'MULTI_PARTY_2FA') {
+      // Si la acción es crítica (A o B) y requiere 2FA Discord o Timelock, verificar 2FA
+      if (isCritical) {
         if (!actor.isDiscord2faVerified) {
           return {
             ...baseResult,
             granted: false,
-            reason: `La capacidad crítica '${capability}' requiere verificación 2FA Discord previa.`,
+            reason: `La capacidad crítica '${capability}' (${def.riskLevel}) requiere verificación 2FA Discord previa.`,
           };
         }
       }
@@ -211,11 +217,11 @@ export class PlatformCapabilityRegistryService {
     }
 
     // 2. Acciones CRITICAL están estrictamente prohibidas para roles inferiores a SUPER_ADMIN
-    if (def.riskLevel === 'CRITICAL') {
+    if (isCritical) {
       return {
         ...baseResult,
         granted: false,
-        reason: `La capacidad crítica '${capability}' es exclusiva de SUPER_ADMIN.`,
+        reason: `La capacidad crítica '${capability}' (${def.riskLevel}) es exclusiva de SUPER_ADMIN.`,
       };
     }
 

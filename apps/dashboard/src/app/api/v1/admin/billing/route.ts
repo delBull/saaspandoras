@@ -48,6 +48,12 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (adjustmentUsd && adjustmentUsd !== 0) {
+      if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+        return NextResponse.json(
+          { ok: false, error: 'Un motivo de auditoría explícito (mínimo 5 caracteres) es obligatorio para cualquier ajuste financiero en el servidor.' },
+          { status: 400 }
+        );
+      }
       PlatformCapabilityRegistryService.requireCapability(actor, 'platform.credits.adjust', { tenantId: normalizedTenant });
     }
 
