@@ -21,15 +21,32 @@ import {
   Database,
   Terminal,
   LogOut,
+  Compass,
+  Sparkles,
 } from "lucide-react";
 import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { HermesFloatingGuide } from "@/components/guides/HermesFloatingGuide";
+import type { EcosystemTourRole } from "@/lib/guides/ecosystem-guides.data";
 
 interface NexusCommandCenterProps {
   auth: NexusAuthContext;
+  initialTour?: string;
+  initialRole?: string;
 }
 
-export function NexusCommandCenter({ auth }: NexusCommandCenterProps) {
+export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusCommandCenterProps) {
   const { role, permissions, wallet, email, name } = auth;
+  const [isTourOpen, setIsTourOpen] = React.useState(
+    initialTour === "ecosystem" || initialTour === "onboarding"
+  );
+
+  const validRoles: EcosystemTourRole[] = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COLLABORATOR"];
+  const normalizedInitialRole = initialRole?.toUpperCase() as EcosystemTourRole;
+  const tourRole: EcosystemTourRole = validRoles.includes(normalizedInitialRole)
+    ? normalizedInitialRole
+    : validRoles.includes(role as EcosystemTourRole)
+    ? (role as EcosystemTourRole)
+    : "COLLABORATOR";
 
   const getRoleBadge = () => {
     switch (role) {
@@ -166,6 +183,16 @@ export function NexusCommandCenter({ auth }: NexusCommandCenterProps) {
                 Puerta de entrada unificada y orquestador institucional con control de acceso basado en roles (RBAC).
                 Accede a las salas de transacciones, academia, herramientas operativas y directorios centrales.
               </p>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  onClick={() => setIsTourOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-500/30 text-amber-300 text-xs font-semibold shadow-lg shadow-amber-500/10 transition-all group"
+                >
+                  <Compass className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+                  <span>🧭 Iniciar Recorrido del Ecosistema con Hermes</span>
+                </button>
+              </div>
             </div>
 
             {/* User Profile Card */}
@@ -310,6 +337,13 @@ export function NexusCommandCenter({ auth }: NexusCommandCenterProps) {
             ))}
           </div>
         </div>
+
+        {/* ── HERMES FLOATING ECOSYSTEM TOUR GUIDE ── */}
+        <HermesFloatingGuide
+          role={tourRole}
+          isOpen={isTourOpen}
+          onClose={() => setIsTourOpen(false)}
+        />
       </div>
     </div>
   );

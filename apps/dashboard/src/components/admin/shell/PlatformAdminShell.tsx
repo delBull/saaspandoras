@@ -27,6 +27,7 @@ import {
   Sparkles,
   Zap,
   Briefcase,
+  Compass,
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
@@ -49,6 +50,13 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin',
       icon: LayoutDashboard,
       active: activeSection === 'overview' || pathname === '/admin',
+    },
+    {
+      id: 'guides',
+      label: 'Guías del Ecosistema',
+      href: '/admin?tab=guides',
+      icon: Compass,
+      active: activeSection === 'guides' || pathname.includes('tab=guides'),
     },
     {
       id: 'billing',

@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 
 import type { EcosystemSetupSummary } from '@/lib/mesh/setup-progress.service';
+import { HermesFloatingGuide } from '@/components/guides/HermesFloatingGuide';
+import { getStationsForTenantVertical, TenantVertical } from '@/lib/guides/tenant-vertical-guides.data';
 
 export type StepTier = 'REQUIRED' | 'RECOMMENDED' | 'OPTIONAL';
 
@@ -51,6 +53,26 @@ export function SetupCompletionWidget({
   const hermesMod = initialSummary?.modules?.find((m) => m.productKey === 'HERMES');
   const growthMod = initialSummary?.modules?.find((m) => m.productKey === 'GROWTH_OS');
   const rwaMod = initialSummary?.modules?.find((m) => m.productKey === 'PANDORAS_RWA');
+
+  // Interactive Hermes Floating Guide State for Tenant
+  const [isTourOpen, setIsTourOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tour') === 'setup' || params.get('tour') === 'vertical') {
+        setIsTourOpen(true);
+      }
+    }
+  }, []);
+
+  const tenantVertical: TenantVertical = rwaMod
+    ? 'RWA_REAL_ESTATE'
+    : growthMod
+    ? 'SAAS_GROWTH'
+    : 'RWA_REAL_ESTATE';
+
+  const tenantStations = getStationsForTenantVertical(tenantVertical, organizationSlug);
 
   // Dynamic signals from real database state
   const isHermesPersonaDone = Boolean(hermesMod?.checklist?.find((c) => c.id === 'hermes-persona')?.isCompleted);
@@ -232,14 +254,22 @@ export function SetupCompletionWidget({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 z-10 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 z-10 w-full md:w-auto">
+          <button
+            onClick={() => setIsTourOpen(true)}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold font-mono flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02]"
+          >
+            <Compass className="w-4 h-4 text-black" />
+            <span>🧭 Iniciar Guía con Hermes</span>
+          </button>
+
           <Link
             href={`/portal/${organizationSlug}`}
-            className="w-full md:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white text-xs font-bold font-mono flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/20 transition-all hover:scale-[1.02]"
+            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium font-mono flex items-center justify-center gap-2 transition-all"
           >
-            <Sparkles className="w-4 h-4 text-emerald-300" />
-            <span>Hablar con Hermes Concierge</span>
-            <ArrowRight className="w-4 h-4" />
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Hablar en Portal</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
@@ -373,6 +403,14 @@ export function SetupCompletionWidget({
           })}
         </div>
       </div>
+
+      {/* ── HERMES FLOATING GUIDE FOR TENANT ── */}
+      <HermesFloatingGuide
+        customStations={tenantStations}
+        titleOverride={`Setup · ${organizationSlug.toUpperCase()}`}
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+      />
     </div>
   );
 }

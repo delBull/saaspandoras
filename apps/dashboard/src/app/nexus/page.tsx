@@ -7,14 +7,14 @@ export const dynamic = "force-dynamic";
 export default async function NexusRootPage({
   searchParams,
 }: {
-  searchParams: Promise<{ unlock?: string; token?: string }>;
+  searchParams: Promise<{ unlock?: string; token?: string; tour?: string; role?: string }>;
 }) {
-  const { token } = await searchParams;
+  const { token, tour, role } = await searchParams;
 
   const auth = await getNexusAuthContext(null, token);
 
   if (auth.isAuthenticated) {
-    return <NexusCommandCenter auth={auth} />;
+    return <NexusCommandCenter auth={auth} initialTour={tour} initialRole={role} />;
   }
 
   return <NexusLoginGate />;

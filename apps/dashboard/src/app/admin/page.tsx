@@ -27,6 +27,7 @@ import { AdminRwaView } from '@/components/admin/views/AdminRwaView';
 import { AdminSecurityView } from '@/components/admin/views/AdminSecurityView';
 import { AdminOperationsView } from '@/components/admin/views/AdminOperationsView';
 import { AdminCrmView } from '@/components/admin/views/AdminCrmView';
+import { AdminEcosystemGuidesView } from '@/components/admin/views/AdminEcosystemGuidesView';
 import { AdminAccessGate } from './AdminAccessGate';
 import { 
   PlatformActor, 
@@ -398,6 +399,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         />
       ) : activeTab === 'crm' ? (
         <AdminCrmView initialLeads={b2bLeadsList} metrics={b2bMetrics} />
+      ) : activeTab === 'guides' ? (
+        <AdminEcosystemGuidesView />
       ) : activeTab === 'operations' ? (
         <AdminOperationsView endpoints={endpointsList} />
       ) : (
