@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ChannelContext, ChannelOutboundPayload } from '@/lib/hermes/channel-gateway';
+import { ChannelGatewayAdapter } from '@/lib/hermes/bot/channel-gateway-adapter';
+
+const adapter = new ChannelGatewayAdapter();
 
 /**
  * CHANNEL GATEWAY (F10.4)
@@ -25,21 +28,11 @@ export async function POST(req: NextRequest) {
 
     console.log(`📡 [Channel Gateway] Inbound from ${payload.channel} - User: ${payload.externalUserId} - Tenant Hint: ${payload.tenantHint}`);
 
-    // 2. Tenant Resolution & Identity Resolution
-    // TODO: PR 2 will port the logic to map `externalUserId` to `CanonicalUserContext`
+    // 2. Tenant Resolution & Identity Resolution & Execution Engine
+    // The ChannelGatewayAdapter now handles routing to the correct Hermes execution logic.
+    const responsePayload = await adapter.handleInbound(payload);
 
-    // 3. Hermes Execution Engine
-    // TODO: PR 2 will forward to HermesExecutionEngine
-
-    // 4. Return the normalized Outbound Payload synchronously (or ACK for async)
-    const mockResponse: ChannelOutboundPayload = {
-        channel: payload.channel,
-        externalConversationId: payload.externalConversationId,
-        externalUserId: payload.externalUserId,
-        replyText: "Message received by Channel Gateway (Stub)",
-    };
-
-    return NextResponse.json({ ok: true, data: mockResponse });
+    return NextResponse.json({ ok: true, data: responsePayload });
 
   } catch (err: any) {
     console.error('[Channel Gateway] Error processing inbound:', err);
