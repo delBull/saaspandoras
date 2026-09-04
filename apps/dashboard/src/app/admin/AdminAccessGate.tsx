@@ -14,12 +14,24 @@ import { motion } from 'framer-motion';
 import { ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
 import { ConnectButton } from 'thirdweb/react';
 import { client } from '@/lib/thirdweb-client';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 interface AdminAccessGateProps {
   reason?: string;
 }
 
 export function AdminAccessGate({ reason }: AdminAccessGateProps) {
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.refresh();
+    }
+  }, [isAuthenticated, router]);
+
   return (
     <div className="min-h-screen bg-[#08080A] text-white flex items-center justify-center p-6 relative overflow-hidden font-sans">
       <div className="relative z-10 w-full max-w-md">
@@ -61,7 +73,7 @@ export function AdminAccessGate({ reason }: AdminAccessGateProps) {
           {/* Back to Nexus */}
           <div className="pt-4 border-t border-white/[0.06]">
             <Link
-              href="/nexus"
+              href="https://nexus.pandoras.finance"
               className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />

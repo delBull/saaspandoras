@@ -294,7 +294,7 @@ export function AdminOverviewView({ kpis, health, recentTenants }: AdminOverview
           {/* Quick Nexus Bridge */}
           <div className="pt-2">
             <Link
-              href="/nexus"
+              href="https://nexus.pandoras.finance"
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs text-zinc-300 font-medium transition-all"
             >
               <Layers className="w-3.5 h-3.5 text-purple-400" />

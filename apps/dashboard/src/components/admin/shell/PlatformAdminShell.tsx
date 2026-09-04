@@ -215,7 +215,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
           {/* Sidebar Footer & Collapse Toggle */}
           <div className="p-3 border-t border-white/[0.08] space-y-2">
             <Link
-              href="/nexus"
+              href="https://nexus.pandoras.finance"
               className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-all"
               title={isCollapsed ? 'Volver a Nexus' : undefined}
             >
