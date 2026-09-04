@@ -17,7 +17,7 @@ export type CapabilityNamespace =
   | 'planning'
   | 'workflow'
   | 'artifact'
-  | 'communication'
+  | 'communication' // e.g., communication.route, communication.handoff
   | 'marketing'
   | 'content'
   | 'creative'

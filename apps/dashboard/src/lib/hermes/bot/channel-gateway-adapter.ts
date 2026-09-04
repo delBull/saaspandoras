@@ -470,6 +470,37 @@ export class ChannelGatewayAdapter {
       }
 
       if (projectRecord) {
+        // HITL Check: Verify if the conversation is escalated to a human
+        const { hermesConversations } = await import('@/db/schema');
+        const activeConversation = await db.query.hermesConversations.findFirst({
+            where: (conv, { eq, and }) => and(
+                eq(conv.organizationId, projectRecord!.slug),
+                eq(conv.conversationId, ctx.externalConversationId)
+            )
+        });
+
+        if (activeConversation?.status === 'PAUSED_HUMAN') {
+            // Send directly to the Discord webhook as an update from the user
+            const { DiscordWebhookService } = await import('@/lib/integrations/discord/webhook');
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+            await DiscordWebhookService.dispatchEscalation({
+                tenantSlug: projectRecord.slug,
+                externalConversationId: ctx.externalConversationId,
+                externalUserId: ctx.externalUserId,
+                channel: ctx.channel,
+                reason: 'USER_REPLY',
+                transcriptSummary: `*El usuario envió un nuevo mensaje mientras esperaba soporte:*\n"${text}"`,
+                dashboardUrl: `${baseUrl}/portal/${projectRecord.slug}/hermes`
+            });
+
+            return {
+                channel: ctx.channel,
+                externalConversationId: ctx.externalConversationId,
+                externalUserId: ctx.externalUserId,
+                replyText: `⏳ Un especialista de ${escapeHtml(activeTenant.organizationName)} está revisando tu caso. Te responderemos a la brevedad.`
+            };
+        }
+
         const { HermesExecutionEngine } = await import('@/lib/hermes/kernel/execution/execution-api');
         const engine = new HermesExecutionEngine();
         
