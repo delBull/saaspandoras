@@ -20,7 +20,15 @@ export interface ChannelContext {
   message: string;
   
   // Any channel-specific metadata (e.g., raw update ID, message IDs for reply)
-  metadata: Record<string, any>;
+  metadata: {
+    requestId?: string; // Standardized idempotency key across all channels
+    updateId?: string; // Telegram specific update id
+    isCallback?: boolean;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    [key: string]: any;
+  };
 }
 
 /**
@@ -44,6 +52,14 @@ export interface CanonicalConversationContext {
   idempotencyKey: string;
 }
 
+export interface ChannelAction {
+  id: string;
+  label: string;
+  payload?: string;
+  url?: string;
+  type?: 'tma' | 'url'; // tma = Telegram Mini App, url = standard external browser link
+}
+
 /**
  * Interface for the outbound adapter back to the Channel Edge
  */
@@ -54,5 +70,6 @@ export interface ChannelOutboundPayload {
   replyText: string;
   escalate?: boolean;
   evidenceCid?: string;
+  actions?: ChannelAction[][];
   metadata?: Record<string, any>;
 }

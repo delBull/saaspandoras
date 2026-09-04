@@ -1,0 +1,2 @@
+ALTER TABLE "telegram_bindings" ADD COLUMN "active_organization_id" varchar(256);--> statement-breakpoint
+ALTER TABLE "telegram_bindings" ADD CONSTRAINT "telegram_bindings_active_organization_id_projects_slug_fk" FOREIGN KEY ("active_organization_id") REFERENCES "public"."projects"("slug") ON DELETE set null ON UPDATE no action;

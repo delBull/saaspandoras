@@ -1721,6 +1721,7 @@ export const telegramBindings = pgTable("telegram_bindings", {
   telegramUserId: text("telegram_user_id").notNull().unique(),
   walletAddress: text("wallet_address").notNull(),
   source: text("source").notNull().default("telegram"), // future: 'discord', 'farcaster'
+  activeOrganizationId: varchar("active_organization_id", { length: 256 }).references(() => projects.slug, { onDelete: 'set null' }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
 });

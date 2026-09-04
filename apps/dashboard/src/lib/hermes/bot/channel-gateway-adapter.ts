@@ -29,6 +29,34 @@ export class ChannelGatewayAdapter {
     this.membershipService = new HermesTenantMembershipService();
   }
 
+
+  private async resolveActiveTenant(userId: string, tenants: AuthorizedTenant[], intentSlug?: string): Promise<AuthorizedTenant | null> {
+    if (tenants.length === 0) return null;
+    let activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
+    
+    const { telegramBindings } = await import('@/db/schema');
+    const binding = await db.query.telegramBindings.findFirst({
+        where: (tb, { eq }) => eq(tb.telegramUserId, userId)
+    });
+    
+    if (binding?.activeOrganizationId) {
+        const matched = tenants.find(t => t.organizationId === binding.activeOrganizationId);
+        if (matched) activeTenant = matched;
+    }
+
+    if (intentSlug) {
+      const cleanSlug = intentSlug.replace(/^org_/, '');
+      const matched = tenants.find(t => t.tenantSlug?.toLowerCase() === cleanSlug.toLowerCase() || t.organizationId.toLowerCase() === cleanSlug.toLowerCase());
+      if (matched) {
+          activeTenant = matched;
+          await db.update(telegramBindings)
+            .set({ activeOrganizationId: activeTenant.organizationId })
+            .where(eq(telegramBindings.telegramUserId, userId));
+      }
+    }
+    return activeTenant;
+  }
+
   async handleInbound(ctx: ChannelContext): Promise<ChannelOutboundPayload> {
     const text = ctx.message.trim() || '';
     const userId = ctx.externalUserId;
@@ -94,6 +122,11 @@ export class ChannelGatewayAdapter {
           username: ctx.metadata?.username,
         });
 
+        const { telegramBindings } = await import('@/db/schema');
+        await db.update(telegramBindings)
+          .set({ activeOrganizationId: session.tenant.organizationId })
+          .where(eq(telegramBindings.telegramUserId, userId));
+
         const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(session.tenant.tenantSlug || session.tenant.organizationId)}`;
         const successText = `✅ <b>Workspace Activo Conmutado:</b>\n` +
           `Organización: <b>${escapeHtml(session.tenant.organizationName)}</b>\n` +
@@ -106,14 +139,14 @@ export class ChannelGatewayAdapter {
           externalUserId: ctx.externalUserId,
           replyText: successText,
           metadata: {
-            inlineKeyboard: [
-              [{ text: '🚀 Abrir Command Center (TMA)', web_app: { url: tmaUrl } }],
+            actions: [
+              [{ id: 'open_tma', label: '🚀 Abrir Command Center (TMA)', url: tmaUrl }],
               [
-                { text: '📊 Estado', callback_data: 'cmd:status' },
-                { text: '🎯 Journeys', callback_data: 'cmd:journeys' },
-                { text: '🧩 Add-Ons', callback_data: 'cmd:addons' }
+                { id: 'status', label: '📊 Estado', payload: 'cmd:status' },
+                { id: 'journeys', label: '🎯 Journeys', payload: 'cmd:journeys' },
+                { id: 'addons', label: '🧩 Add-Ons', payload: 'cmd:addons' }
               ],
-              [{ text: '🔄 Cambiar Workspace', callback_data: 'cmd:switch' }]
+              [{ id: 'switch', label: '🔄 Cambiar Workspace', payload: 'cmd:switch' }]
             ],
             menuButton: { text: '🚀 Command Center', url: tmaUrl }
           }
@@ -174,12 +207,7 @@ export class ChannelGatewayAdapter {
       };
     }
 
-    let activeTenant = tenants[0]!;
-    if (intentSlug) {
-      const cleanSlug = intentSlug.replace(/^org_/, '');
-      const matched = tenants.find(t => t.tenantSlug?.toLowerCase() === cleanSlug.toLowerCase() || t.organizationId.toLowerCase() === cleanSlug.toLowerCase());
-      if (matched) activeTenant = matched;
-    }
+    let activeTenant = (await this.resolveActiveTenant(userId, tenants, intentSlug))!;
 
     const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
     const welcomeText = `🏛️ <b>Hermes OS — Command Center</b>\n\n` +
@@ -187,12 +215,12 @@ export class ChannelGatewayAdapter {
       `Workspace Activo: <b>${escapeHtml(activeTenant.organizationName)}</b> (Rol: <code>${escapeHtml(activeTenant.role)}</code>)\n\n` +
       `Selecciona una acción operativa:`;
 
-    const inlineKeyboard: any[][] = [
-      [{ text: '🚀 Abrir Command Center', web_app: { url: tmaUrl } }],
-      [{ text: '📊 Estado del Sistema', callback_data: 'cmd:status' }]
+    const actions: any[][] = [
+      [{ id: 'open_tma', label: '🚀 Abrir Command Center', url: tmaUrl }],
+      [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }]
     ];
     if (tenants.length > 1) {
-      inlineKeyboard.push([{ text: `🔄 Cambiar Workspace (${tenants.length} disponibles)`, callback_data: 'cmd:switch' }]);
+      actions.push([{ id: 'switch', label: `🔄 Cambiar Workspace (${tenants.length} disponibles)`, payload: 'cmd:switch' }]);
     }
 
     return {
@@ -200,7 +228,8 @@ export class ChannelGatewayAdapter {
         externalConversationId: ctx.externalConversationId,
         externalUserId: ctx.externalUserId,
         replyText: welcomeText,
-        metadata: { inlineKeyboard, menuButton: { text: '🚀 Command Center', url: tmaUrl } }
+        actions,
+        metadata: { menuButton: { text: '🚀 Command Center', url: tmaUrl } }
     };
   }
 
@@ -215,12 +244,7 @@ export class ChannelGatewayAdapter {
         };
     }
 
-    let activeTenant = tenants[0]!;
-    if (intentSlug) {
-      const cleanSlug = intentSlug.replace(/^org_/, '');
-      const matched = tenants.find(t => t.tenantSlug?.toLowerCase() === cleanSlug.toLowerCase() || t.organizationId.toLowerCase() === cleanSlug.toLowerCase());
-      if (matched) activeTenant = matched;
-    }
+    let activeTenant = (await this.resolveActiveTenant(userId, tenants, intentSlug))!;
     const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
     const text = `📱 <b>Hermes OS Command Center</b>\nWorkspace: <b>${escapeHtml(activeTenant.organizationName)}</b>`;
     
@@ -230,7 +254,7 @@ export class ChannelGatewayAdapter {
         externalUserId: ctx.externalUserId,
         replyText: text,
         metadata: {
-            inlineKeyboard: [[{ text: '⚡ Entrar al Command Center', web_app: { url: tmaUrl } }]],
+            actions: [[{ id: 'open_tma', label: '⚡ Entrar al Command Center', url: tmaUrl }]],
             menuButton: { text: '🚀 Command Center', url: tmaUrl }
         }
     };
@@ -246,7 +270,7 @@ export class ChannelGatewayAdapter {
             replyText: `⚠️ No tienes acceso a métricas de estado.`
         };
     }
-    const activeTenant = tenants[0]!;
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
     const status = await collectSystemStatus(activeTenant.organizationId);
     const statusText = buildStatusMessage(status, activeTenant.organizationName, tenants.length);
 
@@ -269,8 +293,8 @@ export class ChannelGatewayAdapter {
         };
     }
 
-    const inlineKeyboard = tenants.map(t => [
-        { text: `${t.isOwner ? '👑' : '🏢'} ${t.organizationName} (${t.role})`, callback_data: `switch:${t.organizationId}` }
+    const actions = tenants.map(t => [
+        { id: `switch_${t.organizationId}`, label: `${t.isOwner ? '👑' : '🏢'} ${t.organizationName} (${t.role})`, payload: `switch:${t.organizationId}` }
     ]);
     const text = `🔄 <b>Selecciona el Workspace Activo:</b>\nElige una organización para gestionar su Hermes OS:`;
 
@@ -279,7 +303,7 @@ export class ChannelGatewayAdapter {
         externalConversationId: ctx.externalConversationId,
         externalUserId: ctx.externalUserId,
         replyText: text,
-        metadata: { inlineKeyboard }
+        actions
     };
   }
 
@@ -294,7 +318,7 @@ export class ChannelGatewayAdapter {
       };
     }
 
-    const activeTenant = tenants[0]!;
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
     const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
     const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
 
@@ -329,9 +353,9 @@ export class ChannelGatewayAdapter {
           externalUserId: ctx.externalUserId,
           replyText: msg,
           metadata: {
-              inlineKeyboard: [
-                  [{ text: '📱 Administrar Journeys en TMA', web_app: { url: tmaUrl } }],
-                  [{ text: '🔄 Actualizar', callback_data: 'cmd:journeys' }]
+              actions: [
+                  [{ id: 'open_tma', label: '📱 Administrar Journeys en TMA', url: tmaUrl }],
+                  [{ id: 'refresh', label: '🔄 Actualizar', payload: 'cmd:journeys' }]
               ]
           }
       };
@@ -356,7 +380,7 @@ export class ChannelGatewayAdapter {
         };
     }
 
-    const activeTenant = tenants[0]!;
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
     const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
     const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
 
@@ -383,9 +407,9 @@ export class ChannelGatewayAdapter {
           externalUserId: ctx.externalUserId,
           replyText: msg,
           metadata: {
-              inlineKeyboard: [
-                  [{ text: '⚡ Activar / Desactivar en TMA', web_app: { url: tmaUrl } }],
-                  [{ text: '🔄 Actualizar', callback_data: 'cmd:addons' }]
+              actions: [
+                  [{ id: 'open_tma', label: '⚡ Activar / Desactivar en TMA', url: tmaUrl }],
+                  [{ id: 'refresh', label: '🔄 Actualizar', payload: 'cmd:addons' }]
               ]
           }
       };
@@ -410,7 +434,7 @@ export class ChannelGatewayAdapter {
         };
     }
 
-    const activeTenant = tenants[0]!;
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
     const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
     const credits = await TenantCreditLedgerService.getOrCreateCredits(cleanTenant);
 
@@ -432,10 +456,10 @@ export class ChannelGatewayAdapter {
         externalUserId: ctx.externalUserId,
         replyText: text,
         metadata: {
-            inlineKeyboard: [
-                [{ text: '💳 Recargar en Mini App', web_app: { url: topupUrl } }],
-                [{ text: '🌐 Recargar en Portal Web', url: topupUrl }],
-                [{ text: '📊 Estado del Sistema', callback_data: 'cmd:status' }]
+            actions: [
+                [{ id: 'topup_mini', label: '💳 Recargar en Mini App', url: topupUrl }],
+                [{ id: 'topup_web', label: '🌐 Recargar en Portal Web', url: topupUrl }],
+                [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }]
             ]
         }
     };
@@ -453,7 +477,7 @@ export class ChannelGatewayAdapter {
       return { channel: ctx.channel, externalConversationId: ctx.externalConversationId, externalUserId: ctx.externalUserId, replyText: helpText };
     }
 
-    const activeTenant = tenants[0]!;
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
     const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
     const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
 
@@ -537,9 +561,9 @@ export class ChannelGatewayAdapter {
                 externalUserId: ctx.externalUserId,
                 replyText: reply,
                 metadata: {
-                    inlineKeyboard: [
-                        [{ text: '🚀 Abrir Command Center', web_app: { url: tmaUrl } }],
-                        [{ text: '📊 Estado', callback_data: 'cmd:status' }]
+                    actions: [
+                        [{ id: 'open_tma', label: '🚀 Abrir Command Center', url: tmaUrl }],
+                        [{ id: 'status', label: '📊 Estado', payload: 'cmd:status' }]
                     ]
                 }
             };
@@ -556,10 +580,10 @@ export class ChannelGatewayAdapter {
           externalUserId: ctx.externalUserId,
           replyText: fallbackMsg,
           metadata: {
-              inlineKeyboard: [
-                  [{ text: '🚀 Abrir Command Center (TMA)', web_app: { url: tmaUrl } }],
-                  [{ text: '📊 Estado del Sistema', callback_data: 'cmd:status' }],
-                  [{ text: '🎯 Journeys', callback_data: 'cmd:journeys' }]
+              actions: [
+                  [{ id: 'open_tma', label: '🚀 Abrir Command Center (TMA)', url: tmaUrl }],
+                  [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }],
+                  [{ id: 'journeys', label: '🎯 Journeys', payload: 'cmd:journeys' }]
               ]
           }
       };

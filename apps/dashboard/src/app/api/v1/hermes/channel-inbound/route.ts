@@ -26,6 +26,21 @@ export async function POST(req: NextRequest) {
        return NextResponse.json({ ok: false, error: 'Unauthorized Edge Transport' }, { status: 401 });
     }
 
+    const requestId = payload.metadata?.requestId;
+    if (requestId) {
+        const { getRedis, isRedisHealthy } = await import('@/lib/redis');
+        const redis = getRedis();
+        if (redis && isRedisHealthy()) {
+            const idempotencyKey = `hermes_inbound_idempotency:${requestId}`;
+            const exists = await redis.setnx(idempotencyKey, "1");
+            if (exists === 0) {
+                console.warn(`[Channel Gateway] Duplicate request detected (Idempotency Key: ${requestId}), ignoring.`);
+                return NextResponse.json({ ok: true, data: { status: 'duplicate_ignored', channel: payload.channel, externalConversationId: payload.externalConversationId, externalUserId: payload.externalUserId } });
+            }
+            await redis.expire(idempotencyKey, 300);
+        }
+    }
+
     console.log(`📡 [Channel Gateway] Inbound from ${payload.channel} - User: ${payload.externalUserId} - Tenant Hint: ${payload.tenantHint}`);
 
     // 2. Tenant Resolution & Identity Resolution & Execution Engine

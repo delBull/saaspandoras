@@ -253,6 +253,13 @@
       "when": 1788499734455,
       "tag": "0035_yummy_mulholland_black",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788505049041,
+      "tag": "0036_ordinary_sersi",
+      "breakpoints": true
     }
   ]
 }
