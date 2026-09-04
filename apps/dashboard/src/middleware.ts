@@ -50,6 +50,28 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 0.2 Admin Subdomain Routing (e.g. admin.pandoras.finance)
+  const isAdminSubdomain = host.startsWith("admin.");
+
+  if (isAdminSubdomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+    if (pathname === "/" || pathname === "") {
+      return NextResponse.rewrite(new URL("/admin", request.url));
+    }
+    if (!pathname.startsWith("/admin/")) {
+      return NextResponse.rewrite(new URL(`/admin${pathname}`, request.url));
+    }
+  }
+
+  // 0.3 Admin Decoupling Protection (Redirect dash to admin)
+  // TODO: Uncomment this once DNS propagates and admin.pandoras.finance is fully verified.
+  /*
+  if (pathname.startsWith("/admin") && !isAdminSubdomain && !pathname.startsWith("/api/admin")) {
+    const adminUrl = new URL(request.url);
+    adminUrl.hostname = "admin.pandoras.finance";
+    return NextResponse.redirect(adminUrl, 301);
+  }
+  */
+
   // 1. Rate Limiting Strategy (Only for API routes)
   if (pathname.startsWith("/api")) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
