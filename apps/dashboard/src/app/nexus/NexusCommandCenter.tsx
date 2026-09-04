@@ -144,7 +144,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       title: "Bóveda Constitucional & Libros",
       description: "Constitución y Libros Fundacionales I al IX de Pandora's Protocol. Protegido con doble capa de seguridad criptográfica.",
       icon: Lock,
-      href: "/libros/constitucion",
+      href: "https://app.pandoras.finance/libros/constitucion",
       allowed: permissions.institutionalBooks,
       color: "rose",
       requirementText: "Exclusivo Super Admin con 2FA Discord",
@@ -156,8 +156,11 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
     { name: "Platform Governance Plane", href: "/admin", note: "HQ Admin Console, GPU Accounting & Tenant Lens" },
     { name: "S'Narai Portal", href: "/portal/snarai", note: "Interactive In-Portal Experience" },
     { name: "Growth OS Commercial Engine", href: "/growth-os/organizations/snarai", note: "CRM Pipeline & Leads" },
+    { name: "Hermes HITL Inbox (S'Narai)", href: "/growth-os/hermes/inbox?tenant=snarai", note: "Human-in-the-Loop Command Center" },
     { name: "Tokenomics & Capital RWA", href: "/profile/projects/snarai/manage", note: "Phases & Safe Treasury" },
     { name: "Onboarding Unificado", href: "/onboarding", note: "Tenant Provisioning Wizard" },
+    { name: "Nexus Knowledge Base", href: "https://nexus.pandoras.finance", note: "SOPs & Guías Oficiales" },
+    { name: "Retail End-User Portal", href: "https://app.pandoras.finance", note: "B2C Consumer Frontend" },
   ];
 
   return (
