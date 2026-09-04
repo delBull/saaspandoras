@@ -31,9 +31,9 @@ export async function GET(req: Request) {
     // Check if user is a daoMember with access to this tenant
     // (Assuming user.address is the wallet address)
     const membership = await db.query.daoMembers.findFirst({
-      where: (member, { eq, and }) => and(
+      where: (member, { eq, ilike, and }) => and(
         eq(member.projectId, project.id),
-        eq(member.wallet, user.walletAddress)
+        ilike(member.wallet, user.walletAddress)
       )
     });
 

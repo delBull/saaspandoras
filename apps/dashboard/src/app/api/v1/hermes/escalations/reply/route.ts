@@ -28,9 +28,9 @@ export async function POST(req: Request) {
     }
 
     const membership = await db.query.daoMembers.findFirst({
-      where: (member, { eq, and }) => and(
+      where: (member, { eq, ilike, and }) => and(
         eq(member.projectId, project.id),
-        eq(member.wallet, user.walletAddress)
+        ilike(member.wallet, user.walletAddress)
       )
     });
 
