@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { db } from "@/db";
 import { telegramBindings } from "@/db/schema";
-import { verifyMessage } from "ethers";
-import { setCanonicalSessionCookie } from "@/lib/auth";
+import { utils } from "ethers";
 
 export const runtime = "nodejs";
 
@@ -69,7 +68,7 @@ export async function POST(request: Request) {
 
     // 2. Validate SIWE Signature (Proves Wallet Ownership)
     try {
-      const recoveredAddress = verifyMessage(message, signature);
+      const recoveredAddress = utils.verifyMessage(message, signature);
       if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
          return NextResponse.json({ error: "Signature verification failed. Wallet mismatch." }, { status: 401 });
       }
@@ -95,15 +94,7 @@ export async function POST(request: Request) {
         }
       });
 
-    // 4. Issue Canonical Session now that the binding exists
-    await setCanonicalSessionCookie({
-        telegramUserId,
-        walletAddress: walletAddress.toLowerCase(),
-        username: tgUser.username,
-        isLinked: true
-    });
-
-    console.log(`✅ [TMA Auth Link] Successfully bound Telegram ${telegramUserId} and issued session`);
+    console.log(`✅ [TMA Auth Link] Successfully bound Telegram ${telegramUserId} to Wallet ${walletAddress}`);
 
     return NextResponse.json({
       success: true,
