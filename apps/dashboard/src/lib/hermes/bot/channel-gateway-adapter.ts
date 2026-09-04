@@ -138,8 +138,7 @@ export class ChannelGatewayAdapter {
           externalConversationId: ctx.externalConversationId,
           externalUserId: ctx.externalUserId,
           replyText: successText,
-          metadata: {
-            actions: [
+          actions: [
               [{ id: 'open_tma', label: '🚀 Abrir Command Center (TMA)', url: tmaUrl }],
               [
                 { id: 'status', label: '📊 Estado', payload: 'cmd:status' },
@@ -147,9 +146,8 @@ export class ChannelGatewayAdapter {
                 { id: 'addons', label: '🧩 Add-Ons', payload: 'cmd:addons' }
               ],
               [{ id: 'switch', label: '🔄 Cambiar Workspace', payload: 'cmd:switch' }]
-            ],
-            menuButton: { text: '🚀 Command Center', url: tmaUrl }
-          }
+          ],
+          metadata: { menuButton: { text: '🚀 Command Center', url: tmaUrl } }
         };
       } catch (err: any) {
         return {
@@ -253,8 +251,8 @@ export class ChannelGatewayAdapter {
         externalConversationId: ctx.externalConversationId,
         externalUserId: ctx.externalUserId,
         replyText: text,
+        actions: [[{ id: 'open_tma', label: '⚡ Entrar al Command Center', url: tmaUrl }]],
         metadata: {
-            actions: [[{ id: 'open_tma', label: '⚡ Entrar al Command Center', url: tmaUrl }]],
             menuButton: { text: '🚀 Command Center', url: tmaUrl }
         }
     };
@@ -352,12 +350,10 @@ export class ChannelGatewayAdapter {
           externalConversationId: ctx.externalConversationId,
           externalUserId: ctx.externalUserId,
           replyText: msg,
-          metadata: {
-              actions: [
+          actions: [
                   [{ id: 'open_tma', label: '📱 Administrar Journeys en TMA', url: tmaUrl }],
                   [{ id: 'refresh', label: '🔄 Actualizar', payload: 'cmd:journeys' }]
               ]
-          }
       };
     } catch (err: any) {
         return {
@@ -406,12 +402,10 @@ export class ChannelGatewayAdapter {
           externalConversationId: ctx.externalConversationId,
           externalUserId: ctx.externalUserId,
           replyText: msg,
-          metadata: {
-              actions: [
+          actions: [
                   [{ id: 'open_tma', label: '⚡ Activar / Desactivar en TMA', url: tmaUrl }],
                   [{ id: 'refresh', label: '🔄 Actualizar', payload: 'cmd:addons' }]
               ]
-          }
       };
     } catch (err: any) {
         return {
@@ -455,13 +449,11 @@ export class ChannelGatewayAdapter {
         externalConversationId: ctx.externalConversationId,
         externalUserId: ctx.externalUserId,
         replyText: text,
-        metadata: {
-            actions: [
+        actions: [
                 [{ id: 'topup_mini', label: '💳 Recargar en Mini App', url: topupUrl }],
                 [{ id: 'topup_web', label: '🌐 Recargar en Portal Web', url: topupUrl }],
                 [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }]
             ]
-        }
     };
   }
 
@@ -560,12 +552,10 @@ export class ChannelGatewayAdapter {
                 externalConversationId: ctx.externalConversationId,
                 externalUserId: ctx.externalUserId,
                 replyText: reply,
-                metadata: {
-                    actions: [
+                actions: [
                         [{ id: 'open_tma', label: '🚀 Abrir Command Center', url: tmaUrl }],
                         [{ id: 'status', label: '📊 Estado', payload: 'cmd:status' }]
                     ]
-                }
             };
         }
       }
@@ -579,13 +569,11 @@ export class ChannelGatewayAdapter {
           externalConversationId: ctx.externalConversationId,
           externalUserId: ctx.externalUserId,
           replyText: fallbackMsg,
-          metadata: {
-              actions: [
+          actions: [
                   [{ id: 'open_tma', label: '🚀 Abrir Command Center (TMA)', url: tmaUrl }],
                   [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }],
                   [{ id: 'journeys', label: '🎯 Journeys', payload: 'cmd:journeys' }]
               ]
-          }
       };
     } catch (err: any) {
         return {

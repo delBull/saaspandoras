@@ -17,8 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Invalid ChannelContext payload' }, { status: 400 });
     }
 
-    // 1. Authenticate the Edge Transport (e.g., via HMAC, Shared Secret, or Internal Auth)
-    // TODO: PR 2 will implement transport authentication
+    // 1. Authenticate the Edge Transport
     const expectedSecret = process.env.HERMES_EDGE_SECRET || process.env.HERMES_WEBHOOK_SECRET;
     const authHeader = req.headers.get('Authorization') || req.headers.get('x-edge-secret');
     if (expectedSecret && authHeader !== `Bearer ${expectedSecret}` && authHeader !== expectedSecret) {
