@@ -1,33 +1,50 @@
 import { NextResponse } from 'next/server';
+import { getCanonicalAuth } from '@/lib/auth';
+import { EscalationService } from '@/lib/hermes/escalation/escalation-service';
 import { db } from '@/db';
-import { hermesConversations } from '@/db/schema';
+import { daoMembers, projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function POST(req: Request) {
   try {
-    const { tenantSlug, conversationId, resolutionSummary } = await req.json();
+    const { tenantSlug, escalationId, resolutionSummary } = await req.json();
 
-    if (!tenantSlug || !conversationId) {
-      return NextResponse.json({ error: 'tenantSlug and conversationId are required' }, { status: 400 });
+    if (!tenantSlug || !escalationId) {
+      return NextResponse.json({ error: 'tenantSlug and escalationId are required' }, { status: 400 });
     }
 
-    // TODO: Verify Authorization based on tenant (JWT/Session)
+    // 1. Authorization
+    const { user, isVerified } = await getCanonicalAuth();
+    if (!user || !isVerified) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Update conversation status back to ACTIVE
-    await db.update(hermesConversations)
-      .set({ 
-        status: 'ACTIVE',
-        updatedAt: new Date()
-      })
-      .where(
-        and(
-          eq(hermesConversations.organizationId, tenantSlug),
-          eq(hermesConversations.conversationId, conversationId)
-        )
-      );
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.slug, tenantSlug)
+    });
+    if (!project) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+    }
 
-    // TODO: Inject resolutionSummary into Hermes Memory/Context so the agent knows what the human did
-    // E.g., await HermesMemoryService.injectSystemMessage(conversationId, `Human Operator resolved the issue: ${resolutionSummary}`);
+    const membership = await db.query.daoMembers.findFirst({
+      where: (member, { eq, and }) => and(
+        eq(member.projectId, project.id),
+        eq(member.wallet, user.walletAddress)
+      )
+    });
+
+    if (!membership && user.walletAddress !== process.env.ADMIN_WALLET) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // 2. Resolve via Service
+    const operatorId = user.walletAddress;
+    await EscalationService.resumeHermes({
+        organizationId: tenantSlug,
+        escalationId: escalationId,
+        operatorId: operatorId,
+        notes: resolutionSummary
+    });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

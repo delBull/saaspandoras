@@ -5,13 +5,14 @@ import { db } from '@/db';
 import { daoMembers, projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function GET(req: Request) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
+    const escalationId = params.id;
     const { searchParams } = new URL(req.url);
     const tenantSlug = searchParams.get('tenantSlug');
 
-    if (!tenantSlug) {
-      return NextResponse.json({ error: 'tenantSlug is required' }, { status: 400 });
+    if (!tenantSlug || !escalationId) {
+      return NextResponse.json({ error: 'tenantSlug and escalationId are required' }, { status: 400 });
     }
 
     // 1. Authorization
@@ -20,7 +21,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Resolve tenantId from slug
     const project = await db.query.projects.findFirst({
       where: eq(projects.slug, tenantSlug)
     });
@@ -28,8 +28,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
-    // Check if user is a daoMember with access to this tenant
-    // (Assuming user.address is the wallet address)
     const membership = await db.query.daoMembers.findFirst({
       where: (member, { eq, and }) => and(
         eq(member.projectId, project.id),
@@ -38,14 +36,13 @@ export async function GET(req: Request) {
     });
 
     if (!membership && user.walletAddress !== process.env.ADMIN_WALLET) {
-        // Just fail-closed if they are not part of the DAO/Tenant
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // 2. Fetch escalations via the Service
-    const escalations = await EscalationService.getEscalations(tenantSlug);
+    // 2. Fetch escalation details via the Service
+    const details = await EscalationService.getEscalationDetails(tenantSlug, escalationId);
 
-    return NextResponse.json({ success: true, data: escalations });
+    return NextResponse.json({ success: true, data: details });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

@@ -6,12 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
   MessageSquare, 
-  Clock, 
   CheckCircle,
   AlertTriangle,
-  ChevronRight,
   Send,
-  X
+  X,
+  BookOpen
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +19,16 @@ interface Escalation {
   id: string;
   conversationId: string;
   status: string;
-  escalationReason: string;
-  escalatedAt: string;
+  reason: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+interface Message {
+  id: string;
+  role: 'USER' | 'HERMES' | 'SYSTEM' | 'OPERATOR';
+  content: string;
+  sequence: number;
 }
 
 export default function HITLInboxPageWrapper() {
@@ -34,11 +41,12 @@ export default function HITLInboxPageWrapper() {
 
 function HITLInboxPage() {
   const searchParams = useSearchParams();
-  const tenantSlug = searchParams?.get('tenant') || 'snarai'; // Fallback for dev
+  const tenantSlug = searchParams?.get('tenant') || 'snarai';
 
   const [escalations, setEscalations] = useState<Escalation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCase, setSelectedCase] = useState<Escalation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [replyMessage, setReplyMessage] = useState('');
 
   useEffect(() => {
@@ -50,7 +58,7 @@ function HITLInboxPage() {
       const res = await fetch(`/api/v1/hermes/escalations?tenantSlug=${tenantSlug}`);
       const data = await res.json();
       if (data.success) {
-        setEscalations(data.data);
+        setEscalations(data.data.filter((e: any) => e.status !== 'RESOLVED'));
       }
     } catch (err) {
       console.error(err);
@@ -59,15 +67,30 @@ function HITLInboxPage() {
     }
   };
 
-  const handleResolve = async (conversationId: string) => {
+  const selectCase = async (esc: Escalation) => {
+    setSelectedCase(esc);
+    setMessages([]); // clear previous
+    try {
+      const res = await fetch(`/api/v1/hermes/escalations/${esc.id}?tenantSlug=${tenantSlug}`);
+      const data = await res.json();
+      if (data.success && data.data.messages) {
+        setMessages(data.data.messages);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleResolve = async () => {
+    if (!selectedCase) return;
     try {
       await fetch('/api/v1/hermes/escalations/resolve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenantSlug,
-          conversationId,
-          resolutionSummary: 'Resuelto por humano.'
+          escalationId: selectedCase.id,
+          resolutionSummary: 'Resuelto por operador manual.'
         })
       });
       setSelectedCase(null);
@@ -85,13 +108,13 @@ function HITLInboxPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenantSlug,
-          conversationId: selectedCase.conversationId,
+          escalationId: selectedCase.id,
           message: replyMessage,
-          channel: 'telegram' // Assume telegram for now
         })
       });
       setReplyMessage('');
-      alert('Mensaje enviado al usuario.');
+      // Refresh messages
+      selectCase(selectedCase);
     } catch (err) {
       console.error(err);
     }
@@ -99,12 +122,10 @@ function HITLInboxPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-slate-200 p-8 pt-24 font-sans relative overflow-hidden">
-      {/* Background Glows */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-[120px] pointer-events-none" />
       
       <div className="max-w-7xl mx-auto relative z-10 flex flex-col h-[calc(100vh-120px)]">
         
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-light tracking-tight text-white mb-2 flex items-center gap-3">
@@ -118,7 +139,6 @@ function HITLInboxPage() {
           </Badge>
         </div>
 
-        {/* Kanban Board */}
         <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex shadow-2xl backdrop-blur-xl">
           
           {/* List (Left Pane) */}
@@ -138,7 +158,7 @@ function HITLInboxPage() {
                 escalations.map((esc) => (
                   <div 
                     key={esc.id} 
-                    onClick={() => setSelectedCase(esc)}
+                    onClick={() => selectCase(esc)}
                     className={`p-4 rounded-xl cursor-pointer transition-all border ${
                       selectedCase?.id === esc.id 
                       ? 'bg-blue-500/10 border-blue-500/30' 
@@ -147,14 +167,17 @@ function HITLInboxPage() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <Badge variant="outline" className="text-xs bg-black/40">
-                        {esc.escalationReason || 'Desconocido'}
+                        {esc.reason || 'MANUAL'}
                       </Badge>
                       <span className="text-xs text-slate-500">
-                        {new Date(esc.escalatedAt).toLocaleTimeString()}
+                        {new Date(esc.createdAt).toLocaleTimeString()}
                       </span>
                     </div>
                     <div className="font-medium text-sm text-slate-200 truncate">
                       Chat ID: {esc.conversationId}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2 truncate">
+                        Estado: {esc.status}
                     </div>
                   </div>
                 ))
@@ -174,30 +197,43 @@ function HITLInboxPage() {
                   <Button 
                     variant="outline" 
                     className="border-green-500/30 text-green-400 hover:bg-green-500/10"
-                    onClick={() => handleResolve(selectedCase.conversationId)}
+                    onClick={handleResolve}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Resolver y Devolver a Hermes
                   </Button>
                 </div>
                 
-                <div className="flex-1 p-6 overflow-y-auto">
-                  <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-6">
-                    <h4 className="text-red-400 font-medium mb-1">Razón de Escalamiento</h4>
-                    <p className="text-slate-300 text-sm">El usuario generó un flag automático por: {selectedCase.escalationReason || 'Frustración repetitiva'}. Hermes se ha puesto en pausa.</p>
+                <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-4">
+                  <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl shrink-0">
+                    <h4 className="text-red-400 font-medium mb-1 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" /> Razón de Escalamiento
+                    </h4>
+                    <p className="text-slate-300 text-sm">{selectedCase.reason}</p>
+                    {selectedCase.notes && (
+                        <p className="text-slate-400 text-xs mt-2 italic">Notas: {selectedCase.notes}</p>
+                    )}
                   </div>
                   
-                  {/* Mock Transcript */}
-                  <div className="space-y-4 mb-6">
-                    <h4 className="text-slate-400 font-medium text-sm">Últimos Mensajes</h4>
-                    <div className="bg-white/5 p-4 rounded-xl text-sm text-slate-300 border border-white/10">
-                       <p className="text-blue-400 font-medium mb-1">Usuario:</p>
-                       <p>No entiendo como funciona el vesting. Quiero hablar con un humano.</p>
-                    </div>
-                    <div className="bg-blue-500/5 p-4 rounded-xl text-sm text-slate-300 border border-blue-500/10">
-                       <p className="text-blue-400 font-medium mb-1">Hermes:</p>
-                       <p>Entendido. He pausado mi asistencia automática. Un especialista revisará tu caso en breve.</p>
-                    </div>
+                  {/* Real Transcript */}
+                  <div className="flex-1 flex flex-col space-y-4 pt-4 border-t border-white/5">
+                    {messages.length === 0 ? (
+                        <div className="text-center text-slate-500 py-4 animate-pulse">Cargando historial...</div>
+                    ) : (
+                        messages.map(msg => (
+                            <div key={msg.id} className={`p-4 rounded-xl text-sm border ${
+                                msg.role === 'USER' ? 'bg-white/5 text-slate-300 border-white/10 self-start w-3/4' :
+                                msg.role === 'HERMES' ? 'bg-blue-500/5 text-slate-300 border-blue-500/10 self-end w-3/4' :
+                                msg.role === 'OPERATOR' ? 'bg-green-500/5 text-green-300 border-green-500/10 self-end w-3/4' :
+                                'bg-yellow-500/5 text-yellow-500/70 border-yellow-500/10 self-center w-full text-center text-xs'
+                            }`}>
+                                <p className="font-medium mb-1 opacity-70">
+                                    {msg.role === 'USER' ? 'Usuario' : msg.role === 'OPERATOR' ? 'Soporte Humano' : msg.role}
+                                </p>
+                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                            </div>
+                        ))
+                    )}
                   </div>
                 </div>
 
@@ -206,7 +242,7 @@ function HITLInboxPage() {
                   <div className="flex gap-3">
                     <input 
                       type="text" 
-                      placeholder="Escribe directamente al usuario (Se enviará vía Telegram/Web)..."
+                      placeholder="Escribe directamente al usuario (Se enviará vía Edge Outbound)..."
                       className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500/50 transition-colors"
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
@@ -241,7 +277,7 @@ function HITLInboxPage() {
           >
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
               <h2 className="text-lg font-medium text-white flex items-center gap-2">
-                <Badge className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/20">Nexus SOP</Badge>
+                <Badge className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/20">Nexus Base de Conocimiento</Badge>
               </h2>
               <button onClick={() => setSelectedCase(null)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -249,19 +285,17 @@ function HITLInboxPage() {
             </div>
             <div className="p-6 overflow-y-auto text-sm text-slate-300 space-y-6">
               <div>
-                <h3 className="text-white font-medium text-base mb-2">Procedimiento Operativo: Vesting</h3>
-                <p className="text-slate-400">Este usuario tiene dudas sobre el contrato de adquisición (vesting). Sigue estos pasos para la resolución corporativa.</p>
+                <h3 className="text-white font-medium text-base mb-2">Procedimiento sugerido</h3>
+                <p className="text-slate-400">Contexto de la escalación: {selectedCase.reason}</p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                <ol className="list-decimal list-inside space-y-3">
-                  <li>Verificar la wallet en el explorador interno.</li>
-                  <li>Confirmar el Cliff Date.</li>
-                  <li>Si el usuario pide cancelación manual, solicitar ticket en <code>support@pandoras.finance</code>.</li>
-                  <li><strong>Nota:</strong> Nunca compartas la Tx Hash privada.</li>
-                </ol>
+                  <p className="text-xs text-slate-500 mb-2">Consultando Nexus en tiempo real para el tópico actual...</p>
+                  <p className="text-sm italic">
+                      [El Soporte SOP dinámico no está configurado para este tenant. Por favor contacta al administrador de Nexus para indexar guías relacionadas a {selectedCase.reason}.]
+                  </p>
               </div>
-              <Button variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10 text-slate-300">
-                Ver Guía Completa en Nexus
+              <Button variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10 text-slate-300" onClick={() => window.open('https://nexus.pandoras.finance', '_blank')}>
+                <BookOpen className="w-4 h-4 mr-2" /> Buscar en Nexus
               </Button>
             </div>
           </motion.div>
