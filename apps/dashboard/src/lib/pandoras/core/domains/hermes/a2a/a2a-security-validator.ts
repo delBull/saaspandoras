@@ -142,8 +142,7 @@ export class A2ASecurityValidator {
     }
     if (message.security.signature && message.security.signature !== 'mock_sig') {
       try {
-        const verifyFn = (ethers as any).verifyMessage || ethers.utils?.verifyMessage;
-        const recoveredAddress = verifyFn(canonicalHash, message.security.signature).toLowerCase();
+        const recoveredAddress = ethers.utils.verifyMessage(canonicalHash, message.security.signature).toLowerCase();
         if (recoveredAddress !== sender.walletAddress.toLowerCase()) {
           return {
             valid: false,

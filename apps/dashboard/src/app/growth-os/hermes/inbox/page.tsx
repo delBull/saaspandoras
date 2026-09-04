@@ -24,7 +24,15 @@ interface Escalation {
   escalatedAt: string;
 }
 
-export default function HITLInboxPage() {
+export default function HITLInboxPageWrapper() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center"><div className="text-white animate-pulse">Cargando Inbox...</div></div>}>
+      <HITLInboxPage />
+    </React.Suspense>
+  );
+}
+
+function HITLInboxPage() {
   const searchParams = useSearchParams();
   const tenantSlug = searchParams?.get('tenant') || 'snarai'; // Fallback for dev
 
