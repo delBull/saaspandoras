@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { db } from '@/db';
 import { projects, hermesKnowledge, hermesSecurityEvents } from '@/db/schema';
@@ -29,7 +29,12 @@ interface EcosystemPageProps {
 
 export default async function EcosystemPage({ params }: EcosystemPageProps) {
   const { organizationSlug } = await params;
-  const context = await resolvePortalContext(organizationSlug);
+  let context;
+  try {
+    context = await resolvePortalContext(organizationSlug);
+  } catch (err: any) {
+    redirect(`/accessv2?return=/ecosystem/${organizationSlug}`);
+  }
 
   if (!context) notFound();
 

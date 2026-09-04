@@ -16,10 +16,16 @@ export default async function EcosystemLayout({
   params,
 }: EcosystemLayoutProps) {
   const { organizationSlug } = await params;
-  const context = await resolvePortalContext(organizationSlug);
+  let context;
+  try {
+    context = await resolvePortalContext(organizationSlug);
+  } catch (err: any) {
+    // If it's a PortalAuthorizationError, redirect to login
+    redirect(`/accessv2?return=/ecosystem/${organizationSlug}`);
+  }
 
   if (!context) {
-    redirect(`/portal/login?return=/ecosystem/${organizationSlug}`);
+    redirect(`/accessv2?return=/ecosystem/${organizationSlug}`);
   }
 
   return (

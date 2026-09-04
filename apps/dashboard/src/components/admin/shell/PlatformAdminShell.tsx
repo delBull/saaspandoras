@@ -75,7 +75,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
     {
       id: 'identity',
       label: 'Identidad & RBAC',
-      href: '/nexus/settings',
+      href: 'https://nexus.pandoras.finance/settings',
       icon: UserCheck,
       active: activeSection === 'identity' || pathname.includes('/nexus/settings'),
     },
