@@ -57,7 +57,7 @@ export function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/admin", request.url));
     }
-    if (!pathname.startsWith("/admin/")) {
+    if (!pathname.startsWith("/admin/") && pathname !== "/admin") {
       return NextResponse.rewrite(new URL(`/admin${pathname}`, request.url));
     }
   }
@@ -68,7 +68,7 @@ export function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/nexus", request.url));
     }
-    if (!pathname.startsWith("/nexus/")) {
+    if (!pathname.startsWith("/nexus/") && pathname !== "/nexus") {
       return NextResponse.rewrite(new URL(`/nexus${pathname}`, request.url));
     }
   }
