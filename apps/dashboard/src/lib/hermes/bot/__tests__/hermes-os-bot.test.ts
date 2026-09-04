@@ -1,120 +1,63 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HermesOSBotAdapter, TelegramUpdate, escapeHtml } from '../hermes-os-bot';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { ChannelGatewayAdapter, escapeHtml } from '../channel-gateway-adapter';
 import { buildStatusMessage, type HermesSystemStatus } from '../system-status';
-import * as routerModule from '@/lib/hermes/telegram-runtime/router';
+import { ChannelContext } from '../../channel-gateway';
 
-describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & Command Center Adapter', () => {
-  const TEST_BOT_TOKEN = '123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ_TEST_TOKEN';
-  let botAdapter: HermesOSBotAdapter;
-  let sentMessages: Array<{ chatId: number; text: string; keyboard?: any }> = [];
+describe('🤖 Hermes OS Milestone 2.2 — Channel Gateway Adapter', () => {
+  let botAdapter: ChannelGatewayAdapter;
 
   beforeEach(() => {
-    sentMessages = [];
-    botAdapter = new HermesOSBotAdapter({
-      botToken: TEST_BOT_TOKEN,
+    botAdapter = new ChannelGatewayAdapter({
       tmaBaseUrl: 'https://dash.pandoras.finance',
     });
-
-    // Spy on sendTelegramMessage
-    vi.spyOn(routerModule, 'sendTelegramMessage').mockImplementation(
-      async (token: string, chatId: number, text: string, replyMarkup?: any) => {
-        sentMessages.push({ chatId, text, keyboard: replyMarkup });
-        return { ok: true, result: { message_id: 999 } };
-      }
-    );
   });
 
-  it('BOT-001: Handles /start for unauthorized telegram user with instructions', async () => {
-    const update: TelegramUpdate = {
-      update_id: 1001,
-      message: {
-        message_id: 1,
-        from: { id: 999999999, username: 'unauthorized_stranger' },
-        chat: { id: 55555, type: 'private' },
-        date: Math.floor(Date.now() / 1000),
-        text: '/start',
+  function makeContext(text: string, isCallback = false, tenantHint?: string): ChannelContext {
+    return {
+      channel: 'telegram',
+      externalUserId: '999999999',
+      externalConversationId: '55555',
+      tenantHint,
+      message: text,
+      metadata: {
+        isCallback,
+        username: 'operator_marco'
       }
     };
+  }
 
-    const result = await botAdapter.handleUpdate(update);
-    expect(result.handled).toBe(true);
-    expect(result.action).toBe('START_UNAUTHORIZED');
+  it('BOT-001: Handles /start for unauthorized telegram user with instructions', async () => {
+    const ctx = makeContext('/start');
+    ctx.metadata.username = 'unauthorized_stranger';
 
-    expect(sentMessages.length).toBe(1);
-    expect(sentMessages[0]?.text).toContain('no tiene workspaces vinculados');
+    const result = await botAdapter.handleInbound(ctx);
+    expect(result.replyText).toContain('no tiene workspaces vinculados');
   });
 
   it('BOT-002: /status rejects unauthorized telegram user with STATUS_UNAUTHORIZED', async () => {
-    const update: TelegramUpdate = {
-      update_id: 1002,
-      message: {
-        message_id: 2,
-        from: { id: 999999999, username: 'unauthorized_stranger' },
-        chat: { id: 55555, type: 'private' },
-        date: Math.floor(Date.now() / 1000),
-        text: '/status',
-      }
-    };
-
-    const result = await botAdapter.handleUpdate(update);
-    expect(result.handled).toBe(true);
-    expect(sentMessages.length).toBe(1);
-    expect(sentMessages[0]?.text).toContain('No tienes acceso a métricas');
+    const ctx = makeContext('/status');
+    const result = await botAdapter.handleInbound(ctx);
+    expect(result.replyText).toContain('No tienes acceso a métricas');
   });
 
   it('BOT-003: Handles /portal command returning WebApp launch button', async () => {
-    const update: TelegramUpdate = {
-      update_id: 1003,
-      message: {
-        message_id: 3,
-        from: { id: 999999999, username: 'operator_marco' },
-        chat: { id: 55555, type: 'private' },
-        date: Math.floor(Date.now() / 1000),
-        text: '/portal',
-      }
-    };
-
-    const result = await botAdapter.handleUpdate(update);
-    expect(result.handled).toBe(true);
-    expect(result.action).toBe('PORTAL_UNAUTHORIZED');
+    const ctx = makeContext('/portal');
+    const result = await botAdapter.handleInbound(ctx);
+    expect(result.replyText).toContain('No tienes workspaces autorizados'); // because mock DB says unauthorized
   });
 
   it('BOT-004: Handles /switch command listing authorized workspaces', async () => {
-    const update: TelegramUpdate = {
-      update_id: 1004,
-      message: {
-        message_id: 4,
-        from: { id: 999999999, username: 'operator_marco' },
-        chat: { id: 55555, type: 'private' },
-        date: Math.floor(Date.now() / 1000),
-        text: '/switch',
-      }
-    };
-
-    const result = await botAdapter.handleUpdate(update);
-    expect(result.handled).toBe(true);
-    expect(result.action).toBe('SWITCH_EMPTY');
+    const ctx = makeContext('/switch');
+    const result = await botAdapter.handleInbound(ctx);
+    expect(result.replyText).toContain('No tienes workspaces para conmutar'); // mock DB unauthorized
   });
 
   it('BOT-005: Handles callback query switch:<UUID> with fail-closed access check', async () => {
     const fakeUuid = '00000000-0000-0000-0000-000000000000';
-    const update: TelegramUpdate = {
-      update_id: 1005,
-      callback_query: {
-        id: 'cb_123',
-        from: { id: 999999999, username: 'operator_marco' },
-        message: {
-          message_id: 5,
-          chat: { id: 55555 }
-        },
-        data: `switch:${fakeUuid}`,
-      }
-    };
-
-    const result = await botAdapter.handleUpdate(update);
-    expect(result.handled).toBe(true);
-    expect(result.action).toBe('SWITCH_DENIED');
-    expect(sentMessages.some(m => m.text.includes('Error al conmutar'))).toBe(true);
+    const ctx = makeContext(`switch:${fakeUuid}`, true);
+    
+    const result = await botAdapter.handleInbound(ctx);
+    expect(result.replyText).toContain('Error al conmutar workspace');
   });
 
   it('BOT-006: escapeHtml sanitizes dangerous characters preventing Telegram HTML injection', () => {
@@ -158,22 +101,10 @@ describe('🤖 Hermes OS Milestone 2.2 — @pandorasHermes_bot Control Plane & C
   });
 
   it('BOT-009: Handles /help with operational guide', async () => {
-    const update: TelegramUpdate = {
-      update_id: 1009,
-      message: {
-        message_id: 9,
-        from: { id: 999999999, username: 'operator' },
-        chat: { id: 55555, type: 'private' },
-        date: Math.floor(Date.now() / 1000),
-        text: '/help',
-      }
-    };
-
-    const result = await botAdapter.handleUpdate(update);
-    expect(result.handled).toBe(true);
-    expect(result.action).toBe('HELP');
-    expect(sentMessages[0]?.text).toContain('/portal');
-    expect(sentMessages[0]?.text).toContain('/status');
-    expect(sentMessages[0]?.text).toContain('/switch');
+    const ctx = makeContext('/help');
+    const result = await botAdapter.handleInbound(ctx);
+    expect(result.replyText).toContain('/portal');
+    expect(result.replyText).toContain('/status');
+    expect(result.replyText).toContain('/switch');
   });
 });
