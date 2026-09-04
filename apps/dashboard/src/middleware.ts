@@ -62,6 +62,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 0.2.1 Nexus Subdomain Routing (e.g. nexus.pandoras.finance)
+  const isNexusSubdomain = host.startsWith("nexus.") || host.startsWith("staging.nexus.");
+  if (isNexusSubdomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+    if (pathname === "/" || pathname === "") {
+      return NextResponse.rewrite(new URL("/nexus", request.url));
+    }
+    if (!pathname.startsWith("/nexus/")) {
+      return NextResponse.rewrite(new URL(`/nexus${pathname}`, request.url));
+    }
+  }
+
   // 0.3 Admin Decoupling Protection (Redirect dash to admin)
   // TODO: Uncomment this once DNS propagates and admin.pandoras.finance is fully verified.
   /*

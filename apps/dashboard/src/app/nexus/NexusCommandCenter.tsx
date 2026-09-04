@@ -154,9 +154,9 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
 
   const quickLinks = [
     { name: "Platform Governance Plane", href: "/admin", note: "HQ Admin Console, GPU Accounting & Tenant Lens" },
-    { name: "S'Narai Portal", href: "/portal/snarai", note: "Interactive In-Portal Experience" },
+    { name: "Tenant Portal (Preview)", href: "/portal/snarai", note: "Interactive In-Portal Experience" },
     { name: "Growth OS Commercial Engine", href: "/growth-os/organizations/snarai", note: "CRM Pipeline & Leads" },
-    { name: "Hermes HITL Inbox (S'Narai)", href: "/growth-os/hermes/inbox?tenant=snarai", note: "Human-in-the-Loop Command Center" },
+    { name: "Hermes HITL Inbox", href: "/growth-os/hermes/inbox?tenant=snarai", note: "Human-in-the-Loop Command Center" },
     { name: "Tokenomics & Capital RWA", href: "/profile/projects/snarai/manage", note: "Phases & Safe Treasury" },
     { name: "Onboarding Unificado", href: "/onboarding", note: "Tenant Provisioning Wizard" },
     { name: "Nexus Knowledge Base", href: "https://nexus.pandoras.finance", note: "SOPs & Guías Oficiales" },
