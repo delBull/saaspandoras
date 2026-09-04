@@ -17,6 +17,17 @@ interface JWTPayload {
   aud?: string;
   iat?: number;
   exp?: number;
+  sid?: string;
+  hasAccess?: boolean;
+  scope?: string;
+}
+
+export interface CanonicalUserContext {
+  userId: string;          // UUID from `users` table, the canonical ID
+  walletAddress: string;   // The verified identity binding
+  hasPandorasKey: boolean; // Evaluated access rights
+  sessionId: string;       // JWT sid / __pbox_sid UUID
+  scope: string;           // Channel scope (web, tma, whatsapp, etc.)
 }
 
 export async function isAdmin(address?: string | null): Promise<boolean> {
@@ -175,6 +186,70 @@ export async function getAuth(headersData?: any, userAddress?: string) {
     isVerified: false,
   };
 }
+
+/**
+ * RESOLVE CANONICAL IDENTITY (F10 Boundary Lock)
+ * Used by Domain Services, BFFs, and TMA to retrieve the fully unified identity.
+ * Unlike getAuth(), this intentionally preserves the Platform User ID to map
+ * memberships without spoofing the legacy RBAC system.
+ */
+export async function getCanonicalAuth(headersData?: any): Promise<{ user: CanonicalUserContext | null, isVerified: boolean }> {
+  try {
+    let rawCookieHeader = '';
+    if (headersData) {
+      if (headersData.headers && typeof headersData.headers.get === 'function') {
+        rawCookieHeader = headersData.headers.get('cookie') || '';
+      } else if (typeof (headersData as any).get === 'function') {
+        rawCookieHeader = (headersData as any).get('cookie') || '';
+      } else {
+        rawCookieHeader = (headersData as any).cookie || (headersData as any).Cookie || '';
+      }
+    } else {
+      try {
+        const hdrs = await nextHeaders();
+        rawCookieHeader = hdrs.get('cookie') || '';
+      } catch (e) { /* Silent catch */ }
+    }
+
+    const cookiesMap = new Map();
+    rawCookieHeader.split(';').forEach((cookie: string) => {
+      const [name, ...rest] = cookie.trim().split('=');
+      if (name) cookiesMap.set(name, rest.join('='));
+    });
+
+    const authToken = cookiesMap.get('__pbox_sid') || 
+                     cookiesMap.get('auth_token') || 
+                     cookiesMap.get('pbox_session_v3');
+
+    if (authToken) {
+      const decoded = await verifyJWT(authToken);
+      
+      if (decoded) {
+          const decodedAddr = (decoded.address || (decoded as any).walletAddress)?.toLowerCase() || null;
+          const canonicalUserId = decoded.sub || decoded.userId;
+          const sessionId = decoded.sid;
+          
+          if (canonicalUserId && decodedAddr && sessionId) {
+              return {
+                  user: {
+                      userId: canonicalUserId,
+                      walletAddress: decodedAddr,
+                      hasPandorasKey: decoded.hasAccess ?? false,
+                      sessionId: sessionId,
+                      scope: decoded.scope || 'web'
+                  },
+                  isVerified: true
+              };
+          }
+      }
+    }
+  } catch (error) {
+    console.error("🔍 [Auth] getCanonicalAuth Error:", error);
+  }
+
+  return { user: null, isVerified: false };
+}
+
 
 /**
  * RECONSTRUCT PEM UTILITY (Symmetrical Logic)

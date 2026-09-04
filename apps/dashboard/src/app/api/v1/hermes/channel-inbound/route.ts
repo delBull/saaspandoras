@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const authHeader = req.headers.get('Authorization') || req.headers.get('x-edge-secret');
     if (expectedSecret && authHeader !== `Bearer ${expectedSecret}` && authHeader !== expectedSecret) {
        console.warn(`[Channel Gateway] Unauthorized attempt from edge.`);
-       // return NextResponse.json({ ok: false, error: 'Unauthorized Edge Transport' }, { status: 401 });
+       return NextResponse.json({ ok: false, error: 'Unauthorized Edge Transport' }, { status: 401 });
     }
 
     console.log(`📡 [Channel Gateway] Inbound from ${payload.channel} - User: ${payload.externalUserId} - Tenant Hint: ${payload.tenantHint}`);

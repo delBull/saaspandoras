@@ -471,25 +471,33 @@ export class ChannelGatewayAdapter {
 
       if (projectRecord) {
         const { HermesExecutionEngine } = await import('@/lib/hermes/kernel/execution/execution-api');
-        const { TelegramAdapter } = await import('@/lib/hermes/adapters/telegram-adapter');
-
         const engine = new HermesExecutionEngine();
         
-        // Construct a synthetic update for the legacy execution path for now
-        const fakeUpdate = {
-          message: {
-            text,
-            chat: { id: parseInt(ctx.externalConversationId, 10) },
-            from: { id: parseInt(userId, 10) || 0, username: ctx.metadata?.username },
-          },
-          botToken: process.env.TELEGRAM_BOT_TOKEN || '',
-          projectRecord,
-          metadata: (projectRecord.w2eConfig as any) || {},
+        // Native Universal Execution Request
+        const request = {
+            requestId: `req-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+            executionId: `${ctx.channel}-${Date.now()}`,
+            tenantId: String(projectRecord.id),
+            requester: ctx.externalConversationId,
+            channel: ctx.channel,
+            capability: 'communication.route',
+            executionProfile: 'interactive' as const,
+            identity: { userId },
+            priority: 'normal' as const,
+            payload: {
+                projectId: projectRecord.id,
+                chatId: ctx.externalConversationId,
+                userMessage: text,
+                botToken: process.env.TELEGRAM_BOT_TOKEN || '',
+                raw: ctx
+            }
         };
 
-        const context = TelegramAdapter.parse(projectRecord.id, fakeUpdate);
-        const result = await engine.execute(context);
-        const reply = TelegramAdapter.render(result);
+        const result = await engine.execute(request);
+        
+        // Render from standard execution artifacts
+        const textArtifact = result.artifacts?.find((a: any) => a.type === 'message');
+        const reply = textArtifact ? textArtifact.content : (result as any).reply || '';
 
         if (reply && reply.trim()) {
             return {

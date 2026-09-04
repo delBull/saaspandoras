@@ -1,7 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ChannelGatewayAdapter, escapeHtml } from '../channel-gateway-adapter';
 import { buildStatusMessage, type HermesSystemStatus } from '../system-status';
 import { ChannelContext } from '../../channel-gateway';
+import { HermesTenantMembershipService } from '@/lib/hermes/auth';
+
+vi.mock('@/lib/hermes/auth', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    HermesTenantMembershipService: vi.fn().mockImplementation(() => ({
+      getAuthorizedTenants: vi.fn().mockResolvedValue([]),
+      validateTenantAccess: vi.fn().mockRejectedValue(new Error('Mocked unauthorized')),
+    })),
+  };
+});
 
 describe('🤖 Hermes OS Milestone 2.2 — Channel Gateway Adapter', () => {
   let botAdapter: ChannelGatewayAdapter;
