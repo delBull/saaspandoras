@@ -15,7 +15,6 @@ import WhatsAppLeadsTab from './WhatsAppLeadsTab';
 import ShortlinksSubTab from './ShortlinksSubTab';
 import { NFTManager } from "./NFTManager";
 import NewsletterSubTab from './NewsletterSubTab';
-import GrowthOSSubTab from './GrowthOSSubTab';
 import { DiscordManager } from './DiscordManager';
 import { MarketingDashboard } from './marketing/MarketingDashboard';
 import { CalendarManager } from "./CalendarManager";
@@ -192,13 +191,12 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 { id: 'pay', label: 'Pay & Finance', icon: '💸', color: 'text-emerald-400', active: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-emerald-500/5', glow: 'bg-emerald-500/5', dot: 'bg-emerald-400' },
                 { id: 'shortlinks', label: 'Shortlinks', icon: '🔗', color: 'text-blue-400', active: 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-blue-500/5', glow: 'bg-blue-500/5', dot: 'bg-blue-400' },
                 { id: 'newsletter', label: 'Newsletter', icon: '📧', color: 'text-purple-400', active: 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-purple-500/5', glow: 'bg-purple-500/5', dot: 'bg-purple-400' },
-                { id: 'growth-os', label: 'Growth House', icon: '🚀', color: 'text-indigo-400', active: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-indigo-500/5', glow: 'bg-indigo-500/5', dot: 'bg-indigo-400', pulse: true },
                 { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-indigo-400', active: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-indigo-500/5', glow: 'bg-indigo-500/5', dot: 'bg-indigo-400' },
                 { id: 'campaigns', label: 'Campaigns', icon: '🎯', color: 'text-orange-400', active: 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-orange-500/5', glow: 'bg-orange-500/5', dot: 'bg-orange-400' },
                 { id: 'agenda', label: 'Agenda', icon: '🗓️', color: 'text-rose-400', active: 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-rose-500/5', glow: 'bg-rose-500/5', dot: 'bg-rose-400' },
                 { id: 'cursos', label: 'Cursos', icon: '📚', color: 'text-cyan-400', active: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-cyan-500/5', glow: 'bg-cyan-500/5', dot: 'bg-cyan-400' },
               ].map((tab) => (
-                <button
+                  <button
                   key={tab.id}
                   onClick={() => setSubTab(tab.id)}
                   className={`
@@ -207,7 +205,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                       ? `${tab.active}` 
                       : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/50 hover:border-zinc-700 hover:text-zinc-300'
                     }
-                    ${tab.pulse && activeMarketingSubTab === tab.id ? 'animate-pulse-subtle' : ''}
+                    ${(tab as any).pulse && activeMarketingSubTab === tab.id ? 'animate-pulse-subtle' : ''}
                   `}
                 >
                   {/* Subtle Background Glow for Active State */}
@@ -232,7 +230,6 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           {activeMarketingSubTab === 'pay' && <PaymentsDashboard />}
           {activeMarketingSubTab === 'shortlinks' && <ShortlinksSubTab />}
           {activeMarketingSubTab === 'newsletter' && <NewsletterSubTab />}
-          {activeMarketingSubTab === 'growth-os' && <GrowthOSSubTab />}
           {activeMarketingSubTab === 'discord' && <DiscordManager />}
           {activeMarketingSubTab === 'campaigns' && (
             <MarketingDashboard />

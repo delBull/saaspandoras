@@ -27,8 +27,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Boxes,
-  Sparkles,
   Zap,
+  Sparkles,
+  Target,
+  GraduationCap,
+  Code2,
+  Compass
 } from 'lucide-react';
 
 interface NavItem {
@@ -36,7 +40,7 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   requiredPermission: PortalPermission;
-  section?: 'primary' | 'secondary';
+  section?: 'primary' | 'secondary' | 'internal';
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -117,6 +121,35 @@ const NAV_ITEMS: NavItem[] = [
     requiredPermission: 'organization.read',
     section: 'secondary',
   },
+  // --- INTERNAL / HQ TOOLS ---
+  {
+    label: 'Strategy',
+    href: '/strategy',
+    icon: Compass,
+    requiredPermission: 'growth.strategy',
+    section: 'internal',
+  },
+  {
+    label: 'Campaigns',
+    href: '/market-attack',
+    icon: Target,
+    requiredPermission: 'growth.market_attack',
+    section: 'internal',
+  },
+  {
+    label: 'Academy',
+    href: '/content',
+    icon: GraduationCap,
+    requiredPermission: 'growth.content',
+    section: 'internal',
+  },
+  {
+    label: 'Developers',
+    href: '/developers',
+    icon: Code2,
+    requiredPermission: 'developer.api',
+    section: 'internal',
+  },
 ];
 
 interface PortalSidebarProps {
@@ -153,6 +186,7 @@ export function PortalSidebar({
 
   const primaryItems = visibleItems.filter((i) => i.section === 'primary' || !i.section);
   const secondaryItems = visibleItems.filter((i) => i.section === 'secondary');
+  const internalItems = visibleItems.filter((i) => i.section === 'internal');
 
   return (
     <>
@@ -261,6 +295,41 @@ export function PortalSidebar({
                     </Link>
                 );
             })}
+
+            {/* HQ / INTERNAL SECTION */}
+            {internalItems.length > 0 && (
+                <div className={`mt-auto mb-2 w-full flex flex-col ${collapsed ? 'items-center' : ''}`}>
+                    <div className={`w-8 h-px bg-emerald-500/20 my-2 ${!collapsed && 'w-full'}`} />
+                    {!collapsed && (
+                        <span className="px-3 py-1 text-[10px] font-mono tracking-wider text-emerald-500/60 uppercase">
+                            Growth OS (HQ)
+                        </span>
+                    )}
+                    {internalItems.map((item) => {
+                        const active = isActive(item.href);
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={`${basePath}${item.href}`}
+                                className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-11 gap-3'} rounded-xl transition-all group ${
+                                    active 
+                                        ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' 
+                                        : 'text-zinc-500 hover:text-emerald-400/80 hover:bg-emerald-500/5 border border-transparent'
+                                }`}
+                                title={collapsed ? item.label : undefined}
+                            >
+                                <Icon className="w-5 h-5 shrink-0" />
+                                {collapsed ? (
+                                   <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                                ) : (
+                                   <span className="text-sm font-medium tracking-wide opacity-90">{item.label}</span>
+                                )}
+                            </Link>
+                        );
+                    })}
+                </div>
+            )}
         </div>
         
         <div className={`mt-auto mb-4 border-t border-white/10 pt-4 w-full flex ${collapsed ? 'justify-center' : 'justify-end px-4'}`}>

@@ -117,7 +117,7 @@ export function MarketAttackEngine({ projectId, projectName }: MarketAttackEngin
   const handleSendToCampaigns = async (type: string = "draft", overrideContent?: string) => {
     setIsSending(true);
     try {
-      const result = await createDemandDraft({ 
+      const result: any = await createDemandDraft({ 
         projectId: Number(projectId) || 1,
         hook: activeContent.whatToSay.hooks[selectedHookIdx] || '',
         script: activeContent.whatToSay.scripts[selectedScriptIdx] || '',

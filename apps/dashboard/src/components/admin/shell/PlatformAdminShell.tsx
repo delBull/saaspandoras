@@ -68,16 +68,23 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
     {
       id: 'crm',
       label: 'HQ Deal Room',
-      href: '/admin?tab=crm',
+      href: '/?tab=crm',
       icon: Briefcase,
       active: activeSection === 'crm' || pathname.includes('tab=crm'),
     },
     {
+      id: 'growth',
+      label: 'HQ Growth OS (Portal)',
+      href: `${process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance'}/portal/pandoras`,
+      icon: ExternalLink,
+      active: false,
+    },
+    {
       id: 'identity',
       label: 'Identidad & RBAC',
-      href: 'https://nexus.pandoras.finance/settings',
+      href: '/admin?tab=security',
       icon: UserCheck,
-      active: activeSection === 'identity' || pathname.includes('/nexus/settings'),
+      active: activeSection === 'identity' || pathname.includes('tab=security'),
     },
     {
       id: 'security',

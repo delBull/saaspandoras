@@ -47,7 +47,14 @@ export type PortalPermission =
 
   // Settings
   | 'settings.read'
-  | 'settings.write';
+  | 'settings.write'
+
+  // Growth OS
+  | 'growth.market_attack'
+  | 'growth.content'
+  | 'growth.analytics'
+  | 'growth.strategy'
+  | 'developer.api';
 
 export type PortalRole = 'owner' | 'admin' | 'operator' | 'viewer';
 
@@ -66,6 +73,8 @@ export const PORTAL_ROLE_PERMISSIONS: Record<PortalRole, PortalPermission[]> = {
     'policies.read', 'policies.write',
     'journeys.read', 'journeys.write',
     'settings.read', 'settings.write',
+    'growth.market_attack', 'growth.content', 'growth.analytics', 'growth.strategy',
+    'developer.api',
   ],
   admin: [
     'organization.read', 'organization.update',
@@ -77,6 +86,8 @@ export const PORTAL_ROLE_PERMISSIONS: Record<PortalRole, PortalPermission[]> = {
     'policies.read', 'policies.write',
     'journeys.read', 'journeys.write',
     'settings.read',
+    'growth.market_attack', 'growth.content', 'growth.analytics', 'growth.strategy',
+    'developer.api',
   ],
   operator: [
     'organization.read',
@@ -88,6 +99,7 @@ export const PORTAL_ROLE_PERMISSIONS: Record<PortalRole, PortalPermission[]> = {
     'policies.read',
     'journeys.read',
     'settings.read',
+    'growth.market_attack', 'growth.content', 'growth.analytics', 'growth.strategy',
   ],
   viewer: [
     'organization.read',
@@ -98,6 +110,7 @@ export const PORTAL_ROLE_PERMISSIONS: Record<PortalRole, PortalPermission[]> = {
     'activity.read',
     'policies.read',
     'journeys.read',
+    'growth.analytics',
   ],
 };
 

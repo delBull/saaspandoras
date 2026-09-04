@@ -9,10 +9,29 @@ import {
   projects 
 } from "@/db/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { shortlinks, campaignTrackers } from "@/db/schema";
+import { CampaignDomainService } from "@/lib/marketing/campaigns.service";
+import { PortalTenantContext } from "@/lib/portal/portal-types";
+import { PORTAL_ROLE_PERMISSIONS } from "@/lib/portal/permissions";
+import { getAuth, isAdmin } from "@/lib/auth";
+
+/**
+ * Creates a mock legacy context for the Domain Service so we can use it 
+ * from the old Admin dashboard without breaking existing functionality.
+ */
+async function buildLegacyAdminContext(address: string, projectId: number): Promise<PortalTenantContext> {
+  const [project] = await db.select({ id: projects.id, slug: projects.slug, organizationId: projects.organizationId }).from(projects).where(eq(projects.id, projectId)).limit(1);
+  return {
+    actorId: `wallet_${address.slice(0, 10)}`,
+    sessionId: `legacy_admin_${address}`,
+    organizationId: project?.organizationId || String(projectId),
+    organizationSlug: project?.slug || String(projectId),
+    role: 'owner',
+    permissions: PORTAL_ROLE_PERMISSIONS['owner'],
+  };
+}
 
 /**
  * Persists a content draft with its "Content DNA".
@@ -30,21 +49,10 @@ export async function createDemandDraft(data: {
     const { session } = await getAuth(await headers());
     if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
-    const fullContent = `HOOK: ${data.hook}\n\nSCRIPT: ${data.script}\n\nCTA: ${data.cta}`;
-
-    const [draft] = await db.insert(demandDrafts).values({
-      projectId: data.projectId,
-      hook: data.hook,
-      script: data.script,
-      cta: data.cta,
-      fullContent,
-      angle: data.angle || 'direct',
-      emotion: data.emotion || 'neutral',
-      mechanism: data.mechanism || 'manual',
-      status: 'draft'
-    }).returning();
-
-    return { success: true, draft };
+    const context = await buildLegacyAdminContext(session.address, data.projectId);
+    const service = new CampaignDomainService(context);
+    
+    return await service.createDemandDraft(data);
   } catch (error) {
     console.error("Error creating demand draft:", error);
     return { success: false, error: "Failed to create draft" };
@@ -65,39 +73,13 @@ export async function launchCampaign(data: {
     const { session } = await getAuth(await headers());
     if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
-    // 1. Create Campaign
-    const [campaign] = await db.insert(campaigns).values({
-      projectId: data.projectId,
-      draftId: data.draftId,
-      name: data.name || `Campaign_${Date.now()}`, // Fallback naming
-      source: 'demand_engine',
-      platform: data.platform,
-      type: data.type || 'conversion',
-      status: 'active'
-    }).returning();
-
-    if (!campaign) {
-      throw new Error("Failed to create campaign record");
-    }
-
-    // 2. Initialize Stats Cache
-    await db.insert(campaignStats).values({
-      campaignId: campaign.id,
-      impressions: 0,
-      clicks: 0,
-      leads: 0,
-      purchases: 0,
-      revenue: "0",
-      score: "0"
-    });
-
-    // 3. Update Draft Status
-    await db.update(demandDrafts)
-      .set({ status: 'campaign_ready', updatedAt: new Date() })
-      .where(eq(demandDrafts.id, data.draftId));
+    const context = await buildLegacyAdminContext(session.address, data.projectId);
+    const service = new CampaignDomainService(context);
+    
+    const result = await service.launchCampaign(data);
 
     revalidatePath('/marketing');
-    return { success: true, campaign };
+    return result;
   } catch (error) {
     console.error("Error launching campaign:", error);
     return { success: false, error: "Failed to launch campaign" };
@@ -232,30 +214,10 @@ export async function getCampaignPerformance(projectId: number) {
     const { session } = await getAuth(await headers());
     if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
-    const performance = await db.select({
-      id: campaigns.id,
-      name: campaigns.name,
-      platform: campaigns.platform,
-      source: campaigns.source,
-      status: campaigns.status,
-      // Content DNA
-      hook: demandDrafts.hook,
-      angle: demandDrafts.angle,
-      emotion: demandDrafts.emotion,
-      mechanism: demandDrafts.mechanism,
-      // Stats
-      impressions: campaignStats.impressions,
-      clicks: campaignStats.clicks,
-      leads: campaignStats.leads,
-      purchases: campaignStats.purchases,
-      revenue: campaignStats.revenue,
-      score: campaignStats.score
-    })
-    .from(campaigns)
-    .leftJoin(demandDrafts, eq(campaigns.draftId, demandDrafts.id))
-    .leftJoin(campaignStats, eq(campaigns.id, campaignStats.campaignId))
-    .where(eq(campaigns.projectId, projectId))
-    .orderBy(desc(campaigns.createdAt));
+    const context = await buildLegacyAdminContext(session.address, projectId);
+    const service = new CampaignDomainService(context);
+    
+    const performance = await service.getCampaignPerformance();
 
     return { success: true, performance };
   } catch (error) {
