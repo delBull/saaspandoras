@@ -50,8 +50,8 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 0.2 Admin Subdomain Routing (e.g. admin.pandoras.finance)
-  const isAdminSubdomain = host.startsWith("admin.");
+  // 0.2 Admin Subdomain Routing (e.g. admin.pandoras.finance or staging.admin.pandoras.finance)
+  const isAdminSubdomain = host.startsWith("admin.") || host.startsWith("staging.admin.");
 
   if (isAdminSubdomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
     if (pathname === "/" || pathname === "") {
