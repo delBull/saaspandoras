@@ -41,12 +41,23 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
   );
 
   const validRoles: EcosystemTourRole[] = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COLLABORATOR"];
-  const normalizedInitialRole = initialRole?.toUpperCase() as EcosystemTourRole;
-  const tourRole: EcosystemTourRole = validRoles.includes(normalizedInitialRole)
-    ? normalizedInitialRole
-    : validRoles.includes(role as EcosystemTourRole)
+  // FIX: Strict RBAC - Never trust initialRole for security boundaries
+  const tourRole: EcosystemTourRole = validRoles.includes(role as EcosystemTourRole)
     ? (role as EcosystemTourRole)
     : "COLLABORATOR";
+
+  // FIX: Load Admin Customizations from localStorage so they affect production
+  const [customStations, setCustomStations] = React.useState<any[] | undefined>();
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem("pandoras_guides_customizer_v1");
+      if (stored) {
+        setCustomStations(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.warn("Failed to parse custom stations", error);
+    }
+  }, []);
 
   const getRoleBadge = () => {
     switch (role) {
@@ -343,6 +354,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
           role={tourRole}
           isOpen={isTourOpen}
           onClose={() => setIsTourOpen(false)}
+          customStations={customStations}
         />
       </div>
     </div>
