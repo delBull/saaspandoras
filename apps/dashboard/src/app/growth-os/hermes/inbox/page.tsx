@@ -10,7 +10,8 @@ import {
   AlertTriangle,
   Send,
   X,
-  BookOpen
+  BookOpen,
+  Settings
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,9 @@ function HITLInboxPage() {
   const [selectedCase, setSelectedCase] = useState<Escalation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [replyMessage, setReplyMessage] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [savingWebhook, setSavingWebhook] = useState(false);
 
   useEffect(() => {
     fetchEscalations();
@@ -131,6 +135,13 @@ function HITLInboxPage() {
             <h1 className="text-3xl font-light tracking-tight text-white mb-2 flex items-center gap-3">
               <Bot className="w-8 h-8 text-red-500/80" />
               HITL Inbox: <span className="font-semibold">{tenantSlug}</span>
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="ml-2 p-2 hover:bg-white/10 rounded-full transition-colors"
+                title="Configurar Webhook del Tenant"
+              >
+                <Settings className="w-5 h-5 text-slate-400 hover:text-white transition-colors" />
+              </button>
             </h1>
             <p className="text-slate-400">Atención requerida para usuarios escalados desde Hermes OS.</p>
           </div>
@@ -298,6 +309,67 @@ function HITLInboxPage() {
                 <BookOpen className="w-4 h-4 mr-2" /> Buscar en Nexus
               </Button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0f0f0f] border border-white/10 p-6 rounded-2xl shadow-2xl w-full max-w-md"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-white">Configuración del Tenant</h3>
+                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Discord Webhook URL (HITL Alertas)
+                  </label>
+                  <input 
+                    type="text" 
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://discord.com/api/webhooks/..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Si se deja en blanco, se usará el webhook default de la plataforma.
+                  </p>
+                </div>
+                <Button 
+                  onClick={async () => {
+                    setSavingWebhook(true);
+                    try {
+                      await fetch(`/api/v1/projects/${tenantSlug}/integrations`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ discordWebhookUrl: webhookUrl })
+                      });
+                      setShowSettings(false);
+                    } catch (e) {
+                      console.error(e);
+                    }
+                    setSavingWebhook(false);
+                  }} 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={savingWebhook}
+                >
+                  {savingWebhook ? 'Guardando...' : 'Guardar Configuración'}
+                </Button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

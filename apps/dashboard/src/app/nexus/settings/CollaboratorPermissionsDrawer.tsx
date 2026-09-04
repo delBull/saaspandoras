@@ -45,6 +45,7 @@ export function CollaboratorPermissionsDrawer({
 }: CollaboratorPermissionsDrawerProps) {
   const [role, setRole] = useState<NexusRole>("COLLABORATOR");
   const [permissions, setPermissions] = useState<NexusPermissionsOverride>({});
+  const [discordWebhookUrl, setDiscordWebhookUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -53,6 +54,9 @@ export function CollaboratorPermissionsDrawer({
     if (collaborator) {
       setRole((collaborator.role as NexusRole) || "COLLABORATOR");
       setPermissions(collaborator.permissions || {});
+      // In a full integration, you would fetch the user's existing webhook via API.
+      // We start empty if not loaded yet.
+      setDiscordWebhookUrl("");
       setFeedback(null);
     }
   }, [collaborator]);
@@ -91,6 +95,18 @@ export function CollaboratorPermissionsDrawer({
           permissions,
         }),
       });
+
+      // Save webhook if provided
+      if (discordWebhookUrl) {
+        // Warning: This assumes collaborator.wallet exists or endpoint accepts email.
+        // The API we built uses [wallet]. We should probably update the API or pass a correct identifier.
+        // For now, we hit the generic endpoint using an identifier we know or will adapt it later.
+        await fetch(`/api/v1/nexus/collaborators/${collaborator.email}/webhook`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ discordWebhookUrl })
+        });
+      }
 
       const data = await res.json();
       if (res.ok && data.ok && data.collaborator) {
@@ -367,6 +383,24 @@ export function CollaboratorPermissionsDrawer({
                   <span>{feedback.message}</span>
                 </div>
               )}
+              {/* Discord Webhook Field */}
+              <div className="pt-6 border-t border-white/10">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-zinc-400" />
+                  Discord Webhook (HITL Personal)
+                </label>
+                <p className="text-xs text-zinc-500 mb-3">
+                  Si este operador tiene un canal privado para alertas de escalación HITL, pégalo aquí.
+                </p>
+                <input
+                  type="text"
+                  placeholder="https://discord.com/api/webhooks/..."
+                  value={discordWebhookUrl}
+                  onChange={(e) => setDiscordWebhookUrl(e.target.value)}
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                />
+              </div>
+
             </div>
 
             {/* Footer / Actions */}

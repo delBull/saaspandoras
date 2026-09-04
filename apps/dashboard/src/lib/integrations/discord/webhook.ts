@@ -8,16 +8,40 @@ export interface EscalationPayload {
   reason: string;
   transcriptSummary: string;
   dashboardUrl: string;
+  operatorId?: string;
 }
 
 export class DiscordWebhookService {
   /**
    * Resolves the proper Discord Webhook URL based on the tenant.
-   * In a real DB, this would be stored in the tenant's integration settings.
-   * For now, we rely on environment variables mapping.
+   * Priority: 1) Operator Webhook, 2) Tenant Webhook, 3) ENV Fallback
    */
-  private static getWebhookUrl(tenantSlug: string): string | undefined {
-    // Expected env var format: DISCORD_WEBHOOK_SNARAI
+  private static async getWebhookUrl(tenantSlug: string, operatorId?: string): Promise<string | undefined> {
+    const { db } = await import('@/db');
+    const { projects, users } = await import('@/db/schema');
+    const { eq } = await import('drizzle-orm');
+
+    // 1. Try Operator's personal webhook if assigned
+    if (operatorId) {
+      const operator = await db.query.users.findFirst({
+        where: eq(users.id, operatorId),
+        columns: { discordWebhookUrl: true }
+      });
+      if (operator?.discordWebhookUrl) {
+        return operator.discordWebhookUrl;
+      }
+    }
+
+    // 2. Try Tenant's configured webhook
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.slug, tenantSlug),
+      columns: { discordWebhookUrl: true }
+    });
+    if (project?.discordWebhookUrl) {
+      return project.discordWebhookUrl;
+    }
+
+    // 3. Fallback to env variables
     const envKey = `DISCORD_WEBHOOK_${tenantSlug.toUpperCase().replace(/[^A-Z0-9]/g, '')}`;
     return process.env[envKey] || process.env.DISCORD_WEBHOOK_PLATFORM_DEFAULT;
   }
@@ -26,7 +50,7 @@ export class DiscordWebhookService {
    * Dispatches an escalation alert to the appropriate Discord channel.
    */
   public static async dispatchEscalation(payload: EscalationPayload): Promise<boolean> {
-    const webhookUrl = this.getWebhookUrl(payload.tenantSlug);
+    const webhookUrl = await this.getWebhookUrl(payload.tenantSlug, payload.operatorId);
 
     if (!webhookUrl) {
       console.warn(`[Discord Webhook] No webhook configured for tenant: ${payload.tenantSlug}`);

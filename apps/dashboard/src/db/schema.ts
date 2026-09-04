@@ -177,6 +177,7 @@ export const users = pgTable("users", {
   referrerCoreUserId: varchar("referrer_core_user_id", { length: 255 }),
   lastHarvestAt: timestamp("last_harvest_at"),
   tags: jsonb("tags").default([]),
+  discordWebhookUrl: text("discord_webhook_url"), // Added for HITL Operator personalized webhooks
 
   // Stats (CamelCase legacy)
   connectionCount: integer("connectionCount").default(1).notNull(),
