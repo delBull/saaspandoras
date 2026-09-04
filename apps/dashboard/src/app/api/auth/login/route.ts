@@ -68,6 +68,7 @@ export async function POST(request: Request) {
             "dash.pandoras.finance",
             "staging.dash.pandoras.finance",
             "app.pandoras.org",
+            "app.pandoras.finance",
             hostHeader
         ].filter(Boolean);
 

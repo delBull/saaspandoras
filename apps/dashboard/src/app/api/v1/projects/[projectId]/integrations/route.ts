@@ -6,10 +6,10 @@ import { getCanonicalAuth } from '@/lib/auth';
 
 export async function POST(
   req: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { projectId: slug } = await params;
     const body = await req.json();
     const { discordWebhookUrl } = body;
 
