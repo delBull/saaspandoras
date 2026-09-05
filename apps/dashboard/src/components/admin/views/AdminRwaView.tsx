@@ -278,15 +278,33 @@ function DealActionRow({
               )}
 
               <div className="flex flex-wrap gap-2">
-                {/* Always available: Ver Tokenomics */}
+                {/* Always available: Legacy Options */}
                 <a
                   href={manageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all"
                 >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Editar Proyecto
+                </a>
+                <a
+                  href={`${manageUrl.replace('/edit', '/phases')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all"
+                >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  Ver Tokenomics & Fases
+                  Fases & Supply
+                </a>
+                <a
+                  href={`${manageUrl.replace('/edit', '/documents')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Bóveda Legal
                 </a>
 
                 {/* PLATFORM_ADMIN+: Avanzar a Screening */}

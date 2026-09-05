@@ -14,7 +14,7 @@
 
 import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Building2,
@@ -50,7 +50,11 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isPortalPending, startPortalTransition] = useTransition();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
+
+  // If activeSection isn't passed accurately, we deduce it from the URL
+  const currentTab = searchParams.get('tab') || (pathname === '/admin' ? 'overview' : pathname.split('/').pop());
 
   // ── RBAC visibility helper ──────────────────────────────────────────────────
   // Each nav item declares the roles that can see it. Items are filtered at
@@ -67,7 +71,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'HQ Overview',
       href: '/admin',
       icon: LayoutDashboard,
-      active: activeSection === 'overview' || pathname === '/admin',
+      active: currentTab === 'overview',
       allowedRoles: ALL_ROLES, // Everyone
     },
     {
@@ -75,7 +79,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Guías del Ecosistema',
       href: '/admin?tab=guides',
       icon: Compass,
-      active: activeSection === 'guides' || pathname.includes('tab=guides'),
+      active: currentTab === 'guides',
       allowedRoles: ALL_ROLES, // Everyone
     },
     {
@@ -83,7 +87,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'GPU & Contabilidad',
       href: '/admin?tab=billing',
       icon: Cpu,
-      active: activeSection === 'billing' || pathname.includes('tab=billing'),
+      active: currentTab === 'billing',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
     },
     {
@@ -91,7 +95,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Pagos & Tesorería',
       href: '/admin/payments',
       icon: CreditCard,
-      active: activeSection === 'payments' || pathname.includes('/admin/payments'),
+      active: currentTab === 'payments',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
     },
     {
@@ -99,7 +103,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'HQ Deal Room',
       href: '/?tab=crm',
       icon: Briefcase,
-      active: activeSection === 'crm' || pathname.includes('tab=crm'),
+      active: currentTab === 'crm',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR'] as PlatformRole[],
     },
     {
@@ -107,7 +111,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Marketing & Campaigns',
       href: '/admin/marketing',
       icon: Sparkles,
-      active: activeSection === 'marketing' || pathname.includes('/admin/marketing'),
+      active: currentTab === 'marketing',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'] as PlatformRole[],
     },
     {
@@ -123,7 +127,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Directorio de Usuarios',
       href: '/admin/users',
       icon: UserCheck,
-      active: activeSection === 'identity' || pathname.includes('/admin/users'),
+      active: currentTab === 'users' || currentTab === 'identity',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
     },
     {
@@ -131,7 +135,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Seguridad & Bóveda',
       href: '/admin?tab=security',
       icon: ShieldAlert,
-      active: activeSection === 'security' || pathname.includes('tab=security'),
+      active: currentTab === 'security',
       allowedRoles: ['SUPER_ADMIN', 'VIEWER'] as PlatformRole[],
     },
     {
@@ -139,7 +143,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Operaciones & Fleet',
       href: '/admin?tab=operations',
       icon: Wrench,
-      active: activeSection === 'operations' || pathname.includes('tab=operations'),
+      active: currentTab === 'operations',
       allowedRoles: ALL_ROLES,
     },
     {
@@ -147,7 +151,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Hermes OS Admin',
       href: '/admin/hermes',
       icon: Bot,
-      active: activeSection === 'hermes' || pathname.includes('/admin/hermes'),
+      active: currentTab === 'hermes',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
     },
   ].filter(item => item.allowedRoles.includes(actor.role));
@@ -161,7 +165,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Directorio Tenants',
       href: '/admin?tab=tenants',
       icon: Building2,
-      active: activeSection === 'tenants' || pathname.includes('tab=tenants'),
+      active: currentTab === 'tenants',
       badge: 'Read-Only',
       allowedRoles: ALL_ROLES,
     },
@@ -170,7 +174,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       label: 'Pipeline RWA',
       href: '/admin?tab=rwa',
       icon: ShieldCheck,
-      active: activeSection === 'rwa' || pathname.includes('tab=rwa'),
+      active: currentTab === 'rwa',
       badge: 'Deal Room',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
     },
