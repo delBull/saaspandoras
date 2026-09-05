@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     return config;
   },
   experimental: {
+    // @ts-expect-error - Required by Railway's Next16 Turbopack build to silence webpack config collision
     turbopack: {}
   }
 };
