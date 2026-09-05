@@ -35,6 +35,7 @@ import {
   Compass,
   BarChart2,
   FileText,
+  Users
 } from 'lucide-react';
 
 interface NavItem {
@@ -42,7 +43,7 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   requiredPermission: PortalPermission;
-  section?: 'primary' | 'secondary' | 'internal';
+  section?: 'primary' | 'footer' | 'internal';
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -61,32 +62,25 @@ const NAV_ITEMS: NavItem[] = [
     section: 'primary',
   },
   {
-    label: 'Identity',
-    href: '/identity',
-    icon: Fingerprint,
-    requiredPermission: 'identity.read',
-    section: 'primary',
-  },
-  {
-    label: 'Knowledge',
+    label: 'Knowledge Base',
     href: '/knowledge',
     icon: BookOpen,
     requiredPermission: 'knowledge.read',
     section: 'primary',
   },
   {
-    label: 'Channels',
-    href: '/channels',
-    icon: Plug,
-    requiredPermission: 'channels.read',
+    label: 'Audience & Ops',
+    href: '/audience',
+    icon: Users,
+    requiredPermission: 'identity.read',
     section: 'primary',
   },
   {
-    label: 'Conversations',
-    href: '/conversations',
-    icon: MessageSquare,
-    requiredPermission: 'conversations.read',
-    section: 'primary',
+    label: 'Growth OS',
+    href: '/growth',
+    icon: Target,
+    requiredPermission: 'growth.market_attack',
+    section: 'internal',
   },
   {
     label: 'Activity',
@@ -94,77 +88,38 @@ const NAV_ITEMS: NavItem[] = [
     icon: Activity,
     requiredPermission: 'activity.read',
     section: 'primary',
+  }
+];
+
+const FOOTER_ITEMS: NavItem[] = [
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    requiredPermission: 'settings.read',
+    section: 'footer',
   },
   {
     label: 'Policies',
     href: '/policies',
     icon: Shield,
     requiredPermission: 'policies.read',
-    section: 'secondary',
-  },
-  {
-    label: 'Journeys',
-    href: '/journeys',
-    icon: GitBranch,
-    requiredPermission: 'journeys.read',
-    section: 'secondary',
-  },
-  {
-    label: 'Settings',
-    href: '/settings',
-    icon: Settings,
-    requiredPermission: 'settings.read',
-    section: 'secondary',
-  },
-  {
-    label: 'Add-ons',
-    href: '/addons',
-    icon: Boxes,
-    requiredPermission: 'organization.read',
-    section: 'secondary',
-  },
-  {
-    label: 'Strategy',
-    href: '/strategy',
-    icon: Compass,
-    requiredPermission: 'growth.strategy',
-    section: 'internal',
-  },
-  {
-    label: 'Campaigns',
-    href: '/market-attack',
-    icon: Target,
-    requiredPermission: 'growth.market_attack',
-    section: 'internal',
-  },
-  {
-    label: 'Marketing',
-    href: '/marketing',
-    icon: BarChart2,
-    requiredPermission: 'growth.market_attack',
-    section: 'internal',
-  },
-  {
-    label: 'Academy',
-    href: '/content',
-    icon: GraduationCap,
-    requiredPermission: 'growth.content',
-    section: 'internal',
+    section: 'footer',
   },
   {
     label: 'Developers',
     href: '/developers',
     icon: Code2,
     requiredPermission: 'developer.api',
-    section: 'internal',
+    section: 'footer',
   },
   {
-    label: 'Documents',
-    href: '/documents',
-    icon: FileText,
+    label: 'Add-ons',
+    href: '/addons',
+    icon: Boxes,
     requiredPermission: 'organization.read',
-    section: 'internal',
-  },
+    section: 'footer',
+  }
 ];
 
 interface PortalSidebarProps {
@@ -195,13 +150,16 @@ export function PortalSidebar({
     return pathname.startsWith(fullPath);
   };
 
-  const visibleItems = NAV_ITEMS.filter((item) =>
+  const visiblePrimary = NAV_ITEMS.filter((item) =>
+    permissions.includes(item.requiredPermission)
+  );
+  
+  const visibleFooter = FOOTER_ITEMS.filter((item) =>
     permissions.includes(item.requiredPermission)
   );
 
-  const primaryItems = visibleItems.filter((i) => i.section === 'primary' || !i.section);
-  const secondaryItems = visibleItems.filter((i) => i.section === 'secondary');
-  const internalItems = visibleItems.filter((i) => i.section === 'internal');
+  const primaryItems = visiblePrimary.filter((i) => i.section === 'primary' || !i.section);
+  const internalItems = visiblePrimary.filter((i) => i.section === 'internal');
 
   return (
     <>
@@ -222,7 +180,7 @@ export function PortalSidebar({
         </div>
 
         <nav className="flex-1 flex flex-col gap-1">
-          {visibleItems.map((item) => {
+          {primaryItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
             return (
@@ -243,10 +201,64 @@ export function PortalSidebar({
               </Link>
             );
           })}
+
+          {internalItems.length > 0 && (
+              <div className="mt-4 mb-2">
+                  <div className="text-[10px] font-mono tracking-wider text-emerald-500/60 uppercase px-3">
+                      Growth OS
+                  </div>
+                  {internalItems.map((item) => {
+                    const active = isActive(item.href);
+                    const Icon = item.icon;
+                    return (
+                        <Link
+                            key={item.href}
+                            href={`${basePath}${item.href}`}
+                            onClick={() => onNavClick?.()}
+                            className={`
+                              flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] mt-1
+                              ${active
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                : 'text-zinc-400 hover:text-emerald-400/80 hover:bg-emerald-500/5'
+                              }
+                            `}
+                          >
+                            <Icon size={18} className="shrink-0" />
+                            <span>{item.label}</span>
+                        </Link>
+                    )
+                  })}
+              </div>
+          )}
         </nav>
+
+        {/* Footer Items for Mobile */}
+        <div className="mt-8 border-t border-white/[0.08] pt-4 flex flex-col gap-1">
+          {visibleFooter.map((item) => {
+            const active = isActive(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={`${basePath}${item.href}`}
+                onClick={() => onNavClick?.()}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                  ${active
+                    ? 'bg-zinc-800 text-white border border-zinc-700'
+                    : 'text-zinc-500 hover:text-white hover:bg-white/[0.05]'
+                  }
+                `}
+              >
+                <Icon size={18} className="shrink-0" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </aside>
 
-      {/* DESKTOP SIDEBAR (HermesWorkbench Icon Style) */}
+      {/* DESKTOP SIDEBAR */}
       <aside className={`hidden md:flex flex-col items-center py-3 h-screen bg-[#09090C] border-r border-white/10 shrink-0 z-30 select-none transition-all duration-300 ${collapsed ? 'w-16' : 'w-64 items-start px-3'}`}>
         <div className={`mb-4 ${collapsed ? '' : 'flex items-center gap-3 px-2 w-full mt-2'}`}>
             <div className="w-8 h-8 shrink-0 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-lg text-purple-400">
@@ -285,39 +297,13 @@ export function PortalSidebar({
                 );
             })}
             
-            {secondaryItems.length > 0 && <div className={`w-8 h-px bg-white/10 my-2 ${!collapsed && 'w-full'}`} />}
-            
-            {secondaryItems.map((item) => {
-                const active = isActive(item.href);
-                const Icon = item.icon;
-                return (
-                    <Link
-                        key={item.href}
-                        href={`${basePath}${item.href}`}
-                        className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-11 gap-3'} rounded-xl transition-all group ${
-                            active 
-                                ? 'text-purple-400 bg-purple-500/10 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' 
-                                : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
-                        }`}
-                        title={collapsed ? item.label : undefined}
-                    >
-                        <Icon className="w-5 h-5 shrink-0" />
-                        {collapsed ? (
-                           <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
-                        ) : (
-                           <span className="text-sm font-medium tracking-wide opacity-90">{item.label}</span>
-                        )}
-                    </Link>
-                );
-            })}
-
-            {/* HQ / INTERNAL SECTION */}
+            {/* HQ / INTERNAL SECTION (Growth OS) */}
             {internalItems.length > 0 && (
-                <div className={`mt-auto mb-2 w-full flex flex-col ${collapsed ? 'items-center' : ''}`}>
+                <div className={`mt-4 mb-2 w-full flex flex-col ${collapsed ? 'items-center' : ''}`}>
                     <div className={`w-8 h-px bg-emerald-500/20 my-2 ${!collapsed && 'w-full'}`} />
                     {!collapsed && (
                         <span className="px-3 py-1 text-[10px] font-mono tracking-wider text-emerald-500/60 uppercase">
-                            Growth OS (HQ)
+                            Growth OS
                         </span>
                     )}
                     {internalItems.map((item) => {
@@ -347,7 +333,34 @@ export function PortalSidebar({
             )}
         </div>
         
-        <div className={`mt-auto mb-4 border-t border-white/10 pt-4 w-full flex ${collapsed ? 'justify-center' : 'justify-end px-4'}`}>
+        {/* FOOTER CONFIG SECTION */}
+        <div className={`mt-auto pt-2 w-full flex flex-col gap-0.5 border-t border-white/10 ${collapsed ? 'items-center' : 'px-1'}`}>
+           {visibleFooter.map((item) => {
+                const active = isActive(item.href);
+                const Icon = item.icon;
+                return (
+                    <Link
+                        key={item.href}
+                        href={`${basePath}${item.href}`}
+                        className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-10 gap-3'} rounded-xl transition-all group ${
+                            active 
+                                ? 'text-zinc-200 bg-white/10 border border-white/20' 
+                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border border-transparent'
+                        }`}
+                        title={collapsed ? item.label : undefined}
+                    >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {collapsed ? (
+                           <span className="text-[8px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 3)}</span>
+                        ) : (
+                           <span className="text-[13px] font-medium tracking-wide opacity-90">{item.label}</span>
+                        )}
+                    </Link>
+                );
+           })}
+        </div>
+
+        <div className={`mb-4 mt-2 pt-2 w-full flex ${collapsed ? 'justify-center' : 'justify-end px-4'}`}>
             <button 
                 onClick={onToggle}
                 className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-white/5 cursor-pointer"

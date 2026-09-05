@@ -26,16 +26,20 @@ import {
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
 import { AdminTenantLensDTO } from '@/lib/dash-contracts/admin';
+import { SovereignIpfsStatusWidget } from '../SovereignIpfsStatusWidget';
 
 interface AdminTenantsViewProps {
   tenants: AdminTenantLensDTO[];
+  actorRole?: string;
 }
 
-export function AdminTenantsView({ tenants }: AdminTenantsViewProps) {
+export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenantsViewProps) {
   const { inspect } = usePlatformInspector();
   const [searchQuery, setSearchQuery] = useState('');
   const [productFilter, setProductFilter] = useState<'ALL' | 'hermes' | 'growth' | 'rwa'>('ALL');
   const [stateFilter, setStateFilter] = useState<string>('ALL');
+
+  const isAdmin = actorRole === 'SUPER_ADMIN' || actorRole === 'ADMIN';
 
   // Directory KPIs
   const stats = useMemo(() => {
@@ -103,6 +107,9 @@ export function AdminTenantsView({ tenants }: AdminTenantsViewProps) {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Infrastructure Health (Admins only) */}
+      {isAdmin && <SovereignIpfsStatusWidget />}
+
       {/* Header & Stats Banner */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

@@ -21,6 +21,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CampaignPerformanceDashboard } from "./CampaignPerformanceDashboard";
+import { MarketingAnalytics } from "./MarketingAnalytics";
 
 // Types matching API response roughly
 interface Execution {
@@ -35,7 +38,12 @@ interface Execution {
     lastRunAt: string | null;
 }
 
-export function MarketingDashboard() {
+interface MarketingDashboardProps {
+    projectId?: number;
+    leads?: any[];
+}
+
+export function MarketingDashboard({ projectId = 0, leads = [] }: MarketingDashboardProps = {}) {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total: 0, active: 0, paused: 0, completed: 0 });
     const [executions, setExecutions] = useState<Execution[]>([]);
@@ -98,9 +106,22 @@ export function MarketingDashboard() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header moved to AdminTabs per user request */}
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight">Marketing & Campañas</h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Monitoreo de leads, métricas de retención y análisis de campañas B2B.
+              </p>
+            </div>
 
-            <MarketingStats {...stats} />
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="bg-zinc-900 border border-white/5 mb-6">
+                <TabsTrigger value="overview">Visión General</TabsTrigger>
+                <TabsTrigger value="performance">Rendimiento (Campañas)</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics Global</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-8">
+                <MarketingStats {...stats} />
 
             {/* Campaign List Section */}
             <div className="space-y-4">
@@ -235,6 +256,16 @@ export function MarketingDashboard() {
                     </table>
                 </div>
             </div>
+              </TabsContent>
+
+              <TabsContent value="performance">
+                <CampaignPerformanceDashboard projectId={projectId} />
+              </TabsContent>
+
+              <TabsContent value="analytics">
+                <MarketingAnalytics leads={leads} />
+              </TabsContent>
+            </Tabs>
         </div>
     );
 }

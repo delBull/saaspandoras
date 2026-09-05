@@ -62,7 +62,8 @@ export function middleware(request: NextRequest) {
     // - /portal/ — portal layout has its own auth guard; prefixing breaks resolvePortalContext
     if (!pathname.startsWith("/admin/") && pathname !== "/admin"
         && !pathname.startsWith("/profile/")
-        && !pathname.startsWith("/portal/")) {
+        && !pathname.startsWith("/portal/")
+        && !pathname.startsWith("/nexus/") && pathname !== "/nexus") {
       return NextResponse.rewrite(new URL(`/admin${pathname}`, request.url));
     }
   }

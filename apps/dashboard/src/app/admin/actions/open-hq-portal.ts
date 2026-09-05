@@ -44,8 +44,17 @@ export async function openHQPortalAction(): Promise<
     }
 
     // 3. Resolve the pandoras org project ID (dynamic, not hardcoded)
-    const org = await OrganizationSDK.resolve(HQ_ORG_SLUG, 'HERMES');
-    const projectId = org.projectId;
+    let projectId: number;
+    try {
+      const org = await OrganizationSDK.resolve(HQ_ORG_SLUG, 'HERMES');
+      projectId = org.projectId;
+    } catch (resolveErr) {
+      console.error('[openHQPortalAction] Org Resolve Error:', resolveErr);
+      return { 
+        success: false, 
+        error: 'El tenant interno HQ Growth OS no fue encontrado. Es necesario correr el seed-hq-tenant para crearlo.' 
+      };
+    }
 
     // 4. Generate a virtual session token (matches validatePortalSession ps_v_ path)
     const sessionToken = `ps_v_${projectId}_${randomUUID().replace(/-/g, '')}`;

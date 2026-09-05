@@ -19,7 +19,7 @@ import {
   MoveDown
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createJourney, updateJourney, deleteJourney, toggleJourneyState } from '@/app/portal/[organizationSlug]/journeys/actions';
+import { createJourney, updateJourney, deleteJourney, toggleJourneyState } from '@/app/portal/[organizationSlug]/audience/journeys/actions';
 
 export interface JourneyView {
   id: string;

@@ -10,7 +10,7 @@ import {
   triggerManualTakeover, 
   sendHumanReply, 
   resumeHermesControl 
-} from '@/app/portal/[organizationSlug]/conversations/actions';
+} from '@/app/portal/[organizationSlug]/audience/conversations/actions';
 
 export interface ConversationView {
   id: string;

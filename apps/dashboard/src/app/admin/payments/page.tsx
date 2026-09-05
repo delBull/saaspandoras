@@ -1,9 +1,7 @@
 import React from 'react';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { PaymentsDashboard } from '@/components/admin/payments/PaymentsDashboard';
 import { AdminAccessGate } from '../AdminAccessGate';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,21 +22,8 @@ export default async function PaymentsPage() {
     );
   }
 
-  // 2. Assemble Current Platform Actor
-  const actor: PlatformActor = {
-    id: auth.wallet || auth.email || 'platform_admin',
-    actorType: auth.wallet ? 'WALLET' : 'MAGIC_LINK',
-    role: auth.role as PlatformRole,
-    walletAddress: auth.wallet || null,
-    email: auth.email || null,
-    name: auth.wallet ? `${auth.wallet.slice(0, 6)}...${auth.wallet.slice(-4)}` : 'Admin',
-    sessionStartedAt: new Date().toISOString(),
-    isDiscord2faVerified: auth.role === 'SUPER_ADMIN',
-  };
-
   return (
-    <PlatformAdminShell actor={actor} activeSection="billing">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight">Tesorería & Enlaces de Pago</h2>
           <p className="text-xs text-zinc-400 mt-1">
@@ -46,8 +31,7 @@ export default async function PaymentsPage() {
           </p>
         </div>
         
-        <PaymentsDashboard />
-      </div>
-    </PlatformAdminShell>
+      <PaymentsDashboard />
+    </div>
   );
 }

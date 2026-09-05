@@ -19,7 +19,6 @@ import {
 } from '@/db/schema';
 import { desc, sql, eq } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { AdminOverviewView } from '@/components/admin/views/AdminOverviewView';
 import { AdminTenantsView } from '@/components/admin/views/AdminTenantsView';
 import { AdminBillingView } from '@/components/admin/views/AdminBillingView';
@@ -376,9 +375,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const treasuryAddress = process.env.PANDORAS_ADMIN_WALLET || '0xc52BB6f53C91ff7134e7508B102E5A22BA415954';
 
   return (
-    <PlatformAdminShell actor={actor} activeSection={activeTab}>
+    <>
       {activeTab === 'tenants' ? (
-        <AdminTenantsView tenants={enrichedTenantsList} />
+        <AdminTenantsView tenants={enrichedTenantsList} actorRole={auth.role} />
       ) : activeTab === 'billing' ? (
         <AdminBillingView
           credits={creditsRawList}
@@ -420,6 +419,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           }))}
         />
       )}
-    </PlatformAdminShell>
+    </>
   );
 }

@@ -1,9 +1,10 @@
 import React from 'react';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { MarketingDashboard } from '@/components/admin/marketing/MarketingDashboard';
 import { AdminAccessGate } from '../AdminAccessGate';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
+import { db } from '@/db';
+import { projects, marketingLeads } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,21 +25,20 @@ export default async function MarketingPage() {
     );
   }
 
-  // 2. Assemble Current Platform Actor
-  const actor: PlatformActor = {
-    id: auth.wallet || auth.email || 'platform_admin',
-    actorType: auth.wallet ? 'WALLET' : 'MAGIC_LINK',
-    role: auth.role as PlatformRole,
-    walletAddress: auth.wallet || null,
-    email: auth.email || null,
-    name: auth.wallet ? `${auth.wallet.slice(0, 6)}...${auth.wallet.slice(-4)}` : 'Operador',
-    sessionStartedAt: new Date().toISOString(),
-    isDiscord2faVerified: auth.role === 'SUPER_ADMIN',
-  };
+  // 2. Fetch the HQ Tenant (pandoras)
+  const hqProjectRows = await db.select().from(projects).where(eq(projects.slug, 'pandoras')).limit(1);
+  const projectId = hqProjectRows[0]?.id ?? 0;
+
+  // 3. Fetch CRM Leads
+  const leadsRows = await db
+    .select()
+    .from(marketingLeads)
+    .where(eq(marketingLeads.scope, 'b2b'))
+    .orderBy(desc(marketingLeads.createdAt));
 
   return (
-    <PlatformAdminShell actor={actor} activeSection="marketing">
-      <MarketingDashboard />
-    </PlatformAdminShell>
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <MarketingDashboard projectId={projectId} leads={leadsRows} />
+    </div>
   );
 }
