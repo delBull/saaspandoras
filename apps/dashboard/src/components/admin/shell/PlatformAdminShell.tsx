@@ -7,11 +7,14 @@
  * Master shell layout for Pandora's Platform Governance Plane.
  * Features the Hermes Portal drawer architecture, responsive sidebar (w-16/w-64),
  * topbar with status badges, and unified inspector.
+ *
+ * RBAC: Every nav item declares allowedRoles. Items are filtered at render-time
+ * against actor.role so each role only sees what they're authorized to access.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Building2,
@@ -28,10 +31,13 @@ import {
   Zap,
   Briefcase,
   Compass,
+  Loader2,
+  CreditCard,
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
+import { openHQPortalAction } from '@/app/admin/actions/open-hq-portal';
 
 interface PlatformAdminShellProps {
   actor: PlatformActor;
@@ -41,15 +47,27 @@ interface PlatformAdminShellProps {
 
 export function PlatformAdminShell({ actor, children, activeSection = 'overview' }: PlatformAdminShellProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isPortalPending, startPortalTransition] = useTransition();
   const pathname = usePathname();
+  const router = useRouter();
 
-  const platformNavItems = [
+  // ── RBAC visibility helper ──────────────────────────────────────────────────
+  // Each nav item declares the roles that can see it. Items are filtered at
+  // render time — roles NOT in allowedRoles never see the nav entry.
+  const ALL_ROLES: PlatformRole[] = ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'MARKETING', 'VIEWER'];
+
+  const platformNavItems: Array<{
+    id: string; label: string; href?: string; icon: any;
+    active: boolean; allowedRoles: PlatformRole[];
+    isPortalButton?: boolean;
+  }> = [
     {
       id: 'overview',
       label: 'HQ Overview',
       href: '/admin',
       icon: LayoutDashboard,
       active: activeSection === 'overview' || pathname === '/admin',
+      allowedRoles: ALL_ROLES, // Everyone
     },
     {
       id: 'guides',
@@ -57,6 +75,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=guides',
       icon: Compass,
       active: activeSection === 'guides' || pathname.includes('tab=guides'),
+      allowedRoles: ALL_ROLES, // Everyone
     },
     {
       id: 'billing',
@@ -64,6 +83,15 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=billing',
       icon: Cpu,
       active: activeSection === 'billing' || pathname.includes('tab=billing'),
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
+    },
+    {
+      id: 'payments',
+      label: 'Pagos & Tesorería',
+      href: '/admin/payments',
+      icon: CreditCard,
+      active: activeSection === 'payments' || pathname.includes('/admin/payments'),
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
     },
     {
       id: 'crm',
@@ -71,20 +99,31 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/?tab=crm',
       icon: Briefcase,
       active: activeSection === 'crm' || pathname.includes('tab=crm'),
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR'] as PlatformRole[],
+    },
+    {
+      id: 'marketing',
+      label: 'Marketing & Campaigns',
+      href: '/admin/marketing',
+      icon: Sparkles,
+      active: activeSection === 'marketing' || pathname.includes('/admin/marketing'),
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'] as PlatformRole[],
     },
     {
       id: 'growth',
-      label: 'HQ Growth OS (Portal)',
-      href: `${process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance'}/portal/pandoras`,
+      label: 'HQ Growth OS',
       icon: ExternalLink,
       active: false,
+      isPortalButton: true, // Renders as button, not Link
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'MARKETING'] as PlatformRole[],
     },
     {
       id: 'identity',
-      label: 'Identidad & RBAC',
-      href: '/admin?tab=security',
+      label: 'Directorio de Usuarios',
+      href: '/admin/users',
       icon: UserCheck,
-      active: activeSection === 'identity' || pathname.includes('tab=security'),
+      active: activeSection === 'identity' || pathname.includes('/admin/users'),
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
     },
     {
       id: 'security',
@@ -92,6 +131,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=security',
       icon: ShieldAlert,
       active: activeSection === 'security' || pathname.includes('tab=security'),
+      allowedRoles: ['SUPER_ADMIN', 'VIEWER'] as PlatformRole[],
     },
     {
       id: 'operations',
@@ -99,10 +139,14 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=operations',
       icon: Wrench,
       active: activeSection === 'operations' || pathname.includes('tab=operations'),
+      allowedRoles: ALL_ROLES,
     },
-  ];
+  ].filter(item => item.allowedRoles.includes(actor.role));
 
-  const tenantNavItems = [
+  const tenantNavItems: Array<{
+    id: string; label: string; href: string; icon: any;
+    active: boolean; badge?: string; allowedRoles: PlatformRole[];
+  }> = [
     {
       id: 'tenants',
       label: 'Directorio Tenants',
@@ -110,6 +154,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       icon: Building2,
       active: activeSection === 'tenants' || pathname.includes('tab=tenants'),
       badge: 'Read-Only',
+      allowedRoles: ALL_ROLES,
     },
     {
       id: 'rwa',
@@ -118,8 +163,23 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       icon: ShieldCheck,
       active: activeSection === 'rwa' || pathname.includes('tab=rwa'),
       badge: 'Deal Room',
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
     },
-  ];
+  ].filter(item => item.allowedRoles.includes(actor.role));
+
+  // ── Portal Bridge handler ───────────────────────────────────────────────────
+  const handleOpenPortal = () => {
+    startPortalTransition(async () => {
+      const result = await openHQPortalAction();
+      if (result.success) {
+        window.location.href = result.redirectTo;
+      } else {
+        console.error('[Portal Bridge]', result.error);
+        // Fallback: open portal directly in new tab
+        window.open('/portal/pandoras', '_blank');
+      }
+    });
+  };
 
   return (
     <PlatformInspectorProvider>
@@ -162,10 +222,34 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
                 <nav className="space-y-1">
                   {platformNavItems.map((item) => {
                     const Icon = item.icon;
+                    // Portal Bridge: renders as button, not Link
+                    if (item.isPortalButton) {
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={handleOpenPortal}
+                          disabled={isPortalPending}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-zinc-400 hover:text-white hover:bg-white/[0.04] disabled:opacity-50 disabled:cursor-wait"
+                          title={isCollapsed ? item.label : undefined}
+                        >
+                          {isPortalPending
+                            ? <Loader2 className="w-4 h-4 shrink-0 text-purple-400 animate-spin" />
+                            : <Icon className="w-4 h-4 shrink-0 text-zinc-400" />
+                          }
+                          {!isCollapsed && (
+                            <span className="truncate flex items-center gap-1.5">
+                              {item.label}
+                              {!isPortalPending && <ExternalLink className="w-3 h-3 opacity-50" />}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    }
+                    // Standard Link
                     return (
                       <Link
                         key={item.id}
-                        href={item.href}
+                        href={item.href!}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                           item.active
                             ? 'bg-purple-600/15 text-purple-300 border border-purple-500/30 shadow-sm'

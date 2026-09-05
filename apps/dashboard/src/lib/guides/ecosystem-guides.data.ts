@@ -6,7 +6,7 @@
  * RBAC access matrices, Hermes conversational narratives, and shareable link generators.
  */
 
-export type EcosystemTourRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'COLLABORATOR';
+export type EcosystemTourRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'MARKETING' | 'VIEWER';
 
 export interface GuideFaqItem {
   question: string;
@@ -39,7 +39,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     badgeColor: 'blue',
     iconName: 'ShieldCheck',
     targetUrl: '/nexus',
-    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'VIEWER'],
     hermesGreeting: 'El fundamento de nuestra seguridad: tu identidad criptográfica.',
     hermesNarrative:
       'En Pandoras no utilizamos contraseñas vulnerables. Tu acceso y nivel de permisos (RBAC) están anclados a tu Wallet Web3 o credencial institucional. Desde el Nexus Core gestionas tus llaves de API, monitoreas tus sesiones activas y aseguras que cada acción administrativa quede firmada criptográficamente en nuestra bóveda.',
@@ -68,7 +68,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     badgeColor: 'amber',
     iconName: 'Handshake',
     targetUrl: '/nexus/rooms',
-    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'],
     hermesGreeting: 'Saludos. Te encuentras en la antesala de acuerdos de alta fidelidad.',
     hermesNarrative:
       'Las Deal Rooms son el espacio seguro donde estructuramos, revisamos y notarizamos acuerdos institucionales, cartas de intención (LOIs), NDAs y acuerdos de inversión. Cada documento firmado aquí genera un hash SHA-256 inmutable vinculado a la bóveda Sovereign K25, brindando trazabilidad legal y forense sin depender de intermediarios de firma tradicionales.',
@@ -104,7 +104,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     badgeColor: 'emerald',
     iconName: 'Briefcase',
     targetUrl: '/growth-os',
-    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'VIEWER'],
     hermesGreeting: 'Bienvenido al motor de tracción comercial omnicanal.',
     hermesNarrative:
       'Growth OS centraliza el pipeline comercial y de atracción de inversores de todo el ecosistema. Conecta canales inbound como WhatsApp Business (vía Meta Cloud API), SignalWire, formularios web y landing pages. Yo, Hermes, analizo las conversaciones en tiempo real, califico los prospectos según su perfil de interés y sincronizo los estados directamente con el tablero comercial.',
@@ -140,7 +140,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     badgeColor: 'violet',
     iconName: 'ShieldCheck',
     targetUrl: '/profile/projects',
-    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'],
     hermesGreeting: 'Aquí reside la arquitectura de liquidez y tokenización de activos.',
     hermesNarrative:
       'En esta sección se configuran las rondas de capital, precios por token fraccionado, cuotas mínimas y contratos inteligentes de emisión para proyectos de activos reales (RWA) como S’Narai. Cuando un inversor adquiere participaciones fiduciarias o crypto, aquí se audita y aprueba la operación, emitiendo certificados y distribuyendo el voting power de la DAO.',
@@ -176,7 +176,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     badgeColor: 'blue',
     iconName: 'Globe',
     targetUrl: '/portal/showcase',
-    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'VIEWER'],
     hermesGreeting: 'Esta es la experiencia soberana que viven nuestros inversores.',
     hermesNarrative:
       'El portal público whitelabel (ejemplificado en S’Narai Portal) es la ventana donde los inversores conectan su billetera Web3 para visualizar su portafolio de tokens, certificados de propiedad notariada, historial de rendimientos mensuales en USDC y propuestas de gobernanza en las que pueden emitir su voto con firma criptográfica.',
@@ -248,7 +248,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     badgeColor: 'rose',
     iconName: 'GraduationCap',
     targetUrl: '/admin/academy',
-    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'],
     hermesGreeting: 'El bastión de conocimiento, principios rectores y certificación.',
     hermesNarrative:
       'La Academia y la Bóveda Constitucional son los cimientos culturales y doctrinales de Pandora’s. Aquí se evalúa y certifica a los directores y operadores del ecosistema (tracks COO y CFO), al tiempo que se preserva la Constitución y los Libros I al IX del protocolo, protegidos por políticas estrictas de control de acceso.',
@@ -280,7 +280,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
 /**
  * Filters ecosystem stations according to the given user role.
  */
-export function getStationsForRole(role: EcosystemTourRole = 'COLLABORATOR'): EcosystemStation[] {
+export function getStationsForRole(role: EcosystemTourRole = 'VIEWER'): EcosystemStation[] {
   return ECOSYSTEM_STATIONS.filter((station) => station.allowedRoles.includes(role));
 }
 
@@ -288,7 +288,7 @@ export function getStationsForRole(role: EcosystemTourRole = 'COLLABORATOR'): Ec
  * Generates an actionable deep link for the ecosystem tour.
  */
 export function generateTourShareLink(
-  role: EcosystemTourRole = 'COLLABORATOR',
+  role: EcosystemTourRole = 'VIEWER',
   baseUrl: string = 'https://dash.pandoras.finance'
 ): string {
   const cleanBase = baseUrl.replace(/\/+$/, '');
@@ -299,7 +299,7 @@ export function generateTourShareLink(
  * Generates a ready-to-send WhatsApp invite message formatted for onboarding team members.
  */
 export function generateWhatsAppShareText(
-  role: EcosystemTourRole = 'COLLABORATOR',
+  role: EcosystemTourRole = 'VIEWER',
   tourLink?: string
 ): string {
   const link = tourLink || generateTourShareLink(role);

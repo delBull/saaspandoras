@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MultiStepForm } from "@/app/()/admin/projects/[slug]/edit/multi-step-form";
+import { MultiStepForm } from "@/app/admin/projects/[slug]/edit/multi-step-form";
 
 interface ProjectApplicationModalProps {
   isOpen: boolean;

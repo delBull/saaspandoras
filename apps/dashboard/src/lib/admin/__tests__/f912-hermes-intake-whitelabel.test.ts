@@ -29,7 +29,7 @@ describe('🛡️ F9.12 HQ Commercial Plane Certification', () => {
   it('F912-02: Whitelabel modification requires REINFORCED_AUTH (2FA) for ADMIN', () => {
     const adminWithout2FA: PlatformActor = {
       id: 'human_admin',
-      role: 'PLATFORM_ADMIN',
+      role: 'ADMIN',
       actorType: 'MAGIC_LINK',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false
@@ -37,7 +37,7 @@ describe('🛡️ F9.12 HQ Commercial Plane Certification', () => {
 
     const adminWith2FA: PlatformActor = {
       id: 'human_admin',
-      role: 'PLATFORM_ADMIN',
+      role: 'ADMIN',
       actorType: 'MAGIC_LINK',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: true
@@ -56,7 +56,7 @@ describe('🛡️ F9.12 HQ Commercial Plane Certification', () => {
   it('F912-03: HQ CRM capabilities are allowed for ADMINs without 2FA', () => {
     const salesAdmin: PlatformActor = {
       id: 'sales_rep',
-      role: 'PLATFORM_ADMIN',
+      role: 'ADMIN',
       actorType: 'MAGIC_LINK',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false
@@ -97,10 +97,10 @@ describe('🛡️ F9.12 HQ Commercial Plane Certification', () => {
       )
     ).rejects.toThrow(/Unauthorized/);
 
-    // Human PLATFORM_ADMIN cannot execute ops.tenant.provision (CRITICAL_B is SUPER_ADMIN only)
+    // Human ADMIN cannot execute ops.tenant.provision (CRITICAL_B is SUPER_ADMIN only)
     const humanAdmin: PlatformActor = {
       id: 'human_admin',
-      role: 'PLATFORM_ADMIN',
+      role: 'ADMIN',
       actorType: 'MAGIC_LINK',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: true
@@ -133,7 +133,7 @@ describe('🛡️ F9.12 HQ Commercial Plane Certification', () => {
   it('F912-05: Integration Keys — Reading keys is MEDIUM (allowed for ADMIN), Managing keys is HIGH (requires 2FA)', () => {
     const adminWithout2FA: PlatformActor = {
       id: 'admin_dev',
-      role: 'PLATFORM_ADMIN',
+      role: 'ADMIN',
       actorType: 'MAGIC_LINK',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false

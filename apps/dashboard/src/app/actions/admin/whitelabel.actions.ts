@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
 import { PlatformCapabilityRegistryService } from '@/lib/admin/platform-capability-registry.service';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
 
 export interface WhitelabelConfig {
   domain: string;
@@ -20,7 +20,7 @@ export async function updateTenantWhitelabelConfig(tenantSlug: string, config: W
 
     const actor: PlatformActor = {
       id: auth.email || 'SYSTEM',
-      role: (auth.role as any) === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'PLATFORM_ADMIN',
+      role: auth.role as PlatformRole,
       actorType: 'MAGIC_LINK',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false // En F9.12 se debe integrar 2FA real o simular temporalmente

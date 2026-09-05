@@ -57,7 +57,12 @@ export function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/admin", request.url));
     }
-    if (!pathname.startsWith("/admin/") && pathname !== "/admin") {
+    // Exclude profile and portal routes from the /admin rewrite:
+    // - /profile/projects/[slug]/manage — founder dashboard accessible from admin
+    // - /portal/ — portal layout has its own auth guard; prefixing breaks resolvePortalContext
+    if (!pathname.startsWith("/admin/") && pathname !== "/admin"
+        && !pathname.startsWith("/profile/")
+        && !pathname.startsWith("/portal/")) {
       return NextResponse.rewrite(new URL(`/admin${pathname}`, request.url));
     }
   }

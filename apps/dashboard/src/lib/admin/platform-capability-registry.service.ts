@@ -368,13 +368,13 @@ export class PlatformCapabilityRegistryService {
       };
     }
 
-    // 3. PLATFORM_ADMIN
-    if (actor.role === 'PLATFORM_ADMIN') {
+    // 3. ADMIN
+    if (actor.role === 'ADMIN') {
       if (def.governanceRequirement === 'REINFORCED_AUTH' && !actor.isDiscord2faVerified) {
         return {
           ...baseResult,
           granted: false,
-          reason: `La capacidad '${capability}' (${def.riskLevel}) requiere verificación 2FA Discord previa para PLATFORM_ADMIN.`,
+          reason: `La capacidad '${capability}' (${def.riskLevel}) requiere verificación 2FA Discord previa para ADMIN.`,
         };
       }
       // Puede ejecutar capacidades sin REINFORCED_AUTH
@@ -402,7 +402,7 @@ export class PlatformCapabilityRegistryService {
     }
 
     // 5. AUDITOR
-    if (actor.role === 'AUDITOR') {
+    if (actor.role === 'VIEWER') {
       // Solo lecturas LOW
       if (def.riskLevel === 'LOW') {
         return { ...baseResult, granted: true };

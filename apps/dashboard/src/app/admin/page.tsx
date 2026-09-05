@@ -36,7 +36,8 @@ import {
   AdminTenantLensDTO,
   RwaDealSummaryDTO,
   PlatformB2bLeadDTO,
-  B2bPipelineMetricsDTO
+  B2bPipelineMetricsDTO,
+  PlatformRole 
 } from '@/lib/dash-contracts/admin';
 
 interface AdminPageProps {
@@ -364,7 +365,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const actor: PlatformActor = {
     id: auth.wallet || auth.email || 'platform_admin',
     actorType: auth.wallet ? 'WALLET' : 'MAGIC_LINK',
-    role: auth.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'PLATFORM_ADMIN',
+    role: auth.role as PlatformRole,
     walletAddress: auth.wallet || null,
     email: auth.email || null,
     name: auth.wallet ? `${auth.wallet.slice(0, 6)}...${auth.wallet.slice(-4)}` : 'Administrador',
@@ -390,7 +391,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           treasuryWallet={treasuryAddress}
         />
       ) : activeTab === 'rwa' ? (
-        <AdminRwaView deals={rwaDealsList} />
+        <AdminRwaView deals={rwaDealsList} actor={actor} />
       ) : activeTab === 'security' ? (
         <AdminSecurityView
           totalVaultDocuments={totalVaultDocuments}

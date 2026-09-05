@@ -157,7 +157,8 @@ export const users = pgTable("users", {
   walletAddress: varchar("walletAddress", { length: 42 }).unique(), // LEGACY CASE: matched from DB introspection
   telegramId: varchar("telegram_id", { length: 255 }).unique(), // SNAKE_CASE: confirmed from introspection
   status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
-  role: varchar("role", { length: 20 }).default('user').notNull(),
+  role: varchar("role", { length: 32 }).default('user').notNull(),
+  capabilities: jsonb("capabilities").$type<Record<string, boolean>>().default({}),
   hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(), // LEGACY CASE
 
   // KYC Related Fields (CamelCase legacy)
@@ -3962,14 +3963,13 @@ export const hermesArtifacts = pgTable("hermes_artifacts", {
   tenantCidIdx: uniqueIndex("hermes_artifacts_tenant_cid_unique").on(t.tenantId, t.cid),
 }));
 
-export interface NexusPermissionsOverride {
-  dealRoom?: boolean;
-  academyAdmin?: boolean;
-  settings?: boolean;
-  hermesQa?: boolean;
-}
+export type NexusPermissionsOverride = Record<string, boolean>;
 
 // ── Nexus Collaborators (Magic Link Email Access & RBAC) ───────────────────────────────
+/**
+ * @deprecated Esta tabla será migrada enteramente a `users` mediante el sistema unificado
+ * de roles y capabilities canónicos (Phase 3+). Actualmente relegada para flujos de onboarding heredados.
+ */
 export const nexusCollaborators = pgTable("nexus_collaborators", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),

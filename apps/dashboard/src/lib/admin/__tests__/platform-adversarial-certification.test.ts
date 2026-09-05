@@ -25,7 +25,7 @@ describe('🛡️ F9.9 Platform Boundary Adversarial Certification', () => {
     const legacyAttacker: PlatformActor = {
       id: 'legacy_intruder',
       actorType: 'AGENT_DELEGATE',
-      role: 'AUDITOR', // claims auditor but tries mutation
+      role: 'VIEWER', // claims auditor but tries mutation
       walletAddress: '0x0000000000000000000000000000000000000000',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false,
@@ -131,7 +131,7 @@ describe('🛡️ F9.9 Platform Boundary Adversarial Certification', () => {
     const platformAdmin: PlatformActor = {
       id: 'platform_admin_01',
       actorType: 'WALLET',
-      role: 'PLATFORM_ADMIN',
+      role: 'ADMIN',
       walletAddress: '0x3333333333333333333333333333333333333333',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false,
@@ -151,7 +151,7 @@ describe('🛡️ F9.9 Platform Boundary Adversarial Certification', () => {
     const auditor: PlatformActor = {
       id: 'auditor_01',
       actorType: 'WALLET',
-      role: 'AUDITOR',
+      role: 'VIEWER',
       walletAddress: '0x4444444444444444444444444444444444444444',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false,

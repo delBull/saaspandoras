@@ -7,21 +7,26 @@
  */
 
 import { db } from '@/db';
-import { nexusCollaborators, type NexusPermissionsOverride } from '@/db/schema';
+import { users, nexusCollaborators, type NexusPermissionsOverride } from '@/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { headers as nextHeaders } from 'next/headers';
 
-export type NexusRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'COLLABORATOR';
+export type NexusRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'MARKETING' | 'VIEWER';
 
 export interface NexusPermissions {
-  dealRoom: boolean;
-  academyAdmin: boolean;
-  settings: boolean;
-  hermesQa: boolean;
+  'users.manage': boolean;
+  'tenants.manage': boolean;
+  'finance.manage': boolean;
+  'growth.manage': boolean;
+  'marketing.manage': boolean;
+  'nexus.manage': boolean;
   ecosystem: boolean;
   institutionalBooks: boolean;
 }
+
+// Re-export from dedicated file for client compatibility
+export { CANONICAL_CAPABILITIES } from '@/lib/canonical-capabilities';
 
 export interface NexusAuthContext {
   isAuthenticated: boolean;
@@ -33,10 +38,12 @@ export interface NexusAuthContext {
 }
 
 const DEFAULT_EMPTY_PERMISSIONS: NexusPermissions = {
-  dealRoom: false,
-  academyAdmin: false,
-  settings: false,
-  hermesQa: false,
+  'users.manage': false,
+  'tenants.manage': false,
+  'finance.manage': false,
+  'growth.manage': false,
+  'marketing.manage': false,
+  'nexus.manage': false,
   ecosystem: false,
   institutionalBooks: false,
 };
@@ -47,50 +54,70 @@ const DEFAULT_EMPTY_PERMISSIONS: NexusPermissions = {
  */
 export function resolveEffectivePermissions(
   role: NexusRole,
-  overrides?: Partial<NexusPermissionsOverride> | null
+  overrides?: Partial<Record<string, boolean>> | null
 ): NexusPermissions {
   const defaultsByRole: Record<NexusRole, NexusPermissions> = {
     SUPER_ADMIN: {
-      dealRoom: true,
-      academyAdmin: true,
-      settings: true,
-      hermesQa: true,
+      'users.manage': true,
+      'tenants.manage': true,
+      'finance.manage': true,
+      'growth.manage': true,
+      'marketing.manage': true,
+      'nexus.manage': true,
       ecosystem: true,
       institutionalBooks: true,
     },
     ADMIN: {
-      dealRoom: true,
-      academyAdmin: true,
-      settings: true,
-      hermesQa: true,
+      'users.manage': true,
+      'tenants.manage': true,
+      'finance.manage': true,
+      'growth.manage': true,
+      'marketing.manage': true,
+      'nexus.manage': true,
       ecosystem: true,
       institutionalBooks: false, // Strict double-layer Discord required for books
     },
-    MANAGER: {
-      dealRoom: false,
-      academyAdmin: true,
-      settings: false,
-      hermesQa: true,
+    OPERATOR: {
+      'users.manage': false,
+      'tenants.manage': false,
+      'finance.manage': false,
+      'growth.manage': true,
+      'marketing.manage': false,
+      'nexus.manage': false,
       ecosystem: true,
       institutionalBooks: false,
     },
-    COLLABORATOR: {
-      dealRoom: false,
-      academyAdmin: false,
-      settings: false,
-      hermesQa: false,
+    MARKETING: {
+      'users.manage': false,
+      'tenants.manage': false,
+      'finance.manage': false,
+      'growth.manage': false,
+      'marketing.manage': true,
+      'nexus.manage': false,
+      ecosystem: true,
+      institutionalBooks: false,
+    },
+    VIEWER: {
+      'users.manage': false,
+      'tenants.manage': false,
+      'finance.manage': false,
+      'growth.manage': false,
+      'marketing.manage': false,
+      'nexus.manage': false,
       ecosystem: true,
       institutionalBooks: false,
     },
   };
 
-  const base = defaultsByRole[role] || defaultsByRole.COLLABORATOR;
+  const base = defaultsByRole[role] || defaultsByRole.VIEWER;
   const effective: NexusPermissions = {
     ...base,
-    dealRoom: overrides?.dealRoom !== undefined ? overrides.dealRoom : base.dealRoom,
-    academyAdmin: overrides?.academyAdmin !== undefined ? overrides.academyAdmin : base.academyAdmin,
-    settings: overrides?.settings !== undefined ? overrides.settings : base.settings,
-    hermesQa: overrides?.hermesQa !== undefined ? overrides.hermesQa : base.hermesQa,
+    'users.manage': overrides?.['users.manage'] !== undefined ? overrides['users.manage'] : base['users.manage'],
+    'tenants.manage': overrides?.['tenants.manage'] !== undefined ? overrides['tenants.manage'] : base['tenants.manage'],
+    'finance.manage': overrides?.['finance.manage'] !== undefined ? overrides['finance.manage'] : base['finance.manage'],
+    'growth.manage': overrides?.['growth.manage'] !== undefined ? overrides['growth.manage'] : base['growth.manage'],
+    'marketing.manage': overrides?.['marketing.manage'] !== undefined ? overrides['marketing.manage'] : base['marketing.manage'],
+    'nexus.manage': overrides?.['nexus.manage'] !== undefined ? overrides['nexus.manage'] : base['nexus.manage'],
     ecosystem: true, // Always accessible to authenticated Nexus members
     // 🛡️ SECURITY GUARD: Institutional books NEVER grants via collaborator overrides
     institutionalBooks: role === 'SUPER_ADMIN',
@@ -123,6 +150,33 @@ export async function getNexusAuthContext(
     const sessionWallet = (session?.address || reqHeaders.get('x-wallet-address') || reqHeaders.get('x-thirdweb-address'))?.toLowerCase();
 
     if (sessionWallet && isVerified) {
+      // Optimizamos: Buscar en la base de datos `users` el rol canónico.
+      const userRecords = await db
+        .select()
+        .from(users)
+        .where(eq(users.walletAddress, sessionWallet))
+        .limit(1);
+      
+      const user = userRecords[0];
+
+      // Roles que actúan como "admin/nexus" access
+      const validAdminRoles = ['super_admin', 'admin', 'operator', 'marketing', 'viewer'];
+      
+      if (user && validAdminRoles.includes(user.role)) {
+        return {
+          isAuthenticated: true,
+          role: user.role.toUpperCase() as NexusRole, // Cast to uppercase to match legacy enum if needed
+          wallet: sessionWallet,
+          email: user.email,
+          name: user.name,
+          permissions: resolveEffectivePermissions(
+            user.role.toUpperCase() as NexusRole, 
+            (user.capabilities as NexusPermissionsOverride) || {}
+          ),
+        };
+      }
+
+      // Backward compatibility fallback using `isAdmin` just in case they aren't registered yet in `users`
       const isSuper = sessionWallet === (process.env.NEXT_PUBLIC_ADMIN_WALLET || '').toLowerCase();
       const isPlatformAdmin = await isAdmin(sessionWallet);
 

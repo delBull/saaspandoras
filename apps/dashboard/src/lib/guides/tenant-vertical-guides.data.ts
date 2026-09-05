@@ -70,7 +70,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'amber',
           iconName: 'Briefcase',
           targetUrl: `/profile/projects/${cleanSlug}/manage`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Bienvenido a la tokenización de activos de alta plusvalía.',
           hermesNarrative:
             'En este primer paso establecemos la ficha técnica del activo inmobiliario: ubicación geográfica, valuación comercial, documentación de propiedad y datos del fideicomiso emisor. Esta información se ancla en los metadatos públicos del proyecto.',
@@ -99,7 +99,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'violet',
           iconName: 'ShieldCheck',
           targetUrl: `/portal/${cleanSlug}/knowledge`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'La seguridad legal de tus inversores es innegociable.',
           hermesNarrative:
             'Cada contrato de compra, reglamento de copropiedad y dictamen jurídico se custodia en la Bóveda Sovereign K25. El sistema genera un hash SHA-256 inmutable indexado en IPFS, garantizando que nadie pueda alterar los términos pactados.',
@@ -128,7 +128,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'amber',
           iconName: 'Handshake',
           targetUrl: `/profile/projects/${cleanSlug}/manage`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Diseñemos las fases de capitalización de tu desarrollo.',
           hermesNarrative:
             'Aquí programas tus rondas de financiamiento: Fase Friends & Family, Preventa Exclusiva y Oferta Pública. Puedes definir precios dinámicos por metro cuadrado fraccionado, límites máximos de adquisición y periodos de bloqueo (lockups).',
@@ -157,7 +157,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'purple',
           iconName: 'Cpu',
           targetUrl: `/portal/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Transparencia bancaria y descentralizada de los fondos.',
           hermesNarrative:
             'Los fondos recaudados y las rentas generadas se resguardan en contratos Safe multifirma. Cuando el desarrollo genera rendimientos por arrendamiento, el administrador distribuye los dividendos en USDC pro-rata con un solo clic.',
@@ -186,7 +186,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'blue',
           iconName: 'Globe',
           targetUrl: `/portal/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Tu desarrollo con presencia institucional y portal propio.',
           hermesNarrative:
             'Tus inversores acceden a un portal con tu identidad visual donde pueden consultar sus metros cuadrados tokenizados, certificados notarizados, bitácora de avances de obra y participar en votaciones comunitarias.',
@@ -219,7 +219,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'emerald',
           iconName: 'Briefcase',
           targetUrl: `/growth-os/organizations/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Configura la identidad operativa de tu organización.',
           hermesNarrative:
             'Establece el nombre corporativo, logotipos, dominios autorizados y zonas horarias de tu empresa. Esto garantiza que todos los correos, mensajes de WhatsApp y enlaces compartidos mantengan tu marca impecable.',
@@ -244,7 +244,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'emerald',
           iconName: 'Handshake',
           targetUrl: `/growth-os/organizations/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Conectemos tus canales de captación más calientes.',
           hermesNarrative:
             'Conecta tu número oficial de WhatsApp Business mediante la Meta Cloud API. Cada mensaje entrante es recibido instantáneamente, calificado por Hermes y canalizado al pipeline comercial sin pérdida de prospectos.',
@@ -269,7 +269,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'violet',
           iconName: 'Bot',
           targetUrl: `/portal/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Yo seré tu copiloto comercial y operativo de alta velocidad.',
           hermesNarrative:
             'Personaliza el tono, las reglas de calificación y las respuestas frecuentes de Hermes. Puedo agendar llamadas, responder objeciones de precio y notificar a tus ejecutivos de cuenta en el momento óptimo.',
@@ -294,7 +294,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'purple',
           iconName: 'Cpu',
           targetUrl: `/portal/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Supervisa el rendimiento y consumo de inferencia.',
           hermesNarrative:
             'Monitorea el saldo de créditos de cómputo, la latencia de respuesta en milisegundos y el costo por inferencia de tus agentes. Todo respaldado por nuestra flota de GPU dedicada.',
@@ -323,7 +323,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'indigo',
           iconName: 'Globe',
           targetUrl: `/portal/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Crea un espacio exclusivo y soberano para tu comunidad.',
           hermesNarrative:
             'Personaliza la puerta de bienvenida para tus miembros más leales: bio de comunidad, enlaces a transmisiones exclusivas y manifiesto de valores.',
@@ -348,7 +348,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'violet',
           iconName: 'ShieldCheck',
           targetUrl: `/profile/projects/${cleanSlug}/manage`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Estructura tus niveles de membresía con recompensas reales.',
           hermesNarrative:
             'Diseña pases de acceso con ventajas escalonadas: acceso a chats VIP, llamadas privadas 1 a 1, descargas de material exclusivo y descuentos.',
@@ -373,7 +373,7 @@ export function getStationsForTenantVertical(
           badgeColor: 'amber',
           iconName: 'Handshake',
           targetUrl: `/portal/${cleanSlug}`,
-          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'COLLABORATOR'],
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
           hermesGreeting: 'Involucra a tu comunidad en las decisiones estratégicas.',
           hermesNarrative:
             'Publica propuestas y votaciones donde tus seguidores utilicen su voting power para elegir temas de próximos lanzamientos, dinámicas benéficas o uso de fondos comunitarios.',

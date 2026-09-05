@@ -14,7 +14,7 @@ export default async function AdminAcademyPage({
 
   const auth = await getNexusAuthContext(null, token);
 
-  let unlocked = checkNexusPermission(auth, "academyAdmin");
+  let unlocked = checkNexusPermission(auth, "nexus.manage");
   let userRole: "admin" | "manager" =
     auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" ? "admin" : "manager";
   let userEmail: string | undefined = auth.email || undefined;

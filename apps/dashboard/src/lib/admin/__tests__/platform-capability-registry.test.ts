@@ -29,7 +29,7 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
   const platformAdmin: PlatformActor = {
     id: 'actor_admin_1',
     actorType: 'WALLET',
-    role: 'PLATFORM_ADMIN',
+    role: 'ADMIN',
     walletAddress: '0x1111111111111111111111111111111111111111',
     sessionStartedAt: new Date().toISOString(),
     isDiscord2faVerified: false,
@@ -47,7 +47,7 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
   const auditor: PlatformActor = {
     id: 'actor_auditor_1',
     actorType: 'WALLET',
-    role: 'AUDITOR',
+    role: 'VIEWER',
     walletAddress: '0x2222222222222222222222222222222222222222',
     sessionStartedAt: new Date().toISOString(),
     isDiscord2faVerified: false,
@@ -86,7 +86,7 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
     expect(result.reason).toContain('2FA Discord previa');
   });
 
-  it('PCAP-04: PLATFORM_ADMIN can execute LOW, MEDIUM, and HIGH but NOT CRITICAL', () => {
+  it('PCAP-04: ADMIN can execute LOW, MEDIUM, and HIGH but NOT CRITICAL', () => {
     // LOW
     expect(
       PlatformCapabilityRegistryService.evaluateAuthorization(platformAdmin, 'platform.tenants.read').granted
@@ -135,7 +135,7 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
     ).toBe(false);
   });
 
-  it('PCAP-06: AUDITOR has read-only access (LOW) and is blocked for any mutation (MEDIUM, HIGH, CRITICAL)', () => {
+  it('PCAP-06: VIEWER has read-only access (LOW) and is blocked for any mutation (MEDIUM, HIGH, CRITICAL)', () => {
     expect(
       PlatformCapabilityRegistryService.evaluateAuthorization(auditor, 'platform.treasury.read').granted
     ).toBe(true);

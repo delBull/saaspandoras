@@ -6,7 +6,7 @@
  * and administrator authority boundaries.
  */
 
-export type PlatformRole = 'SUPER_ADMIN' | 'PLATFORM_ADMIN' | 'OPERATOR' | 'AUDITOR';
+export type PlatformRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'MARKETING' | 'VIEWER';
 
 export type PlatformActorType = 'WALLET' | 'MAGIC_LINK' | 'SYSTEM_CRON' | 'AGENT_DELEGATE';
 

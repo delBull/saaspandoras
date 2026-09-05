@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformCapabilityRegistryService } from '@/lib/admin/platform-capability-registry.service';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
 import { redirect } from 'next/navigation';
 
 export default async function DeveloperHubPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +25,7 @@ export default async function DeveloperHubPage({ params }: { params: Promise<{ i
 
   const actor: PlatformActor = {
     id: auth.email || auth.wallet || 'UNKNOWN',
-    role: auth.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'PLATFORM_ADMIN',
+    role: auth.role as PlatformRole,
     actorType: 'MAGIC_LINK',
     sessionStartedAt: new Date().toISOString(),
     isDiscord2faVerified: false,

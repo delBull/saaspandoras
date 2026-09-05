@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useActiveAccount, useConnectModal } from "thirdweb/react";
 import Image from "next/image";
 import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
@@ -326,6 +327,11 @@ export function NFTGate({
   const [visualState, setVisualState] = useState<GateVisualState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // ELITE: If initialState is RITUAL, we assume lead is already captured/verified
   const [leadCaptured, setLeadCaptured] = useState(initialState === "RITUAL");
@@ -699,9 +705,8 @@ export function NFTGate({
   }
 
   // 🎭 CASE 6: Lead not yet captured → show capture gate
-  if (!leadCaptured) {
-    return <LeadCaptureGate onLeadCaptured={handleLeadCaptured} projectId={projectId} />;
-  }
+  if (!mounted) return null;
+  return createPortal(<LeadCaptureGate onLeadCaptured={handleLeadCaptured} projectId={projectId} />, document.body);
 
   // 🎭 CASE 7: Lead captured → Ritual entry
   return (
@@ -737,9 +742,9 @@ export function NFTGate({
         </div>
       )}
 
-      {account && (
+      {account?.address && (
         <p className="text-[10px] text-zinc-700 mt-6 uppercase tracking-widest font-mono">
-          {account.address.slice(0, 6)}...{account.address.slice(-4)}
+          {account?.address.slice(0, 6)}...{account?.address.slice(-4)}
         </p>
       )}
     </div>

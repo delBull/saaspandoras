@@ -1,4 +1,5 @@
-import 'react';
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Cpu, RefreshCw, Bot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

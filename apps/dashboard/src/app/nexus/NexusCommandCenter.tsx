@@ -40,11 +40,11 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
     initialTour === "ecosystem" || initialTour === "onboarding"
   );
 
-  const validRoles: EcosystemTourRole[] = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COLLABORATOR"];
+  const validRoles: EcosystemTourRole[] = ["SUPER_ADMIN", "ADMIN", "MARKETING", "VIEWER"];
   // FIX: Strict RBAC - Never trust initialRole for security boundaries
   const tourRole: EcosystemTourRole = validRoles.includes(role as EcosystemTourRole)
     ? (role as EcosystemTourRole)
-    : "COLLABORATOR";
+    : "VIEWER";
 
   // FIX: Load Admin Customizations from localStorage so they affect production
   const [customStations, setCustomStations] = React.useState<any[] | undefined>();
@@ -73,16 +73,16 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
             🛡️ ADMIN
           </span>
         );
-      case "MANAGER":
+      case "MARKETING":
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-300 text-xs font-mono font-bold tracking-wide">
-            ⚙️ MANAGER / OPERADOR
+            ⚙️ MARKETING / OPERADOR
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold tracking-wide">
-            👥 COLLABORATOR
+            👥 VIEWER
           </span>
         );
     }
@@ -95,9 +95,9 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Redacción, revisión y firma notarizada de propuestas, contratos, acuerdos y NDAs institucionales.",
       icon: Handshake,
       href: "/nexus/rooms",
-      allowed: permissions.dealRoom,
+      allowed: role === "SUPER_ADMIN", // Restringido solo a Super Admin por ahora
       color: "amber",
-      requirementText: "Requiere Rol Admin o Permiso Específico",
+      requirementText: "Exclusivo Super Admin",
     },
     {
       id: "academy_admin",
@@ -105,7 +105,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Gestión de alumnos, evaluación de currículum de liderazgo (COO/CFO) y emisión de blueprints de certificación.",
       icon: GraduationCap,
       href: "/admin/academy",
-      allowed: permissions.academyAdmin,
+      allowed: permissions['nexus.manage'],
       color: "violet",
       requirementText: "Requiere Rol Manager o Permiso Específico",
     },
@@ -115,7 +115,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Administración de colaboradores, asignación de roles base y configuración de permisos mediante Drawer interactivo.",
       icon: Settings,
       href: "/nexus/settings",
-      allowed: permissions.settings,
+      allowed: permissions['nexus.manage'],
       color: "blue",
       requirementText: "Exclusivo para Administradores",
     },
@@ -125,7 +125,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Suite de pruebas conversacionales, evaluación de inferencias LLM, simulación de respuestas y auditoría de seguridad.",
       icon: Bot,
       href: "/admin/hermes-qa",
-      allowed: permissions.hermesQa,
+      allowed: permissions['tenants.manage'],
       color: "emerald",
       requirementText: "Requiere Rol Manager o Permiso Específico",
     },
@@ -145,7 +145,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Constitución y Libros Fundacionales I al IX de Pandora's Protocol. Protegido con doble capa de seguridad criptográfica.",
       icon: Lock,
       href: "https://app.pandoras.finance/libros/constitucion",
-      allowed: permissions.institutionalBooks,
+      allowed: role === "SUPER_ADMIN", // Restringido solo a Super Admin por ahora
       color: "rose",
       requirementText: "Exclusivo Super Admin con 2FA Discord",
       isDoubleLayer: true,

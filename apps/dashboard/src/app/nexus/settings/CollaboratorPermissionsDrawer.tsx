@@ -43,7 +43,7 @@ export function CollaboratorPermissionsDrawer({
   onClose,
   onUpdated,
 }: CollaboratorPermissionsDrawerProps) {
-  const [role, setRole] = useState<NexusRole>("COLLABORATOR");
+  const [role, setRole] = useState<NexusRole>("VIEWER");
   const [permissions, setPermissions] = useState<NexusPermissionsOverride>({});
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -52,7 +52,7 @@ export function CollaboratorPermissionsDrawer({
   // Sync state when collaborator changes
   useEffect(() => {
     if (collaborator) {
-      setRole((collaborator.role as NexusRole) || "COLLABORATOR");
+      setRole((collaborator.role as NexusRole) || "VIEWER");
       setPermissions(collaborator.permissions || {});
       // In a full integration, you would fetch the user's existing webhook via API.
       // We start empty if not loaded yet.
@@ -68,7 +68,7 @@ export function CollaboratorPermissionsDrawer({
     // Reset or adapt overrides according to new base role
     if (newRole === "ADMIN") {
       setPermissions((prev) => ({ ...prev, dealRoom: true, academyAdmin: true, settings: true, hermesQa: true }));
-    } else if (newRole === "MANAGER") {
+    } else if (newRole === "MARKETING") {
       setPermissions((prev) => ({ ...prev, dealRoom: false, academyAdmin: true, settings: false, hermesQa: true }));
     } else {
       setPermissions((prev) => ({ ...prev, dealRoom: false, academyAdmin: false, settings: false, hermesQa: false }));
@@ -190,7 +190,7 @@ export function CollaboratorPermissionsDrawer({
                   Rol Base Asignado
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["ADMIN", "MANAGER", "COLLABORATOR"] as NexusRole[]).map((r) => {
+                  {(["ADMIN", "MARKETING", "VIEWER"] as NexusRole[]).map((r) => {
                     const active = role === r;
                     return (
                       <button
@@ -201,7 +201,7 @@ export function CollaboratorPermissionsDrawer({
                           active
                             ? r === "ADMIN"
                               ? "bg-amber-500/10 border-amber-500/40 text-amber-300"
-                              : r === "MANAGER"
+                              : r === "MARKETING"
                               ? "bg-violet-500/10 border-violet-500/40 text-violet-300"
                               : "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
                             : "bg-zinc-900/50 border-white/5 text-zinc-400 hover:border-white/10 hover:text-white"
@@ -214,7 +214,7 @@ export function CollaboratorPermissionsDrawer({
                         <p className="text-[10px] opacity-70 mt-1 line-clamp-2">
                           {r === "ADMIN"
                             ? "Control total deal room y configuración"
-                            : r === "MANAGER"
+                            : r === "MARKETING"
                             ? "Operador Academy y soporte"
                             : "Recursos y enlaces generales"}
                         </p>

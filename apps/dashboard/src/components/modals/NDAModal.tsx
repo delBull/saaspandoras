@@ -111,5 +111,5 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalPro
   );
 
   if (!mounted || typeof document === "undefined") return null;
-  return createPortal(modalContent, document.body);
+  return <>{createPortal(modalContent, document.body)}</>;
 }

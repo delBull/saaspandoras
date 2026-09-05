@@ -26,8 +26,8 @@ describe('🧭 Ecosystem Guides Data & Logic (Hermes Tour)', () => {
     expect(superAdminStations).toHaveLength(7);
   });
 
-  it('should enforce RBAC filtering: COLLABORATOR only sees permitted stations (no Deal Rooms, Governance, Academy)', () => {
-    const collabStations = getStationsForRole('COLLABORATOR');
+  it('should enforce RBAC filtering: VIEWER only sees permitted stations (no Deal Rooms, Governance, Academy)', () => {
+    const collabStations = getStationsForRole('VIEWER');
     const ids = collabStations.map((s) => s.id);
     expect(ids).toContain('nexus_identity');
     expect(ids).toContain('growth_os_crm');
@@ -38,10 +38,10 @@ describe('🧭 Ecosystem Guides Data & Logic (Hermes Tour)', () => {
   });
 
   it('should generate valid deep links with role parameter', () => {
-    const linkManager = generateTourShareLink('MANAGER', 'https://dash.pandoras.finance');
+    const linkManager = generateTourShareLink('MARKETING', 'https://dash.pandoras.finance');
     expect(linkManager).toBe('https://dash.pandoras.finance/nexus?tour=ecosystem&role=manager');
 
-    const linkCollab = generateTourShareLink('COLLABORATOR');
+    const linkCollab = generateTourShareLink('VIEWER');
     expect(linkCollab).toContain('/nexus?tour=ecosystem&role=collaborator');
   });
 

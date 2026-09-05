@@ -30,7 +30,7 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
   const [collaborators, setCollaborators] = useState<CollaboratorItem[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<NexusRole>("COLLABORATOR");
+  const [role, setRole] = useState<NexusRole>("VIEWER");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -71,7 +71,7 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
         setMessage({ type: "success", text: `Magic link enviado a ${email} con rol ${role}` });
         setName("");
         setEmail("");
-        setRole("COLLABORATOR");
+        setRole("VIEWER");
         await loadCollaborators();
       } else {
         setMessage({ type: "error", text: data.error || "Error al enviar invitación" });
@@ -122,16 +122,16 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
             ADMIN
           </span>
         );
-      case "MANAGER":
+      case "MARKETING":
         return (
           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
-            MANAGER
+            MARKETING
           </span>
         );
       default:
         return (
           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-            COLLABORATOR
+            VIEWER
           </span>
         );
     }
@@ -210,8 +210,8 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
                   onChange={(e) => setRole(e.target.value as NexusRole)}
                   className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500/50 transition-colors"
                 >
-                  <option value="COLLABORATOR">Collaborator (General)</option>
-                  <option value="MANAGER">Manager / Operador (Academy)</option>
+                  <option value="VIEWER">Collaborator (General)</option>
+                  <option value="MARKETING">Manager / Operador (Academy)</option>
                   <option value="ADMIN">Admin (Deal Room &amp; Config)</option>
                 </select>
               </div>

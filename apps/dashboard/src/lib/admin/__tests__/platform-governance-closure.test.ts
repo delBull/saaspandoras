@@ -70,7 +70,7 @@ describe('🏛️ F9.10 Platform Governance Closure & Operational Readiness', ()
     const platformAdmin: PlatformActor = {
       id: 'platform_admin_01',
       actorType: 'WALLET',
-      role: 'PLATFORM_ADMIN',
+      role: 'ADMIN',
       walletAddress: '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
       sessionStartedAt: new Date().toISOString(),
       isDiscord2faVerified: false,
@@ -91,7 +91,7 @@ describe('🏛️ F9.10 Platform Governance Closure & Operational Readiness', ()
     const entry = PlatformAuditLedgerService.recordEntry({
       actorId: 'admin_usr_01',
       actorWallet: '0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
-      actorRole: 'PLATFORM_ADMIN',
+      actorRole: 'ADMIN',
       actorType: 'WALLET',
       action: 'RWA_STAGE_TRANSITION',
       targetResource: 'RWA_DEAL',
@@ -163,7 +163,7 @@ describe('🏛️ F9.10 Platform Governance Closure & Operational Readiness', ()
     const e1 = PlatformAuditLedgerService.recordEntry({
       actorId: 'actor1',
       actorWallet: '0x1',
-      actorRole: 'PLATFORM_ADMIN',
+      actorRole: 'ADMIN',
       actorType: 'WALLET',
       action: 'TENANT_MARKUP_MODIFIED',
       targetResource: 'TENANT',
@@ -190,7 +190,7 @@ describe('🏛️ F9.10 Platform Governance Closure & Operational Readiness', ()
     const e3 = PlatformAuditLedgerService.recordEntry({
       actorId: 'actor1',
       actorWallet: '0x1',
-      actorRole: 'PLATFORM_ADMIN',
+      actorRole: 'ADMIN',
       actorType: 'WALLET',
       action: 'CREDIT_MANUAL_ADJUSTMENT',
       targetResource: 'TENANT_BILLING',

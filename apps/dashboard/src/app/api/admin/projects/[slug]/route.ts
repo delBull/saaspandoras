@@ -194,6 +194,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         businessCategory: true,
         targetAmount: true,
         applicantWalletAddress: true,
+        totalTokens: true,
+        tokensOffered: true,
       }
     });
 
@@ -312,16 +314,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+
 export async function PUT(request: Request, { params }: RouteParams) {
-  const { session } = await getAuth(await headers());
-
-  // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.address) ||
-    await isAdmin(session?.address);
-
-  if (!userIsAdmin) {
+  const reqHeaders = await headers();
+  const auth = await getNexusAuthContext(reqHeaders);
+  
+  const isSuperAdmin = auth.role === 'SUPER_ADMIN';
+  const isAdminRole = auth.role === 'ADMIN';
+  
+  if (!auth.isAuthenticated || (!isSuperAdmin && !isAdminRole)) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
+  
+  const isDiscord2faVerified = isSuperAdmin; // 2FA is simulated as true only for SUPER_ADMIN
+
 
   const { slug } = await params;
   const projectId = Number(slug);
@@ -353,6 +360,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
         id: true,
         slug: true,
         status: true,
+        targetAmount: true,
+        totalTokens: true,
+        tokensOffered: true,
       }
     });
 
@@ -401,6 +411,23 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if ('discordUrl' in rawBody) updateSet.discordUrl = data.discordUrl ?? null;
     if ('telegramUrl' in rawBody) updateSet.telegramUrl = data.telegramUrl ?? null;
     if ('linkedinUrl' in rawBody) updateSet.linkedinUrl = data.linkedinUrl ?? null;
+
+    // Verificar 2FA para campos críticos (Tokenomics, Status)
+    const hasCriticalChanges = 
+      ('targetAmount' in rawBody && data.targetAmount.toString() !== existingProject.targetAmount) ||
+      ('totalTokens' in rawBody && data.totalTokens !== existingProject.totalTokens) ||
+      ('tokensOffered' in rawBody && data.tokensOffered !== existingProject.tokensOffered) ||
+      ('status' in rawBody && rawBody.status !== existingProject.status);
+
+    if (hasCriticalChanges && !isDiscord2faVerified) {
+      return NextResponse.json(
+        { message: "Cambios en tokenomics o estado requieren verificación 2FA (SUPER_ADMIN)." },
+        { status: 403 }
+      );
+    }
+
+    // Status
+    if ('status' in rawBody) updateSet.status = rawBody.status;
 
     // Sección 3: Tokenomics (Decimals as Strings)
     if ('targetAmount' in rawBody) updateSet.targetAmount = data.targetAmount.toString();

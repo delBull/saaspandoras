@@ -8,14 +8,19 @@ import { resolveIpfsUrl } from '@/lib/utils';
 
 const USERS_PER_PAGE = 10;
 
+import { UserRolesDrawer } from './UserRolesDrawer';
+import { PlatformActor } from '@/lib/dash-contracts/admin';
+
 interface UsersTableProps {
   users: UserData[];
+  currentActor?: PlatformActor;
 }
 
-export function UsersTable({ users }: UsersTableProps) {
+export function UsersTable({ users, currentActor }: UsersTableProps) {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [usersPage, setUsersPage] = useState(1);
   const [isCompressed, setIsCompressed] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
 
   // Ensure users is always an array - memoized to prevent unnecessary re-renders
   const usersArray = useMemo(() => Array.isArray(users) ? users : [], [users]);
@@ -39,6 +44,11 @@ export function UsersTable({ users }: UsersTableProps) {
       applicant: 0,
       pandorian: 0,
       admin: 0,
+      user: 0,
+      super_admin: 0,
+      operator: 0,
+      marketing: 0,
+      viewer: 0
     };
 
     usersArray.forEach(user => {
@@ -200,7 +210,11 @@ export function UsersTable({ users }: UsersTableProps) {
             {paginatedUsers.map((user) => {
               const roleDisplay = getRoleDisplay(user.role);
               return (
-                <tr key={user.id} className="hover:bg-zinc-800">
+                <tr 
+                  key={user.id} 
+                  className="hover:bg-zinc-800 cursor-pointer transition-colors"
+                  onClick={() => setSelectedUser(user)}
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {user.image && (
@@ -400,6 +414,14 @@ export function UsersTable({ users }: UsersTableProps) {
           </div>
         </div>
       )}
+
+      {/* Drawer */}
+      <UserRolesDrawer
+        user={selectedUser}
+        isOpen={!!selectedUser}
+        onClose={() => setSelectedUser(null)}
+        currentActor={currentActor}
+      />
     </div>
   );
 }

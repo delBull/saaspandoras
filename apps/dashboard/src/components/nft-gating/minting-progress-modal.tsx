@@ -45,7 +45,7 @@ export function MintingProgressModal({ step, onClose, isMinting = true, alreadyO
   );
 
   if (isMounted) {
-    return ReactDOM.createPortal(modalContent, document.body);
+    return <>{ReactDOM.createPortal(modalContent, document.body)}</>;
   }
 
   return null;

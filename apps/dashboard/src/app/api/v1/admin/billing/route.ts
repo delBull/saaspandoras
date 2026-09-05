@@ -12,7 +12,7 @@ import { hermesTenantCredits, hermesComputeUsageEvents, hermesRunpodEndpoints } 
 import { eq, desc } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformCapabilityRegistryService } from '@/lib/admin/platform-capability-registry.service';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest) {
     const actor: PlatformActor = {
       id: auth.wallet || auth.email || 'admin_actor',
       actorType: auth.wallet ? 'WALLET' : 'MAGIC_LINK',
-      role: auth.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'PLATFORM_ADMIN',
+      role: auth.role as PlatformRole,
       walletAddress: auth.wallet || null,
       email: auth.email || null,
       sessionStartedAt: new Date().toISOString(),

@@ -104,7 +104,7 @@ export function SuccessNFTCard({ onAnimationComplete }: SuccessNFTCardProps) {
   );
 
   if (isMounted) {
-    return ReactDOM.createPortal(cardContent, document.body);
+    return <>{ReactDOM.createPortal(cardContent, document.body)}</>;
   }
 
   return null;

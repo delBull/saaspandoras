@@ -112,6 +112,7 @@ export interface UserData {
   lastConnectionAt: string;
   createdAt: string;
   role: UserRole;
+  capabilities?: Record<string, boolean>;
   projectCount: number;
   systemProjectsManaged?: number; // For super admins only
 
@@ -123,7 +124,7 @@ export interface UserData {
   ritualCompletedAt?: string | null;
 }
 
-export type UserRole = "applicant" | "pandorian" | "admin";
+export type UserRole = "applicant" | "pandorian" | "user" | "super_admin" | "admin" | "operator" | "marketing" | "viewer";
 
 export type HermesBindingMode = 'existing' | 'provisioned';
 

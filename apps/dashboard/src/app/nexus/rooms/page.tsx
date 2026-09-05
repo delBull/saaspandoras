@@ -14,7 +14,7 @@ export default async function NexusRoomsPage({
 
   const auth = await getNexusAuthContext(null, token || collaborator);
 
-  let unlocked = checkNexusPermission(auth, "dealRoom");
+  let unlocked = auth.role === "SUPER_ADMIN"; // Restringido solo a Super Admin a petición del usuario
 
   // Legacy fallback: Token de desbloqueo HMAC (enlace del webhook de Discord, 2h)
   if (!unlocked && typeof unlock === "string" && unlock) {
