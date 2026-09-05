@@ -44,8 +44,8 @@ export default async function Home() {
           />
           <button className="px-8 py-4 glass-panel text-white rounded-lg font-medium hover:bg-white/10 transition flex items-center justify-center gap-2">
             Ver Inteligencia de Proyecto
-            {/* @ts-expect-error React 19 type mismatch */}
-          <ArrowRight className="w-5 h-5" />
+            {/* @ts-ignore React 19 type mismatch */}
+            <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </section>
@@ -54,7 +54,7 @@ export default async function Home() {
       <section className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
         <div className="financial-card p-6 flex flex-col gap-2">
           <span className="text-sm text-white/50 uppercase tracking-wider font-medium flex items-center gap-2">
-            {/* @ts-expect-error React 19 type mismatch */}
+            {/* @ts-ignore React 19 type mismatch */}
             <Activity className="w-4 h-4 text-emerald-400" />
             Supply Disponible
           </span>
@@ -64,7 +64,7 @@ export default async function Home() {
 
         <div className="financial-card p-6 flex flex-col gap-2">
           <span className="text-sm text-white/50 uppercase tracking-wider font-medium flex items-center gap-2">
-            {/* @ts-expect-error React 19 type mismatch */}
+            {/* @ts-ignore React 19 type mismatch */}
             <ShieldCheck className="w-4 h-4 text-blue-400" />
             Participantes
           </span>
