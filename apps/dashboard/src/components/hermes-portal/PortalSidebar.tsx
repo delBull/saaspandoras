@@ -32,7 +32,9 @@ import {
   Target,
   GraduationCap,
   Code2,
-  Compass
+  Compass,
+  BarChart2,
+  FileText,
 } from 'lucide-react';
 
 interface NavItem {
@@ -121,7 +123,6 @@ const NAV_ITEMS: NavItem[] = [
     requiredPermission: 'organization.read',
     section: 'secondary',
   },
-  // --- INTERNAL / HQ TOOLS ---
   {
     label: 'Strategy',
     href: '/strategy',
@@ -137,6 +138,13 @@ const NAV_ITEMS: NavItem[] = [
     section: 'internal',
   },
   {
+    label: 'Marketing',
+    href: '/marketing',
+    icon: BarChart2,
+    requiredPermission: 'growth.market_attack',
+    section: 'internal',
+  },
+  {
     label: 'Academy',
     href: '/content',
     icon: GraduationCap,
@@ -148,6 +156,13 @@ const NAV_ITEMS: NavItem[] = [
     href: '/developers',
     icon: Code2,
     requiredPermission: 'developer.api',
+    section: 'internal',
+  },
+  {
+    label: 'Documents',
+    href: '/documents',
+    icon: FileText,
+    requiredPermission: 'organization.read',
     section: 'internal',
   },
 ];

@@ -140,6 +140,16 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       requirementText: "Activo para todos los miembros",
     },
     {
+      id: "developer_hub",
+      title: "Developer Hub & API Keys",
+      description: "Gestión de credenciales, API keys de integración, webhooks y herramientas para desarrolladores del ecosistema.",
+      icon: Terminal,
+      href: "/nexus/developers",
+      allowed: permissions['nexus.manage'],
+      color: "cyan",
+      requirementText: "Requiere Rol Admin o Permiso Específico",
+    },
+    {
       id: "books_vault",
       title: "Bóveda Constitucional & Libros",
       description: "Constitución y Libros Fundacionales I al IX de Pandora's Protocol. Protegido con doble capa de seguridad criptográfica.",

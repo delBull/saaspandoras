@@ -5,9 +5,9 @@ import { db } from '@/db';
 import { daoMembers, projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const escalationId = params.id;
+    const escalationId = (await params).id;
     const { searchParams } = new URL(req.url);
     const tenantSlug = searchParams.get('tenantSlug');
 

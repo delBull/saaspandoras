@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Play, Settings2, User, ChevronDown, ChevronUp } from "lucide-react";
-import { MarketingCampaignList } from "@/components/admin/marketing/MarketingDashboard";
 import { Info } from "lucide-react";
 import { MarketingStats } from "./MarketingStats";
 import { MarketingHelpModal } from "./MarketingHelpModal";
@@ -152,7 +151,18 @@ export function MarketingDashboard() {
                 {/* Collapsible Content */}
                 {showCampaigns && (
                     <div className="animate-in slide-in-from-top-2 duration-200">
-                        <MarketingCampaignList initialCampaigns={campaigns} />
+                        <div className="divide-y divide-zinc-800">
+                          {campaigns.length === 0 ? (
+                            <p className="px-4 py-6 text-center text-zinc-500 text-sm">No hay campañas activas.</p>
+                          ) : campaigns.map((c: any) => (
+                            <div key={c.id} className="flex items-center justify-between px-4 py-3 hover:bg-zinc-800/40 transition-colors">
+                              <div>
+                                <p className="text-sm font-medium text-white">{c.name || c.id}</p>
+                                <p className="text-xs text-zinc-500">{c.status}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                     </div>
                 )}
             </div>

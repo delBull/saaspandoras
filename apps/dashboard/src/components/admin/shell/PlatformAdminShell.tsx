@@ -33,6 +33,7 @@ import {
   Compass,
   Loader2,
   CreditCard,
+  Bot,
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
@@ -140,6 +141,14 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       icon: Wrench,
       active: activeSection === 'operations' || pathname.includes('tab=operations'),
       allowedRoles: ALL_ROLES,
+    },
+    {
+      id: 'hermes',
+      label: 'Hermes OS Admin',
+      href: '/admin/hermes',
+      icon: Bot,
+      active: activeSection === 'hermes' || pathname.includes('/admin/hermes'),
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
     },
   ].filter(item => item.allowedRoles.includes(actor.role));
 
