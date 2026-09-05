@@ -185,7 +185,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
     startPortalTransition(async () => {
       const result = await openHQPortalAction();
       if (result.success) {
-        window.location.href = result.redirectTo;
+        window.open(result.redirectTo, '_blank');
       } else {
         console.error('[Portal Bridge]', result.error);
         // Fallback: open portal directly in new tab
