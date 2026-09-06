@@ -957,6 +957,38 @@ export function Sidebar({
                   )}
                 </div>
               )}
+
+              {/* Conectar / Login for guests */}
+              {isClient && !account && (
+                <div
+                  className={cn(
+                    "border-t border-gray-800 pt-2",
+                    !open && "mx-auto w-full"
+                  )}
+                >
+                  {!open ? (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <div className="flex w-full items-center justify-center rounded-lg py-2 overflow-hidden scale-75 origin-center">
+                          <ConnectWalletButton />
+                        </div>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content
+                          className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                          sideOffset={3}
+                        >
+                          Conectar Billetera
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  ) : (
+                    <div className="flex w-full items-center px-2 py-1">
+                      <ConnectWalletButton />
+                    </div>
+                  )}
+                </div>
+              )}
               {isClient && account && isAdmin && (
                 <div
                   className={cn(
@@ -1288,6 +1320,11 @@ export function Sidebar({
                           Desconectar
                         </span>
                       </button>
+                    </div>
+                  )}
+                  {isClient && !account && (
+                    <div className="border-t border-gray-800 pt-4 pb-2 px-4 flex justify-center">
+                      <ConnectWalletButton />
                     </div>
                   )}
                   {isClient && account && isAdmin && (

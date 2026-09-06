@@ -261,12 +261,9 @@ export function ConsumerHomePage() {
     const controller = new AbortController();
 
     const load = async () => {
-      if (!canBootstrap) {
-        setHomeData(prev => ({ ...prev, featuredProjects: FALLBACK_PROJECTS, loading: false }));
-        return;
-      }
       try {
-        const res = await fetch(`/api/bootstrap?wallet=${user.address}`, {
+        const walletParam = user?.address ? `?wallet=${user.address}` : '';
+        const res = await fetch(`/api/bootstrap${walletParam}`, {
           signal: controller.signal
         });
         if (!res.ok) throw new Error("bootstrap failed");
@@ -296,7 +293,7 @@ export function ConsumerHomePage() {
     load();
 
     return () => controller.abort();
-  }, [status, user?.address, isAdmin, isAuthenticated, hasAccess]);
+  }, [status, user?.address, isAdmin, isAuthenticated, hasAccess, canBootstrap]);
 
   return (
     <div className="min-h-screen bg-black text-white">
