@@ -256,8 +256,9 @@ export function ConsumerHomePage() {
     remoteState
   });
 
+  const canBootstrap = !!user?.address && (isAuthenticated || hasAccess);
+
   useEffect(() => {
-    const canBootstrap = !!user?.address && (isAuthenticated || hasAccess);
     const controller = new AbortController();
 
     const load = async () => {
