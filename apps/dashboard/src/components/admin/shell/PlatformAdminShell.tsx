@@ -107,7 +107,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/?tab=crm',
       icon: Briefcase,
       active: currentTab === 'crm',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN'] as PlatformRole[],
     },
     {
       id: 'marketing',
@@ -179,7 +179,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       icon: ShieldCheck,
       active: currentTab === 'rwa',
       badge: 'Deal Room',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN'] as PlatformRole[],
     },
   ].filter(item => item.allowedRoles.includes(actor.role));
 
