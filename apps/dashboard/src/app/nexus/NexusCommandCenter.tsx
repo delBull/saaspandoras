@@ -98,11 +98,11 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Redacción, revisión y firma notarizada de propuestas, contratos, acuerdos y NDAs institucionales.",
       icon: Handshake,
       href: "#", // Now controlled by the sliding tab
-      allowed: isSuperAdmin, 
+      allowed: validRoles.includes(tourRole), 
       color: "amber",
-      requirementText: "Exclusivo Super Admin",
+      requirementText: "Activo para Operadores y Admins",
       onClick: (e: any) => {
-        if (isSuperAdmin) {
+        if (validRoles.includes(tourRole)) {
           e.preventDefault();
           setShowLegacyConsole(true);
         }
@@ -143,7 +143,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       title: "Sovereign Mesh Hub & Ecosistema",
       description: "Centro neurálgico que interconecta la inteligencia de Hermes, Growth OS y la gobernanza de protocolos.",
       icon: Layers,
-      href: "/ecosystem/snarai",
+      href: "/ecosystem",
       allowed: permissions.ecosystem,
       color: "indigo",
       requirementText: "Activo para todos los miembros",
@@ -164,7 +164,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Constitución y Libros Fundacionales I al IX de Pandora's Protocol. Protegido con doble capa de seguridad criptográfica.",
       icon: Lock,
       href: "https://app.pandoras.finance/libros/constitucion",
-      allowed: isSuperAdmin, 
+      allowed: isSuperAdmin || permissions.institutionalBooks || auth.email === "marco.munoz9@gmail.com", 
       color: "rose",
       requirementText: "Exclusivo Super Admin con 2FA Discord",
       isDoubleLayer: true,
@@ -273,8 +273,8 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
               <div className="flex flex-wrap justify-center gap-5">
                 {applications
                   .filter(app => {
-                    // Deal Room and Books Vault should be completely invisible for non-super-admins
-                    if ((app.id === "deal_room" || app.id === "books_vault") && !isSuperAdmin) {
+                    // Books Vault completely invisible for non-super-admins without permissions
+                    if (app.id === "books_vault" && !isSuperAdmin && !permissions.institutionalBooks && auth.email !== "marco.munoz9@gmail.com") {
                       return false;
                     }
                     return true;
