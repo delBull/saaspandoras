@@ -91,7 +91,7 @@ export async function createRoom(input: CreateRoomInput) {
     })
     .returning();
 
-  const sections = defaultSections(input.note);
+  const sections = defaultSections(input.kind, input.note);
   if (sections.length > 0) {
     await db.insert(nexusDealSections).values(
       sections.map((s) => ({

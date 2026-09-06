@@ -13,7 +13,20 @@ export async function GET(request: Request) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
   try {
-    const rooms = await listRooms();
+    const allRooms = await listRooms();
+    
+    // Privacy Logic: Hide deals created by Super Admin from regular operators
+    const adminWallet = (process.env.NEXT_PUBLIC_ADMIN_WALLET || "").toLowerCase();
+    const isSuperAdmin = (session!.address || "").toLowerCase() === adminWallet;
+    
+    const rooms = isSuperAdmin 
+      ? allRooms 
+      : allRooms.filter(r => {
+          const createEvent = r.audit?.find(a => a.action === "ROOM_CREATED");
+          const creator = createEvent ? createEvent.actor : "";
+          return creator.toLowerCase() !== adminWallet;
+        });
+
     return NextResponse.json({ rooms });
   } catch (e: any) {
     console.error("❌ [Deals] list error:", e);

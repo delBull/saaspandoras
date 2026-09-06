@@ -120,7 +120,26 @@ const DEFAULT_SIGN = [
   "Provider: pending-esign (DocuSign / HelloSign / equivalente).",
 ].join("\n");
 
-export function defaultSections(note?: string): DealSectionInput[] {
+const DEFAULT_PROPOSAL_LEGAL = [
+  "Al interactuar con esta propuesta tecnológica, ambas partes se someten a los siguientes lineamientos profesionales:",
+  "",
+  "- **1. Confidencialidad Asegurada (NDA):** Toda la información técnica y de negocio compartida en este documento está salvaguardada por el NDA firmado criptográficamente previo al acceso de esta sala.",
+  "- **2. Validez de la Oferta:** Los tiempos, arquitecturas y posibles cotizaciones derivadas de esta propuesta tienen una validez de **30 días naturales** a partir de su publicación on-chain.",
+  "- **3. Propiedad Intelectual (IP):** MXHUB S.A.P.I de C.V. retiene la propiedad intelectual del código fundacional, *Control Plane*, y componentes operativos. El cliente retendrá el IP sobre sus datos y lógica de negocio específica.",
+  "- **4. Exclusiones (Out-of-Scope):** Esta propuesta excluye los costos operativos derivados del uso de APIs de terceros y costos elásticos de servidores en producción.",
+  "- **5. SLA y Responsabilidad:** Pandora's proporcionará el mantenimiento de la infraestructura base, pero el comportamiento específico del producto final recae sobre los parámetros configurados por el cliente."
+].join("\n");
+
+export function defaultSections(kind: DealKind, note?: string): DealSectionInput[] {
+  if (kind === "PROPOSAL") {
+    return [
+      { code: "01", title: "Resumen Ejecutivo", subtitle: "Executive Summary", content: note ?? "" },
+      { code: "02", title: "Arquitectura Propuesta", subtitle: "Proposed Architecture", content: "Detalle de la infraestructura dedicada y componentes a utilizar." },
+      { code: "03", title: "Fases y Entregables", subtitle: "Phases & Deliverables", content: "Desglose de fases del proyecto, tiempos y entregables esperados." },
+      { code: "04", title: "Términos, Condiciones y Disclaimers", subtitle: "Legal & Confidentiality", content: DEFAULT_PROPOSAL_LEGAL },
+    ];
+  }
+
   return [
     { code: "01", title: "Executive Proposal", subtitle: "Propuesta ejecutiva", content: note ?? "" },
     { code: "02", title: "Role & Responsibilities", subtitle: "Rol y responsabilidades", content: DEFAULT_ROLE },
