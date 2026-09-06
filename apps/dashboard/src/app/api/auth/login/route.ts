@@ -174,7 +174,7 @@ export async function POST(request: Request) {
 
         // 7. Simplified User & Session Creation (Reliable Mode)
         const existingUsers = await db.query.users.findMany({
-            where: (users) => sql`lower(${users.walletAddress}) = ${walletAddress}`,
+            where: (users, { ilike }) => ilike(users.walletAddress, walletAddress),
             limit: 1
         });
 
