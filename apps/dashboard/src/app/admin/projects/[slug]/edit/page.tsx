@@ -3,6 +3,8 @@ import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { MultiStepForm } from "./multi-step-form";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { AdminAccessGate } from "../../../AdminAccessGate";
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>;
@@ -12,9 +14,22 @@ interface ProjectPageProps {
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { slug } = await params;
 
+  // 1. Resolve Platform Authority Server-Side
+  const auth = await getNexusAuthContext();
+
+  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+    return (
+      <AdminAccessGate
+        reason={
+          auth.isAuthenticated
+            ? `Tu cuenta con rol '${auth.role}' no cuenta con facultades para editar proyectos.`
+            : 'Se requiere una sesión autenticada con privilegios de administrador.'
+        }
+      />
+    );
+  }
+
   try {
-    // For now, allow access and let client-side handle authentication
-    // This avoids server-side rendering issues with ThirdWeb auth
 
     let project = null;
     if (slug !== "new") {

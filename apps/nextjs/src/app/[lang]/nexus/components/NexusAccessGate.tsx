@@ -11,6 +11,8 @@ interface NexusAccessGateProps {
 const DEFAULT_ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || '';
 const API_BASE_URL = 'https://dash.pandoras.finance';
 
+export const NexusRoleContext = React.createContext<any>(null);
+
 export function NexusAccessGate({ children }: NexusAccessGateProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -18,7 +20,7 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [collaboratorInfo, setCollaboratorInfo] = useState<{ name?: string; email?: string } | null>(null);
+  const [collaboratorInfo, setCollaboratorInfo] = useState<any>(null);
 
   useEffect(() => {
     checkInitialAccess();
@@ -26,7 +28,10 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
 
   const getWalletHeaders = (): Record<string, string> => {
     if (typeof window === 'undefined') return {};
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlWallet = urlParams.get('wallet');
     const wallet =
+      urlWallet ||
       localStorage.getItem('snarai_wallet') ||
       localStorage.getItem('user_wallet') ||
       localStorage.getItem('walletAddress') ||
@@ -43,62 +48,56 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
   const checkInitialAccess = async () => {
     setIsChecking(true);
     try {
+      const checkAuthMe = async (tokenParam: string | null) => {
+        const headers = getWalletHeaders();
+        const url = `${API_BASE_URL}/api/v1/nexus/auth/me${tokenParam ? `?token=${encodeURIComponent(tokenParam)}` : ''}`;
+        const res = await fetch(url, { headers, credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.auth?.isAuthenticated) {
+            if (tokenParam) {
+              localStorage.setItem('pandoras_nexus_token', tokenParam);
+            }
+            setCollaboratorInfo({
+              name: data.auth.name || 'Sovereign Actor',
+              email: data.auth.email,
+              role: data.auth.role,
+              permissions: data.auth.permissions,
+            });
+            setIsAuthenticated(true);
+            return true;
+          }
+        }
+        return false;
+      };
+
       // 1. Check URL token (?token=nx_... or ?collaborator=nx_...)
       const urlParams = new URLSearchParams(window.location.search);
       const urlToken = urlParams.get('token') || urlParams.get('collaborator');
 
       if (urlToken) {
-        const verifyRes = await fetch(`${API_BASE_URL}/api/nexus/collaborators/verify?token=${encodeURIComponent(urlToken)}`, {
-          credentials: 'include',
-        });
-        if (verifyRes.ok) {
-          const data = await verifyRes.json();
-          if (data.ok && data.collaborator) {
-            localStorage.setItem('pandoras_nexus_token', urlToken);
-            localStorage.setItem('pandoras_nexus_user', JSON.stringify(data.collaborator));
-            setCollaboratorInfo(data.collaborator);
-            setIsAuthenticated(true);
-            // Clean URL query without reloading
-            window.history.replaceState({}, '', window.location.pathname);
-            setIsChecking(false);
-            return;
-          }
+        if (await checkAuthMe(urlToken)) {
+          window.history.replaceState({}, '', window.location.pathname);
+          setIsChecking(false);
+          return;
         }
       }
 
       // 2. Check stored token in localStorage
       const storedToken = localStorage.getItem('pandoras_nexus_token');
       if (storedToken) {
-        const verifyRes = await fetch(`${API_BASE_URL}/api/nexus/collaborators/verify?token=${encodeURIComponent(storedToken)}`, {
-          credentials: 'include',
-        });
-        if (verifyRes.ok) {
-          const data = await verifyRes.json();
-          if (data.ok && data.collaborator) {
-            setCollaboratorInfo(data.collaborator);
-            setIsAuthenticated(true);
-            setIsChecking(false);
-            return;
-          }
+        if (await checkAuthMe(storedToken)) {
+          setIsChecking(false);
+          return;
         } else {
           localStorage.removeItem('pandoras_nexus_token');
-          localStorage.removeItem('pandoras_nexus_user');
         }
       }
 
-      // 3. Check wallet admin privileges
-      const walletHeaders = getWalletHeaders();
-      if (walletHeaders['x-wallet-address']) {
-        const listRes = await fetch(`${API_BASE_URL}/api/nexus/collaborators/list`, {
-          headers: walletHeaders,
-          credentials: 'include',
-        });
-        if (listRes.ok) {
-          setIsAuthenticated(true);
-          setCollaboratorInfo({ name: 'Admin Sovereign', email: 'Founder Wallet' });
-          setIsChecking(false);
-          return;
-        }
+      // 3. Check wallet privileges (no token)
+      if (await checkAuthMe(null)) {
+        setIsChecking(false);
+        return;
       }
     } catch (err) {
       console.error('[NexusAccessGate] Auth check error:', err);
@@ -164,9 +163,11 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
 
   if (isAuthenticated) {
     return (
-      <div className="relative w-full h-full">
-        {children}
-      </div>
+      <NexusRoleContext.Provider value={{ role: collaboratorInfo?.role, permissions: collaboratorInfo?.permissions }}>
+        <div className="relative w-full h-full">
+          {children}
+        </div>
+      </NexusRoleContext.Provider>
     );
   }
 

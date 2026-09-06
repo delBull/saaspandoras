@@ -6,7 +6,7 @@
  */
 
 export interface DispatchRequest {
-  capability: 'calendar.schedule' | 'crm.update_stage' | 'payments.create_spei_link' | 'tokenization.get_holdings';
+  capability: 'calendar.schedule' | 'crm.update_stage' | 'payments.create_spei_link' | 'tokenization.get_holdings' | 'support.escalate_human';
   projectId: number;
   payload: Record<string, any>;
 }
@@ -55,6 +55,14 @@ export class CapabilityDispatcher {
           actionExecuted: 'tokenization.get_holdings',
           data: { project: 'S\'Narai', certificates: 2, votingPower: '2.5%' },
           userSummary: 'Holdings y poder de voto recuperados.'
+        };
+
+      case 'support.escalate_human':
+        return {
+          success: true,
+          actionExecuted: 'support.escalate_human',
+          data: { conversationId: payload.conversationId },
+          userSummary: 'Conversación escalada a un agente humano.'
         };
 
       default:

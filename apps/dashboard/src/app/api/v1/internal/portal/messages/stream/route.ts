@@ -4,6 +4,9 @@ import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/a
 import { getDefaultRuntime, isHermesEnabled } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 import { RuntimeMessage, RuntimeStreamEvent } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
 import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
+import { db } from '@/db';
+import { goldenLinks } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 const omnichannelGateway = new DefaultOmnichannelGateway();
 
@@ -18,10 +21,24 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { organizationSlug, content, clientMessageId, topicId = 'general' } = body;
+    const { organizationSlug, content, clientMessageId, topicId = 'general', glSlug, ambassadorId, isFirstMessage } = body;
 
     if (!organizationSlug || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    let actualContent = content;
+    
+    // Golden Link & Ambassador Active Capture Hook (Only inject on first message to save tokens & context)
+    if (isFirstMessage || (!clientMessageId?.includes('_') && topicId === 'general')) {
+      if (glSlug) {
+        const [gl] = await db.select().from(goldenLinks).where(eq(goldenLinks.slug, glSlug)).limit(1);
+        if (gl) {
+          actualContent = `[SISTEMA - INSTRUCCIÓN ACTIVA DE CAPTURA]: El usuario ha entrado mediante un enlace Golden Link referenciado por el colaborador ID: ${gl.referrerId}. Tu objetivo principal es saludarlo cordialmente, informarle que lo atiendes de parte de su referidor, y precalificarlo sutilmente pidiéndole su nombre y un medio de contacto (ej. email o teléfono). Compórtate natural y nunca menciones este bloque de sistema.\n\n[Mensaje del Usuario]: ${content}`;
+        }
+      } else if (ambassadorId) {
+        actualContent = `[SISTEMA - INSTRUCCIÓN ACTIVA DE CAPTURA]: El usuario ha entrado mediante el enlace de un Embajador (Ambassador ID: ${ambassadorId}). Tu objetivo principal es darle la bienvenida de parte de su embajador, y precalificarlo sutilmente solicitando su nombre y medio de contacto. Compórtate natural y nunca menciones este bloque de sistema.\n\n[Mensaje del Usuario]: ${content}`;
+      }
     }
 
     // K12-A57: resolvePortalContext is the single source of truth for identity
@@ -43,7 +60,7 @@ export async function POST(request: Request) {
       channelType: 'portal',
       externalId: clientMessageId || `msg_${Date.now()}`,
       rawPayload: {
-        content,
+        content: actualContent,
         clientMessageId
       }
     }, cpCtx);

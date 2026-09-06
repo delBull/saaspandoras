@@ -10,7 +10,7 @@
  */
 
 import { db } from '@/db';
-import { projects, whatsappMessages } from '@/db/schema';
+import { projects, whatsappMessages, nexusCollaborators } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { HumanHandoffProtocol } from '@/lib/hermes/human-handoff';
 import { InteractionRouter } from '@/lib/hermes/interaction-router';
@@ -169,7 +169,30 @@ export class WhatsAppDispatcher {
     const contactName = changes?.contacts?.[0]?.profile?.name || message.contactName || null;
     const phoneNumberId = changes?.metadata?.phone_number_id;
 
-    // ── 0. Cyber Security: Persistent Atomic Deduplication ────────────────
+    // ── 0.5. Cyber Security: Identity Resolution ────────────────
+    const cleanPhone = phone.replace(/\D/g, '');
+    let resolvedRole = 'USER';
+    let resolvedPermissions: string[] = [];
+    let resolvedActorId = `wa_actor_${cleanPhone}`;
+    let resolvedName = contactName || 'User';
+
+    try {
+      const collaborator = await db.query.nexusCollaborators.findFirst({
+        where: eq(nexusCollaborators.whatsappPhone, cleanPhone)
+      });
+      if (collaborator) {
+        resolvedRole = collaborator.role; // e.g. 'ADMIN' | 'OPERATOR'
+        // Type assertion since jsonb is basically any in drizzle if not mapped perfectly
+        resolvedPermissions = ((collaborator.permissions as any)?.grants || []) as string[];
+        resolvedActorId = `nexus_collab_${collaborator.id}`;
+        resolvedName = collaborator.name;
+        console.log(`[WhatsAppDispatcher] 🛡️ Identity Resolved: ${collaborator.name} (${resolvedRole})`);
+      }
+    } catch (err) {
+      console.warn('[WhatsAppDispatcher] Error resolving identity:', err);
+    }
+
+    // ── 0.6. Cyber Security: Persistent Atomic Deduplication ────────────────
     if (isMessageDuplicate(messageId)) {
       console.log(`⚡ [WhatsAppDispatcher] Duplicate Meta message ID detected in memory (${messageId}), ignoring.`);
       return { status: 'duplicate_ignored', handled: true, target: 'pandoras_acquisition' };
@@ -274,11 +297,11 @@ export class WhatsAppDispatcher {
             createdAt: new Date(),
           },
           controlPlaneContext: {
-            actorId: `wa_actor_${phone.replace(/\D/g, '')}`,
+            actorId: resolvedActorId,
             organizationId: tenant.slug,
-            role: 'ADMIN',
-            permissions: ['view_overview', 'view_governance'],
-            sessionId: `wa_sess_${tenant.slug}_${phone.replace(/\D/g, '')}`,
+            role: resolvedRole as any,
+            permissions: resolvedPermissions,
+            sessionId: `wa_sess_${tenant.slug}_${cleanPhone}`,
           }
         });
 
@@ -357,11 +380,11 @@ export class WhatsAppDispatcher {
             createdAt: new Date(),
           },
           controlPlaneContext: {
-            actorId: `wa_actor_${phone.replace(/\D/g, '')}`,
+            actorId: resolvedActorId,
             organizationId: 'pandoras',
-            role: 'ADMIN',
-            permissions: ['view_overview'],
-            sessionId: `wa_sess_pandoras_${phone.replace(/\D/g, '')}`,
+            role: resolvedRole as any,
+            permissions: resolvedPermissions,
+            sessionId: `wa_sess_pandoras_${cleanPhone}`,
           }
         });
 

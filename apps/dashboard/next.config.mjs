@@ -14,8 +14,6 @@ const nextConfig = {
     memoryBasedWorkersCount: true,
     // Enable webpack build worker to prevent main thread memory leaks
     webpackBuildWorker: true,
-    // Enable instrumentation.ts hook (ECONNRESET + ws unmask suppressors)
-    instrumentationHook: true,
   },
   images: {
     remotePatterns: [

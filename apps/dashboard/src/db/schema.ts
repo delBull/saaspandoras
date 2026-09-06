@@ -13,7 +13,8 @@ import {
   index,
   uuid,
   bigint,
-  doublePrecision
+  doublePrecision,
+  primaryKey
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -3604,6 +3605,7 @@ export const hermesConversations = pgTable("hermes_conversations", {
   conversationId: varchar("conversation_id", { length: 256 }).notNull(),
   status: varchar("status", { length: 50 }).notNull().default('ACTIVE'), // 'ACTIVE' | 'PAUSED_HUMAN' | 'RESOLVED'
   escalationReason: varchar("escalation_reason", { length: 100 }), // 'FRUSTRATION' | 'USER_REQUEST' | 'POLICY_VIOLATION' | 'KNOWLEDGE_GAP' | 'MANUAL'
+  assignedCollaboratorId: integer("assigned_collaborator_id").references(() => nexusCollaborators.id, { onDelete: 'set null' }),
   escalatedAt: timestamp("escalated_at"),
   version: integer("version").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -3977,12 +3979,22 @@ export const nexusCollaborators = pgTable("nexus_collaborators", {
   token: varchar("token", { length: 128 }).notNull().unique(),
   role: varchar("role", { length: 32 }).default("COLLABORATOR").notNull(),
   permissions: jsonb("permissions").$type<NexusPermissionsOverride>().default({}),
+  discordUserId: varchar("discord_user_id", { length: 255 }),
+  whatsappPhone: varchar("whatsapp_phone", { length: 50 }),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   lastAccessAt: timestamp("last_access_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   emailIdx: uniqueIndex("nexus_collaborators_email_unique").on(t.email),
   tokenIdx: uniqueIndex("nexus_collaborators_token_unique").on(t.token),
+}));
+
+export const projectCollaborators = pgTable("project_collaborators", {
+  projectId: varchar("project_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  collaboratorId: integer("collaborator_id").notNull().references(() => nexusCollaborators.id, { onDelete: 'cascade' }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.projectId, t.collaboratorId] }),
 }));
 
 // ── HERMES RUNPOD SERVERLESS & TENANT CREDIT LEDGER ──────────────────────────

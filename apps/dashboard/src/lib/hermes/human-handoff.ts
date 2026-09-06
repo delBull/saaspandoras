@@ -1,7 +1,7 @@
 import { Redis } from 'ioredis';
 import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { projects, hermesConversations } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
 
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 1 }) : null;
@@ -87,20 +87,35 @@ export class HumanHandoffProtocol {
     let tenantTitle = `Project #${projectId}`;
     let alertConfig: HandoffAlertChannelConfig = { preferredChannel: 'discord' };
     let botToken = '';
+    let projectSlug = '';
 
     try {
       const [project] = await db.select({
         title: projects.title,
+        slug: projects.slug,
         tenantRuntimeConfig: projects.tenantRuntimeConfig,
       }).from(projects).where(eq(projects.id, projectId)).limit(1);
 
       if (project) {
         tenantTitle = project.title;
+        projectSlug = project.slug;
         const config = (project.tenantRuntimeConfig as any) || {};
         if (config.handoffAlertConfig) {
           alertConfig = config.handoffAlertConfig;
         }
         botToken = config.secrets?.telegramBotToken || '';
+        
+        // Update database conversation status to PAUSED_HUMAN
+        if (projectSlug) {
+           await db.update(hermesConversations)
+             .set({ status: 'PAUSED_HUMAN', escalationReason: 'MANUAL', escalatedAt: new Date() })
+             .where(
+               and(
+                 eq(hermesConversations.organizationId, projectSlug),
+                 eq(hermesConversations.conversationId, chatId)
+               )
+             );
+        }
       }
     } catch (dbErr) {
       console.warn('[HumanHandoff] DB fetch tenant config error:', dbErr);
