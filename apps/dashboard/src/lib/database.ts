@@ -13,7 +13,15 @@ const globalForNeon = globalThis as unknown as {
 };
 
 // Use the highly resilient stateless HTTP driver for Vercel
-const neonClient = neon(DATABASE_URL);
+// Safely bypass neon initialization during build if URL is missing to prevent crash
+const neonClient = DATABASE_URL 
+  ? neon(DATABASE_URL) 
+  : (() => {
+      // Return a dummy function that throws only if actually called at runtime
+      const dummy = async () => { throw new Error("DATABASE_URL is not set"); };
+      dummy.transaction = async () => { throw new Error("DATABASE_URL is not set"); };
+      return dummy as any;
+    })();
 
 // Type alias to satisfy typescript for legacy postgres-js calls
 export type LegacySql = ((strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>) & ReturnType<typeof neon>;
