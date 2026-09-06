@@ -1,15 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Shield, Lock, Mail, ArrowRight, Wallet, CheckCircle2, AlertCircle } from "lucide-react";
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useRouter } from "next/navigation";
 
 export function NexusLoginGate() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  
+  const { user, status } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // If the user has authenticated successfully, refresh the page to allow the server component to read the cookie
+    if (user && (status === "has_access" || status === "authenticated")) {
+      router.refresh();
+    }
+  }, [user, status, router]);
 
   const handleRequestMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();

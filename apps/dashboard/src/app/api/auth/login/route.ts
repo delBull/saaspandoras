@@ -4,7 +4,7 @@ import { verifySignature } from "thirdweb/auth";
 import { client } from "@/lib/thirdweb-client";
 import { db } from "@/db";
 import { authChallenges, users, sessions, securityEvents } from "@/db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { getContract, readContract } from "thirdweb";
@@ -69,6 +69,8 @@ export async function POST(request: Request) {
             "staging.dash.pandoras.finance",
             "app.pandoras.org",
             "app.pandoras.finance",
+            "nexus.pandoras.finance",
+            "admin.pandoras.finance",
             hostHeader
         ].filter(Boolean);
 
@@ -84,6 +86,8 @@ export async function POST(request: Request) {
             "https://dash.pandoras.finance",
             "https://staging.dash.pandoras.finance",
             "https://app.pandoras.org",
+            "https://nexus.pandoras.finance",
+            "https://admin.pandoras.finance",
             originHeader
         ].filter(Boolean);
 
@@ -170,7 +174,7 @@ export async function POST(request: Request) {
 
         // 7. Simplified User & Session Creation (Reliable Mode)
         const existingUsers = await db.query.users.findMany({
-            where: (users, { eq }) => eq(users.walletAddress, walletAddress),
+            where: (users) => sql`lower(${users.walletAddress}) = ${walletAddress}`,
             limit: 1
         });
 

@@ -354,7 +354,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 credentials: "include",
             });
 
-            if (!loginRes.ok) throw new Error("Login verification failed");
+            if (!loginRes.ok) {
+                const errData = await loginRes.json().catch(() => null);
+                throw new Error(errData?.details || errData?.error || "Login verification failed");
+            }
             toast({ title: "Welcome!", description: "Identity verified successfully." });
         } catch (e: any) {
             console.error("[AuthMachine] Login error object:", e);
