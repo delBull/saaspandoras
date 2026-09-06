@@ -276,7 +276,15 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {applications.map((app) => {
+                {applications
+                  .filter(app => {
+                    // Deal Room and Books Vault should be completely invisible for non-super-admins
+                    if ((app.id === "deal_room" || app.id === "books_vault") && !isSuperAdmin) {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map((app) => {
                   const Icon = app.icon;
                   const isAllowed = app.allowed;
 
@@ -402,7 +410,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       </div>
 
       {/* ── PESTAÑA LATERAL (TOGGLE TAB) ── */}
-      {isSuperAdmin && (
         <div 
           className={`absolute top-0 bottom-0 z-50 flex flex-col justify-center transition-all duration-700 cubic-bezier(0.87, 0, 0.13, 1) ${
             showLegacyConsole ? "left-0" : "right-0"
@@ -422,10 +429,8 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
             </div>
           </button>
         </div>
-      )}
 
       {/* ── LEGACY CONSOLE (RIGHT PANEL) ── */}
-      {isSuperAdmin && (
         <div 
           className={`absolute inset-0 transition-transform duration-700 cubic-bezier(0.87, 0, 0.13, 1) ${
             showLegacyConsole ? "translate-x-0" : "translate-x-full"
@@ -435,7 +440,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
             <DealRoomConsole />
           </div>
         </div>
-      )}
 
     </div>
   );
