@@ -28,7 +28,6 @@ import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import { HermesFloatingGuide } from "@/components/guides/HermesFloatingGuide";
 import type { EcosystemTourRole } from "@/lib/guides/ecosystem-guides.data";
 
-import DealRoomConsole from "./rooms/DealRoomConsole";
 
 interface NexusCommandCenterProps {
   auth: NexusAuthContext;
@@ -437,7 +436,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
           }`}
         >
           <div className="pl-8 h-full w-full bg-[#08080A]">
-            <DealRoomConsole />
+            <iframe src="https://pandoras.finance/en/nexus" className="w-full h-full border-none" />
           </div>
         </div>
 

@@ -12,6 +12,10 @@
  */
 
 import React, { useState, useTransition } from 'react';
+import { toast } from 'sonner';
+import { MultiStepForm } from '@/app/admin/projects/[slug]/edit/multi-step-form';
+import { TokenomicsBotsTab } from '@/app/()/profile/projects/[slug]/manage/tabs/TokenomicsBotsTab';
+import { LegalTab } from '@/components/projects/LegalTab';
 import { 
   ShieldCheck, 
   CheckCircle2, 
@@ -132,15 +136,65 @@ function DealActionRow({
   onStatusChanged: (dealId: string, newStatus: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [gateAction, setGateAction] = useState<{ label: string; status: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { inspect } = usePlatformInspector();
+
+  const openLegacyDrawer = async (actionType: 'EDIT' | 'PHASES' | 'LEGAL') => {
+    try {
+      startTransition(async () => {
+        try {
+          const res = await fetch(`/api/admin/projects/${deal.id}`);
+          if (!res.ok) throw new Error('Error al cargar proyecto completo');
+          const data = await res.json();
+          const fullProject = data.data || data; 
+
+          let component = null;
+          let drawerSize: 'normal' | 'large' | 'full' = 'large';
+          
+          if (actionType === 'EDIT') {
+            drawerSize = 'full';
+            component = (
+              <div className="bg-[#050505] -mx-6 -mt-6 p-6 min-h-[100vh]">
+                <MultiStepForm project={fullProject} isEdit={true} apiEndpoint={`/api/admin/projects/${deal.id}`} isPublic={false} />
+              </div>
+            );
+          } else if (actionType === 'PHASES') {
+            drawerSize = 'full';
+            component = (
+              <div className="bg-[#050505] -mx-6 -mt-6 p-6 min-h-[100vh]">
+                <TokenomicsBotsTab project={fullProject} />
+              </div>
+            );
+          } else if (actionType === 'LEGAL') {
+            drawerSize = 'full';
+            component = (
+              <div className="bg-[#050505] -mx-6 -mt-6 p-6 min-h-[100vh]">
+                <LegalTab project={fullProject} />
+              </div>
+            );
+          }
+          inspect({
+            type: 'RWA_DEAL',
+            title: `${deal.title} - ${actionType === 'EDIT' ? 'Editar' : actionType === 'PHASES' ? 'Fases' : 'Bóveda Legal'}`,
+            badge: deal.stage,
+            badgeColor: 'violet',
+            drawerSize,
+            customComponent: component
+          });
+        } catch (e: any) {
+          setError(e.message);
+        }
+      });
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
 
   const isSuperAdmin = actor?.role === 'SUPER_ADMIN';
   const isPlatformAdmin = actor?.role === 'SUPER_ADMIN' || actor?.role === 'ADMIN';
   const has2FA = actor?.isDiscord2faVerified ?? false;
-
   // Project numeric ID extracted from deal (deals carry originatingTenantId slug)
   // We use the inspector's actionHref pattern to get the slug for the manage page
   const projectSlug = deal.slug || deal.originatingTenantId;
@@ -278,34 +332,31 @@ function DealActionRow({
               )}
 
               <div className="flex flex-wrap gap-2">
-                {/* Always available: Legacy Options */}
-                <a
-                  href={manageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all"
+                {/* Always available: Legacy Options mapped to Drawer */}
+                <button
+                  onClick={() => openLegacyDrawer('EDIT')}
+                  disabled={isPending}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all disabled:opacity-50"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   Editar Proyecto
-                </a>
-                <a
-                  href={`${manageUrl.replace('/edit', '/phases')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all"
+                </button>
+                <button
+                  onClick={() => openLegacyDrawer('PHASES')}
+                  disabled={isPending}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all disabled:opacity-50"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Fases & Supply
-                </a>
-                <a
-                  href={`${manageUrl.replace('/edit', '/documents')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all"
+                </button>
+                <button
+                  onClick={() => openLegacyDrawer('LEGAL')}
+                  disabled={isPending}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] font-medium border border-white/[0.08] transition-all disabled:opacity-50"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Bóveda Legal
-                </a>
+                </button>
 
                 {/* PLATFORM_ADMIN+: Avanzar a Screening */}
                 {isPlatformAdmin && deal.stage === 'APPLIED' && (
