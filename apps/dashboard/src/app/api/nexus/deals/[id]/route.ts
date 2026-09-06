@@ -31,6 +31,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
+    // ENFORCE CREATOR ONLY CAN EDIT
+    const createEvent = room.audit?.find(a => a.action === "ROOM_CREATED");
+    const creator = createEvent ? createEvent.actor : "";
+    if (creator && creator.toLowerCase() !== actor.toLowerCase()) {
+      return NextResponse.json({ error: "Solo el creador original puede editar esta sala." }, { status: 403 });
+    }
+
     const body = await request.json();
     let updated = room;
 
@@ -105,6 +112,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
+
+    // ENFORCE CREATOR ONLY CAN DELETE
+    const createEvent = room.audit?.find(a => a.action === "ROOM_CREATED");
+    const creator = createEvent ? createEvent.actor : "";
+    if (creator && creator.toLowerCase() !== actor.toLowerCase()) {
+      return NextResponse.json({ error: "Solo el creador original puede eliminar esta sala." }, { status: 403 });
+    }
+
     await deleteRoom((await params).id, actor);
     await sendDealRoomAlert({
       roomLabel: `${room.publicId} · ${room.counterparty}`,

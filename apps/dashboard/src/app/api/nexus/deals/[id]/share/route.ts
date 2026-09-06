@@ -17,6 +17,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
+    const actor = session!.address;
+
+    // ENFORCE CREATOR ONLY CAN SHARE
+    const createEvent = room.audit?.find(a => a.action === "ROOM_CREATED");
+    const creator = createEvent ? createEvent.actor : "";
+    if (creator && creator.toLowerCase() !== actor.toLowerCase()) {
+      return NextResponse.json({ error: "Solo el creador original puede invitar a firmantes." }, { status: 403 });
+    }
 
     const body = await request.json();
     const emails: string[] = Array.isArray(body.emails)
