@@ -33,7 +33,7 @@ export function middleware(request: NextRequest) {
   }
 
   // 0.1 Sovereign Sign Subdomain Routing (e.g. sign.pandoras.finance / firmas.pandoras.finance)
-  const host = request.headers.get("host") || "";
+  const host = request.headers.get('x-forwarded-host') || request.headers.get("host") || "";
   const isSignSubdomain = host.startsWith("sign.") || host.startsWith("firmas.");
 
   if (isSignSubdomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {

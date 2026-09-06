@@ -13,7 +13,7 @@ interface PageProps {
 export default async function RootDashboardPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
   const headerList = await headers();
-  const host = headerList.get('host') || '';
+  const host = headerList.get('x-forwarded-host') || headerList.get('host') || '';
 
   // If accessed via app.pandoras.finance or explicit consumer view query param
   if (host.startsWith('app.') || params.view === 'consumer') {
