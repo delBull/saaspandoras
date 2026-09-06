@@ -99,7 +99,7 @@ export function DashboardClientWrapper({
   // Determinar si debemos ocultar el sidebar (Narrativa Genesis en Root o Gestión de Negocio Soberano)
   const isRoot = pathname === '/';
   const isBusinessManageRoute = pathname?.startsWith('/profile/projects/') && pathname?.includes('/manage');
-  const hideSidebar = (isRoot && !hasAccess) || isBusinessManageRoute;
+  const hideSidebar = isBusinessManageRoute;
 
   // Dedicated sovereign business console bypasses DashboardShell entirely for true edge-to-edge layout
   // Se maneja abajo para evitar retornos tempranos que rompan los hooks

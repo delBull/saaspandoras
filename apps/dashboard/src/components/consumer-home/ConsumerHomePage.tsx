@@ -261,7 +261,10 @@ export function ConsumerHomePage() {
     const controller = new AbortController();
 
     const load = async () => {
-      if (!canBootstrap) return;
+      if (!canBootstrap) {
+        setHomeData(prev => ({ ...prev, featuredProjects: FALLBACK_PROJECTS, loading: false }));
+        return;
+      }
       try {
         const res = await fetch(`/api/bootstrap?wallet=${user.address}`, {
           signal: controller.signal
