@@ -93,15 +93,8 @@ export function DashboardClientWrapper({
     setUserName(null);
   }, [account?.address]);
 
-  // 🔴 PANTALLA COMPLETA DE LOADING - Oculta el dashboard hasta que auth esté resuelto
-  if ((isLoadingUserData && account?.address) || (isAuthResolving && account?.address)) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center space-y-4">
-        <div className="w-10 h-10 border-2 border-lime-500/20 border-t-lime-400 animate-spin rounded-full" />
-        <p className="text-[10px] tracking-[0.5em] text-zinc-600 uppercase animate-pulse">Sincronizando Protocolo...</p>
-      </div>
-    );
-  }
+  // 🔴 ESTADO DE LOADING (Se aplicará como overlay o clase CSS para no desmontar el árbol y evitar Error 310)
+  const isShowLoading = (isLoadingUserData && account?.address) || (isAuthResolving && account?.address);
 
   // Determinar si debemos ocultar el sidebar (Narrativa Genesis en Root o Gestión de Negocio Soberano)
   const isRoot = pathname === '/';
@@ -109,22 +102,26 @@ export function DashboardClientWrapper({
   const hideSidebar = (isRoot && !hasAccess) || isBusinessManageRoute;
 
   // Dedicated sovereign business console bypasses DashboardShell entirely for true edge-to-edge layout
-  if (isBusinessManageRoute) {
-    return (
-      <TokenPriceProvider>
-        <TermsModalProvider>
-          {children}
-        </TermsModalProvider>
-      </TokenPriceProvider>
-    );
-  }
+  // Se maneja abajo para evitar retornos tempranos que rompan los hooks
 
   return (
-    <TokenPriceProvider>
-      <TermsModalProvider>
-        <TourEngine>
+    <>
+      {isShowLoading && (
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center space-y-4">
+          <div className="w-10 h-10 border-2 border-lime-500/20 border-t-lime-400 animate-spin rounded-full" />
+          <p className="text-[10px] tracking-[0.5em] text-zinc-600 uppercase animate-pulse">Sincronizando Protocolo...</p>
+        </div>
+      )}
 
-          <AutoLoginGate serverSession={serverSession}>
+      <div className={isShowLoading ? "opacity-0 pointer-events-none fixed inset-0" : "opacity-100 h-full w-full"}>
+        <TokenPriceProvider>
+          <TermsModalProvider>
+            {isBusinessManageRoute ? (
+              // Dedicated sovereign business console bypasses DashboardShell entirely
+              children
+            ) : (
+              <TourEngine>
+                <AutoLoginGate serverSession={serverSession}>
             <DashboardShell
               wallet={account?.address}
               userName={userName ?? undefined}
@@ -188,17 +185,20 @@ export function DashboardClientWrapper({
             </DashboardShell>
           </AutoLoginGate>
 
-          {/* Mobile Navigation Menu - Fijo al bottom pero solo si no está cargando */}
-          {!isLoadingUserData && <MobileNavMenu profile={profile} />}
+            {/* Mobile Navigation Menu - Fijo al bottom pero solo si no está cargando */}
+            {!isLoadingUserData && <MobileNavMenu profile={profile} />}
 
-          <TermsModalRenderer />
-          <GamificationListener />
+            <TermsModalRenderer />
+            <GamificationListener />
 
-          {/* 🎮 Reward Modal - Mock implementation */}
-          <RewardModalManager />
-        </TourEngine>
-      </TermsModalProvider>
-    </TokenPriceProvider>
+            {/* 🎮 Reward Modal - Mock implementation */}
+            <RewardModalManager />
+          </TourEngine>
+          )}
+        </TermsModalProvider>
+      </TokenPriceProvider>
+    </div>
+    </>
   );
 }
 

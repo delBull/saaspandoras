@@ -52,7 +52,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .update(users)
       .set({
         role: role as UserRole,
-        capabilities: capabilities as Record<string, boolean>,
       })
       .where(eq(users.id, targetUserId));
 

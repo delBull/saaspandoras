@@ -58,7 +58,7 @@ export default async function UsersPage() {
     lastConnectionAt: new Date().toISOString(),
     createdAt: u.createdAt ? u.createdAt.toISOString() : new Date().toISOString(),
     role: (u.role || 'user') as UserRole,
-    capabilities: (u.capabilities as Record<string, boolean>) || {},
+    capabilities: {},
     projectCount: 0,
     kycLevel: (u.kycLevel || 'N/A') as 'basic' | 'N/A',
     kycCompleted: u.kycCompleted || false,

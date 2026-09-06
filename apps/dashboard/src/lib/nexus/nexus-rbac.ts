@@ -171,7 +171,7 @@ export async function getNexusAuthContext(
           name: user.name,
           permissions: resolveEffectivePermissions(
             user.role.toUpperCase() as NexusRole, 
-            (user.capabilities as NexusPermissionsOverride) || {}
+            {}
           ),
         };
       }
