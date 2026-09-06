@@ -66,22 +66,20 @@ export default async function UsersPage() {
   }));
 
   return (
-    <PlatformAdminShell actor={actor} activeSection="identity">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Directorio Global de Usuarios</h2>
-            <p className="text-xs text-zinc-400 mt-1">
-              Registro canónico de identidades, billeteras y estado KYC en Pandora's.
-            </p>
-          </div>
-          <span className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-xs font-semibold">
-            {usersList.length} Registros Activos
-          </span>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Directorio Global de Usuarios</h2>
+          <p className="text-xs text-zinc-400 mt-1">
+            Registro canónico de identidades, billeteras y estado KYC en Pandora's.
+          </p>
         </div>
-        
-        <UsersTable users={usersList} currentActor={actor} />
+        <span className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-xs font-semibold">
+          {usersList.length} Registros Activos
+        </span>
       </div>
-    </PlatformAdminShell>
+      
+      <UsersTable users={usersList} currentActor={actor} />
+    </div>
   );
 }

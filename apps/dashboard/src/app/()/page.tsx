@@ -49,8 +49,25 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   // Check onboarding stage
   const stage = await getTenantOnboardingStage(context, resolvedSlug);
   
-  // Si no ha terminado el onboarding, lo mandamos allá
-  if (stage && stage !== 'completed') {
+  // Check if user is an admin to skip onboarding
+  let userIsAdmin = false;
+  try {
+    const { getAuth, isAdmin } = await import('@/lib/auth');
+    const hdrs = await headers();
+    const auth = await getAuth(hdrs);
+    const callerWallet = auth.session?.address?.toLowerCase() ||
+        hdrs.get('x-wallet-address')?.toLowerCase() ||
+        hdrs.get('x-thirdweb-address')?.toLowerCase();
+    
+    if (callerWallet) {
+      userIsAdmin = await isAdmin(callerWallet);
+    }
+  } catch (err) {
+    console.warn('[RootDashboardPage] Admin check failed:', err);
+  }
+
+  // Si no ha terminado el onboarding, y no es admin, lo mandamos allá
+  if (stage && stage !== 'completed' && !userIsAdmin) {
     redirect('/onboarding');
   }
 

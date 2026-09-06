@@ -54,7 +54,10 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
   const router = useRouter();
 
   // If activeSection isn't passed accurately, we deduce it from the URL
-  const currentTab = searchParams.get('tab') || (pathname === '/admin' ? 'overview' : pathname.split('/').pop());
+  const currentTab = searchParams.get('tab') || (pathname === '/admin' ? 'overview' : pathname.split('/').pop() || 'overview');
+  
+  // Use currentTab as activeSection if activeSection is the default 'overview' but currentTab is different
+  const effectiveSection = (activeSection === 'overview' && currentTab !== 'overview') ? currentTab : activeSection;
 
   // ── RBAC visibility helper ──────────────────────────────────────────────────
   // Each nav item declares the roles that can see it. Items are filtered at
@@ -346,13 +349,15 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
               <span className="text-xs font-mono text-zinc-500">PLATFORM GOVERNANCE</span>
               <span className="text-zinc-600">/</span>
               <h1 className="text-sm font-semibold text-white truncate">
-                {activeSection === 'overview' && 'HQ Global Overview'}
-                {activeSection === 'billing' && 'Hermes GPU Compute & Internal Billing'}
-                {activeSection === 'tenants' && 'Directorio Maestro de Tenants'}
-                {activeSection === 'rwa' && 'Pipeline RWA & Capital Structuring'}
-                {activeSection === 'crm' && 'HQ Deal Room (B2B CRM)'}
-                {activeSection === 'security' && 'Seguridad & Bóveda Soberana K25'}
-                {activeSection === 'operations' && 'Operaciones & Serverless Fleet'}
+                {effectiveSection === 'overview' && 'HQ Global Overview'}
+                {effectiveSection === 'billing' && 'Hermes GPU Compute & Internal Billing'}
+                {effectiveSection === 'tenants' && 'Directorio Maestro de Tenants'}
+                {effectiveSection === 'rwa' && 'Pipeline RWA & Capital Structuring'}
+                {effectiveSection === 'crm' && 'HQ Deal Room (B2B CRM)'}
+                {effectiveSection === 'security' && 'Seguridad & Bóveda Soberana K25'}
+                {effectiveSection === 'operations' && 'Operaciones & Serverless Fleet'}
+                {(effectiveSection === 'identity' || effectiveSection === 'users') && 'Directorio de Usuarios'}
+                {effectiveSection === 'hermes' && 'Hermes OS Admin'}
               </h1>
             </div>
 
