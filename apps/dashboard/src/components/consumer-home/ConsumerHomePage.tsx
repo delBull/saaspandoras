@@ -294,7 +294,7 @@ export function ConsumerHomePage() {
     load();
 
     return () => controller.abort();
-  }, [status, user?.address, isAdmin, isAuthenticated, hasAccess, canBootstrap]);
+  }, [status, user?.address, isAdmin, isAuthenticated, hasAccess]);
 
   return (
     <div className="min-h-screen bg-black text-white">

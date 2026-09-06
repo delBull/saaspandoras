@@ -178,7 +178,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
     { name: "Hermes HITL Inbox", href: "/growth-os/hermes/inbox", note: "Human-in-the-Loop Command Center" },
     { name: "Tokenomics & Capital RWA", href: "/profile/projects", note: "Phases & Safe Treasury" },
     { name: "Onboarding Unificado", href: "/onboarding", note: "Tenant Provisioning Wizard" },
-    { name: "Nexus Knowledge Base", href: "https://nexus.pandoras.finance", note: "SOPs & Guías Oficiales" },
     { name: "Retail End-User Portal", href: "https://app.pandoras.finance", note: "B2C Consumer Frontend" },
   ];
 
@@ -269,12 +268,9 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
                   <ShieldCheck className="w-5 h-5 text-amber-400" />
                   Plataformas &amp; Aplicaciones Internas
                 </h2>
-                <span className="text-xs text-zinc-500 font-mono">
-                  Permisos resueltos dinámicamente
-                </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="flex flex-wrap justify-center gap-5">
                 {applications
                   .filter(app => {
                     // Deal Room and Books Vault should be completely invisible for non-super-admins
@@ -290,7 +286,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
                   return (
                     <div
                       key={app.id}
-                      className={`relative rounded-2xl border p-6 flex flex-col justify-between transition-all group ${
+                      className={`relative w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1rem)] max-w-md rounded-2xl border p-6 flex flex-col justify-between transition-all group ${
                         isAllowed
                           ? "bg-zinc-900/40 border-white/10 hover:border-amber-500/40 hover:bg-zinc-900/70 shadow-lg hover:shadow-amber-500/5"
                           : "bg-zinc-950/40 border-white/5 opacity-60 hover:opacity-75"
@@ -376,12 +372,12 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
                 Acceso Rápido a Ecosistemas &amp; Portales
               </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex flex-wrap justify-center gap-4">
                 {quickLinks.map((ql) => (
                   <Link
                     key={ql.name}
                     href={ql.href}
-                    className="p-4 rounded-2xl bg-zinc-900/30 border border-white/5 hover:border-indigo-500/30 hover:bg-zinc-900/60 transition-all group flex flex-col justify-between"
+                    className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1rem)] p-4 rounded-2xl bg-zinc-900/30 border border-white/5 hover:border-indigo-500/30 hover:bg-zinc-900/60 transition-all group flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-center justify-between text-zinc-400 group-hover:text-indigo-400 mb-2">
@@ -422,7 +418,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
           >
             <div className="flex flex-col items-center gap-4">
               <span className="text-[10px] text-zinc-400 font-mono tracking-[0.2em] group-hover:text-amber-400 transition-colors" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-                {showLegacyConsole ? "VOLVER AL COMMAND CENTER" : "LEGACY NEXUS CONSOLE"}
+                {showLegacyConsole ? "VOLVER AL COMMAND CENTER" : "NEXUS CONSOLE"}
               </span>
               {showLegacyConsole ? <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-amber-400" /> : <Layers className="w-4 h-4 text-zinc-400 group-hover:text-amber-400" />}
             </div>
@@ -436,7 +432,10 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
           }`}
         >
           <div className="pl-8 h-full w-full bg-[#08080A]">
-            <iframe src="https://pandoras.finance/en/nexus" className="w-full h-full border-none" />
+            <iframe 
+              src={`https://pandoras.finance/en/nexus${auth.wallet ? `?wallet=${auth.wallet}` : ''}`} 
+              className="w-full h-full border-none" 
+            />
           </div>
         </div>
 

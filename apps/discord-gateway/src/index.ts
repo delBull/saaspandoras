@@ -28,8 +28,73 @@ client.on('messageCreate', async (message: Message) => {
   const isMentioned = client.user && message.mentions.has(client.user.id);
   const isDirectMessage = message.channel.isDMBased();
   const isReplyToHermes = message.reference && message.mentions.repliedUser?.id === client.user?.id;
+  const isThread = message.channel.isThread();
 
-  // Only respond if directly addressed
+  // Zero-Trust Linking Flow
+  if (message.content.trim() === '!link-wallet') {
+    const link = `https://admin.pandoras.finance/admin/discord-verify?discord_id=${message.author.id}`;
+    await message.author.send(`¡Hola! Haz clic en el siguiente enlace para verificar tu Smart Wallet y vincular tu cuenta de Discord a los privilegios de operador en Pandoras Growth OS:\n\n${link}`);
+    if (!isDirectMessage) {
+      await message.reply("Te he enviado un mensaje privado con el enlace de vinculación.");
+    }
+    return;
+  }
+
+  // HITL Operator Reply Flow
+  // If the message is in a thread and doesn't mention Hermes directly, treat it as a human reply to the user.
+  if (isThread && !isMentioned && (!message.content.startsWith('!') || message.content.trim() === '!resolver')) {
+    try {
+      // Fetch the starter message to extract Conversation ID
+      const thread = message.channel;
+      let conversationId = null;
+      if (thread.isThread()) {
+        const starterMessage = await thread.fetchStarterMessage();
+        if (starterMessage) {
+          // Look for something like "Conversation ID: conv_12345" or similar in the embed or text
+          const textToSearch = starterMessage.content + (starterMessage.embeds[0]?.description || '');
+          const match = textToSearch.match(/Conversation ID:\s*([a-zA-Z0-9_-]+)/i);
+          if (match && match[1]) {
+            conversationId = match[1];
+          }
+        }
+      }
+
+      if (!conversationId) {
+        await message.react('❓');
+        await message.author.send(`No pude extraer el 'Conversation ID' del mensaje original de este hilo. Asegúrate de que el webhook incluya 'Conversation ID: [id]'.`);
+        return;
+      }
+
+      // Send to the HITL endpoint
+      const releaseTakeover = message.content.trim() === '!resolver';
+      const actualMessage = releaseTakeover ? "Conversación marcada como resuelta. Hermes retoma el control." : message.content;
+
+      const hitlResponse = await axios.post('http://localhost:3000/api/v1/internal/discord/hitl-reply', {
+        discordUserId: message.author.id,
+        message: actualMessage,
+        channelId: message.channel.id,
+        conversationId,
+        releaseTakeover
+      }, {
+        headers: { 'x-internal-secret': INTERNAL_SECRET, 'Content-Type': 'application/json' }
+      });
+      
+      if (hitlResponse.data.ok || hitlResponse.data.success) {
+        await message.react('✅');
+      } else {
+        await message.react('❌');
+        await message.reply(`Error de enrutamiento: ${hitlResponse.data.error || 'Desconocido'}`);
+      }
+    } catch (e: any) {
+      await message.react('❌');
+      const errReason = e.response?.data?.error || e.message;
+      await message.author.send(`Tu mensaje en el hilo no pudo ser enviado al usuario porque no tienes permisos en el Tenant (Zero-Trust Validation Failed) o hubo un error: ${errReason}`);
+      await message.delete();
+    }
+    return;
+  }
+
+  // Only respond to Hermes Agent commands if directly addressed
   if (!isMentioned && !isDirectMessage && !isReplyToHermes) return;
 
   // Clean the message content by removing the bot mention string if present

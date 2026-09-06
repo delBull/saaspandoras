@@ -1,0 +1,1 @@
+ALTER TABLE "nexus_collaborators" ADD COLUMN "whatsapp_phone" varchar(50);

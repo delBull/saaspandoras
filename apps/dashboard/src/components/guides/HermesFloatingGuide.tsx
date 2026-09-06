@@ -302,16 +302,18 @@ export function HermesFloatingGuide({
           {/* Footer Navigation Bar */}
           <div className="p-4 sm:px-6 bg-[#0B0B10] border-t border-white/10 flex items-center justify-between gap-3">
             {/* Direct Link to Station */}
-            <a
-              href={currentStation.targetUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white transition-all shadow-sm"
-              title="Abre la estación en una pestaña secundaria sin perder el recorrido"
-            >
-              <span>Explorar esta estación</span>
-              <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
-            </a>
+            {currentStation.targetUrl && (
+              <a
+                href={currentStation.targetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white transition-all shadow-sm"
+                title="Abre la estación en una pestaña secundaria sin perder el recorrido"
+              >
+                <span>Explorar esta estación</span>
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+              </a>
+            )}
 
             {/* Stepper Buttons */}
             <div className="flex items-center gap-2">

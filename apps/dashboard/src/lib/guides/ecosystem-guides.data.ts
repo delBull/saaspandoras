@@ -38,7 +38,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     category: 'GOVERNANCE',
     badgeColor: 'blue',
     iconName: 'ShieldCheck',
-    targetUrl: '/nexus',
+    targetUrl: '', // Se deja vacío para no abrir una pestaña redundante si ya se está en /nexus
     allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'VIEWER'],
     hermesGreeting: 'El fundamento de nuestra seguridad: tu identidad criptográfica.',
     hermesNarrative:
@@ -67,7 +67,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     category: 'LEGAL',
     badgeColor: 'amber',
     iconName: 'Handshake',
-    targetUrl: '/nexus/rooms',
+    targetUrl: '/nexus', // Integrado en la Consola Nexus Legacy
     allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'],
     hermesGreeting: 'Saludos. Te encuentras en la antesala de acuerdos de alta fidelidad.',
     hermesNarrative:
@@ -105,29 +105,29 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     iconName: 'Briefcase',
     targetUrl: '/growth-os',
     allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'VIEWER'],
-    hermesGreeting: 'Bienvenido al motor de tracción comercial omnicanal.',
+    hermesGreeting: 'Bienvenido al motor de tracción comercial omnicanal y de colaboración de soporte.',
     hermesNarrative:
-      'Growth OS centraliza el pipeline comercial y de atracción de inversores de todo el ecosistema. Conecta canales inbound como WhatsApp Business (vía Meta Cloud API), SignalWire, formularios web y landing pages. Yo, Hermes, analizo las conversaciones en tiempo real, califico los prospectos según su perfil de interés y sincronizo los estados directamente con el tablero comercial.',
+      'Growth OS centraliza el pipeline comercial y de atracción de inversores de todo el ecosistema. Conecta canales inbound como WhatsApp Business, SignalWire, formularios web, y permite a los colaboradores responder a los escalamientos en tiempo real desde Discord de forma segura. Yo, Hermes, analizo las conversaciones, califico prospectos y coopero contigo en los hilos de soporte.',
     keyHighlights: [
       'Pipeline de oportunidades en tiempo real con etapas parametrizables.',
-      'Integración nativa con WhatsApp Meta API y telefonía SignalWire.',
-      'Scoring automático de prospectos y alertas instantáneas al equipo comercial.',
+      'Resolución de tickets escalados (HITL) vía Discord con seguridad Zero-Trust vinculada a tu Smart Wallet.',
+      'Scoring automático de prospectos y asistencia de Hermes al mencionarlo (@) en Discord.',
     ],
     faqs: [
       {
-        question: '¿Cómo califica Hermes el interés de un lead?',
+        question: '¿Cómo me uno como colaborador de soporte en Discord?',
         answer:
-          'Analizo la intención conversacional, solvencia declarada, mención de tickets de inversión y recurrencia de interacción para asignar un score predictivo de conversión.',
+          '1. Únete al servidor oficial: https://discord.gg/HcfARNc9Q \n2. Escribe `!link-wallet` en un canal. \n3. Recibirás un enlace por DM para conectar y firmar con tu Smart Wallet. Esto verificará tus permisos (Zero-Trust) para responder tickets.',
       },
       {
-        question: '¿Puede un colaborador tomar control manual de un chat?',
+        question: '¿Cómo interactúo con Hermes en el servidor de Discord?',
         answer:
-          'Absolutamente. Cualquier conversación iniciada por Hermes puede pausarse o transferirse a un operador humano sin perder el contexto histórico.',
+          'En el canal principal o dentro de un hilo, simplemente menciona a Hermes escribiendo `@` y buscando el logo oscuro de Pandoras. Yo te responderé de inmediato.',
       },
       {
-        question: '¿Cómo se registran nuevos prospectos desde eventos o llamadas?',
+        question: '¿Cómo tomo control y cómo lo devuelvo?',
         answer:
-          'Se pueden dar de alta manualmente en el tablero CRM o enviar un webhook desde landing pages o bots de Telegram vinculados.',
+          'Al estar vinculado, cualquier mensaje tuyo en el hilo se enviará al cliente. Para finalizar tu atención y devolverme el control (Hermes), escribe `!resolver` en el hilo.',
       },
     ],
   },
@@ -139,7 +139,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     category: 'FINANCE',
     badgeColor: 'violet',
     iconName: 'ShieldCheck',
-    targetUrl: '/profile/projects',
+    targetUrl: '/admin/projects',
     allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'],
     hermesGreeting: 'Aquí reside la arquitectura de liquidez y tokenización de activos.',
     hermesNarrative:
@@ -175,7 +175,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     category: 'PORTAL',
     badgeColor: 'blue',
     iconName: 'Globe',
-    targetUrl: '/portal/showcase',
+    targetUrl: '/portal',
     allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'VIEWER'],
     hermesGreeting: 'Esta es la experiencia soberana que viven nuestros inversores.',
     hermesNarrative:
@@ -247,7 +247,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     category: 'ACADEMY',
     badgeColor: 'rose',
     iconName: 'GraduationCap',
-    targetUrl: '/admin/academy',
+    targetUrl: '/nexus/academy',
     allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'],
     hermesGreeting: 'El bastión de conocimiento, principios rectores y certificación.',
     hermesNarrative:

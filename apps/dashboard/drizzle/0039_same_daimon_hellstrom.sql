@@ -1,0 +1,1 @@
+ALTER TABLE "nexus_collaborators" ADD COLUMN "discord_user_id" varchar(255);

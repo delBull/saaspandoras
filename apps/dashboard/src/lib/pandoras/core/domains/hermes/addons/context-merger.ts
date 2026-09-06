@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { HermesAddOnManifest } from './contracts';
 import { db } from '@/db';
-import { hermesAddonInstallations, hermesKnowledge, hermesKnowledgeRegistry, projects, installedProducts } from '@/db/schema';
+import { hermesAddonInstallations, hermesKnowledge, hermesKnowledgeRegistry, projects, installedProducts, nexusCollaborators } from '@/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 import { KnowledgeDimensionDefinitionRegistry } from '../knowledge/registry';
 import { KnowledgeDimension, GovernedKnowledgeItem } from '../knowledge/types';
@@ -412,6 +412,51 @@ export class CognitiveContextBuilder {
     const isPandorasCore = tenantId === 'pandoras' || tenantId === 'pandoras-core';
     const finalOrgName = orgName || (tenantId.toLowerCase().includes('snarai') ? "S'Narai" : tenantId);
 
+    // ── Build Team Directory (Identity Resolution & Contacts) ──
+    let directoryFact: any = null;
+    try {
+      const collabs = await db.select().from(nexusCollaborators);
+      if (collabs.length > 0) {
+        const lines = collabs.map(c => `- ${c.name} (Rol: ${c.role}, Contacto de Discord: ${c.discordUserId || 'No vinculado'})`);
+        directoryFact = {
+          id: 'tenant_team_directory',
+          key: 'directorio_equipo',
+          content: 'Directorio de colaboradores del equipo de Pandora:\n' + lines.join('\n'),
+          status: 'ACTIVE',
+          dimension: 'identity',
+          visibility: 'INTERNAL_OPERATIONAL'
+        };
+      }
+    } catch (e) {
+      console.warn('[ContextMerger] Failed to fetch team directory:', e);
+    }
+
+    const activePacks = [
+      { id: 'base_faq' },
+      { 
+        id: 'tenant_identity_header', 
+        key: 'tenant_organization_name', 
+        content: finalOrgName, 
+        status: 'ACTIVE', 
+        dimension: 'identity',
+        visibility: 'PUBLIC'
+      },
+      ...activeKnowledge.map(k => ({
+        id: k.id,
+        type: k.dimension,
+        key: k.key,
+        content: k.content,
+        status: k.status,
+        visibility: k.visibility || 'PUBLIC',
+        dimension: k.dimension,
+        classification: k.classification || 'PUBLIC',
+      }))
+    ];
+
+    if (directoryFact) {
+      activePacks.push(directoryFact);
+    }
+
     return {
       soul: {
         mode: isPandorasCore ? 'institutional' : 'standard',
@@ -420,27 +465,7 @@ export class CognitiveContextBuilder {
         directness: 'high',
         informality: isPandorasCore ? 'low' : 'low'
       },
-      activePacks: [
-        { id: 'base_faq' },
-        { 
-          id: 'tenant_identity_header', 
-          key: 'tenant_organization_name', 
-          content: finalOrgName, 
-          status: 'ACTIVE', 
-          dimension: 'identity',
-          visibility: 'PUBLIC'
-        },
-        ...activeKnowledge.map(k => ({
-          id: k.id,
-          type: k.dimension,
-          key: k.key,
-          content: k.content,
-          status: k.status,
-          visibility: k.visibility || 'PUBLIC',
-          dimension: k.dimension,
-          classification: k.classification || 'PUBLIC',
-        }))
-      ]
+      activePacks
     };
   }
 

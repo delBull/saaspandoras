@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Settings,
 } from "lucide-react";
+import { NexusRoleContext } from "./NexusAccessGate";
 import { OperationsHubModal } from "./OperationsHubModal";
 import { NexusSettingsModal } from "./NexusSettingsModal";
 import TasksPanel from "./TasksPanel";
@@ -80,8 +81,8 @@ const categories: Category[] = [
     },
     links: [
       { name: "Growth OS (Ecosystem Portal)", path: "https://dash.pandoras.finance/growth-os" },
-      { name: "Pandora's Academy (Certificaciones)", path: "https://dash.pandoras.finance/admin/academy" },
-      { name: "Hermes AI Platform (AI-OS)", path: "https://dash.pandoras.finance/growth-os/hermes" },
+      { name: "Pandora's Academy (Certificaciones)", path: "/nexus/academy" },
+      { name: "Hermes AI Platform (AI-OS)", path: "/admin/hermes" },
       { name: "Pandora's Media Co (Demand Engine)", path: "https://dash.pandoras.finance/media" },
       { name: "Pandora's Media Co (Dashboard)", path: "https://media.pandoras.finance" },
       { name: "Asset Capitalization", path: "https://dash.pandoras.finance/asset-capitalization" },
@@ -182,8 +183,17 @@ const cardVariants: Variants = {
 };
 
 export default function NexusClient() {
+  const { role } = React.useContext(NexusRoleContext) || {};
   const [isIpModalOpen, setIsIpModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  const filteredCategories = categories.filter(c => {
+    if (role === 'SUPER_ADMIN') return true;
+    if (role === 'ADMIN' && c.id === 'resources') return false;
+    if ((role === 'OPERATOR' || role === 'MARKETING') && (c.id === 'protocol' || c.id === 'resources')) return false;
+    if (role === 'VIEWER' && (c.id === 'protocol' || c.id === 'resources' || c.id === 'growth')) return false;
+    return true;
+  });
 
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
     if (typeof window === "undefined") return INITIAL_TASKS;
@@ -297,7 +307,7 @@ export default function NexusClient() {
               animate="visible"
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
             >
-            {categories.map((cat) => (
+            {filteredCategories.map((cat) => (
               <motion.section
                 key={cat.id}
                 variants={cardVariants}
@@ -355,11 +365,13 @@ export default function NexusClient() {
             </motion.div>
 
             {/* Nivel 2 — Transaction Rooms / Deal Room */}
-            <motion.section
-              variants={cardVariants}
-              className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-[#0C0C10] to-amber-500/[0.04] p-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.06)] hover:border-amber-500/40"
-            >
-              <div className="flex items-center gap-3 min-w-0">
+            {role === 'SUPER_ADMIN' && (
+              <>
+                <motion.section
+                variants={cardVariants}
+                className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-[#0C0C10] to-amber-500/[0.04] p-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.06)] hover:border-amber-500/40"
+              >
+                <div className="flex items-center gap-3 min-w-0">
                 <span className="flex items-center justify-center w-10 h-10 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 shrink-0">
                   <Landmark className="w-4 h-4" />
                 </span>
@@ -387,6 +399,8 @@ export default function NexusClient() {
             <p className="mt-2 text-[10px] text-zinc-600 font-mono px-1">
               Nivel 2 del Nexus: salas de transacción privadas por relación (ej. Eduardo Garza) con propuesta, rol, compensación, documentos confidenciales, acuerdo, enmiendas y firma — con audit trail inmutable. El Nivel 1 (Data Room institucional) permanece intacto.
             </p>
+              </>
+            )}
           </div>
           <TasksPanel tasks={tasks} setTasks={setTasks} />
         </div>

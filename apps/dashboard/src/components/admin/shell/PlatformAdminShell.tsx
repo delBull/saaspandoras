@@ -131,7 +131,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin/users',
       icon: UserCheck,
       active: currentTab === 'users' || currentTab === 'identity',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
     },
     {
       id: 'security',

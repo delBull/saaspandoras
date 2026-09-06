@@ -55,14 +55,25 @@ function HITLInboxPage() {
 
   useEffect(() => {
     fetchEscalations();
-  }, [tenantSlug]);
+  }, []);
 
   const fetchEscalations = async () => {
     try {
-      const res = await fetch(`/api/v1/hermes/escalations?tenantSlug=${tenantSlug}`);
+      // Usar la API unificada
+      const res = await fetch(`/api/v1/internal/hermes/inbox?status=PAUSED_HUMAN`);
       const data = await res.json();
-      if (data.success) {
-        setEscalations(data.data.filter((e: any) => e.status !== 'RESOLVED'));
+      if (data.ok) {
+        // Mapear los datos de hermesConversations a la interfaz Escalation
+        const formatted = data.data.map((conv: any) => ({
+          id: conv.id,
+          conversationId: conv.conversationId,
+          status: conv.status,
+          reason: conv.escalationReason || 'Intervención Manual',
+          notes: conv.projectTitle ? `Tenant: ${conv.projectTitle}` : null,
+          createdAt: conv.escalatedAt || conv.updatedAt,
+          organizationId: conv.organizationId
+        }));
+        setEscalations(formatted);
       }
     } catch (err) {
       console.error(err);
@@ -88,14 +99,14 @@ function HITLInboxPage() {
   const handleResolve = async () => {
     if (!selectedCase) return;
     try {
-      await fetch('/api/v1/hermes/escalations/resolve', {
+      await fetch('/api/v1/internal/hermes/inbox/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenantSlug,
-          escalationId: selectedCase.id,
-          resolutionSummary: 'Resuelto por operador manual.'
-        })
+          conversationId: selectedCase.conversationId,
+          message: "El agente ha devuelto el control a Hermes.",
+          releaseTakeover: true
+        }),
       });
       setSelectedCase(null);
       fetchEscalations();
@@ -107,14 +118,14 @@ function HITLInboxPage() {
   const handleReply = async () => {
     if (!replyMessage || !selectedCase) return;
     try {
-      await fetch('/api/v1/hermes/escalations/reply', {
+      await fetch('/api/v1/internal/hermes/inbox/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenantSlug,
-          escalationId: selectedCase.id,
+          conversationId: selectedCase.conversationId,
           message: replyMessage,
-        })
+          releaseTakeover: false
+        }),
       });
       setReplyMessage('');
       // Refresh messages

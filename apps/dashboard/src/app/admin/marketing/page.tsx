@@ -12,8 +12,8 @@ export default async function MarketingPage() {
   // 1. Resolve Platform Authority Server-Side
   const auth = await getNexusAuthContext();
 
-  // Rol permitido: PLATFORM_ADMIN, OPERATOR (y SUPER_ADMIN)
-  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN' && auth.role !== 'OPERATOR' && auth.role !== 'MARKETING')) {
+  // Rol permitido: SUPER_ADMIN, ADMIN, MARKETING
+  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN' && auth.role !== 'MARKETING')) {
     return (
       <AdminAccessGate
         reason={

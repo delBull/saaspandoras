@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from "@/db";
-import { marketingExecutions, marketingCampaigns, users, clients } from "@/db/schema";
+import { marketingExecutions, marketingCampaigns, users, clients, goldenLinks, campaigns } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -162,3 +162,78 @@ export async function deleteCampaign(id: number) {
         return { success: false, error: "Failed to delete campaign" };
     }
 }
+
+// ==========================================
+// GOLDEN LINKS ACTIONS (Lead Capture)
+// ==========================================
+
+export async function getGoldenLinks() {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            throw new Error("Unauthorized");
+        }
+
+        const links = await db.select({
+            id: goldenLinks.id,
+            slug: goldenLinks.slug,
+            channel: goldenLinks.channel,
+            referrerId: goldenLinks.referrerId,
+            relationshipOverride: goldenLinks.relationshipOverride,
+            isActive: goldenLinks.isActive,
+            createdAt: goldenLinks.createdAt,
+            campaignId: goldenLinks.campaignId,
+            campaignTitle: campaigns.name
+        })
+        .from(goldenLinks)
+        .leftJoin(campaigns, eq(goldenLinks.campaignId, campaigns.id))
+        .orderBy(desc(goldenLinks.createdAt));
+
+        return { success: true, links };
+    } catch (error) {
+        console.error("Error fetching golden links:", error);
+        return { success: false, links: [] };
+    }
+}
+
+export async function createGoldenLink(data: { campaignId: number; slug: string; channel?: string; referrerId?: string; relationshipOverride?: string }) {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            throw new Error("Unauthorized");
+        }
+
+        const [newLink] = await db.insert(goldenLinks).values({
+            campaignId: data.campaignId,
+            slug: data.slug.toLowerCase().trim(),
+            channel: data.channel || 'web',
+            referrerId: data.referrerId,
+            relationshipOverride: data.relationshipOverride,
+            isActive: true,
+        }).returning();
+
+        return { success: true, link: newLink };
+    } catch (error: any) {
+        console.error("Error creating golden link:", error);
+        if (error?.message?.includes('unique constraint') || error?.code === '23505') {
+            return { success: false, error: "El slug ya está en uso." };
+        }
+        return { success: false, error: "Failed to create golden link" };
+    }
+}
+
+export async function deleteGoldenLink(id: string) {
+    try {
+        const { session } = await getAuth(await headers());
+        if (!session?.address || !await isAdmin(session.address)) {
+            throw new Error("Unauthorized");
+        }
+
+        await db.delete(goldenLinks).where(eq(goldenLinks.id, id));
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting golden link:", error);
+        return { success: false, error: "Failed to delete golden link" };
+    }
+}
+

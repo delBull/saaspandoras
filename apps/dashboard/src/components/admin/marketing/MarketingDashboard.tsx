@@ -24,6 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CampaignPerformanceDashboard } from "./CampaignPerformanceDashboard";
 import { MarketingAnalytics } from "./MarketingAnalytics";
+import { GoldenLinksManager } from "./GoldenLinksManager";
 
 // Types matching API response roughly
 interface Execution {
@@ -118,6 +119,7 @@ export function MarketingDashboard({ projectId = 0, leads = [] }: MarketingDashb
                 <TabsTrigger value="overview">Visión General</TabsTrigger>
                 <TabsTrigger value="performance">Rendimiento (Campañas)</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics Global</TabsTrigger>
+                <TabsTrigger value="golden-links" className="text-purple-400">Golden Links</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-8">
@@ -264,6 +266,10 @@ export function MarketingDashboard({ projectId = 0, leads = [] }: MarketingDashb
 
               <TabsContent value="analytics">
                 <MarketingAnalytics leads={leads} />
+              </TabsContent>
+
+              <TabsContent value="golden-links">
+                <GoldenLinksManager />
               </TabsContent>
             </Tabs>
         </div>

@@ -20,6 +20,7 @@ import { ProjectSection5 } from "./sections/ProjectSection5";
 import { ProjectSection6 } from "./sections/ProjectSection6";
 import { ProjectSection7 } from "./sections/ProjectSection7";
 import { ProjectSection8 } from "./sections/ProjectSection8";
+import { ProjectSection9 } from "./sections/ProjectSection9";
 
 interface Project {
   id?: number;
@@ -301,7 +302,7 @@ export function MultiStepForm({
     }
   }, [account?.address, isAdminUser, isPublic, router]);
 
-  const totalSteps = 8;
+  const totalSteps = 9;
 
   // Funciones de parseo seguro para inicializar el formulario
   function safeParseArray<T>(input: unknown): T[] {
@@ -877,7 +878,9 @@ export function MultiStepForm({
     "Equipo y Transparencia",
     "Seguridad y Auditoría",
     "Parámetros Técnicos",
-    "Información de Contacto"
+    "Información de Contacto",
+    "Hermes AI",
+    "Operadores Humanos (HITL)"
   ];
 
   const currentTitle = stepTitles[currentStep - 1];
@@ -1014,6 +1017,7 @@ export function MultiStepForm({
             {currentStep === 6 && <ProjectSection6 />}
             {currentStep === 7 && <ProjectSection7 />}
             {currentStep === 8 && <ProjectSection8 />}
+            {currentStep === 9 && <ProjectSection9 />}
 
             {/* Navegación inferior */}
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-800">
