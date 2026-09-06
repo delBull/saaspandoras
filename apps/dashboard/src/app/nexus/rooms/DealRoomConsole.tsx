@@ -542,7 +542,7 @@ export default function DealRoomConsole() {
         <aside className="hidden md:flex w-72 shrink-0 flex-col border-r border-white/10 bg-[#0C0C10]">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono tracking-widest text-zinc-400">ROOMS</span>
+              <span className="text-[10px] font-mono tracking-widest text-zinc-400">PROPUESTAS & ACUERDOS</span>
               <button
                 onClick={() => setShowArchived(!showArchived)}
                 className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
