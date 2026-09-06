@@ -29,6 +29,8 @@ export interface PlatformInspectorData {
   rawPayload?: any;
   actionHref?: string;
   actionLabel?: string;
+  customComponent?: React.ReactNode;
+  drawerSize?: 'normal' | 'large' | 'full';
 }
 
 interface PlatformInspectorContextType {

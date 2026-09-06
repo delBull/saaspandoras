@@ -60,7 +60,13 @@ export function PlatformInspectorDrawer() {
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        className="fixed top-0 right-0 h-screen w-full sm:w-[460px] lg:w-[480px] bg-[#0C0C12] border-l border-white/[0.08] z-50 flex flex-col shadow-2xl overflow-hidden font-sans"
+        className={`fixed top-0 right-0 h-screen w-full ${
+          data.drawerSize === 'full' 
+            ? 'lg:w-[90vw]' 
+            : data.drawerSize === 'large' 
+            ? 'lg:w-[65vw]' 
+            : 'sm:w-[460px] lg:w-[480px]'
+        } bg-[#0C0C12] border-l border-white/[0.08] z-50 flex flex-col shadow-2xl overflow-hidden font-sans`}
       >
         {/* Drawer Header */}
         <div className="px-6 py-5 border-b border-white/[0.08] flex items-center justify-between bg-[#111118]/80 backdrop-blur-md shrink-0">
@@ -95,42 +101,48 @@ export function PlatformInspectorDrawer() {
         </div>
 
         {/* Drawer Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800">
-          {data.subtitle && (
-            <p className="text-xs text-zinc-400 leading-relaxed bg-white/[0.02] p-3.5 rounded-xl border border-white/[0.04]">
-              {data.subtitle}
-            </p>
-          )}
+        <div className={`flex-1 overflow-y-auto ${data.customComponent ? '' : 'px-6 py-6 space-y-6'} scrollbar-thin scrollbar-thumb-zinc-800`}>
+          {data.customComponent ? (
+            data.customComponent
+          ) : (
+            <>
+              {data.subtitle && (
+                <p className="text-xs text-zinc-400 leading-relaxed bg-white/[0.02] p-3.5 rounded-xl border border-white/[0.04]">
+                  {data.subtitle}
+                </p>
+              )}
 
-          {/* Attributes Grid */}
-          {data.attributes && Object.keys(data.attributes).length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
-                Atributos & Telemetría
-              </h4>
-              <div className="bg-[#14141E] rounded-xl border border-white/[0.06] divide-y divide-white/[0.04] overflow-hidden">
-                {Object.entries(data.attributes).map(([key, val]) => (
-                  <div key={key} className="px-4 py-3 flex items-center justify-between text-xs">
-                    <span className="text-zinc-400 font-medium">{key}</span>
-                    <span className="text-white font-mono font-semibold text-right max-w-[60%] truncate">
-                      {typeof val === 'boolean' ? (val ? '✓ Habilitado' : '✗ Deshabilitado') : String(val)}
-                    </span>
+              {/* Attributes Grid */}
+              {data.attributes && Object.keys(data.attributes).length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                    Atributos & Telemetría
+                  </h4>
+                  <div className="bg-[#14141E] rounded-xl border border-white/[0.06] divide-y divide-white/[0.04] overflow-hidden">
+                    {Object.entries(data.attributes).map(([key, val]) => (
+                      <div key={key} className="px-4 py-3 flex items-center justify-between text-xs">
+                        <span className="text-zinc-400 font-medium">{key}</span>
+                        <span className="text-white font-mono font-semibold text-right max-w-[60%] truncate">
+                          {typeof val === 'boolean' ? (val ? '✓ Habilitado' : '✗ Deshabilitado') : String(val)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* Raw Payload Preview if available */}
-          {data.rawPayload && (
-            <div className="space-y-2">
-              <h4 className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
-                Carga de Datos (Snapshot)
-              </h4>
-              <pre className="p-3.5 rounded-xl bg-black/60 border border-white/[0.06] text-[11px] font-mono text-zinc-300 overflow-x-auto max-h-56">
-                {JSON.stringify(data.rawPayload, null, 2)}
-              </pre>
-            </div>
+              {/* Raw Payload Preview if available */}
+              {data.rawPayload && (
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                    Carga de Datos (Snapshot)
+                  </h4>
+                  <pre className="p-3.5 rounded-xl bg-black/60 border border-white/[0.06] text-[11px] font-mono text-zinc-300 overflow-x-auto max-h-56">
+                    {JSON.stringify(data.rawPayload, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </>
           )}
         </div>
 
