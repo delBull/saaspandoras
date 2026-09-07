@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { marketingExecutions, marketingCampaigns, clients, users, projects, marketingLeads } from "@/db/schema";
+import { marketingExecutions, marketingCampaigns, clients, users, projects, marketingLeads, hermesCognitiveProfiles } from "@/db/schema";
 import { eq, and, lte, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/utils/client";
@@ -204,13 +204,58 @@ export class MarketingEngine {
 
         // --- EXECUTE ACTION ---
         let actionResult: any = {};
+        
+        // --- COGNITIVE HYPER-PERSONALIZATION ---
+        // Fetch Cognitive Profile if it exists
+        const profileId = execution.leadId || execution.userId;
+        let cognitiveRewriteInstruction = "";
+        
+        if (profileId) {
+            const [profile] = await db.select()
+                .from(hermesCognitiveProfiles)
+                .where(eq(hermesCognitiveProfiles.userId, profileId as any))
+                .limit(1);
+                
+            if (profile && (profile.persona || profile.optimalApproach)) {
+                cognitiveRewriteInstruction = `Rewrite the following marketing message to match the persona: '${profile.persona}'. 
+Optimal approach: '${profile.optimalApproach}'. 
+Keep the core message, CTA, and facts identical. Only adjust the tone, brevity, and framing.`;
+            }
+        }
+        
+        const rewriteWithHermes = async (rawMessage: string, instruction: string) => {
+            if (!instruction) return rawMessage;
+            try {
+                const model = process.env.HERMES_LEARNING_MODEL || "llama3.1";
+                const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+                const response = await fetch(`${baseUrl}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            { role: "system", content: instruction },
+                            { role: "user", content: `Original Message:\n${rawMessage}\n\nRewritten Message:` }
+                        ],
+                        stream: false
+                    })
+                });
+                const data: any = await response.json();
+                return data?.message?.content || rawMessage;
+            } catch (err) {
+                console.error("[MarketingEngine] Cognitive rewrite failed, falling back to raw.", err);
+                return rawMessage;
+            }
+        };
 
         if (step.type === 'whatsapp' && contact.phone) {
             // Priority: Dynamic Body -> Legacy Message -> Error
             const rawBody = step.body || step.message;
             if (!rawBody) throw new Error("WhatsApp step missing message body");
 
-            const body = replaceVars(rawBody);
+            let body = replaceVars(rawBody);
+            body = await rewriteWithHermes(body, cognitiveRewriteInstruction);
+            
             await sendWhatsAppMessage(contact.phone, body);
             actionResult = { channel: 'whatsapp', sentTo: contact.phone };
         }
@@ -241,12 +286,15 @@ export class MarketingEngine {
             // Render
             // Dynamic import to avoid build issues with server components
             const { render } = await import('@react-email/render');
+            
+            let finalBody = step.body ? replaceVars(step.body) : templateData.body;
+            finalBody = await rewriteWithHermes(finalBody, cognitiveRewriteInstruction);
 
             const html = await render(
                 PandorasCampaignEmail({
                     ...templateData,
                     // Ensure body is processed if it came from dynamic and has vars
-                    bodyContent: step.body ? replaceVars(step.body) : templateData.body
+                    bodyContent: finalBody
                 })
             );
 

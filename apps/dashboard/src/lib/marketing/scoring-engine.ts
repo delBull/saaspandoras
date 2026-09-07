@@ -4,51 +4,26 @@ import { eq, sql } from "drizzle-orm";
 
 export class ScoringEngine {
   /**
-   * Weights for different lead actions.
-   */
-  private static WEIGHTS: Record<string, number> = {
-    'landing_page_view': 5,
-    'click': 10,
-    'time_on_page_30s': 15,
-    'whatsapp_redirect': 25,
-    'form_submit': 30,
-    'wallet_connect': 50,
-    'purchase': 100,
-  };
-
-  /**
-   * Updates a lead's score based on a new event.
+   * (DEPRECATED) Static weights are deprecated in favor of Hermes Cognitive Profiles.
+   * HermesLearningLoop will now asynchronously evaluate the transactional intent of this lead.
    */
   static async updateScore(leadId: string, eventType: string): Promise<number> {
-    const points = this.WEIGHTS[eventType.toLowerCase()] || 0;
-    if (points === 0) return 0;
-
-    const [updatedLead] = await db
-      .update(marketingLeads)
-      .set({
-        score: sql`${marketingLeads.score} + ${points}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(marketingLeads.id, leadId))
-      .returning({ score: marketingLeads.score });
-
-    if (updatedLead) {
-      const quality = this.calculateQuality(updatedLead.score);
-      await db
-        .update(marketingLeads)
-        .set({ quality })
-        .where(eq(marketingLeads.id, leadId));
-        
-      return updatedLead.score;
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { HermesLearningLoop } = await import("@/lib/hermes/memory/learning-loop");
+      
+      // We pass the leadId. Since it's a web event, Hermes will fetch the recent web events
+      // and update the cognitive profile without needing chat context.
+      // We do NOT await this to avoid blocking the main thread (Fire-and-forget)
+      HermesLearningLoop.processLeadEvents(leadId).catch(err => {
+        console.error(`[ScoringEngine] Failed to process Hermes learning loop for lead ${leadId}:`, err);
+      });
+      
+      return 0; // Legacy score is no longer meaningful
+    } catch (err) {
+      console.error(`[ScoringEngine] Failed to import HermesLearningLoop:`, err);
+      return 0;
     }
-
-    return 0;
-  }
-
-  private static calculateQuality(score: number): "low" | "medium" | "high" {
-    if (score >= 80) return "high";
-    if (score >= 30) return "medium";
-    return "low";
   }
 }
 

@@ -74,6 +74,17 @@ export async function recordCallOutcome(data: {
                 updatedAt: new Date()
             })
             .where(eq(marketingLeads.id, leadId));
+            
+        // 3.5. Inject fact into Hermes Memory (Cognitive Profiling)
+        const { marketingLeadEvents } = await import("@/db/schema");
+        await db.insert(marketingLeadEvents).values({
+            leadId,
+            type: "CALL_LOGGED",
+            payload: { outcome, notes, dealValue, recordedBy: session.address }
+        });
+        
+        const { HermesLearningLoop } = await import("@/lib/hermes/memory/learning-loop");
+        HermesLearningLoop.processLeadEvents(leadId).catch(e => console.error("Failed to process Hermes lead events on call", e));
 
         // 4. Trigger Growth Engine
         const engineResult = resolveGrowthAction('CALL_COMPLETED' as any, {

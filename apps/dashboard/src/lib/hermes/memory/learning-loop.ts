@@ -88,4 +88,84 @@ Do not include markdown blocks or any other text.
       console.error(`[HermesLearningLoop] Error processing trigger:`, error);
     }
   }
+
+  /**
+   * Processes purely analytical web events (clicks, form submits) for a lead to deduce
+   * their transactional intent and score asynchronously.
+   */
+  static async processLeadEvents(leadId: string) {
+    try {
+      // 1. Fetch lead events
+      const { marketingLeadEvents } = await import('@/db/schema');
+      const { sql, desc } = await import('drizzle-orm');
+      
+      const events = await db.select()
+        .from(marketingLeadEvents)
+        .where(eq(marketingLeadEvents.leadId, leadId))
+        .orderBy(desc(marketingLeadEvents.createdAt))
+        .limit(20);
+
+      if (events.length === 0) return;
+
+      // 2. Format events for LLM
+      const eventDescriptions = events.map(e => `[${e.createdAt?.toISOString()}] Event Type: ${e.type} | Data: ${JSON.stringify(e.payload || {})}`).join('\n');
+
+      const systemPrompt = `You are the Hermes Cognitive Scoring Engine.
+Analyze the following recent web events of a user.
+Determine their transactional intent (score 0-100) and assign them a 'persona' (e.g., 'Risk-Averse', 'Whale', 'Curious', 'Window-Shopper').
+
+You MUST respond ONLY with a valid JSON object matching this schema:
+{
+  "transactionalScore": number,
+  "persona": "string"
+}
+Do not include markdown blocks or any other text.`;
+
+      const model = process.env.HERMES_LEARNING_MODEL || "llama3.1";
+      const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+
+      const response = await fetch(`${baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Events:\n${eventDescriptions}` }
+          ],
+          format: 'json',
+          stream: false,
+          options: { temperature: 0.1 }
+        })
+      });
+
+      if (!response.ok) throw new Error(`LLM API error: ${response.statusText}`);
+
+      const data: any = await response.json();
+      const content = data?.message?.content;
+      if (!content) return;
+
+      const result = JSON.parse(content) as { transactionalScore: number; persona: string };
+
+      // 3. Upsert Profile
+      await db.insert(hermesCognitiveProfiles)
+        .values({
+          userId: leadId,
+          transactionalScore: result.transactionalScore,
+          persona: result.persona
+        })
+        .onConflictDoUpdate({
+          target: hermesCognitiveProfiles.userId,
+          set: {
+            transactionalScore: result.transactionalScore,
+            persona: result.persona,
+            lastInteractionAt: new Date()
+          }
+        });
+
+      console.log(`[HermesLearningLoop] Inferred score ${result.transactionalScore} and persona ${result.persona} for lead ${leadId} via web events.`);
+    } catch (error) {
+      console.error(`[HermesLearningLoop] Error processing lead events for ${leadId}:`, error);
+    }
+  }
 }

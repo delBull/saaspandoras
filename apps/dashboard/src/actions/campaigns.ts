@@ -13,25 +13,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { shortlinks, campaignTrackers } from "@/db/schema";
 import { CampaignDomainService } from "@/lib/marketing/campaigns.service";
-import { PortalTenantContext } from "@/lib/portal/portal-types";
-import { PORTAL_ROLE_PERMISSIONS } from "@/lib/portal/permissions";
+import { resolvePortalContext } from "@/lib/portal/resolve-portal-context";
 import { getAuth, isAdmin } from "@/lib/auth";
-
-/**
- * Creates a mock legacy context for the Domain Service so we can use it 
- * from the old Admin dashboard without breaking existing functionality.
- */
-async function buildLegacyAdminContext(address: string, projectId: number): Promise<PortalTenantContext> {
-  const [project] = await db.select({ id: projects.id, slug: projects.slug, organizationId: projects.organizationId }).from(projects).where(eq(projects.id, projectId)).limit(1);
-  return {
-    actorId: `wallet_${address.slice(0, 10)}`,
-    sessionId: `legacy_admin_${address}`,
-    organizationId: project?.organizationId || String(projectId),
-    organizationSlug: project?.slug || String(projectId),
-    role: 'owner',
-    permissions: PORTAL_ROLE_PERMISSIONS['owner'],
-  };
-}
 
 /**
  * Persists a content draft with its "Content DNA".
@@ -49,7 +32,14 @@ export async function createDemandDraft(data: {
     const { session } = await getAuth(await headers());
     if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
-    const context = await buildLegacyAdminContext(session.address, data.projectId);
+    const { db } = await import("@/db");
+    const { projects } = await import("@/db/schema");
+    const [project] = await db.select({ slug: projects.slug }).from(projects).where(eq(projects.id, data.projectId)).limit(1);
+    if (!project) throw new Error("Project not found");
+
+    const portalContext = await resolvePortalContext(project.slug);
+    if (!portalContext) throw new Error("Could not resolve portal context");
+    const context = portalContext.tenant;
     const service = new CampaignDomainService(context);
     
     return await service.createDemandDraft(data);
@@ -73,7 +63,14 @@ export async function launchCampaign(data: {
     const { session } = await getAuth(await headers());
     if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
-    const context = await buildLegacyAdminContext(session.address, data.projectId);
+    const { db } = await import("@/db");
+    const { projects } = await import("@/db/schema");
+    const [project] = await db.select({ slug: projects.slug }).from(projects).where(eq(projects.id, data.projectId)).limit(1);
+    if (!project) throw new Error("Project not found");
+
+    const portalContext = await resolvePortalContext(project.slug);
+    if (!portalContext) throw new Error("Could not resolve portal context");
+    const context = portalContext.tenant;
     const service = new CampaignDomainService(context);
     
     const result = await service.launchCampaign(data);
@@ -214,7 +211,15 @@ export async function getCampaignPerformance(projectId: number) {
     const { session } = await getAuth(await headers());
     if (!session?.address || !await isAdmin(session.address)) throw new Error("Unauthorized");
 
-    const context = await buildLegacyAdminContext(session.address, projectId);
+    const { db } = await import("@/db");
+    const { projects } = await import("@/db/schema");
+    const [project] = await db.select({ slug: projects.slug }).from(projects).where(eq(projects.id, projectId)).limit(1);
+    if (!project) throw new Error("Project not found");
+
+    const portalContext = await resolvePortalContext(project.slug);
+    if (!portalContext) throw new Error("Could not resolve portal context for performance.");
+    const context = portalContext.tenant;
+    
     const service = new CampaignDomainService(context);
     
     const performance = await service.getCampaignPerformance();
