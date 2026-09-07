@@ -11,6 +11,7 @@ import {
   sendHumanReply, 
   resumeHermesControl 
 } from '@/app/portal/[organizationSlug]/audience/conversations/actions';
+import { CognitiveProfileWidget } from '@/components/hermes/CognitiveProfileWidget';
 
 export interface ConversationView {
   id: string;
@@ -359,8 +360,12 @@ export function ConversationsDashboard({ conversations: initialConversations, or
                 </div>
               </div>
               
-              {/* Takeover / Resume Actions */}
-              <div className="flex gap-2">
+              <div className="flex gap-4 items-center">
+                <div className="w-[300px]">
+                  <CognitiveProfileWidget userId={activeConvId} />
+                </div>
+                {/* Takeover / Resume Actions */}
+                <div className="flex gap-2">
                 {activeConv?.status === 'PAUSED_HUMAN' ? (
                   <button 
                     onClick={handleResumeHermes}
@@ -380,6 +385,7 @@ export function ConversationsDashboard({ conversations: initialConversations, or
                     Intervenir (Takeover Humano)
                   </button>
                 )}
+                </div>
               </div>
             </div>
 

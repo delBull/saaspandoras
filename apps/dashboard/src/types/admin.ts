@@ -122,6 +122,7 @@ export interface UserData {
   kycData?: KYCData | null;
   telegramId?: string | null;
   ritualCompletedAt?: string | null;
+  hasCognitiveProfile?: boolean;
 }
 
 export type UserRole = "applicant" | "pandorian" | "user" | "super_admin" | "admin" | "operator" | "marketing" | "viewer";

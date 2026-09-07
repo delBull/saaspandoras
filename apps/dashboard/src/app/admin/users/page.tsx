@@ -5,8 +5,8 @@ import { UsersTable } from '@/components/admin/UsersTable';
 import { AdminAccessGate } from '../AdminAccessGate';
 import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
 import { db } from '@/db';
-import { users } from '@/db/schema';
-import { desc } from 'drizzle-orm';
+import { users, hermesCognitiveProfiles } from '@/db/schema';
+import { desc, inArray } from 'drizzle-orm';
 import type { UserData, UserRole } from '@/types/admin';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +47,17 @@ export default async function UsersPage() {
     .orderBy(desc(users.createdAt))
     .limit(500); // Acotar por performance
 
+  // Fetch cognitive profiles for these users
+  const userIds = usersRows.map(u => u.id);
+  let cognitiveSet = new Set<string>();
+  if (userIds.length > 0) {
+    const cognitiveRows = await db
+      .select({ userId: hermesCognitiveProfiles.userId })
+      .from(hermesCognitiveProfiles)
+      .where(inArray(hermesCognitiveProfiles.userId, userIds));
+    cognitiveRows.forEach(row => cognitiveSet.add(row.userId));
+  }
+
   const usersList: UserData[] = usersRows.map(u => ({
     id: u.id,
     name: u.name,
@@ -63,6 +74,7 @@ export default async function UsersPage() {
     kycLevel: (u.kycLevel || 'N/A') as 'basic' | 'N/A',
     kycCompleted: u.kycCompleted || false,
     telegramId: u.telegramId,
+    hasCognitiveProfile: cognitiveSet.has(u.id) || (u.email ? cognitiveSet.has(u.email) : false) || (u.walletAddress ? cognitiveSet.has(u.walletAddress) : false),
   }));
 
   return (

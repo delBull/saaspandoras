@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { platformEvents } from "@/db/schema";
+import { platformEvents, hermesCognitiveProfiles } from "@/db/schema";
 import { eq, or, and, desc } from "drizzle-orm";
 
 export interface ConversationMessage {
@@ -10,6 +10,10 @@ export interface ConversationMessage {
 
 export interface MemoryContext {
   recentHistory: ConversationMessage[];
+  cognitiveProfile?: {
+    behavioralTraits: string[] | null;
+    optimalApproach: string | null;
+  } | null;
 }
 
 export class MemoryProvider {
@@ -43,6 +47,16 @@ export class MemoryProvider {
       };
     }).filter(msg => msg.content !== "");
 
-    return { recentHistory };
+    // Fetch cognitive profile
+    const profile = await db.query.hermesCognitiveProfiles.findFirst({
+      where: eq(hermesCognitiveProfiles.userId, identityId)
+    });
+
+    const cognitiveProfile = profile ? {
+      behavioralTraits: profile.behavioralTraits || null,
+      optimalApproach: profile.optimalApproach || null,
+    } : null;
+
+    return { recentHistory, cognitiveProfile };
   }
 }
