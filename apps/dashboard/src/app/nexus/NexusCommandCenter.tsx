@@ -84,7 +84,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
       {/* ── SIDEBAR OVERLAY / GUIDE ── */}
       <div 
-        className={`absolute top-0 bottom-0 left-0 z-40 w-80 bg-[#08080A]/95 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+        className={`absolute top-0 bottom-0 left-0 z-40 w-[85%] sm:w-80 bg-[#08080A]/95 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
           showGuideSidebar ? "translate-x-0 shadow-2xl shadow-black/50" : "-translate-x-full"
         }`}
       >

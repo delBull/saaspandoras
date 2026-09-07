@@ -88,12 +88,12 @@ export function OnboardingClient({ organizationSlug, organizationName }: { organ
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center p-2 sm:p-6 lg:p-12 min-h-screen relative bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#08080A] to-[#08080A]">
+    <main className="flex-1 flex items-center justify-center p-2 pb-[env(safe-area-inset-bottom,0.5rem)] sm:p-6 lg:p-12 min-h-[100dvh] relative bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#08080A] to-[#08080A]">
       <motion.div 
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="w-full max-w-4xl h-[94vh] sm:h-[90vh] max-h-[900px] flex flex-col shadow-2xl shadow-indigo-500/10 rounded-2xl overflow-hidden ring-1 ring-white/10"
+        className="w-full max-w-4xl h-[calc(100dvh-16px)] sm:h-[90dvh] max-h-[900px] flex flex-col shadow-2xl shadow-indigo-500/10 rounded-2xl overflow-hidden ring-1 ring-white/10"
       >
         <div className="bg-[#0C0C12] p-3.5 sm:p-5 border-b border-white/5 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0">

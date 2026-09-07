@@ -84,8 +84,9 @@ export function PortalShell({ context, children }: PortalShellProps) {
       {/* Mobile Slide-Over Backdrop */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-md z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/70 backdrop-blur-md z-40 md:hidden transition-opacity cursor-pointer touch-manipulation"
           onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 

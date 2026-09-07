@@ -222,16 +222,16 @@ export function PoliciesDashboard({ policies, organizationSlug, onSavePolicy }: 
                 placeholder="Enter policy details here..."
               />
             </div>
-            <div className="p-6 border-t border-white/[0.06] flex justify-end gap-3 bg-[#0C0C12]/50 rounded-b-2xl">
+            <div className="p-6 border-t border-white/[0.06] flex flex-col sm:flex-row sm:justify-end gap-3 bg-[#0C0C12]/50 rounded-b-2xl">
               <button 
                 onClick={() => setEditingPolicy(null)}
-                className="px-5 py-2.5 rounded-xl font-medium text-white/60 hover:text-white transition-colors"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-medium text-white/60 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSaveModal}
-                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-rose-900/20"
+                className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-rose-900/20"
               >
                 Done
               </button>

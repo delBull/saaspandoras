@@ -76,7 +76,7 @@ export function OverviewDashboard({ context, overview }: OverviewDashboardProps)
 
         {/* Right Column: Hermes Intelligence Chat (5 cols on lg, 5 cols on xl) */}
         {/* Responsive height on mobile, sticky and tall on desktop */}
-        <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 flex flex-col w-full h-[520px] lg:h-[min(calc(100vh-140px),680px)]">
+        <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 flex flex-col w-full min-h-[400px] h-[calc(100dvh-200px)] lg:h-[min(calc(100vh-140px),680px)]">
           <HermesIntelligencePanel 
             organizationSlug={context.organization.slug} 
             organizationName={overview.organization.name} 
