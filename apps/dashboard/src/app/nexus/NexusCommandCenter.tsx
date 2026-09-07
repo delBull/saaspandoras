@@ -92,7 +92,18 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
     }
   };
 
-  const applications = [
+  const applications: Array<{
+    id: string;
+    title: string;
+    description: string;
+    icon: any;
+    href: string;
+    allowed: boolean;
+    color: string;
+    requirementText: string;
+    onClick?: (e: any) => void;
+    isDoubleLayer?: boolean;
+  }> = [
     {
       id: "deal_room",
       title: "Deal Room & Transaction Rooms",
