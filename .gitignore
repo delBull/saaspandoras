@@ -23,6 +23,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# debug & temp scripts (may contain hardcoded credentials — never commit)
+apps/dashboard/scripts/check_*.ts
+apps/dashboard/scripts/test_*.ts
+apps/dashboard/scripts/fix_prod_*.ts
+apps/dashboard/scripts/seed_*.ts
+apps/dashboard/scripts/debug_*.ts
+
 # local env files
 .env
 .env*.local
