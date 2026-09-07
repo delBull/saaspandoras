@@ -58,7 +58,12 @@ export type A2AMessageType =
   | 'event.tenant.updated'
   | 'event.document.received'
   | 'status.query'
-  | 'status.response';
+  | 'status.response'
+  | 'sofia.context.request'
+  | 'sofia.context.response'
+  | 'sofia.contact.sync'
+  | 'sofia.contact.synced'
+  | 'error';
 
 // ─── SECURITY ENVELOPE & MESSAGE ENVELOPE ─────────────────────────────────────
 

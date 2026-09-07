@@ -19,6 +19,19 @@ export async function POST(req: Request) {
        return NextResponse.json({ success: false, error: 'Missing content' }, { status: 400 });
     }
 
+    const { db } = await import('@/db');
+    const { nexusCollaborators } = await import('@/db/schema');
+    const { eq } = await import('drizzle-orm');
+
+    const collaborator = await db.query.nexusCollaborators.findFirst({
+        where: eq(nexusCollaborators.discordUserId, discordUserId)
+    });
+
+    if (!collaborator || new Date(collaborator.expiresAt).getTime() < Date.now()) {
+        console.warn(`[Discord Security] Rejecting unauthorized message from Discord ID: ${discordUserId}`);
+        return NextResponse.json({ success: false, error: 'Acceso Denegado. Discord ID no autorizado o expirado.' }, { status: 403 });
+    }
+
     const organizationId = 'pandoras'; 
     const actorId = `discord_${discordUserId}`;
     const conversationId = `conv_discord_${discordUserId}_${channelId}`;

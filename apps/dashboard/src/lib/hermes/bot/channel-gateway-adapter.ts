@@ -520,6 +520,9 @@ export class ChannelGatewayAdapter {
         const { HermesExecutionEngine } = await import('@/lib/hermes/kernel/execution/execution-api');
         const engine = new HermesExecutionEngine();
         
+        const { IdentityResolver } = await import('./identity-resolver');
+        const identityId = await IdentityResolver.resolveIdentity(ctx.channel, ctx.externalUserId, ctx.metadata);
+        
         // Native Universal Execution Request
         const request = {
             requestId: `req-${Date.now()}-${Math.floor(Math.random()*1000)}`,
@@ -529,7 +532,7 @@ export class ChannelGatewayAdapter {
             channel: ctx.channel,
             capability: 'communication.route',
             executionProfile: 'interactive' as const,
-            identity: { userId },
+            identity: { userId, identityId },
             priority: 'normal' as const,
             payload: {
                 projectId: projectRecord.id,

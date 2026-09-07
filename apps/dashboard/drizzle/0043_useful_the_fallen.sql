@@ -1,0 +1,2 @@
+ALTER TABLE "hermes_conversations" ADD COLUMN "identity_id" uuid;--> statement-breakpoint
+ALTER TABLE "hermes_conversations" ADD CONSTRAINT "hermes_conversations_identity_id_marketing_identities_id_fk" FOREIGN KEY ("identity_id") REFERENCES "public"."marketing_identities"("id") ON DELETE set null ON UPDATE no action;

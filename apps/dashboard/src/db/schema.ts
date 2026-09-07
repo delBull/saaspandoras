@@ -3602,6 +3602,7 @@ export const hermesAddonAudit = pgTable("hermes_addon_audit", {
 export const hermesConversations = pgTable("hermes_conversations", {
   id: varchar("id", { length: 256 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  identityId: uuid("identity_id").references(() => marketingIdentities.id, { onDelete: 'set null' }),
   conversationId: varchar("conversation_id", { length: 256 }).notNull(),
   status: varchar("status", { length: 50 }).notNull().default('ACTIVE'), // 'ACTIVE' | 'PAUSED_HUMAN' | 'RESOLVED'
   escalationReason: varchar("escalation_reason", { length: 100 }), // 'FRUSTRATION' | 'USER_REQUEST' | 'POLICY_VIOLATION' | 'KNOWLEDGE_GAP' | 'MANUAL'

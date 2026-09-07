@@ -102,6 +102,10 @@ export interface ControlPlaneContext {
   role: ControlPlaneRole;
   permissions: string[];
   sessionId?: string;
+  identity?: {
+    identityId?: string;
+    userId?: string;
+  };
 }
 
 // -------------------------------------

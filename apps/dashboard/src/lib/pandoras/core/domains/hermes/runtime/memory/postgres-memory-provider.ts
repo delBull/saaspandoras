@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { hermesConversations, hermesConversationMessages, projects } from '@/db/schema';
-import { eq, and, or, asc, desc, sql } from 'drizzle-orm';
+import { eq, and, or, asc, desc, sql, inArray } from 'drizzle-orm';
 import { RuntimeMessage } from '../contracts';
 import { TenantSessionTokenSigner } from '../tenant-session-token';
 import { 
@@ -58,6 +58,23 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
       .limit(1);
     const targetOrgId = proj?.slug || cleanOrgId;
 
+    const identityId = (input.controlPlaneContext?.identity as any)?.identityId;
+    let conversationIds = [convId];
+
+    if (identityId) {
+      const userConvs = await db.select({ convId: hermesConversations.conversationId })
+        .from(hermesConversations)
+        .where(and(
+          or(eq(hermesConversations.organizationId, orgId), eq(hermesConversations.organizationId, targetOrgId)),
+          eq(hermesConversations.identityId, identityId)
+        ));
+      
+      const ids = userConvs.map(c => c.convId);
+      if (ids.length > 0) {
+        conversationIds = Array.from(new Set([...ids, convId]));
+      }
+    }
+
     const convResult = await db.select().from(hermesConversations)
       .where(and(
         or(eq(hermesConversations.organizationId, orgId), eq(hermesConversations.organizationId, targetOrgId)),
@@ -85,7 +102,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     const msgResults = await db.select().from(hermesConversationMessages)
       .where(and(
         or(eq(hermesConversationMessages.organizationId, orgId), eq(hermesConversationMessages.organizationId, targetOrgId)),
-        eq(hermesConversationMessages.conversationId, convId)
+        inArray(hermesConversationMessages.conversationId, conversationIds)
       ))
       .orderBy(desc(hermesConversationMessages.sequence))
       .limit(limit);
@@ -181,9 +198,11 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     const nextVersion = currentVersion + 1;
     
     // Update or create conversation
+    const identityId = (input.controlPlaneContext?.identity as any)?.identityId;
+
     if (conv) {
       await db.update(hermesConversations)
-        .set({ version: nextVersion, updatedAt: new Date() })
+        .set({ version: nextVersion, updatedAt: new Date(), ...(identityId && !conv.identityId ? { identityId } : {}) })
         .where(eq(hermesConversations.id, conv.id));
         
       // Get max sequence
@@ -205,6 +224,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
         id: `conv_${Date.now()}_${Math.random().toString(36).substring(7)}`,
         organizationId: targetOrgId,
         conversationId: convId,
+        identityId: identityId || null,
         version: nextVersion,
         createdAt: new Date(),
         updatedAt: new Date()
