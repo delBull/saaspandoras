@@ -16,14 +16,15 @@ export async function GET(request: Request) {
     const allRooms = await listRooms();
     
     // Privacy Logic: Hide deals created by Super Admin from regular operators
+    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
     const adminWallet = (process.env.NEXT_PUBLIC_ADMIN_WALLET || "").toLowerCase();
-    const isSuperAdmin = (session!.address || "").toLowerCase() === adminWallet;
     
     const rooms = isSuperAdmin 
       ? allRooms 
       : allRooms.filter(r => {
           const createEvent = r.audit?.find(a => a.action === "ROOM_CREATED");
           const creator = createEvent ? createEvent.actor : "";
+          // If we don't know who created it, or it was created by the admin wallet, hide it from non-super admins.
           return creator.toLowerCase() !== adminWallet;
         });
 

@@ -125,9 +125,11 @@ interface OpsModalProps {
   onClose: () => void;
   tasks: TaskItem[];
   setTasks: React.Dispatch<React.SetStateAction<TaskItem[]>>;
+  userName?: string;
+  userRole?: string;
 }
 
-export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModalProps) {
+export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userRole }: OpsModalProps) {
   const [tab, setTab] = useState<Tab>('TERMINAL');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
@@ -212,6 +214,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
       dueDate: task.dueDate,
       detail: task.detail,
       requester: task.requester,
+      assignee: task.assignee,
     };
     saveTasks([taskItem, ...tasks]);
   };
@@ -331,11 +334,21 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks }: OpsModa
                     Responde las preguntas del terminal · la tarea queda pendiente y se envía a #pandoras-security
                   </p>
                 </div>
-                <span className="hidden sm:block px-2 py-1 rounded-lg border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono text-[10px]">
-                  sudo nexus ops
-                </span>
+                <div className="flex items-center gap-3">
+                  <a
+                    href="https://dash.pandoras.finance/admin/hermes"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hidden sm:block px-3 py-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 font-mono text-[10px] transition-colors"
+                  >
+                    sudo wake_up_hermes
+                  </a>
+                  <span className="hidden sm:block px-2 py-1 rounded-lg border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono text-[10px]">
+                    sudo nexus ops
+                  </span>
+                </div>
               </div>
-              <TaskTerminal onTaskCreated={handleTerminalTask} />
+              <TaskTerminal onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
             </div>
           )}
 

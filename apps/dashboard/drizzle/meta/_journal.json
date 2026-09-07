@@ -309,6 +309,13 @@
       "when": 1788761807368,
       "tag": "0043_useful_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1788810175369,
+      "tag": "0044_illegal_shinko_yamashiro",
+      "breakpoints": true
     }
   ]
 }

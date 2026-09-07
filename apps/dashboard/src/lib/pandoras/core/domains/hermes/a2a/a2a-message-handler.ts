@@ -18,6 +18,9 @@ import { AgentRegistry } from './agent-registry';
 import { ClaimContractEngine } from '../knowledge/claim-contract-engine';
 import { TenantAuthorityService } from '../tenants/tenant-authority';
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
+import { db } from '@/db';
+import { hermesAgentSkills } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export class A2AMessageHandler {
   public static async processIncomingMessage(message: A2AMessage): Promise<A2AProcessingResult> {
@@ -462,6 +465,17 @@ export class A2AMessageHandler {
     const caller = AgentRegistry.getAgent(message.from);
     const hermes = AgentRegistry.getAgent('hermes');
 
+    // Load available shared skills from the Cognitive Hub Repository (DB)
+    let sharedSkills: string[] = [];
+    try {
+      const skillsRecords = await db.select({ name: hermesAgentSkills.capabilityName })
+        .from(hermesAgentSkills)
+        .where(eq(hermesAgentSkills.isActive, true));
+      sharedSkills = skillsRecords.map(r => r.name);
+    } catch (err) {
+      console.warn('[A2AMessageHandler] Failed to query shared skills:', err);
+    }
+
     return {
       success: true,
       messageId: `resp_${crypto.randomUUID()}`,
@@ -488,6 +502,7 @@ export class A2AMessageHandler {
           'media.campaign.create',
           'research.report.create',
         ],
+        harnessSharedSkills: sharedSkills,
       },
     };
   }

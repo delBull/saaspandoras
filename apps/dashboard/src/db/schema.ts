@@ -4070,3 +4070,42 @@ export const hermesCognitiveProfiles = pgTable("hermes_cognitive_profiles", {
   lastInteractionAt: timestamp("last_interaction_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ============================================================================
+// 34. HERMES COGNITIVE HUB & ENGINEERING HARNESS
+// ============================================================================
+
+export const hermesAgentSkills = pgTable("hermes_agent_skills", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  capabilityName: varchar("capability_name", { length: 255 }).notNull(),
+  description: text("description"),
+  payload: jsonb("payload"),
+  ipfsCid: varchar("ipfs_cid", { length: 255 }),
+  ipfsUri: varchar("ipfs_uri", { length: 512 }),
+  authorAgentId: varchar("author_agent_id", { length: 255 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => {
+  return {
+    capabilityNameIdx: index("hermes_agent_skills_capability_idx").on(t.capabilityName),
+    authorIdx: index("hermes_agent_skills_author_idx").on(t.authorAgentId),
+  };
+});
+
+export const hermesAgentPrompts = pgTable("hermes_agent_prompts", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  promptName: varchar("prompt_name", { length: 255 }).notNull(),
+  content: text("content"),
+  ipfsCid: varchar("ipfs_cid", { length: 255 }),
+  ipfsUri: varchar("ipfs_uri", { length: 512 }),
+  authorAgentId: varchar("author_agent_id", { length: 255 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => {
+  return {
+    promptNameIdx: index("hermes_agent_prompts_name_idx").on(t.promptName),
+    authorIdx: index("hermes_agent_prompts_author_idx").on(t.authorAgentId),
+  };
+});
+

@@ -24,6 +24,7 @@ export interface TaskItem {
   dueDate: string;
   detail: string;
   requester?: string;
+  assignee?: string;
   tipo?: string;
   evidence?: string;
   evidenceType?: 'texto' | 'código' | 'foto' | 'enlace';

@@ -16,6 +16,8 @@ import {
   Landmark,
   GraduationCap,
   Settings,
+  LogOut,
+  Code2,
 } from "lucide-react";
 import { NexusRoleContext } from "./NexusAccessGate";
 import { OperationsHubModal } from "./OperationsHubModal";
@@ -183,9 +185,18 @@ const cardVariants: Variants = {
 };
 
 export default function NexusClient() {
-  const { role } = React.useContext(NexusRoleContext) || {};
+  const { role, name } = React.useContext(NexusRoleContext) || {};
   const [isIpModalOpen, setIsIpModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('settings') === 'open') {
+        setIsSettingsModalOpen(true);
+      }
+    }
+  }, []);
 
   const filteredCategories = categories.filter(c => {
     if (role === 'SUPER_ADMIN') return true;
@@ -216,6 +227,8 @@ export default function NexusClient() {
         onClose={() => setIsIpModalOpen(false)}
         tasks={tasks}
         setTasks={setTasks}
+        userName={name}
+        userRole={role}
       />
 
       <NexusSettingsModal
@@ -268,15 +281,28 @@ export default function NexusClient() {
                 <TerminalSquare className="w-3 h-3" />
                 OPERATIONS HUB
               </button>
-              <a
-                href="https://dash.pandoras.finance/nexus/rooms"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors"
-              >
-                <Handshake className="w-3 h-3" />
-                DEAL ROOM
-              </a>
+              {role === 'SUPER_ADMIN' && (
+                <a
+                  href="https://dash.pandoras.finance/nexus/rooms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors"
+                >
+                  <Handshake className="w-3 h-3" />
+                  DEAL ROOM
+                </a>
+              )}
+              {(role === 'SUPER_ADMIN' || role === 'ADMIN') && (
+                <a
+                  href="https://dash.pandoras.finance/nexus/developers"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-sky-500/30 bg-sky-500/10 text-sky-300 text-[10px] tracking-wider hover:bg-sky-500/20 transition-colors"
+                >
+                  <Code2 className="w-3 h-3" />
+                  DEVELOPER HUB
+                </a>
+              )}
               <a
                 href="https://dash.pandoras.finance/admin/academy"
                 target="_blank"
@@ -287,13 +313,26 @@ export default function NexusClient() {
                 ACADEMY
               </a>
               <button
-                onClick={() => setIsSettingsModalOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-300 text-[10px] tracking-wider hover:bg-zinc-700 transition-colors"
-                title="Configuración y Gestión de Colaboradores"
+                onClick={() => {
+                  localStorage.removeItem('pandoras_nexus_token');
+                  window.location.reload();
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-[10px] tracking-wider hover:bg-red-500/20 transition-colors"
+                title="Cerrar Sesión"
               >
-                <Settings className="w-3 h-3 text-zinc-400" />
-                SETTINGS
+                <LogOut className="w-3 h-3" />
+                LOGOUT
               </button>
+              {role === 'SUPER_ADMIN' && (
+                <button
+                  onClick={() => setIsSettingsModalOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-300 text-[10px] tracking-wider hover:bg-zinc-700 transition-colors"
+                  title="Configuración y Gestión de Colaboradores"
+                >
+                  <Settings className="w-3 h-3 text-zinc-400" />
+                  SETTINGS
+                </button>
+              )}
             </div>
           </div>
         </header>

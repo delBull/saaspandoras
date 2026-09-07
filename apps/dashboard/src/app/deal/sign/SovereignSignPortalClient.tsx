@@ -73,36 +73,53 @@ export function SovereignSignPortalClient() {
   useEffect(() => {
     const tokenParam = searchParams.get('token');
 
+    const headers: Record<string, string> = {};
+    const wallet = localStorage.getItem('snarai_wallet') || localStorage.getItem('user_wallet') || localStorage.getItem('walletAddress');
+    if (wallet) headers['x-wallet-address'] = wallet;
+
     if (tokenParam) {
-      // Auto-verify token from URL
-      fetch('/api/v1/deal-signing/auth/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: tokenParam }),
-      })
+      // Auto-verify token from URL using unified endpoint
+      fetch(`/api/v1/nexus/auth/me?token=${tokenParam}`, { headers })
         .then(res => res.json())
         .then(data => {
-          if (data.success) {
-            setSession(data.session);
-            // Pre-fill signer 1 email
-            setSigners([{ name: data.session.email.split('@')[0], email: data.session.email, role: 'SIGNER' }]);
+          if (data.ok && data.auth?.isAuthenticated) {
+            setSession({ email: data.auth.email, isAdmin: data.auth.role === 'SUPER_ADMIN' || data.auth.role === 'ADMIN' });
+            localStorage.setItem('pandoras_nexus_token', tokenParam);
+            if (data.auth.email) {
+              setSigners([{ name: data.auth.email.split('@')[0], email: data.auth.email, role: 'SIGNER' }]);
+            }
             // Clean up token from URL
             router.replace('/deal/sign');
+          } else {
+            router.replace('/nexus');
           }
         })
-        .catch(err => console.error('Error verifying token:', err))
+        .catch(err => {
+          console.error('Error verifying token:', err);
+          router.replace('/nexus');
+        })
         .finally(() => setIsCheckingAuth(false));
     } else {
-      // Check existing session cookie
-      fetch('/api/v1/deal-signing/auth/me')
+      // Check unified session (cookie/headers/local token)
+      const localToken = localStorage.getItem('pandoras_nexus_token');
+      const url = `/api/v1/nexus/auth/me${localToken ? `?token=${localToken}` : ''}`;
+      
+      fetch(url, { headers })
         .then(res => res.json())
         .then(data => {
-          if (data.authenticated && data.session) {
-            setSession(data.session);
-            setSigners([{ name: data.session.email.split('@')[0], email: data.session.email, role: 'SIGNER' }]);
+          if (data.ok && data.auth?.isAuthenticated) {
+            setSession({ email: data.auth.email, isAdmin: data.auth.role === 'SUPER_ADMIN' || data.auth.role === 'ADMIN' });
+            if (data.auth.email) {
+              setSigners([{ name: data.auth.email.split('@')[0], email: data.auth.email, role: 'SIGNER' }]);
+            }
+          } else {
+            router.replace('/nexus');
           }
         })
-        .catch(err => console.error('Session check failed:', err))
+        .catch(err => {
+          console.error('Session check failed:', err);
+          router.replace('/nexus');
+        })
         .finally(() => setIsCheckingAuth(false));
     }
   }, [searchParams, router]);
@@ -124,21 +141,19 @@ export function SovereignSignPortalClient() {
     setMagicError(null);
     setIsSendingMagic(true);
     try {
-      const res = await fetch('/api/v1/deal-signing/auth/magic', {
+      // Usamos el endpoint unificado de request collaborators
+      const res = await fetch('/api/nexus/collaborators/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: magicEmail.trim() }),
+        body: JSON.stringify({ email: magicEmail.trim(), name: magicEmail.split('@')[0] }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.message || 'Error al enviar magic link');
+        throw new Error(data?.error || 'Error al enviar magic link');
       }
 
       setMagicSentSuccess(true);
-      if (data.devMagicUrl) {
-        setDevMagicUrl(data.devMagicUrl);
-      }
     } catch (err: any) {
       setMagicError(err?.message || 'Error al procesar la solicitud');
     } finally {
@@ -147,7 +162,7 @@ export function SovereignSignPortalClient() {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/v1/deal-signing/auth/logout', { method: 'POST' });
+    localStorage.removeItem('pandoras_nexus_token');
     setSession(null);
     setMagicSentSuccess(false);
     setDevMagicUrl(null);

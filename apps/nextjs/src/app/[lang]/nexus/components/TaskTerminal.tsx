@@ -14,6 +14,7 @@ export interface TerminalTask {
   dueDate: string;
   detail: string;
   requester: string;
+  assignee?: string;
   tipo: string;
 }
 
@@ -66,7 +67,7 @@ function normalizePriority(v: string): 'HIGH' | 'MEDIUM' | 'LOW' {
   return 'MEDIUM';
 }
 
-export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: TerminalTask) => void }) {
+export default function TaskTerminal({ onTaskCreated, userName, userRole }: { onTaskCreated: (task: TerminalTask) => void; userName?: string; userRole?: string }) {
   const [log, setLog] = useState<LogLine[]>([]);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -109,9 +110,18 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
     switch (step) {
       case 0: {
         append.push({ kind: 'cmd', text: `$ ${value || 'nexus ops --start'}` });
-        append.push({ kind: 'out', text: '> whoami ▸ ¿Quién solicita esta tarea?' });
-        setLog(append);
-        setStep(1);
+        if (userName) {
+          const reqStr = `${userName} (${userRole || 'USER'})`;
+          append.push({ kind: 'out', text: `> whoami ▸ Autodetectado: ${reqStr}` });
+          append.push({ kind: 'out', text: '> task ▸ ¿Qué hay que hacer?' });
+          setAnswers((a) => ({ ...a, requester: reqStr }));
+          setLog(append);
+          setStep(2);
+        } else {
+          append.push({ kind: 'out', text: '> whoami ▸ ¿Quién solicita esta tarea?' });
+          setLog(append);
+          setStep(1);
+        }
         setInput('');
         return;
       }
@@ -174,6 +184,18 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
         const tipoDef = TIPOS.find((t) => t.key === tipoKey);
         const tipo = tipoDef ? tipoDef.label : value || suggestedType;
         append.push({ kind: 'out', text: `  → tipo: ${tipo}${tipoDef ? ` — ${tipoDef.short}` : ''}` });
+        append.push({ kind: 'out', text: '> assign ▸ ¿A quién se asignará? (Enter para omitir)' });
+        setAnswers((a) => ({ ...a, tipo: tipo }));
+        setLog(append);
+        setStep(7);
+        setInput('');
+        return;
+      }
+      case 7: {
+        const assignee = value || 'Sin asignar';
+        append.push({ kind: 'out', text: `  → asignado a: ${assignee}` });
+        setAnswers((a) => ({ ...a, assignee: assignee }));
+        
         const id = makeTaskId();
         setLastId(id);
         append.push({ kind: 'cmd', text: '─'.repeat(46) });
@@ -182,18 +204,18 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
         append.push({ kind: 'ok', text: `  DETALLES    : ${answers.details || '(sin detalle)'}` });
         append.push({ kind: 'ok', text: `  PRIORIDAD   : ${answers.priority}` });
         append.push({ kind: 'ok', text: `  CATEGORÍA   : ${answers.category}` });
-        append.push({ kind: 'ok', text: `  TIPO        : ${tipo}` });
+        append.push({ kind: 'ok', text: `  TIPO        : ${answers.tipo}` });
+        append.push({ kind: 'ok', text: `  ASIGNADO A  : ${assignee}` });
         append.push({ kind: 'ok', text: `  ID          : ${id}` });
         append.push({ kind: 'ok', text: `  FECHA       : ${dueDate}` });
         append.push({ kind: 'cmd', text: '─'.repeat(46) });
         append.push({ kind: 'cmd', text: '> run ▸ [y] enviar a #pandoras-security · [n] cancelar' });
-        setAnswers((a) => ({ ...a, tipo }));
         setLog(append);
-        setStep(7);
+        setStep(8);
         setInput('');
         return;
       }
-      case 7: {
+      case 8: {
         const v = value.toLowerCase();
         if (v === 'y' || v === 'yes' || v === 'sí' || v === 'si' || v === '1') {
           void submitTask();
@@ -236,6 +258,7 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
           priority: answers.priority,
           category: answers.category,
           tipo: answers.tipo,
+          assignee: answers.assignee || 'Sin asignar',
           dueDate,
           taskId: id,
         }),
@@ -264,6 +287,7 @@ export default function TaskTerminal({ onTaskCreated }: { onTaskCreated: (task: 
         detail: answers.details || '',
         requester: answers.requester || '',
         tipo: answers.tipo || 'Operación',
+        assignee: answers.assignee || 'Sin asignar',
       });
       setDone(true);
     } catch (e: any) {

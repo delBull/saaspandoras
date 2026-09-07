@@ -126,6 +126,25 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
     }
   };
 
+  const handlePromote = async (emailToPromote: string) => {
+    try {
+      const res = await fetch('https://dash.pandoras.finance/api/nexus/collaborators/promote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getWalletHeaders() },
+        credentials: 'include',
+        body: JSON.stringify({ email: emailToPromote })
+      });
+      if (res.ok) {
+        alert('Usuario promovido a ADMIN. Ahora tiene acceso al Developer Hub.');
+        loadCollaborators();
+      } else {
+        alert('Error al promover usuario. Asegúrate de ser SUPER_ADMIN.');
+      }
+    } catch (e) {
+      alert('Error de red');
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -247,9 +266,18 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
                           <p className="font-semibold text-white">{c.name}</p>
                           <p className="text-[11px] text-zinc-500">{c.email}</p>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                          ACTIVO
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePromote(c.email)}
+                            className="text-[10px] font-mono text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 px-2 py-0.5 rounded-full border border-sky-500/20 transition-colors cursor-pointer"
+                          >
+                            + DEV ACCESS
+                          </button>
+                          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                            ACTIVO
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>

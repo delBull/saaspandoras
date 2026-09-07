@@ -8,6 +8,7 @@ export interface AdminSession {
   userId: string;
   address: string;
   isVerified: boolean;
+  role?: string;
 }
 
 /**
@@ -75,16 +76,29 @@ export async function validateAdminSession(reqHeaders?: Headers): Promise<{ sess
 }
 
 /**
- * Autoriza la consola del Deal Room (Nivel 2).
- * Acepta sesión de administrador O token de desbloqueo HMAC
- * (enlace único del webhook de Discord, 2h de validez).
+ * Autoriza la consola del Deal Room (Nivel 2) usando el sistema de RBAC unificado.
+ * Acepta sesión de administrador Web3 O token de desbloqueo HMAC / Magic Link.
  */
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+
 export async function validateDealRoomAccess(
   request: Request
 ): Promise<{ session?: AdminSession; errorResponse?: NextResponse }> {
-  const admin = await validateAdminSession(request.headers);
-  if (admin.session) return admin;
+  // Check unified context
+  const auth = await getNexusAuthContext(request.headers);
+  
+  if (auth.isAuthenticated && ["SUPER_ADMIN", "ADMIN", "MARKETING"].includes(auth.role || '')) {
+    return {
+      session: {
+        userId: auth.wallet || auth.email || "nexus-user",
+        address: auth.wallet || auth.email || "nexus-user",
+        isVerified: true,
+        role: auth.role || undefined
+      }
+    };
+  }
 
+  // Legacy fallback: Token de desbloqueo HMAC (enlace del webhook de Discord, 2h)
   const url = new URL(request.url);
   const unlock = url.searchParams.get("unlock");
   if (typeof unlock === "string" && unlock && (await verifyUnlockToken(unlock))) {
