@@ -245,6 +245,32 @@ export async function verifyCollaboratorToken(
 }
 
 /**
+ * Get a collaborator by email (expired or not) for self-renewal auth.
+ */
+export async function getCollaboratorByEmail(
+  email: string
+): Promise<CollaboratorDTO | null> {
+  const [record] = await db
+    .select()
+    .from(nexusCollaborators)
+    .where(eq(nexusCollaborators.email, email.toLowerCase()))
+    .limit(1);
+
+  if (!record) return null;
+
+  return {
+    id: record.id,
+    name: record.name,
+    email: record.email,
+    role: record.role || 'COLLABORATOR',
+    permissions: (record.permissions as NexusPermissionsOverride) || {},
+    expiresAt: record.expiresAt,
+    lastAccessAt: record.lastAccessAt,
+    createdAt: record.createdAt,
+  };
+}
+
+/**
  * List all active collaborators (not expired).
  */
 export async function listCollaborators(): Promise<CollaboratorDTO[]> {

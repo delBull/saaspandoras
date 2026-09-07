@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Mail, CheckCircle2, ShieldCheck, ArrowRight, Loader2, Sparkles, LogOut } from 'lucide-react';
+import { Lock, Mail, CheckCircle2, Sparkles, Loader2, ArrowRight, Info, Wallet, AtSign } from 'lucide-react';
+import { ConnectButton, useActiveAccount } from "thirdweb/react";
+import { client } from "~/lib/thirdweb-client";
 
 interface NexusAccessGateProps {
   children: React.ReactNode;
@@ -21,10 +23,12 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collaboratorInfo, setCollaboratorInfo] = useState<any>(null);
+  
+  const account = useActiveAccount();
 
   useEffect(() => {
     checkInitialAccess();
-  }, []);
+  }, [account]);
 
   const getWalletHeaders = (): Record<string, string> => {
     if (typeof window === 'undefined') return {};
@@ -215,53 +219,120 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
             </div>
             <div>
               <p className="text-sm font-bold text-white">Autenticación Soberana</p>
-              <p className="text-[11px] text-zinc-500">Ingresa tu correo o conecta tu wallet autorizada</p>
+              <p className="text-[11px] text-zinc-500">Dos canales de acceso — cada uno con un propósito distinto</p>
+            </div>
+          </div>
+
+          {/* Why both methods notice */}
+          <div className="rounded-2xl bg-white/[0.03] border border-amber-500/15 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-amber-400/80">
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              <p className="text-[10px] font-mono font-bold uppercase tracking-wider">¿Por qué dos métodos?</p>
+            </div>
+            <div className="space-y-2.5">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-violet-500/20 border border-violet-500/30 shrink-0 mt-0.5">
+                  <Wallet className="w-2.5 h-2.5 text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-white/80 font-semibold leading-tight">Wallet Web3 — Identidad On-Chain</p>
+                  <p className="text-[10px] text-zinc-500 leading-relaxed mt-0.5">
+                    Crea tu Smart Wallet institucional. Necesaria para firmar transacciones, acceder a activos tokenizados y participar en gobernanza on-chain dentro del ecosistema Pandoras.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/30 shrink-0 mt-0.5">
+                  <AtSign className="w-2.5 h-2.5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-white/80 font-semibold leading-tight">Email — Acceso al Ecosistema Interno</p>
+                  <p className="text-[10px] text-zinc-500 leading-relaxed mt-0.5">
+                    Recibe Magic Links de acceso, notificaciones de deals, reportes de Hermes y comunicaciones operativas cifradas del ecosistema Pandoras.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           {!sent ? (
-            <form onSubmit={handleRequestMagicLink} className="space-y-4">
-              <div>
-                <label className="block text-xs font-mono text-zinc-400 mb-2">
-                  Correo Electrónico Autorizado
-                </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu-correo@pandoras.finance"
-                    required
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40 font-mono transition-all"
+            <div className="space-y-6">
+              {/* Method 1: Web3 Wallet */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-violet-500/20 border border-violet-500/30 text-[10px] font-bold text-violet-400 shrink-0">1</span>
+                  <label className="text-xs font-mono text-zinc-300 font-semibold">
+                    Billetera Institucional
+                  </label>
+                  <span className="text-[10px] font-mono text-violet-400/60 bg-violet-500/10 px-1.5 py-0.5 rounded-md border border-violet-500/20">Smart Wallet</span>
+                </div>
+                <div className="flex justify-center w-full">
+                  <ConnectButton
+                    client={client}
+                    theme="dark"
+                    connectButton={{
+                      label: "Conectar Wallet Web3",
+                      className: "!w-full !py-3 !rounded-xl !bg-zinc-800 !text-white !font-semibold !border !border-zinc-700 !hover:bg-zinc-700 !text-xs !font-mono",
+                    }}
                   />
-                  <Mail className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-500" />
                 </div>
               </div>
 
-              {error && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-mono">
-                  {error}
-                </div>
-              )}
+              {/* Divider */}
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-white/10 w-full" />
+                <span className="bg-[#0d0d12] px-3 text-[10px] text-zinc-500 uppercase tracking-wider font-mono absolute">
+                  o mediante magic link
+                </span>
+              </div>
 
-              <button
-                type="submit"
-                disabled={loading || !email}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-amber-500/20 disabled:opacity-40 flex items-center justify-center gap-2 font-mono"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Enviando Magic Link...
-                  </>
-                ) : (
-                  <>
-                    Solicitar Magic Link
-                    <ArrowRight className="w-4 h-4" />
-                  </>
+              <form onSubmit={handleRequestMagicLink} className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[10px] font-bold text-amber-400 shrink-0">2</span>
+                    <label className="text-xs font-mono text-zinc-300 font-semibold">
+                      Correo Electrónico
+                    </label>
+                    <span className="text-[10px] font-mono text-amber-400/60 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20">Magic Link</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu-correo@pandoras.finance"
+                      required
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40 font-mono transition-all"
+                    />
+                    <Mail className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-500" />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-mono">
+                    {error}
+                  </div>
                 )}
-              </button>
-            </form>
+
+                <button
+                  type="submit"
+                  disabled={loading || !email}
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-amber-500/20 disabled:opacity-40 flex items-center justify-center gap-2 font-mono"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Enviando Magic Link...
+                    </>
+                  ) : (
+                    <>
+                      Solicitar Magic Link
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
           ) : (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}

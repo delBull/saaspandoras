@@ -9,6 +9,7 @@ import {
   sendCollaboratorMagicLink,
   requireNexusAdmin,
   isNexusAdminEmail,
+  getCollaboratorByEmail,
 } from '@/lib/nexus/collaborators-service';
 
 function getCorsHeaders(req: NextRequest) {
@@ -46,22 +47,33 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName: string = (name && typeof name === 'string' && name.trim()) ? name.trim() : (isNexusAdminEmail(cleanEmail) ? 'Admin' : (cleanEmail.split('@')[0] || 'Collaborator'));
 
-    // Authorized if caller is an admin wallet OR if target email is an admin email
+    // Authorized if:
+    // 1. Caller is an admin wallet
+    // 2. Target email is in ADMIN_EMAILS env var
+    // 3. Target email already exists in nexus_collaborators (self-renewal of magic link)
     const isAdminCaller = await requireNexusAdmin(req);
     const isAdminTarget = isNexusAdminEmail(cleanEmail);
 
-    if (!isAdminCaller && !isAdminTarget) {
+    // Check if email already has an existing collaborator record (allows self-renewal)
+    const existingCollaborator = await getCollaboratorByEmail(cleanEmail);
+    const isExistingCollaborator = !!existingCollaborator;
+
+    if (!isAdminCaller && !isAdminTarget && !isExistingCollaborator) {
       return NextResponse.json(
         { error: 'Admin authentication required to invite external collaborators' },
         { status: 403, headers: cors }
       );
     }
 
+    // Preserve existing role if self-renewal (don't downgrade admins)
+    const effectiveRole = role || existingCollaborator?.role || 'COLLABORATOR';
+    const effectivePermissions = permissions || existingCollaborator?.permissions || {};
+
     const { collaborator, magicLink } = await createOrUpdateCollaborator(
       cleanName,
       cleanEmail,
-      role || 'COLLABORATOR',
-      permissions || {}
+      effectiveRole,
+      effectivePermissions
     );
 
     const sendResult = await sendCollaboratorMagicLink(
