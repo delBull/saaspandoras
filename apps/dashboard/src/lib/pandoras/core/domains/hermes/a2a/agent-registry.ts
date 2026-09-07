@@ -77,6 +77,68 @@ export class AgentRegistry {
     return this.registry.get(agentId);
   }
 
+  public static async getAgentAsync(agentId: string): Promise<AgentRegistryEntry | undefined> {
+    // 1. Check in-memory hardcoded agents first (Sofia, Hermes)
+    const memAgent = this.registry.get(agentId as AgentId);
+    if (memAgent) return memAgent;
+
+    // 2. Fallback to Database for dynamic agents
+    try {
+      const { db } = await import('@/db');
+      const { hermesAgents } = await import('@/db/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const [dbAgent] = await db.select().from(hermesAgents).where(eq(hermesAgents.agentId, agentId)).limit(1);
+      
+      if (dbAgent && dbAgent.isActive) {
+        return {
+          agentId: dbAgent.agentId as AgentId,
+          displayName: dbAgent.name,
+          organizationId: 'external',
+          role: 'EXTERNAL_AGENT' as any,
+          walletAddress: dbAgent.walletAddress || '',
+          endpoint: '', // Optional for dynamic clients that only call in
+          protocolVersion: '1.1',
+          status: 'ACTIVE',
+          allowedCapabilities: dbAgent.capabilities as string[],
+        };
+      }
+    } catch (err) {
+      console.error('[AgentRegistry] Failed to fetch dynamic agent from DB:', err);
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Returns the AES-256-GCM encrypted HMAC secret for a dynamic agent.
+   * Used by A2ASecurityValidator for bilateral HMAC verification.
+   * Returns null for hardcoded agents (sofia/hermes) — they use A2A_HMAC_SECRET env var.
+   */
+  public static async getAgentSecretEncrypted(agentId: string): Promise<string | null> {
+    // Hardcoded agents never have a DB encrypted secret — they use shared env var
+    if (this.registry.has(agentId as AgentId)) return null;
+
+    try {
+      const { db } = await import('@/db');
+      const { hermesAgents } = await import('@/db/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const [dbAgent] = await db
+        .select({ hmacSecretEncrypted: hermesAgents.hmacSecretEncrypted, isActive: hermesAgents.isActive })
+        .from(hermesAgents)
+        .where(eq(hermesAgents.agentId, agentId))
+        .limit(1);
+
+      if (dbAgent?.isActive && dbAgent.hmacSecretEncrypted) {
+        return dbAgent.hmacSecretEncrypted;
+      }
+    } catch (err) {
+      console.error('[AgentRegistry] Failed to fetch agent secret from DB:', err);
+    }
+    return null;
+  }
+
   public static getAllAgents(): AgentRegistryEntry[] {
     return Array.from(this.registry.values());
   }
@@ -98,16 +160,17 @@ export class AgentRegistry {
     // Consumer agents (e.g. Hermes) requesting tenant media capabilities strictly require an active CapabilityGrant
     if (tenantId && (capability.startsWith('media.') || capability.startsWith('research.'))) {
       for (const grant of this.capabilityGrants.values()) {
-        if (grant.capability === capability) {
+        if (grant.grantee === agentId && grant.capability === capability) {
           if (grant.expiresAt && Date.now() > new Date(grant.expiresAt).getTime()) {
             continue;
           }
-          if (grant.scope.tenantIds && (grant.scope.tenantIds.includes(tenantId) || grant.scope.tenantIds.includes('*'))) {
-            return true;
+          if (tenantId && grant.scope.tenantIds && !grant.scope.tenantIds.includes(tenantId) && !grant.scope.tenantIds.includes('*')) {
+            continue;
           }
+          return true;
         }
       }
-      return false;
+      return false; // Fail closed for tenant media/research without grant
     }
 
     // Check baseline capabilities for system-level messages
@@ -128,6 +191,19 @@ export class AgentRegistry {
     }
 
     return false;
+  }
+
+  public static async hasCapabilityAsync(agentId: string, capability: string, tenantId?: string): Promise<boolean> {
+    const entry = await this.getAgentAsync(agentId);
+    if (!entry || entry.status !== 'ACTIVE') return false;
+
+    // If it's a known static agent, fallback to the synchronous logic
+    if (agentId === 'sofia' || agentId === 'hermes') {
+      return this.hasCapability(agentId as AgentId, capability, tenantId);
+    }
+
+    // For dynamic external agents, check their allowed capabilities array
+    return entry.allowedCapabilities.includes(capability) || entry.allowedCapabilities.includes('*');
   }
 
   public static registerCapabilityGrant(grant: CapabilityGrant): void {

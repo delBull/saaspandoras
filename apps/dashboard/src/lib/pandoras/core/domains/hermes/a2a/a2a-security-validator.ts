@@ -1,17 +1,22 @@
 /**
- * 🏛️ PANDORAS A2A PROTOCOL v1.0 — SECURITY VALIDATOR
+ * 🏛️ PANDORAS A2A PROTOCOL v1.1 — SECURITY VALIDATOR
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/a2a/a2a-security-validator.ts
  *
  * Enforces Zero-Trust transport HMAC, EIP-191 wallet signature verification,
- * nonce replay defense, and capability authorization.
+ * DB-backed nonce replay defense, and bilateral HMAC for dynamic agents.
+ *
+ * GAP1 fix: nonce store is now backed by a2a_nonces table in NeonDB.
+ *           Survives serverless cold starts and multi-instance deployments.
+ * GAP2 fix: dynamic agents now validate payload HMAC bilaterally using
+ *           AES-256-GCM decrypted secret from hermes_agents.hmac_secret_encrypted.
  */
 
 import * as crypto from 'crypto';
 import { ethers } from 'ethers';
 import { A2AMessage } from './contracts';
 import { AgentRegistry } from './agent-registry';
+import { decryptSecret } from '@/lib/nexus/agents-service';
 
-const processedNonces = new Map<string, number>();
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000; // 5 minutes
 const NONCE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -92,12 +97,25 @@ export class A2ASecurityValidator {
       return { valid: false, errorCode: 'MESSAGE_EXPIRED', errorMessage: 'Message TTL has expired' };
     }
 
-    // 4. Nonce Replay Defense
-    this.pruneNonces(now);
-    if (processedNonces.has(message.nonce)) {
-      return { valid: false, errorCode: 'NONCE_REPLAY', errorMessage: 'Nonce has already been used' };
+    // 4. Nonce Replay Defense — DB-backed (GAP1 fix)
+    //    INSERT the nonce into a2a_nonces. If it already exists → replay attack.
+    //    ON CONFLICT DO NOTHING returns 0 rows → replay detected.
+    try {
+      const { db } = await import('@/db');
+      const { a2aNonces } = await import('@/db/schema');
+      const expiresAt = new Date(now + NONCE_TTL_MS);
+      const inserted = await db.insert(a2aNonces)
+        .values({ nonce: message.nonce, expiresAt })
+        .onConflictDoNothing()
+        .returning();
+      if (inserted.length === 0) {
+        return { valid: false, errorCode: 'NONCE_REPLAY', errorMessage: 'Nonce has already been used' };
+      }
+    } catch (dbErr: any) {
+      // DB unavailable: fail-closed for security
+      console.error('[A2ASecurityValidator] DB nonce check failed:', dbErr?.message);
+      return { valid: false, errorCode: 'NONCE_CHECK_FAILED', errorMessage: 'Nonce replay DB check failed' };
     }
-    processedNonces.set(message.nonce, now);
 
     // 5. Canonical Hash
     const canonicalHash = this.computePayloadCanonicalHash({
@@ -119,24 +137,30 @@ export class A2ASecurityValidator {
     // For legacy agents (sofia, hermes), fallback to env vars.
     // For dynamic agents, use their db hmacSecretHash.
     let expectedHmac: string;
+    let hmacRequired = false;
     try {
       if (message.from === 'sofia' || message.from === 'hermes') {
-         expectedHmac = this.computeHmac(canonicalHash);
+        // Legacy hardcoded agents: shared A2A_HMAC_SECRET env var
+        expectedHmac = this.computeHmac(canonicalHash);
+        hmacRequired = true;
       } else {
-         // We would ideally compare bcrypt hash, but HMAC must be symmetric.
-         // A true zero-trust design requires the agent to send an HMAC derived from their raw secret,
-         // but we only store the hash of the secret. Actually, in A2A, HMAC is usually symmetric.
-         // So the DB should store the agent's secret encrypted, not one-way hashed, or we just rely on EIP-191.
-         // Wait, the Client Harness implements both HMAC and EIP-191. 
-         // If we rely on EIP-191, we can skip HMAC for dynamic agents if we verify the signature.
-         // Let's enforce EIP-191 for dynamic agents.
-         expectedHmac = ''; // Skip HMAC for dynamic agents if EIP-191 is present
+        // Dynamic agents (GAP2 fix): decrypt per-agent secret and verify HMAC bilaterally
+        const encryptedSecret = await AgentRegistry.getAgentSecretEncrypted(message.from);
+        if (encryptedSecret) {
+          const agentPlainSecret = decryptSecret(encryptedSecret);
+          expectedHmac = crypto.createHmac('sha256', agentPlainSecret).update(canonicalHash).digest('hex');
+          hmacRequired = true;
+        } else {
+          // No encrypted secret registered → fall through to EIP-191 only
+          expectedHmac = '';
+          hmacRequired = false;
+        }
       }
     } catch (err: any) {
       return { valid: false, errorCode: 'HMAC_SECRET_UNCONFIGURED', errorMessage: err?.message || 'A2A HMAC secret is not configured' };
     }
-    
-    if ((message.from === 'sofia' || message.from === 'hermes') && (!message.security.hmac || message.security.hmac !== expectedHmac)) {
+
+    if (hmacRequired && (!message.security.hmac || message.security.hmac !== expectedHmac)) {
       return { valid: false, errorCode: 'INVALID_HMAC', errorMessage: 'Transport HMAC signature verification failed' };
     }
 
@@ -170,11 +194,4 @@ export class A2ASecurityValidator {
     return { valid: true };
   }
 
-  private static pruneNonces(now: number): void {
-    for (const [nonce, timestamp] of processedNonces.entries()) {
-      if (now - timestamp > NONCE_TTL_MS) {
-        processedNonces.delete(nonce);
-      }
-    }
-  }
 }

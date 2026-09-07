@@ -4113,10 +4113,21 @@ export const hermesAgents = pgTable("hermes_agents", {
   id: serial("id").primaryKey(),
   agentId: varchar("agent_id", { length: 255 }).notNull().unique(), // e.g., 'dev-alex', 'sofia-v2'
   name: varchar("name", { length: 255 }).notNull(),
-  hmacSecretHash: text("hmac_secret_hash").notNull(), // bcrypt hashed
+  hmacSecretHash: text("hmac_secret_hash").notNull(), // SHA-256 hash for identity confirmation
+  hmacSecretEncrypted: text("hmac_secret_encrypted"), // AES-256-GCM encrypted — used for bilateral HMAC verification
   walletAddress: varchar("wallet_address", { length: 255 }), // for EIP-191 signature validation
   capabilities: jsonb("capabilities").default([]).notNull(), // array of capability strings
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * DB-backed nonce store for A2A replay protection.
+ * Replaces in-memory Map to survive across serverless cold starts and multi-instance deployments.
+ */
+export const a2aNonces = pgTable("a2a_nonces", {
+  nonce: text("nonce").primaryKey(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

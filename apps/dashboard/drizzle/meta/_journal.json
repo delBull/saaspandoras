@@ -323,6 +323,13 @@
       "when": 1788815751834,
       "tag": "0045_steep_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1788818834519,
+      "tag": "0046_elite_emma_frost",
+      "breakpoints": true
     }
   ]
 }
