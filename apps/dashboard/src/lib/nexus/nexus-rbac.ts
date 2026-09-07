@@ -233,6 +233,21 @@ export async function getNexusAuthContext(
           name: collaborator.name,
           permissions,
         };
+      } else {
+        // Fallback for dynamically generated HMAC iframe tokens
+        const { verifyAcademyToken } = await import('@/lib/nexus-deals/tokens');
+        const hmac = await verifyAcademyToken(token);
+        if (hmac.valid) {
+          const role = hmac.role === 'admin' ? 'ADMIN' : 'VIEWER';
+          return {
+            isAuthenticated: true,
+            role,
+            permissions: resolveEffectivePermissions(role as NexusRole, {}),
+            email: hmac.email,
+            name: hmac.email?.split('@')[0] || 'Sovereign Actor',
+            wallet: null
+          };
+        }
       }
     }
 
