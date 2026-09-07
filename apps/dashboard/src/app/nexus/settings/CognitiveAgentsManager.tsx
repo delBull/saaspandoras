@@ -181,14 +181,14 @@ export function CognitiveAgentsManager() {
             </button>
             <pre className="whitespace-pre-wrap pr-10">
 {`# 1. Instala el SDK en tu proyecto
-npm install @pandoras/a2a-client
+npm install @pandorasbox6/a2a-client
 
 # 2. Configura las variables de entorno
 AGENT_ID="${newAgentId}"
 AGENT_SECRET="${newSecret}"
 
 # 3. Inicializa el Cliente
-import { A2AClient } from '@pandoras/a2a-client';
+import { A2AClient } from '@pandorasbox6/a2a-client';
 
 const client = new A2AClient({
   agentId: process.env.AGENT_ID,
