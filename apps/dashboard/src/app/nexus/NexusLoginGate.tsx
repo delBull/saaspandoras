@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 
 export function NexusLoginGate() {
   const [email, setEmail] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   
@@ -33,7 +34,7 @@ export function NexusLoginGate() {
       const res = await fetch("/api/nexus/collaborators/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, whatsappPhone }),
       });
 
       const data = await res.json();
@@ -43,6 +44,7 @@ export function NexusLoginGate() {
           message: `Enlace de acceso soberano enviado a ${email}. Revisa tu bandeja de entrada.`,
         });
         setEmail("");
+        setWhatsappPhone("");
       } else {
         setResult({
           type: "error",
@@ -143,6 +145,14 @@ export function NexusLoginGate() {
                 className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
                 required
               />
+              <input
+                type="tel"
+                value={whatsappPhone}
+                onChange={(e) => setWhatsappPhone(e.target.value)}
+                placeholder="+5215551234567 (Opcional - Para notificaciones IA de Hermes)"
+                className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
+              />
+              <p className="text-[10px] text-zinc-500 px-1 leading-tight">El número de WhatsApp es requerido para que la IA de Hermes pueda asignar y notificar tareas operativas del Nexus.</p>
               <button
                 type="submit"
                 disabled={loading || !email}

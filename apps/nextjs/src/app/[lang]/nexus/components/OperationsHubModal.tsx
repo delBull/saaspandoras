@@ -131,6 +131,7 @@ interface OpsModalProps {
 
 export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userRole }: OpsModalProps) {
   const [tab, setTab] = useState<Tab>('TERMINAL');
+  const [terminalMode, setTerminalMode] = useState<'TASK' | 'HERMES'>('TASK');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
   const [notifying, setNotifying] = useState(false);
@@ -144,12 +145,24 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
   const [newAssetRisk, setNewAssetRisk] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
   const [newAssetNotes, setNewAssetNotes] = useState('');
 
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('');
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const storedAssets = localStorage.getItem('pandoras_ip_assets_custom');
     if (storedAssets) {
       try { setAssets(JSON.parse(storedAssets)); } catch { }
     }
+    
+    fetch('https://dash.pandoras.finance/api/nexus/collaborators/list')
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && data.collaborators) {
+          setCollaborators(data.collaborators);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   const saveAssets = (updated: IPAsset[]) => {
@@ -199,7 +212,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     };
     saveTasks([newTask, ...tasks]);
 
-    sendDiscordAlert(`Nueva Búsqueda/Marca Registrada: ${newAssetItem.name} (Riesgo: ${newAssetItem.riskAssessment})`);
+    assignTask(`Nueva Búsqueda/Marca Registrada: ${newAssetItem.name} (Riesgo: ${newAssetItem.riskAssessment})`);
   };
 
   const handleTerminalTask = (task: TerminalTask) => {
@@ -219,22 +232,58 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     saveTasks([taskItem, ...tasks]);
   };
 
-  const sendDiscordAlert = async (message: string, requester = 'Nexus Ops') => {
+  const getWalletHeaders = (): Record<string, string> => {
+    if (typeof window === 'undefined') return {};
+    const wallet = 
+      localStorage.getItem('snarai_wallet') ||
+      localStorage.getItem('user_wallet') ||
+      localStorage.getItem('walletAddress') ||
+      localStorage.getItem('thirdweb:active-account') ||
+      (window as any).ethereum?.selectedAddress ||
+      '';
+    if (!wallet) return {};
+    return {
+      'x-wallet-address': wallet,
+      'x-thirdweb-address': wallet,
+    };
+  };
+
+  const assignTask = async (message: string, requester = 'Nexus Ops') => {
     setNotifying(true);
     try {
-      const res = await fetch('/api/nexus/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'alert',
-          message,
-          requester,
-          task: selectedAsset ? selectedAsset.name : undefined,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        console.warn('[Nexus Ops] Discord alert failed:', data);
+      if (selectedAssignee) {
+        console.log("[HERMES META API] Enviando WhatsApp a ID:", selectedAssignee, "Mensaje:", message);
+        await fetch('https://dash.pandoras.finance/api/nexus/assignments', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...getWalletHeaders()
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            assigneeId: selectedAssignee,
+            message: `[HERMES WA] ${message}`,
+            requester,
+            task: selectedAsset ? selectedAsset.name : undefined,
+          }),
+        }).catch(() => null);
+        
+        // Also keep Discord log if needed, or rely on fallback in assignments route
+      } else {
+        const res = await fetch('/api/nexus/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: 'alert',
+            message,
+            requester,
+            task: selectedAsset ? selectedAsset.name : undefined,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          console.warn('[Nexus Ops] Discord alert failed:', data);
+        }
       }
       setNotified(true);
       setTimeout(() => setNotified(false), 4000);
@@ -335,20 +384,18 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <a
-                    href="https://dash.pandoras.finance/admin/hermes"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hidden sm:block px-3 py-1 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 font-mono text-[10px] transition-colors"
+                  <button
+                    onClick={() => setTerminalMode(terminalMode === 'HERMES' ? 'TASK' : 'HERMES')}
+                    className={`hidden sm:block px-3 py-1 rounded-lg border font-mono text-[10px] transition-colors ${terminalMode === 'HERMES' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20'}`}
                   >
                     sudo wake_up_hermes
-                  </a>
+                  </button>
                   <span className="hidden sm:block px-2 py-1 rounded-lg border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono text-[10px]">
                     sudo nexus ops
                   </span>
                 </div>
               </div>
-              <TaskTerminal onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
+              <TaskTerminal mode={terminalMode} onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
             </div>
           )}
 
@@ -509,7 +556,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                       <p className="text-[11px] text-purple-300 font-mono mt-0.5">Titular Registral: {selectedAsset.owner}</p>
                     </div>
                     <button
-                      onClick={() => sendDiscordAlert(`Notificación de Marca: ${selectedAsset.name}`)}
+                      onClick={() => assignTask(`Notificación de Marca: ${selectedAsset.name}`)}
                       disabled={notifying}
                       className="px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[11px] font-mono transition-colors flex items-center gap-1.5 disabled:opacity-50"
                     >
@@ -591,13 +638,23 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. · HOLDING
             </span>
             <div className="flex items-center gap-3 shrink-0">
+              <select
+                value={selectedAssignee}
+                onChange={(e) => setSelectedAssignee(e.target.value)}
+                className="bg-[#0C0C10] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 font-mono outline-none focus:border-amber-500/50"
+              >
+                <option value="">Sin Asignar (Discord)</option>
+                {collaborators.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
+                ))}
+              </select>
               <button
-                onClick={() => sendDiscordAlert('Resumen de Operaciones Enviado')}
+                onClick={() => assignTask(selectedAssignee ? `Operación asignada a ${collaborators.find(c => c.id === selectedAssignee)?.name}` : 'Resumen de Operaciones Enviado')}
                 disabled={notifying}
                 className="px-3.5 py-2 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[11px] font-mono transition-colors flex items-center gap-1.5"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${notifying ? 'animate-spin' : ''}`} />
-                <span>{notified ? 'ENVIADO ✓' : 'ENVIAR A DISCORD'}</span>
+                <span>{notified ? 'ENVIADO ✓' : selectedAssignee ? 'ASIGNAR (HERMES WA)' : 'ENVIAR A DISCORD'}</span>
               </button>
               <button
                 onClick={onClose}

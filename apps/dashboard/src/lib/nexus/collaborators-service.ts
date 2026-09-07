@@ -60,6 +60,7 @@ export interface CollaboratorDTO {
   email: string;
   role: string;
   permissions?: NexusPermissionsOverride;
+  whatsappPhone?: string | null;
   expiresAt: Date;
   lastAccessAt?: Date | null;
   createdAt: Date;
@@ -79,7 +80,9 @@ export async function createOrUpdateCollaborator(
   name: string,
   email: string,
   role: string = 'COLLABORATOR',
-  permissions: NexusPermissionsOverride = {}
+  permissions: NexusPermissionsOverride = {},
+  whatsappPhone?: string
+
 ): Promise<{ collaborator: CollaboratorDTO; magicLink: string }> {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
@@ -92,6 +95,7 @@ export async function createOrUpdateCollaborator(
       token,
       role,
       permissions,
+      whatsappPhone,
       expiresAt,
       lastAccessAt: null,
     })
@@ -101,6 +105,7 @@ export async function createOrUpdateCollaborator(
         token,
         role,
         permissions,
+        whatsappPhone,
         expiresAt,
         lastAccessAt: null,
       },
@@ -121,6 +126,7 @@ export async function createOrUpdateCollaborator(
       email: record.email,
       role: record.role || 'COLLABORATOR',
       permissions: (record.permissions as NexusPermissionsOverride) || {},
+      whatsappPhone: record.whatsappPhone,
       expiresAt: record.expiresAt,
       lastAccessAt: record.lastAccessAt,
       createdAt: record.createdAt,
@@ -238,6 +244,7 @@ export async function verifyCollaboratorToken(
     email: record.email,
     role: record.role || 'COLLABORATOR',
     permissions: (record.permissions as NexusPermissionsOverride) || {},
+    whatsappPhone: record.whatsappPhone,
     expiresAt: record.expiresAt,
     lastAccessAt: record.lastAccessAt,
     createdAt: record.createdAt,
@@ -264,6 +271,7 @@ export async function getCollaboratorByEmail(
     email: record.email,
     role: record.role || 'COLLABORATOR',
     permissions: (record.permissions as NexusPermissionsOverride) || {},
+    whatsappPhone: record.whatsappPhone,
     expiresAt: record.expiresAt,
     lastAccessAt: record.lastAccessAt,
     createdAt: record.createdAt,
@@ -287,6 +295,7 @@ export async function listCollaborators(): Promise<CollaboratorDTO[]> {
     email: r.email,
     role: r.role || 'COLLABORATOR',
     permissions: (r.permissions as NexusPermissionsOverride) || {},
+    whatsappPhone: r.whatsappPhone,
     expiresAt: r.expiresAt,
     lastAccessAt: r.lastAccessAt,
     createdAt: r.createdAt,
@@ -322,6 +331,7 @@ export async function updateCollaboratorPermissions(
       email: record.email,
       role: record.role,
       permissions: (record.permissions as NexusPermissionsOverride) || {},
+      whatsappPhone: record.whatsappPhone,
       expiresAt: record.expiresAt,
       lastAccessAt: record.lastAccessAt,
       createdAt: record.createdAt,

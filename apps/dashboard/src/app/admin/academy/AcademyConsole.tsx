@@ -376,7 +376,7 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
 
           <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
             <a
-              href="/academy/assessment/inv_coo_carlos_demo"
+              href="https://dash.pandoras.finance/academy/assessment/inv_coo_carlos_demo"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20 text-xs font-mono transition-colors"
@@ -385,17 +385,19 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
               <Play className="w-3.5 h-3.5 fill-purple-300/30" />
               PROBAR TEST (COO TRACK)
             </a>
-            <button
-              onClick={() => {
-                setGeneratedInviteLink(null);
-                setInviteError(null);
-                setShowInviteModal(true);
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-colors shadow-lg hover:shadow-purple-500/25"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              INVITAR CANDIDATO
-            </button>
+            {role === 'admin' && (
+              <button
+                onClick={() => {
+                  setGeneratedInviteLink(null);
+                  setInviteError(null);
+                  setShowInviteModal(true);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-colors shadow-lg hover:shadow-purple-500/25"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                INVITAR CANDIDATO
+              </button>
+            )}
             <button
               onClick={fetchCandidates}
               className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
@@ -441,17 +443,19 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
             <Sparkles className="w-3.5 h-3.5" />
             SIMULADOR & RÚBRICAS
           </button>
-          <button
-            onClick={() => setActiveTab("METRICS")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
-              activeTab === "METRICS"
-                ? "bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold"
-                : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            MÉTRICAS & CERTIFICACIONES
-          </button>
+          {role === 'admin' && (
+            <button
+              onClick={() => setActiveTab("METRICS")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === "METRICS"
+                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              MÉTRICAS & CONVERSIÓN
+            </button>
+          )}
         </div>
 
         {/* ─── TAB 1: PROGRAMS & TRACKS ────────────────────────────────────────── */}

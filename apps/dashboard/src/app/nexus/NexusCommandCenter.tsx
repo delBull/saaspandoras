@@ -5,7 +5,9 @@ import {
   Compass,
   UserCheck,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Settings,
+  LogOut
 } from "lucide-react";
 import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import { HermesFloatingGuide } from "@/components/guides/HermesFloatingGuide";
@@ -129,6 +131,36 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             <Compass className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
             <span className="text-center">Guía del Ecosistema</span>
           </button>
+
+          <div className="flex gap-2 mt-4">
+            {auth.role === 'SUPER_ADMIN' && (
+              <button
+                onClick={() => {
+                  const iframe = document.querySelector('iframe');
+                  if (iframe) {
+                    const currentSrc = iframe.src;
+                    iframe.src = currentSrc.includes('?') ? currentSrc + '&settings=open' : currentSrc + '?settings=open';
+                  }
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800/50 text-zinc-300 text-[10px] tracking-wider hover:bg-zinc-700 transition-colors"
+                title="Configuración y Gestión de Colaboradores"
+              >
+                <Settings className="w-3 h-3 text-zinc-400" />
+                SETTINGS
+              </button>
+            )}
+            <button
+              onClick={() => {
+                localStorage.removeItem('pandoras_nexus_token');
+                window.location.href = '/login';
+              }}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-[10px] tracking-wider hover:bg-red-500/20 transition-colors"
+              title="Cerrar Sesión"
+            >
+              <LogOut className="w-3 h-3" />
+              LOGOUT
+            </button>
+          </div>
         </div>
 
         <div className="text-[9px] text-zinc-600 font-mono text-center">

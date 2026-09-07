@@ -67,7 +67,7 @@ function normalizePriority(v: string): 'HIGH' | 'MEDIUM' | 'LOW' {
   return 'MEDIUM';
 }
 
-export default function TaskTerminal({ onTaskCreated, userName, userRole }: { onTaskCreated: (task: TerminalTask) => void; userName?: string; userRole?: string }) {
+export default function TaskTerminal({ onTaskCreated, userName, userRole, mode = 'TASK' }: { onTaskCreated: (task: TerminalTask) => void; userName?: string; userRole?: string; mode?: 'TASK' | 'HERMES' }) {
   const [log, setLog] = useState<LogLine[]>([]);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -80,14 +80,28 @@ export default function TaskTerminal({ onTaskCreated, userName, userRole }: { on
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const boot: LogLine[] = [
-      { kind: 'cmd', text: '$ nexus ops --new-task' },
-      { kind: 'out', text: 'Nexus Operations Hub · registrador de tareas pendientes' },
-      { kind: 'out', text: 'Canal: #pandoras-security · fuente: dash.pandoras.finance/nexus' },
-      { kind: 'out', text: '— responde las preguntas en orden. Sugerencias automáticas incluidas.' },
-    ];
-    setLog(boot);
-  }, []);
+    if (mode === 'HERMES') {
+      const boot: LogLine[] = [
+        { kind: 'cmd', text: '$ sudo wake_up_hermes' },
+        { kind: 'out', text: 'Hermes OS Kernel · AI Operations Assistant' },
+        { kind: 'out', text: `Usuario verificado: ${userName || 'Operador'} (${userRole || 'USER'})` },
+        { kind: 'out', text: '— Hermes está en línea. ¿En qué te puedo ayudar?' },
+      ];
+      setLog(boot);
+      setStep(100);
+      setDone(false);
+    } else {
+      const boot: LogLine[] = [
+        { kind: 'cmd', text: '$ nexus ops --new-task' },
+        { kind: 'out', text: 'Nexus Operations Hub · registrador de tareas pendientes' },
+        { kind: 'out', text: 'Canal: #pandoras-security · fuente: dash.pandoras.finance/nexus' },
+        { kind: 'out', text: '— responde las preguntas en orden. Sugerencias automáticas incluidas.' },
+      ];
+      setLog(boot);
+      setStep(0);
+      setDone(false);
+    }
+  }, [mode, userName, userRole]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -229,6 +243,22 @@ export default function TaskTerminal({ onTaskCreated, userName, userRole }: { on
         setInput('');
         return;
       }
+      case 100: {
+        if (!value) return;
+        append.push({ kind: 'cmd', text: `$ ${value}` });
+        setLog(append);
+        setBusy(true);
+        setTimeout(() => {
+          setLog((l) => [
+            ...l,
+            { kind: 'ok', text: `Hermes: Entendido. Integrando contexto de ${userName || 'Operador'} y analizando requerimiento...` },
+            { kind: 'out', text: 'Hermes: (Modo simulación interactiva activo. La integración A2A de IA procesaría esta instrucción para crear tareas automáticamente).' },
+          ]);
+          setBusy(false);
+        }, 1500);
+        setInput('');
+        return;
+      }
     }
   };
 
@@ -308,6 +338,7 @@ export default function TaskTerminal({ onTaskCreated, userName, userRole }: { on
       case 5: return `cat ▸ sugerido: ${suggestedCat}`;
       case 6: return `type ▸ [ROADMAP|PLATAFORMA|CODIGO|ESTRUCTURA|ARQUITECTURA|NEGOCIO|OPERACION] · sugerido: ${suggestedType}`;
       case 7: return 'run ▸ [y] enviar a #pandoras-security · [n] cancelar';
+      case 100: return 'hermes ▸ Escribe un requerimiento para automatizar...';
       default: return '';
     }
   };

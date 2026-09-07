@@ -19,6 +19,7 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [email, setEmail] = useState(DEFAULT_ADMIN_EMAIL);
+  const [whatsappPhone, setWhatsappPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,8 +113,6 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
 
   const handleRequestMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-
     setLoading(true);
     setError(null);
 
@@ -128,6 +127,7 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
           name: email.split('@')[0],
+          whatsappPhone: whatsappPhone.trim(),
         }),
       });
 
@@ -291,20 +291,34 @@ export function NexusAccessGate({ children }: NexusAccessGateProps) {
                   <div className="flex items-center gap-2 mb-2">
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[10px] font-bold text-amber-400 shrink-0">2</span>
                     <label className="text-xs font-mono text-zinc-300 font-semibold">
-                      Correo Electrónico
+                      Correo Electrónico & WhatsApp
                     </label>
                     <span className="text-[10px] font-mono text-amber-400/60 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20">Magic Link</span>
                   </div>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu-correo@pandoras.finance"
-                      required
-                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40 font-mono transition-all"
-                    />
-                    <Mail className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-500" />
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="tu-correo@pandoras.finance"
+                        required
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40 font-mono transition-all"
+                      />
+                      <Mail className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-500" />
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        value={whatsappPhone}
+                        onChange={(e) => setWhatsappPhone(e.target.value)}
+                        placeholder="+5215551234567 (Opcional - Para notificaciones de Hermes)"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40 font-mono transition-all"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500 font-mono leading-relaxed px-1">
+                      El número de WhatsApp permite que la IA de Hermes te asigne tareas y te envíe notificaciones críticas directamente a tu teléfono mediante el Meta Graph API.
+                    </p>
                   </div>
                 </div>
 

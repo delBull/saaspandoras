@@ -150,6 +150,17 @@ export async function getNexusAuthContext(
     const sessionWallet = (session?.address || reqHeaders.get('x-wallet-address') || reqHeaders.get('x-thirdweb-address'))?.toLowerCase();
 
     if (sessionWallet && isVerified) {
+      const isSuper = sessionWallet === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || '').toLowerCase();
+      
+      if (isSuper) {
+        return {
+          isAuthenticated: true,
+          role: 'SUPER_ADMIN',
+          wallet: sessionWallet,
+          permissions: resolveEffectivePermissions('SUPER_ADMIN'),
+        };
+      }
+
       // Optimizamos: Buscar en la base de datos `users` el rol canónico.
       const userRecords = await db
         .select()
@@ -176,18 +187,8 @@ export async function getNexusAuthContext(
         };
       }
 
-      // Backward compatibility fallback using `isAdmin` just in case they aren't registered yet in `users`
-      const isSuper = sessionWallet === (process.env.NEXT_PUBLIC_ADMIN_WALLET || '').toLowerCase();
+      // Backward compatibility fallback usando `isAdmin` just in case they aren't registered yet in `users`
       const isPlatformAdmin = await isAdmin(sessionWallet);
-
-      if (isSuper) {
-        return {
-          isAuthenticated: true,
-          role: 'SUPER_ADMIN',
-          wallet: sessionWallet,
-          permissions: resolveEffectivePermissions('SUPER_ADMIN'),
-        };
-      }
 
       if (isPlatformAdmin) {
         return {

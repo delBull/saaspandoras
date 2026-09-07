@@ -281,17 +281,15 @@ export default function NexusClient() {
                 <TerminalSquare className="w-3 h-3" />
                 OPERATIONS HUB
               </button>
-              {role === 'SUPER_ADMIN' && (
-                <a
-                  href="https://dash.pandoras.finance/nexus/rooms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors"
-                >
-                  <Handshake className="w-3 h-3" />
-                  DEAL ROOM
-                </a>
-              )}
+              <a
+                href="https://dash.pandoras.finance/nexus/rooms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors"
+              >
+                <Handshake className="w-3 h-3" />
+                DEAL ROOM
+              </a>
               {(role === 'SUPER_ADMIN' || role === 'ADMIN') && (
                 <a
                   href="https://dash.pandoras.finance/nexus/developers"
@@ -312,27 +310,6 @@ export default function NexusClient() {
                 <GraduationCap className="w-3 h-3" />
                 ACADEMY
               </a>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('pandoras_nexus_token');
-                  window.location.reload();
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-[10px] tracking-wider hover:bg-red-500/20 transition-colors"
-                title="Cerrar Sesión"
-              >
-                <LogOut className="w-3 h-3" />
-                LOGOUT
-              </button>
-              {role === 'SUPER_ADMIN' && (
-                <button
-                  onClick={() => setIsSettingsModalOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-300 text-[10px] tracking-wider hover:bg-zinc-700 transition-colors"
-                  title="Configuración y Gestión de Colaboradores"
-                >
-                  <Settings className="w-3 h-3 text-zinc-400" />
-                  SETTINGS
-                </button>
-              )}
             </div>
           </div>
         </header>

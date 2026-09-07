@@ -24,8 +24,7 @@ export async function GET(request: Request) {
       : allRooms.filter(r => {
           const createEvent = r.audit?.find(a => a.action === "ROOM_CREATED");
           const creator = createEvent ? createEvent.actor : "";
-          // If we don't know who created it, or it was created by the admin wallet, hide it from non-super admins.
-          return creator.toLowerCase() !== adminWallet;
+          return creator.toLowerCase() === session?.address?.toLowerCase();
         });
 
     return NextResponse.json({ rooms });

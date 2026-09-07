@@ -30,6 +30,7 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
   const [collaborators, setCollaborators] = useState<CollaboratorItem[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
   const [role, setRole] = useState<NexusRole>("VIEWER");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -63,15 +64,20 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
       const res = await fetch("/api/nexus/collaborators/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, role }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), role, whatsappPhone: whatsappPhone.trim() }),
       });
 
       const data = await res.json();
+
       if (res.ok && data.ok) {
-        setMessage({ type: "success", text: `Magic link enviado a ${email} con rol ${role}` });
+        setMessage({
+          type: "success",
+          text: `Magic Link enviado a ${email}. Rol asignado: ${role}`,
+        });
         setName("");
         setEmail("");
-        setRole("VIEWER");
+        setWhatsappPhone("");
+        loadCollaborators();
         await loadCollaborators();
       } else {
         setMessage({ type: "error", text: data.error || "Error al enviar invitación" });
@@ -180,7 +186,7 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
             Invitar Miembro / Asignar Rol
           </h2>
           <form onSubmit={handleInvite} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs text-zinc-400 mb-1">Nombre</label>
                 <input
@@ -201,6 +207,16 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
                   placeholder="carlos@empresa.com"
                   className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
                   required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={whatsappPhone}
+                  onChange={(e) => setWhatsappPhone(e.target.value)}
+                  placeholder="+5215551234567"
+                  className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
                 />
               </div>
               <div>

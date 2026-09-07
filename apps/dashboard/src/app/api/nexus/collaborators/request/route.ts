@@ -30,11 +30,12 @@ export async function POST(req: NextRequest) {
   const cors = getCorsHeaders(req);
   try {
     const body = await req.json();
-    const { name, email, role, permissions } = body as {
+    const { name, email, role, permissions, whatsappPhone } = body as {
       name?: string;
       email?: string;
       role?: string;
       permissions?: any;
+      whatsappPhone?: string;
     };
 
     if (!email) {
@@ -68,12 +69,14 @@ export async function POST(req: NextRequest) {
     // Preserve existing role if self-renewal (don't downgrade admins)
     const effectiveRole = role || existingCollaborator?.role || 'COLLABORATOR';
     const effectivePermissions = permissions || existingCollaborator?.permissions || {};
+    const effectiveWhatsapp = whatsappPhone || existingCollaborator?.whatsappPhone || undefined;
 
     const { collaborator, magicLink } = await createOrUpdateCollaborator(
       cleanName,
       cleanEmail,
       effectiveRole,
-      effectivePermissions
+      effectivePermissions,
+      effectiveWhatsapp
     );
 
     const sendResult = await sendCollaboratorMagicLink(

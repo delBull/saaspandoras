@@ -29,6 +29,7 @@ interface Collaborator {
 export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [whatsappPhone, setWhatsappPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -97,7 +98,7 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
           ...getWalletHeaders(),
         },
         credentials: 'include',
-        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), whatsappPhone: whatsappPhone.trim() }),
       });
 
       const data = await res.json();
@@ -109,6 +110,7 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
         });
         setName('');
         setEmail('');
+        setWhatsappPhone('');
         loadCollaborators();
       } else {
         setMessage({
@@ -200,7 +202,7 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
                 </div>
 
                 <form onSubmit={handleInvite} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-xs text-zinc-400 mb-1">Nombre</label>
                       <input
@@ -220,6 +222,16 @@ export function NexusSettingsModal({ isOpen, onClose }: NexusSettingsModalProps)
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="juan@empresa.com"
                         required
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/60 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-400 mb-1">WhatsApp</label>
+                      <input
+                        type="tel"
+                        value={whatsappPhone}
+                        onChange={(e) => setWhatsappPhone(e.target.value)}
+                        placeholder="+5215551234567"
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/60 transition-colors"
                       />
                     </div>
