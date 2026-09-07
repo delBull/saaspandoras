@@ -6,6 +6,7 @@ import { PlatformActor } from '@/lib/dash-contracts/admin';
 import { CANONICAL_CAPABILITIES } from '@/lib/canonical-capabilities';
 import { X, ShieldAlert, Save, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { CognitiveProfileWidget } from '@/components/hermes/CognitiveProfileWidget';
 
 interface UserRolesDrawerProps {
   user: UserData | null;
@@ -92,6 +93,11 @@ export function UserRolesDrawer({ user, isOpen, onClose, currentActor }: UserRol
             <div className="text-xs text-zinc-500 mb-1 font-mono">{user.walletAddress}</div>
             <h3 className="text-xl font-bold text-white mb-1">{user.name || 'Sin Nombre'}</h3>
             {user.email && <p className="text-zinc-400 text-sm">{user.email}</p>}
+          </div>
+
+          {/* Cognitive Insights (Anti-Noise Strategy) */}
+          <div className="pt-2">
+            <CognitiveProfileWidget userId={user.id} walletAddress={user.walletAddress} />
           </div>
 
           {!canEditRoles && (

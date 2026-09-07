@@ -4064,6 +4064,8 @@ export const hermesCognitiveProfiles = pgTable("hermes_cognitive_profiles", {
   transactionalScore: integer("transactional_score").notNull().default(0),
   educationalScore: integer("educational_score").notNull().default(0),
   persona: varchar("persona", { length: 50 }).notNull().default("UNKNOWN"),
+  behavioralTraits: jsonb("behavioral_traits").$type<string[]>(),
+  optimalApproach: text("optimal_approach"),
   lastInteractionAt: timestamp("last_interaction_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

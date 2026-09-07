@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CampaignPerformanceDashboard } from "./CampaignPerformanceDashboard";
 import { MarketingAnalytics } from "./MarketingAnalytics";
 import { GoldenLinksManager } from "./GoldenLinksManager";
+import { TenantLeadDrawer } from "@/components/portal/growth/TenantLeadDrawer";
 
 // Types matching API response roughly
 interface Execution {
@@ -52,6 +53,8 @@ export function MarketingDashboard({ projectId = 0, leads = [] }: MarketingDashb
     const [isRunningCron, setIsRunningCron] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [showCampaigns, setShowCampaigns] = useState(false); // Default collapsed
+    const [selectedLead, setSelectedLead] = useState<{ id: string, name?: string | null } | null>(null);
+    const [isLeadDrawerOpen, setIsLeadDrawerOpen] = useState(false);
     const router = useRouter();
 
     const fetchData = async () => {
@@ -99,7 +102,9 @@ export function MarketingDashboard({ projectId = 0, leads = [] }: MarketingDashb
 
     const handleUserClick = (exec: Execution) => {
         if (exec.userId) {
-            router.push(`/admin/users/${exec.userId}`);
+            // For tenants, we open the slide-out drawer instead of admin redirect
+            setSelectedLead({ id: exec.userId, name: exec.targetName });
+            setIsLeadDrawerOpen(true);
         } else {
             toast({ title: "Lead de WhatsApp", description: "Este usuario no tiene perfil completo aún." });
         }
@@ -272,6 +277,12 @@ export function MarketingDashboard({ projectId = 0, leads = [] }: MarketingDashb
                 <GoldenLinksManager />
               </TabsContent>
             </Tabs>
+
+            <TenantLeadDrawer 
+              user={selectedLead}
+              isOpen={isLeadDrawerOpen}
+              onClose={() => setIsLeadDrawerOpen(false)}
+            />
         </div>
     );
 }

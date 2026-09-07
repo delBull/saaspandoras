@@ -5,6 +5,7 @@ import Image from 'next/image';
 import type { UserData, UserRole } from '@/types/admin';
 import { UserKeyStatus } from './UserKeyStatus';
 import { resolveIpfsUrl } from '@/lib/utils';
+import { BrainCircuit } from 'lucide-react';
 
 const USERS_PER_PAGE = 10;
 
@@ -227,8 +228,13 @@ export function UsersTable({ users, currentActor }: UsersTableProps) {
                         />
                       )}
                       <div>
-                        <div className="text-white font-medium">
+                        <div className="text-white font-medium flex items-center gap-2">
                           {user.name ?? 'Usuario sin nombre'}
+                          {user.hasCognitiveProfile && (
+                            <div title="Perfil Cognitivo Disponible" className="p-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                              <BrainCircuit className="w-3.5 h-3.5" />
+                            </div>
+                          )}
                         </div>
                         {user.email && (
                           <div className="text-gray-400 text-xs">{user.email}</div>

@@ -28,6 +28,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
+import { CognitiveProfileWidget } from "@/components/hermes/CognitiveProfileWidget";
 
 interface Section {
   id: string;
@@ -801,6 +802,15 @@ export default function DealRoomConsole() {
                         </div>
                       </div>
                     )}
+                    {(() => {
+                      const firstSigner = selected.signers[0];
+                      if (!firstSigner?.email) return null;
+                      return (
+                        <div className="mt-4 max-w-sm">
+                          <CognitiveProfileWidget userId={firstSigner.email} walletAddress={firstSigner.wallet} />
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-2">
                     <button

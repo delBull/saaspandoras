@@ -295,6 +295,13 @@
       "when": 1788738615790,
       "tag": "0041_many_crystal",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1788752317194,
+      "tag": "0042_striped_iron_lad",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,15 @@ export class OllamaProvider implements CognitiveProvider {
       systemPrompt += `CRITICAL RULES (Forbidden Claims - NEVER VIOLATE):\n- ${domainPack.soul.forbiddenClaims.join('\n- ')}\n\n`;
     }
 
+    if (memory.cognitiveProfile) {
+      if (memory.cognitiveProfile.behavioralTraits?.length) {
+        systemPrompt += `USER BEHAVIORAL TRAITS (Learned from past interactions):\n- ${memory.cognitiveProfile.behavioralTraits.join('\n- ')}\n\n`;
+      }
+      if (memory.cognitiveProfile.optimalApproach) {
+        systemPrompt += `OPTIMAL APPROACH FOR THIS USER:\n${memory.cognitiveProfile.optimalApproach}\n\n`;
+      }
+    }
+
     systemPrompt += `Journey State:\n`;
     systemPrompt += `The user is currently at stage: ${journeyContext.stage}. The primary intent for this interaction is: ${journeyContext.intent}.\n`;
     systemPrompt += `Adjust your response to gently move the user along this journey without being overly aggressive.\n\n`;
