@@ -90,3 +90,6 @@ S_NARAI_METRICS.md
 # graphify
 graphify-out/
 **/graphify-out/
+apps/dashboard/.env.vercel
+apps/dashboard/.env.vercel.prod
+apps/dashboard/.env*.prod
