@@ -16,6 +16,11 @@ export interface CognitiveResponse {
   responseText?: string;
   confidence: number;
   reasoning?: string;
+  metacognition?: {
+    transactionalScore: number;
+    educationalScore: number;
+    persona: string;
+  };
 }
 
 export interface CognitiveProvider {

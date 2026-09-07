@@ -98,11 +98,11 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       description: "Redacción, revisión y firma notarizada de propuestas, contratos, acuerdos y NDAs institucionales.",
       icon: Handshake,
       href: "#", // Now controlled by the sliding tab
-      allowed: validRoles.includes(tourRole), 
+      allowed: ["SUPER_ADMIN", "ADMIN", "MARKETING"].includes(tourRole), 
       color: "amber",
       requirementText: "Activo para Operadores y Admins",
       onClick: (e: any) => {
-        if (validRoles.includes(tourRole)) {
+        if (["SUPER_ADMIN", "ADMIN", "MARKETING"].includes(tourRole)) {
           e.preventDefault();
           setShowLegacyConsole(true);
         }

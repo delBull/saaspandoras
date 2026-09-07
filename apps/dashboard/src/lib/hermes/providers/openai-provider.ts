@@ -68,9 +68,19 @@ export class OpenAIProvider implements CognitiveProvider {
                 action: { type: "string", enum: ["SEND_MESSAGE", "ESCALATE_TO_HUMAN", "DO_NOTHING"] },
                 responseText: { type: "string" },
                 confidence: { type: "number" },
-                reasoning: { type: "string" }
+                reasoning: { type: "string" },
+                metacognition: {
+                  type: "object",
+                  properties: {
+                    transactionalScore: { type: "number", description: "0 to 100" },
+                    educationalScore: { type: "number", description: "0 to 100" },
+                    persona: { type: "string", enum: ["EXPLORER", "BUYER", "SKEPTIC", "SUPPORT_SEEKER"] }
+                  },
+                  required: ["transactionalScore", "educationalScore", "persona"],
+                  additionalProperties: false
+                }
               },
-              required: ["action", "confidence", "reasoning"],
+              required: ["action", "confidence", "reasoning", "metacognition"],
               additionalProperties: false
             }
           }

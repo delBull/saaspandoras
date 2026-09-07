@@ -20,6 +20,7 @@ import { TIPOS, TaskItem, tipoLabel } from './taskTypes';
 interface Props {
   tasks: TaskItem[];
   setTasks: React.Dispatch<React.SetStateAction<TaskItem[]>>;
+  role?: string;
 }
 
 const prioBadge = (p: TaskItem['priority']) => {
@@ -28,7 +29,7 @@ const prioBadge = (p: TaskItem['priority']) => {
   return 'border-white/10 bg-black/40 text-zinc-400';
 };
 
-export default function TasksPanel({ tasks, setTasks }: Props) {
+export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) {
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
@@ -49,8 +50,13 @@ export default function TasksPanel({ tasks, setTasks }: Props) {
 
   const [tipoFilter, setTipoFilter] = useState('');
 
-  const pending = tasks.filter((t) => !t.completed).length;
-  const sorted = [...tasks].sort((a, b) => Number(a.completed) - Number(b.completed));
+  const visibleTasks = tasks.filter((t) => {
+    if (t.isPrivate && role !== 'SUPER_ADMIN') return false;
+    return true;
+  });
+
+  const pending = visibleTasks.filter((t) => !t.completed).length;
+  const sorted = [...visibleTasks].sort((a, b) => Number(a.completed) - Number(b.completed));
   const filtered = tipoFilter
     ? sorted.filter((t) => (t.tipo ? tipoLabel(t.tipo) : 'Operación') === tipoFilter)
     : sorted;

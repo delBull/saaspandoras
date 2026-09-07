@@ -130,6 +130,43 @@ ${orgMem.faqs.map(f => `  * Q: ${f.question}\n    A: ${f.answer}`).join('\n')}
     const customSystemPrompt = (installed.config as any)?.prompt || `Eres Hermes, el Agente Autónomo de ${orgContext.name}. Atiende a los clientes con amabilidad y precisión.`;
     const fullSystemPrompt = `${customSystemPrompt}\n\nINTENCIÓN DETECTADA: ${routeResult.intent}${actionSummary}\n\n${knowledgeText}\n\nREGLAS DE PLATAFORMA:\n${memory.platformMemory.playbookRules.join('\n')}`;
 
+    // 7.5 Multi-Perspective Contrast (Daimon Feature)
+    if (routeResult.intent === 'FINANCIAL_ANALYSIS') {
+      console.log(`[ExecutionEngine] Running Multi-Perspective Contrast for Financial Analysis...`);
+      const conservativePromise = generateBotResponse({
+        userMessage, chatId, projectSlug: orgContext.slug, projectName: orgContext.name, projectContext: { title: orgContext.name, slug: orgContext.slug },
+        customSystemPrompt: `${fullSystemPrompt}\n\nINSTRUCCIÓN CRÍTICA (MICRO-AGENTE CONSERVADOR):\nAdopta una postura extremadamente CONSERVADORA. Enfatiza los riesgos, la necesidad de liquidez, la preservación del capital y los peores escenarios posibles. Sé escéptico.`,
+      });
+      const growthPromise = generateBotResponse({
+        userMessage, chatId, projectSlug: orgContext.slug, projectName: orgContext.name, projectContext: { title: orgContext.name, slug: orgContext.slug },
+        customSystemPrompt: `${fullSystemPrompt}\n\nINSTRUCCIÓN CRÍTICA (MICRO-AGENTE GROWTH):\nAdopta una postura de ALTO RIESGO y CRECIMIENTO. Enfatiza el potencial de disrupción, los altos rendimientos (APY), el FOMO positivo y la narrativa de innovación tecnológica.`,
+      });
+
+      const [conservative, growth] = await Promise.all([conservativePromise, growthPromise]);
+
+      const synthesizerPrompt = `${fullSystemPrompt}\n\nINSTRUCCIÓN DE SÍNTESIS (JUEZ MULTI-PERSPECTIVA):\nAcabas de consultar a dos analistas internos sobre la pregunta del usuario. Aquí están sus respuestas.\n\n[PERSPECTIVA CONSERVADORA]:\n${conservative.replyText}\n\n[PERSPECTIVA DE CRECIMIENTO]:\n${growth.replyText}\n\nSintetiza ambas perspectivas en una sola respuesta elegante para el cliente. Es OBLIGATORIO que hagas visible que existen dos posturas contrapuestas (ej. "Desde un perfil conservador... pero desde un perfil de alto crecimiento..."). Dale una conclusión ponderada.`;
+
+      const botReplyObj = await generateBotResponse({
+        userMessage,
+        chatId,
+        projectSlug: orgContext.slug,
+        projectName: orgContext.name,
+        customSystemPrompt: synthesizerPrompt,
+        projectContext: {
+          title: orgContext.name,
+          slug: orgContext.slug,
+        },
+      });
+
+      return {
+        reply: botReplyObj.replyText || "Lo siento, no pude procesar tu solicitud financiera.",
+        intent: routeResult.intent,
+        requiresHuman: false,
+        actionExecuted: "MULTI_PERSPECTIVE_ANALYSIS",
+      };
+    }
+
+    // 8. Standard LLM Execution
     const botReplyObj = await generateBotResponse({
       userMessage,
       chatId,

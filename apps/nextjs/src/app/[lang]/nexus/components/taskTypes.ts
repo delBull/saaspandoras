@@ -28,6 +28,7 @@ export interface TaskItem {
   evidence?: string;
   evidenceType?: 'texto' | 'código' | 'foto' | 'enlace';
   evidenceLink?: string;
+  isPrivate?: boolean;
 }
 
 const strip = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -75,7 +76,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'HIGH',
     completed: true,
     dueDate: '2026-07-31',
-    detail: 'Examen de anterioridades en Marcanet completado (Riesgo BAJO). Evidencia documentada en /nexus Data Room.'
+    detail: 'Examen de anterioridades en Marcanet completado (Riesgo BAJO). Evidencia documentada en /nexus Data Room.',
+    isPrivate: true
   },
   {
     id: 'TSK-W1-03',
@@ -85,7 +87,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'HIGH',
     completed: false,
     dueDate: '2026-08-05',
-    detail: 'Definición de clasificación de productos/servicios para Clases 36 + 42 y selección de denominación PANDORAS vs PANDORA\'S.'
+    detail: 'Definición de clasificación de productos/servicios para Clases 36 + 42 y selección de denominación PANDORAS vs PANDORA\'S.',
+    isPrivate: true
   },
   {
     id: 'TSK-W1-04',
@@ -95,7 +98,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'HIGH',
     completed: false,
     dueDate: '2026-08-07',
-    detail: 'Presentación de la solicitud oficial a nombre directo de MXHUB Ecosistema Blockchain S.A. de C.V. Uso del distintivo PANDORAS™.'
+    detail: 'Presentación de la solicitud oficial a nombre directo de MXHUB Ecosistema Blockchain S.A. de C.V. Uso del distintivo PANDORAS™.',
+    isPrivate: true
   },
   {
     id: 'TSK-W1-05',
@@ -115,7 +119,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'HIGH',
     completed: false,
     dueDate: '2026-08-16',
-    detail: 'Registro oficial de la LLC en USA con Iván como Organizer y Managing Member temporal.'
+    detail: 'Registro oficial de la LLC en USA con Iván como Organizer y Managing Member temporal.',
+    isPrivate: true
   },
 
   // SEMANA 2: CORPORATE RESOLUTION & OWNERSHIP AUDIT
@@ -127,7 +132,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'HIGH',
     completed: true,
     dueDate: '2026-08-10',
-    detail: 'Resolución de asamblea formalizando que el 100% de desarrollos, marcas y software de Pandoras pertenecen inalienablemente a MXHUB.'
+    detail: 'Resolución de asamblea formalizando que el 100% de desarrollos, marcas y software de Pandoras pertenecen inalienablemente a MXHUB.',
+    isPrivate: true
   },
   {
     id: 'TSK-W2-02',
@@ -177,7 +183,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'HIGH',
     completed: false,
     dueDate: '2026-08-22',
-    detail: 'Firma On-Chain del contrato intercompany donde MXHub presta servicios tecnológicos a la LLC de USA.'
+    detail: 'Firma On-Chain del contrato intercompany donde MXHub presta servicios tecnológicos a la LLC de USA.',
+    isPrivate: true
   },
 
   // SEMANA 3: LICENSING & INVESTOR DATA ROOM
@@ -189,7 +196,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'HIGH',
     completed: false,
     dueDate: '2026-08-18',
-    detail: 'Borrador del Master License Agreement definiendo Royalty Fees (3%-10%), Platform Fees y Aislamiento de IP.'
+    detail: 'Borrador del Master License Agreement definiendo Royalty Fees (3%-10%), Platform Fees y Aislamiento de IP.',
+    isPrivate: true
   },
   {
     id: 'TSK-W3-02',
