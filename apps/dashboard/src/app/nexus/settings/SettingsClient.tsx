@@ -21,6 +21,7 @@ import {
   type CollaboratorItem,
 } from "./CollaboratorPermissionsDrawer";
 import type { NexusRole } from "@/lib/nexus/nexus-rbac";
+import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
 
 interface SettingsClientProps {
   isUserAdmin?: boolean;
@@ -38,6 +39,9 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
   // Drawer state
   const [selectedCollab, setSelectedCollab] = useState<CollaboratorItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Tabs state
+  const [activeTab, setActiveTab] = useState<"team" | "agents">("team");
 
   const loadCollaborators = async () => {
     try {
@@ -175,7 +179,34 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
           </a>
         </div>
 
-        {/* Formulario de invitación */}
+        {/* Tabs Navigation */}
+        <div className="flex items-center gap-4 border-b border-zinc-800">
+          <button
+            onClick={() => setActiveTab("team")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === "team"
+                ? "border-amber-400 text-amber-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Team & Roles
+          </button>
+          <button
+            onClick={() => setActiveTab("agents")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              activeTab === "agents"
+                ? "border-emerald-400 text-emerald-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <Bot className="w-4 h-4" />
+            Cognitive Agents
+          </button>
+        </div>
+
+        {activeTab === "team" ? (
+          <>
+            {/* Formulario de invitación */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -364,6 +395,10 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
             <strong className="text-amber-200">Arquitectura de Seguridad:</strong> Los roles base asignan capacidades predeterminadas, pero puedes liberar o bloquear módulos puntuales (Deal Room, Academy, Settings, Hermes QA) por usuario desde el Drawer de Permisos. Los Libros Institucionales y temas de soberanía fundacional permanecen protegidos bajo la doble capa de Discord exclusiva de Super Admin.
           </p>
         </div>
+          </>
+        ) : (
+          <CognitiveAgentsManager />
+        )}
       </div>
 
       {/* Drawer de Permisos Granulares */}

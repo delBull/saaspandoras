@@ -132,7 +132,7 @@ describe('🏛️ PANDORAS A2A PROTOCOL v1.1 Suite (Sofía ↔ Hermes Sovereign 
     expect((res.payload as any).cid).toBe(artifact.cid);
   });
 
-  it('5. Rejects unauthorized sender and enforces nonce replay protection', () => {
+  it('5. Rejects unauthorized sender and enforces nonce replay protection', async () => {
     const nonce = `test_replay_nonce_v11_${Date.now()}`;
     const message = signedEnvelope({
       protocol: 'pandoras-a2a',
@@ -146,10 +146,10 @@ describe('🏛️ PANDORAS A2A PROTOCOL v1.1 Suite (Sofía ↔ Hermes Sovereign 
       payload: {},
     });
 
-    const first = A2ASecurityValidator.validate(message);
-    expect(first.valid).toBe(true);
+    const validation = await A2ASecurityValidator.validateAsync(message);
+    expect(validation.valid).toBe(true);
 
-    const second = A2ASecurityValidator.validate(message);
+    const second = await A2ASecurityValidator.validateAsync(message);
     expect(second.valid).toBe(false);
     expect(second.errorCode).toBe('NONCE_REPLAY');
   });

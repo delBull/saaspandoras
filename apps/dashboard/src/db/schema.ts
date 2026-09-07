@@ -4109,3 +4109,14 @@ export const hermesAgentPrompts = pgTable("hermes_agent_prompts", {
   };
 });
 
+export const hermesAgents = pgTable("hermes_agents", {
+  id: serial("id").primaryKey(),
+  agentId: varchar("agent_id", { length: 255 }).notNull().unique(), // e.g., 'dev-alex', 'sofia-v2'
+  name: varchar("name", { length: 255 }).notNull(),
+  hmacSecretHash: text("hmac_secret_hash").notNull(), // bcrypt hashed
+  walletAddress: varchar("wallet_address", { length: 255 }), // for EIP-191 signature validation
+  capabilities: jsonb("capabilities").default([]).notNull(), // array of capability strings
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});

@@ -25,7 +25,7 @@ import { eq } from 'drizzle-orm';
 export class A2AMessageHandler {
   public static async processIncomingMessage(message: A2AMessage): Promise<A2AProcessingResult> {
     // 1. Security & Identity Validation
-    const validation = A2ASecurityValidator.validate(message);
+    const validation = await A2ASecurityValidator.validateAsync(message);
     if (!validation.valid) {
       return {
         success: false,
@@ -44,7 +44,8 @@ export class A2AMessageHandler {
     const requiredCapability = this.getRequiredCapability(message.type, payload.capability);
     const tenantId = payload.tenantId || payload.scope?.tenantIds?.[0];
 
-    if (!AgentRegistry.hasCapability(message.from, requiredCapability, tenantId)) {
+    const hasCap = await AgentRegistry.hasCapabilityAsync(message.from, requiredCapability, tenantId);
+    if (!hasCap) {
       return {
         success: false,
         messageId: message.messageId,
@@ -462,8 +463,8 @@ export class A2AMessageHandler {
   }
 
   private static async handleCapabilityDiscover(message: A2AMessage<any>): Promise<A2AProcessingResult> {
-    const caller = AgentRegistry.getAgent(message.from);
-    const hermes = AgentRegistry.getAgent('hermes');
+    const caller = await AgentRegistry.getAgentAsync(message.from);
+    const hermes = await AgentRegistry.getAgentAsync('hermes');
 
     // Load available shared skills from the Cognitive Hub Repository (DB)
     let sharedSkills: string[] = [];

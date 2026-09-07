@@ -316,6 +316,13 @@
       "when": 1788810175369,
       "tag": "0044_illegal_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1788815751834,
+      "tag": "0045_steep_flatman",
+      "breakpoints": true
     }
   ]
 }

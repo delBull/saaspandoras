@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
       headers: {
         "Access-Control-Allow-Origin": isAllowed ? origin : "https://dash.pandoras.finance",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key, x-thirdweb-address, x-wallet-address, x-user-address, x-stress-test",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key, x-thirdweb-address, x-wallet-address, x-user-address, x-stress-test, x-hermes-timestamp, x-hermes-signature",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400",
       },

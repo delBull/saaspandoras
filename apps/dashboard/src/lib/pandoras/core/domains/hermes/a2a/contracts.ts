@@ -63,6 +63,7 @@ export type A2AMessageType =
   | 'sofia.context.response'
   | 'sofia.contact.sync'
   | 'sofia.contact.synced'
+  | 'media.upload'
   | 'error';
 
 // ─── SECURITY ENVELOPE & MESSAGE ENVELOPE ─────────────────────────────────────
