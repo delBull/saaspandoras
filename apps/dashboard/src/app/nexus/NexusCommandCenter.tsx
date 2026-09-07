@@ -33,9 +33,10 @@ interface NexusCommandCenterProps {
   auth: NexusAuthContext;
   initialTour?: string;
   initialRole?: string;
+  iframeToken?: string;
 }
 
-export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusCommandCenterProps) {
+export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken }: NexusCommandCenterProps) {
   const { role, permissions, wallet, email, name } = auth;
   const [isTourOpen, setIsTourOpen] = React.useState(
     initialTour === "ecosystem" || initialTour === "onboarding"
@@ -97,16 +98,10 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
       title: "Deal Room & Transaction Rooms",
       description: "Redacción, revisión y firma notarizada de propuestas, contratos, acuerdos y NDAs institucionales.",
       icon: Handshake,
-      href: "#", // Now controlled by the sliding tab
+      href: "/nexus/rooms", 
       allowed: ["SUPER_ADMIN", "ADMIN", "MARKETING"].includes(tourRole), 
       color: "amber",
       requirementText: "Activo para Operadores y Admins",
-      onClick: (e: any) => {
-        if (["SUPER_ADMIN", "ADMIN", "MARKETING"].includes(tourRole)) {
-          e.preventDefault();
-          setShowLegacyConsole(true);
-        }
-      }
     },
     {
       id: "academy_admin",
@@ -433,7 +428,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole }: NexusComm
         >
           <div className="pl-8 h-full w-full bg-[#08080A]">
             <iframe 
-              src={`https://pandoras.finance/en/nexus${auth.wallet ? `?wallet=${auth.wallet}` : ''}`} 
+              src={`https://pandoras.finance/en/nexus${auth.wallet ? `?wallet=${auth.wallet}` : ''}${iframeToken ? `${auth.wallet ? '&' : '?'}token=${iframeToken}` : ''}`} 
               className="w-full h-full border-none" 
             />
           </div>
