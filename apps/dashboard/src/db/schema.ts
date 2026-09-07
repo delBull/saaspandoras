@@ -4057,3 +4057,13 @@ export const hermesRunpodEndpoints = pgTable("hermes_runpod_endpoints", {
   endpointIdIdx: uniqueIndex("hermes_runpod_endpoints_ep_unique").on(t.endpointId),
   tenantIdx: index("hermes_runpod_endpoints_tenant_idx").on(t.tenantId),
 }));
+
+export const hermesCognitiveProfiles = pgTable("hermes_cognitive_profiles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull().unique(),
+  transactionalScore: integer("transactional_score").notNull().default(0),
+  educationalScore: integer("educational_score").notNull().default(0),
+  persona: varchar("persona", { length: 50 }).notNull().default("UNKNOWN"),
+  lastInteractionAt: timestamp("last_interaction_at", { withTimezone: true }).defaultNow().notNull(),
+});
+

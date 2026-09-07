@@ -11,6 +11,7 @@ export type UserIntent =
   | 'SUPPORT_FAQ'
   | 'OBJECTION'
   | 'HUMAN_ESCALATION'
+  | 'FINANCIAL_ANALYSIS'
   | 'GENERAL_CHAT';
 
 export interface RouteResult {
@@ -61,8 +62,20 @@ export class InteractionRouter {
       };
     }
 
+    // 3.5 Financial Analysis (Multi-Perspective Contrast)
+    const financeTriggers = ['invertir', 'inversión', 'rendimiento', 'apy', 'riesgo', 'proyecto', 'evaluar', 'roi', 'rwa', 'fraccionado', 'tokenización', 'análisis'];
+    if (financeTriggers.some(t => text.includes(t))) {
+      return {
+        intent: 'FINANCIAL_ANALYSIS',
+        confidence: 85,
+        requiresHuman: false,
+        targetFlow: 'sales',
+        reason: 'Solicitud de análisis financiero o evaluación de proyecto'
+      };
+    }
+
     // 4. Objection Triggers
-    const objectionTriggers = ['caro', 'no confío', 'desconfío', 'riesgo', 'luego veo', 'tengo dudas'];
+    const objectionTriggers = ['caro', 'no confío', 'desconfío', 'luego veo', 'tengo dudas'];
     if (objectionTriggers.some(t => text.includes(t))) {
       return {
         intent: 'OBJECTION',

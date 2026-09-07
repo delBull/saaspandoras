@@ -402,7 +402,7 @@ export default function NexusClient() {
               </>
             )}
           </div>
-          <TasksPanel tasks={tasks} setTasks={setTasks} />
+          <TasksPanel tasks={tasks} setTasks={setTasks} role={role} />
         </div>
 
         {/* Bottom status bar */}

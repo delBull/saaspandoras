@@ -26,12 +26,17 @@ export class OllamaProvider implements CognitiveProvider {
     systemPrompt += `The user is currently at stage: ${journeyContext.stage}. The primary intent for this interaction is: ${journeyContext.intent}.\n`;
     systemPrompt += `Adjust your response to gently move the user along this journey without being overly aggressive.\n\n`;
 
-    systemPrompt += `INSTRUCTIONS:\nYou MUST respond ONLY with a valid JSON object matching this schema:
+systemPrompt += `INSTRUCTIONS:\nYou MUST respond ONLY with a valid JSON object matching this schema:
 {
   "action": "SEND_MESSAGE" | "ESCALATE_TO_HUMAN" | "DO_NOTHING",
   "responseText": "Your generated text here",
   "confidence": 0.0 to 1.0,
-  "reasoning": "Explain your logic briefly"
+  "reasoning": "Explain your logic briefly",
+  "metacognition": {
+    "transactionalScore": 0 to 100, // How likely they are to buy/invest right now
+    "educationalScore": 0 to 100,   // How curious they are / asking for info
+    "persona": "EXPLORER" | "BUYER" | "SKEPTIC" | "SUPPORT_SEEKER"
+  }
 }
 Do not wrap it in markdown block. Just return raw JSON.`;
 

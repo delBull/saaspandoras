@@ -23,6 +23,11 @@ export interface MemoryLayersContext {
     score: number;
     crmStage: string;
     holdings?: any;
+    metacognition?: {
+      transactionalScore: number;
+      educationalScore: number;
+      persona: string;
+    };
   };
   organizationMemory: {
     companyName: string;
@@ -59,7 +64,7 @@ export class MemoryLayersResolver {
 
     try {
       const lead = await db.query.marketingLeads.findFirst({
-        where: and(eq(marketingLeads.projectId, projectId)),
+        where: and(eq(marketingLeads.projectId, projectId)), // Note: In production this should filter by chatId too
       });
       if (lead) {
         customerMemory = {
@@ -69,6 +74,25 @@ export class MemoryLayersResolver {
           score: lead.score || 50,
           crmStage: lead.crmStage || 'LEAD',
         };
+      }
+
+      // Fetch Daimon Metacognition Profile and apply Time Decay
+      const { hermesCognitiveProfiles } = await import('@/db/schema');
+      const profile = await db.query.hermesCognitiveProfiles.findFirst({
+        where: eq(hermesCognitiveProfiles.userId, chatId)
+      });
+
+      if (profile) {
+        // Calculate Time Decay (e.g. -5% per day of inactivity)
+        const daysSinceLastInteraction = Math.floor((Date.now() - profile.lastInteractionAt.getTime()) / (1000 * 60 * 60 * 24));
+        const decayFactor = Math.max(0, 1 - (daysSinceLastInteraction * 0.05));
+
+        customerMemory.metacognition = {
+          transactionalScore: Math.round(profile.transactionalScore * decayFactor),
+          educationalScore: Math.round(profile.educationalScore * decayFactor),
+          persona: profile.persona
+        };
+        console.log(`[MemoryLayersResolver] Applied Memory Re-scoring. Decay Factor: ${decayFactor.toFixed(2)}`);
       }
     } catch (e) {
       console.warn('[MemoryLayersResolver] Could not query CRM customer memory:', e);

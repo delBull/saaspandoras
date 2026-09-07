@@ -63,6 +63,28 @@ export class HermesCognitiveLayer {
       }
     );
 
+    // Save Metacognition profile asynchronously (Fire & Forget)
+    if (cognitiveResponse.metacognition) {
+      import("@/db").then(({ db }) => {
+        import("@/db/schema").then(({ hermesCognitiveProfiles }) => {
+          db.insert(hermesCognitiveProfiles).values({
+            userId: request.identityId,
+            transactionalScore: cognitiveResponse.metacognition!.transactionalScore,
+            educationalScore: cognitiveResponse.metacognition!.educationalScore,
+            persona: cognitiveResponse.metacognition!.persona
+          }).onConflictDoUpdate({
+            target: hermesCognitiveProfiles.userId,
+            set: {
+              transactionalScore: cognitiveResponse.metacognition!.transactionalScore,
+              educationalScore: cognitiveResponse.metacognition!.educationalScore,
+              persona: cognitiveResponse.metacognition!.persona,
+              lastInteractionAt: new Date()
+            }
+          }).catch(e => console.error("[Hermes] Failed to save metacognition", e));
+        });
+      }).catch(e => console.error("[Hermes] DB import failed", e));
+    }
+
     console.log(`[HermesCognitiveLayer] Generated final intent: ${finalIntent.action} via ${finalIntent.channel}`);
     return finalIntent;
   }
