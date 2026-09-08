@@ -71,7 +71,7 @@ export function SovereignHeader({ organization, organizationSlug, activeModules 
 
         {hasRwa && (
           <Link
-            href={`/profile/projects/${organizationSlug}/manage`}
+            href={`/ecosystem/${organizationSlug}/capital`}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all text-xs font-semibold"
           >
             <Landmark className="w-4 h-4 text-indigo-400" />

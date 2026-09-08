@@ -170,7 +170,7 @@ export function SetupCompletionWidget({
       icon: Landmark,
       percentage: rwaPercentage,
       color: 'indigo',
-      primaryHref: `/profile/projects/${organizationSlug}/manage`,
+      primaryHref: `/ecosystem/${organizationSlug}/capital`,
       actionCta: 'Preparar Proyecto →',
       steps: [
         {
@@ -178,7 +178,7 @@ export function SetupCompletionWidget({
           label: 'Define tu proyecto y metadata',
           tier: 'REQUIRED',
           done: isRwaProjectDone,
-          href: `/profile/projects/${organizationSlug}/manage`,
+          href: `/ecosystem/${organizationSlug}/capital`,
           actionText: 'Editar Metadata',
         },
         {
@@ -186,7 +186,7 @@ export function SetupCompletionWidget({
           label: 'Modela fases de venta y participaciones',
           tier: 'RECOMMENDED',
           done: isRwaTokenomicsDone,
-          href: `/profile/projects/${organizationSlug}/manage`,
+          href: `/ecosystem/${organizationSlug}/capital`,
           actionText: 'Configurar Tokenomics',
         },
         {
@@ -194,7 +194,7 @@ export function SetupCompletionWidget({
           label: 'Inicia dictamen legal y deploy on-chain',
           tier: 'OPTIONAL',
           done: isRwaDeployDone,
-          href: `/profile/projects/${organizationSlug}/manage`,
+          href: `/ecosystem/${organizationSlug}/capital`,
           actionText: 'Desplegar On-Chain',
         },
       ],

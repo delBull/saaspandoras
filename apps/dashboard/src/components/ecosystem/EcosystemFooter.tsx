@@ -21,6 +21,13 @@ export function EcosystemFooter({ organization }: EcosystemFooterProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        <a 
+          href={`/ecosystem/${organization.slug}/developers`}
+          className="text-zinc-400 hover:text-amber-300 transition-colors hidden sm:inline"
+        >
+          API & Webhooks
+        </a>
+        <span className="hidden sm:inline text-zinc-700">•</span>
         <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span>ORCHESTRATOR ONLINE</span>
