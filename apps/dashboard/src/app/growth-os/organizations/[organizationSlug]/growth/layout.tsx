@@ -23,7 +23,7 @@ export default function GrowthLayout({
   if (pathname.includes('/content')) activeTab = 'content';
 
   const navigateTo = (tab: string) => {
-    router.push(`/portal/${slug}/growth/${tab}`);
+    router.push(`/growth-os/organizations/${slug}/growth/${tab}`);
   };
 
   return (

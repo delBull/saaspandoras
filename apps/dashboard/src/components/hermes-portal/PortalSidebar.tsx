@@ -44,6 +44,7 @@ interface NavItem {
   icon: LucideIcon;
   requiredPermission: PortalPermission;
   section?: 'primary' | 'footer' | 'internal';
+  externalUrl?: (slug: string) => string;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -81,6 +82,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Target,
     requiredPermission: 'growth.market_attack',
     section: 'internal',
+    externalUrl: (slug: string) => `/growth-os/organizations/${slug}`,
   },
   {
     label: 'Activity',
@@ -210,10 +212,11 @@ export function PortalSidebar({
                   {internalItems.map((item) => {
                     const active = isActive(item.href);
                     const Icon = item.icon;
+                    const destination = item.externalUrl ? item.externalUrl(organizationSlug) : `${basePath}${item.href}`;
                     return (
                         <Link
                             key={item.href}
-                            href={`${basePath}${item.href}`}
+                            href={destination}
                             onClick={() => onNavClick?.()}
                             className={`
                               flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] mt-1
@@ -309,10 +312,11 @@ export function PortalSidebar({
                     {internalItems.map((item) => {
                         const active = isActive(item.href);
                         const Icon = item.icon;
+                        const destination = item.externalUrl ? item.externalUrl(organizationSlug) : `${basePath}${item.href}`;
                         return (
                             <Link
                                 key={item.href}
-                                href={`${basePath}${item.href}`}
+                                href={destination}
                                 className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-11 gap-3'} rounded-xl transition-all group ${
                                     active 
                                         ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' 

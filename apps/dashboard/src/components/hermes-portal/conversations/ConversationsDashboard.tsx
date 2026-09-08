@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { 
   MessageSquare, Search, Filter, ShieldAlert, Zap, Clock, User, 
-  ArrowRight, Send, AlertTriangle, CheckCircle2, RefreshCw, UserCheck, Shield, BarChart2
+  ArrowRight, Send, AlertTriangle, CheckCircle2, RefreshCw, UserCheck, Shield, BarChart2, BookOpen, X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { 
   triggerManualTakeover, 
@@ -46,6 +47,7 @@ export function ConversationsDashboard({ conversations: initialConversations, or
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'ALL' | 'ESCALATED' | 'AUTONOMOUS'>('ALL');
   const [replyText, setReplyText] = useState('');
+  const [showSopDrawer, setShowSopDrawer] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Sprint 3: Operational observability metrics
@@ -365,7 +367,16 @@ export function ConversationsDashboard({ conversations: initialConversations, or
                   <CognitiveProfileWidget userId={activeConvId} />
                 </div>
                 {/* Takeover / Resume Actions */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  <button
+                    onClick={() => setShowSopDrawer(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                    title="Ver Nexus SOP & Base de Conocimiento"
+                  >
+                    <BookOpen size={14} className="text-purple-400" />
+                    <span className="hidden sm:inline">SOP Nexus</span>
+                  </button>
+
                 {activeConv?.status === 'PAUSED_HUMAN' ? (
                   <button 
                     onClick={handleResumeHermes}
@@ -500,6 +511,58 @@ export function ConversationsDashboard({ conversations: initialConversations, or
           </div>
         )}
       </div>
+
+      {/* Drawer: Nexus SOP Injection */}
+      <AnimatePresence>
+        {showSopDrawer && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed top-0 right-0 w-[380px] sm:w-[420px] h-full bg-[#0d0d12] border-l border-white/10 shadow-2xl z-50 flex flex-col"
+          >
+            <div className="p-5 border-b border-white/10 flex items-center justify-between bg-[#12121a]">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-purple-400" />
+                <h2 className="text-sm font-semibold text-white">Nexus Base de Conocimiento</h2>
+              </div>
+              <button 
+                onClick={() => setShowSopDrawer(false)} 
+                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto text-sm text-zinc-300 space-y-6 flex-1">
+              <div>
+                <h3 className="text-white font-medium text-sm mb-1">Procedimiento de Operador Sugerido</h3>
+                <p className="text-xs text-zinc-400">
+                  Contexto de la sesión activa: <span className="font-mono text-purple-300">{activeConvId || 'Ninguna seleccionada'}</span>
+                  {activeConv?.escalationReason && (
+                    <span className="block mt-1 text-amber-300">Razón: {activeConv.escalationReason}</span>
+                  )}
+                </p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+                <p className="text-xs text-zinc-400">Consultando Nexus en tiempo real para el tenant actual...</p>
+                <p className="text-xs italic text-zinc-500">
+                  [Nexus Knowledge Mesh activo: Los manuales y SOPs de soporte se indexan automáticamente desde la documentación del proyecto.]
+                </p>
+              </div>
+              <a 
+                href="/nexus" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-medium text-xs transition-all text-center"
+              >
+                <BookOpen className="w-4 h-4" />
+                Abrir Nexus Knowledge Mesh
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

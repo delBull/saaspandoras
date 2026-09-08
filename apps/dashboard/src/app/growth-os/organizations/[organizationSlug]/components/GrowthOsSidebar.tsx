@@ -20,6 +20,7 @@ import {
   Wallet,
   ShieldAlert,
   Activity,
+  BarChart2,
   Bot,
   Menu,
   X,
@@ -45,6 +46,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
 
   const navItems = [
     { label: 'Overview', href: '', icon: LayoutDashboard, section: 'ops' },
+    { label: 'Growth Campaigns', href: '/growth/marketing', icon: BarChart2, section: 'ops' },
     { label: 'Mission Control', href: '/missions', icon: Target, section: 'ops' },
     { label: 'Pipeline & CRM', href: '/pipeline', icon: Users, section: 'ops' },
     { label: 'Email Marketing', href: '/email', icon: Mail, section: 'ops' },
