@@ -2,7 +2,7 @@
 
 /**
  * 🏛️ Growth OS Sidebar & Mobile Drawer Navigation
- * apps/dashboard/src/app/growth-os/organizations/[id]/components/GrowthOsSidebar.tsx
+ * apps/dashboard/src/app/growth-os/organizations/[organizationSlug]/components/GrowthOsSidebar.tsx
  *
  * Implements desktop collapsible sidebar and mobile slide-over drawer with backdrop blur,
  * matching Hermes Portal's modern aesthetic and enabling cross-plane hybrid navigation.
