@@ -1,9 +1,9 @@
 import { DashApi } from '@/lib/dash-api';
 import { Mail, Send, Eye, MousePointer, Plus, FileCode, CheckCircle2 } from 'lucide-react';
 
-export default async function EmailMarketingPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EmailMarketingPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const resolvedParams = await params;
-  const slugId = resolvedParams.id;
+  const slugId = resolvedParams.organizationSlug;
   const orgId = `org_${slugId}`;
 
   let emailData = {

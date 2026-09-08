@@ -11,10 +11,10 @@ export default async function ControlPlaneLayout({
   params 
 }: { 
   children: ReactNode; 
-  params: Promise<{ id: string }> 
+  params: Promise<{ organizationSlug: string }> 
 }) {
   const resolvedParams = await params;
-  const slugId = resolvedParams?.id || '';
+  const slugId = resolvedParams?.organizationSlug || '';
   const orgId = `org_${slugId}`;
 
   // 1. Secure Layout with Authentication

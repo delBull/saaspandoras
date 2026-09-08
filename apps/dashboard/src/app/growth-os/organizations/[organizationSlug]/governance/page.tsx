@@ -2,9 +2,9 @@ import { getPendingIntents } from '../actions';
 import GovernanceButtons from './components/GovernanceButtons';
 import { ShieldAlert, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export default async function GovernanceCenterPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await Promise.resolve(params);
-  const requestedOrganizationId = `org_${id}`;
+export default async function GovernanceCenterPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
+  const { organizationSlug } = await Promise.resolve(params);
+  const requestedOrganizationId = `org_${organizationSlug}`;
   
   let data = { pendingIntents: [] as any[] };
   let errorMsg: string | null = null;
@@ -26,7 +26,7 @@ export default async function GovernanceCenterPage({ params }: { params: Promise
             Governance Center
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Superficie de autoridad y aprobación de intenciones operacionales para {id.toUpperCase()}.
+            Superficie de autoridad y aprobación de intenciones operacionales para {organizationSlug.toUpperCase()}.
           </p>
         </div>
       </div>

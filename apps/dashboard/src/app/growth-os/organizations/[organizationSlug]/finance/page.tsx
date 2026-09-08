@@ -13,9 +13,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-export default async function SovereignFinancePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SovereignFinancePage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const resolvedParams = await params;
-  const slugId = resolvedParams.id;
+  const slugId = resolvedParams.organizationSlug;
   const orgId = `org_${slugId}`;
 
   let walletConfig: TenantWalletConfigDTO = {

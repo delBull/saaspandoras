@@ -3,9 +3,9 @@ import { ProjectRepository } from "@/lib/domain/project-repository";
 import { DashApi } from '@/lib/dash-api';
 import { Target } from 'lucide-react';
 
-export default async function MissionsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MissionsPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const resolvedParams = await params;
-  const orgId = `org_${resolvedParams.id}`;
+  const orgId = `org_${resolvedParams.organizationSlug}`;
   
   try {
     await DashApi.controlPlane.getOverview(orgId);
@@ -13,7 +13,7 @@ export default async function MissionsPage({ params }: { params: Promise<{ id: s
     console.warn(`[MissionsPage] Notice:`, err);
   }
   
-  const project = await ProjectRepository.findBySlug(resolvedParams.id);
+  const project = await ProjectRepository.findBySlug(resolvedParams.organizationSlug);
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -25,7 +25,7 @@ export default async function MissionsPage({ params }: { params: Promise<{ id: s
             Mission Control
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Administra campañas y misiones asignadas para la comunidad de {resolvedParams.id.toUpperCase()}.
+            Administra campañas y misiones asignadas para la comunidad de {resolvedParams.organizationSlug.toUpperCase()}.
           </p>
         </div>
       </div>

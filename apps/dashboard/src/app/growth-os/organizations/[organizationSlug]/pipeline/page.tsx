@@ -1,9 +1,9 @@
 import { DashApi } from '@/lib/dash-api';
 import { Users, Plus, DollarSign, Tag, ArrowRight, Activity } from 'lucide-react';
 
-export default async function PipelinePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PipelinePage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const resolvedParams = await params;
-  const slugId = resolvedParams.id;
+  const slugId = resolvedParams.organizationSlug;
   const orgId = `org_${slugId}`;
 
   let pipelineData = {

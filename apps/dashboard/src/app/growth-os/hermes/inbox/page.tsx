@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Bot, 
-  MessageSquare, 
+import {
+  Bot,
+  MessageSquare,
   CheckCircle,
   AlertTriangle,
   Send,
@@ -138,15 +138,15 @@ function HITLInboxPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-slate-200 p-8 pt-24 font-sans relative overflow-hidden">
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-[120px] pointer-events-none" />
-      
+
       <div className="max-w-7xl mx-auto relative z-10 flex flex-col h-[calc(100vh-120px)]">
-        
+
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-light tracking-tight text-white mb-2 flex items-center gap-3">
               <Bot className="w-8 h-8 text-red-500/80" />
               HITL Inbox: <span className="font-semibold">{tenantSlug}</span>
-              <button 
+              <button
                 onClick={() => setShowSettings(true)}
                 className="ml-2 p-2 hover:bg-white/10 rounded-full transition-colors"
                 title="Configurar Webhook del Tenant"
@@ -162,7 +162,7 @@ function HITLInboxPage() {
         </div>
 
         <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex shadow-2xl backdrop-blur-xl">
-          
+
           {/* List (Left Pane) */}
           <div className="w-1/3 border-r border-white/10 flex flex-col">
             <div className="p-4 border-b border-white/10 bg-white/[0.02]">
@@ -178,14 +178,13 @@ function HITLInboxPage() {
                 <div className="text-center text-slate-500 py-10">No hay escalaciones activas.</div>
               ) : (
                 escalations.map((esc) => (
-                  <div 
-                    key={esc.id} 
+                  <div
+                    key={esc.id}
                     onClick={() => selectCase(esc)}
-                    className={`p-4 rounded-xl cursor-pointer transition-all border ${
-                      selectedCase?.id === esc.id 
-                      ? 'bg-blue-500/10 border-blue-500/30' 
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
+                    className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedCase?.id === esc.id
+                        ? 'bg-blue-500/10 border-blue-500/30'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <Badge variant="outline" className="text-xs bg-black/40">
@@ -199,7 +198,7 @@ function HITLInboxPage() {
                       Chat ID: {esc.conversationId}
                     </div>
                     <div className="text-xs text-slate-500 mt-2 truncate">
-                        Estado: {esc.status}
+                      Estado: {esc.status}
                     </div>
                   </div>
                 ))
@@ -216,8 +215,8 @@ function HITLInboxPage() {
                     <h2 className="text-lg font-medium text-white">Detalle de Escalación</h2>
                     <p className="text-sm text-slate-400">Conversación {selectedCase.conversationId}</p>
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="border-green-500/30 text-green-400 hover:bg-green-500/10"
                     onClick={handleResolve}
                   >
@@ -225,36 +224,35 @@ function HITLInboxPage() {
                     Resolver y Devolver a Hermes
                   </Button>
                 </div>
-                
+
                 <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-4">
                   <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl shrink-0">
                     <h4 className="text-red-400 font-medium mb-1 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" /> Razón de Escalamiento
+                      <AlertTriangle className="w-4 h-4" /> Razón de Escalamiento
                     </h4>
                     <p className="text-slate-300 text-sm">{selectedCase.reason}</p>
                     {selectedCase.notes && (
-                        <p className="text-slate-400 text-xs mt-2 italic">Notas: {selectedCase.notes}</p>
+                      <p className="text-slate-400 text-xs mt-2 italic">Notas: {selectedCase.notes}</p>
                     )}
                   </div>
-                  
+
                   {/* Real Transcript */}
                   <div className="flex-1 flex flex-col space-y-4 pt-4 border-t border-white/5">
                     {messages.length === 0 ? (
-                        <div className="text-center text-slate-500 py-4 animate-pulse">Cargando historial...</div>
+                      <div className="text-center text-slate-500 py-4 animate-pulse">Cargando historial...</div>
                     ) : (
-                        messages.map(msg => (
-                            <div key={msg.id} className={`p-4 rounded-xl text-sm border ${
-                                msg.role === 'USER' ? 'bg-white/5 text-slate-300 border-white/10 self-start w-3/4' :
-                                msg.role === 'HERMES' ? 'bg-blue-500/5 text-slate-300 border-blue-500/10 self-end w-3/4' :
-                                msg.role === 'OPERATOR' ? 'bg-green-500/5 text-green-300 border-green-500/10 self-end w-3/4' :
+                      messages.map(msg => (
+                        <div key={msg.id} className={`p-4 rounded-xl text-sm border ${msg.role === 'USER' ? 'bg-white/5 text-slate-300 border-white/10 self-start w-3/4' :
+                            msg.role === 'HERMES' ? 'bg-blue-500/5 text-slate-300 border-blue-500/10 self-end w-3/4' :
+                              msg.role === 'OPERATOR' ? 'bg-green-500/5 text-green-300 border-green-500/10 self-end w-3/4' :
                                 'bg-yellow-500/5 text-yellow-500/70 border-yellow-500/10 self-center w-full text-center text-xs'
-                            }`}>
-                                <p className="font-medium mb-1 opacity-70">
-                                    {msg.role === 'USER' ? 'Usuario' : msg.role === 'OPERATOR' ? 'Soporte Humano' : msg.role}
-                                </p>
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
-                            </div>
-                        ))
+                          }`}>
+                          <p className="font-medium mb-1 opacity-70">
+                            {msg.role === 'USER' ? 'Usuario' : msg.role === 'OPERATOR' ? 'Soporte Humano' : msg.role}
+                          </p>
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>
@@ -262,8 +260,8 @@ function HITLInboxPage() {
                 {/* Reply Box */}
                 <div className="p-4 border-t border-white/10 bg-black/40">
                   <div className="flex gap-3">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Escribe directamente al usuario (Se enviará vía Edge Outbound)..."
                       className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500/50 transition-colors"
                       value={replyMessage}
@@ -283,14 +281,14 @@ function HITLInboxPage() {
               </div>
             )}
           </div>
-          
+
         </div>
       </div>
-      
+
       {/* Drawer: Nexus SOP Injection */}
       <AnimatePresence>
         {selectedCase && (
-          <motion.div 
+          <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -311,10 +309,10 @@ function HITLInboxPage() {
                 <p className="text-slate-400">Contexto de la escalación: {selectedCase.reason}</p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <p className="text-xs text-slate-500 mb-2">Consultando Nexus en tiempo real para el tópico actual...</p>
-                  <p className="text-sm italic">
-                      [El Soporte SOP dinámico no está configurado para este tenant. Por favor contacta al administrador de Nexus para indexar guías relacionadas a {selectedCase.reason}.]
-                  </p>
+                <p className="text-xs text-slate-500 mb-2">Consultando Nexus en tiempo real para el tópico actual...</p>
+                <p className="text-sm italic">
+                  [El Soporte SOP dinámico no está configurado para este tenant. Por favor contacta al administrador de Nexus para indexar guías relacionadas a {selectedCase.reason}.]
+                </p>
               </div>
               <Button variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10 text-slate-300" onClick={() => window.open('https://nexus.pandoras.finance', '_blank')}>
                 <BookOpen className="w-4 h-4 mr-2" /> Buscar en Nexus
@@ -325,13 +323,13 @@ function HITLInboxPage() {
       </AnimatePresence>
       <AnimatePresence>
         {showSettings && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -348,8 +346,8 @@ function HITLInboxPage() {
                   <label className="block text-sm font-medium text-slate-300 mb-2">
                     Discord Webhook URL (HITL Alertas)
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
                     placeholder="https://discord.com/api/webhooks/[ID]/[TOKEN]"
@@ -359,7 +357,7 @@ function HITLInboxPage() {
                     Si se deja en blanco, se usará el webhook default de la plataforma.
                   </p>
                 </div>
-                <Button 
+                <Button
                   onClick={async () => {
                     setSavingWebhook(true);
                     try {
@@ -373,7 +371,7 @@ function HITLInboxPage() {
                       console.error(e);
                     }
                     setSavingWebhook(false);
-                  }} 
+                  }}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   disabled={savingWebhook}
                 >

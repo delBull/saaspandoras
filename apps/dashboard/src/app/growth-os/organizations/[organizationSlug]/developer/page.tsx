@@ -9,9 +9,9 @@ import { PlatformCapabilityRegistryService } from '@/lib/admin/platform-capabili
 import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
 import { redirect } from 'next/navigation';
 
-export default async function DeveloperHubPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DeveloperHubPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const resolvedParams = await params;
-  const slugId = resolvedParams?.id;
+  const slugId = resolvedParams?.organizationSlug;
 
   if (!slugId) {
     redirect('/unauthorized');

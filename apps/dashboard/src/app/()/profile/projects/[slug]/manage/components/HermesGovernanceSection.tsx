@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getPendingIntents } from '@/app/growth-os/organizations/[id]/actions';
-import GovernanceButtons from '@/app/growth-os/organizations/[id]/governance/components/GovernanceButtons';
+import { getPendingIntents } from '@/app/growth-os/organizations/[organizationSlug]/actions';
+import GovernanceButtons from '@/app/growth-os/organizations/[organizationSlug]/governance/components/GovernanceButtons';
 import { simulateHermesProposal } from '@/actions/simulate-hermes-intent';
 import { useRouter } from 'next/navigation';
 

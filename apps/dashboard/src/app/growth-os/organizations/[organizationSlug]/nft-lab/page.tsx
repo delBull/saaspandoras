@@ -1,9 +1,9 @@
 import { DashApi } from '@/lib/dash-api';
 import { Sparkles, Layers, ShieldCheck, Plus, ExternalLink, Cpu } from 'lucide-react';
 
-export default async function NftLabPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function NftLabPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const resolvedParams = await params;
-  const slugId = resolvedParams.id;
+  const slugId = resolvedParams.organizationSlug;
   const orgId = `org_${slugId}`;
 
   let nftData = {

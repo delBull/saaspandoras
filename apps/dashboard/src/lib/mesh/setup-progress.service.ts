@@ -303,7 +303,7 @@ export class SetupProgressService {
       overallPercentage,
       totalActiveModules: totalActive,
       completedModules,
-      modules,
+      modules: activeModules,
     };
   }
 }

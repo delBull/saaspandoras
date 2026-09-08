@@ -3,9 +3,9 @@ import { ProjectRepository } from "@/lib/domain/project-repository";
 import { DashApi } from '@/lib/dash-api';
 import { Activity } from 'lucide-react';
 
-export default async function ActivityPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ActivityPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const resolvedParams = await params;
-  const orgId = `org_${resolvedParams.id}`;
+  const orgId = `org_${resolvedParams.organizationSlug}`;
 
   try {
     await DashApi.controlPlane.getOverview(orgId);
@@ -13,7 +13,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
     console.warn(`[ActivityPage] Notice:`, err);
   }
 
-  const project = await ProjectRepository.findBySlug(resolvedParams.id);
+  const project = await ProjectRepository.findBySlug(resolvedParams.organizationSlug);
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -23,7 +23,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
           Activity & Audit
         </h1>
         <p className="text-zinc-400 text-sm mt-1">
-          Feed inmutable de auditoría, firmas y registros de eventos para {resolvedParams.id.toUpperCase()}.
+          Feed inmutable de auditoría, firmas y registros de eventos para {resolvedParams.organizationSlug.toUpperCase()}.
         </p>
       </div>
 
