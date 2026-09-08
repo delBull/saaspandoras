@@ -149,13 +149,14 @@ export function NexusLoginGate() {
                 type="tel"
                 value={whatsappPhone}
                 onChange={(e) => setWhatsappPhone(e.target.value)}
-                placeholder="+5215551234567 (Opcional - Para notificaciones IA de Hermes)"
+                placeholder="+5215551234567 (WhatsApp - Para notificaciones de IA)"
                 className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
+                required
               />
               <p className="text-[10px] text-zinc-500 px-1 leading-tight">El número de WhatsApp es requerido para que la IA de Hermes pueda asignar y notificar tareas operativas del Nexus.</p>
               <button
                 type="submit"
-                disabled={loading || !email}
+                disabled={loading || !email || !whatsappPhone}
                 className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all disabled:opacity-40"
               >
                 <Mail className="w-3.5 h-3.5" />

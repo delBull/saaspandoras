@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!whatsappPhone) {
+      return NextResponse.json(
+        { error: 'WhatsApp phone number is required for Hermes notifications' },
+        { status: 400, headers: cors }
+      );
+    }
+
     const cleanEmail = email.trim().toLowerCase();
     const cleanName: string = (name && typeof name === 'string' && name.trim()) ? name.trim() : (isNexusAdminEmail(cleanEmail) ? 'Admin' : (cleanEmail.split('@')[0] || 'Collaborator'));
 
