@@ -354,7 +354,7 @@ export default function ChannelsDashboard({ organizationSlug }: { organizationSl
               <Label className="text-neutral-300 text-xs font-medium">Discord Webhook URL</Label>
               <Input
                 type="url"
-                placeholder="https://discord.com/api/webhooks/..."
+                placeholder="https://discord.com/api/webhooks/[ID]/[TOKEN]"
                 value={alertDiscordUrl}
                 onChange={(e) => setAlertDiscordUrl(e.target.value)}
                 className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600 text-xs"

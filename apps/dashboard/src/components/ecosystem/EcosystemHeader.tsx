@@ -8,13 +8,18 @@ import { Layers, Bot, Rocket, Landmark, ShieldCheck, LogOut } from 'lucide-react
 interface EcosystemHeaderProps {
   organization: PortalOrganization;
   organizationSlug: string;
+  activeModules?: string[];
 }
 
-export function EcosystemHeader({ organization, organizationSlug }: EcosystemHeaderProps) {
+export function EcosystemHeader({ organization, organizationSlug, activeModules = [] }: EcosystemHeaderProps) {
   const handleLogout = () => {
     document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
     window.location.href = `/portal/login`;
   };
+
+  const hasHermes = activeModules.length === 0 || activeModules.includes('HERMES');
+  const hasGrowth = activeModules.length === 0 || activeModules.includes('GROWTH_OS');
+  const hasRwa = activeModules.length === 0 || activeModules.includes('PANDORAS_RWA');
 
   return (
     <header className="h-14 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-40 backdrop-blur-xl">
@@ -36,29 +41,43 @@ export function EcosystemHeader({ organization, organizationSlug }: EcosystemHea
 
       {/* 3 Planes Navigation */}
       <div className="hidden md:flex items-center gap-2 bg-black/40 p-1 rounded-2xl border border-white/5">
-        <Link
-          href={`/portal/${organizationSlug}`}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all text-xs font-semibold"
-        >
-          <Bot className="w-4 h-4 text-emerald-400" />
-          <span>Hermes AI OS</span>
-        </Link>
-        <div className="h-3 w-px bg-white/10" />
-        <Link
-          href={`/growth-os/organizations/${organizationSlug}`}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-violet-300 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20 transition-all text-xs font-semibold"
-        >
-          <Rocket className="w-4 h-4 text-violet-400" />
-          <span>Growth OS</span>
-        </Link>
-        <div className="h-3 w-px bg-white/10" />
-        <Link
-          href={`/profile/projects/${organizationSlug}/manage`}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all text-xs font-semibold"
-        >
-          <Landmark className="w-4 h-4 text-indigo-400" />
-          <span>Tokenomics & Capital</span>
-        </Link>
+        {hasHermes && (
+          <Link
+            href={`/portal/${organizationSlug}`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all text-xs font-semibold"
+          >
+            <Bot className="w-4 h-4 text-emerald-400" />
+            <span>Hermes AI OS</span>
+          </Link>
+        )}
+        
+        {hasHermes && (hasGrowth || hasRwa) && (
+          <div className="h-3 w-px bg-white/10" />
+        )}
+        
+        {hasGrowth && (
+          <Link
+            href={`/growth-os/organizations/${organizationSlug}`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-violet-300 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20 transition-all text-xs font-semibold"
+          >
+            <Rocket className="w-4 h-4 text-violet-400" />
+            <span>Growth OS</span>
+          </Link>
+        )}
+
+        {hasGrowth && hasRwa && (
+          <div className="h-3 w-px bg-white/10" />
+        )}
+
+        {hasRwa && (
+          <Link
+            href={`/profile/projects/${organizationSlug}/manage`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all text-xs font-semibold"
+          >
+            <Landmark className="w-4 h-4 text-indigo-400" />
+            <span>RWA & Capital</span>
+          </Link>
+        )}
       </div>
 
       {/* Right User State */}

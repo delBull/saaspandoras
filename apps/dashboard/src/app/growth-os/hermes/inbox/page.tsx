@@ -352,7 +352,7 @@ function HITLInboxPage() {
                     type="text" 
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://discord.com/api/webhooks/..."
+                    placeholder="https://discord.com/api/webhooks/[ID]/[TOKEN]"
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
                   />
                   <p className="text-xs text-slate-500 mt-2">

@@ -45,9 +45,11 @@ interface SuiteMission {
 
 export function SetupCompletionWidget({ 
   organizationSlug,
+  organizationName,
   initialSummary,
 }: { 
   organizationSlug: string;
+  organizationName: string;
   initialSummary?: EcosystemSetupSummary | null;
 }) {
   const hermesMod = initialSummary?.modules?.find((m) => m.productKey === 'HERMES');
@@ -91,7 +93,7 @@ export function SetupCompletionWidget({
   const growthPercentage = growthMod?.progressPercentage ?? (isGrowthPipelineDone ? 35 : 0);
   const rwaPercentage = rwaMod?.progressPercentage ?? (isRwaProjectDone ? 35 : 0);
 
-  const suites: SuiteMission[] = [
+  const allSuites: SuiteMission[] = [
     {
       name: 'Activar Hermes',
       short: 'Hermes AI',
@@ -119,7 +121,7 @@ export function SetupCompletionWidget({
         },
         {
           id: 'h_channels',
-          label: 'Conecta tu primer canal (Telegram / Widget)',
+          label: 'Conecta tu canal (Telegram / Widget)',
           tier: 'OPTIONAL',
           done: isHermesChannelsDone,
           href: `/portal/${organizationSlug}/channels`,
@@ -199,10 +201,19 @@ export function SetupCompletionWidget({
     },
   ];
 
+  // Filter suites based on provisioned modules. If no initialSummary is provided, assume all are active.
+  const suites = allSuites.filter(suite => {
+    if (!initialSummary) return true;
+    if (suite.short === 'Hermes AI') return !!hermesMod;
+    if (suite.short === 'Growth OS') return !!growthMod;
+    if (suite.short === 'RWA & Tokenomics') return !!rwaMod;
+    return true;
+  });
+
   const totalPercentage = initialSummary
     ? initialSummary.overallPercentage
     : Math.round(
-        suites.reduce((acc, s) => acc + s.percentage, 0) / suites.length
+        suites.reduce((acc, s) => acc + s.percentage, 0) / (suites.length || 1)
       );
 
   const getTierBadge = (tier: StepTier) => {
@@ -228,89 +239,67 @@ export function SetupCompletionWidget({
     }
   };
 
+  // Determine grid columns dynamically based on number of active suites
+  const gridColsClass = suites.length === 1 
+    ? 'grid-cols-1' 
+    : suites.length === 2 
+    ? 'grid-cols-1 md:grid-cols-2' 
+    : 'grid-cols-1 md:grid-cols-3';
+
   return (
     <div className="space-y-6">
-      {/* 🌟 HERMES CONCIERGE WELCOME BANNER */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#0C0C16] via-[#101020] to-[#0A0A12] border border-indigo-500/20 p-6 sm:p-7 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex items-start gap-4 z-10">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-indigo-500/20 to-violet-500/20 border border-indigo-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-lg shadow-emerald-500/10">
-            <Bot className="w-6 h-6 animate-pulse" />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                Hermes Concierge
-              </span>
-              <span className="text-zinc-500 text-xs">· Onboarding Asistido</span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-              Tu ecosistema está listo. Ahora vamos a configurarlo juntos.
-            </h3>
-            <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
-              Hermes ya conoce la estructura inicial de tu organización. Puedes completar las Setup Missions a tu propio ritmo o dejar que Hermes te guíe paso a paso.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 z-10 w-full md:w-auto">
-          <button
-            onClick={() => setIsTourOpen(true)}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold font-mono flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02]"
-          >
-            <Compass className="w-4 h-4 text-black" />
-            <span>🧭 Iniciar Guía con Hermes</span>
-          </button>
-
-          <Link
-            href={`/portal/${organizationSlug}`}
-            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium font-mono flex items-center justify-center gap-2 transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Hablar en Portal</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      {/* 🚀 SETUP MISSIONS MATRIX */}
+      {/* 🚀 SETUP MISSIONS MATRIX & UNIFIED HEADER */}
       <div className="rounded-3xl bg-[#09090E] border border-white/10 p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-indigo-500/5 via-violet-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        {/* Header & Overall Readiness */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest">
-              <Compass className="w-4 h-4 text-indigo-400" />
-              <span>Ecosystem Readiness & Setup Missions</span>
+        {/* Unified Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/5 pb-6">
+          <div className="flex items-start gap-4 z-10">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-indigo-500/20 to-violet-500/20 border border-indigo-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-lg shadow-emerald-500/10">
+              <Bot className="w-6 h-6 animate-pulse" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-              Misiones de Activación Soberana
-            </h2>
-            <p className="text-xs text-zinc-400 leading-relaxed max-w-xl">
-              Solo las misiones marcadas como <span className="text-amber-400 font-medium">REQUIRED</span> son esenciales para operar. Puedes continuar sin completar las recomendaciones adicionales.
-            </p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Ecosystem Readiness & Setup Missions
+                </span>
+                <span className="text-zinc-500 text-xs">· Onboarding Asistido</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Tu ecosistema {organizationName} está listo. Ahora vamos a configurarlo juntos.
+              </h3>
+              <p className="text-xs text-zinc-400 max-w-2xl leading-relaxed mt-1">
+                Completa las misiones marcadas como <span className="text-amber-400 font-medium">REQUIRED</span> para operar de forma soberana. Puedes continuar sin completar las recomendaciones adicionales, o dejar que Hermes te guíe paso a paso.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3.5 rounded-2xl shrink-0">
-            <div className="text-right">
-              <div className="text-[10px] font-mono text-zinc-400 uppercase">Ecosystem Readiness</div>
-              <div className="text-2xl font-black font-mono text-white">{totalPercentage}%</div>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-emerald-500/20 border border-indigo-500/30 flex items-center justify-center text-emerald-300">
-              <Zap className="w-5 h-5" />
+          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 z-10 w-full lg:w-auto">
+            <button
+              onClick={() => setIsTourOpen(true)}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold font-mono flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02]"
+            >
+              <Compass className="w-4 h-4 text-black" />
+              <span>🧭 Iniciar Guía con Hermes</span>
+            </button>
+            <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-2.5 px-4 rounded-xl shrink-0">
+              <div className="text-right">
+                <div className="text-[10px] font-mono text-zinc-400 uppercase">Readiness</div>
+                <div className="text-xl font-black font-mono text-white">{totalPercentage}%</div>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500/20 to-emerald-500/20 border border-indigo-500/30 flex items-center justify-center text-emerald-300">
+                <Zap className="w-4 h-4" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Grid of 3 Setup Missions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Dynamic Grid of Setup Missions */}
+        <div className={`grid ${gridColsClass} gap-6`}>
           {suites.map((suite) => {
             const Icon = suite.icon;
             const isEmerald = suite.color === 'emerald';
             const isViolet = suite.color === 'violet';
-            const isIndigo = suite.color === 'indigo';
 
             const accentBadge = isEmerald
               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'

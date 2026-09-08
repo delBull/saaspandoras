@@ -460,7 +460,7 @@ export function CollaboratorPermissionsDrawer({
                 </p>
                 <input
                   type="text"
-                  placeholder="https://discord.com/api/webhooks/..."
+                  placeholder="https://discord.com/api/webhooks/[ID]/[TOKEN]"
                   value={discordWebhookUrl}
                   onChange={(e) => setDiscordWebhookUrl(e.target.value)}
                   className="w-full bg-zinc-900/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
