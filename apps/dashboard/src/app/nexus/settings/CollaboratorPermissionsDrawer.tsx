@@ -15,9 +15,20 @@ import {
   Globe,
   Save,
   AlertCircle,
+  FolderOpen,
+  FileText,
+  FileCheck,
+  FileX,
+  ChevronRight,
+  ExternalLink,
+  Loader2,
+  ClipboardList,
+  Share2,
+  Upload,
 } from "lucide-react";
 import type { NexusRole } from "@/lib/nexus/nexus-rbac";
 import type { NexusPermissionsOverride } from "@/db/schema";
+import { KIND_LABEL, STATUS_LABEL } from "@/lib/nexus-deals/types";
 
 export interface CollaboratorItem {
   id: number;
@@ -48,18 +59,48 @@ export function CollaboratorPermissionsDrawer({
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<"permisos" | "dataroom">("permisos");
+
+  // Data Room state
+  interface DealRoomRef {
+    id: string;
+    publicId: string;
+    title: string;
+    kind: string;
+    status: string;
+    counterparty: string;
+    createdAt: string;
+    myRole: string;
+    mySignStatus: string | null;
+  }
+  const [deals, setDeals] = useState<DealRoomRef[]>([]);
+  const [dealsLoading, setDealsLoading] = useState(false);
 
   // Sync state when collaborator changes
   useEffect(() => {
     if (collaborator) {
       setRole((collaborator.role as NexusRole) || "VIEWER");
       setPermissions(collaborator.permissions || {});
-      // In a full integration, you would fetch the user's existing webhook via API.
-      // We start empty if not loaded yet.
       setDiscordWebhookUrl("");
       setFeedback(null);
+      setActiveTab("permisos");
+      setDeals([]);
     }
   }, [collaborator]);
+
+  // Fetch deals when Data Room tab is opened
+  useEffect(() => {
+    if (activeTab === "dataroom" && collaborator?.email && deals.length === 0) {
+      setDealsLoading(true);
+      fetch(`/api/nexus/collaborators/deals?email=${encodeURIComponent(collaborator.email)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.ok) setDeals(data.rooms ?? []);
+        })
+        .catch(console.error)
+        .finally(() => setDealsLoading(false));
+    }
+  }, [activeTab, collaborator?.email, deals.length]);
 
   if (!collaborator) return null;
 
@@ -182,9 +223,33 @@ export function CollaboratorPermissionsDrawer({
               </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex border-b border-white/10 bg-zinc-950/30">
+              {[
+                { id: "permisos", label: "Permisos & Rol", icon: Shield },
+                { id: "dataroom", label: "Data Room", icon: FolderOpen },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as "permisos" | "dataroom")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-semibold transition-all border-b-2 ${
+                    activeTab === tab.id
+                      ? "border-amber-500 text-amber-400 bg-amber-500/5"
+                      : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Role Selection */}
+              {/* ── PERMISOS TAB ── */}
+              {activeTab === "permisos" && (
+              <>
+
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-3">
                   Rol Base Asignado
@@ -383,6 +448,7 @@ export function CollaboratorPermissionsDrawer({
                   <span>{feedback.message}</span>
                 </div>
               )}
+
               {/* Discord Webhook Field */}
               <div className="pt-6 border-t border-white/10">
                 <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -390,7 +456,7 @@ export function CollaboratorPermissionsDrawer({
                   Discord Webhook (HITL Personal)
                 </label>
                 <p className="text-xs text-zinc-500 mb-3">
-                  Si este operador tiene un canal privado para alertas de escalación HITL, pégalo aquí.
+                  Canal privado de alertas HITL para este operador.
                 </p>
                 <input
                   type="text"
@@ -400,8 +466,195 @@ export function CollaboratorPermissionsDrawer({
                   className="w-full bg-zinc-900/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
                 />
               </div>
+              </>
+              )} {/* end PERMISOS TAB */}
 
-            </div>
+              {/* ── DATA ROOM TAB ── */}
+              {activeTab === "dataroom" && (
+                <div className="space-y-6">
+                  {/* Section A: Contractual Docs (Pandoras ↔ Collaborator) */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 rounded-lg bg-amber-500/10"><FileCheck className="w-4 h-4 text-amber-400" /></div>
+                      <div>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">A. Documentos Contractuales</span>
+                        <p className="text-[10px] text-zinc-500">Pandoras ↔ {collaborator.name}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {([
+                        { label: "NDA / Acuerdo de Confidencialidad", status: "Pendiente" },
+                        { label: "Contrato de Servicios / Colaboración", status: "Pendiente" },
+                        { label: "Ficha de Incorporación (Onboarding Brief)", status: "Pendiente" },
+                      ] as const).map((doc) => (
+                        <div key={doc.label} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/50 border border-white/5 group hover:border-amber-500/20 transition-all">
+                          <div className="flex items-center gap-2.5">
+                            <FileText className="w-3.5 h-3.5 text-zinc-500" />
+                            <span className="text-xs text-zinc-300">{doc.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono">{doc.status}</span>
+                            <button
+                              onClick={() => window.open('/nexus/rooms', '_blank')}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-white/5 text-zinc-400 transition-all"
+                              title="Crear en Deal Room"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section B: Docs collaborator delivers to Pandoras */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 rounded-lg bg-purple-500/10"><Upload className="w-4 h-4 text-purple-400" /></div>
+                      <div>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">B. Documentos del Colaborador</span>
+                        <p className="text-[10px] text-zinc-500">Entregables requeridos por Pandoras</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {([
+                        { label: "ID Oficial / Pasaporte", status: "Requerido" },
+                        { label: "Comprobante de Domicilio", status: "Requerido" },
+                        { label: "CV / Portfolio de Experiencia", status: "Requerido" },
+                        { label: "Factura Fiscal (si aplica)", status: "Opcional" },
+                      ] as const).map((doc) => (
+                        <div key={doc.label} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/50 border border-white/5 group hover:border-purple-500/20 transition-all">
+                          <div className="flex items-center gap-2.5">
+                            <ClipboardList className="w-3.5 h-3.5 text-zinc-500" />
+                            <span className="text-xs text-zinc-300">{doc.label}</span>
+                          </div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${
+                            doc.status === 'Opcional'
+                              ? 'border-zinc-600 bg-zinc-800 text-zinc-400'
+                              : 'border-red-500/30 bg-red-500/10 text-red-400'
+                          }`}>{doc.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section C: Docs to share with clients */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/10"><Share2 className="w-4 h-4 text-emerald-400" /></div>
+                      <div>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">C. Materiales para Clientes</span>
+                        <p className="text-[10px] text-zinc-500">Documentos autorizados para prospección</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {([
+                        { label: "One-Pager · Pandoras Growth OS", status: "Disponible", href: "https://pandoras.finance/en/institutional" },
+                        { label: "Deck de Presentación Institucional", status: "Disponible", href: "https://pandoras.finance/en/institutional" },
+                        { label: "Term Sheet / Resumen de Inversión", status: "Por proyecto", href: null },
+                        { label: "Documento AML / Regulación (Due Diligence)", status: "Disponible", href: null },
+                      ] as const).map((doc) => (
+                        <div key={doc.label} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/50 border border-white/5 group hover:border-emerald-500/20 transition-all">
+                          <div className="flex items-center gap-2.5">
+                            <Globe className="w-3.5 h-3.5 text-zinc-500" />
+                            <span className="text-xs text-zinc-300">{doc.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${
+                              doc.status === 'Disponible'
+                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                : 'border-zinc-600 bg-zinc-800 text-zinc-400'
+                            }`}>{doc.status}</span>
+                            {doc.href && (
+                              <a href={doc.href} target="_blank" rel="noopener noreferrer"
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-white/5 text-zinc-400 transition-all"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section D: Deal Rooms linked to this collaborator */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-blue-500/10"><Handshake className="w-4 h-4 text-blue-400" /></div>
+                        <div>
+                          <span className="text-xs font-bold text-white uppercase tracking-wider">D. Deal Rooms Vinculados</span>
+                          <p className="text-[10px] text-zinc-500">Acuerdos activos con {collaborator.email}</p>
+                        </div>
+                      </div>
+                      <a href="/nexus/rooms" target="_blank"
+                        className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+                      >
+                        Ver todos <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+
+                    {dealsLoading ? (
+                      <div className="flex items-center gap-2 p-4 text-zinc-500 text-xs">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Cargando documentos del Deal Room...
+                      </div>
+                    ) : deals.length === 0 ? (
+                      <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/5 text-center">
+                        <FileX className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
+                        <p className="text-xs text-zinc-500">No hay Deal Rooms vinculados aún.</p>
+                        <a href="/nexus/rooms" target="_blank"
+                          className="inline-flex items-center gap-1 mt-2 text-[11px] text-blue-400 hover:text-blue-300"
+                        >
+                          Crear uno en Deal Rooms <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {deals.map((deal) => (
+                          <div key={deal.id} className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 group hover:border-blue-500/20 transition-all">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <FileCheck className="w-3.5 h-3.5 text-blue-400" />
+                                <div>
+                                  <p className="text-xs font-medium text-white">{deal.title}</p>
+                                  <p className="text-[10px] text-zinc-500 font-mono">{(KIND_LABEL as Record<string,string>)[deal.kind] ?? deal.kind} · {deal.publicId}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${
+                                  deal.status === 'SIGNED' || deal.status === 'EXECUTED'
+                                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                    : deal.status === 'DRAFT'
+                                    ? 'border-zinc-600 bg-zinc-800 text-zinc-400'
+                                    : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                                }`}>
+                                  {(STATUS_LABEL as Record<string,string>)[deal.status] ?? deal.status}
+                                </span>
+                                <a href={`/nexus/rooms`} target="_blank"
+                                  className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-white/5 text-zinc-400"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
+                            </div>
+                            {deal.mySignStatus && (
+                              <div className={`mt-1.5 text-[10px] font-mono ${
+                                deal.mySignStatus === 'SIGNED' ? 'text-emerald-400' : 'text-amber-400'
+                              }`}>
+                                Tu firma: {deal.mySignStatus === 'SIGNED' ? '✓ Firmado' : '⏳ Pendiente'}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )} {/* end DATA ROOM TAB */}
+
+            </div> {/* end scrollable content */}
 
             {/* Footer / Actions */}
             <div className="p-6 border-t border-white/10 bg-white/[0.02] flex items-center justify-between gap-3">

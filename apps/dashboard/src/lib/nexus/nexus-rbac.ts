@@ -34,6 +34,7 @@ export interface NexusAuthContext {
   wallet?: string | null;
   email?: string | null;
   name?: string | null;
+  whatsappPhone?: string | null;
   permissions: NexusPermissions;
 }
 
@@ -174,12 +175,25 @@ export async function getNexusAuthContext(
       const validAdminRoles = ['super_admin', 'admin', 'operator', 'marketing', 'viewer'];
       
       if (user && validAdminRoles.includes(user.role)) {
+        let whatsappPhone: string | null = null;
+        if (user.email) {
+          const collabRecords = await db
+            .select({ whatsappPhone: nexusCollaborators.whatsappPhone })
+            .from(nexusCollaborators)
+            .where(eq(nexusCollaborators.email, user.email))
+            .limit(1);
+          if (collabRecords.length > 0 && collabRecords[0]) {
+            whatsappPhone = collabRecords[0].whatsappPhone || null;
+          }
+        }
+
         return {
           isAuthenticated: true,
           role: user.role.toUpperCase() as NexusRole, // Cast to uppercase to match legacy enum if needed
           wallet: sessionWallet,
           email: user.email,
           name: user.name,
+          whatsappPhone,
           permissions: resolveEffectivePermissions(
             user.role.toUpperCase() as NexusRole, 
             {}
@@ -232,6 +246,7 @@ export async function getNexusAuthContext(
           role,
           email: collaborator.email,
           name: collaborator.name,
+          whatsappPhone: collaborator.whatsappPhone,
           permissions,
         };
       } else {

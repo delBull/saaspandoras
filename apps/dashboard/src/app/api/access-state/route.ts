@@ -64,11 +64,16 @@ export async function GET(req: Request): Promise<NextResponse> {
         // 🛡️ 2. NO TOKEN
         if (!token) {
             const ux = await resolveUXConfig(walletParam || undefined, AccessState.NO_WALLET, false, projectSlug);
+            
+            // 🔥 CDN Caching: cache anonymous (no token) checks at the edge for 30 seconds
+            const responseHeaders = new Headers(corsHeaders);
+            responseHeaders.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=59");
+            
             return NextResponse.json({ 
                 state: walletParam ? AccessState.NO_SESSION : AccessState.NO_WALLET,
                 authenticated: false,
                 ux
-            }, { headers: corsHeaders });
+            }, { headers: responseHeaders });
         }
 
         // 🔐 3. VERIFICATION

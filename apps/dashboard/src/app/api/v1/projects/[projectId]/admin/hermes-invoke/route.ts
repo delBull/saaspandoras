@@ -3,9 +3,9 @@ import { db } from '@/db';
 import { nexusCollaborators, nexusDealRooms, projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   try {
-    const { projectId } = params;
+    const { projectId } = await params;
     const body = await req.json();
     const { dealRoomId, targetIdentityId } = body;
 

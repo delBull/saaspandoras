@@ -108,3 +108,11 @@ PandorasGrowth.openCheckout({
 
 **Behavior:** 
 When `origin` is detected, the default "Go to Dashboard" button in Pandoras is replaced with a customizable redirect button that returns the user to the specified URL.
+
+---
+
+## 🤖 Agent-to-Agent (A2A) Client SDK
+
+If you are developing an external AI Agent that needs to communicate with the Hermes Cognitive Hub or upload files securely to our Sovereign IPFS infrastructure, please refer to the dedicated **Client Harness SDK Guide**.
+
+👉 **[View Client Harness SDK Guide](../../DOCUMENTACIÓN/Hermes/CLIENT_HARNESS_SDK_GUIDE.md)**

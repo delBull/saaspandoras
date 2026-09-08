@@ -23,6 +23,8 @@ import {
   Zap
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
+import { grantAdminPrivilegesAction } from '../../../app/admin/actions/admin-actions';
+import { useState } from 'react';
 
 interface AdminSecurityViewProps {
   totalVaultDocuments: number;
@@ -34,14 +36,41 @@ interface AdminSecurityViewProps {
     addedBy: string;
     createdAt: string;
   }>;
+  nexusCollaborators?: Array<{
+    id: number;
+    email: string;
+    name: string | null;
+    role: string | null;
+    whatsappPhone: string | null;
+  }>;
 }
 
 export function AdminSecurityView({
   totalVaultDocuments,
   isDiscord2faActive,
   administrators,
+  nexusCollaborators = [],
 }: AdminSecurityViewProps) {
   const { inspect } = usePlatformInspector();
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  const handleGrantPrivileges = async (formData: FormData) => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await grantAdminPrivilegesAction(formData);
+      if (res.error) {
+        setMessage({ type: 'error', text: res.error });
+      } else if (res.success) {
+        setMessage({ type: 'success', text: res.success });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: 'Error de conexión' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -167,6 +196,52 @@ export function AdminSecurityView({
             </table>
           </div>
         </div>
+      </div>
+
+      {/* Aprovisionamiento de Administradores */}
+      <div className="p-6 rounded-2xl bg-[#0F0F16] border border-white/[0.08] space-y-4 shadow-xl">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-white">Aprovisionar Nuevo Administrador</h3>
+        </div>
+        <p className="text-xs text-zinc-400">Selecciona un colaborador del Nexus o ingresa una Billetera Web3 directamente para otorgar privilegios administrativos.</p>
+
+        <form action={handleGrantPrivileges} className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Colaborador del Nexus (Email)</label>
+            <select name="email" className="w-full bg-[#12121B] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500/50">
+              <option value="">Seleccionar colaborador...</option>
+              {nexusCollaborators.map(c => (
+                <option key={c.id} value={c.email}>
+                  {c.name ? `${c.name} (${c.email})` : c.email} - {c.role || 'Sin Rol'}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">O Wallet Directa</label>
+            <input type="text" name="walletAddress" placeholder="0x..." className="w-full bg-[#12121B] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:font-sans focus:outline-none focus:border-purple-500/50" />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Rol de Plataforma</label>
+            <div className="flex gap-2">
+              <select name="role" required className="flex-1 bg-[#12121B] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-semibold focus:outline-none focus:border-purple-500/50">
+                <option value="ADMIN">ADMIN</option>
+                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+              </select>
+              <button disabled={loading} type="submit" className="bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition-colors disabled:opacity-50">
+                {loading ? '...' : 'Aprovisionar'}
+              </button>
+            </div>
+          </div>
+        </form>
+        {message && (
+          <div className={`mt-4 p-3 rounded-xl text-xs font-medium border ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+            {message.text}
+          </div>
+        )}
       </div>
     </div>
   );

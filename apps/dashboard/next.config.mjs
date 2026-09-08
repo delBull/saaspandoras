@@ -9,6 +9,19 @@ const nextConfig = {
   // Disable source maps in production to save memory
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
+
+  // Prevent heavy server-only libs from being bundled into every serverless function.
+  // These are required at runtime but should not be inlined into the lambda bundle,
+  // reducing Function Storage consumption and cold start time.
+  serverExternalPackages: [
+    '@aws-sdk/client-s3',
+    '@aws-sdk/s3-request-presigner',
+    'sharp',
+    'canvas',
+    'puppeteer',
+    'playwright',
+  ],
+
   experimental: {
     // Reduce memory usage during build
     memoryBasedWorkersCount: true,
@@ -49,13 +62,59 @@ const nextConfig = {
   },
   async headers() {
     return [
+      // ── Global Security Headers ──────────────────────────────────────────
       {
-        source: "/(.*)",
+        source: '/(.*)',
         headers: [
+          // Wallet-connect requires unsafe-none for COOP (thirdweb popup flows)
+          { key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' },
+
+          // Prevent MIME-type sniffing attacks
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+
+          // Control referrer leakage
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+
+          // Restrict browser features (no camera/mic/geolocation unless explicitly needed)
           {
-            key: "Cross-Origin-Opener-Policy",
-            value: "unsafe-none",
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
           },
+
+          // HSTS: force HTTPS for 1 year (only applies on HTTPS connections)
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+
+          // Content Security Policy — allows Thirdweb, IPFS, Vercel, and app domains.
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.thirdweb.com https://cdn.jsdelivr.net",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob: https: ipfs:",
+              "connect-src 'self' https: wss: data:",
+              "frame-src 'self' https://*.thirdweb.com https://*.pandoras.finance",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
+        ],
+      },
+
+      // ── API Routes: force no caching on auth/sensitive endpoints ─────────
+      {
+        source: '/api/nexus/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, private' },
+          { key: 'X-Robots-Tag', value: 'noindex' },
+        ],
+      },
+      {
+        source: '/api/v1/(.*)',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex' },
         ],
       },
     ];
@@ -63,3 +122,4 @@ const nextConfig = {
 }
 
 export default nextConfig;
+

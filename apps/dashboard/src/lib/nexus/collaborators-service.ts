@@ -387,3 +387,54 @@ async function notifyCollaboratorViaWhatsApp(
     console.warn('[NexusCollaborators] Failed to send WhatsApp notification:', err);
   }
 }
+
+/**
+ * Resolve the full CollaboratorDTO for the currently authenticated Nexus operator.
+ *
+ * Resolution order:
+ *  1. If `walletAddress` is a Super Admin → return a synthetic SUPER_ADMIN identity
+ *     by looking for the admin email in DB (ADMIN_EMAILS env) first.
+ *  2. If `email` is provided directly (e.g. from cookie/session) → getCollaboratorByEmail.
+ *  3. Fallback: null (operator is identified as wallet-only admin with no DB record).
+ *
+ * Used by the Settings page server component to inject full identity into the terminal.
+ */
+export async function getCollaboratorForOperator(
+  walletAddress: string | null | undefined,
+  emailHint?: string | null
+): Promise<CollaboratorDTO | null> {
+  // 1. Try by email hint (fastest path, used when available)
+  if (emailHint) {
+    const byEmail = await getCollaboratorByEmail(emailHint);
+    if (byEmail) return byEmail;
+  }
+
+  // 2. Try admin email(s) from env — first valid match wins
+  for (const adminEmail of ADMIN_EMAILS) {
+    if (!adminEmail) continue;
+    const record = await getCollaboratorByEmail(adminEmail);
+    if (record) return record;
+  }
+
+  // 3. If we have a walletAddress but no DB record, synthesize a minimal identity
+  if (walletAddress) {
+    return {
+      id: 0,
+      name: 'Administrador',
+      email: walletAddress.toLowerCase(),
+      role: 'SUPER_ADMIN',
+      permissions: {
+        dealRoom: true,
+        academyAdmin: true,
+        settings: true,
+        hermesQa: true,
+      },
+      whatsappPhone: null,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      lastAccessAt: null,
+      createdAt: new Date(),
+    };
+  }
+
+  return null;
+}

@@ -22,12 +22,22 @@ import {
 } from "./CollaboratorPermissionsDrawer";
 import type { NexusRole } from "@/lib/nexus/nexus-rbac";
 import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
+import { NexusHermesTerminal } from "./NexusHermesTerminal";
+
+export interface OperatorContext {
+  name: string;
+  email: string;
+  whatsappPhone?: string | null;
+  role: string;
+  permissions: Record<string, boolean | undefined>;
+}
 
 interface SettingsClientProps {
   isUserAdmin?: boolean;
+  operatorContext?: OperatorContext | null;
 }
 
-export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClientProps) {
+export default function NexusSettingsPage({ isUserAdmin = false, operatorContext = null }: SettingsClientProps) {
   const [collaborators, setCollaborators] = useState<CollaboratorItem[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,7 +51,7 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Tabs state
-  const [activeTab, setActiveTab] = useState<"team" | "agents">("team");
+  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal">("team");
 
   const loadCollaborators = async () => {
     try {
@@ -201,6 +211,17 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
           >
             <Bot className="w-4 h-4" />
             Cognitive Agents
+          </button>
+          <button
+            onClick={() => setActiveTab("terminal")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              activeTab === "terminal"
+                ? "border-amber-400 text-amber-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            Hermes Terminal
           </button>
         </div>
 
@@ -396,8 +417,25 @@ export default function NexusSettingsPage({ isUserAdmin = false }: SettingsClien
           </p>
         </div>
           </>
-        ) : (
+        ) : activeTab === "agents" ? (
           <CognitiveAgentsManager />
+        ) : (
+          /* ── HERMES TERMINAL TAB ── */
+          <div className="flex flex-col" style={{ height: '600px' }}>
+            <div className="mb-4">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <Settings className="w-4 h-4 text-amber-400" />
+                Hermes OS Terminal
+              </h2>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Consola conversacional para operadores. Usa voz (Whisper) o texto. Comienza con{" "}
+                <code className="text-amber-400 font-mono">sudo wake_up_hermes</code>.
+              </p>
+            </div>
+            <div className="flex-1 min-h-0">
+              <NexusHermesTerminal role={isUserAdmin ? "SUPER_ADMIN" : "OPERATOR"} operatorContext={operatorContext} />
+            </div>
+          </div>
         )}
       </div>
 

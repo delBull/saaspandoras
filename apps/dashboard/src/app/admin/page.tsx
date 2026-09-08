@@ -15,7 +15,8 @@ import {
   hermesRunpodEndpoints,
   hermesKnowledge,
   administrators,
-  marketingLeads
+  marketingLeads,
+  nexusCollaborators
 } from '@/db/schema';
 import { desc, sql, eq } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
@@ -73,6 +74,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   let recentEventsList: any[] = [];
   let endpointsList: any[] = [];
   let administratorsList: any[] = [];
+  let nexusCollaboratorsList: any[] = [];
   let totalVaultDocuments = 0;
   let totalDeposited = 0;
   let totalSpent = 0;
@@ -266,6 +268,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         createdAt: a.createdAt ? new Date(a.createdAt).toISOString() : new Date().toISOString(),
       }));
 
+      // Query Nexus Collaborators for Provisioning
+      const collabsRows = await db
+        .select()
+        .from(nexusCollaborators)
+        .limit(50);
+      
+      nexusCollaboratorsList = collabsRows.map((c) => ({
+        id: c.id,
+        email: c.email,
+        name: c.name,
+        role: c.role,
+        whatsappPhone: c.whatsappPhone,
+      }));
+
       // Query Knowledge Count
       const docsCount = await db
         .select({ count: sql<number>`count(*)` })
@@ -392,11 +408,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       ) : activeTab === 'rwa' ? (
         <AdminRwaView deals={rwaDealsList} actor={actor} />
       ) : activeTab === 'security' ? (
-        <AdminSecurityView
-          totalVaultDocuments={totalVaultDocuments}
-          isDiscord2faActive={!!process.env.DISCORD_SECURITY_WEBHOOK_URL}
-          administrators={administratorsList}
-        />
+          <AdminSecurityView 
+            totalVaultDocuments={totalVaultDocuments}
+            isDiscord2faActive={true}
+            administrators={administratorsList}
+            nexusCollaborators={nexusCollaboratorsList}
+          />
       ) : activeTab === 'crm' ? (
         <AdminCrmView initialLeads={b2bLeadsList} metrics={b2bMetrics} />
       ) : activeTab === 'guides' ? (

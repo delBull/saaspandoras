@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * 🧭 HERMES FLOATING GUIDE (ECOSYSTEM RECONNAISSANCE TOUR)
+ * 🧭 HERMES FLOATING ONBOARDING (ECOSYSTEM RECONNAISSANCE TOUR)
  * apps/dashboard/src/components/guides/HermesFloatingGuide.tsx
  *
- * Interactive, non-intrusive floating guide powered by Hermes AI.
+ * Interactive, non-intrusive floating onboarding powered by Hermes AI.
  * Uses cinematic backdrop dimming (bg-black/60 backdrop-blur-sm) to focus attention
  * without breaking DOM layouts or using fragile spotlights.
  */
@@ -40,6 +40,7 @@ import {
 
 interface HermesFloatingGuideProps {
   role?: EcosystemTourRole;
+  operatorContext?: { name: string; email: string; role: string } | null;
   customStations?: EcosystemStation[];
   titleOverride?: string;
   isOpen: boolean;
@@ -50,6 +51,7 @@ interface HermesFloatingGuideProps {
 
 export function HermesFloatingGuide({
   role = 'SUPER_ADMIN',
+  operatorContext = null,
   customStations,
   titleOverride,
   isOpen,
@@ -163,31 +165,31 @@ export function HermesFloatingGuide({
           {/* Header Bar */}
           <div className="p-5 sm:px-6 sm:py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-600/20 border border-amber-500/30 flex items-center justify-center text-amber-300 shadow-inner">
-                  <Bot className="w-5 h-5 animate-pulse" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                  <Bot className="w-5 h-5 text-amber-400" />
                 </div>
-                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0F0F16]" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                    Hermes Guide
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-zinc-400 font-mono">
-                    {titleOverride || `Rol: ${role}`}
-                  </span>
+                <div>
+                  <h3 className="text-white font-bold tracking-tight text-lg">
+                    {titleOverride || 'Onboarding Interactivo'}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Hermes OS
+                    </span>
+                    <span className="text-xs text-zinc-400">
+                      guiando a <span className="text-amber-300 font-medium">{operatorContext ? operatorContext.name.split(' ')[0] : 'Operador'}</span> ({role})
+                    </span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-zinc-400">
-                  Estación {currentIndex + 1} de {stations.length} · {progressPercent}% Completado
-                </p>
               </div>
             </div>
 
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
-              title="Cerrar Guía"
+              title="Cerrar Onboarding"
             >
               <X className="w-4 h-4" />
             </button>

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const rooms = isSuperAdmin 
       ? allRooms 
       : allRooms.filter(r => {
-          const createEvent = r.audit?.find(a => a.action === "ROOM_CREATED");
+          const createEvent = r.audit?.find(a => a.action === "Room created");
           const creator = createEvent ? createEvent.actor : "";
           return creator.toLowerCase() === session?.address?.toLowerCase();
         });

@@ -29,8 +29,8 @@ export async function GET(
     const params = await context.params;
     const walletAddressRaw = params.walletAddress;
 
-    console.log(`🔍 API: Request received for wallet ${walletAddressRaw}`);
-    console.log(`🔍 API: Params object:`, context.params);
+    console.debug(`🔍 API: Request received for wallet ${walletAddressRaw}`);
+    console.debug(`🔍 API: Params object:`, context.params);
 
     if (!walletAddressRaw) {
       console.error(`❌ API: No wallet address provided in params`);
@@ -42,16 +42,16 @@ export async function GET(
 
     // Normalize wallet address to lowercase for consistency with database
     const walletAddress = walletAddressRaw.toLowerCase();
-    console.log(`🔍 API: Normalized wallet to lowercase: ${walletAddress}`);
+    console.debug(`🔍 API: Normalized wallet to lowercase: ${walletAddress}`);
 
-    console.log(`🔍 API: Getting gamification data for wallet ${walletAddress}`);
+    console.debug(`🔍 API: Getting gamification data for wallet ${walletAddress}`);
 
     // 🚀 Hardened with Retry to handle ECONNRESET
     const { withRetry } = await import("@/lib/database");
 
     return await withRetry(async () => {
       // 🔍 1. Resolve User & Fetch Global Data in Parallel
-      console.log(`🔍 API: Querying users table for identifier ${walletAddress}`);
+      console.debug(`🔍 API: Querying users table for identifier ${walletAddress}`);
       
       const [userResult, allAchievements, leaderboardResult] = await Promise.all([
         db
@@ -86,10 +86,10 @@ export async function GET(
           .limit(10)
       ]);
 
-      console.log(`🔍 API: User resolution result:`, userResult);
+      console.debug(`🔍 API: User resolution result:`, userResult);
 
       if (!userResult || userResult.length === 0 || !userResult[0]) {
-        console.log(`❌ User not found for wallet ${walletAddress}`);
+        console.debug(`❌ User not found for wallet ${walletAddress}`);
         return NextResponse.json({
           profile: null,
           achievements: [],
@@ -142,7 +142,7 @@ export async function GET(
           updatedAt: new Date(dbProfile.updatedAt)
         };
       } else {
-        console.log(`🎯 User found without gamification profile. Initializing basics (no seeding)...`);
+        console.debug(`🎯 User found without gamification profile. Initializing basics (no seeding)...`);
         try {
           const initialProfile = {
             userId: userId.toString(),
@@ -205,7 +205,7 @@ export async function GET(
         }
       }
 
-      console.log(`🔍 API DIAGNOSTIC: Found ${allAchievements.length} total achievements and ${userProgress.length} user progress records.`);
+      console.debug(`🔍 API DIAGNOSTIC: Found ${allAchievements.length} total achievements and ${userProgress.length} user progress records.`);
 
       // 5. Map achievements to user progress
       const progressMap = new Map(userProgress.map((p: any) => [p.achievementId, p]));
@@ -281,7 +281,7 @@ export async function GET(
             .where(sql`${gamificationProfiles.totalPoints} > ${profile.totalPoints}`);
           
           userRank = (Number(rankResult[0]?.count || 0) + 1).toString();
-          console.log(`📊 API rank for ${walletAddress}: #${userRank} (with ${profile.totalPoints} pts)`);
+          console.debug(`📊 API rank for ${walletAddress}: #${userRank} (with ${profile.totalPoints} pts)`);
         }
       } catch (rankError) {
         console.warn(`⚠️ Failed to calculate rank for ${walletAddress}:`, rankError);
@@ -292,10 +292,10 @@ export async function GET(
       const currentLevel = profile?.currentLevel || 1;
       const levelProgress = profile?.levelProgress || 0;
 
-      console.log(`✅ API: Retrieved gamification data for ${walletAddress}:`);
-      console.log(`   - Profile: ${profile ? 'Yes' : 'No'} (Level ${currentLevel}, ${totalPoints} pts, Rank: ${userRank})`);
-      console.log(`   - Achievements: ${achievementsData.length}`);
-      console.log(`   - Leaderboard: ${leaderboardData.length} entries`);
+      console.debug(`✅ API: Retrieved gamification data for ${walletAddress}:`);
+      console.debug(`   - Profile: ${profile ? 'Yes' : 'No'} (Level ${currentLevel}, ${totalPoints} pts, Rank: ${userRank})`);
+      console.debug(`   - Achievements: ${achievementsData.length}`);
+      console.debug(`   - Leaderboard: ${leaderboardData.length} entries`);
 
       return NextResponse.json({
         profile,

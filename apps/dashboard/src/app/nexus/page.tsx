@@ -15,9 +15,12 @@ export default async function NexusRootPage({
   const auth = await getNexusAuthContext(null, token);
 
   if (auth.isAuthenticated) {
+    if (!auth.name || !auth.whatsappPhone) {
+      return <NexusLoginGate requireCompletion={true} initialAuth={{ address: auth.wallet || null, email: auth.email || null }} />;
+    }
     const iframeToken = await generateAcademyToken(auth.email || "admin@pandoras.finance", auth.role === "SUPER_ADMIN" ? "admin" : "manager");
     return <NexusCommandCenter auth={auth} initialTour={tour} initialRole={role} iframeToken={iframeToken} />;
   }
 
-  return <NexusLoginGate />;
+  return <NexusLoginGate requireCompletion={false} initialAuth={null} />;
 }

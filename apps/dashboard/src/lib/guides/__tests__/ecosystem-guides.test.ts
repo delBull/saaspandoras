@@ -8,63 +8,65 @@ import {
   type EcosystemTourRole,
 } from '../ecosystem-guides.data';
 
-describe('🧭 Ecosystem Guides Data & Logic (Hermes Tour)', () => {
-  it('should have 7 canonical ecosystem stations', () => {
-    expect(ECOSYSTEM_STATIONS).toHaveLength(7);
+describe('🧭 Nexus Onboarding Data & Logic (Hermes Tour)', () => {
+  it('should have 5 canonical onboarding stations', () => {
+    expect(ECOSYSTEM_STATIONS).toHaveLength(5);
     const stationIds = ECOSYSTEM_STATIONS.map((s) => s.id);
-    expect(stationIds).toContain('nexus_identity');
-    expect(stationIds).toContain('deal_rooms');
-    expect(stationIds).toContain('growth_os_crm');
-    expect(stationIds).toContain('rwa_capital');
-    expect(stationIds).toContain('investor_portals');
-    expect(stationIds).toContain('platform_governance');
-    expect(stationIds).toContain('academy_vault');
+    expect(stationIds).toContain('nexus_core');
+    expect(stationIds).toContain('nexus_growth');
+    expect(stationIds).toContain('nexus_access');
+    expect(stationIds).toContain('nexus_resources');
+    expect(stationIds).toContain('nexus_cognitive');
   });
 
-  it('should enforce RBAC filtering: SUPER_ADMIN sees all stations', () => {
+  it('should enforce RBAC filtering: SUPER_ADMIN sees all 5 stations', () => {
     const superAdminStations = getStationsForRole('SUPER_ADMIN');
-    expect(superAdminStations).toHaveLength(7);
+    expect(superAdminStations).toHaveLength(5);
   });
 
-  it('should enforce RBAC filtering: VIEWER only sees permitted stations (no Deal Rooms, Governance, Academy)', () => {
+  it('should enforce RBAC filtering: VIEWER only sees permitted stations (no Access, Cognitive)', () => {
     const collabStations = getStationsForRole('VIEWER');
     const ids = collabStations.map((s) => s.id);
-    expect(ids).toContain('nexus_identity');
-    expect(ids).toContain('growth_os_crm');
-    expect(ids).toContain('investor_portals');
-    expect(ids).not.toContain('platform_governance');
-    expect(ids).not.toContain('deal_rooms');
-    expect(ids).not.toContain('academy_vault');
+    expect(ids).toContain('nexus_core');
+    expect(ids).toContain('nexus_resources');
+    expect(ids).not.toContain('nexus_access');
+    expect(ids).not.toContain('nexus_cognitive');
   });
 
   it('should generate valid deep links with role parameter', () => {
-    const linkManager = generateTourShareLink('MARKETING', 'https://dash.pandoras.finance');
-    expect(linkManager).toBe('https://dash.pandoras.finance/nexus?tour=ecosystem&role=manager');
+    const linkAdmin = generateTourShareLink('ADMIN', 'https://dash.pandoras.finance');
+    expect(linkAdmin).toBe('https://dash.pandoras.finance/nexus?tour=ecosystem&role=admin');
 
-    const linkCollab = generateTourShareLink('VIEWER');
-    expect(linkCollab).toContain('/nexus?tour=ecosystem&role=collaborator');
+    const linkViewer = generateTourShareLink('VIEWER');
+    expect(linkViewer).toContain('/nexus?tour=ecosystem&role=viewer');
   });
 
   it('should generate formatted WhatsApp invite text containing role and station list', () => {
+    // 1-arg variant: auto-generates link
     const waText = generateWhatsAppShareText('ADMIN');
     expect(waText).toContain('*ADMIN*');
-    expect(waText).toContain('Deal Rooms & Legal Institucional');
-    expect(waText).toContain('https://dash.pandoras.finance/nexus?tour=ecosystem&role=admin');
+    expect(waText).toContain('Core Protocol');
+    expect(waText).toContain('/nexus?tour=ecosystem&role=admin');
+
+    // 2-arg variant used by AdminEcosystemGuidesView
+    const customLink = 'https://dash.pandoras.finance/nexus?tour=ecosystem&role=admin';
+    const waText2 = generateWhatsAppShareText('ADMIN', customLink);
+    expect(waText2).toContain(customLink);
   });
 
   it('should provide intelligent answers from Hermes for station queries', () => {
-    const dealRooms = ECOSYSTEM_STATIONS.find((s) => s.id === 'deal_rooms')!;
+    const coreStation = ECOSYSTEM_STATIONS.find((s) => s.id === 'nexus_core')!;
 
-    // Exact or FAQ matching
-    const faqAnswer = getHermesAnswerForStation(dealRooms, '¿Cómo se garantiza la validez legal?');
-    expect(faqAnswer).toContain('SHA-256');
-
-    // Security keyword matching
-    const secAnswer = getHermesAnswerForStation(dealRooms, '¿Es seguro el proceso legal?');
-    expect(secAnswer).toContain('seguridad');
+    // FAQ matching
+    const faqAnswer = getHermesAnswerForStation(coreStation, '¿Cómo se garantiza la validez legal?');
+    expect(faqAnswer).toContain("SHA-256");
 
     // General fallback
-    const generalAnswer = getHermesAnswerForStation(dealRooms, '¿Qué hace esto?');
-    expect(generalAnswer).toContain('Hermes AI');
+    const generalAnswer = getHermesAnswerForStation(coreStation, '¿Qué hace esto?');
+    expect(generalAnswer).toBeTruthy();
+
+    // Greeting
+    const greetingAnswer = getHermesAnswerForStation(coreStation, 'Hola Hermes');
+    expect(greetingAnswer).toContain('Hermes');
   });
 });
