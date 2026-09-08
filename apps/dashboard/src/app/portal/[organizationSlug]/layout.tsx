@@ -42,9 +42,20 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
     redirect('/portal/error');
   }
 
+  let activeModules: string[] = [];
+  try {
+    const { setupProgressService } = await import('@/lib/mesh/setup-progress.service');
+    const setupSummary = await setupProgressService.getEcosystemSetupState(organizationSlug);
+    if (setupSummary && setupSummary.modules) {
+      activeModules = setupSummary.modules.map((m: any) => m.productKey);
+    }
+  } catch (err) {
+    console.warn('[PortalLayout] Setup summary fetch notice:', err);
+  }
+
   return (
     <TourEngine>
-      <PortalShell context={context}>
+      <PortalShell context={context} activeModules={activeModules}>
         {children}
       </PortalShell>
     </TourEngine>

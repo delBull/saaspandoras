@@ -12,7 +12,7 @@
 import React, { useEffect, useState } from 'react';
 import type { PortalContext } from '@/lib/portal/portal-types';
 import { PortalSidebar } from '@/components/hermes-portal/PortalSidebar';
-import { PortalHeader } from '@/components/hermes-portal/PortalHeader';
+import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { PortalInspector } from '@/components/hermes-portal/PortalInspector';
 import { HermesTerminalBar } from '@/components/hermes-portal/HermesTerminalBar';
 import { Menu, X } from 'lucide-react';
@@ -22,9 +22,10 @@ import { InspectorProvider } from './InspectorContext';
 interface PortalShellProps {
   context: PortalContext;
   children: React.ReactNode;
+  activeModules?: string[];
 }
 
-export function PortalShell({ context, children }: PortalShellProps) {
+export function PortalShell({ context, children, activeModules = [] }: PortalShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(true);
   const [inspectorExpanded, setInspectorExpanded] = useState(true);
@@ -115,10 +116,10 @@ export function PortalShell({ context, children }: PortalShellProps) {
         
         {/* Global Top Bar (Spans full width above Inspector) */}
         <div className="hidden md:block z-30 shrink-0 border-b border-white/[0.06]">
-          <PortalHeader
+          <SovereignHeader
             organization={context.organization}
-            role={context.tenant.role}
             organizationSlug={context.organization.slug}
+            activeModules={activeModules}
           />
         </div>
 

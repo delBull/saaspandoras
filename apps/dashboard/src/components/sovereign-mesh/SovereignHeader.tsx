@@ -5,13 +5,13 @@ import Link from 'next/link';
 import type { PortalOrganization } from '@/lib/portal/portal-types';
 import { Layers, Bot, Rocket, Landmark, ShieldCheck, LogOut } from 'lucide-react';
 
-interface EcosystemHeaderProps {
-  organization: PortalOrganization;
+interface SovereignHeaderProps {
+  organization: { name: string };
   organizationSlug: string;
   activeModules?: string[];
 }
 
-export function EcosystemHeader({ organization, organizationSlug, activeModules = [] }: EcosystemHeaderProps) {
+export function SovereignHeader({ organization, organizationSlug, activeModules = [] }: SovereignHeaderProps) {
   const handleLogout = () => {
     document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
     window.location.href = `/portal/login`;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { EcosystemHeader } from '@/components/ecosystem/EcosystemHeader';
+import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { EcosystemFooter } from '@/components/ecosystem/EcosystemFooter';
 import { setupProgressService } from '@/lib/mesh/setup-progress.service';
 
@@ -43,7 +43,7 @@ export default async function EcosystemLayout({
   return (
     <div className="min-h-screen bg-[#060608] text-zinc-100 flex flex-col font-sans relative overflow-x-hidden selection:bg-amber-500/20 selection:text-amber-300">
       {/* Top Navbar */}
-      <EcosystemHeader 
+      <SovereignHeader 
         organization={context.organization} 
         organizationSlug={organizationSlug} 
         activeModules={activeModules}

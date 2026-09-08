@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
 import { DashApi } from '@/lib/dash-api';
 import { GrowthOsSidebar } from './components/GrowthOsSidebar';
-import { GrowthOsHeader } from './components/GrowthOsHeader';
+import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { GrowthOsFooter } from './components/GrowthOsFooter';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { redirect } from 'next/navigation';
+import { setupProgressService } from '@/lib/mesh/setup-progress.service';
 
 export default async function ControlPlaneLayout({ 
   children, 
@@ -44,10 +45,25 @@ export default async function ControlPlaneLayout({
     console.warn(`[ControlPlaneLayout] Notice:`, err);
   }
 
+  // Load setup state to know which modules are active for the navbar
+  let activeModules: string[] = [];
+  try {
+    const setupSummary = await setupProgressService.getEcosystemSetupState(slugId);
+    if (setupSummary && setupSummary.modules) {
+      activeModules = setupSummary.modules.map(m => m.productKey);
+    }
+  } catch (err) {
+    console.warn('[ControlPlaneLayout] Setup summary fetch notice:', err);
+  }
+
   return (
     <div className="h-screen w-screen bg-[#050505] text-white flex flex-col font-sans overflow-hidden select-none">
       {/* Top Header Navbar */}
-      <GrowthOsHeader slugId={slugId} orgName={overview.name} />
+      <SovereignHeader 
+        organization={overview} 
+        organizationSlug={slugId} 
+        activeModules={activeModules} 
+      />
 
       {/* Main Workspace Frame */}
       <div className="flex-1 flex flex-row min-w-0 overflow-hidden relative">
