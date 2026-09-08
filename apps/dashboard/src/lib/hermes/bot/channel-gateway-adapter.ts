@@ -32,7 +32,7 @@ export class ChannelGatewayAdapter {
 
   private async resolveActiveTenant(userId: string, tenants: AuthorizedTenant[], intentSlug?: string): Promise<AuthorizedTenant | null> {
     if (tenants.length === 0) return null;
-    let activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
+    let activeTenant: AuthorizedTenant | null = tenants[0] ?? null;
     
     const { telegramBindings } = await import('@/db/schema');
     const binding = await db.query.telegramBindings.findFirst({

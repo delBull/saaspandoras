@@ -7,7 +7,11 @@ import { eq, desc } from "drizzle-orm";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+/**
+ * ⚠️ LEGACY TMA STACK (PBox) — DEPRECATED
+ * Consolidado en el stack `/api/v1/hermes/tma/*`. Mantenido funcional por compatibilidad.
+ */
+async function legacyGET() {
     try {
         // 1. Authenticate via F10 Canonical Identity
         const auth = await getCanonicalAuth();
@@ -74,4 +78,11 @@ export async function GET() {
         console.error("❌ [TMA Claims] Error:", e);
         return NextResponse.json({ error: "Internal Server Error", detail: e.message }, { status: 500 });
     }
+}
+
+export async function GET() {
+    const res = await legacyGET();
+    res.headers.set('Deprecation', 'true');
+    res.headers.set('Link', '</api/v1/hermes/tma/overview>; rel="successor-version"');
+    return res;
 }

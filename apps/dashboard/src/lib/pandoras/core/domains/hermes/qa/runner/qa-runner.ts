@@ -16,6 +16,9 @@ import { DeterministicMatchers } from '../matchers/deterministic-matchers';
 import { SemanticMatchers } from '../matchers/semantic-matchers';
 import { PolicyMatchers } from '../matchers/policy-matchers';
 import { QACertificationPolicy } from './certification-policy';
+import type { ControlPlaneContext } from '../../knowledge/types';
+import type { RuntimeMessage } from '../../runtime/contracts';
+import { getDefaultRuntime } from '../../runtime/hermes-runtime';
 
 export interface QARunnerOptions {
   mode?: RunnerExecutionMode;
@@ -111,7 +114,30 @@ export class HermesQARunner {
     const userMessage = lastUserTurn?.content || '';
 
     // Simulate or execute response
-    const { responseText, emittedEvents, storedMemory, taskCount } = await this.generateResponse(scenario, mode);
+    let harness: {
+      responseText: string;
+      emittedEvents: string[];
+      storedMemory: Record<string, any>;
+      taskCount: number;
+    };
+    try {
+      harness = await this.generateResponse(scenario, mode);
+    } catch (err: any) {
+      return {
+        scenarioId: scenario.id,
+        title: scenario.title,
+        gateLevel: scenario.gateLevel,
+        category: scenario.category,
+        status: 'BLOCKED',
+        latencyMs: 0,
+        deterministicResults: [],
+        semanticResults: [],
+        policyResults: [],
+        traceId: `trace_${scenario.id}_${Date.now()}`,
+        failureReason: `RUNTIME_ERROR: ${err?.message || String(err)}`
+      };
+    }
+    const { responseText, emittedEvents, storedMemory, taskCount } = harness;
 
     // 1. Run Deterministic Matchers
     const deterministicResults = scenario.deterministicAssertions.map(assertion =>
@@ -170,7 +196,12 @@ export class HermesQARunner {
     storedMemory: Record<string, any>;
     taskCount: number;
   }> {
-    // In MOCK mode, generate compliant mock responses to validate assertions in CI
+    // In MOCK mode, generate compliant mock responses to validate assertions in CI.
+    // INTEGRATION / CERTIFICATION execute the REAL HermesRuntime pipeline (provider,
+    // context builder, policy validator, memory) and evaluate actual governed output.
+    if (mode !== 'MOCK') {
+      return this.generateRealRuntimeResponse(scenario);
+    }
     const emittedEvents: string[] = [];
     const storedMemory: Record<string, any> = {};
     let taskCount = 0;
@@ -462,5 +493,66 @@ export class HermesQARunner {
           taskCount
         };
     }
+  }
+
+  /**
+   * INTEGRATION / CERTIFICATION — executes the REAL governed pipeline.
+   *
+   * Runs HermesRuntime.respond() (production provider resolution via
+   * getDefaultRuntime), so the LLM, ContextBuilder, PolicyValidator and memory
+   * stack are exercised. The organization is sandbox-scoped (`<tenant>__qa_cert`)
+   * so certification runs never pollute the real tenant conversation ledger.
+   */
+  private static async generateRealRuntimeResponse(
+    scenario: QAScenario
+  ): Promise<{
+    responseText: string;
+    emittedEvents: string[];
+    storedMemory: Record<string, any>;
+    taskCount: number;
+  }> {
+    const lastUserTurn = scenario.dialogueSequence[scenario.dialogueSequence.length - 1];
+    const tenantId = scenario.initialContext.tenantId;
+    const orgId = `${tenantId}__qa_cert`;
+    const conversationId = `qa_cert_${scenario.id}`;
+
+    const runtime = getDefaultRuntime();
+
+    const cpCtx: ControlPlaneContext = {
+      actorId: `qa_actor_${scenario.id}`,
+      organizationId: orgId,
+      role: 'OWNER',
+      permissions: ['*'],
+      sessionId: `qa_${scenario.id}_${Date.now()}`,
+    };
+
+    const message: RuntimeMessage = {
+      id: `qa_msg_${scenario.id}_${Date.now()}`,
+      role: 'USER',
+      content: lastUserTurn?.content || '',
+      createdAt: new Date(),
+    };
+
+    const response = await runtime.respond({
+      organizationId: orgId,
+      conversationId,
+      message,
+      controlPlaneContext: cpCtx,
+    });
+
+    const emittedEvents: string[] = [];
+    if (response.policyViolations && response.policyViolations.length > 0) {
+      emittedEvents.push('POLICY_VIOLATION');
+    }
+    if (response.journeyNavigation?.advanced) {
+      emittedEvents.push('JOURNEY_ADVANCED');
+    }
+
+    return {
+      responseText: response.content,
+      emittedEvents,
+      storedMemory: {},
+      taskCount: 0,
+    };
   }
 }

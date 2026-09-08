@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { hermesConversations, hermesEscalations } from '@/db/schema';
 import { and, eq, gte, sql } from 'drizzle-orm';
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,23 +16,33 @@ export const dynamic = 'force-dynamic';
  *   - Avg resolution time (ms)
  *   - Rolling 24h and 7d escalation volume
  *
- * Auth: same HERMES_CHANNEL_SECRET header used by the Channel Mesh.
+ * Auth (OR):
+ *   - `x-hermes-channel-secret` header (Channel Mesh, server-to-server), or
+ *   - A valid portal session via resolvePortalContext (ConversationsDashboard UI).
+ * Previously the route ONLY accepted the channel secret, so the portal UI (which
+ * cannot read server env vars) received 401 and observability metrics never loaded.
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ tenantId: string }> },
 ) {
-  // Auth
+  const { tenantId } = await params;
+
+  // Auth: channel secret (edge/daemon) OR authenticated portal session (browser)
   const channelSecret = req.headers.get('x-hermes-channel-secret');
   const expectedSecret = process.env.HERMES_CHANNEL_SECRET;
-  if (expectedSecret && channelSecret !== expectedSecret) {
-    return NextResponse.json(
-      { success: false, error: 'UNAUTHORIZED' },
-      { status: 401 },
-    );
+  const isChannelClient = !expectedSecret || channelSecret === expectedSecret;
+
+  if (!isChannelClient) {
+    const portalCtx = await resolvePortalContext(tenantId).catch(() => null);
+    if (!portalCtx) {
+      return NextResponse.json(
+        { success: false, error: 'UNAUTHORIZED' },
+        { status: 401 },
+      );
+    }
   }
 
-  const { tenantId } = await params;
   const now = new Date();
   const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

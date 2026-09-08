@@ -10,6 +10,12 @@ import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 /**
  * 📡 Pandora's Platform OS v5 — Autonomous Webhook Endpoint powered by ExecutionEngine Kernel
  * Route: /api/v1/projects/[projectId]/bot/webhook
+ *
+ * ⚠️ DEPRECATED (superficie legacy via ExecutionEngine Kernel v1).
+ * Se mantiene vivo porque `provisioning-engine.ts:131` lo registra como
+ * webhook de onboarding de BotFather. Canal canónico consolidado:
+ * /api/v1/hermes/tenants/[tenantId]/chat (channel mesh + HermesRuntime).
+ * NO se cambia el wiring para no romper bots provisionados.
  */
 async function handler(req: Request, props: { params: Promise<{ projectId: string }> }) {
   try {
@@ -118,4 +124,20 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow enough time for LLM generation
 
-export const POST = withSecurity(handler as any, { rateLimit: apiRateLimiter });
+let deprecationLoggedOnce = false;
+
+export const POST = withSecurity((async (
+  req: Request,
+  props: { params: Promise<{ projectId: string }> },
+) => {
+  if (!deprecationLoggedOnce) {
+    deprecationLoggedOnce = true;
+    console.warn(
+      `[Telegram Bot][DEPRECATED] projects/[projectId]/bot/webhook — canal legacy via ExecutionEngine Kernel. Consolidar en /api/v1/hermes/tenants/[tenantId]/chat (channel mesh).`
+    );
+  }
+  const res = await handler(req, props);
+  res.headers.set('Deprecation', 'true');
+  res.headers.set('Link', '</api/v1/hermes/tenants/%7BtenantId%7D/chat>; rel="successor-version"');
+  return res;
+}) as any, { rateLimit: apiRateLimiter });

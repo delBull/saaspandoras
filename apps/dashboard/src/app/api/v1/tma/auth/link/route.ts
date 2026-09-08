@@ -40,7 +40,7 @@ function validateTelegramInitData(initData: string, botToken: string): boolean {
  * F10.1 Binding Rule: A Telegram binding may only be created after proof of control.
  * This endpoint requires an active Web Session (Canonical Identity) AND a valid Telegram initData.
  */
-export async function POST(request: Request) {
+async function legacyPOST(request: Request) {
   try {
     const { initData, message, signature, walletAddress } = await request.json();
     if (!initData || !message || !signature || !walletAddress) {
@@ -107,4 +107,15 @@ export async function POST(request: Request) {
     console.error("❌ [TMA Auth Link] Failure:", error);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
+}
+
+/**
+ * ⚠️ LEGACY TMA AUTH/LINK — DEPRECATED (stack PBox). El stack multitenant Hermes
+ * maneja el linking por tenant en `/api/v1/hermes/tma/*`. Wrapper no-rompible.
+ */
+export async function POST(request: Request) {
+  const res = await legacyPOST(request);
+  res.headers.set('Deprecation', 'true');
+  res.headers.set('Link', '</api/v1/hermes/tma/auth>; rel="successor-version"');
+  return res;
 }

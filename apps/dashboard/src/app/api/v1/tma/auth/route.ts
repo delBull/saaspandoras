@@ -39,7 +39,14 @@ function validateTelegramInitData(initData: string, botToken: string): boolean {
   }
 }
 
-export async function POST(request: Request) {
+/**
+ * ⚠️ LEGACY TMA AUTH STACK (PBox) — DEPRECATED
+ * Consolidado en `/api/v1/hermes/tma/*` (multitenant, per-tenant.telegramBotToken).
+ * Se mantiene funcional para no romper Mini Apps desplegadas exteriores, pero
+ * todas las integraciones nuevas deben usar el stack de Hermes TMA.
+ * El wrapper `POST` aplica header `Deprecation` + `Link` a toda respuesta.
+ */
+async function legacyPOST(request: Request) {
   try {
     const { initData } = await request.json();
 
@@ -199,6 +206,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       isLinked: true,
+      deprecated: true,
+      successor: '/api/v1/hermes/tma/auth',
       hasAccess: canonicalUser.hasPandorasKey,
       user: {
         id: canonicalUser.id,
@@ -212,4 +221,15 @@ export async function POST(request: Request) {
     console.error("❌ [TMA Auth] Failure:", error);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
+}
+
+/**
+ * Wrapper de deprecación: anota cada respuesta legacy con `Deprecation` + `Link`
+ * al sucesor (`/api/v1/hermes/tma/auth`) sin alterar la semántica del handler.
+ */
+export async function POST(request: Request) {
+  const res = await legacyPOST(request);
+  res.headers.set('Deprecation', 'true');
+  res.headers.set('Link', '</api/v1/hermes/tma/auth>; rel="successor-version"');
+  return res;
 }

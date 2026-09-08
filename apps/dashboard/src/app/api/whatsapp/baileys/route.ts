@@ -71,7 +71,11 @@ export async function POST(req: NextRequest) {
       const health = await BaileysWhatsAppProvider.initSession(sessionId);
       return NextResponse.json({
         ...health,
-        positioningNote: 'Baileys QR Bridge is for Pyme / Sandbox / Pilot use. For Enterprise production, use Meta Cloud API.',
+        provider: 'baileys',
+        tier: 'sandbox' as const,
+        deprecation: 'Baileys is sandbox/pilot only. Production channel is Meta Cloud API (api/whatsapp/simple).',
+        inbound: 'NOT_IMPLEMENTED' as const,
+        positioningNote: 'Baileys QR Bridge is for Pyme / Sandbox / Pilot use. For Enterprise production, use Meta Cloud API. Inbound ingestion is not wired to Hermes Runtime.',
       });
     }
 
@@ -103,6 +107,10 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ...health,
+    provider: 'baileys',
+    tier: 'sandbox' as const,
+    deprecation: 'Baileys is sandbox/pilot only. Production channel is Meta Cloud API (api/whatsapp/simple).',
+    inbound: 'NOT_IMPLEMENTED' as const,
     connected: health.status === 'connected',
   });
 }

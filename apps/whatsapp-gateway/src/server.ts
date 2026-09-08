@@ -102,7 +102,9 @@ async function startBaileysSession(sessionId: string) {
 
   sock.ev.on('creds.update', saveCreds);
 
-  // Incoming messages Webhook to Hermes Dashboard Runtime
+  // Incoming messages: Baileys is SANDBOX ONLY — inbound ingestion to Hermes
+  // Runtime is NOT wired. Production WhatsApp uses Meta Cloud API
+  // (apps/dashboard/src/app/api/whatsapp/simple). Do not ship this path to prod.
   sock.ev.on('messages.upsert', async (m: any) => {
     if (m.type === 'notify') {
       for (const msg of m.messages) {
@@ -110,7 +112,7 @@ async function startBaileysSession(sessionId: string) {
            // Push to Hermes Runtime Webhook
            // E.g., POST http://localhost:3000/api/v1/tenant/${sessionId}/inbound/whatsapp
            // The dashboard url should be configurable. For now we just log.
-           console.log(`[${sessionId}] Inbound message from ${msg.key.remoteJid}: `, msg.message);
+           console.warn(`[${sessionId}] DEPRECATED sandbox inbound — delivery to Hermes Runtime is NOT IMPLEMENTED. Message from ${msg.key.remoteJid} ignored.`);
         }
       }
     }
@@ -184,7 +186,13 @@ app.post('/messages', async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', uptime: process.uptime() });
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    tier: 'sandbox',
+    deprecation: 'Baileys bridge is sandbox/pilot only. Production WhatsApp channel is Meta Cloud API.',
+    inbound: 'NOT_IMPLEMENTED',
+  });
 });
 
 app.listen(PORT, () => {
