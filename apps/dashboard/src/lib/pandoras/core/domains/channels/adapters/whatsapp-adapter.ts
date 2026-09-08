@@ -121,9 +121,9 @@ export class WhatsAppAdapter implements ChannelAdapter {
         token = parts[0] || '';
         phoneNumberId = parts[1] || '';
       } catch {
-        // Fallback for dev
+        // Fallback for dev / environment vars
         token = process.env.META_WHATSAPP_TOKEN || 'mock_token';
-        phoneNumberId = process.env.META_PHONE_NUMBER_ID || 'mock_phone_id';
+        phoneNumberId = process.env.META_PHONE_NUMBER_ID || process.env.HERMES_WHATSAPP_PHONE_NUMBER || 'mock_phone_id';
       }
 
       if (token === 'mock_token' || token.startsWith('mock_') || process.env.NODE_ENV === 'test') {

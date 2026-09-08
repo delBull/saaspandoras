@@ -13,6 +13,7 @@ import { resend } from '@/lib/resend';
 import crypto from 'crypto';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { headers as nextHeaders } from 'next/headers';
+import { WhatsAppAdapter } from '@/lib/pandoras/core/domains/channels/adapters/whatsapp-adapter';
 
 const TOKEN_EXPIRY_HOURS = 24;
 const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_MARKETING_URL || process.env.NEXT_PUBLIC_LANDING_URL || 'https://pandoras.finance';
@@ -238,6 +239,10 @@ export async function verifyCollaboratorToken(
 
   if (!record) return null;
 
+  if (record.whatsappPhone) {
+    notifyCollaboratorViaWhatsApp(record.whatsappPhone, record.name, 'access_confirmed').catch(console.warn);
+  }
+
   return {
     id: record.id,
     name: record.name,
@@ -283,6 +288,12 @@ export async function getCollaboratorByEmail(
  */
 export async function listCollaborators(): Promise<CollaboratorDTO[]> {
   const now = new Date();
+  try {
+    await db.delete(nexusCollaborators).where(lt(nexusCollaborators.expiresAt, now));
+  } catch (error) {
+    console.warn('[NexusCollaborators] Failed to clean up expired tokens:', error);
+  }
+
   const rows = await db
     .select()
     .from(nexusCollaborators)
@@ -349,4 +360,30 @@ export async function removeCollaborator(email: string): Promise<boolean> {
     .execute();
 
   return (result?.rowCount ?? 0) > 0;
+}
+
+/**
+ * Fire-and-forget WhatsApp notification for Nexus Collaborators
+ */
+async function notifyCollaboratorViaWhatsApp(
+  phone: string,
+  name: string,
+  templateType: 'welcome' | 'access_confirmed'
+): Promise<void> {
+  try {
+    const text = templateType === 'welcome' 
+      ? `Hola ${name} 👋 \n\nSoy Hermes, el asistente operativo de Pandoras Growth OS.\n\nTu invitación al Nexus está en camino por correo — revisa tu bandeja de entrada.\n\nUna vez que accedas, puedes escribirme aquí directamente para cualquier cosa. 🚀`
+      : `✅ Acceso confirmado, ${name}.\n\nYa eres parte del equipo en Nexus. \n\nPuedes escribirme aquí en cualquier momento para consultas, reportes o actualizaciones del proyecto. Estoy disponible 24/7.`;
+
+    const waAdapter = new WhatsAppAdapter();
+    await waAdapter.send({
+      organizationId: 'pandoras',
+      conversationId: `conv_wa_pandoras_${phone.replace(/\D/g, '')}`,
+      channelType: 'whatsapp',
+      content: text,
+      correlationId: `nexus_auth_${Date.now()}`
+    });
+  } catch (err) {
+    console.warn('[NexusCollaborators] Failed to send WhatsApp notification:', err);
+  }
 }
