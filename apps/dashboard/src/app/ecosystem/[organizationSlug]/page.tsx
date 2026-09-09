@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { SetupCompletionWidget } from '@/components/ecosystem/SetupCompletionWidget';
 import { setupProgressService } from '@/lib/mesh/setup-progress.service';
+import { resolveTenantExperienceContext } from '@/lib/mesh/tenant-experience-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +60,14 @@ export default async function EcosystemPage({ params }: EcosystemPageProps) {
     console.warn('[EcosystemPage] Setup summary fetch notice:', err);
   }
 
+  // Resolve presentation experience context (Presentation only, zero auth grant)
+  const experienceContext = resolveTenantExperienceContext({
+    canonicalOrgId: context.organization.id,
+    slug: organizationSlug,
+    installedModules: (setupSummary?.modules?.map((m) => m.productKey) || []) as any,
+    hasContractDeployed: Boolean(project?.contractAddress),
+  });
+
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* ── SETUP COMPLETION ENGINE (REAL-TIME SIGNALS) ── */}
@@ -66,6 +75,7 @@ export default async function EcosystemPage({ params }: EcosystemPageProps) {
         organizationSlug={organizationSlug} 
         organizationName={context.organization.name}
         initialSummary={setupSummary} 
+        experienceContext={experienceContext}
       />
     </div>
   );

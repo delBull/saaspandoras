@@ -53,7 +53,7 @@ export const TENANT_VERTICALS_CONFIG: TenantVerticalConfig[] = [
  * with URLs dynamically resolved to the tenant's slug.
  */
 export function getStationsForTenantVertical(
-  vertical: TenantVertical = 'RWA_REAL_ESTATE',
+  vertical: TenantVertical = 'SAAS_GROWTH',
   organizationSlug: string = 'snarai'
 ): EcosystemStation[] {
   const cleanSlug = encodeURIComponent(organizationSlug.trim().toLowerCase());
@@ -397,7 +397,7 @@ export function getStationsForTenantVertical(
  * Generates an actionable deep link for a tenant vertical onboarding tour.
  */
 export function generateTenantTourShareLink(
-  vertical: TenantVertical = 'RWA_REAL_ESTATE',
+  vertical: TenantVertical = 'SAAS_GROWTH',
   organizationSlug: string = 'snarai',
   baseUrl: string = 'https://dash.pandoras.finance'
 ): string {
@@ -410,7 +410,7 @@ export function generateTenantTourShareLink(
  * Generates a ready-to-send WhatsApp invite message for onboarding a tenant client.
  */
 export function generateTenantWhatsAppShareText(
-  vertical: TenantVertical = 'RWA_REAL_ESTATE',
+  vertical: TenantVertical = 'SAAS_GROWTH',
   organizationSlug: string = 'snarai',
   tourLink?: string
 ): string {

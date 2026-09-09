@@ -39,15 +39,15 @@ const PRODUCTS: ProductOption[] = [
   {
     key: 'HERMES',
     title: 'Hermes',
-    subtitle: 'Inteligencia Relacional',
-    description: 'Habla con tus clientes, inversionistas y comunidad mediante una IA que conoce tu organización.',
-    badge: 'CONVERSATIONAL PLANE',
+    subtitle: 'Cerrador de Ventas IA 24/7',
+    description: 'Atiende, califica y convierte prospectos de forma autónoma en tus canales de mensajería.',
+    badge: 'CONVERSATIONAL CLOSER',
     badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
     icon: <Bot className="w-5 h-5 text-emerald-400" />,
     features: [
-      'Agente conversacional en Telegram y Widget Web',
-      'Knowledge Vault con anclaje criptográfico (K25)',
-      'Trazabilidad epistémica de reclamos institucionales (K26)',
+      'Atención y calificación de prospectos en WhatsApp, Telegram y Web',
+      'Entrenamiento con la documentación y respuestas de tu negocio',
+      'Traspaso inteligente a asesores humanos ante intención de compra',
     ],
   },
   {
@@ -458,10 +458,10 @@ export function UnifiedOnboardingClient() {
                 <div>
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-amber-400" />
-                    3. Prioridad Inicial e Intención
+                    3. ¿Qué quieres lograr primero?
                   </h2>
                   <p className="text-zinc-400 text-xs mt-1">
-                    Hermes utilizará esta intención para darte la bienvenida y guiarte de forma personalizada en el Sovereign Mesh Hub.
+                    Selecciona tu prioridad para que configuremos tu espacio de trabajo y te mostremos solo los pasos necesarios para comenzar.
                   </p>
                 </div>
 

@@ -19,7 +19,8 @@ export function SovereignHeader({ organization, organizationSlug, activeModules 
 
   const hasHermes = activeModules.length === 0 || activeModules.includes('HERMES');
   const hasGrowth = activeModules.length === 0 || activeModules.includes('GROWTH_OS');
-  const hasRwa = activeModules.length === 0 || activeModules.includes('PANDORAS_RWA');
+  // RWA & Capital operates backstage unless explicitly active
+  const hasRwa = activeModules.includes('PANDORAS_RWA');
 
   return (
     <header className="h-14 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-40 backdrop-blur-xl">

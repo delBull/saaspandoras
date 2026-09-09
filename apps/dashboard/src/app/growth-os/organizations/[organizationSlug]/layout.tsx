@@ -6,6 +6,8 @@ import { GrowthOsFooter } from './components/GrowthOsFooter';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { redirect } from 'next/navigation';
 import { setupProgressService } from '@/lib/mesh/setup-progress.service';
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 
 export default async function ControlPlaneLayout({ 
   children, 
@@ -18,15 +20,26 @@ export default async function ControlPlaneLayout({
   const slugId = resolvedParams?.organizationSlug || '';
   const orgId = `org_${slugId}`;
 
-  // 1. Secure Layout with Authentication
-  const auth = await getNexusAuthContext();
-  if (!auth.isAuthenticated) {
-    redirect('/login');
-  }
+  // 1. Secure Layout with Dual Gate: Platform Admin OR Authorized Tenant Context
+  const nexusAuth = await getNexusAuthContext().catch(() => null);
+  const isPlatformAdmin = nexusAuth?.isAuthenticated && (nexusAuth.role === 'SUPER_ADMIN' || nexusAuth.role === 'ADMIN');
 
-  // 2. Tenant isolation (only SUPER_ADMIN or ADMIN allowed in HQ)
-  if (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN') {
-    redirect('/unauthorized'); // Replace with your real fallback
+  let portalContext = null;
+  if (!isPlatformAdmin) {
+    try {
+      portalContext = await resolvePortalContext(slugId);
+    } catch (err: any) {
+      if (err instanceof PortalAuthorizationError) {
+        if (err.code === 'NO_SESSION' || err.code === 'INVALID_SESSION') {
+          redirect(`/portal/login?return=/growth-os/organizations/${slugId}`);
+        }
+        redirect(`/portal/unauthorized?reason=${err.code}`);
+      }
+      redirect(`/accessv2?return=/growth-os/organizations/${slugId}`);
+    }
+    if (!portalContext) {
+      redirect(`/accessv2?return=/growth-os/organizations/${slugId}`);
+    }
   }
 
   let overview = {
