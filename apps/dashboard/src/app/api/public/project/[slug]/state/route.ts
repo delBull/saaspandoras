@@ -89,6 +89,15 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const domain = await ProjectDomainService.buildProjectDomain(slug);
     const rawProject = domain.project;
 
+    // Security Gate: Enforce project binding if key is scoped to a specific project
+    if (authClient.projectId && authClient.projectId !== rawProject.id) {
+      console.warn(`[SECURITY] Cross-project API Key attempt: keyProjectId=${authClient.projectId}, targetProjectId=${rawProject.id}`);
+      return NextResponse.json({ error: "API Key no autorizada para este proyecto" }, {
+        status: 403,
+        headers: getCorsHeaders(req.headers.get("origin"))
+      });
+    }
+
     const project = harmonizeProject(rawProject as any);
     const w2e = project.w2eConfig;
 

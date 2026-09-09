@@ -17,10 +17,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Invalid ChannelContext payload' }, { status: 400 });
     }
 
-    // 1. Authenticate the Edge Transport
+    // 1. Authenticate the Edge Transport (Fail-Closed)
     const expectedSecret = process.env.HERMES_EDGE_SECRET || process.env.HERMES_WEBHOOK_SECRET;
+    if (!expectedSecret) {
+      console.error('[Channel Gateway] Edge transport authentication unavailable: HERMES_EDGE_SECRET not configured.');
+      return NextResponse.json({ ok: false, error: 'Gateway Secret Unavailable' }, { status: 503 });
+    }
     const authHeader = req.headers.get('Authorization') || req.headers.get('x-edge-secret');
-    if (expectedSecret && authHeader !== `Bearer ${expectedSecret}` && authHeader !== expectedSecret) {
+    if (authHeader !== `Bearer ${expectedSecret}` && authHeader !== expectedSecret) {
        console.warn(`[Channel Gateway] Unauthorized attempt from edge.`);
        return NextResponse.json({ ok: false, error: 'Unauthorized Edge Transport' }, { status: 401 });
     }

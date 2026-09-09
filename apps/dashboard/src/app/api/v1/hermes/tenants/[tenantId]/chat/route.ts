@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { OllamaReasoningProvider } from '@/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
+import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
 import { hermesConversations } from '@/db/schema';
 import { db } from '@/db';
 import { and, eq } from 'drizzle-orm';
 import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
+import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,20 +28,29 @@ export async function POST(
   const start = Date.now();
 
   try {
-    // 1. Channel Authentication — Tenant Secret
+    // 1. Channel Authentication — Tenant Secret (Fail-closed)
     const channelSecret = req.headers.get('x-hermes-channel-secret');
     const expectedSecret = process.env.HERMES_CHANNEL_SECRET;
-    if (expectedSecret && channelSecret !== expectedSecret) {
+    if (!expectedSecret || channelSecret !== expectedSecret) {
       return NextResponse.json(
-        { success: false, error: 'UNAUTHORIZED', message: 'Invalid channel secret.' },
+        { success: false, error: 'UNAUTHORIZED', message: 'Invalid or missing channel secret.' },
         { status: 401 }
       );
     }
 
     const { tenantId } = await params;
 
-    // Rate Limiting (Per-Tenant anti-abuse protection)
-    const rateLimit = checkTenantRateLimit(tenantId, 120, 60_000);
+    // 2. Canonical Tenant Identity Resolution (Fail-closed)
+    const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantId);
+    if (!canonical) {
+      return NextResponse.json(
+        { success: false, error: 'TENANT_NOT_FOUND', message: `Tenant [${tenantId}] not found.` },
+        { status: 404 }
+      );
+    }
+
+    // Rate Limiting (Per-Tenant anti-abuse protection by canonicalOrgId)
+    const rateLimit = checkTenantRateLimit(canonical.canonicalOrgId, 120, 60_000);
     const rlHeaders = buildRateLimitHeaders(rateLimit);
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -86,7 +95,7 @@ export async function POST(
         .from(hermesConversations)
         .where(
           and(
-            eq(hermesConversations.organizationId, tenantId),
+            eq(hermesConversations.organizationId, canonical.canonicalOrgId),
             eq(hermesConversations.conversationId, conversationId)
           )
         )
@@ -113,10 +122,10 @@ export async function POST(
     const boundActorSession = ActorIdentityBindingService.createBoundSession(
       {
         actorId,
-        tenantId,
+        tenantId: canonical.canonicalOrgId,
         authProvider: 'TELEGRAM_INIT_DATA',
         nonce: `tg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-        proofSignature: `sig_tg_${tenantId}_${Date.now()}`,
+        proofSignature: `sig_tg_${canonical.canonicalOrgId}_${Date.now()}`,
         issuedAt: Date.now(),
       },
       'TENANT_RESTRICTED',
@@ -125,7 +134,7 @@ export async function POST(
 
     // 4. ControlPlaneContext
     const controlPlaneContext = {
-      organizationId: tenantId,
+      organizationId: canonical.canonicalOrgId,
       actorId,
       role: 'VIEWER' as const,
       sessionId: boundActorSession.sessionToken,
@@ -133,12 +142,11 @@ export async function POST(
       boundActorSession,
     };
 
-    // 5. Execute Hermes Cognitive Turn
-    const provider = new OllamaReasoningProvider();
-    const runtime = new HermesRuntime(provider);
+    // 5. Execute Hermes Cognitive Turn (Env-configured multi-provider via getDefaultRuntime)
+    const runtime = getDefaultRuntime();
 
     const response = await runtime.respond({
-      organizationId: tenantId,
+      organizationId: canonical.canonicalOrgId,
       conversationId,
       message: {
         id: `msg_tg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -175,7 +183,7 @@ export async function POST(
       try {
         const { EscalationService } = await import('@/lib/hermes/escalation/escalation-service');
         const escalation = await EscalationService.triggerEscalation({
-          organizationId: tenantId,
+          organizationId: canonical.canonicalOrgId,
           conversationId,
           actorId,
           channel: 'TELEGRAM',

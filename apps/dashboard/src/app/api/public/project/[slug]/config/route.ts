@@ -54,6 +54,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
     }
 
+    // Security Gate: Enforce project binding if key is scoped to a specific project
+    if (authClient.projectId && authClient.projectId !== project.id) {
+      console.warn(`[SECURITY] Cross-project API Key attempt: keyProjectId=${authClient.projectId}, targetProjectId=${project.id}`);
+      return NextResponse.json({ error: "API Key no autorizada para este proyecto" }, { status: 403 });
+    }
+
     const w2e = typeof project.w2eConfig === 'string' 
       ? JSON.parse(project.w2eConfig) 
       : (project.w2eConfig || {});

@@ -16,7 +16,7 @@
 
 import { db } from '@/db';
 import { projects, daoMembers } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, and } from 'drizzle-orm';
 
 export async function isWalletAuthorizedForTenant(
   wallet: string,
@@ -63,7 +63,7 @@ export async function isWalletAuthorizedForTenant(
       .select({ projectId: daoMembers.projectId })
       .from(daoMembers)
       .where(
-        or(
+        and(
           eq(daoMembers.projectId, project.id),
           eq(daoMembers.wallet, normalizedWallet)
         )

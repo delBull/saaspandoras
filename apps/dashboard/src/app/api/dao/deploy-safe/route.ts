@@ -7,6 +7,9 @@ import { withSecurity, withdrawRateLimiter } from "~/lib/security-utils";
 import { getAdminAddress } from "~/lib/treasury/gas-monitor";
 import { verifyMessage } from "viem";
 
+import { headers } from "next/headers";
+import { getAuth } from "~/lib/auth";
+
 interface DeployRequest {
   projectId: number;
   ownerSignature?: string;
@@ -16,6 +19,9 @@ interface DeployRequest {
 
 async function handler(request: Request): Promise<Response> {
   try {
+    const authHeaders = await headers();
+    const { session } = await getAuth(authHeaders);
+
     const body: DeployRequest = await request.json();
     const { projectId, ownerSignature, owners, threshold } = body;
 
@@ -39,12 +45,23 @@ async function handler(request: Request): Promise<Response> {
       );
     }
 
+    // Security Gate: Caller must be authenticated owner OR present valid owner signature
+    const ownerWallet = project.applicantWalletAddress?.toLowerCase();
+    const sessionWallet = session?.address?.toLowerCase();
+    const isSessionOwner = !!(ownerWallet && sessionWallet && ownerWallet === sessionWallet);
+
     const safeOwners = (owners ?? [project.applicantWalletAddress].filter(Boolean)) as `0x${string}`[];
     if (safeOwners.length === 0) {
       safeOwners.push(getAdminAddress());
     }
 
-    if (ownerSignature && project.applicantWalletAddress) {
+    if (!isSessionOwner) {
+      if (!ownerSignature || !project.applicantWalletAddress) {
+        return NextResponse.json(
+          { error: "Unauthorized: Active owner session or valid ownerSignature required" },
+          { status: 401 }
+        );
+      }
       const message = `Deploy Safe for project ${project.slug} (${projectId}) with owners ${safeOwners.join(",")}`;
       const valid = await verifyMessage({
         address: project.applicantWalletAddress as `0x${string}`,

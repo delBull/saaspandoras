@@ -32,7 +32,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
     // ENFORCE CREATOR ONLY CAN EDIT
-    const createEvent = room.audit?.find(a => a.action === "ROOM_CREATED");
+    const createEvent = room.audit?.find(a => a.action === "Room created" || a.action === "ROOM_CREATED");
     const creator = createEvent ? createEvent.actor : "";
     if (creator && creator.toLowerCase() !== actor.toLowerCase()) {
       return NextResponse.json({ error: "Solo el creador original puede editar esta sala." }, { status: 403 });
@@ -114,7 +114,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
     // ENFORCE CREATOR ONLY CAN DELETE
-    const createEvent = room.audit?.find(a => a.action === "ROOM_CREATED");
+    const createEvent = room.audit?.find(a => a.action === "Room created" || a.action === "ROOM_CREATED");
     const creator = createEvent ? createEvent.actor : "";
     if (creator && creator.toLowerCase() !== actor.toLowerCase()) {
       return NextResponse.json({ error: "Solo el creador original puede eliminar esta sala." }, { status: 403 });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validatePortalSession } from '@/lib/platform/portal-auth';
 import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
+import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
 import { KnowledgeService } from '@/lib/hermes/knowledge/service';
 import { TenantAuthorityService, CanonicalTenantIdentity } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
 import type { 
@@ -23,7 +23,7 @@ interface ResolvedTenantAuth {
 
 async function resolveTenant(req: NextRequest, requestedSlug?: string | null): Promise<ResolvedTenantAuth | null> {
   let tenantIdentifier: string | null = null;
-  let actorId = 'anonymous';
+  let actorId = 'unknown_actor';
   let sessionId = '';
   let role: 'owner' | 'operator' = 'operator';
 
@@ -42,7 +42,7 @@ async function resolveTenant(req: NextRequest, requestedSlug?: string | null): P
     }
   }
 
-  // 2. Check Bearer token if no cookie session
+  // 2. Check Bearer token if no cookie
   if (!tenantIdentifier) {
     const authHeader = req.headers.get('authorization') || '';
     const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
@@ -50,7 +50,7 @@ async function resolveTenant(req: NextRequest, requestedSlug?: string | null): P
       try {
         const payload = sessionTokenService.verifyToken(bearerToken);
         tenantIdentifier = payload.organizationId;
-        actorId = (payload as any).actorId || (payload as any).sub || 'tma_actor';
+        actorId = (payload as any).actorId || (payload as any).sub || 'bearer_actor';
         sessionId = bearerToken;
         role = 'operator';
       } catch {
@@ -63,20 +63,19 @@ async function resolveTenant(req: NextRequest, requestedSlug?: string | null): P
     return null;
   }
 
-  // Resolve Canonical Identity via TenantAuthorityService
+  // Resolve Canonical Tenant Identity via TenantAuthorityService (fail-closed)
   const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantIdentifier);
   if (!canonical) {
     return null;
   }
 
-  // If a requestedSlug query param was provided, prevent ID tampering / cross-tenant switching
+  // If the caller passed a requestedSlug, reject any cross-tenant mismatch
   if (requestedSlug) {
-    const cleanRequested = requestedSlug.toLowerCase().replace(/^org_/, '').trim();
+    const cleanSlug = requestedSlug.toLowerCase().replace(/^org_/, '').trim();
     if (
-      cleanRequested !== canonical.projectSlug.toLowerCase() &&
-      cleanRequested !== canonical.canonicalOrgId.toLowerCase()
+      cleanSlug !== canonical.projectSlug.toLowerCase() &&
+      cleanSlug !== canonical.canonicalOrgId.toLowerCase()
     ) {
-      console.warn(`[Knowledge API] Cross-tenant attempt rejected: session=${canonical.projectSlug}, requested=${requestedSlug}`);
       return null;
     }
   }
@@ -91,12 +90,6 @@ async function resolveTenant(req: NextRequest, requestedSlug?: string | null): P
 
 export async function GET(req: NextRequest) {
   try {
-    const ip = clientIpFromHeaders(req.headers);
-    const rl = checkRateLimit(`hermes-knowledge-get:${ip}`, 60, 60_000);
-    if (!rl.allowed) {
-      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
-    }
-
     const { searchParams } = new URL(req.url);
     const requestedSlug = searchParams.get('organizationSlug');
 
@@ -105,13 +98,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes authenticated session required.' }, { status: 401 });
     }
 
+    // Rate Limiting by Canonical Tenant Identity (Rule J)
+    const rateLimit = checkTenantRateLimit(auth.canonicalTenant.canonicalOrgId, 120, 60_000);
+    const rlHeaders = buildRateLimitHeaders(rateLimit);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests for this tenant.' }, { status: 429, headers: rlHeaders });
+    }
+
     const snapshot = await KnowledgeService.getTenantKnowledge(auth.canonicalTenant.projectSlug);
 
     return NextResponse.json({
       facts: snapshot.facts,
       sources: snapshot.sources,
       overview: snapshot.overview,
-    });
+    }, { headers: rlHeaders });
   } catch (err: any) {
     console.error('[API /api/v1/hermes/knowledge GET] Error:', err);
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to fetch knowledge' }, { status: 500 });
@@ -120,15 +120,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = clientIpFromHeaders(req.headers);
-    const rl = checkRateLimit(`hermes-knowledge-post:${ip}`, 30, 60_000);
-    if (!rl.allowed) {
-      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
-    }
-
     const auth = await resolveTenant(req);
     if (!auth) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes authenticated session required.' }, { status: 401 });
+    }
+
+    // Rate Limiting by Canonical Tenant Identity (Rule J)
+    const rateLimit = checkTenantRateLimit(auth.canonicalTenant.canonicalOrgId, 60, 60_000);
+    const rlHeaders = buildRateLimitHeaders(rateLimit);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests for this tenant.' }, { status: 429, headers: rlHeaders });
     }
 
     const body: AddKnowledgeSourceRequestDTO = await req.json();
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
       body
     );
 
-    return NextResponse.json({ success: true, sourceId: sourceId || 'src_created' });
+    return NextResponse.json({ success: true, sourceId: sourceId || 'src_created' }, { headers: rlHeaders });
   } catch (err: any) {
     console.error('[API /api/v1/hermes/knowledge POST] Error:', err);
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to add knowledge source' }, { status: 500 });
@@ -156,15 +157,16 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const ip = clientIpFromHeaders(req.headers);
-    const rl = checkRateLimit(`hermes-knowledge-patch:${ip}`, 30, 60_000);
-    if (!rl.allowed) {
-      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
-    }
-
     const auth = await resolveTenant(req);
     if (!auth) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes authenticated session required.' }, { status: 401 });
+    }
+
+    // Rate Limiting by Canonical Tenant Identity (Rule J)
+    const rateLimit = checkTenantRateLimit(auth.canonicalTenant.canonicalOrgId, 60, 60_000);
+    const rlHeaders = buildRateLimitHeaders(rateLimit);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests for this tenant.' }, { status: 429, headers: rlHeaders });
     }
 
     const body: UpdateKnowledgeFactStatusRequestDTO = await req.json();
@@ -179,10 +181,9 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ code: 'NOT_FOUND', message: 'Fact not found or does not belong to authorized tenant.' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, factId, status });
+    return NextResponse.json({ success: true, factId, status }, { headers: rlHeaders });
   } catch (err: any) {
     console.error('[API /api/v1/hermes/knowledge PATCH] Error:', err);
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to update fact' }, { status: 500 });
   }
 }
-

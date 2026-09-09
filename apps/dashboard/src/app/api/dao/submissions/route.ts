@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoActivitySubmissions, daoActivities } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
+import { headers } from 'next/headers';
+import { getAuth, isAdmin } from '@/lib/auth';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -113,7 +115,13 @@ export async function POST(req: Request) {
         }
 
         if (action === 'payout') {
-            // Admin only - theoretically check session here or assume protected route middleware
+            // Security Gate: Admin only verification
+            const authHeaders = await headers();
+            const { session } = await getAuth(authHeaders);
+            if (!session?.address || !await isAdmin(session.address)) {
+                return NextResponse.json({ error: 'Unauthorized: Admin session required for payout' }, { status: 403 });
+            }
+
             const { submissionIds } = body;
 
             if (!Array.isArray(submissionIds)) return NextResponse.json({ error: 'Invalid submission IDs' }, { status: 400 });

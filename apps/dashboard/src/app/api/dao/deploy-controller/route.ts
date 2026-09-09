@@ -6,9 +6,18 @@ import { withSecurity, withdrawRateLimiter, isValidWalletAddress } from "~/lib/s
 import { deployProjectController } from "~/lib/treasury/factory";
 import { getUsdcAddress } from "~/lib/treasury/usdc-contract";
 
+import { headers } from "next/headers";
+import { getAuth } from "~/lib/auth";
+
 const DEFAULT_DAILY_LIMIT = BigInt(500 * 1_000_000); // 500 USDC
 
 async function handler(request: Request): Promise<Response> {
+  const authHeaders = await headers();
+  const { session } = await getAuth(authHeaders);
+  if (!session?.address) {
+    return NextResponse.json({ error: "Unauthorized — session required" }, { status: 401 });
+  }
+
   const body = await request.json();
   const { projectId, ownerAddress, dailyLimitWei } = body;
 
@@ -30,6 +39,14 @@ async function handler(request: Request): Promise<Response> {
 
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  // Security Gate: Caller must be the project owner (applicantWalletAddress)
+  const isOwner = project.applicantWalletAddress && 
+    project.applicantWalletAddress.toLowerCase() === session.address.toLowerCase();
+
+  if (!isOwner) {
+    return NextResponse.json({ error: "Forbidden — only project owner can deploy controller" }, { status: 403 });
   }
 
   if (project.allowanceControllerAddress) {
