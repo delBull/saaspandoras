@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
-import { HermesRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { OllamaReasoningProvider } from '@/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
+import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
-
-const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'dev_secret_key';
 
 export async function POST(req: Request) {
   try {
+    const internalSecret = process.env.INTERNAL_SECRET;
+    if (!internalSecret) {
+      console.error('[Internal Discord Chat API] Fail-closed: INTERNAL_SECRET is not configured on server.');
+      return NextResponse.json({ success: false, error: 'Gateway configuration error' }, { status: 503 });
+    }
+
     const secret = req.headers.get('x-internal-secret');
-    if (secret !== INTERNAL_SECRET) {
+    if (secret !== internalSecret) {
       return NextResponse.json({ success: false, error: 'Unauthorized gateway' }, { status: 401 });
     }
 
@@ -58,8 +61,7 @@ export async function POST(req: Request) {
       boundActorSession,
     };
 
-    const provider = new OllamaReasoningProvider();
-    const runtime = new HermesRuntime(provider);
+    const runtime = getDefaultRuntime();
 
     const response = await runtime.respond({
       organizationId,

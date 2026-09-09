@@ -2,18 +2,104 @@
  * 🏛️ Pandora's Hermes OS — Production Governed Cognitive Chat Endpoint
  * POST /api/v1/hermes/chat
  *
- * Fully wired to HermesCognitiveRuntime, OllamaReasoningProvider,
- * PromptHygieneEngine, ActorIdentityBindingService, and ToolCircuitBreaker.
+ * Enforces:
+ * 1. Authenticated session validation (Portal cookie session OR Bearer token).
+ * 2. Canonical Tenant Identity via TenantAuthorityService (K27.1).
+ * 3. Prevention of caller tampering: body organizationId CANNOT override session tenant.
+ * 4. Runtime instantiation via getDefaultRuntime() respecting HERMES_REASONING_PROVIDER.
+ * 5. Full pipeline with PromptHygieneEngine, ActorIdentityBindingService, and PolicyValidator.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { OllamaReasoningProvider } from '@/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
+import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
 import type { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
 import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
+import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
+import { validatePortalSession } from '@/lib/platform/portal-auth';
+import { OrganizationSDK } from '@/lib/platform/organization-sdk';
+import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
 
 export const dynamic = 'force-dynamic';
+
+const sessionTokenService = new SessionTokenService();
+
+interface ResolvedChatAuth {
+  canonicalOrgId: string;
+  projectSlug: string;
+  actorId: string;
+  sessionId: string;
+  role: 'TENANT_ADMIN' | 'OPERATOR';
+}
+
+async function resolveChatSession(req: NextRequest, bodyTenantHint?: string): Promise<ResolvedChatAuth | null> {
+  let tenantIdentifier: string | null = null;
+  let actorId = 'anonymous_actor';
+  let sessionId = '';
+  let role: 'TENANT_ADMIN' | 'OPERATOR' = 'OPERATOR';
+
+  // 1. Check portal session cookie
+  const cookie = req.cookies?.get?.('pandoras_portal_session')?.value;
+  if (cookie) {
+    const session = await validatePortalSession(cookie);
+    if (session) {
+      const org = await OrganizationSDK.resolve(session.projectId, session.product as any);
+      if (org) {
+        tenantIdentifier = org.slug || org.organizationId;
+        actorId = `session_${session.installedProductId}`;
+        sessionId = cookie;
+        role = 'TENANT_ADMIN';
+      }
+    }
+  }
+
+  // 2. Check Bearer token if no cookie
+  if (!tenantIdentifier) {
+    const authHeader = req.headers.get('authorization') || '';
+    const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (bearerToken) {
+      try {
+        const payload = sessionTokenService.verifyToken(bearerToken);
+        tenantIdentifier = payload.organizationId;
+        actorId = (payload as any).actorId || (payload as any).sub || 'tma_actor';
+        sessionId = bearerToken;
+        role = 'OPERATOR';
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  if (!tenantIdentifier) {
+    return null;
+  }
+
+  // Resolve Canonical Tenant Identity via TenantAuthorityService (fail-closed)
+  const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantIdentifier);
+  if (!canonical) {
+    return null;
+  }
+
+  // If the caller passed a body hint, reject any cross-tenant switching
+  if (bodyTenantHint) {
+    const cleanHint = bodyTenantHint.toLowerCase().replace(/^org_/, '').trim();
+    if (
+      cleanHint !== canonical.projectSlug.toLowerCase() &&
+      cleanHint !== canonical.canonicalOrgId.toLowerCase()
+    ) {
+      console.warn(`[Chat API] Cross-tenant spoofing attempt rejected: session=${canonical.projectSlug}, body=${bodyTenantHint}`);
+      return null;
+    }
+  }
+
+  return {
+    canonicalOrgId: canonical.canonicalOrgId,
+    projectSlug: canonical.projectSlug,
+    actorId,
+    sessionId,
+    role,
+  };
+}
 
 export async function POST(req: NextRequest) {
   const start = Date.now();
@@ -21,17 +107,32 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      organizationId = 'pandoras',
+      organizationId: bodyOrgId,
       message,
       conversationId,
-      actorId = 'anonymous_actor',
+      actorId: bodyActorId,
       authProvider = 'PORTAL_INTERNAL',
       channelType = 'AUTHENTICATED_WEB',
-      sessionToken,
     } = body;
 
-    // Rate Limiting (Per-tenant protection)
-    const rateLimit = checkTenantRateLimit(organizationId, 120, 60_000);
+    // 1. Session & Canonical Tenant Verification (Fail-Closed)
+    const auth = await resolveChatSession(req, bodyOrgId);
+    if (!auth) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHENTICATED',
+          message: 'Valid Hermes session (cookie or Bearer token) is required for cognitive execution.',
+        },
+        { status: 401 }
+      );
+    }
+
+    const effectiveOrgId = auth.canonicalOrgId;
+    const effectiveActorId = auth.actorId !== 'anonymous_actor' ? auth.actorId : (bodyActorId || 'session_actor');
+
+    // 2. Rate Limiting by Canonical Tenant Identity
+    const rateLimit = checkTenantRateLimit(effectiveOrgId, 120, 60_000);
     const rlHeaders = buildRateLimitHeaders(rateLimit);
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -52,38 +153,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Mandatory Actor Identity Binding
+    // 3. Mandatory Actor Identity Binding with Cryptographic Proof
     const boundActorSession = ActorIdentityBindingService.createBoundSession(
       {
-        actorId,
-        tenantId: organizationId,
+        actorId: effectiveActorId,
+        tenantId: effectiveOrgId,
         authProvider,
         nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        proofSignature: sessionToken || `sig_${organizationId}_${Date.now()}`,
+        proofSignature: auth.sessionId || `sig_${effectiveOrgId}_${Date.now()}`,
         issuedAt: Date.now(),
       },
       channelType === 'INTERNAL_WORKBENCH' ? 'CONFIDENTIAL' : 'TENANT_RESTRICTED',
       3600
     );
 
-    // 2. ControlPlaneContext with cryptographic session
+    // 4. ControlPlaneContext with cryptographic session
     const controlPlaneContext: ControlPlaneContext & { boundActorSession: any } = {
-      organizationId,
-      actorId,
-      role: (channelType === 'INTERNAL_WORKBENCH' ? 'TENANT_ADMIN' : 'PUBLIC_VISITOR') as any,
+      organizationId: effectiveOrgId,
+      actorId: effectiveActorId,
+      role: auth.role as any,
       sessionId: boundActorSession.sessionToken,
       permissions: ['read:knowledge', 'execute:capabilities'],
       boundActorSession,
     };
 
-    // 3. Instantiate Production Runtime with Ollama Provider
-    const provider = new OllamaReasoningProvider();
-    const runtime = new HermesRuntime(provider);
+    // 5. Canonical Runtime (respects HERMES_REASONING_PROVIDER or Mock default)
+    const runtime = getDefaultRuntime();
 
-    // 4. Execute Governed Cognitive Turn
+    // 6. Execute Governed Cognitive Turn
     const response = await runtime.respond({
-      organizationId,
-      conversationId: conversationId || `conv_${organizationId}_${actorId}`,
+      organizationId: effectiveOrgId,
+      conversationId: conversationId || `conv_${effectiveOrgId}_${effectiveActorId}`,
       message: {
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         role: 'USER',
@@ -125,3 +225,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

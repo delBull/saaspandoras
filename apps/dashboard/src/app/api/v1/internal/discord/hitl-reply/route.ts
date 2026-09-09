@@ -5,12 +5,16 @@ import { eq, desc, and } from 'drizzle-orm';
 import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
 import { v4 as uuidv4 } from 'uuid';
 
-const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'dev_secret_key';
-
 export async function POST(req: NextRequest) {
   try {
+    const internalSecret = process.env.INTERNAL_SECRET;
+    if (!internalSecret) {
+      console.error('[Internal Discord HITL API] Fail-closed: INTERNAL_SECRET is not configured on server.');
+      return NextResponse.json({ error: 'Gateway configuration error' }, { status: 503 });
+    }
+
     const secret = req.headers.get('x-internal-secret');
-    if (secret !== INTERNAL_SECRET) {
+    if (secret !== internalSecret) {
       return NextResponse.json({ error: 'Unauthorized gateway' }, { status: 401 });
     }
 
