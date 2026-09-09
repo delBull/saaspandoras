@@ -611,20 +611,34 @@ export async function POST(req: NextRequest) {
       const pandorasAlertsWebhookUrl = process.env.DISCORD_WEBHOOK_PANDORAS_ALERTS;
       if (pandorasAlertsWebhookUrl) {
         const isB2BLead = scope === 'b2b' || metadata?.moduleInterest || metadata?.company;
+        const isSimulatorLead = metadata?.source === 'hermes_simulator';
+        const alertTitle = isSimulatorLead
+          ? "🏆 NUEVO LEAD — HERMES SIMULATOR"
+          : isB2BLead
+          ? "🏢 NUEVA SOLICITUD DE PLATAFORMA ENTERPRISE"
+          : "👤 NUEVO LEAD CAPTURADO";
         const alertPayload = {
           embeds: [{
-            title: isB2BLead ? "🏢 NUEVA SOLICITUD DE PLATAFORMA ENTERPRISE" : "👤 NUEVO LEAD CAPTURADO",
-            color: isB2BLead ? 0xf59e0b : 0x10b981,
+            title: alertTitle,
+            color: isSimulatorLead ? 0x9b5de5 : (isB2BLead ? 0xf59e0b : 0x10b981),
             fields: [
               { name: "Email", value: result.email || "N/A", inline: true },
               { name: "Nombre", value: result.name || "Sin nombre", inline: true },
               { name: "Teléfono / WhatsApp", value: result.phoneNumber || "No proporcionado", inline: true },
               { name: "Organización / Empresa", value: metadata?.company || "No especificada", inline: true },
+              ...(isSimulatorLead && metadata?.attributionRep
+                ? [{ name: "Asesor (Demo)", value: String(metadata.attributionRep), inline: true }]
+                : []),
+              ...(isSimulatorLead && metadata?.industry
+                ? [{ name: "Industria Demo", value: String(metadata.industry), inline: true }]
+                : []),
               { name: "Módulo Solicitado", value: metadata?.moduleInterest || "General", inline: true },
               { name: "Volumen Leads/Mes", value: metadata?.monthlyLeads || "N/A", inline: true },
               { name: "Origen / Landing", value: result.origin || "Direct", inline: false },
               { name: "Scoring Intención", value: result.intent || "explore", inline: true },
-              { name: "Acción Sugerida", value: "Revisar en Admin Dashboard para aprobar Tenant", inline: false }
+              ...(isSimulatorLead
+                ? [{ name: "Acción Sugerida", value: "Revisar Demo Oracle y asignar asesor para follow-up mismo día", inline: false }]
+                : [{ name: "Acción Sugerida", value: "Revisar en Admin Dashboard para aprobar Tenant", inline: false }])
             ],
             timestamp: new Date().toISOString(),
             footer: { text: "Pandora's Platform Engine — Alerts v1.0" }

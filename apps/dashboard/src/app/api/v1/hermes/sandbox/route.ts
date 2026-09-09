@@ -104,50 +104,66 @@ export async function POST(req: NextRequest) {
       }, { status: 429 });
     }
 
-    // Build dynamic system prompt for Sandbox & Referral Trust Journey
-    const effectiveCompany = companyName || 'Mi Empresa';
-    const effectiveIndustry = industry || 'General';
+    // Build dynamic system prompt using sanitized DemoContext
+    const { resolveSafeDemoContext } = await import('@/lib/hermes/simulator-types');
+    const demoCtx = resolveSafeDemoContext({
+      company: companyName,
+      industry,
+      goal: body.goal,
+      rep: referralContext?.referredBy || body.rep,
+      source: body.source,
+    });
 
-    let conciergeInstructions = '';
-    if (referralContext) {
-      conciergeInstructions = `\n\nHERMES CONCIERGE MODE (REFERRAL TRUST JOURNEY ACTIVO):
-- Origen del Contacto: Referido por ${referralContext.referredBy || 'Círculo Cercano'} (${referralContext.relationship || 'VIP Family'}).
-- Prioridad: ${referralContext.priorityTier || 'VIP'}.
-- REGLAS DE TONO E INSTITUCIONALIDAD:
-  • NUNCA uses lenguaje de presión, ventas agresivas ni FOMO ("compra antes de que suba", "oportunidad de tu vida").
-  • Habla con máxima elegancia institucional sobre la preservación de PATRIMONIO y PARTICIPACIÓN DESDE EL ORIGEN (Etapa Cero).
-  • Salta las preguntas frías de prospección. Reconoce el origen de la invitación y guía hacia la tesis del proyecto y agendamiento con los fundadores.`;
+    const effectiveCompany = demoCtx.company;
+    const effectiveIndustry = demoCtx.industry;
+
+    // Detect Intent visually for demo feedback
+    const lowerMsg = userMessage.toLowerCase();
+    let detectedIntent: { type: string; label: string; confidence: string } | null = null;
+    if (
+      lowerMsg.includes('precio') ||
+      lowerMsg.includes('costo') ||
+      lowerMsg.includes('comprar') ||
+      lowerMsg.includes('cuanto') ||
+      lowerMsg.includes('cuánto') ||
+      lowerMsg.includes('pagar') ||
+      lowerMsg.includes('contratar')
+    ) {
+      detectedIntent = {
+        type: 'HIGH_PRIORITY_PURCHASE',
+        label: 'Intención de Compra / Consulta de Precios',
+        confidence: '94%',
+      };
+    } else if (
+      lowerMsg.includes('cita') ||
+      lowerMsg.includes('agendar') ||
+      lowerMsg.includes('visita') ||
+      lowerMsg.includes('reunión') ||
+      lowerMsg.includes('reunion') ||
+      lowerMsg.includes('horario')
+    ) {
+      detectedIntent = {
+        type: 'APPOINTMENT_REQUEST',
+        label: 'Solicitud de Agenda / Visita',
+        confidence: '91%',
+      };
     }
 
-    // Evaluate Hermes OS v7 Journey & Playbook Engine
-    const { BUILTIN_JOURNEYS, BUILTIN_PLAYBOOKS } = await import('@/lib/hermes/journey-engine');
-    const selectedJourneyId = referralContext ? 'family_referral_journey' : (effectiveIndustry.includes('Web3') ? 'web3_sovereign_education' : 'family_referral_journey');
-    const journey = BUILTIN_JOURNEYS[selectedJourneyId]!;
-    const playbook = BUILTIN_PLAYBOOKS[journey.playbookId]!;
-    const objectiveState = {
-      journeyId: journey.id,
-      currentStageId: playbook.stages[0]?.id || '',
-      goal: journey.goal,
-      completedObjectives: [],
-      missingObjectives: playbook.stages[0]?.requiredData || [],
-      recommendedAction: playbook.stages[0]?.suggestedAction || 'Avanzar conversación'
-    };
+    const honestyDirective = `
+REGLAS DE TRANSPARENCIA Y HONESTIDAD DE DEMOSTRACIÓN:
+- Eres Hermes, configurado en modo demostración para ${effectiveCompany} en la vertical de ${effectiveIndustry}.
+- Saluda reconociendo a ${effectiveCompany} y el objetivo comercial del sector.
+- Si el usuario pregunta por inventario, catálogo o precios específicos que no tengas detallados, responde demostrando la estructura comercial y aclara amablemente: "Para esta demostración estoy configurado con los flujos y parámetros estándar de ${effectiveIndustry} para ${effectiveCompany}. Al activar tu instancia dedicada en producción, cargaremos el catálogo, precios e inventario exactos de tu negocio para responder con total precisión."
+- NUNCA inventes direcciones físicas, números de cuenta falsos ni nombres de productos que no conozcas.`;
 
-    const journeyPromptInjection = `\n\nHERMES OS V7 JOURNEY & OBJECTIVE ENGINE:
-- Journey Activo: ${journey.name} (Persona: ${journey.persona})
-- Meta del Journey: ${journey.goal}
-- Playbook Activo: ${playbook.name} (Etapa Actual: ${objectiveState.currentStageId})
-- Objetivo de la Etapa: ${playbook.stages.find(s => s.id === objectiveState.currentStageId)?.objective}
-- Acción Sugerida: ${objectiveState.recommendedAction}`;
-
-    const basePrompt = (customPrompt ? `${customPrompt}\n\n` : '') + `Eres Hermes, el Agente Autónomo de Inteligencia Corporativa de ${effectiveCompany} (Industria: ${effectiveIndustry}).${conciergeInstructions}${journeyPromptInjection}
+    const basePrompt = `Eres Hermes, el Asistente y Cerrador Comercial IA de ${effectiveCompany} (Industria: ${effectiveIndustry}).${honestyDirective}
 
 REGLAS DE FORMATO VISUAL Y ESTILO:
 - Utiliza siempre emojis relevantes (✨, 🚀, 💡, 📅, 💳, 📌, 🎯) para dar dinamismo a tus respuestas.
-- Organiza tu respuesta en párrafos cortos separados por doble salto de línea (enter).
-- Usa listas con viñetas (•) o numeración cuando menciones opciones, precios o características.
-- Usa negritas (**texto**) para destacar términos clave, precios o acciones importantes.
-- NUNCA entregues texto plano sin formato ni párrafos apelmazados.`;
+- Organiza tu respuesta en párrafos cortos separados por doble salto de línea.
+- Usa viñetas (•) o numeración para opciones y características.
+- Usa negritas (**texto**) para destacar términos clave o llamados a la acción.
+- Mantén un tono sumamente profesional, resolutivo y comercial sin ser agresivo.`;
 
     // Call Hermes Bot Engine using Sandbox mode
     const botResponseText = await generateBotResponse({
@@ -158,8 +174,8 @@ REGLAS DE FORMATO VISUAL Y ESTILO:
       projectContext: {
         title: effectiveCompany,
         slug: 'sandbox',
-        industry: effectiveIndustry
-      }
+        industry: effectiveIndustry,
+      },
     });
 
     // Record intelligence event for Growth OS Mission Control Analytics
@@ -169,7 +185,14 @@ REGLAS DE FORMATO VISUAL Y ESTILO:
         projectSlug: 'sandbox',
         eventType: 'HANDLED_OBJECTION',
         channel: 'web',
-        metadata: { companyName: effectiveCompany, industry: effectiveIndustry, ip, currentCount, lifetimeCount }
+        metadata: {
+          companyName: effectiveCompany,
+          industry: effectiveIndustry,
+          ip,
+          currentCount,
+          lifetimeCount,
+          attributionRep: demoCtx.attributionRep,
+        },
       });
     } catch (err) {
       // Non-blocking telemetry
@@ -178,7 +201,8 @@ REGLAS DE FORMATO VISUAL Y ESTILO:
     return NextResponse.json({
       success: true,
       response: botResponseText,
-      remaining: Math.max(0, SANDBOX_DAILY_LIMIT - currentCount)
+      remaining: Math.max(0, SANDBOX_DAILY_LIMIT - currentCount),
+      intentDetected: detectedIntent,
     });
   } catch (err: any) {
     console.error('[Hermes Sandbox Error]:', err);
