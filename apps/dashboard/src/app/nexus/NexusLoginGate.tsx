@@ -8,6 +8,14 @@ import { client } from "@/lib/thirdweb-client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 
+// Helper: preserves a magic-link ?token= across same-origin fetches (the register
+// route authenticates token-based sessions via its own ?token= param).
+function sessionTokenQuery(): string {
+  if (typeof window === 'undefined') return '';
+  const token = new URLSearchParams(window.location.search).get('token');
+  return token ? `?token=${encodeURIComponent(token)}` : '';
+}
+
 interface NexusLoginGateProps {
   requireCompletion?: boolean;
   initialAuth?: { address: string | null; email: string | null } | null;
@@ -39,7 +47,7 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
         // Interceptar login web3 para registrar datos obligatorios
         if (name && email && whatsappPhone && user.address) {
           try {
-            await fetch("/api/nexus/collaborators/register", {
+            await fetch(`/api/nexus/collaborators/register${sessionTokenQuery()}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ address: user.address, name, email, whatsappPhone }),
@@ -106,7 +114,7 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
 
     try {
       const address = initialAuth?.address || (user?.address) || '0x0000000000000000000000000000000000000000';
-      const res = await fetch("/api/nexus/collaborators/register", {
+      const res = await fetch(`/api/nexus/collaborators/register${sessionTokenQuery()}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ address, name, email, whatsappPhone: normalizePhone(whatsappPhone) }),
@@ -118,7 +126,16 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
           type: "success",
           message: `Registro completado. Redirigiendo...`,
         });
-        setTimeout(() => router.refresh(), 1500);
+        // Hard navigation (full server render) instead of router.refresh():
+        // guarantees NexusRootPage re-resolves auth fresh so the completion gate
+        // actually clears (wallet/SUPER_ADMIN sessions previously looped forever).
+        const token = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('token');
+        setTimeout(() => {
+          const target = '/nexus' + (token ? `?token=${encodeURIComponent(token)}` : '');
+          if (typeof window !== 'undefined') {
+            window.location.assign(target);
+          }
+        }, 1200);
       } else {
         setResult({
           type: "error",

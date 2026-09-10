@@ -294,3 +294,85 @@ export function buildSandboxTrace(params: {
 
   return { steps, action, actionLabel };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo scenario builder — deterministic extra scenarios for the Portal preview.
+// Lets a seller replay the three money moments (close, appointment, escalation)
+// WITHOUT burning the sandbox global/LLM quota. Mirrors the exact same intent
+// regex the real sandbox API uses (see api/v1/hermes/sandbox/route.ts).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SimulatedScenario {
+  kind: 'purchase' | 'appointment' | 'escalate';
+  prompt: string;
+  reply: string;
+  intent: { type: string; label: string; confidence: string } | null;
+  trace: HermesTrace;
+}
+
+const SCENARIO_PROMPTS: Record<SimulatedScenario['kind'], string> = {
+  purchase:
+    'Quiero comprar el paquete completo ahora, ¿puedo pagar con tarjeta?',
+  appointment: 'Quiero agendar una reunión o visita esta semana, por favor',
+  escalate: 'Prefiero hablar con una persona real, no con un robot',
+};
+
+const SCENARIO_INTENTS: Record<
+  'purchase' | 'appointment',
+  { type: string; label: string; confidence: string }
+> = {
+  purchase: {
+    type: 'HIGH_PRIORITY_PURCHASE',
+    label: 'Intención de Compra / Consulta de Precios',
+    confidence: '94%',
+  },
+  appointment: {
+    type: 'APPOINTMENT_REQUEST',
+    label: 'Solicitud de Agenda / Visita',
+    confidence: '91%',
+  },
+};
+
+export function buildDemoScenario(params: {
+  kind: SimulatedScenario['kind'];
+  company: string;
+  industry: SimulatorIndustry;
+  goal: SimulatorGoal;
+}): SimulatedScenario {
+  const { kind, company, industry, goal } = params;
+  const industryLabel = (SIMULATOR_INDUSTRIES[industry] || SIMULATOR_INDUSTRIES.general).label;
+  const cleanCompany = company !== 'Tu Negocio' ? company : 'tu empresa';
+  const prompt = SCENARIO_PROMPTS[kind];
+
+  let reply: string;
+  let intent: SimulatedScenario['intent'] = null;
+
+  if (kind === 'purchase') {
+    intent = SCENARIO_INTENTS.purchase;
+    reply =
+      `¡Excelente decisión! 🎉 Hermes **detectó tu intención de compra** al instante.\n\n` +
+      `• Estoy validando la elegibilidad de tu paquete ${industryLabel}.\n` +
+      `• En tu **instancia en producción**, esto continúa solo: recibes tu **link de pago** 💳 (SPEI o crypto) en este chat y quedas registrado en **Onboarding**, sin intervención humana.`;
+  } else if (kind === 'appointment') {
+    intent = SCENARIO_INTENTS.appointment;
+    reply =
+      `¡Claro! 📅 Reviso la agenda disponible de **${cleanCompany}**.\n\n` +
+      `• En producción enlazamos tu **calendario real** y te propongo **slots** al instante.\n` +
+      `• Confirma y Hermes agenda + envía **recordatorios automáticos** hasta el día de tu visita.`;
+  } else {
+    reply =
+      `¡Por supuesto! 🙋 Entiendo que prefieres atención humana.\n\n` +
+      `Hermes **ya escaló esta conversación a tu equipo con contexto completo**: historial, intención detectada y datos de contacto. Un asesor te llamará a la brevedad.\n\n` +
+      `• Esta es la parte que más valoran tus clientes: **nada se pierde en la transferencia**.`;
+  }
+
+  const trace = buildSandboxTrace({
+    company,
+    industry,
+    goal,
+    intent,
+    message: prompt,
+  });
+
+  return { kind, prompt, reply, intent, trace };
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveSafeDemoContext, buildSandboxTrace } from '../simulator-types';
+import { resolveSafeDemoContext, buildSandboxTrace, buildDemoScenario } from '../simulator-types';
 
 describe('⚡ Hermes Simulator Context & Sanitizer', () => {
   it('Resolves clean defaults when parameters are empty', () => {
@@ -100,5 +100,37 @@ describe('⚙️ Hermes OS Engine Trace Builder', () => {
     expect(trace.action).toBe('RESPOND');
     const intentStep = trace.steps.find((s) => s.id === 'intent')!;
     expect(intentStep.detail).toContain('Intención aún no comercial');
+  });
+});
+
+describe('🎬 Demo scenario builder (deterministic, no API quota burn)', () => {
+  const base = { company: 'Grupo Altius', industry: 'real_estate' as const, goal: 'CLOSE_SALES' as const };
+
+  it('Builds a purchase scenario → AUTONOMOUS_CLOSE with the payment narrative', () => {
+    const s = buildDemoScenario({ kind: 'purchase', ...base });
+    expect(s.prompt).toMatch(/comprar/i);
+    expect(s.intent?.type).toBe('HIGH_PRIORITY_PURCHASE');
+    expect(s.trace.action).toBe('AUTONOMOUS_CLOSE');
+    expect(s.reply).toContain('link de pago');
+  });
+
+  it('Builds an appointment scenario → BOOK_APPOINTMENT with scheduling narrative', () => {
+    const s = buildDemoScenario({ kind: 'appointment', ...base });
+    expect(s.prompt).toMatch(/agendar/i);
+    expect(s.intent?.type).toBe('APPOINTMENT_REQUEST');
+    expect(s.trace.action).toBe('BOOK_APPOINTMENT');
+    expect(s.reply).toContain('recordatorios');
+  });
+
+  it('Builds an escalate scenario → ESCALATE_TO_HUMAN with HITL narrative', () => {
+    const s = buildDemoScenario({ kind: 'escalate', ...base });
+    expect(s.intent).toBeNull();
+    expect(s.trace.action).toBe('ESCALATE_TO_HUMAN');
+    expect(s.reply).toContain('tu equipo');
+  });
+
+  it('Injects the industry label into the reply so copy feels vertical-specific', () => {
+    const s = buildDemoScenario({ kind: 'purchase', company: 'GoTo Market', industry: 'saas', goal: 'QUALIFY_LEADS' });
+    expect(s.reply).toContain('💻 SaaS & Tecnología');
   });
 });

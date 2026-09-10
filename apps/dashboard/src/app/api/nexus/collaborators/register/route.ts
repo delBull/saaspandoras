@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { nexusCollaborators } from '@/db/schema';
+import { nexusCollaborators, users } from '@/db/schema';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
@@ -85,6 +85,38 @@ export async function POST(req: NextRequest) {
         expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         lastAccessAt: new Date(),
       });
+    }
+
+    // 🔗 Tie the authenticated wallet to this email on `users` so wallet-based
+    // sessions (getNexusAuthContext path 1, incl. SUPER_ADMIN) can resolve
+    // name + whatsappPhone — otherwise the completion gate loops forever.
+    // Non-blocking: registration must never fail because of this side-write.
+    try {
+      const wallet = auth.wallet || null;
+      if (wallet && wallet !== '0x0000000000000000000000000000000000000000') {
+        const walletLower = wallet.toLowerCase();
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.walletAddress, walletLower))
+          .limit(1);
+
+        if (existingUser) {
+          await db.update(users)
+            .set({ email: normalizedEmail, name: name.trim() })
+            .where(eq(users.walletAddress, walletLower));
+        } else {
+          await db.insert(users).values({
+            id: crypto.randomUUID(),
+            walletAddress: walletLower,
+            email: normalizedEmail,
+            name: name.trim(),
+            role: 'user',
+          }).onConflictDoNothing();
+        }
+      }
+    } catch (linkErr) {
+      console.warn('[Nexus Register] Wallet→users link skipped (non-blocking):', linkErr);
     }
 
     return NextResponse.json({ ok: true });

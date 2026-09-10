@@ -27,8 +27,10 @@ import {
   HermesTrace,
   HermesTraceStep,
   HERMES_PORTAL_MODULES,
+  SimulatedScenario,
 } from '@/lib/hermes/simulator-types';
 import { SalesDemoBuilderDrawer } from '@/components/hermes/SalesDemoBuilderDrawer';
+import { PortalPreview } from '@/components/hermes-simulator/PortalPreview';
 
 // Print-style icons per engine-trace layer (maps each layer to its real module)
 const TRACE_ICONS: Record<HermesTraceStep['id'], LucideIcon> = {
@@ -39,6 +41,20 @@ const TRACE_ICONS: Record<HermesTraceStep['id'], LucideIcon> = {
   governance: CheckCircle2,
   action: Zap,
 };
+
+// Minimal markdown-lite: renders **bold** while preserving the full text verbatim
+// (the bot replies with markdown; plain pre-line would show literal asterisks).
+function renderRichText(text: string): React.ReactNode {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.length > 4 && part.startsWith('**') && part.endsWith('**') ? (
+      <strong key={i} className="font-semibold text-white">
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      part
+    )
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -243,6 +259,39 @@ export function SimulatorClient() {
     }
   };
 
+  // Demo scenario injection from the Portal preview — deterministic, local-only.
+  // Replays the money moments (close / appointment / escalate) through the SAME
+  // intent paths the real sandbox API uses, WITHOUT burning the global LLM quota
+  // or the per-IP trial budget (that stays reserved for real prospects).
+  const handleSimulatedScenario = (scenario: SimulatedScenario) => {
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userChat: ChatMessage = {
+      id: `user-sim-${Date.now()}`,
+      role: 'user',
+      text: scenario.prompt,
+      timestamp: now,
+    };
+    const agentChat: ChatMessage = {
+      id: `agent-sim-${Date.now()}`,
+      role: 'agent',
+      text: scenario.reply,
+      timestamp: now,
+      intentDetected: scenario.intent ?? undefined,
+    };
+
+    setMessages((prev) => [...prev, userChat, agentChat]);
+    setLastTrace(scenario.trace);
+
+    if (scenario.intent) {
+      setDetectedIntent(scenario.intent);
+      setSessionIntentCount((n) => n + 1);
+      setConversionPhase('interested');
+      setShowRecap(true);
+    } else {
+      setConversionPhase((prev) => (prev === 'start' ? 'exploring' : prev));
+    }
+  };
+
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadEmail) return;
@@ -290,6 +339,15 @@ export function SimulatorClient() {
 
   const ctaCopy = CTA_COPY[conversionPhase];
   const cleanCompanyDisplay = companyName !== 'Tu Negocio' ? companyName : 'tu empresa';
+
+  // Session-derived telemetry feeding the Portal preview (real data only)
+  const userTurns = messages.filter((m) => m.role === 'user').length;
+  const agentTurns = messages.length - userTurns;
+  const previewMessages = messages.map((m) => ({
+    role: m.role,
+    text: m.text,
+    timestamp: m.timestamp,
+  }));
 
   // Off-hours closing scenario — illustrative narrative (not telemetry): always
   // frames a late-night prospect so the "24/7" value lands regardless of when
@@ -576,7 +634,7 @@ export function SimulatorClient() {
                       : 'bg-white/[0.04] border border-white/10 text-zinc-200 rounded-bl-none'
                   }`}
                 >
-                  {msg.text}
+                  {renderRichText(msg.text)}
                 </div>
                 <span className="text-[9px] font-mono text-zinc-600 mt-1 px-1">
                   {msg.timestamp}
@@ -750,6 +808,23 @@ export function SimulatorClient() {
           </div>
         </div>
       </main>
+
+      {/* ── Hermes Portal Preview — replica del portal real (continuidad demo → pago) ── */}
+      <PortalPreview
+        key={`${companyName}|${industry}|${goal}`}
+        companyName={companyName}
+        industry={industry}
+        goal={goal}
+        phase={conversionPhase}
+        userTurns={userTurns}
+        agentTurns={agentTurns}
+        sessionIntentCount={sessionIntentCount}
+        detectedIntent={detectedIntent}
+        lastTrace={lastTrace}
+        messages={previewMessages}
+        attributionRep={attributionRep}
+        onScenario={handleSimulatedScenario}
+      />
 
       {/* ── Internal Sales Demo Builder Drawer ────────────────────────── */}
       <SalesDemoBuilderDrawer

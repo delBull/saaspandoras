@@ -174,10 +174,13 @@ REGLAS DE FORMATO VISUAL Y ESTILO:
 - Usa negritas (**texto**) para destacar términos clave o llamados a la acción.
 - Mantén un tono sumamente profesional, resolutivo y comercial sin ser agresivo.`;
 
-    // Call Hermes Bot Engine using Sandbox mode
-    const botResponseText = await generateBotResponse({
+    // Call Hermes Bot Engine using Sandbox mode (returns a structured response object)
+    const structuredResponse = await generateBotResponse({
       userMessage,
-      history,
+      history: (history || []).map((m: any) => ({
+        role: m?.role === 'agent' ? 'assistant' : 'user',
+        content: m?.text ?? m?.content ?? '',
+      })),
       projectSlug: 'sandbox',
       customSystemPrompt: basePrompt,
       projectContext: {
@@ -186,6 +189,12 @@ REGLAS DE FORMATO VISUAL Y ESTILO:
         industry: effectiveIndustry,
       },
     });
+
+    // Normalize to plain text for the client (bot-engine may return string or {replyText})
+    const botResponseText =
+      typeof structuredResponse === 'string'
+        ? structuredResponse
+        : structuredResponse?.replyText || 'Lo siento, ocurrió un problema al generar la respuesta.';
 
     // Record intelligence event for Growth OS Mission Control Analytics
     try {

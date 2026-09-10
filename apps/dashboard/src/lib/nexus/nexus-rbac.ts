@@ -152,12 +152,40 @@ export async function getNexusAuthContext(
 
     if (sessionWallet && isVerified) {
       const isSuper = sessionWallet === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || '').toLowerCase();
-      
+
       if (isSuper) {
+        // Resolve completion fields even for SUPER_ADMIN so the registration gate
+        // (!name && !whatsappPhone) can clear after the operator completes their
+        // profile — previously this path returned early and the gate looped forever.
+        const [superUser] = await db
+          .select({ name: users.name, email: users.email })
+          .from(users)
+          .where(eq(users.walletAddress, sessionWallet))
+          .limit(1);
+
+        let email: string | null = superUser?.email ?? null;
+        let name: string | null = superUser?.name ?? null;
+        let whatsappPhone: string | null = null;
+
+        if (email) {
+          const [collab] = await db
+            .select({ collaboratorName: nexusCollaborators.name, whatsappPhone: nexusCollaborators.whatsappPhone })
+            .from(nexusCollaborators)
+            .where(eq(nexusCollaborators.email, email))
+            .limit(1);
+          if (collab) {
+            name = name || collab.collaboratorName || null;
+            whatsappPhone = collab.whatsappPhone || null;
+          }
+        }
+
         return {
           isAuthenticated: true,
           role: 'SUPER_ADMIN',
           wallet: sessionWallet,
+          email,
+          name,
+          whatsappPhone,
           permissions: resolveEffectivePermissions('SUPER_ADMIN'),
         };
       }
