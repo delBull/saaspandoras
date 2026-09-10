@@ -57,12 +57,14 @@ export function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/admin", request.url));
     }
-    // Exclude profile and portal routes from the /admin rewrite:
+    // Exclude profile, portal, deal and nexus routes from the /admin rewrite:
     // - /profile/projects/[slug]/manage — founder dashboard accessible from admin
     // - /portal/ — portal layout has its own auth guard; prefixing breaks resolvePortalContext
+    // - /deal/ — Sovereign Sign portals must work on any subdomain
     if (!pathname.startsWith("/admin/") && pathname !== "/admin"
         && !pathname.startsWith("/profile/")
         && !pathname.startsWith("/portal/")
+        && !pathname.startsWith("/deal/")
         && !pathname.startsWith("/nexus/") && pathname !== "/nexus") {
       return NextResponse.rewrite(new URL(`/admin${pathname}`, request.url));
     }
@@ -74,7 +76,8 @@ export function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/nexus", request.url));
     }
-    if (!pathname.startsWith("/nexus/") && pathname !== "/nexus") {
+    // /deal/* stays untouched on the nexus subdomain (Sovereign Sign portals).
+    if (!pathname.startsWith("/nexus/") && pathname !== "/nexus" && !pathname.startsWith("/deal/")) {
       return NextResponse.rewrite(new URL(`/nexus${pathname}`, request.url));
     }
   }

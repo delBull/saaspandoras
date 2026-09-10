@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import TaskTerminal, { TerminalTask } from './TaskTerminal';
 import { TaskItem } from './taskTypes';
+import { NexusHermesTerminal } from '@/app/nexus/settings/NexusHermesTerminal';
+import type { OperatorContext } from '@/app/nexus/settings/SettingsClient';
 
 interface IPAsset {
   id: string;
@@ -126,16 +128,26 @@ interface OpsModalProps {
   tasks: TaskItem[];
   setTasks: React.Dispatch<React.SetStateAction<TaskItem[]>>;
   userName?: string;
+  userEmail?: string;
   userRole?: string;
 }
 
-export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userRole }: OpsModalProps) {
+export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userEmail, userRole }: OpsModalProps) {
   const [tab, setTab] = useState<Tab>('TERMINAL');
   const [terminalMode, setTerminalMode] = useState<'TASK' | 'HERMES'>('TASK');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
   const [notifying, setNotifying] = useState(false);
   const [notified, setNotified] = useState(false);
+
+  const operatorContext: OperatorContext | null = userName
+    ? {
+        name: userName,
+        email: userEmail ?? '',
+        role: userRole || 'VIEWER',
+        permissions: {},
+      }
+    : null;
 
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [newAssetName, setNewAssetName] = useState('');
@@ -378,9 +390,13 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
             <div className="p-5 overflow-y-auto flex-1 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-mono uppercase tracking-widest text-purple-300">Adicionador de Tareas Pendientes</p>
+                  <p className="text-xs font-mono uppercase tracking-widest text-purple-300">
+                    {terminalMode === 'HERMES' ? 'Hermes Kernel · Terminal Conversacional' : 'Adicionador de Tareas Pendientes'}
+                  </p>
                   <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
-                    Responde las preguntas del terminal · la tarea queda pendiente y se envía a #pandoras-security
+                    {terminalMode === 'HERMES'
+                      ? 'Misma terminal que Nexus Settings · /api/nexus/hermes-chat'
+                      : 'Responde las preguntas del terminal · la tarea queda pendiente y se envía a #pandoras-security'}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -388,14 +404,18 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                     onClick={() => setTerminalMode(terminalMode === 'HERMES' ? 'TASK' : 'HERMES')}
                     className={`hidden sm:block px-3 py-1 rounded-lg border font-mono text-[10px] transition-colors ${terminalMode === 'HERMES' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20'}`}
                   >
-                    sudo wake_up_hermes
+                    {terminalMode === 'HERMES' ? 'sudo task_terminal' : 'sudo wake_up_hermes'}
                   </button>
                   <span className="hidden sm:block px-2 py-1 rounded-lg border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono text-[10px]">
                     sudo nexus ops
                   </span>
                 </div>
               </div>
-              <TaskTerminal mode={terminalMode} onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
+              {terminalMode === 'HERMES' ? (
+                <NexusHermesTerminal role={userRole} operatorContext={operatorContext} />
+              ) : (
+                <TaskTerminal mode="TASK" onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
+              )}
             </div>
           )}
 

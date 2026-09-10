@@ -39,7 +39,28 @@ interface NexusCommandCenterProps {
   iframeToken?: string;
 }
 
-const SECTIONS = [
+interface NexusLink {
+  label: string;
+  note?: string;
+  href: string;
+  external?: boolean;
+  cap?: string | string[];
+}
+
+interface NexusSection {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  border: string;
+  text: string;
+  bgAccent: string;
+  cap?: string | string[];
+  links: NexusLink[];
+}
+
+const SECTIONS: NexusSection[] = [
   {
     id: "core",
     title: "Core Protocol",
@@ -49,12 +70,18 @@ const SECTIONS = [
     border: "border-blue-500/30",
     text: "text-blue-400",
     bgAccent: "bg-blue-500/10",
+    cap: "nexus.manage",
     links: [
       { label: "Deal Room & Transaction Rooms", note: "Redacción, revisión y firma de propuestas y acuerdos institucionales.", href: "/nexus/rooms" },
       { label: "Academy & Leadership Curriculum", note: "Alumnos, curriculum COO/CFO y emisión de blueprints de certificación.", href: "/nexus/academy" },
       { label: "Nexus Settings & Roles (RBAC)", note: "Gestión centralizada de roles y permisos de la organización.", href: "/nexus/settings" },
-      { label: "Books Vault Constitucional", note: "Constitución y Libros Fundacionales I-IX con doble capa criptográfica.", href: "https://app.pandoras.finance/libros/constitucion", external: true },
-      { label: "Institutional Data Room", note: "Due diligence y compliance institucional.", href: "https://pandoras.finance/en/institutional", external: true },
+      { label: "Protocol Overview", note: "Visión del protocolo y sus capas.", href: "/protocol" },
+      { label: "Utility Protocol", note: "Capa utilitaria del ecosistema.", href: "/utility-protocol" },
+      { label: "Protocol Story", note: "Historia y evolución del protocolo.", href: "/protocol-story" },
+      { label: "Litepaper", note: "Resumen ejecutivo e institucional.", href: "/litepaper" },
+      { label: "Whitepaper", note: "Documento técnico completo.", href: "/whitepaper" },
+      { label: "Books Vault Constitucional", note: "Constitución y Libros Fundacionales I-IX con doble capa criptográfica.", href: "https://pandoras.finance/libros/constitucion", external: true },
+      { label: "Institutional Data Room", note: "Due diligence y compliance institucional.", href: "https://pandoras.finance/institutional-book", external: true },
     ]
   },
   {
@@ -66,12 +93,23 @@ const SECTIONS = [
     border: "border-emerald-500/30",
     text: "text-emerald-400",
     bgAccent: "bg-emerald-500/10",
+    cap: ["growth.manage", "marketing.manage"],
     links: [
-      { label: "Developer Hub & SDK", note: "API keys, webhooks y herramientas para desarrolladores del ecosistema.", href: "/nexus/developers" },
-      { label: "Marketing Leads & Flow", note: "Campañas, funnels y leads comerciales.", href: "/admin/marketing" },
+      { label: "Growth OS (Ecosystem Portal)", note: "Portal del ecosistema.", href: "/growth-os" },
+      { label: "Developer Hub & SDK", note: "API keys, webhooks y herramientas para desarrolladores del ecosistema.", href: "/nexus/developers", cap: "nexus.manage" },
+      { label: "Marketing Leads & Flow", note: "Campañas, funnels y leads comerciales.", href: "/admin/marketing", cap: "marketing.manage" },
       { label: "Hermes HITL Inbox", note: "Command center human-in-the-loop.", href: "/growth-os/hermes/inbox" },
       { label: "Cognitive Hub & Agents", note: "Orquestación de agentes Hermes en Growth OS.", href: "/growth-os/hermes" },
-      { label: "Tenant Portal (Preview)", note: "Experiencia in-portal interactiva.", href: "/portal" },
+      { label: "Pandora's Media Co (Demand Engine)", note: "Motor de demanda mediática.", href: "/media" },
+      { label: "Pandora's Media Co (Dashboard)", note: "Consola de la media company.", href: "https://media.pandoras.finance", external: true },
+      { label: "Asset Capitalization", note: "Capitalización de activos.", href: "/asset-capitalization" },
+      { label: "Ambassadors", note: "Programa de embajadores.", href: "/ambassadors" },
+      { label: "Founders", note: "Programa de founders.", href: "/founders" },
+      { label: "Bitcoin Initiative", note: "Capa BTC del ecosistema.", href: "/bitcoin-initiative" },
+      { label: "Events", note: "Eventos y activaciones.", href: "/events" },
+      { label: "Join", note: "Únete al ecosistema.", href: "/join" },
+      { label: "Waitlist Success", note: "Post-registro waitlist.", href: "/waitlist-success" },
+      { label: "Tenant Portal (Preview)", note: "Experiencia in-portal interactiva.", href: "/portal", cap: "nexus.manage" },
       { label: "Retail End-User Portal", note: "Frontend B2C de consumo.", href: "https://app.pandoras.finance", external: true },
     ]
   },
@@ -84,14 +122,16 @@ const SECTIONS = [
     border: "border-amber-500/30",
     text: "text-amber-400",
     bgAccent: "bg-amber-500/10",
+    cap: "ecosystem",
     links: [
       { label: "Nexus Settings & Roles (RBAC)", note: "Team, agentes cognitivos y terminal Hermes.", href: "/nexus/settings" },
-      { label: "Collaborators & Aprobaciones", note: "Aprobar accesos PENDING y gestionar colaboradores.", href: "/admin/collaborators" },
-      { label: "Usuarios & Identidad", note: "Directorio de usuarios del ecosistema.", href: "/admin/users" },
-      { label: "Hermes QA & Prompt Studio", note: "Suite de pruebas conversacionales y auditoría de inferencias.", href: "/admin/hermes" },
-      { label: "Academy Control Plane", note: "Gestión administrativa de la academia.", href: "/admin/academy" },
+      { label: "Collaborators & Aprobaciones", note: "Aprobar accesos PENDING y gestionar colaboradores.", href: "/admin/collaborators", cap: "users.manage" },
+      { label: "Usuarios & Identidad", note: "Directorio de usuarios del ecosistema.", href: "/admin/users", cap: "users.manage" },
+      { label: "Hermes QA & Prompt Studio", note: "Suite de pruebas conversacionales y auditoría de inferencias.", href: "/admin/hermes", cap: "users.manage" },
+      { label: "Academy Control Plane", note: "Gestión administrativa de la academia.", href: "/admin/academy", cap: "users.manage" },
       { label: "Onboarding Unificado", note: "Wizard de provisioning de operadores.", href: "/onboarding" },
-      { label: "HQ Platform Governance", note: "Consola admin, accounting y tenant lens.", href: "/admin" },
+      { label: "HQ Platform Governance", note: "Consola admin, accounting y tenant lens.", href: "/admin", cap: "users.manage" },
+      { label: "Access / Login", note: "Acceso al ecosistema.", href: "/access" },
     ]
   },
   {
@@ -103,11 +143,19 @@ const SECTIONS = [
     border: "border-purple-500/30",
     text: "text-purple-400",
     bgAccent: "bg-purple-500/10",
+    cap: "institutionalBooks",
     links: [
-      { label: "Institutional Data Room", note: "Due diligence y compliance institucional.", href: "https://pandoras.finance/en/institutional", external: true },
-      { label: "Books Vault Constitucional", note: "Constitución y Libros Fundacionales I-IX.", href: "https://app.pandoras.finance/libros/constitucion", external: true },
+      { label: "Pandoras Institutional Framework (Libros 0–VIII)", note: "Cuerpo documental institucional.", href: "https://pandoras.finance/libros", external: true },
+      { label: "IOM System & Architecture (5 Layers)", note: "Sistema operativo institucional.", href: "https://pandoras.finance/libros/constitucion", external: true },
+      { label: "Pandoras Asset Standard (PAS v1.0)", note: "Estándar de activos, Libro IV.", href: "https://pandoras.finance/libros/libro-iv", external: true },
+      { label: "Licensing Framework (Libro V)", note: "Frame de licenciamiento.", href: "https://pandoras.finance/libros/libro-v", external: true },
+      { label: "Tech Platform & Capital Engine (Libro VI)", note: "Plataforma tecnológica y capital.", href: "https://pandoras.finance/libros/libro-vi", external: true },
+      { label: "Growth & Expansion Roadmap (Libro VII)", note: "Roadmap de crecimiento.", href: "https://pandoras.finance/libros/libro-vii", external: true },
+      { label: "Institutional Doctrine (Libro VIII)", note: "Doctrina institucional.", href: "https://pandoras.finance/libros/libro-viii", external: true },
+      { label: "Hermes Agent OS & Kernel Architecture (Libro IX)", note: "Arquitectura del kernel Hermes.", href: "https://pandoras.finance/libros/libro-ix", external: true },
+      { label: "Institutional Data Room", note: "Due diligence y compliance institucional.", href: "https://pandoras.finance/institutional-book", external: true },
       { label: "Academy & Blueprints", note: "Alumnos y curriculum de liderazgo.", href: "/nexus/academy" },
-      { label: "Academy Control Plane", note: "Evaluación y emisión de certificaciones.", href: "/admin/academy" },
+      { label: "Academy Control Plane", note: "Evaluación y emisión de certificaciones.", href: "/admin/academy", cap: "users.manage" },
     ]
   },
   {
@@ -119,12 +167,14 @@ const SECTIONS = [
     border: "border-rose-500/30",
     text: "text-rose-400",
     bgAccent: "bg-rose-500/10",
+    cap: "ecosystem",
     links: [
       { label: "Hermes OS Terminal", note: "Consola conversacional para operadores (texto o voz).", href: "/nexus/settings" },
       { label: "Cognitive Agents", note: "Agentes cognitivos y memoria vectorial.", href: "/nexus/settings" },
       { label: "Hermes HITL Inbox", note: "Command center human-in-the-loop.", href: "/growth-os/hermes/inbox" },
       { label: "Cognitive Hub", note: "Sync cognitivo y hub de agentes.", href: "/growth-os/hermes" },
-      { label: "Hermes QA & Prompt Studio", note: "Simulación de respuestas y auditoría de seguridad.", href: "/admin/hermes" },
+      { label: "Hermes QA & Prompt Studio", note: "Simulación de respuestas y auditoría de seguridad.", href: "/admin/hermes", cap: "users.manage" },
+      { label: "Libro IX · Hermes Architecture", note: "Specs de arquitectura, contratos, SDK, APIs.", href: "https://pandoras.finance/libros/libro-ix", external: true },
     ]
   }
 ];
@@ -163,6 +213,18 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   const tourRole: EcosystemTourRole = validRoles.includes(role as EcosystemTourRole)
     ? (role as EcosystemTourRole)
     : "VIEWER";
+
+  // Visibilidad DINÁMICA de secciones y enlaces según capabilities del actor.
+  // Las capabilities se resuelven server-side (rol base + overrides por
+  // colaborador persistidos en BD, editables desde Settings → Permissions Drawer).
+  // Nota: institutionalBooks está hard-locked a SUPER_ADMIN por el security guard.
+  const hasCap = (cap?: string | string[]) => {
+    if (!cap) return true;
+    const perms = (auth.permissions ?? {}) as unknown as Record<string, boolean | undefined>;
+    return (Array.isArray(cap) ? cap : [cap]).some((c) => Boolean(perms[c]));
+  };
+  const visibleSections = SECTIONS.filter((s) => hasCap(s.cap));
+  const sectionLinks = (sec: NexusSection) => sec.links.filter((l) => hasCap(l.cap));
 
   const [customStations, setCustomStations] = useState<any[] | undefined>();
   useEffect(() => {
@@ -240,6 +302,13 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
           src={`${process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandoras.finance'}/nexus/rooms${auth.wallet ? `?wallet=${auth.wallet}` : ''}${iframeToken ? `${auth.wallet ? '&' : '?'}token=${iframeToken}` : ''}`} 
           className="w-full h-full border-none" 
         />
+      </div>
+
+      {/* ── AMBIENT GLOW + GRID (identidad oscura del nexus anterior) ── */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/4 left-1/4 w-[45vw] h-[45vw] bg-purple-500/[0.05] rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute -bottom-1/4 right-1/4 w-[35vw] h-[35vw] bg-blue-500/[0.05] rounded-full blur-[110px] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]" />
       </div>
 
       {/* ── SIDEBAR OVERLAY / GUIDE ── */}
@@ -444,33 +513,38 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 auto-rows-fr gap-4 md:gap-5 h-full"
               >
-                {SECTIONS.map((sec, i) => (
+                {visibleSections.map((sec, i) => {
+                  const linksForRole = sectionLinks(sec);
+                  return (
                   <motion.div
                     layoutId={`card-${sec.id}`}
                     key={sec.id}
                     onClick={() => setActiveSection(sec.id)}
-                    className={`group relative overflow-hidden rounded-3xl border bg-gradient-to-br ${sec.color} ${sec.border} p-6 md:p-7 flex flex-col justify-between min-h-[280px] md:min-h-[340px] xl:min-h-0 cursor-pointer transition-all hover:scale-[1.015] hover:shadow-2xl hover:shadow-black/60`}
+                    className={`group relative overflow-hidden rounded-3xl border ${sec.border} bg-[#0C0C10] p-6 md:p-7 flex flex-col justify-between min-h-[280px] md:min-h-[340px] xl:min-h-0 cursor-pointer transition-all hover:scale-[1.015] hover:shadow-2xl hover:shadow-black/60 hover:border-white/25`}
                   >
+                    {/* glow de color (identidad oscura vieja) */}
+                    <div className={`absolute -top-24 -right-24 w-64 h-64 rounded-full bg-gradient-to-br ${sec.color} opacity-25 blur-[90px] pointer-events-none transition-opacity duration-500 group-hover:opacity-40`} />
                     {/* drawer handle */}
                     <div className="absolute top-3 left-1/2 -translate-x-1/2 w-14 h-1.5 rounded-full bg-white/10 group-hover:bg-white/30 transition-colors" />
-                    <span className={`absolute top-4 right-5 font-mono text-xs tracking-widest ${sec.text} opacity-60`}>
+                    <span className={`absolute top-4 right-5 font-mono text-xs tracking-widest ${sec.text} opacity-70`}>
                       0{i + 1}
                     </span>
-                    <div className="pt-3 flex items-start justify-between">
+                    <div className="relative pt-3 flex items-start justify-between">
                       <div className={`p-3.5 rounded-2xl ${sec.bgAccent} ring-1 ring-white/5`}>
                         <sec.icon className={`w-7 h-7 ${sec.text}`} />
                       </div>
                       <ChevronRight className={`w-5 h-5 ${sec.text} opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0`} />
                     </div>
-                    <div className="mt-auto pt-6 space-y-2">
+                    <div className="relative mt-auto pt-6 space-y-2">
                       <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">{sec.title}</h3>
                       <p className="text-sm text-zinc-400 leading-relaxed">{sec.description}</p>
                       <span className="inline-flex items-center gap-1.5 text-[11px] font-medium mt-2 rounded-full px-3 py-1 bg-white/5 border border-white/10 text-zinc-300 group-hover:text-white group-hover:border-white/20 transition-colors">
-                        {sec.links.length} módulos <ChevronRight className="w-3 h-3" />
+                        {linksForRole.length} módulos <ChevronRight className="w-3 h-3" />
                       </span>
                     </div>
                   </motion.div>
-                ))}
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>
@@ -498,7 +572,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                 transition={{ type: "tween", duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
                 className="fixed inset-y-0 right-0 z-50 w-full sm:w-[620px] lg:w-[720px] bg-[#0C0C10]/95 backdrop-blur-2xl border-l border-white/10 overflow-y-auto custom-scrollbar"
               >
-                {SECTIONS.filter(s => s.id === activeSection).map(sec => (
+                {visibleSections.filter(s => s.id === activeSection).map(sec => (
                   <div key={sec.id} className="relative min-h-full flex flex-col">
                     <div className={`absolute inset-0 bg-gradient-to-br ${sec.color} opacity-40 pointer-events-none`} />
 
@@ -535,7 +609,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
                       {/* Todos los módulos / enlaces en grande */}
                       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {sec.links.map((link, idx) => (
+                        {sectionLinks(sec).map((link, idx) => (
                           <Link 
                             key={idx} 
                             href={link.href}
@@ -679,6 +753,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         tasks={tasks}
         setTasks={setTasks}
         userName={auth.name ?? undefined}
+        userEmail={auth.email ?? undefined}
         userRole={role ?? undefined}
       />
     </div>

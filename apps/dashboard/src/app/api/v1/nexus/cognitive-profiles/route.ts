@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       .limit(1);
 
     if (records.length === 0) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      return NextResponse.json({ profile: null });
     }
 
     return NextResponse.json({ profile: records[0] });
