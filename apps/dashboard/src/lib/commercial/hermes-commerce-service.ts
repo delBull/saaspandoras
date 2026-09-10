@@ -21,12 +21,12 @@ import { sendPaymentNotification } from '@/lib/discord/notifier';
 
 export interface HermesProposalInput {
   offerId: string;
-  email: string;
+  email?: string;
   name?: string;
   phone?: string;
   whatsapp?: string;
   companyName?: string;
-  source?: 'hermes' | 'simulator' | 'api';
+  source?: 'hermes' | 'simulator' | 'api' | 'whatsapp';
   attributionRep?: string;
   notes?: string;
   /**

@@ -29,7 +29,7 @@ export interface CommercialOffer {
 
 export interface OfferLinkMetadata {
   offerId: string;
-  source: 'hermes' | 'admin' | 'simulator' | 'api';
+  source: 'hermes' | 'admin' | 'simulator' | 'api' | 'whatsapp';
   attributionRep?: string;
   fulfillmentType: FulfillmentType;
   productKey: ProductKey;

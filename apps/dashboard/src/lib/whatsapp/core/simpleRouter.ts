@@ -122,10 +122,26 @@ async function handleUtilityFlow(message: string, step = 0, phone?: string, proj
       } catch (e) { console.error('[Utility] Campaign Error:', e); }
     }
 
+    let sowAddendum = '';
+    if (phone) {
+      try {
+        const checkout = await generateWhatsAppCheckoutLink({
+          phone,
+          offerId: 'sow_tier_1_viability',
+          notes: 'Filtro de Viabilidad Q1-Q3 completado via WhatsApp',
+        });
+        if (checkout?.url) {
+          sowAddendum = `\n\nSi deseas formalizar el Dictamen Ejecutivo con entrega en 48-72h (SOW Tier 1 — $${checkout.amount} ${checkout.currency}):\n🔗 ${checkout.url}`;
+        }
+      } catch (err) {
+        console.warn('[Utility Flow] Non-blocking SOW checkout creation error:', err);
+      }
+    }
+
     return {
       handled: true,
       flowType: 'utility',
-      response: `Gracias.\n\nCon esto evaluamos viabilidad funcional, no diseño ni narrativa.\nTu respuesta entra ahora a revisión arquitectónica.\n\nSi hay claridad suficiente:\n• Te indicaremos el siguiente paso técnico\n\nSi hay ambigüedad:\n• Te devolveremos el punto exacto donde colapsa el modelo\n\nNota: No todos los protocolos deben construirse aún.`,
+      response: `Gracias.\n\nCon esto evaluamos viabilidad funcional, no diseño ni narrativa.\nTu respuesta entra ahora a revisión arquitectónica.\n\nSi hay claridad suficiente:\n• Te indicaremos el siguiente paso técnico\n\nSi hay ambigüedad:\n• Te devolveremos el punto exacto donde colapsa el modelo\n\nNota: No todos los protocolos deben construirse aún.${sowAddendum}`,
       isCompleted: true,
       action: 'flow_completed'
     };
@@ -722,6 +738,43 @@ async function logWhatsAppMessage(phone: string, direction: 'incoming' | 'outgoi
 }
 
 /**
+ * Genera un checkout link canónico y seguro para WhatsApp utilizando
+ * el catálogo canónico (COMMERCIAL_OFFERS) y el servicio de propuestas.
+ */
+export async function generateWhatsAppCheckoutLink(params: {
+  phone: string;
+  offerId: string;
+  contactName?: string;
+  notes?: string;
+}): Promise<{ url: string; title: string; amount: string; currency: string } | null> {
+  try {
+    const { proposeHermesCommercialOffer } = await import('@/lib/commercial/hermes-commerce-service');
+    const res = await proposeHermesCommercialOffer({
+      offerId: params.offerId,
+      whatsapp: params.phone,
+      name: params.contactName,
+      source: 'whatsapp',
+      notes: params.notes || 'Enlace solicitado via WhatsApp',
+      autoActivate: true, // Link activo para cobro directo
+    });
+
+    if (res.success && res.linkId) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+      return {
+        url: `${baseUrl}/pay/${res.linkId}`,
+        title: res.offer?.title || 'Hermes Runtime',
+        amount: res.offer?.amount || '299.00',
+        currency: res.offer?.currency || 'USD',
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[WhatsApp Checkout] Error generating payment link:', err);
+    return null;
+  }
+}
+
+/**
  * FUNCIÓN PRINCIPAL DE ROUTING SIMPLIFICADO
  */
 export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
@@ -803,6 +856,38 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       };
 
       const lowerText = messageText.toLowerCase().trim();
+
+      // CHECK FOR DIRECT PAYMENT INTENT (WhatsApp Commerce Checkout)
+      const isPaymentIntent = /\b(pagar|link de pago|enlace de pago|comprar hermes|contratar|adquirir hermes|checkout|datos de pago|cuenta bancaria)\b/i.test(lowerText);
+      if (isPaymentIntent) {
+        const checkout = await generateWhatsAppCheckoutLink({
+          phone,
+          offerId: 'hermes_starter_monthly',
+          contactName: payload.contactName || 'Prospecto WhatsApp',
+          notes: `Solicitud de enlace de cobro directa via WhatsApp: "${messageText.substring(0, 100)}"`,
+        });
+
+        if (checkout) {
+          result = {
+            handled: true,
+            flowType: existingFlow || 'commercial_checkout',
+            response: `💳 *Enlace Oficial de Activación — Hermes Runtime*\n\n` +
+              `• *Concepto:* ${checkout.title}\n` +
+              `• *Monto:* $${checkout.amount} ${checkout.currency}/mes\n` +
+              `• *Métodos:* Cripto (USDC en Base) o Transferencia Bancaria (Banregio)\n\n` +
+              `Puedes completar tu pago seguro aquí:\n` +
+              `🔗 ${checkout.url}\n\n` +
+              `_Una vez registrado el pago, tus accesos y canales se provisionan automáticamente._`,
+            action: 'payment_link_sent',
+          };
+
+          await logWhatsAppMessage(phone, 'incoming', messageText, messageId);
+          if (result.response) {
+            await logWhatsAppMessage(phone, 'outgoing', result.response);
+          }
+          return result;
+        }
+      }
 
       // Check for deep links exact match first
       let requestedSwitch = deepLinkMessages[lowerText as keyof typeof deepLinkMessages];
@@ -971,6 +1056,38 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       });
     } catch (syncErr) {
       console.warn('[SIMPLE-ROUTER] syncLeadAsClient failed (non-blocking):', syncErr);
+    }
+
+    // Check if initial message is a direct payment intent
+    const initialLower = messageText.toLowerCase().trim();
+    const isDirectPayment = /\b(pagar|link de pago|enlace de pago|comprar hermes|contratar|adquirir hermes|checkout|datos de pago|cuenta bancaria)\b/i.test(initialLower);
+    if (isDirectPayment) {
+      const checkout = await generateWhatsAppCheckoutLink({
+        phone,
+        offerId: 'hermes_starter_monthly',
+        contactName: payload.contactName || 'Prospecto WhatsApp',
+        notes: `Primer contacto solicitando pago directo: "${messageText.substring(0, 100)}"`,
+      });
+      if (checkout) {
+        const directResult: FlowResult = {
+          handled: true,
+          flowType: 'commercial_checkout',
+          response: `💳 *Enlace Oficial de Activación — Hermes Runtime*\n\n` +
+            `• *Concepto:* ${checkout.title}\n` +
+            `• *Monto:* $${checkout.amount} ${checkout.currency}/mes\n` +
+            `• *Métodos:* Cripto (USDC en Base) o Transferencia Bancaria (Banregio)\n\n` +
+            `Puedes completar tu pago seguro aquí:\n` +
+            `🔗 ${checkout.url}\n\n` +
+            `_Una vez registrado el pago, tus accesos y canales se provisionan automáticamente._`,
+          action: 'payment_link_sent',
+        };
+
+        await logWhatsAppMessage(phone, 'incoming', messageText, messageId);
+        if (directResult.response) {
+          await logWhatsAppMessage(phone, 'outgoing', directResult.response);
+        }
+        return directResult;
+      }
     }
 
     // Procesar mensaje inicial
