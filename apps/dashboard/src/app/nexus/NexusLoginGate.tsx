@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, Lock, Mail, ArrowRight, Wallet, CheckCircle2, AlertCircle } from "lucide-react";
+import { Shield, Lock, Mail, ArrowRight, Wallet, CheckCircle2, AlertCircle, ChevronDown, MessageCircle } from "lucide-react";
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -311,6 +311,58 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
             </div>
           )}
         </div>
+
+        {/* Why these methods */}
+        <details className="group w-full bg-[#0e0e16] border border-white/10 rounded-2xl overflow-hidden">
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-3 p-4 text-xs font-semibold text-zinc-300 hover:bg-white/[0.03] transition-colors">
+            <span className="flex items-center gap-2.5">
+              <Shield className="w-4 h-4 text-amber-400" />
+              ¿Por qué dos métodos de autenticación?
+            </span>
+            <ChevronDown className="w-4 h-4 text-zinc-500 group-open:rotate-180 transition-transform" />
+          </summary>
+
+          <div className="px-4 pb-4 space-y-3">
+            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <div className={`p-2.5 rounded-lg shrink-0 ${"bg-blue-500/10 border border-blue-500/30 text-blue-400"}`}>
+                <Wallet className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-blue-300 uppercase tracking-wider mb-1">Wallet Web3 — Identidad On-Chain</div>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Crea tu Smart Wallet institucional. Necesaria para firmar transacciones, acceder a
+                  activos tokenizados y participar en gobernanza on-chain dentro del ecosistema Pandoras.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <div className="p-2.5 rounded-lg shrink-0 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider mb-1">Email — Acceso al Ecosistema Interno</div>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Recibe Magic Links de acceso, notificaciones de deals, reportes de Hermes y
+                  comunicaciones operativas cifradas del ecosistema Pandoras.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <div className="p-2.5 rounded-lg shrink-0 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <MessageCircle className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider mb-1">¿Por qué tu número de WhatsApp?</div>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  El número de WhatsApp permite que la IA de Hermes te asigne tareas y te envíe
+                  notificaciones críticas directamente a tu teléfono mediante el Meta Graph API.
+                </p>
+              </div>
+            </div>
+          </div>
+        </details>
 
         {/* Footer */}
         <p className="text-center text-[11px] text-zinc-500">
