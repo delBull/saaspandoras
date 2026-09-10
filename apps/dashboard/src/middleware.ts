@@ -249,7 +249,7 @@ export function middleware(request: NextRequest) {
 
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), display-capture=(), fullscreen=(self), geolocation=(), microphone=(), payment=(), usb=()');
+    response.headers.set('Permissions-Policy', 'camera=(), display-capture=(), fullscreen=(self), geolocation=(), microphone=(self), payment=(), usb=()');
 
   // 🛡️ Anti-cache for HTML pages: Prevent stale JS causing login redirect loops
   if (!pathname.startsWith('/api') && !pathname.startsWith('/_next')) {

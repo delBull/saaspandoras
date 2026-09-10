@@ -253,66 +253,132 @@ export const SNARAI_CANONICAL_CLAIM_CONTRACT: TenantClaimContract = {
 // 1.1 CANONICAL PANDORAS / HERMES OS CLAIM CONTRACT
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { PANDORAS_ECOSYSTEM_CLAIMS } from './ecosystem-doctrine';
+import { computeCanonicalCidV1ForData } from './ipfs/canonical-cid';
+import { SovereignIpfsAlerting } from './ipfs/ipfs-alerting';
+
+const pandorasPayload = JSON.stringify({
+  tenantId: 'pandoras',
+  version: 1,
+  claims: PANDORAS_ECOSYSTEM_CLAIMS,
+});
+const pandorasContractHash = crypto.createHash('sha256').update(pandorasPayload, 'utf8').digest('hex');
+const pandorasPinPayload: Record<string, unknown> = {
+  tenantId: 'pandoras',
+  version: 1,
+  claims: PANDORAS_ECOSYSTEM_CLAIMS,
+  contractHash: pandorasContractHash,
+};
+const pandorasIpfsCid = computeCanonicalCidV1ForData(pandorasPinPayload);
+
 export const PANDORAS_CANONICAL_CLAIM_CONTRACT: TenantClaimContract = {
   tenantId: 'pandoras',
   version: 1,
   governanceStatus: 'ACTIVE',
-  contractHash: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
-  ipfsCid: 'bafkreigpandorasgrowthoscoreintel0123456789abcdef0123456789abcdef',
-  ipfsUri: 'ipfs://bafkreigpandorasgrowthoscoreintel0123456789abcdef0123456789abcdef',
+  contractHash: pandorasContractHash,
+  ipfsCid: pandorasIpfsCid,
+  ipfsUri: `ipfs://${pandorasIpfsCid}`,
   updatedAt: new Date().toISOString(),
-  claims: [
-    {
-      claimId: 'claim_hermes_growth_intelligence',
-      category: 'FACT',
-      canonicalAssertion: "Hermes es el sistema operativo cognitivo y de inteligencia de crecimiento de Pandora's Growth OS.",
-      permittedPhrasings: [
-        'inteligencia de crecimiento de Pandora',
-        'sistema operativo cognitivo Hermes OS',
-        'oficial de inteligencia de crecimiento',
-        'infraestructura de agentes autónomos',
-      ],
-      provenance: {
-        artifactId: 'pandoras-hermes-core',
-        contentHash: '1111111111111111111111111111111111111111111111111111111111111111',
-        ipfsCid: 'bafkreighermescoreintelligencefact0123456789abcdef0123456789abc',
-        version: 1,
-      },
-    },
-    {
-      claimId: 'claim_pandoras_platform_capabilities',
-      category: 'FACT',
-      canonicalAssertion: "Pandora's Growth OS permite a empresas desplegar ecosistemas de agentes autónomos, gobernanza y tokenización de activos bajo su propia marca.",
-      permittedPhrasings: [
-        'plataforma de infraestructura para empresas autónomas',
-        'tokenización de activos y gobernanza descentralizada',
-        'soporte de marketing, tokenomics y activos inmobiliarios',
-      ],
-      provenance: {
-        artifactId: 'pandoras-platform-capabilities',
-        contentHash: '2222222222222222222222222222222222222222222222222222222222222222',
-        ipfsCid: 'bafkreigpandorasplatformcapabilities0123456789abcdef012345678',
-        version: 1,
-      },
-    },
-    {
-      claimId: 'claim_sovereign_knowledge_vault',
-      category: 'FACT',
-      canonicalAssertion: "Hermes OS custodia la información de cada proyecto mediante bóvedas soberanas en IPFS con cifrado de grado institucional y firmas EIP-712.",
-      permittedPhrasings: [
-        'bóvedas soberanas en IPFS',
-        'cifrado institucional y firmas criptográficas',
-        'cero alucinaciones respaldado por contratos de hechos',
-      ],
-      provenance: {
-        artifactId: 'pandoras-sovereign-vault',
-        contentHash: '3333333333333333333333333333333333333333333333333333333333333333',
-        ipfsCid: 'bafkreigsovereignknowledgevaultfact0123456789abcdef0123456789',
-        version: 1,
-      },
-    },
-  ],
+  claims: PANDORAS_ECOSYSTEM_CLAIMS,
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1.2 SOVEREIGN SEALING — Real IPFS anchor (Railway Kubo node, K27 failover)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PandorasContractSealReceipt {
+  /** Canonical derived CID (bafkrei...) */
+  derivedCid: string;
+  /** CID reported by the sovereign node on pin */
+  pinnedCid?: string;
+  /** Pin operation completed against a real provider */
+  pinned: boolean;
+  /** pinnedCid === derivedCid (content-addressed dual fidelity) */
+  integrity: boolean;
+  provider?: string;
+  repoMirrored?: boolean;
+  attemptedAt: string;
+  error?: string;
+}
+
+let pandorasSealReceipt: PandorasContractSealReceipt | null = null;
+let pandorasSealInFlight: Promise<PandorasContractSealReceipt> | null = null;
+let pandorasSealDeferred = false;
+
+/** Observabilidad: receipt del sellado canónico (última corrida). */
+export function getPandorasContractSealReceipt(): PandorasContractSealReceipt | null {
+  return pandorasSealReceipt;
+}
+
+/**
+ * Ancla el payload canónico de PANDORAS al nodo IPFS soberano REAL (Kubo/Cluster en Railway,
+ * con failover a Pinata según StoragePolicy de CLAIM_CONTRACT) y verifica la fidelidad:
+ * el CID del nodo debe ser idéntico al CID derivado criptográficamente.
+ */
+export async function ensurePandorasContractSealed(): Promise<PandorasContractSealReceipt> {
+  if (pandorasSealReceipt?.integrity && pandorasSealReceipt?.pinned) return pandorasSealReceipt;
+  if (pandorasSealInFlight) return pandorasSealInFlight;
+
+  pandorasSealInFlight = (async () => {
+    const receipt: PandorasContractSealReceipt = {
+      derivedCid: pandorasIpfsCid,
+      pinned: false,
+      integrity: false,
+      attemptedAt: new Date().toISOString(),
+    };
+    try {
+      // Provider resolution de Producción: PANDORAS_KUBO_RPC_URL (Railway Kubo) → PINATA_JWT → Mock (no-prod).
+      const orchestrator = new SovereignIpfsOrchestrator();
+
+      if (await orchestrator.exists(pandorasIpfsCid)) {
+        // Ya anclado por una corrida anterior — certificar integridad sin re-pin.
+        receipt.pinned = true;
+        receipt.integrity = true;
+        receipt.provider = 'PERSISTED';
+      } else {
+        const pin = await orchestrator.pinJson(pandorasPinPayload, {
+          name: 'pandoras-canonical-claim-contract-v1.json',
+          category: 'CLAIM_CONTRACT' as any, // StoragePolicy L3: alertas de durabilidad si el espejo falla
+        });
+        receipt.pinnedCid = pin.cid;
+        receipt.provider = pin.provider;
+        receipt.repoMirrored = pin.backupMirrored === true;
+        receipt.pinned = true;
+        receipt.integrity = pin.cid === pandorasIpfsCid;
+
+        if (!receipt.integrity) {
+          // K25 FIDELITY FAIL: los bytes anclados no son los canónicos.
+          console.error(
+            '[ClaimContractEngine] K25 SOVEREIGN FIDELITY FAIL: pinned CID diverges from canonical derivation',
+            JSON.stringify({ derived: pandorasIpfsCid, pinned: pin.cid, provider: pin.provider })
+          );
+          SovereignIpfsAlerting.notifyL3DurabilityDegraded({
+            category: 'CLAIM_CONTRACT' as any,
+            name: 'pandoras-canonical-claim-contract-v1.json',
+            primaryCid: pin.cid,
+            reason: `CID divergence — derived ${pandorasIpfsCid} pinned ${pin.cid}`,
+          } as any).catch(() => {});
+          if (process.env.NODE_ENV === 'production') {
+            throw new Error(`K25 fidelity failure: derived ${pandorasIpfsCid} ≠ pinned ${pin.cid}`);
+          }
+        }
+      }
+    } catch (err: any) {
+      receipt.error = err?.message || 'Sovereign seal failed';
+      console.warn('[ClaimContractEngine] Sovereign seal warning (non-blocking):', receipt.error);
+      // Fail-closed en producción: sin nodo soberano disponible, el sello no puede mentir.
+      if (process.env.NODE_ENV === 'production' && process.env.PANDORAS_KUBO_RPC_URL) {
+        throw err;
+      }
+    } finally {
+      pandorasSealReceipt = receipt;
+      pandorasSealInFlight = null;
+    }
+    return receipt;
+  })();
+
+  return pandorasSealInFlight;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. SOVEREIGN CLAIM CONTRACT ENGINE
@@ -379,7 +445,17 @@ export class ClaimContractEngine {
   ): Promise<TenantClaimContract | undefined> {
     const key = tenantId.toLowerCase().replace(/^org_/, '');
     const cached = this.getContract(key, options);
-    if (cached) return cached;
+    if (cached) {
+      // Lazy Sovereign Seal: started on first serving — pins the canonical payload
+      // to the REAL node (Railway Kubo) and verifies derived≡pinned CID fidelity.
+      if ((key === 'pandoras' || key === 'hermes' || key === 'global' || key === 'generic') && !pandorasSealDeferred) {
+        pandorasSealDeferred = true;
+        void ensurePandorasContractSealed().catch((e) =>
+          console.warn('[ClaimContractEngine] Deferred sovereign seal warning:', e?.message)
+        );
+      }
+      return cached;
+    }
 
     if (db) {
       try {

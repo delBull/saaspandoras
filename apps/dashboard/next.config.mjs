@@ -75,10 +75,10 @@ const nextConfig = {
           // Control referrer leakage
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
 
-          // Restrict browser features (no camera/mic/geolocation unless explicitly needed)
+          // Restrict browser features (mic allowed same-origin for Hermes terminal voice; no camera/geolocation)
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+            value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()',
           },
 
           // HSTS: force HTTPS for 1 year (only applies on HTTPS connections)

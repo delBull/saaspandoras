@@ -49,6 +49,23 @@ export class TenantAuthorityService {
     if (!identifier || typeof identifier !== 'string') return null;
     const cleanId = identifier.trim().replace(/^org_/, '');
 
+    // Canonical Ecosystem Root: pandoras
+    if (cleanId.toLowerCase() === 'pandoras' || identifier.trim().toLowerCase() === 'pandoras') {
+      return {
+        canonicalOrgId: 'pandoras',
+        projectSlug: 'pandoras',
+        projectId: 0,
+        title: "Pandora's Growth OS",
+        tokenPriceUsd: null,
+        fiduciaryEntity: "Pandora's Foundation",
+        status: 'ACTIVE',
+      };
+    }
+
+    if (!db || typeof db.select !== 'function') {
+      return null;
+    }
+
     const [project] = await db
       .select({
         id: projects.id,

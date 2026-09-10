@@ -52,7 +52,9 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
   }
 
   /**
-   * Pins JSON data to Kubo via /api/v0/add?cid-version=1&pin=true
+   * Pins JSON data to Kubo via /api/v0/add?cid-version=1&pin=true&raw-leaves=true
+   * raw-leaves=true guarantees the pinned CID equals the derived canonical raw
+   * CID (bafkrei...) — content-addressed dual fidelity with computeCanonicalCidV1Raw.
    */
   public async pinJson(data: unknown, name?: string): Promise<string> {
     const content = typeof data === 'string' ? data : JSON.stringify(data);
@@ -60,7 +62,7 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
     const blob = new Blob([content], { type: 'application/json' });
     formData.append('file', blob, name || 'hermes-artifact.json');
 
-    const url = `${this.rpcUrl}/api/v0/add?cid-version=1&pin=true&quieter=true`;
+    const url = `${this.rpcUrl}/api/v0/add?cid-version=1&pin=true&quieter=true&raw-leaves=true&to-files=false`;
     const headers = this.getAuthHeaders();
 
     const response = await SafeHttpClient.fetch(url, {

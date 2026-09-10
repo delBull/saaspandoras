@@ -95,8 +95,74 @@ export class CognitiveContextAdapter {
 
         const classificationTier = (pack.classification || (['PUBLIC', 'TENANT_RESTRICTED', 'B2B_RESTRICTED', 'INTERNAL_OPERATIONAL', 'CONFIDENTIAL', 'SECRET'].includes(pack.visibility) ? pack.visibility : 'PUBLIC')) as any;
         
-        // Exclude higher classification tiers from default public reasoning context
-        if (['CONFIDENTIAL', 'SECRET'].includes(classificationTier)) {
+        // Disclosure Clearance Lattice Gate (K26 / Phase 2.2 — Least Privilege Principle)
+        // Authorization = f(Identity, TenantScope, Role, Capabilities/Permissions, DisclosurePolicy)
+        const actorRole = ((effectiveContext.core as any)?.role || '').toUpperCase();
+        const explicitClearance = (effectiveContext.core as any)?.clearance as string | undefined;
+        const tenantId = ((effectiveContext.core as any)?.tenantId || '').toLowerCase().replace(/^org_/, '');
+        const actorPermissions: string[] = (effectiveContext.core as any)?.permissions || [];
+
+        const clearanceRank: Record<string, number> = {
+          PUBLIC: 1,
+          TENANT_RESTRICTED: 2,
+          B2B_RESTRICTED: 3,
+          INTERNAL_OPERATIONAL: 4,
+          CONFIDENTIAL: 5,
+          SECRET: 6,
+        };
+
+        const isPlatformMasterScope = tenantId === 'pandoras' || tenantId === 'master';
+        const hasGovernanceAdminCap = actorPermissions.includes('governance.admin') || actorPermissions.includes('claims.verify');
+        const hasOperationalReadCap = actorPermissions.includes('knowledge.read') || actorPermissions.includes('runtime.respond');
+
+        // Least-Privilege Lattice Resolution:
+        // - CONFIDENTIAL: ONLY platform master scope ('pandoras') with SUPER_ADMIN/OWNER role OR ADMIN with explicit governance capability.
+        // - INTERNAL_OPERATIONAL: Operators or Admins with operational read capabilities.
+        // - TENANT_RESTRICTED: Authenticated tenant members/viewers.
+        // - PUBLIC: All external leads and visitors.
+        let maxClearanceLevel: string = 'PUBLIC';
+        if (isPlatformMasterScope && (['SUPER_ADMIN', 'OWNER'].includes(actorRole) || (actorRole === 'ADMIN' && hasGovernanceAdminCap))) {
+          maxClearanceLevel = 'CONFIDENTIAL';
+        } else if (['SUPER_ADMIN', 'OWNER', 'ADMIN', 'OPERATOR', 'MARKETING'].includes(actorRole) && (isPlatformMasterScope || hasOperationalReadCap)) {
+          maxClearanceLevel = 'INTERNAL_OPERATIONAL';
+        } else if (['VIEWER', 'MEMBER', 'INVESTOR'].includes(actorRole)) {
+          maxClearanceLevel = 'TENANT_RESTRICTED';
+        } else {
+          maxClearanceLevel = 'PUBLIC';
+        }
+
+        // 🛡️ CLEARANCE SPoOF LOCK (Gap closure — explicit clearance can NEVER elevate):
+        // An explicit core.clearance is honored ONLY for actors with grant authority
+        // (master scope + SUPER_ADMIN/OWNER or governance capability). For every other
+        // actor it can only LOWER the ceiling (intersect), never bypass the lattice.
+        if (explicitClearance) {
+          const hasGrantAuthority = isPlatformMasterScope
+            && (['SUPER_ADMIN', 'OWNER'].includes(actorRole)
+              || (actorRole === 'ADMIN' && hasGovernanceAdminCap));
+          if (hasGrantAuthority) {
+            maxClearanceLevel = explicitClearance;
+          } else {
+            const explicitRank = clearanceRank[explicitClearance] ?? 1;
+            const latticeRank = clearanceRank[maxClearanceLevel] ?? 1;
+            maxClearanceLevel = explicitRank <= latticeRank ? explicitClearance : maxClearanceLevel;
+          }
+        }
+
+        // 🛡️ SECRET DOCTRINE LOCK: no clearance path can reach SECRET without the
+        // god-level decree capability resolved server-side ('platform.decrees').
+        if ((clearanceRank[maxClearanceLevel] ?? 1) >= (clearanceRank['SECRET'] ?? 6) && !actorPermissions.includes('platform.decrees')) {
+          maxClearanceLevel = 'CONFIDENTIAL';
+        }
+
+        if ((clearanceRank[maxClearanceLevel] ?? 1) >= (clearanceRank['SECRET'] ?? 6) && !actorPermissions.includes('platform.decrees')) {
+          maxClearanceLevel = 'CONFIDENTIAL';
+        }
+
+        const itemRank = clearanceRank[classificationTier] ?? 1;
+        const maxRank = clearanceRank[maxClearanceLevel] ?? 1;
+
+        // Exclude knowledge facts exceeding actor clearance rank
+        if (itemRank > maxRank) {
           excludedKnowledgeReasons.push({ id: pack.id, reason: 'RESTRICTED_CLASSIFICATION' });
           continue;
         }

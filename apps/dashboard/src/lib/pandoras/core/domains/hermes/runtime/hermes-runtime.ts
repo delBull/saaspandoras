@@ -74,6 +74,7 @@ interface CognitiveTurnSetup {
   controlPlaneContext: import('../knowledge/types').ControlPlaneContext;
   effectiveContext: Awaited<ReturnType<typeof CognitiveContextBuilder.buildEffectiveContext>>;
   memory: Awaited<ReturnType<ConversationMemoryProvider['load']>>;
+  conversationHistory: RuntimeMessage[];
   reasoningContext: Parameters<typeof CognitiveContextAdapter.adapt>[0] extends never
     ? never
     : ReturnType<typeof CognitiveContextAdapter.adapt>['reasoningContext'];
@@ -272,7 +273,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
 
       return {
         runtimeId, organizationId, canonicalTenantId, conversationId, message, controlPlaneContext,
-        effectiveContext, memory, reasoningContext, traceInfo,
+        effectiveContext, memory, conversationHistory, reasoningContext, traceInfo,
         reasoningInput, suggestedActions, traceHandle,
       };
     } catch (error) {
@@ -505,6 +506,29 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         }
       } catch (journeyErr: any) {
         console.warn('[HermesRuntime] Journey auto-navigation warning (non-blocking):', journeyErr?.message);
+      }
+
+      // Step 8e: Governed User Learning Loop (Asynchronous fire-and-forget)
+      // Governed Boundary: Learns ONLY user communication traits into hermesCognitiveProfiles.
+      // CANNOT alter, mutate, or inject into platform institutional truth or Claim Contracts.
+      const actorUserId = input.controlPlaneContext.identity?.userId || input.controlPlaneContext.actorId;
+      if (actorUserId && !actorUserId.startsWith('system_')) {
+        const fullHistoryForLearning = [
+          ...setup.conversationHistory.map((m: any) => ({
+            role: (m.role || 'user').toLowerCase(),
+            content: m.content || '',
+          })),
+          { role: 'user', content: input.message?.content || '' },
+          { role: 'assistant', content: decision.output || '' },
+        ];
+        // Dynamic import to maintain strict architectural decoupling
+        import('@/lib/hermes/memory/learning-loop')
+          .then(({ HermesLearningLoop }) => {
+            return HermesLearningLoop.triggerLearning(actorUserId, fullHistoryForLearning);
+          })
+          .catch(learnErr => {
+            console.warn('[HermesRuntime] Governed learning loop background trigger warning:', learnErr?.message);
+          });
       }
 
       await this.traceRecorder.complete(traceHandle, {
