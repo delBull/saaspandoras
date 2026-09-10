@@ -294,26 +294,19 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#08080A] text-white selection:bg-amber-500/30 flex flex-col">
+    <div className="relative w-full h-screen overflow-hidden bg-[#050508] text-white selection:bg-amber-500/30 flex flex-col">
       
-      {/* ── BACKGROUND IFRAME ── */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none grayscale">
-        <iframe 
-          src={`${process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandoras.finance'}/nexus/rooms${auth.wallet ? `?wallet=${auth.wallet}` : ''}${iframeToken ? `${auth.wallet ? '&' : '?'}token=${iframeToken}` : ''}`} 
-          className="w-full h-full border-none" 
-        />
-      </div>
-
-      {/* ── AMBIENT GLOW + GRID (identidad oscura del nexus anterior) ── */}
+      {/* ── AMBIENT GLOW + GRID (Atmósfera Obsidian Institucional) ── */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/4 left-1/4 w-[45vw] h-[45vw] bg-purple-500/[0.05] rounded-full blur-[120px] mix-blend-screen" />
-        <div className="absolute -bottom-1/4 right-1/4 w-[35vw] h-[35vw] bg-blue-500/[0.05] rounded-full blur-[110px] mix-blend-screen" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]" />
+        <div className="absolute -top-1/4 left-1/4 w-[45vw] h-[45vw] bg-purple-600/[0.04] rounded-full blur-[140px] mix-blend-screen" />
+        <div className="absolute -bottom-1/4 right-1/4 w-[35vw] h-[35vw] bg-amber-500/[0.03] rounded-full blur-[130px] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(120,50,255,0.03),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_75%_75%_at_50%_50%,#000_60%,transparent_100%)] opacity-70" />
       </div>
 
       {/* ── SIDEBAR OVERLAY / GUIDE ── */}
       <div 
-        className={`absolute top-0 bottom-0 left-0 z-40 w-[85%] sm:w-80 bg-[#0C0C10]/95 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col justify-between transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
+        className={`absolute top-0 bottom-0 left-0 z-40 w-[85%] sm:w-80 bg-[#07070A]/95 backdrop-blur-2xl border-r border-white/[0.08] p-6 flex flex-col justify-between transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${
           sidebarOpen ? "translate-x-0 shadow-2xl shadow-black/50" : "-translate-x-full"
         }`}
       >
@@ -426,7 +419,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       >
         <button 
           onClick={() => setShowGuideSidebar(!showGuideSidebar)}
-          className={`h-24 w-6 bg-[#0C0C10]/90 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-white/10 hover:border-amber-500/50 transition-all shadow-xl group rounded-r-xl border-l-0`}
+          className={`h-24 w-6 bg-[#07070A]/90 backdrop-blur-md border border-white/[0.12] flex items-center justify-center hover:bg-white/10 hover:border-amber-500/50 transition-all shadow-xl group rounded-r-xl border-l-0`}
           title="Toggle Sidebar"
         >
           {sidebarOpen ? (
@@ -438,7 +431,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       </div>
 
       {/* ── TOP COMMAND BAR / NAVBAR ── */}
-      <header className="h-12 shrink-0 relative z-20 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] border-b border-white/10 font-mono">
+      <header className="h-12 shrink-0 relative z-20 flex items-center justify-between px-4 md:px-6 bg-[#07070B] border-b border-white/[0.08] font-mono">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-purple-500/30 bg-purple-500/10">
@@ -520,7 +513,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                     layoutId={`card-${sec.id}`}
                     key={sec.id}
                     onClick={() => setActiveSection(sec.id)}
-                    className={`group relative overflow-hidden rounded-3xl border ${sec.border} bg-[#0C0C10] p-6 md:p-7 flex flex-col justify-between min-h-[280px] md:min-h-[340px] xl:min-h-0 cursor-pointer transition-all hover:scale-[1.015] hover:shadow-2xl hover:shadow-black/60 hover:border-white/25`}
+                    className={`group relative overflow-hidden rounded-3xl border ${sec.border} bg-[#0A0A0E]/90 backdrop-blur-md p-6 md:p-7 flex flex-col justify-between min-h-[280px] md:min-h-[340px] xl:min-h-0 cursor-pointer transition-all hover:scale-[1.015] hover:shadow-2xl hover:shadow-black/70 hover:border-white/25`}
                   >
                     {/* glow de color (identidad oscura vieja) */}
                     <div className={`absolute -top-24 -right-24 w-64 h-64 rounded-full bg-gradient-to-br ${sec.color} opacity-25 blur-[90px] pointer-events-none transition-opacity duration-500 group-hover:opacity-40`} />
@@ -570,7 +563,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ type: "tween", duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-                className="fixed inset-y-0 right-0 z-50 w-full sm:w-[620px] lg:w-[720px] bg-[#0C0C10]/95 backdrop-blur-2xl border-l border-white/10 overflow-y-auto custom-scrollbar"
+                className="fixed inset-y-0 right-0 z-50 w-full sm:w-[620px] lg:w-[720px] bg-[#07070A]/95 backdrop-blur-2xl border-l border-white/[0.08] overflow-y-auto custom-scrollbar"
               >
                 {visibleSections.filter(s => s.id === activeSection).map(sec => (
                   <div key={sec.id} className="relative min-h-full flex flex-col">
@@ -726,7 +719,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       </div>
 
       {/* ── BOTTOM STATUS BAR / FOOTBAR ── */}
-      <footer className="h-9 shrink-0 relative z-20 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] border-t border-white/10 font-mono text-[10px] text-zinc-500">
+      <footer className="h-9 shrink-0 relative z-20 flex items-center justify-between px-4 md:px-6 bg-[#07070B] border-t border-white/[0.08] font-mono text-[10px] text-zinc-500">
         <span className="truncate">UNIFIED INDEX · PANDORAS GROWTH OS & PLATFORM ECOSYSTEM</span>
         <span className="hidden sm:flex items-center gap-3 shrink-0">
           <span>NEXUS v2.5</span>

@@ -193,16 +193,16 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
     return (
       <div
         key={task.id}
-        className={`p-3 rounded-xl border transition-all ${
+        className={`p-3.5 rounded-xl border transition-all ${
           task.completed
-            ? 'border-white/5 bg-black/30 opacity-60'
-            : 'border-white/10 bg-[#08080A] hover:border-white/20'
+            ? 'border-white/[0.04] bg-black/40 opacity-50'
+            : 'border-white/[0.06] bg-[#09090D] hover:border-white/15 hover:bg-[#0D0D13]'
         }`}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className={`text-[11px] ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}`}>
+              <span className={`text-[11px] font-medium leading-snug ${task.completed ? 'line-through text-zinc-500' : 'text-zinc-100'}`}>
                 {task.title}
               </span>
             </div>
@@ -431,17 +431,17 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
           {flash}
         </div>
       )}
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5 pb-1">
         {TIPOS.map((t) => {
           const active = tipoFilter === t.label;
           return (
             <button
               key={t.key}
               onClick={() => setTipoFilter(active ? '' : t.label)}
-              className={`px-2 py-0.5 rounded-full border font-mono transition-colors ${
+              className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono transition-all ${
                 active
-                  ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                  : 'bg-black/40 border-white/10 text-zinc-500 hover:border-white/25 hover:text-zinc-300'
+                  ? 'bg-purple-500/20 border-purple-500/50 text-purple-200 shadow-sm shadow-purple-500/20 font-bold'
+                  : 'bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:border-white/15 hover:text-zinc-200 hover:bg-white/[0.05]'
               }`}
               title={t.short}
             >
@@ -473,7 +473,7 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
   );
 
   const renderHeader = (onClose?: () => void) => (
-    <div className="flex items-center justify-between h-11 px-3 border-b border-white/10 bg-black/40 shrink-0">
+    <div className="flex items-center justify-between h-11 px-3.5 border-b border-white/[0.08] bg-[#09090E] shrink-0">
       <span className="flex items-center gap-2">
         <Calendar className="w-3.5 h-3.5 text-purple-300" />
         <span className="text-[10px] font-mono tracking-widest text-zinc-300">TAREAS</span>
@@ -483,14 +483,14 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
           </span>
         )}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => setShowAddForm(!showAddForm)}
           title="HITO 30D: registra un objetivo del plan de ejecución a 30 días (agenda Semana 1-4 o Pendientes) y notifícalo a #pandoras-security"
-          className={`px-2 py-1 rounded-lg border text-[9px] font-mono transition-all flex items-center gap-1 ${
+          className={`px-2.5 py-1 rounded-lg border text-[9px] font-mono transition-all flex items-center gap-1.5 ${
             showAddForm
-              ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-              : 'bg-black/40 border-white/10 text-zinc-300 hover:border-purple-500/30 hover:text-purple-300'
+              ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
+              : 'bg-white/[0.03] border-white/[0.08] text-zinc-300 hover:border-purple-500/30 hover:text-purple-300 hover:bg-white/[0.06]'
           }`}
         >
           <Plus className="w-3 h-3" />
@@ -513,7 +513,7 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
     <>
       {/* Desktop docked panel */}
       <div
-        className={`hidden md:flex flex-col shrink-0 border-l border-white/10 bg-[#0C0C10] transition-[width] duration-300 overflow-hidden ${
+        className={`hidden md:flex flex-col shrink-0 border-l border-white/[0.08] bg-[#07070A] transition-[width] duration-300 overflow-hidden ${
           open ? 'w-[360px]' : 'w-12'
         }`}
       >
@@ -581,7 +581,7 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 260, damping: 30 }}
-                className="fixed inset-y-0 right-0 z-[51] w-[85vw] max-w-sm bg-[#0C0C10] border-l border-white/10 flex flex-col"
+                className="fixed inset-y-0 right-0 z-[51] w-[85vw] max-w-sm bg-[#07070A] border-l border-white/[0.08] flex flex-col"
               >
                 {renderHeader(() => setMobileOpen(false))}
                 <div className="flex-1 min-h-0 flex flex-col">{renderList()}</div>
