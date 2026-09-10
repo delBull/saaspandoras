@@ -3966,10 +3966,18 @@ export const hermesArtifacts = pgTable("hermes_artifacts", {
 
 export type NexusPermissionsOverride = Record<string, boolean>;
 
+export type NexusProvisionStatus = 'ACTIVE' | 'PENDING' | 'REJECTED' | 'DISABLED';
+
 // ── Nexus Collaborators (Magic Link Email Access & RBAC) ───────────────────────────────
 /**
  * @deprecated Esta tabla será migrada enteramente a `users` mediante el sistema unificado
  * de roles y capabilities canónicos (Phase 3+). Actualmente relegada para flujos de onboarding heredados.
+ *
+ * `status` controla el pipeline de aprovisionamiento:
+ * - PENDING  → auto-registro completado por magic link, espera aprobación de un admin.
+ * - ACTIVE   → aprobado (default histórico para no romper colaboradores previos).
+ * - REJECTED → rechazado por admin; sesiones denegadas.
+ * - DISABLED → revocado por admin.
  */
 export const nexusCollaborators = pgTable("nexus_collaborators", {
   id: serial("id").primaryKey(),
@@ -3980,6 +3988,8 @@ export const nexusCollaborators = pgTable("nexus_collaborators", {
   permissions: jsonb("permissions").$type<NexusPermissionsOverride>().default({}),
   discordUserId: varchar("discord_user_id", { length: 255 }),
   whatsappPhone: varchar("whatsapp_phone", { length: 50 }),
+  status: varchar("status", { length: 16 }).default("ACTIVE").notNull(),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   lastAccessAt: timestamp("last_access_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -3987,6 +3997,8 @@ export const nexusCollaborators = pgTable("nexus_collaborators", {
   emailIdx: uniqueIndex("nexus_collaborators_email_unique").on(t.email),
   tokenIdx: uniqueIndex("nexus_collaborators_token_unique").on(t.token),
 }));
+
+export type NexusCollaborator = typeof nexusCollaborators.$inferSelect;
 
 export const projectCollaborators = pgTable("project_collaborators", {
   projectId: varchar("project_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),

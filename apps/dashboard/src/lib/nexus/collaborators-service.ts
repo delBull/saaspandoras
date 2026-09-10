@@ -14,6 +14,7 @@ import crypto from 'crypto';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { headers as nextHeaders } from 'next/headers';
 import { WhatsAppAdapter } from '@/lib/pandoras/core/domains/channels/adapters/whatsapp-adapter';
+import type { NexusProvisionStatus } from '@/db/schema';
 
 const TOKEN_EXPIRY_HOURS = 24;
 const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandas.finance';
@@ -62,6 +63,7 @@ export interface CollaboratorDTO {
   role: string;
   permissions?: NexusPermissionsOverride;
   whatsappPhone?: string | null;
+  status?: NexusProvisionStatus | null;
   expiresAt: Date;
   lastAccessAt?: Date | null;
   createdAt: Date;
@@ -88,6 +90,11 @@ export async function createOrUpdateCollaborator(
   const token = generateToken();
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
+  // Provisioning policy: brand-new collaborators default to PENDING so no magic
+  // link auto-grants access. Elevated roles (SUPER_ADMIN/ADMIN) are explicit
+  // admin grants → ACTIVE. Existing rows (renewal) PRESERVE their current status.
+  const status: NexusProvisionStatus = role === 'SUPER_ADMIN' || role === 'ADMIN' ? 'ACTIVE' : 'PENDING';
+
   const records = await db
     .insert(nexusCollaborators)
     .values({
@@ -97,6 +104,8 @@ export async function createOrUpdateCollaborator(
       role,
       permissions,
       whatsappPhone,
+      status,
+      statusChangedAt: status === 'PENDING' ? new Date() : null,
       expiresAt,
       lastAccessAt: null,
     })
@@ -128,6 +137,7 @@ export async function createOrUpdateCollaborator(
       role: record.role || 'COLLABORATOR',
       permissions: (record.permissions as NexusPermissionsOverride) || {},
       whatsappPhone: record.whatsappPhone,
+      status: (record.status as NexusProvisionStatus) || 'ACTIVE',
       expiresAt: record.expiresAt,
       lastAccessAt: record.lastAccessAt,
       createdAt: record.createdAt,
@@ -250,6 +260,7 @@ export async function verifyCollaboratorToken(
     role: record.role || 'COLLABORATOR',
     permissions: (record.permissions as NexusPermissionsOverride) || {},
     whatsappPhone: record.whatsappPhone,
+    status: (record.status as NexusProvisionStatus) || 'ACTIVE',
     expiresAt: record.expiresAt,
     lastAccessAt: record.lastAccessAt,
     createdAt: record.createdAt,
@@ -277,6 +288,7 @@ export async function getCollaboratorByEmail(
     role: record.role || 'COLLABORATOR',
     permissions: (record.permissions as NexusPermissionsOverride) || {},
     whatsappPhone: record.whatsappPhone,
+    status: (record.status as NexusProvisionStatus) || 'ACTIVE',
     expiresAt: record.expiresAt,
     lastAccessAt: record.lastAccessAt,
     createdAt: record.createdAt,
@@ -307,6 +319,7 @@ export async function listCollaborators(): Promise<CollaboratorDTO[]> {
     role: r.role || 'COLLABORATOR',
     permissions: (r.permissions as NexusPermissionsOverride) || {},
     whatsappPhone: r.whatsappPhone,
+    status: (r.status as NexusProvisionStatus) || 'ACTIVE',
     expiresAt: r.expiresAt,
     lastAccessAt: r.lastAccessAt,
     createdAt: r.createdAt,
@@ -343,6 +356,7 @@ export async function updateCollaboratorPermissions(
       role: record.role,
       permissions: (record.permissions as NexusPermissionsOverride) || {},
       whatsappPhone: record.whatsappPhone,
+      status: (record.status as NexusProvisionStatus) || 'ACTIVE',
       expiresAt: record.expiresAt,
       lastAccessAt: record.lastAccessAt,
       createdAt: record.createdAt,
@@ -423,6 +437,7 @@ export async function getCollaboratorForOperator(
       name: 'Administrador',
       email: walletAddress.toLowerCase(),
       role: 'SUPER_ADMIN',
+      status: 'ACTIVE' as NexusProvisionStatus,
       permissions: {
         dealRoom: true,
         academyAdmin: true,

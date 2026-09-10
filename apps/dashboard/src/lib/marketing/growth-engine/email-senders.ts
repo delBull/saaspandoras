@@ -475,14 +475,14 @@ export async function sendB2BWelcomeEmail(context: {
 
   // Personalization Logic
   let ctaText = "Agendar Llamada Estratégica";
-  let ctaUrl = "https://calendly.com/pandoras-finance/strategy";
+  let ctaUrl = "https://dash.pandoras.finance/schedule/protocol?type=strategy";
 
   if (context.source === 'growth-os-landing') {
     ctaText = "Agendar Auditoría de Infraestructura";
-    ctaUrl = "https://calendly.com/pandoras-finance/growth-audit";
+    ctaUrl = "https://dash.pandoras.finance/schedule/protocol?type=strategy";
   } else if (context.subType === 'protocol_application_form') {
     ctaText = "Agendar Sesión de Despliegue";
-    ctaUrl = "https://calendly.com/pandoras-finance/protocol-deployment";
+    ctaUrl = "https://dash.pandoras.finance/schedule/protocol?type=architecture";
   }
 
   try {

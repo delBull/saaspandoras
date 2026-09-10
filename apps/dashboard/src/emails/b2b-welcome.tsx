@@ -28,7 +28,7 @@ export const B2BWelcomeEmail = ({
     name = "Founder",
     projectName = "tu proyecto",
     ctaText = "Agendar Llamada Estratégica",
-    ctaUrl = "https://calendly.com/pandoras-finance/strategy",
+    ctaUrl = "https://dash.pandoras.finance/schedule/protocol?type=strategy",
     whatsappUrl = "https://wa.me/5213221374392",
     source = "growth-os"
 }: B2BWelcomeEmailProps) => {

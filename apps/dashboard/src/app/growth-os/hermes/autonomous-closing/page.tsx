@@ -17,6 +17,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+// Agenda Soberana de Pandoras (/schedule/pandoras) — las reglas de disponibilidad
+// son editables desde el admin. Se reemplaza el Calendly externo (inexistente).
+const AGENDA_URL = `${typeof window !== 'undefined' ? window.location.origin : 'https://dash.pandoras.finance'}/schedule/pandoras?type=strategy`;
+
 export default function AutonomousClosingPage() {
   return (
     <div className="min-h-screen bg-[#070709] text-white selection:bg-purple-500 selection:text-black font-sans relative overflow-hidden">
@@ -42,7 +46,7 @@ export default function AutonomousClosingPage() {
 
           <div className="flex items-center gap-3">
             <a 
-              href="https://calendly.com/pandoras-finance/strategy"
+              href={AGENDA_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all"
@@ -166,7 +170,7 @@ export default function AutonomousClosingPage() {
             Agenda una llamada técnica con el equipo de Pandoras para descubrir cómo integrar el motor transaccional de Hermes en tus procesos operativos actuales.
           </p>
           <a
-            href="https://calendly.com/pandoras-finance/strategy"
+            href={AGENDA_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-white hover:bg-zinc-200 text-black font-bold text-base px-10 py-6 rounded-2xl transition-all"

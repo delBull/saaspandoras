@@ -7,7 +7,7 @@
  */
 
 import { db } from '@/db';
-import { users, nexusCollaborators, type NexusPermissionsOverride } from '@/db/schema';
+import { users, nexusCollaborators, type NexusPermissionsOverride, type NexusProvisionStatus } from '@/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { headers as nextHeaders } from 'next/headers';
@@ -35,6 +35,7 @@ export interface NexusAuthContext {
   email?: string | null;
   name?: string | null;
   whatsappPhone?: string | null;
+  provisionStatus?: NexusProvisionStatus | null;
   permissions: NexusPermissions;
 }
 
@@ -167,6 +168,29 @@ export async function getNexusAuthContext(
         let name: string | null = superUser?.name ?? null;
         let whatsappPhone: string | null = null;
 
+        // Fallback: the wallet→users email link can be blocked by
+        // users_email_unique when the admin's email already belongs to another
+        // `users` row. Resolve the collaborator record via the env admin list
+        // so the completion gate always clears for the sovereign operator.
+        if (!email) {
+          const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
+            .toLowerCase()
+            .split(',')
+            .map((e) => e.trim())
+            .filter(Boolean);
+          for (const candidate of adminEmails) {
+            const [row] = await db
+              .select({ email: nexusCollaborators.email })
+              .from(nexusCollaborators)
+              .where(eq(nexusCollaborators.email, candidate))
+              .limit(1);
+            if (row) {
+              email = row.email;
+              break;
+            }
+          }
+        }
+
         if (email) {
           const [collab] = await db
             .select({ collaboratorName: nexusCollaborators.name, whatsappPhone: nexusCollaborators.whatsappPhone })
@@ -260,6 +284,19 @@ export async function getNexusAuthContext(
 
       const collaborator = records[0];
       if (collaborator) {
+        const provisionStatus = (collaborator.status as NexusProvisionStatus) || 'ACTIVE';
+
+        // Provisioning gate: denylisted collaborator (REJECTED/DISABLED) must never
+        // authenticate — not even to attempt re-registration.
+        if (provisionStatus === 'REJECTED' || provisionStatus === 'DISABLED') {
+          return {
+            isAuthenticated: false,
+            role: null,
+            permissions: DEFAULT_EMPTY_PERMISSIONS,
+            provisionStatus,
+          };
+        }
+
         // Record last access timestamp asynchronously
         db.update(nexusCollaborators)
           .set({ lastAccessAt: now })
@@ -275,6 +312,7 @@ export async function getNexusAuthContext(
           email: collaborator.email,
           name: collaborator.name,
           whatsappPhone: collaborator.whatsappPhone,
+          provisionStatus: provisionStatus as NexusProvisionStatus,
           permissions,
         };
       } else {

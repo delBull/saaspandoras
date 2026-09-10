@@ -1,6 +1,7 @@
 import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import { NexusCommandCenter } from "./NexusCommandCenter";
 import { NexusLoginGate } from "./NexusLoginGate";
+import { NexusProvisioningPending } from "./NexusProvisioningPending";
 import { generateAcademyToken } from "@/lib/nexus-deals/tokens";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,14 @@ export default async function NexusRootPage({
   const auth = await getNexusAuthContext(null, token);
 
   if (auth.isAuthenticated) {
+    // Provisioning gate: PENDING collaborators may complete their profile but
+    // cannot enter the Command Center until an admin approves their access.
+    if (auth.provisionStatus === "PENDING") {
+      if (!auth.name || !auth.whatsappPhone) {
+        return <NexusLoginGate requireCompletion={true} initialAuth={{ address: auth.wallet || null, email: auth.email || null }} />;
+      }
+      return <NexusProvisioningPending email={auth.email} />;
+    }
     if (!auth.name || !auth.whatsappPhone) {
       return <NexusLoginGate requireCompletion={true} initialAuth={{ address: auth.wallet || null, email: auth.email || null }} />;
     }

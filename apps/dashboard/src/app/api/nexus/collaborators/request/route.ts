@@ -11,6 +11,7 @@ import {
   isNexusAdminEmail,
   getCollaboratorByEmail,
 } from '@/lib/nexus/collaborators-service';
+import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';
@@ -85,6 +86,19 @@ export async function POST(req: NextRequest) {
       effectivePermissions,
       effectiveWhatsapp
     );
+
+    // New collaborator invito → PENDING until admin approves. Notify #pandoras-alerts
+    // so the provisioning request shows up in the admin queue. Renewals of an
+    // existing ACTIVE collaborator are not re-notified.
+    const isFreshPending = collaborator.status === 'PENDING' && (!existingCollaborator || existingCollaborator.status !== 'PENDING');
+    if (isFreshPending) {
+      void notifyProvisioningRequest({
+        name: collaborator.name || cleanName || 'Collaborator',
+        email: collaborator.email,
+        whatsappPhone: effectiveWhatsapp || null,
+        role: effectiveRole,
+      });
+    }
 
     const sendResult = await sendCollaboratorMagicLink(
       collaborator.name || cleanName || 'Collaborator',

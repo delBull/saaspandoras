@@ -236,7 +236,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           )}
           {activeMarketingSubTab === 'agenda' && (
             <div className="w-full">
-              <CalendarManager userId="FIXME_CURRENT_USER_ID" />
+              <CalendarManager userId={currentUserId || 'pandoras-host'} />
             </div>
           )}
           {activeMarketingSubTab === 'cursos' && <CoursesAdminPanel />}

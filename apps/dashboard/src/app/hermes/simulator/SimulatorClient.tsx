@@ -42,6 +42,11 @@ const TRACE_ICONS: Record<HermesTraceStep['id'], LucideIcon> = {
   action: Zap,
 };
 
+// Agenda Soberana: el calendario propio de Pandoras (/schedule/pandoras), NO
+// Calendly externo. Las reglas de disponibilidad (días/horarios) son editables
+// desde el admin (CalendarManager). Same-origin para funcionar en staging y prod.
+const AGENDA_1_1_URL = `${typeof window !== 'undefined' ? window.location.origin : 'https://dash.pandoras.finance'}/schedule/pandoras?type=strategy`;
+
 // Minimal markdown-lite: renders **bold** while preserving the full text verbatim
 // (the bot replies with markdown; plain pre-line would show literal asterisks).
 function renderRichText(text: string): React.ReactNode {
@@ -155,7 +160,7 @@ export function SimulatorClient() {
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadError, setLeadError] = useState<string | null>(null);
 
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Personalized greeting — reset on industry/company change
   useEffect(() => {
@@ -175,8 +180,15 @@ export function SimulatorClient() {
   }, [industry, companyName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    // Scroll confinado AL CONTENEDOR del chat (overflow-y-auto). Nunca usamos
+    // scrollIntoView aquí: ese API puede arrastrar también a los ancestros y
+    // brinca la página a las secciones de abajo (Portal Preview). Con el ref
+    // en el propio contenedor, escribir o interactuar no mueve el page scroll.
+    const el = chatScrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages, loading, lastTrace]);
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -621,7 +633,7 @@ export function SimulatorClient() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 p-5 overflow-y-auto space-y-4 min-h-[380px] max-h-[480px]">
+          <div ref={chatScrollRef} className="flex-1 p-5 overflow-y-auto space-y-4 min-h-[380px] max-h-[480px]">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -648,8 +660,6 @@ export function SimulatorClient() {
                 <span className="font-mono text-[11px]">Hermes está redactando respuesta...</span>
               </div>
             )}
-
-            <div ref={chatBottomRef} />
           </div>
 
           {/* ── Intent Detection Badge + Inline CTA ───────────────────── */}
@@ -686,7 +696,7 @@ export function SimulatorClient() {
                     Configurar →
                   </button>
                   <a
-                    href="https://calendly.com/pandoras-finance/strategy"
+                    href={AGENDA_1_1_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-[10px] font-mono flex items-center gap-1 transition-all whitespace-nowrap"
@@ -861,7 +871,7 @@ export function SimulatorClient() {
                   </p>
                 </div>
                 <a
-                  href="https://calendly.com/pandoras-finance/strategy"
+                  href={AGENDA_1_1_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold transition-all"

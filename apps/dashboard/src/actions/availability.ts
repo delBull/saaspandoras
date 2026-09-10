@@ -43,15 +43,12 @@ export async function getAdminAvailability(userId: string) {
             throw new Error("Unauthorized");
         }
 
+        // El `administrators` row se keyea por WALLET del admin, NO por `userId`
+        // (que es el `users.id` con el que se manage la agenda pública). Deriva
+        // la wallet desde la sesión autenticada para no depender del id del cliente.
+        const adminWallet = session.address.toLowerCase();
         const admin = await db.query.administrators.findFirst({
-            where: eq(administrators.walletAddress, userId)
-            // NOTE: schema says walletAddress is the unique identifier used effectively as ID in many places, 
-            // but `CalendarManager` passes `userId`. 
-            // If `userId` passed to CalendarManager is the wallet address (which is likely given previous context), we use walletAddress.
-            // Let's verify if `userId` is the `id` (int) or `walletAddress` (string).
-            // In `CalendarManager`, `userId` is passed.
-            // In usage, usually `account.address`.
-            // So queries should use `walletAddress`.
+            where: eq(administrators.walletAddress, adminWallet)
         });
 
         if (!admin) return { success: false, error: "Admin not found" };
@@ -70,12 +67,16 @@ export async function saveAvailability(userId: string, config: AvailabilityConfi
             throw new Error("Unauthorized");
         }
 
-        // 1. Update Admin Config
+        const adminWallet = session.address.toLowerCase();
+
+        // 1. Update Admin Config (keyed por wallet de la sesión autenticada)
         await db.update(administrators)
             .set({ availability: config })
-            .where(eq(administrators.walletAddress, userId));
+            .where(eq(administrators.walletAddress, adminWallet));
 
-        // 2. Regenerate Slots for next 30 days
+        // 2. Regenerate Slots for next 30 days — bajo el `userId` de la agenda
+        //    pública (users.id), NO bajo la wallet, para que /schedule/pandoras
+        //    vea los mismos slots que administra el CalendarManager.
         // A. Delete future Unbooked slots
         const now = new Date();
         await db.delete(schedulingSlots)

@@ -34,6 +34,7 @@ import {
   Loader2,
   CreditCard,
   Bot,
+  ClipboardList,
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
@@ -131,6 +132,14 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin/users',
       icon: UserCheck,
       active: currentTab === 'users' || currentTab === 'identity',
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
+    },
+    {
+      id: 'collaborators',
+      label: 'Aprovisionamiento',
+      href: '/admin/collaborators',
+      icon: ClipboardList,
+      active: currentTab === 'collaborators',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
     },
     {

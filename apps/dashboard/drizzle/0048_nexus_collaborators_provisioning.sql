@@ -1,0 +1,2 @@
+ALTER TABLE "nexus_collaborators" ADD COLUMN "status" varchar(16) DEFAULT 'ACTIVE' NOT NULL;--> statement-breakpoint
+ALTER TABLE "nexus_collaborators" ADD COLUMN "status_changed_at" timestamp with time zone;

@@ -52,23 +52,25 @@ export async function getAdminSlots(userId: string) {
             throw new Error("Unauthorized");
         }
 
-        // Fetch slots
-        const slots = await db.query.schedulingSlots.findMany({
-            where: eq(schedulingSlots.userId, userId),
-            with: {
-                bookings: true // Assuming relation exists in schema
-            },
-            orderBy: desc(schedulingSlots.startTime)
-        });
+        // NOTE: No drizzle relation is defined for scheduling_slots →
+        // scheduling_bookings, so `.with({ bookings: true })` would throw at
+        // runtime. Fetch slots + bookings manually to keep the same shape.
+        const slots = await db.select()
+            .from(schedulingSlots)
+            .where(eq(schedulingSlots.userId, userId))
+            .orderBy(desc(schedulingSlots.startTime));
 
-        // If relation isn't set up in Drizzle schema relations, we might need manual join. 
-        // For now assuming schema relations are defined based on existing code style.
-        // If not, we'll see a TS error or runtime error. 
-        // fallback: manual join check? 
-        // Let's rely on manual join strategy if "bookings" relation isn't obvious in schema file I read partially.
-        // Actually, I didn't see relations defined in the schema snippet I read. safe bet: manual join and map.
+        const slotsWithBookings = await Promise.all(
+            slots.map(async (slot) => {
+                const bookings = await db.select()
+                    .from(schedulingBookings)
+                    .where(eq(schedulingBookings.slotId, slot.id))
+                    .limit(1);
+                return { ...slot, bookings };
+            })
+        );
 
-        return { success: true, slots };
+        return { success: true, slots: slotsWithBookings };
     } catch (error) {
         console.error("[Scheduler] Error fetching admin slots:", error);
         return { success: false, error: "Failed to load admin calendar" };
