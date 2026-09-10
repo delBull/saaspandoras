@@ -6,6 +6,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
 import { getAuth, isAdmin } from "@/lib/auth";
+import { extractOfferMetadataFromDescription } from "@/lib/commercial/offers";
 
 // ZERO TRUST GUARD: requires a verified JWT session with admin privileges.
 // Returns true if authorized. Admin-only actions below use this to reject
@@ -168,13 +169,39 @@ export async function processPaymentSuccess(linkId: string) {
         const client = link.client as any;
         let newStatus = client.status;
 
-        // 1. Advance Protocol State based on Link Title (SOW)
-        if (link.title.includes("SOW Tier 1") || link.title.includes("Tier 1")) {
+        // 1. Resolve structured commercial offer or fallback to legacy title (SOW)
+        const offerMeta = extractOfferMetadataFromDescription(link.description);
+
+        if (offerMeta?.fulfillmentType === 'sow_protocol') {
+            newStatus = 'closed_won';
+            const targetTier = offerMeta.tier === 'TIER_1' 
+                ? 'IN_PROGRESS_TIER_1' 
+                : offerMeta.tier === 'TIER_2' 
+                    ? 'IN_PROGRESS_TIER_2' 
+                    : 'IN_PROGRESS_TIER_3';
+            await advanceProtocolState(link.clientId, targetTier);
+        } else if (offerMeta?.fulfillmentType === 'saas_provision') {
+            newStatus = 'closed_won';
+            // Flag client record with active SaaS subscription
+            await db.update(clients)
+                .set({ 
+                    status: 'closed_won',
+                    metadata: {
+                        ...(client.metadata || {}),
+                        activePlan: offerMeta.planKey || 'starter',
+                        subscriptionStatus: 'active',
+                        paidAt: new Date().toISOString(),
+                    }
+                })
+                .where(eq(clients.id, link.clientId));
+        } else if (link.title.includes("SOW Tier 1") || link.title.includes("Tier 1")) {
             newStatus = 'closed_won';
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_1');
         } else if (link.title.includes("SOW Tier 2") || link.title.includes("Tier 2")) {
+            newStatus = 'closed_won';
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_2');
         } else if (link.title.includes("SOW Tier 3") || link.title.includes("Tier 3")) {
+            newStatus = 'closed_won';
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_3');
         } else {
             // Standard payment

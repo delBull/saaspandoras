@@ -76,8 +76,11 @@ export function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/nexus", request.url));
     }
-    // /deal/* stays untouched on the nexus subdomain (Sovereign Sign portals).
-    if (!pathname.startsWith("/nexus/") && pathname !== "/nexus" && !pathname.startsWith("/deal/")) {
+    // /deal/* and /admin/* stay untouched on the nexus subdomain
+    // (Sovereign Sign portals and the admin/academy console).
+    if (!pathname.startsWith("/nexus/") && pathname !== "/nexus"
+        && !pathname.startsWith("/deal/")
+        && !pathname.startsWith("/admin")) {
       return NextResponse.rewrite(new URL(`/nexus${pathname}`, request.url));
     }
   }

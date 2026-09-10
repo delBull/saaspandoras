@@ -39,6 +39,8 @@ import type { OperatorContext } from './SettingsClient';
 interface NexusHermesTerminalProps {
   role?: string;
   operatorContext?: OperatorContext | null;
+  /** Despierta a Hermes automáticamente al montar (sin escribir sudo wake_up_hermes) */
+  autoBoot?: boolean;
 }
 
 // Web Speech API — minimal typings (not in default TS lib, works cross-browser)
@@ -76,12 +78,14 @@ const ts = () =>
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-export function NexusHermesTerminal({ role = 'OPERATOR', operatorContext = null }: NexusHermesTerminalProps) {
+export function NexusHermesTerminal({ role = 'OPERATOR', operatorContext = null, autoBoot = false }: NexusHermesTerminalProps) {
   const [lines, setLines] = useState<TerminalLine[]>([
     {
       id: uid(),
       type: 'system',
-      content: 'Nexus Operations Hub · Terminal\nEscribe "sudo wake_up_hermes" para despertar al asistente.',
+      content: autoBoot
+        ? 'Nexus Operations Hub · Terminal\nDespertando a Hermes...'
+        : 'Nexus Operations Hub · Terminal\nEscribe "sudo wake_up_hermes" para despertar al asistente.',
       timestamp: ts(),
     },
   ]);
@@ -134,6 +138,14 @@ export function NexusHermesTerminal({ role = 'OPERATOR', operatorContext = null 
     },
     [role, operatorContext, addLine]
   );
+
+  // Auto-boot: despierta a Hermes sin requerir "sudo wake_up_hermes" manual
+  const autoBootedRef = useRef(false);
+  useEffect(() => {
+    if (!autoBoot || autoBootedRef.current) return;
+    autoBootedRef.current = true;
+    void callHermesAPI('', true);
+  }, [autoBoot, callHermesAPI]);
 
   const handleCommand = useCallback(
     async (cmd: string) => {
@@ -245,7 +257,14 @@ Una vez Hermes esté activo, escribe en lenguaje natural. Ejemplos:
       }
     };
     recognition.onerror = (e: { error: string }) => {
-      addLine('error', `Whisper: Error de micrófono — ${e.error}`);
+      const MIC_HINTS: Record<string, string> = {
+        'not-allowed': 'Permiso de micrófono denegado. Habilítalo para este sitio (ícono 🔒 en la barra de direcciones) y reintenta — o escribe tu consulta.',
+        'service-not-allowed': 'El servicio de voz no está disponible en este navegador. Escribe tu consulta.',
+        'no-speech': 'No se detectó voz. Habla más cerca del micrófono e intenta de nuevo.',
+        'audio-capture': 'No se detectó micrófono. Conecta uno y reintenta.',
+        'network': 'Error de red con el servicio de voz. Escribe tu consulta.',
+      };
+      addLine('error', MIC_HINTS[e.error] ?? `Whisper: Error de micrófono — ${e.error}`);
       setIsListening(false);
     };
 

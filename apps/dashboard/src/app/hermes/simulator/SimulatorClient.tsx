@@ -159,6 +159,7 @@ export function SimulatorClient() {
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadError, setLeadError] = useState<string | null>(null);
+  const [createdProposal, setCreatedProposal] = useState<{ linkId: string; offer: { id: string; title: string; amount: string; currency: string } } | null>(null);
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
@@ -333,6 +334,36 @@ export function SimulatorClient() {
       if (res.ok) {
         setLeadSubmitted(true);
         setConversionPhase('converting');
+
+        // Generar propuesta comercial estructurada en el catálogo canónico (Gap 2.2)
+        try {
+          const propRes = await fetch('/api/v1/hermes/commerce/propose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              offerId: 'hermes_starter_monthly',
+              email: leadEmail,
+              name: leadName,
+              phone: leadPhone,
+              companyName: companyName !== 'Tu Negocio' ? companyName : undefined,
+              source: 'simulator',
+              attributionRep,
+              notes: `Simulador completado: ${companyName} (${industry} - ${goal})`,
+              autoActivate: false, // Requiere revisión/aprobación en lane HITL
+            }),
+          });
+          if (propRes.ok) {
+            const propData = await propRes.json();
+            if (propData?.offer) {
+              setCreatedProposal({
+                linkId: propData.linkId,
+                offer: propData.offer,
+              });
+            }
+          }
+        } catch (propErr) {
+          console.warn('[Simulator] Non-fatal proposal creation warning:', propErr);
+        }
       } else {
         const data = await res.json().catch(() => null);
         setLeadError(data?.message || data?.error || 'No se pudo registrar tu solicitud. Inténtalo de nuevo.');
@@ -864,21 +895,51 @@ export function SimulatorClient() {
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white">¡Solicitud Recibida con Éxito!</h3>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-bold text-white">¡Solicitud y Propuesta Recibidas!</h3>
                   <p className="text-xs text-zinc-400 leading-relaxed">
-                    Un especialista comercial te contactará para cargar el catálogo y las respuestas oficiales de {cleanCompanyDisplay}.
+                    Hemos registrado tu interés para <span className="text-white font-semibold">{cleanCompanyDisplay}</span>.
                   </p>
                 </div>
-                <a
-                  href={AGENDA_1_1_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold transition-all"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>Agendar Sesión Técnica Directa</span>
-                </a>
+
+                {createdProposal?.offer && (
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-purple-500/30 text-left space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-purple-300 font-bold">Propuesta Registrada</span>
+                      <span className="text-emerald-400 font-bold">${createdProposal.offer.amount} {createdProposal.offer.currency}/mes</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-300 leading-snug">
+                      {createdProposal.offer.title}
+                    </p>
+                    <div className="pt-1 text-[9px] text-zinc-500 font-mono flex items-center gap-1">
+                      <span>Ref:</span>
+                      <span className="text-zinc-400 select-all">{createdProposal.linkId.slice(0, 12)}…</span>
+                      <span>· Pendiente de revisión técnica</span>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Un especialista revisará la configuración de tu catálogo y conectará tus canales oficiales.
+                </p>
+
+                <div className="pt-1 flex flex-col gap-2">
+                  <a
+                    href={AGENDA_1_1_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold transition-all shadow-lg shadow-purple-600/20"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span>Agendar Sesión Técnica Directa</span>
+                  </a>
+                  <button
+                    onClick={() => setIsLeadModalOpen(false)}
+                    className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+                  >
+                    Volver al Simulador
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleLeadSubmit} className="space-y-4">

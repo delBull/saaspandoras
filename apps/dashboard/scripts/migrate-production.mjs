@@ -58,6 +58,11 @@ async function runMigrations() {
   `;
   await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "role" VARCHAR(32) DEFAULT 'COLLABORATOR' NOT NULL;`;
   await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "permissions" JSONB DEFAULT '{}'::jsonb;`;
+  // Migration 0048 — Nexus collaborators provisioning status
+  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "status" VARCHAR(16) DEFAULT 'ACTIVE' NOT NULL;`;
+  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "status_changed_at" TIMESTAMP WITH TIME ZONE;`;
+  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "discord_user_id" VARCHAR(255);`;
+  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "whatsapp_phone" VARCHAR(32);`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_email_unique" ON "nexus_collaborators" ("email");`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_token_unique" ON "nexus_collaborators" ("token");`;
 

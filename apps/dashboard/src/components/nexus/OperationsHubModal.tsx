@@ -412,7 +412,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                 </div>
               </div>
               {terminalMode === 'HERMES' ? (
-                <NexusHermesTerminal role={userRole} operatorContext={operatorContext} />
+                <NexusHermesTerminal role={userRole} operatorContext={operatorContext} autoBoot />
               ) : (
                 <TaskTerminal mode="TASK" onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
               )}
