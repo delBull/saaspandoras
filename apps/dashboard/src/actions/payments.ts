@@ -43,7 +43,7 @@ export async function createPaymentLink(data: {
             amount: amount.toString(), // Store as decimal string
             currency,
             description: description || '',
-            methods: ['stripe', 'crypto', 'wire'], // Default enabled
+            methods: ['crypto', 'wire'], // Default enabled
             destinationWallet: destinationWallet || null,
             isActive: true,
         }).returning();

@@ -591,7 +591,7 @@ function PaymentBridgeModal({ open, onOpenChange, client, onSuccess }: { open: b
             title: form.title,
             amount: form.amount,
             description: form.description,
-            methods: ["stripe", "crypto", "wire"],
+            methods: ["crypto", "wire"],
             isActive: true
         });
 
@@ -629,7 +629,7 @@ function PaymentBridgeModal({ open, onOpenChange, client, onSuccess }: { open: b
                         </div>
 
                         <div className="pt-2">
-                            <div className="text-xs text-zinc-500 mb-2">Métodos Habilitados (Default): Crypto, Stripe, Wire</div>
+                            <div className="text-xs text-zinc-500 mb-2">Métodos Habilitados (Default): Crypto, Wire</div>
                             <Button disabled={loading} type="submit" className="w-full bg-lime-500 text-black hover:bg-lime-400 font-bold">
                                 {loading ? <Loader2 className="animate-spin" /> : "Generar Smart Link"}
                             </Button>

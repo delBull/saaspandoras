@@ -78,7 +78,7 @@ export async function createPaymentLink(data: typeof paymentLinks.$inferInsert) 
     }
 }
 
-export async function updatePaymentStatus(linkId: string, status: 'pending' | 'paid' | 'cancelled', method: 'stripe' | 'crypto' | 'wire' = 'wire') {
+export async function updatePaymentStatus(linkId: string, status: 'pending' | 'paid' | 'cancelled', method: 'crypto' | 'wire' = 'wire') {
     try {
         // Fetch Link & Client details
         const link = await db.query.paymentLinks.findFirst({
@@ -303,7 +303,7 @@ export async function sendProtocolSOW(clientId: string, tier: SOWTier, templateI
             title: config.title,
             amount: amount,
             currency: "USD",
-            methods: ['stripe', 'crypto', 'wire'],
+            methods: ['crypto', 'wire'],
             description: `Payment for ${tier} Execution`,
             createdBy: "admin_automation" // TODO: Pass actual user if possible
         }).returning();

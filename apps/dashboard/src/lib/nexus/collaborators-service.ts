@@ -16,7 +16,7 @@ import { headers as nextHeaders } from 'next/headers';
 import { WhatsAppAdapter } from '@/lib/pandoras/core/domains/channels/adapters/whatsapp-adapter';
 
 const TOKEN_EXPIRY_HOURS = 24;
-const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_MARKETING_URL || process.env.NEXT_PUBLIC_LANDING_URL || 'https://pandoras.finance';
+const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandas.finance';
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
   .toLowerCase()
@@ -118,7 +118,7 @@ export async function createOrUpdateCollaborator(
     throw new Error('Failed to create/update collaborator');
   }
 
-  const magicLink = `${NEXUS_BASE_URL}/en/nexus?token=${encodeURIComponent(token)}`;
+  const magicLink = `${NEXUS_BASE_URL}/nexus?token=${encodeURIComponent(token)}`;
 
   return {
     collaborator: {

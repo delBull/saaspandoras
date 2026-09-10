@@ -21,7 +21,7 @@ export default function PaymentLinksPage() {
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
                     <h1 className="text-2xl font-bold mb-4">Gestión de Links de Pago</h1>
                     <p className="text-muted-foreground mb-6">
-                        Aquí podrás generar links de Stripe y Cripto personalizados.
+                        Aquí podrás generar links de pago Cripto y Wire personalizados.
                         <br />
                         <span className="text-xs opacity-50">Módulo en construcción.</span>
                     </p>

@@ -330,6 +330,13 @@
       "when": 1788818834519,
       "tag": "0046_elite_emma_frost",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1789013322613,
+      "tag": "0047_f0_remove_stripe",
+      "breakpoints": true
     }
   ]
 }

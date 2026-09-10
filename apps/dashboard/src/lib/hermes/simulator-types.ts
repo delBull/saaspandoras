@@ -38,6 +38,42 @@ export interface IndustryConfig {
   starterSuggestions: string[];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Hermes OS Engine Trace — functionality that SELLS
+// Reflects the real Hermes OS portal modules and 5-layer cognitive pipeline
+// (see /growth-os/hermes/architecture). Each step maps to a real product feature.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type HermesTraceAction =
+  | 'RESPOND'
+  | 'BOOK_APPOINTMENT'
+  | 'ESCALATE_TO_HUMAN'
+  | 'AUTONOMOUS_CLOSE';
+
+export interface HermesTraceStep {
+  id: 'inbound' | 'authority' | 'intent' | 'knowledge' | 'governance' | 'action';
+  module: string;
+  step: string;
+  detail: string;
+  status: 'done' | 'active' | 'pending';
+}
+
+export interface HermesTrace {
+  steps: HermesTraceStep[];
+  action: HermesTraceAction;
+  actionLabel: string;
+}
+
+// Real portal modules the demo proves, surfaced as chips in the UI
+export const HERMES_PORTAL_MODULES = [
+  'Canales',
+  'Knowledge Base',
+  'Journeys',
+  'Escalación HITL',
+  'Pagos',
+  'Whitelabel',
+] as const;
+
 export const SIMULATOR_INDUSTRIES: Record<SimulatorIndustry, IndustryConfig> = {
   real_estate: {
     id: 'real_estate',
@@ -171,4 +207,90 @@ export function resolveSafeDemoContext(params: {
     attributionRep: safeRep,
     source: safeSource,
   };
+}
+
+/**
+ * Builds the live engine trace shown in the simulator — maps each step to a REAL
+ * Hermes OS module (the 5-layer cognitive pipeline + execution action).
+ * Pure & deterministic so it can be unit-tested and reused client/server.
+ */
+export function buildSandboxTrace(params: {
+  company: string;
+  industry: SimulatorIndustry;
+  goal?: SimulatorGoal;
+  intent: { type: string; label: string; confidence: string } | null;
+  message: string;
+}): HermesTrace {
+  const lowerMsg = params.message.toLowerCase();
+  const wantsHuman =
+    /(humano|asesor|persona|ejecutivo|hablar con alguien|representante|no un robot)/i.test(lowerMsg);
+
+  const steps: HermesTraceStep[] = [
+    {
+      id: 'inbound',
+      module: 'Omnicanal',
+      step: 'Entrada por canal',
+      detail:
+        'Prospecto escribió vía Web Widget (demostración). En producción entra por WhatsApp, Telegram, SMS o Web con normalización de sesión.',
+      status: 'done',
+    },
+    {
+      id: 'authority',
+      module: 'Aislamiento Tenant',
+      step: 'Resolución de autoridad',
+      detail: `Modo demo pre-tenant para ${params.company}. En producción cada organización opera aislada con Row-Level Security.`,
+      status: 'done',
+    },
+    {
+      id: 'intent',
+      module: 'Intent Engine',
+      step: 'Clasificación de intención',
+      detail: params.intent
+        ? `Detectó: ${params.intent.label} (confianza ${params.intent.confidence}).`
+        : 'Intención aún no comercial; sigue calificando con preguntas de contexto.',
+      status: 'done',
+    },
+    {
+      id: 'knowledge',
+      module: 'Knowledge Base',
+      step: 'Respuesta desde hechos verificados',
+      detail: `Solo responde lo que la bóveda de ${params.industry} respalda (en demo, estructura estándar; en producción, catálogo y precios exactos).`,
+      status: 'done',
+    },
+    {
+      id: 'governance',
+      module: 'Gobernanza',
+      step: 'Firewall post-LLM',
+      detail:
+        'Respuesta auditada antes de enviarse: cero alucinaciones, cero promesas de precio o rendimiento inventadas, normalización del vocabulario institucional.',
+      status: 'done',
+    },
+  ];
+
+  let action: HermesTraceAction = 'RESPOND';
+  let actionLabel = 'Respondió y sigue calificando al prospecto en el embudo';
+
+  if (wantsHuman) {
+    action = 'ESCALATE_TO_HUMAN';
+    actionLabel =
+      'Escaló a tu equipo con contexto completo (HITL): no entregó el lead, lo priorizó con todo el historial.';
+  } else if (params.intent?.type === 'HIGH_PRIORITY_PURCHASE') {
+    action = 'AUTONOMOUS_CLOSE';
+    actionLabel =
+      'Señal de compra detectada: en producción Hermes valida elegibilidad y genera un link de pago SPEI o Web3 en el chat (cierre autónomo).';
+  } else if (params.intent?.type === 'APPOINTMENT_REQUEST') {
+    action = 'BOOK_APPOINTMENT';
+    actionLabel =
+      'Agenda conectada: en producción Hermes propone slot, confirma la cita automáticamente y envía recordatorios.';
+  }
+
+  steps.push({
+    id: 'action',
+    module: 'Ejecución',
+    step: 'Acción final',
+    detail: actionLabel,
+    status: 'done',
+  });
+
+  return { steps, action, actionLabel };
 }

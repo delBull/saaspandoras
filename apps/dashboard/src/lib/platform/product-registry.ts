@@ -110,7 +110,8 @@ export const PRODUCT_REGISTRY = {
       cross_chain:    { default: false, plans: ['enterprise'] },
     },
     connectors: {
-      stripe:  { default: true, plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      thirdweb: { default: true, plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      wire:     { default: true, plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
       spei:    { default: true, plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
     },
     portalModules: ['governance', 'portfolio', 'purchases', 'certificates', 'analytics'],

@@ -65,7 +65,7 @@ export function MarketingHelpModal() {
                         </h3>
                         <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
                             <li>
-                                <strong>Tier 1 (Client Activation):</strong> Ocurre cuando se confirma el primer pago (Stripe/Cripto). El proyecto pasa a estado <code>Active Client</code> automáticamente.
+                                <strong>Tier 1 (Client Activation):</strong> Ocurre cuando se confirma el primer pago (Cripto/Wire). El proyecto pasa a estado <code>Active Client</code> automáticamente.
                             </li>
                             <li>
                                 <strong>SOW Creation:</strong> Los administradores crean el "Scope of Work" en el Dashboard. Esto no es automático, es una negociación humana.
@@ -110,7 +110,7 @@ export function MarketingHelpModal() {
                             </div>
                             <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
                                 <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">Pay & Finance</h5>
-                                <p className="text-[11px] leading-tight text-muted-foreground">Generación de links de pago Cripto/Stripe y seguimiento de ingresos por protocolo.</p>
+                                <p className="text-[11px] leading-tight text-muted-foreground">Generación de links de pago Cripto/Wire y seguimiento de ingresos por protocolo.</p>
                             </div>
                             <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
                                 <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">Shortlinks</h5>

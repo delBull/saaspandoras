@@ -8,8 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, CreditCard, Wallet, Landmark } from "lucide-react";
-import { PayEmbed } from "thirdweb/react";
+import { Loader2, CheckCircle, Wallet, Landmark } from "lucide-react";
 import { client } from "@/lib/thirdweb-client";
 import { base, sepolia } from "thirdweb/chains";
 import { getContract } from "thirdweb";
@@ -28,9 +27,9 @@ const ACTIVE_TOKEN = IS_PROD ? USDC_BASE : USDC_SEPOLIA;
 const MERCHANT_WALLET = process.env.NEXT_PUBLIC_PANDORAS_ADMIN_WALLET || "0xc52BB6f53C91ff7134e7508B102E5A22BA415954";
 
 export function PaymentCheckout({ link, client: clientData }: { link: any, client: any }) {
-    // Default to 'stripe' if available, then 'crypto'
-    const enabledMethods = (link.methods as string[]) || ["stripe", "crypto", "wire"];
-    const [method, setMethod] = useState(enabledMethods.includes("stripe") ? "stripe" : "crypto");
+    // Default to 'crypto' if available, then 'wire'
+    const enabledMethods = (link.methods as string[]) || ["crypto", "wire"];
+    const [method, setMethod] = useState(enabledMethods.includes("crypto") ? "crypto" : "wire");
     const [loading, setLoading] = useState(false);
     const [wireSent, setWireSent] = useState(false);
 
@@ -147,12 +146,7 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
             {/* Right: Payment Methods */}
             <div className="p-8 bg-black">
                 <Tabs value={method} onValueChange={setMethod} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-zinc-900 mb-6">
-                        {enabledMethods.includes('stripe') && (
-                            <TabsTrigger value="stripe" className="data-[state=active]:bg-zinc-800">
-                                <CreditCard className="w-4 h-4 mr-2" /> Card
-                            </TabsTrigger>
-                        )}
+                    <TabsList className="grid w-full grid-cols-2 bg-zinc-900 mb-6">
                         {enabledMethods.includes('crypto') && (
                             <TabsTrigger value="crypto" className="data-[state=active]:bg-zinc-800">
                                 <Wallet className="w-4 h-4 mr-2" /> Crypto
@@ -164,47 +158,6 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                             </TabsTrigger>
                         )}
                     </TabsList>
-
-                    <TabsContent value="stripe" className="text-center py-12 space-y-6">
-                        <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
-                            <CreditCard className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                            <h3 className="text-white font-bold text-lg mb-2">Pago con Tarjeta</h3>
-                            <p className="text-zinc-400 text-sm mb-6">
-                                Procesado de forma segura vía Stripe. Aceptamos Visa, Mastercard y Amex.
-                            </p>
-                            <Button
-                                onClick={async () => {
-                                    setLoading(true);
-                                    try {
-                                        const res = await fetch('/api/stripe/create-checkout', {
-                                            method: 'POST',
-                                            body: JSON.stringify({
-                                                linkId: link.id,
-                                                clientId: clientData?.id,
-                                                amount: link.amount,
-                                                title: link.title,
-                                                clientEmail: clientData?.email
-                                            })
-                                        });
-                                        const data = await res.json();
-                                        if (data.url) {
-                                            window.location.href = data.url;
-                                        } else {
-                                            toast.error("Error iniciando pago");
-                                            setLoading(false);
-                                        }
-                                    } catch (e) {
-                                        toast.error("Error de conexión");
-                                        setLoading(false);
-                                    }
-                                }}
-                                disabled={loading}
-                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 text-lg"
-                            >
-                                {loading ? <Loader2 className="animate-spin mr-2" /> : "Pagar Ahora"}
-                            </Button>
-                        </div>
-                    </TabsContent>
 
                     <TabsContent value="crypto" className="space-y-4">
                         <div className="text-center mb-4">

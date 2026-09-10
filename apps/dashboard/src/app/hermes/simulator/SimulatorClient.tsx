@@ -17,14 +17,28 @@ import {
   Layers,
   Calendar,
   X,
+  LucideIcon,
 } from 'lucide-react';
 import {
   SimulatorIndustry,
   SimulatorGoal,
   SIMULATOR_INDUSTRIES,
   resolveSafeDemoContext,
+  HermesTrace,
+  HermesTraceStep,
+  HERMES_PORTAL_MODULES,
 } from '@/lib/hermes/simulator-types';
 import { SalesDemoBuilderDrawer } from '@/components/hermes/SalesDemoBuilderDrawer';
+
+// Print-style icons per engine-trace layer (maps each layer to its real module)
+const TRACE_ICONS: Record<HermesTraceStep['id'], LucideIcon> = {
+  inbound: Bot,
+  authority: ShieldCheck,
+  intent: Sparkles,
+  knowledge: Layers,
+  governance: CheckCircle2,
+  action: Zap,
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -85,6 +99,7 @@ export function SimulatorClient() {
   const [remainingMessages, setRemainingMessages] = useState<number | null>(null);
   const [isDemoBuilderOpen, setIsDemoBuilderOpen] = useState(false);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [lastTrace, setLastTrace] = useState<HermesTrace | null>(null);
 
   // 3. Server-side RBAC gate for the Demo Builder drawer
   //    Defaults to false — only true after API confirms SUPER_ADMIN/ADMIN/OPERATOR
@@ -122,6 +137,7 @@ export function SimulatorClient() {
   const [leadPhone, setLeadPhone] = useState('');
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [leadError, setLeadError] = useState<string | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +155,7 @@ export function SimulatorClient() {
     setConversionPhase('start');
     setDetectedIntent(null);
     setSessionIntentCount(0);
+    setLastTrace(null);
   }, [industry, companyName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -194,6 +211,10 @@ export function SimulatorClient() {
           setShowRecap(true); // Immediately show recap on any intent detection
         }
 
+        if (data.trace) {
+          setLastTrace(data.trace);
+        }
+
         const agentMsg: ChatMessage = {
           id: `agent-${Date.now()}`,
           role: 'agent',
@@ -226,6 +247,7 @@ export function SimulatorClient() {
     e.preventDefault();
     if (!leadEmail) return;
     setLeadSubmitting(true);
+    setLeadError(null);
 
     try {
       const res = await fetch('/api/v1/marketing/leads/register', {
@@ -250,9 +272,13 @@ export function SimulatorClient() {
       if (res.ok) {
         setLeadSubmitted(true);
         setConversionPhase('converting');
+      } else {
+        const data = await res.json().catch(() => null);
+        setLeadError(data?.message || data?.error || 'No se pudo registrar tu solicitud. Inténtalo de nuevo.');
       }
     } catch (err) {
       console.error('[Lead submit error]:', err);
+      setLeadError('Error de conexión al registrar tu solicitud. Inténtalo de nuevo.');
     } finally {
       setLeadSubmitting(false);
     }
@@ -441,6 +467,62 @@ export function SimulatorClient() {
             </div>
           )}
 
+          {/* Engine Trace — live proof of the real 5-layer Hermes OS pipeline */}
+          {lastTrace && (
+            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10 text-xs space-y-3 backdrop-blur-xl">
+              <div className="flex items-center gap-2 font-bold text-[11px] text-white">
+                <Layers className="w-4 h-4 text-purple-400" />
+                <span>Esto es lo que Hermes acaba de hacer</span>
+              </div>
+
+              <div className="space-y-2">
+                {lastTrace.steps.map((step) => {
+                  const Icon = TRACE_ICONS[step.id] || Zap;
+                  return (
+                    <div key={step.id} className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <Icon className="w-3 h-3" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-bold text-white">{step.module}</span>
+                          <span className="text-[9px] text-zinc-500">·</span>
+                          <span className="text-[9px] text-zinc-300">{step.step}</span>
+                        </div>
+                        <p className="text-[9px] text-zinc-500 leading-snug">{step.detail}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Execution action — the ACTUAL selling point */}
+              <div className="p-2.5 rounded-xl bg-gradient-to-r from-purple-600/10 to-indigo-600/10 border border-purple-500/25">
+                <div className="flex items-start gap-2">
+                  <Zap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-zinc-200 leading-snug">{lastTrace.actionLabel}</p>
+                </div>
+              </div>
+
+              {/* Portal modules the demo proves */}
+              <div className="border-t border-white/5 pt-2.5">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block mb-1.5">
+                  Módulos del portal que se activarían para {cleanCompanyDisplay}
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {HERMES_PORTAL_MODULES.map((mod) => (
+                    <span
+                      key={mod}
+                      className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/10 text-zinc-400"
+                    >
+                      {mod}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Safety callout */}
           <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-950/20 to-indigo-950/20 border border-purple-500/20 text-xs space-y-2">
             <div className="flex items-center gap-2 text-purple-300 font-bold">
@@ -609,6 +691,11 @@ export function SimulatorClient() {
                 <p className="text-[10px] text-zinc-400 leading-relaxed border-t border-white/5 pt-2">
                   En una instancia real, esto continúa automáticamente: Hermes atiende → califica → registra → envía al pipeline → escala a humano cuando corresponde.
                 </p>
+                {lastTrace && (
+                  <p className="text-[10px] text-purple-200 leading-relaxed border-t border-white/5 pt-2">
+                    ⚡ Última acción del motor: <span className="font-semibold text-white">{lastTrace.actionLabel}</span>
+                  </p>
+                )}
                 <button
                   onClick={() => setIsLeadModalOpen(true)}
                   className="w-full py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-mono font-bold flex items-center justify-center gap-2 transition-all"
@@ -764,6 +851,12 @@ export function SimulatorClient() {
                     />
                   </div>
                 </div>
+
+                {leadError && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-950/40 px-3 py-2 text-[10px] font-mono text-red-300 leading-relaxed">
+                    {leadError}
+                  </div>
+                )}
 
                 <button
                   type="submit"

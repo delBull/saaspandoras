@@ -1,91 +1,97 @@
-
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { transactions, purchases } from "@/db/schema";
+import { transactions, purchases, daoMembers, integrationClients } from "@/db/schema";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
 import { WebhookService } from "@/lib/integrations/webhook-service";
-import { integrationClients } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 import { LegalEngine } from "@/lib/legal/engine";
 
-// Security: Verify Thirdweb Signature
-function isValidSignature(req: Request, body: string, secret: string) {
-    const signature = req.headers.get("x-thirdweb-signature") ||
+// Security: Fail-closed signature verification for thirdweb Pay / Engine webhooks.
+// Payloads are signed with HMAC-SHA256 over the raw request body using THIRDWEB_WEBHOOK_SECRET.
+// The signature header can arrive as raw hex, "sha256=<hex>", or "t=<ts>,v1=<hex>";
+// we accept any format and require a match before the request is processed.
+function verifyWebhookSignature(req: Request, rawBody: string, secret: string): boolean {
+    const header = req.headers.get("x-thirdweb-signature") ||
         req.headers.get("x-webhook-signature") ||
         req.headers.get("x-engine-signature");
 
-    if (!signature || !secret) return false;
+    if (!header) return false;
 
-    // Thirdweb Engine / Webhook specific verification logic may vary slightly 
-    // but typically it's HMAC-SHA256(secret, body)
-    // IMPORTANT: Verify against documentation for "Contract Subscription" vs "Engine" if this constantly fails.
-    // For standard webhooks: signature = HMAC(body + timestamp) usually.
-    // Simplifying to standard HMAC check of body for now, but in prod ideally check documentation for specific header format.
+    const provided: string[] = [];
+    let timestamp: string | undefined;
 
-    // NOTE: If using Thirdweb Engine, the signature is often computed as:
-    // const computedSignature = crypto.createHmac('sha256', secret).update(body).digest('hex');
-    // return signature === computedSignature;
-
-    try {
-        const hmac = crypto.createHmac("sha256", secret);
-        const digest = hmac.update(body).digest("hex");
-        return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
-    } catch (e) {
-        console.error("Signature verification error:", e);
-        return false;
+    for (const part of header.split(",")) {
+        const token = part.trim();
+        const eqIndex = token.indexOf("=");
+        if (eqIndex === -1) {
+            provided.push(token);
+            continue;
+        }
+        const key = token.slice(0, eqIndex).toLowerCase();
+        const value = token.slice(eqIndex + 1);
+        if (key === "t") timestamp = value;
+        else provided.push(value);
     }
+
+    if (provided.length === 0) return false;
+
+    const expected = provided.map((s) => Buffer.from(s, "hex"));
+    const payloads = timestamp ? [rawBody, `${timestamp}.${rawBody}`] : [rawBody];
+
+    for (const payload of payloads) {
+        const digest = crypto.createHmac("sha256", secret).update(payload).digest();
+        for (const candidate of expected) {
+            if (candidate.length === digest.length && crypto.timingSafeEqual(candidate, digest)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function isHexWallet(value: string | undefined): value is string {
+    return typeof value === "string" && /^0x[a-fA-F0-9]{40}$/.test(value);
 }
 
 export async function POST(req: Request) {
     try {
-        const rawBody = await req.text(); // Read raw text for signature
+        const rawBody = await req.text(); // Raw body is required for signature verification
 
-        // 1. Signature Verification
+        // 1. Signature Verification (fail-closed: no secret installed => refuse)
         const secret = process.env.THIRDWEB_WEBHOOK_SECRET;
-        if (secret) {
-            // Re-enable this check once USER confirms Secret is in Env and Webhook sends header
-            // For now, we log if it fails but don't hard-block to avoid outage during setup if user hasn't set env var yet.
-            // BUT user explicitly asked to "blindar", so we should block ideally. 
-            // Logic: If verify fails, simple log for now, but ideally uncomment block below.
-
-            /* 
-            if (!isValidSignature(req, rawBody, secret)) {
-                console.warn("🚫 Invalid Webhook Signature - Blocking Request");
-                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-            } 
-            */
-            // NOTE: Implementing "Light" blocking: if header exists, must match. If NO header (maybe old webhook), pass?
-            // Actually, user wants security. Let's make it robust but safe:
-            // We will PARSE the body first.
+        if (!secret) {
+            console.error("❌ [THIRDWEB_WEBHOOK] THIRDWEB_WEBHOOK_SECRET not configured — refusing to process");
+            return NextResponse.json(
+                { error: "THIRDWEB_WEBHOOK_SECRET not configured" },
+                { status: 503 }
+            );
+        }
+        if (!verifyWebhookSignature(req, rawBody, secret)) {
+            console.warn("🚫 [THIRDWEB_WEBHOOK] Invalid signature — blocked");
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const body = JSON.parse(rawBody);
 
-        // 2. Event Filtering (Crucial for Resource Optimization)
-        // Only process specific events (e.g., Transfer)
+        // 2. Event Filtering (resource optimization): only Transfer events / test pings
         const eventName = body.eventName || body.event || body.logs?.[0]?.eventName;
-
-        // If it's NOT a Transfer, ignore it immediately (200 OK)
-        // Also allow specialized events if needed
         if (eventName !== "Transfer" && body.type !== "TEST_NOTIFICATION") {
-            console.log(`⚠️ Ignoring filtered event: ${eventName || body.type}`);
+            console.log(`⚠️ [THIRDWEB_WEBHOOK] Ignoring filtered event: ${eventName || body.type}`);
             return NextResponse.json({ status: "ignored" });
+        }
+
+        if (body.type === "TEST_NOTIFICATION") {
+            console.log("✅ [THIRDWEB_WEBHOOK] Test notification acknowledged");
+            return NextResponse.json({ status: "ok" });
         }
 
         console.log("🕸️ [THIRDWEB_WEBHOOK] Processing Transfer:", JSON.stringify(body, null, 2));
 
-        if (body.type === "TEST_NOTIFICATION") {
-            return NextResponse.json({ status: "ok" });
-        }
-
-        // 3. Extract Transfer Data
-        // Structure depends on webhook type. Assuming "Contract Event"
+        // 3. Extract Transfer Data (Decoded args from Transfer(from, to, value))
         const log = body.logs?.[0];
         const txHash = body.transactionHash || log?.transactionHash || "unknown";
 
-        // Decoded args from Transfer(from, to, value)
-        // Thirdweb often sends decoded args in `args` or `decoded`
         let fromAddress = "unknown";
         let toAddress = "unknown";
         let value = "0";
@@ -93,7 +99,7 @@ export async function POST(req: Request) {
         if (log?.args) {
             fromAddress = log.args.from || log.args[0] || "unknown";
             toAddress = log.args.to || log.args[1] || "unknown";
-            value = log.args.value || log.args[2] || "0";
+            value = log.args.value ?? log.args[2] ?? "0";
         } else if (body.from && body.to) {
             // Fallback for Wallet Activity webhooks
             fromAddress = body.from;
@@ -101,9 +107,46 @@ export async function POST(req: Request) {
             value = body.value || body.amount || "0";
         }
 
-        // 4. Record DB Entry & Resolve Purchase
-        const purchaseId = body.metadata?.purchaseId || body.purchaseId;
+        const isMint = fromAddress === "0x0000000000000000000000000000000000000000" || fromAddress === "0x0";
 
+        // 4. Resolve + VALIDATE purchase BEFORE mutating anything
+        const purchaseId = body.metadata?.purchaseId || body.purchaseId;
+        let purchase: typeof purchases.$inferSelect | undefined = undefined;
+
+        if (purchaseId) {
+            purchase = await db.query.purchases.findFirst({ where: eq(purchases.purchaseId, purchaseId) });
+
+            if (!purchase) {
+                console.error(`❌ [THIRDWEB_WEBHOOK] purchaseId ${purchaseId} not found — refusing to complete`);
+                return NextResponse.json({ error: "Purchase not found" }, { status: 400 });
+            }
+
+            // Idempotency: never re-process a completed purchase
+            if (purchase.status === "completed") {
+                console.log(`♻️ [THIRDWEB_WEBHOOK] Purchase ${purchaseId} already completed — idempotent no-op`);
+                return NextResponse.json({ success: true, idempotent: true });
+            }
+
+            // Cryptographic integrity: a purchase cannot be finalized without an on-chain hash
+            if (!txHash || txHash === "unknown") {
+                console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} missing on-chain txHash — refusing`);
+                return NextResponse.json({ error: "Missing transaction hash" }, { status: 400 });
+            }
+
+            // Zero-value transfers are never purchases
+            if ((Number(value) || 0) <= 0) {
+                console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} reported value ${value} — refusing`);
+                return NextResponse.json({ error: "Invalid transfer value" }, { status: 400 });
+            }
+
+            // Completing a purchase for an unknown wallet is a red flag
+            if (!isHexWallet(toAddress)) {
+                console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} recipient is not a valid wallet — refusing`);
+                return NextResponse.json({ error: "Invalid recipient" }, { status: 400 });
+            }
+        }
+
+        // 5. Record DB Entry (ledger of observed transfers)
         await db.insert(transactions).values({
             amount: value.toString(),
             currency: 'CRYPTO',
@@ -112,86 +155,77 @@ export async function POST(req: Request) {
             processedAt: new Date(),
         });
 
-        if (purchaseId) {
+        // 6. Complete the purchase, notify Edge API and sync DAO membership
+        if (purchase && purchaseId) {
             try {
-                // Update Purchase record with transactionHash (FIX #4)
-                await db.execute(sql`
-                    UPDATE purchases 
-                    SET status = 'completed', 
-                        transaction_hash = ${txHash}, -- ✅ Store blockchain TX hash
-                        updated_at = now() 
-                    WHERE purchaseId = ${purchaseId}
-                `);
+                await db
+                    .update(purchases)
+                    .set({
+                        status: 'completed',
+                        transactionHash: txHash,
+                        updatedAt: new Date(),
+                    })
+                    .where(eq(purchases.purchaseId, purchaseId));
 
-                // Fetch details for Edge notification
-                const purchase = await db.query.purchases.findFirst({
-                    where: eq(purchases.purchaseId, purchaseId)
-                });
+                const metadata = purchase.metadata as any;
+                const edgeWebhookUrl = process.env.TELEGRAM_EDGE_API_URL + '/core/callback';
+                const edgeSecret = process.env.CORE_CALLBACK_SECRET;
 
-                if (purchase) {
-                    const metadata = purchase.metadata as any;
-                    const edgeWebhookUrl = process.env.TELEGRAM_EDGE_API_URL + '/core/callback';
-                    const edgeSecret = process.env.CORE_CALLBACK_SECRET;
+                if (edgeWebhookUrl && edgeSecret) {
+                    const payload = {
+                        type: 'PURCHASE_COMPLETED',
+                        actionId: purchaseId,
+                        telegramUserId: metadata?.paymentConfig?.payOptions?.metadata?.telegramId,
+                        amount: Number(purchase.amount),
+                        protocolId: metadata?.paymentConfig?.payOptions?.metadata?.projectId,
+                        timestamp: Math.floor(Date.now() / 1000)
+                    };
 
-                    if (edgeWebhookUrl && edgeSecret) {
-                        const payload = {
-                            type: 'PURCHASE_COMPLETED',
-                            actionId: purchaseId,
-                            telegramUserId: metadata?.paymentConfig?.payOptions?.metadata?.telegramId,
-                            amount: Number(purchase.amount),
-                            protocolId: metadata?.paymentConfig?.payOptions?.metadata?.projectId,
-                            timestamp: Math.floor(Date.now() / 1000)
-                        };
+                    const signature = crypto
+                        .createHmac('sha256', edgeSecret)
+                        .update(JSON.stringify(payload))
+                        .digest('hex');
 
-                        const signature = crypto
-                            .createHmac('sha256', edgeSecret)
-                            .update(JSON.stringify(payload))
-                            .digest('hex');
+                    await fetch(edgeWebhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-core-signature': signature
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    console.log(`📡 [THIRDWEB_WEBHOOK] Notified Edge API of completed purchase: ${purchaseId}`);
+                }
 
-                        await fetch(edgeWebhookUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-core-signature': signature
-                            },
-                            body: JSON.stringify(payload)
-                        });
-                        console.log(`📡 [Webhook] Notified Edge API of completed purchase: ${purchaseId}`);
-                    }
+                // 🏛️ DAO Membership Sync: register or update the holder
+                try {
+                    const wallet = purchase.userId.toLowerCase();
+                    const projectId = purchase.projectId;
+                    const count = 1;
 
-                    // 🏛️ DAO Membership Sync: Register or update the holder in dao_members
-                    try {
-                        const { daoMembers } = await import("@/db/schema");
-                        const wallet = purchase.userId.toLowerCase();
-                        const projectId = purchase.projectId;
-                        
-                        // Default to 1 artifact if not specified
-                        const count = 1;
-
-                        await db.insert(daoMembers)
-                            .values({
-                                projectId,
-                                wallet,
-                                artifactsCount: count,
-                                votingPower: count.toString(),
-                                joinedAt: new Date(),
+                    await db.insert(daoMembers)
+                        .values({
+                            projectId,
+                            wallet,
+                            artifactsCount: count,
+                            votingPower: count.toString(),
+                            joinedAt: new Date(),
+                            lastActiveAt: new Date(),
+                        })
+                        .onConflictDoUpdate({
+                            target: [daoMembers.projectId, daoMembers.wallet],
+                            set: {
+                                artifactsCount: sql`${daoMembers.artifactsCount} + ${count}`,
+                                votingPower: sql`(${daoMembers.votingPower}::integer + ${count})::text`,
                                 lastActiveAt: new Date(),
-                            })
-                            .onConflictDoUpdate({
-                                target: [daoMembers.projectId, daoMembers.wallet],
-                                set: {
-                                    artifactsCount: sql`${daoMembers.artifactsCount} + ${count}`,
-                                    votingPower: sql`(${daoMembers.votingPower}::integer + ${count})::text`,
-                                    lastActiveAt: new Date(),
-                                }
-                            });
-                        console.log(`🏛️ [Webhook] DAO member synchronized for wallet ${wallet} in project ${projectId}`);
-                    } catch (daoError: any) {
-                        console.error("❌ [Webhook] Failed to sync DAO member:", daoError.message);
-                    }
+                            }
+                        });
+                    console.log(`🏛️ [THIRDWEB_WEBHOOK] DAO member synchronized for wallet ${wallet} in project ${projectId}`);
+                } catch (daoError: any) {
+                    console.error("❌ [THIRDWEB_WEBHOOK] Failed to sync DAO member:", daoError.message);
                 }
             } catch (err) {
-                console.error(`⚠️ Error resolving purchase ${purchaseId}:`, err);
+                console.error(`⚠️ [THIRDWEB_WEBHOOK] Error completing purchase ${purchaseId}:`, err);
             }
         }
 
@@ -205,10 +239,10 @@ export async function POST(req: Request) {
             }));
         }
 
-        // 5. Notify Discord
+        // 7. Notify Discord
         await sendPaymentNotification({
             type: "payment_received",
-            amount: Number(value), // Warn: This interprets raw uint256 as Number (might be huge)
+            amount: Number(value),
             currency: "PANDORAS_KEY (Events)",
             method: "crypto",
             status: "completed",
@@ -220,16 +254,15 @@ export async function POST(req: Request) {
             }
         });
 
-        // 6. WEBHOOK: Notify external clients if it's a MINT (from null address)
-        const isMint = fromAddress === "0x0000000000000000000000000000000000000000" || fromAddress === "0x0";
+        // 8. MINT events: legal certification + notify external clients + DAO membership
         if (isMint) {
-            console.log(`✅ [Webhook] DETECTED MINT EVENT - from: ${fromAddress}, to: ${toAddress}`);
-            
+            console.log(`✅ [THIRDWEB_WEBHOOK] DETECTED MINT EVENT - from: ${fromAddress}, to: ${toAddress}`);
+
             try {
                 const tokenId = log?.args?.tokenId || log?.args?.[0] || "unknown";
 
                 // ⚖️ V3: Generate Legal Integrity Proof & Certification
-                if (purchaseId && tokenId !== "unknown") {
+                if (purchase && purchaseId && tokenId !== "unknown") {
                     await LegalEngine.certifyPurchase(purchaseId, tokenId.toString());
                 }
 
@@ -252,50 +285,6 @@ export async function POST(req: Request) {
                 }
             } catch (webhookError) {
                 console.warn('⚠️ Failed to queue mint webhook:', webhookError);
-            }
-
-            // 🏛️ FIX #2: DAO Membership Sync for MINTS
-            // MINT events don't have purchaseId, but we still need to register holder
-            // The recipient (toAddress) received the tokens, so they should be in daoMembers
-            const mintWallet = toAddress.toLowerCase();
-            
-            // Validate it's an actual wallet address (42 chars, 0x prefix)
-            const isWallet = mintWallet.length === 42 && mintWallet.startsWith('0x');
-            
-            if (isWallet) {
-                try {
-                    // For mints, we don't have a direct purchase link, so we use a default count
-                    // The actual count will come from on-chain totalSupply or user query
-                    const projectId = body.metadata?.projectId || body.projectId || 1; // Default to project 1 if unknown
-                    
-                    console.log(`🏛️ [Webhook] Registering MINT holder: ${mintWallet} for project ${projectId}`);
-                    
-                    const { daoMembers } = await import("@/db/schema");
-                    
-                    await db.insert(daoMembers)
-                        .values({
-                            projectId,
-                            wallet: mintWallet,
-                            artifactsCount: 1, // Default count for mint
-                            votingPower: "1",
-                            joinedAt: new Date(),
-                            lastActiveAt: new Date(),
-                        })
-                        .onConflictDoUpdate({
-                            target: [daoMembers.projectId, daoMembers.wallet],
-                            set: {
-                                artifactsCount: sql`${daoMembers.artifactsCount} + 1`,
-                                votingPower: sql`CAST(CAST(${daoMembers.votingPower} AS NUMERIC) + 1 AS VARCHAR)`,
-                                lastActiveAt: new Date(),
-                            }
-                        });
-                    
-                    console.log(`✅ [Webhook] DAO member synchronized for MINT wallet ${mintWallet} in project ${projectId}`);
-                } catch (mintError: any) {
-                    console.error("❌ [Webhook] Failed to sync MINT DAO member:", mintError.message);
-                }
-            } else {
-                console.warn(`⚠️ [Webhook] MINT recipient is not a valid wallet: ${toAddress}`);
             }
         }
 

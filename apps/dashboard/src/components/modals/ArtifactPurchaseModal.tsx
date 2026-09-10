@@ -608,10 +608,10 @@ export default function ArtifactPurchaseModal({
                                     </button>
                                 )}
 
-                                {/* Traditional Payment Bridge (Stripe / Wire Transfer) */}
-                                {['stripe', 'wire', 'card'].some(m => project.payment_methods?.includes(m)) && (
+                                {/* Traditional Payment Bridge (Wire Transfer) */}
+                                {['wire'].some(m => project.payment_methods?.includes(m)) && (
                                     <div className="pt-4 border-t border-zinc-800/50 mt-4">
-                                        <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest text-center mb-4">O PAGA CON MEDIOS TRADICIONALES</p>
+                                        <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest text-center mb-4">O PAGA CON TRANSFERENCIA BANCARIA</p>
                                         <button 
                                             onClick={() => {
                                                 const tierSlug = String(phase?.name || phase?.id || 'silver').toLowerCase();
@@ -620,7 +620,7 @@ export default function ArtifactPurchaseModal({
                                             className="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold py-4 rounded-xl border border-zinc-800 flex items-center justify-center gap-2 group transition-all"
                                         >
                                             <CreditCard className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                                            Pagar con Tarjeta o Transferencia
+                                            Pagar con Transferencia Bancaria
                                         </button>
                                         <p className="text-[10px] text-zinc-500 text-center mt-3 px-4 italic leading-tight">
                                             Tu artefacto será registrado en tu perfil de {project.title} una vez confirmado el pago.

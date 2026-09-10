@@ -504,6 +504,7 @@ export async function POST(req: NextRequest) {
 
     // 6. Growth Engine Trigger
     const GROWTH_ENGINE_V2 = true;
+    try {
     if (GROWTH_ENGINE_V2 && result) {
       // Re-resolve phone from body as last-resort (in case DB upsert didn't preserve it)
       const resolvedPhone = result.phoneNumber || phoneNumber || 
@@ -568,6 +569,12 @@ export async function POST(req: NextRequest) {
         const { MarketingEngine } = await import('@/lib/marketing/engine');
         await MarketingEngine.startCampaign("Market Attack", { leadId: result.id });
       }
+    }
+    } catch (growthEngineErr: any) {
+      // Non-blocking: lead ingestion must NEVER fail because the Growth Engine
+      // (which relies on db.transaction + SELECT FOR UPDATE) is unavailable under
+      // the neon-http driver. Log and continue — alerts/webhooks still fire below.
+      console.error(`[Growth OS] ⚠️ Growth Engine failed (non-blocking): ${growthEngineErr?.message || growthEngineErr}`);
     }
 
     if (!result) {

@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build dynamic system prompt using sanitized DemoContext
-    const { resolveSafeDemoContext } = await import('@/lib/hermes/simulator-types');
+    const { resolveSafeDemoContext, buildSandboxTrace } = await import('@/lib/hermes/simulator-types');
     const demoCtx = resolveSafeDemoContext({
       company: companyName,
       industry,
@@ -148,6 +148,15 @@ export async function POST(req: NextRequest) {
         confidence: '91%',
       };
     }
+
+    // Build live Hermes OS engine trace (5-layer pipeline + execution action)
+    const trace = buildSandboxTrace({
+      company: effectiveCompany,
+      industry: effectiveIndustry,
+      goal: demoCtx.goal,
+      intent: detectedIntent,
+      message: userMessage,
+    });
 
     const honestyDirective = `
 REGLAS DE TRANSPARENCIA Y HONESTIDAD DE DEMOSTRACIÓN:
@@ -203,6 +212,7 @@ REGLAS DE FORMATO VISUAL Y ESTILO:
       response: botResponseText,
       remaining: Math.max(0, SANDBOX_DAILY_LIMIT - currentCount),
       intentDetected: detectedIntent,
+      trace,
     });
   } catch (err: any) {
     console.error('[Hermes Sandbox Error]:', err);

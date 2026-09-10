@@ -44,7 +44,7 @@ export const SOW_TEMPLATES: Record<SOWTier, (v: SOWVariables) => string> = {
     <p>Inicio: Inmediato tras pago.<br>Entrega: 48 a 72 horas hábiles.<br>Sesión de revisión: Incluida (1x45 min).</p>
 
     <h3>6. Fee y Condiciones</h3>
-    <p><strong>Tarifa:</strong> ${v.amount} USD<br>Pago 100% por adelantado via Crypto/Stripe/Wire.</p>
+    <p><strong>Tarifa:</strong> ${v.amount} USD<br>Pago 100% por adelantado via Crypto o Wire.</p>
 
     <h3>7. Aceptación</h3>
 

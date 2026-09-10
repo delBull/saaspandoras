@@ -5,7 +5,7 @@ export interface PaymentNotification {
     type: "payment_received" | "payment_failed" | "payment_dispute";
     amount: number;
     currency: string;
-    method: "stripe" | "crypto" | "wire";
+    method: "crypto" | "wire";
     status: "pending" | "completed" | "failed" | "refunded";
     linkId?: string;
     clientId?: string;
@@ -34,7 +34,6 @@ export async function sendPaymentNotification(data: PaymentNotification) {
     };
 
     const methodMap = {
-        stripe: "💳 Tarjeta (Stripe)",
         crypto: "🪙 Crypto",
         wire: "🏦 Transferencia Bancaria"
     };

@@ -23,7 +23,6 @@ export interface OrganizationConfig {
   capabilities: {
     hasOpenAI: boolean;
     hasTelegram: boolean;
-    hasStripe: boolean;
   };
   
   installedPacks: string[];
@@ -63,8 +62,7 @@ export class OrganizationRuntime {
       },
       capabilities: {
         hasOpenAI: true,
-        hasTelegram: true,
-        hasStripe: true
+        hasTelegram: true
       },
       installedPacks: [
         "pandoras.snarai",

@@ -174,7 +174,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       {/* ── BACKGROUND IFRAME ── */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none grayscale">
         <iframe 
-          src={`https://pandoras.finance/en/nexus${auth.wallet ? `?wallet=${auth.wallet}` : ''}${iframeToken ? `${auth.wallet ? '&' : '?'}token=${iframeToken}` : ''}`} 
+          src={`${process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandoras.finance'}/nexus/rooms${auth.wallet ? `?wallet=${auth.wallet}` : ''}${iframeToken ? `${auth.wallet ? '&' : '?'}token=${iframeToken}` : ''}`} 
           className="w-full h-full border-none" 
         />
       </div>

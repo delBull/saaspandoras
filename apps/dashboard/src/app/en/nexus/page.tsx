@@ -8,12 +8,12 @@ export default async function EnNexusRedirectPage({
   searchParams: Promise<{ token?: string; unlock?: string }>;
 }) {
   const { token, unlock } = await searchParams;
-  const marketingBase = process.env.NEXT_PUBLIC_MARKETING_URL || "https://pandoras.finance";
+  const nexusBase = process.env.NEXT_PUBLIC_NEXUS_URL || "https://nexus.pandas.finance";
 
   const queryParams = new URLSearchParams();
   if (token) queryParams.set("token", token);
   if (unlock) queryParams.set("unlock", unlock);
 
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
-  redirect(`${marketingBase}/en/nexus${queryString}`);
+  redirect(`${nexusBase}/nexus${queryString}`);
 }

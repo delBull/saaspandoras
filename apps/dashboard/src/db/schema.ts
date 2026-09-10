@@ -1536,7 +1536,6 @@ export const clientStatusEnum = pgEnum("client_status", [
 ]);
 
 export const paymentMethodEnum = pgEnum("payment_method", [
-  "stripe",
   "crypto",
   "wire"
 ]);
@@ -1587,7 +1586,7 @@ export const paymentLinks = pgTable("payment_links", {
   currency: varchar("currency", { length: 10 }).default("USD").notNull(),
 
   // Methods Enabled
-  methods: jsonb("methods").default(['stripe', 'crypto', 'wire']).notNull(), // Array of enabled methods
+  methods: jsonb("methods").default(['crypto', 'wire']).notNull(), // Array of enabled methods
   destinationWallet: varchar("destination_wallet", { length: 42 }), // Override for Crypto Payments
 
   // Lifecycle
@@ -1671,14 +1670,13 @@ export const purchases = pgTable("purchases", {
   amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
   currency: varchar("currency", { length: 10 }).default("USD").notNull(),
 
-  paymentMethod: varchar("payment_method", { length: 20 }).notNull(), // 'stripe', 'crypto'
+  paymentMethod: varchar("payment_method", { length: 20 }).notNull(), // 'crypto', 'wire'
   status: transactionStatusEnum("status").default('pending').notNull(),
 
   purchaseId: varchar("purchase_id", { length: 255 }).notNull().unique(), // External reference
   idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull().unique(),
 
   thirdwebSessionId: varchar("thirdweb_session_id", { length: 255 }),
-  stripeSessionId: varchar("stripe_session_id", { length: 255 }),
 
   metadata: jsonb("metadata").default({}),
   
