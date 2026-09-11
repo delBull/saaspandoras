@@ -48,7 +48,40 @@ export interface FinancialProposal {
 
 export class FinancialOrchestratorService {
   private static proposals: Map<string, FinancialProposal> = new Map();
+  private static consumedNonces: Set<string> = new Set();
+  private static consumedSignatures: Set<string> = new Set();
   private static readonly TTL_MS = 30 * 60 * 1000; // 30 minutos
+
+  private static canonicalWalletOverride?: string;
+
+  /** Reset internal anti-replay registries (for testing and ephemeral resets) */
+  public static resetConsumedStateForTesting(): void {
+    this.consumedNonces.clear();
+    this.consumedSignatures.clear();
+    this.canonicalWalletOverride = undefined;
+    try {
+      import('@/db').then(({ db }) => {
+        import('@/db/schema').then(({ a2aNonces }) => {
+          import('drizzle-orm').then(({ like, or }) => {
+            db.delete(a2aNonces)
+              .where(or(like(a2aNonces.nonce, 'fin_nonce_%'), like(a2aNonces.nonce, 'fin_sig_%')))
+              .catch(() => {});
+          });
+        });
+      }).catch(() => {});
+    } catch {
+      // Ignored in unit testing environments without DB
+    }
+  }
+
+  /** Override canonical wallet during automated test suites (without touching production constants) */
+  public static setCanonicalWalletForTesting(wallet?: string): void {
+    this.canonicalWalletOverride = wallet ? wallet.toLowerCase() : undefined;
+  }
+
+  public static getCanonicalWallet(): string {
+    return this.canonicalWalletOverride || MARCO_CANONICAL_WALLET;
+  }
 
   /**
    * Prepares an on-chain / financial execution payload ready for Marco's signature.
@@ -160,6 +193,28 @@ export class FinancialOrchestratorService {
       };
     }
 
+    if (proposal.status === 'EXECUTED') {
+      return {
+        success: false,
+        message: `⛔ **Ataque de Replay Bloqueado:** La propuesta financiera \`${params.proposalId}\` ya fue ejecutada previamente.`,
+      };
+    }
+
+    if (this.consumedNonces.has(proposal.nonce)) {
+      return {
+        success: false,
+        message: `⛔ **Nonce Consumido:** El nonce \`${proposal.nonce}\` ya fue utilizado en una transacción previa. Replay attack bloqueado.`,
+      };
+    }
+
+    const sigHash = ethers.utils.sha256(ethers.utils.toUtf8Bytes(params.signature));
+    if (this.consumedSignatures.has(sigHash)) {
+      return {
+        success: false,
+        message: `⛔ **Firma Criptográfica ya Consumida:** Esta firma EIP-712 ya fue liquidada. Replay attack bloqueado.`,
+      };
+    }
+
     if (Date.now() > proposal.expiry) {
       proposal.status = 'EXPIRED';
       return {
@@ -198,7 +253,8 @@ export class FinancialOrchestratorService {
     }
 
     // 2. Strict Verification against Marco's canonical wallet
-    if (recoveredSigner !== MARCO_CANONICAL_WALLET) {
+    const expectedSigner = this.getCanonicalWallet();
+    if (recoveredSigner !== expectedSigner) {
       await SecurityAuditLogger.logEvent({
         organizationId: proposal.tenantId,
         actorId: recoveredSigner,
@@ -208,22 +264,66 @@ export class FinancialOrchestratorService {
         correlationId: proposal.id,
         metadata: {
           attemptedSigner: recoveredSigner,
-          expectedSigner: MARCO_CANONICAL_WALLET,
+          expectedSigner,
           proposalId: proposal.id,
         },
       });
 
       return {
         success: false,
-        message: `⛔ **Firma Rechazada:** La wallet firmante (\`${recoveredSigner}\`) NO coincide con la wallet soberana del Fundador (\`${MARCO_CANONICAL_WALLET}\`). Transacción abortada.`,
+        message: `⛔ **Firma Rechazada:** La wallet firmante (\`${recoveredSigner}\`) NO coincide con la wallet soberana del Fundador (\`${expectedSigner}\`). Transacción abortada.`,
       };
     }
 
-    // 3. Mark as signed and executed
+    // 3. Distributed Replay Defense (Multi-Pod Vercel Safety via a2a_nonces)
+    const nonceKey = `fin_nonce_${proposal.nonce}`;
+    const sigKey = `fin_sig_${sigHash}`;
+    const expiresAt = new Date(Date.now() + this.TTL_MS);
+
+    try {
+      const { db } = await import('@/db');
+      const { a2aNonces } = await import('@/db/schema');
+
+      // Atomic DB reservation for nonce
+      const insertedNonce = await db
+        .insert(a2aNonces)
+        .values({ nonce: nonceKey, expiresAt })
+        .onConflictDoNothing()
+        .returning();
+
+      if (insertedNonce.length === 0) {
+        this.consumedNonces.add(proposal.nonce);
+        return {
+          success: false,
+          message: `⛔ **Ataque de Replay Distribuido Bloqueado:** El nonce \`${proposal.nonce}\` ya fue consumido en otro nodo del clúster.`,
+        };
+      }
+
+      // Atomic DB reservation for signature
+      const insertedSig = await db
+        .insert(a2aNonces)
+        .values({ nonce: sigKey, expiresAt })
+        .onConflictDoNothing()
+        .returning();
+
+      if (insertedSig.length === 0) {
+        this.consumedSignatures.add(sigHash);
+        return {
+          success: false,
+          message: `⛔ **Firma Criptográfica ya Consumida en Clúster:** Esta firma EIP-712 ya fue liquidada en otro pod. Replay attack bloqueado.`,
+        };
+      }
+    } catch (dbErr: any) {
+      console.warn('[FinancialOrchestrator] Distributed DB nonce check warning (continuing with in-memory guard):', dbErr?.message);
+    }
+
+    // 4. Mark as signed and executed + consume anti-replay primitives locally
     proposal.status = 'EXECUTED';
     proposal.signedAt = Date.now();
     proposal.signerAddress = recoveredSigner;
     proposal.signature = params.signature;
+    this.consumedNonces.add(proposal.nonce);
+    this.consumedSignatures.add(sigHash);
 
     // 4. IPFS Receipt Generation (K25 Sovereign Knowledge Vault)
     const receiptPayload = {

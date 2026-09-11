@@ -47,31 +47,29 @@ export async function getAvailableSlots(userId: string) {
             )
             .orderBy(desc(schedulingSlots.startTime));
         } catch (dbErr: any) {
-            // Resilient fallback when reserved_until / reserved_by are not yet migrated in target database
-            if (dbErr?.message?.includes('reserved_until') || dbErr?.message?.includes('column') || dbErr?.code === '42703') {
-                console.warn('[Scheduler] Falling back to core columns for getAvailableSlots');
-                slots = await db.select({
-                    id: schedulingSlots.id,
-                    userId: schedulingSlots.userId,
-                    startTime: schedulingSlots.startTime,
-                    endTime: schedulingSlots.endTime,
-                    isBooked: schedulingSlots.isBooked,
-                    type: schedulingSlots.type,
-                    createdAt: schedulingSlots.createdAt,
-                    updatedAt: schedulingSlots.updatedAt,
-                })
-                .from(schedulingSlots)
-                .where(
-                    and(
-                        eq(schedulingSlots.userId, userId),
-                        eq(schedulingSlots.isBooked, false),
-                        gte(schedulingSlots.startTime, bufferTime)
-                    )
-                )
-                .orderBy(desc(schedulingSlots.startTime));
-            } else {
-                throw dbErr;
+            if (dbErr?.message?.includes('reserved_until') || dbErr?.message?.includes('reserved_by') || dbErr?.code === '42703') {
+                console.error('[Scheduler] 🚨 SCHEMA CAPABILITY ERROR: Neon database is missing reserved_until / reserved_by columns. Migration 0049 required.');
+                return { success: false, error: "Scheduling unavailable: schema migration required (missing reserved_until/reserved_by)" };
             }
+            throw dbErr;
+        }
+
+        if (!slots || slots.length === 0) {
+            const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
+            const dynamicSlots = await SovereignCalendarEngine.calculateDynamicSlots({ hostUserId: userId });
+            const mappedSlots = dynamicSlots.map((s) => ({
+                id: `dyn_${userId}_${new Date(s.startTime).getTime()}_${new Date(s.endTime).getTime()}`,
+                userId: userId,
+                startTime: new Date(s.startTime),
+                endTime: new Date(s.endTime),
+                isBooked: false,
+                reservedUntil: null,
+                reservedBy: null,
+                type: `${s.durationMinutes}_min`,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }));
+            return { success: true, slots: mappedSlots };
         }
 
         return { success: true, slots };
@@ -134,6 +132,62 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
             if (proj?.discordWebhookUrl) projectWebhookUrl = proj.discordWebhookUrl;
         } catch { /* non-blocking */ }
 
+        // 0. Dynamic Slot & Atomic Hold Execution
+        if (slotId.startsWith('dyn_')) {
+            const parts = slotId.split('_');
+            const hostUserId = parts[1] || 'usr_platform_admin_default';
+            const startMs = parts[2] || '0';
+            const endMs = parts[3] || '0';
+            const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
+            const holdResult = await SovereignCalendarEngine.acquireAtomicHold({
+                hostUserId,
+                startTime: new Date(Number(startMs)),
+                endTime: new Date(Number(endMs)),
+                heldBy: normalizedEmail,
+                holdMinutes: 15,
+                idempotencyKey: leadData.fingerprint || normalizedEmail,
+            });
+
+            if (!holdResult.success || !holdResult.holdId) {
+                return { success: false, error: holdResult.message || "Slot no longer available or held by another person" };
+            }
+
+            const bookResult = await SovereignCalendarEngine.executeIdempotentBooking({
+                holdId: holdResult.holdId,
+                idempotencyKey: leadData.fingerprint || normalizedEmail,
+                leadName: leadData.name,
+                leadEmail: normalizedEmail,
+                leadPhone: leadData.phone,
+                notificationPreference: leadData.preference,
+                notes: leadData.notes,
+            });
+
+            if (!bookResult.success) {
+                return { success: false, error: bookResult.error || "Failed to process booking" };
+            }
+
+            return { success: true, bookingId: bookResult.bookingId };
+        }
+
+        if (slotId.startsWith('hold_')) {
+            const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
+            const bookResult = await SovereignCalendarEngine.executeIdempotentBooking({
+                holdId: slotId,
+                idempotencyKey: leadData.fingerprint || normalizedEmail,
+                leadName: leadData.name,
+                leadEmail: normalizedEmail,
+                leadPhone: leadData.phone,
+                notificationPreference: leadData.preference,
+                notes: leadData.notes,
+            });
+
+            if (!bookResult.success) {
+                return { success: false, error: bookResult.error || "Failed to process booking" };
+            }
+
+            return { success: true, bookingId: bookResult.bookingId };
+        }
+
         // 1. ATOMIC TRANSACTION: Lock slot FIRST
         return await db.transaction(async (tx) => {
           let updatedSlot;
@@ -158,15 +212,11 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
               .returning();
             updatedSlot = res;
           } catch (slotErr: any) {
-            if (slotErr?.message?.includes('reserved_until') || slotErr?.code === '42703') {
-              const [res] = await tx.update(schedulingSlots)
-                .set({ isBooked: true })
-                .where(and(eq(schedulingSlots.id, slotId), eq(schedulingSlots.isBooked, false)))
-                .returning();
-              updatedSlot = res;
-            } else {
-              throw slotErr;
+            if (slotErr?.message?.includes('reserved_until') || slotErr?.message?.includes('reserved_by') || slotErr?.code === '42703') {
+              console.error('[Scheduler] 🚨 SCHEMA CAPABILITY ERROR in bookSlot: missing reservation columns. Aborting to prevent phantom booking.');
+              return { success: false, error: "Scheduling unavailable: schema migration required (missing reserved_until/reserved_by)" };
             }
+            throw slotErr;
           }
 
           if (!updatedSlot) {
@@ -291,7 +341,30 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
 export async function reserveSlot(slotId: string, reservePayload: { identifier: string }) {
   try {
     const now = new Date();
-    const expiry = new Date(now.getTime() + 5 * 60 * 1000); // 5 min
+    const expiry = new Date(now.getTime() + 15 * 60 * 1000); // 15 min
+
+    // 0. Dynamic Slot Atomic Hold
+    if (slotId.startsWith('dyn_')) {
+      const parts = slotId.split('_');
+      const hostUserId = parts[1] || 'usr_platform_admin_default';
+      const startMs = parts[2] || '0';
+      const endMs = parts[3] || '0';
+      const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
+      const holdResult = await SovereignCalendarEngine.acquireAtomicHold({
+        hostUserId,
+        startTime: new Date(Number(startMs)),
+        endTime: new Date(Number(endMs)),
+        heldBy: reservePayload.identifier,
+        holdMinutes: 15,
+        idempotencyKey: reservePayload.identifier,
+      });
+
+      if (!holdResult.success) {
+        return { success: false, error: holdResult.message || "Slot already taken or locked" };
+      }
+
+      return { success: true, holdId: holdResult.holdId, expiresAt: holdResult.expiresAt };
+    }
     
     // Atomically lock if not already locked or lock expired
     const result = await db.update(schedulingSlots)
@@ -317,7 +390,11 @@ export async function reserveSlot(slotId: string, reservePayload: { identifier: 
     }
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.includes('reserved_until') || error?.message?.includes('reserved_by') || error?.code === '42703') {
+      console.error('[Scheduler] 🚨 SCHEMA CAPABILITY ERROR in holdSlotForBooking: missing reservation columns.');
+      return { success: false, error: "Scheduling unavailable: schema migration required (missing reserved_until/reserved_by)" };
+    }
     console.error("[Scheduler] Reserve slot failed:", error);
     return { success: false, error: "Failed to reserve slot" };
   }
@@ -750,3 +827,20 @@ export async function completeCall(bookingId: string, outcome: 'interested' | 'n
     return { success: false, error: "Failed to save call outcome" };
   }
 }
+
+/**
+ * Action: Get Tenant Calendar Config
+ */
+export async function getTenantCalendarConfig(tenantSlug: string, hostUserId?: string) {
+  const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
+  return await SovereignCalendarEngine.resolveConfig({ tenantSlug, hostUserId });
+}
+
+/**
+ * Action: Save Tenant Calendar Config
+ */
+export async function saveTenantCalendarConfig(tenantSlug: string, config: any) {
+  const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
+  return await SovereignCalendarEngine.saveConfig({ tenantSlug, config });
+}
+

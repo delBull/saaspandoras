@@ -370,11 +370,22 @@ export async function POST(request: Request) {
             }
 
             const isPreview = process.env.VERCEL_ENV === "preview";
-            const cookieDomain = (isProd && !isPreview) || (hostHeader?.endsWith("pandoras.finance") && !hostHeader.includes("localhost"))
-                ? ".pandoras.finance"
-                : undefined;
+            const isStaging = hostHeader?.includes("staging") || process.env.NEXT_PUBLIC_ENVIRONMENT === "staging";
             
-            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'host-only'} | Secure: ${isProd} | SameSite: lax`);
+            // 🛡️ BLAST RADIUS ISOLATION: Staging strictly uses host-only cookies to prevent credential leakage
+            // to production root domain or untrusted preview environments.
+            let cookieDomain: string | undefined = undefined;
+            if (isProd && !isPreview && !isStaging) {
+                const trustedProdHosts = ["dash.pandoras.finance", "admin.pandoras.finance", "nexus.pandoras.finance"];
+                if (hostHeader && (trustedProdHosts.includes(hostHeader) || hostHeader.endsWith(".pandoras.finance"))) {
+                    cookieDomain = ".pandoras.finance";
+                }
+            } else {
+                // Host-only cookie for staging, preview, and local development
+                cookieDomain = undefined;
+            }
+            
+            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'host-only'} | Environment: ${isStaging ? 'staging' : (isProd ? 'production' : 'development')} | Secure: ${isProd} | SameSite: lax`);
 
             const cookieStore = await cookies();
             console.log("🔐 [LOGIN] Emitting Production-Ready Session Cookie...");

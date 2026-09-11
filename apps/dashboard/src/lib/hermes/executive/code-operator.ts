@@ -106,6 +106,26 @@ export class CodeOperatorService {
       };
     }
 
+    // 🛡️ HARD INVIOLABLE BOUND: Hermes cannot mutate its own executive authority or security rules
+    const { SystemInvariantEnforcer } = require('./invariants');
+    const invariantCheck = SystemInvariantEnforcer.checkCodeFilesInvariant(params.files);
+    if (!invariantCheck.allowed) {
+      return {
+        ok: false,
+        reviewCard: `🛡️ **Invariante Soberano Violado (Self-Mutation Prohibida)**\n\n${invariantCheck.reason}`,
+        error: 'BLOCKED_SELF_AUTHORITY_MUTATION',
+      };
+    }
+
+    // 🧪 Sandbox Validation Gate: Cannot propose broken patches
+    if (params.typecheckPassed === false || params.testsPassed === false) {
+      return {
+        ok: false,
+        reviewCard: '❌ **Validación de Sandbox Fallida:** El parche no superó el typecheck (`tsc`) o las pruebas unitarias en el entorno aislado.',
+        error: 'SANDBOX_VALIDATION_FAILED',
+      };
+    }
+
     const proposalId = `patch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const proposal: CodePatchProposal = {
       id: proposalId,

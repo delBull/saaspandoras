@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 import { CognitiveProfileWidget } from "@/components/hermes/CognitiveProfileWidget";
+import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
 
 interface Section {
   id: string;
@@ -516,6 +517,8 @@ export default function DealRoomConsole() {
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>ESPECIFICACIÓN</span>
           </Link>
+
+          <ConfigureAgendaButton tenantSlug="pandoras" vertical="PANDORAS_RWA" variant="compact" />
 
           <span className="hidden lg:flex items-center gap-1.5 text-[10px] text-zinc-500">
             <Activity className="w-3 h-3 text-amber-300" />

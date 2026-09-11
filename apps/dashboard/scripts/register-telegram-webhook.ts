@@ -21,6 +21,12 @@ const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 const args = process.argv.slice(2);
 const infoOnly = args.includes('--info-only');
+const isRemote = args.includes('--remote');
+const secretArgIdx = args.indexOf('--secret');
+const bearerSecret = (secretArgIdx !== -1 && args[secretArgIdx + 1])
+  ? String(args[secretArgIdx + 1])
+  : (process.env.ADMIN_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET || process.env.CRON_SECRET);
+
 const urlArgIdx = args.indexOf('--url');
 const targetUrl: string = (urlArgIdx !== -1 && args[urlArgIdx + 1])
   ? String(args[urlArgIdx + 1])
@@ -30,6 +36,27 @@ const targetUrl: string = (urlArgIdx !== -1 && args[urlArgIdx + 1])
 
 async function main() {
   console.log('--- 🤖 Hermes Telegram Webhook Inspector ---');
+
+  if (isRemote) {
+    const baseEndpoint = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+    console.log(`🌐 Registering remotely via Next.js endpoint: ${baseEndpoint}/api/hermes/bot/webhook/register`);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerSecret) {
+      headers['Authorization'] = `Bearer ${bearerSecret}`;
+      headers['x-admin-secret'] = bearerSecret;
+    }
+    const res = await fetch(`${baseEndpoint}/api/hermes/bot/webhook/register`, {
+      method: 'POST',
+      headers,
+    });
+    const data = await res.json() as any;
+    if (!res.ok || !data?.ok) {
+      console.error('❌ Remote registration failed:', data);
+      process.exit(1);
+    }
+    console.log('✅ Remote registration succeeded:', data);
+    return;
+  }
 
   if (!botToken) {
     console.error('❌ Error: HERMES_TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN is not set in environment.');

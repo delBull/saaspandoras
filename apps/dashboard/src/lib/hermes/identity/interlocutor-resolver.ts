@@ -88,6 +88,7 @@ function extractGrantedPermissions(perms: NexusPermissions | Record<string, any>
 
 const CANONICAL_ADMIN_WALLETS = [
   '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
+  '0x00c9f7ee9252cbe5eb7b370605a9b7c44756f40b',
   '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
   '0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba',
 ];
@@ -755,6 +756,7 @@ export class InterlocutorResolver {
     cap: FounderCapability
   ): boolean {
     if (!interlocutor) return false;
-    return Boolean(interlocutor.capabilities?.includes(cap));
+    const caps = interlocutor.capabilities || (interlocutor as any).founderCapabilities;
+    return Boolean(caps?.includes(cap));
   }
 }

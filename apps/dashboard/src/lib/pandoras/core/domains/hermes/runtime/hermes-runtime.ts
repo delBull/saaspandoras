@@ -433,6 +433,48 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         const msgText = input.message?.content?.trim() || '';
         const founderKey = interlocutor?.id || 'marco_founder';
 
+        // 🛡️ HARD INVIOLABLE BOUNDS: System Invariants apply universally, even to Marco
+        const { SystemInvariantEnforcer } = await import('@/lib/hermes/executive/invariants');
+        const invariantCheck = SystemInvariantEnforcer.checkCommandInvariants({
+          commandText: msgText,
+          actorId: interlocutor?.actorId || founderKey,
+          organizationId,
+        });
+
+        if (!invariantCheck.allowed) {
+          await SystemInvariantEnforcer.logInvariantBreach({
+            actorId: interlocutor?.actorId || founderKey,
+            organizationId,
+            violatedInvariant: invariantCheck.violatedInvariant!,
+            reason: invariantCheck.reason!,
+            rawPayload: { commandText: msgText },
+          });
+
+          await this.traceRecorder.complete(traceHandle, { success: false, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_invariant_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: `🛡️ **Invariante Soberano del Sistema Inviolable**\n\n${invariantCheck.reason}\n\n*Esta restricción es criptográfica y arquitectónica. Aplica de manera universal a todas las identidades del ecosistema, incluyendo al Fundador.*`,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'system-invariant-enforcer',
+              model: 'hard-inviolable-bound',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 1 },
+            },
+          };
+        }
+
         const { ExecutiveIntentClassifier } = await import('@/lib/hermes/executive/intent-classifier');
         const { ExecutivePlanner } = await import('@/lib/hermes/executive/executive-planner');
 

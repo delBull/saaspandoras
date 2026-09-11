@@ -234,24 +234,24 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     // Persist atomic turn (USER + ASSISTANT)
     await db.insert(hermesConversationMessages).values([
       {
-        id: input.turn.userMessage.id,
+        id: input.turn.userMessage.id || `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         organizationId: targetOrgId,
         conversationId: convId,
         role: input.turn.userMessage.role,
         content: input.turn.userMessage.content,
         sequence: nextSequence,
         idempotencyKey: `${input.idempotencyKey}_user`,
-        createdAt: input.turn.userMessage.createdAt
+        createdAt: input.turn.userMessage.createdAt || new Date(),
       },
       {
-        id: input.turn.assistantMessage.id,
+        id: input.turn.assistantMessage.id || `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_a`,
         organizationId: targetOrgId,
         conversationId: convId,
         role: input.turn.assistantMessage.role,
         content: input.turn.assistantMessage.content,
         sequence: nextSequence + 1,
         idempotencyKey: `${input.idempotencyKey}_assistant`,
-        createdAt: input.turn.assistantMessage.createdAt
+        createdAt: input.turn.assistantMessage.createdAt || new Date(),
       }
     ]);
 

@@ -26,6 +26,7 @@ import { CampaignPerformanceDashboard } from "./CampaignPerformanceDashboard";
 import { MarketingAnalytics } from "./MarketingAnalytics";
 import { GoldenLinksManager } from "./GoldenLinksManager";
 import { TenantLeadDrawer } from "@/components/portal/growth/TenantLeadDrawer";
+import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
 
 // Types matching API response roughly
 interface Execution {
@@ -112,11 +113,14 @@ export function MarketingDashboard({ projectId = 0, leads = [] }: MarketingDashb
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div>
-              <h2 className="text-xl font-bold text-white tracking-tight">Marketing & Campañas</h2>
-              <p className="text-xs text-zinc-400 mt-1">
-                Monitoreo de leads, métricas de retención y análisis de campañas B2B.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white tracking-tight">Marketing & Campañas</h2>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Monitoreo de leads, métricas de retención y análisis de campañas B2B.
+                </p>
+              </div>
+              <ConfigureAgendaButton tenantSlug="pandoras" vertical="GROWTH_OS" />
             </div>
 
             <Tabs defaultValue="overview" className="w-full">

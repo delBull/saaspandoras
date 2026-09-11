@@ -23,6 +23,7 @@ import {
 import type { NexusRole } from "@/lib/nexus/nexus-rbac";
 import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
 import { NexusHermesTerminal } from "./NexusHermesTerminal";
+import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
 
 export interface OperatorContext {
   name: string;
@@ -180,13 +181,16 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
             </div>
           </div>
 
-          <a
-            href="/nexus/rooms"
-            className="text-xs text-zinc-400 hover:text-amber-400 border border-white/10 px-3 py-1.5 rounded-xl hover:border-amber-500/30 transition-colors flex items-center gap-1.5"
-          >
-            <span>Deal Room</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <div className="flex items-center gap-2">
+            <ConfigureAgendaButton tenantSlug="pandoras" vertical="HERMES" />
+            <a
+              href="/nexus/rooms"
+              className="text-xs text-zinc-400 hover:text-amber-400 border border-white/10 px-3 py-1.5 rounded-xl hover:border-amber-500/30 transition-colors flex items-center gap-1.5"
+            >
+              <span>Deal Room</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
 
         {/* Tabs Navigation */}
