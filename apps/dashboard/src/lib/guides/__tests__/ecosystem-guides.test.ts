@@ -9,19 +9,20 @@ import {
 } from '../ecosystem-guides.data';
 
 describe('🧭 Nexus Onboarding Data & Logic (Hermes Tour)', () => {
-  it('should have 5 canonical onboarding stations', () => {
-    expect(ECOSYSTEM_STATIONS).toHaveLength(5);
+  it('should have 6 canonical onboarding stations including Sovereign Agenda', () => {
+    expect(ECOSYSTEM_STATIONS).toHaveLength(6);
     const stationIds = ECOSYSTEM_STATIONS.map((s) => s.id);
     expect(stationIds).toContain('nexus_core');
     expect(stationIds).toContain('nexus_growth');
     expect(stationIds).toContain('nexus_access');
     expect(stationIds).toContain('nexus_resources');
     expect(stationIds).toContain('nexus_cognitive');
+    expect(stationIds).toContain('nexus_scheduling');
   });
 
-  it('should enforce RBAC filtering: SUPER_ADMIN sees all 5 stations', () => {
+  it('should enforce RBAC filtering: SUPER_ADMIN sees all 6 stations', () => {
     const superAdminStations = getStationsForRole('SUPER_ADMIN');
-    expect(superAdminStations).toHaveLength(5);
+    expect(superAdminStations).toHaveLength(6);
   });
 
   it('should enforce RBAC filtering: VIEWER only sees permitted stations (no Access, Cognitive)', () => {

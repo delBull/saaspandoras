@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bot, Plus, Trash2, Key, Check, Copy, ExternalLink, ShieldAlert } from "lucide-react";
+import { Bot, Plus, Trash2, Key, Check, Copy, ExternalLink, ShieldAlert, Lock, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 
-export function CognitiveAgentsManager() {
+export function CognitiveAgentsManager({ canManage = true }: { canManage?: boolean }) {
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -19,9 +19,18 @@ export function CognitiveAgentsManager() {
   const [newAgentId, setNewAgentId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const getAuthHeaders = (): HeadersInit => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
+    return token
+      ? { "Content-Type": "application/json", "x-nexus-token": token, Authorization: `Bearer ${token}` }
+      : { "Content-Type": "application/json" };
+  };
+
   const loadAgents = async () => {
     try {
-      const res = await fetch("/api/nexus/agents/list");
+      const res = await fetch("/api/nexus/agents/list", {
+        headers: getAuthHeaders(),
+      });
       const data = await res.json();
       if (res.ok && data.ok) {
         setAgents(data.agents);
@@ -37,13 +46,14 @@ export function CognitiveAgentsManager() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage) return;
     setLoading(true);
     setMessage(null);
 
     try {
       const res = await fetch("/api/nexus/agents/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ agentId: agentId.trim(), name: name.trim(), walletAddress: walletAddress.trim() }),
       });
 
@@ -67,12 +77,13 @@ export function CognitiveAgentsManager() {
   };
 
   const handleRevoke = async (id: string) => {
+    if (!canManage) return;
     if (!confirm(`¿Estás seguro de revocar permanentemente el acceso del agente ${id}? Esta acción cortará su conexión al Hub.`)) return;
 
     try {
       const res = await fetch("/api/nexus/agents/revoke", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ agentId: id }),
       });
 
@@ -96,62 +107,84 @@ export function CognitiveAgentsManager() {
 
   return (
     <div className="space-y-8">
-      {/* Nuevo Agente Form */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 shadow-xl"
-      >
-        <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-          <Bot className="w-4 h-4 text-emerald-400" />
-          Registrar Nuevo Agente (Zero-Trust Hub)
-        </h2>
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">ID Único (e.g. dev-alex)</label>
-              <input
-                type="text"
-                value={agentId}
-                onChange={(e) => setAgentId(e.target.value)}
-                placeholder="bot-analytics"
-                className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
-                required
-              />
+      {/* Nuevo Agente Form o Banner de Monitoreo */}
+      {canManage ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 shadow-xl"
+        >
+          <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+            <Bot className="w-4 h-4 text-emerald-400" />
+            Registrar Nuevo Agente (Zero-Trust Hub)
+          </h2>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">ID Único (e.g. dev-alex)</label>
+                <input
+                  type="text"
+                  value={agentId}
+                  onChange={(e) => setAgentId(e.target.value)}
+                  placeholder="bot-analytics"
+                  className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Nombre Descriptivo</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Agent Name"
+                  className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Wallet Address (EIP-191)</label>
+                <input
+                  type="text"
+                  value={walletAddress}
+                  onChange={(e) => setWalletAddress(e.target.value)}
+                  placeholder="0x..."
+                  className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !agentId || !name}
+              className="w-full sm:w-auto bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl px-5 py-2.5 text-emerald-300 transition-all disabled:opacity-40 font-medium text-xs flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              {loading ? "Generando credenciales..." : "Registrar & Generar Secreto"}
+            </button>
+          </form>
+        </motion.div>
+      ) : (
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+              <Bot className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <label className="block text-xs text-zinc-400 mb-1">Nombre Descriptivo</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Agent Name"
-                className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">Wallet Address (EIP-191)</label>
-              <input
-                type="text"
-                value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
-                placeholder="0x..."
-                className="w-full bg-zinc-800/50 border border-zinc-700/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
-              />
+              <p className="text-xs font-semibold text-emerald-300 flex items-center gap-2">
+                Modo Monitoreo de Agentes Cognitivos
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  READ-ONLY
+                </span>
+              </p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Tienes visibilidad operacional de los agentes activos y telemetría de red. La provisión de nuevas credenciales y revocación requiere rol Administrador.
+              </p>
             </div>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading || !agentId || !name}
-            className="w-full sm:w-auto bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl px-5 py-2.5 text-emerald-300 transition-all disabled:opacity-40 font-medium text-xs flex items-center justify-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            {loading ? "Generando credenciales..." : "Registrar & Generar Secreto"}
-          </button>
-        </form>
-      </motion.div>
+          <Eye className="w-4 h-4 text-zinc-500 hidden sm:block" />
+        </div>
+      )}
 
       {/* Secret Modal */}
       {newSecret && (
@@ -257,14 +290,20 @@ const client = new A2AClient({
                       )}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      {agent.isActive && (
-                        <button
-                          onClick={() => handleRevoke(agent.agentId)}
-                          className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                          title="Revocar acceso"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      {canManage ? (
+                        agent.isActive && (
+                          <button
+                            onClick={() => handleRevoke(agent.agentId)}
+                            className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            title="Revocar acceso"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )
+                      ) : (
+                        <span className="text-[10px] font-mono text-zinc-500 inline-flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-zinc-600" /> Solo Lectura
+                        </span>
                       )}
                     </td>
                   </tr>

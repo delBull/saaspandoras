@@ -121,9 +121,16 @@ export function NexusHermesTerminal({ role = 'OPERATOR', operatorContext = null,
     async (message: string, isBootSequence = false) => {
       setIsLoading(true);
       try {
+        const token = typeof window !== 'undefined' 
+          ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) 
+          : null;
+
         const res = await fetch('/api/nexus/hermes-chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'x-nexus-token': token, 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({ message, role, isBootSequence, operatorContext }),
         });
         const data = await res.json();

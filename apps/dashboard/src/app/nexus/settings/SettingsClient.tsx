@@ -35,10 +35,11 @@ export interface OperatorContext {
 
 interface SettingsClientProps {
   isUserAdmin?: boolean;
+  userRole?: string;
   operatorContext?: OperatorContext | null;
 }
 
-export default function NexusSettingsPage({ isUserAdmin = false, operatorContext = null }: SettingsClientProps) {
+export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPERATOR", operatorContext = null }: SettingsClientProps) {
   const [collaborators, setCollaborators] = useState<CollaboratorItem[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -51,10 +52,14 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
   const [selectedCollab, setSelectedCollab] = useState<CollaboratorItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Tabs state
-  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal">("team");
+  // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "terminal"
+  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal">(isUserAdmin ? "team" : "terminal");
+
+  const canManageAgenda = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["calendar.manage"];
+  const canManageAgents = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["agents.manage"];
 
   const loadCollaborators = async () => {
+    if (!isUserAdmin) return;
     try {
       const res = await fetch("/api/nexus/collaborators/list");
       const data = await res.json();
@@ -67,8 +72,10 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
   };
 
   useEffect(() => {
-    loadCollaborators();
-  }, []);
+    if (isUserAdmin) {
+      loadCollaborators();
+    }
+  }, [isUserAdmin]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +173,14 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
           <div className="flex items-center gap-4">
             <a
               href="/nexus"
+              onClick={(e) => {
+                const storedToken = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
+                if (storedToken) {
+                  e.preventDefault();
+                  document.cookie = `pandoras_nexus_token=${encodeURIComponent(storedToken)}; path=/; max-age=2592000; SameSite=Lax`;
+                  window.location.href = `/nexus?token=${encodeURIComponent(storedToken)}`;
+                }
+              }}
               className="p-2.5 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
               title="Volver a Nexus Command Center"
             >
@@ -182,7 +197,9 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
           </div>
 
           <div className="flex items-center gap-2">
-            <ConfigureAgendaButton tenantSlug="pandoras" vertical="HERMES" />
+            {canManageAgenda && (
+              <ConfigureAgendaButton tenantSlug="pandoras" vertical="HERMES" />
+            )}
             <a
               href="/nexus/rooms"
               className="text-xs text-zinc-400 hover:text-amber-400 border border-white/10 px-3 py-1.5 rounded-xl hover:border-amber-500/30 transition-colors flex items-center gap-1.5"
@@ -195,16 +212,18 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
 
         {/* Tabs Navigation */}
         <div className="flex items-center gap-4 border-b border-zinc-800">
-          <button
-            onClick={() => setActiveTab("team")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === "team"
-                ? "border-amber-400 text-amber-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            Team & Roles
-          </button>
+          {isUserAdmin && (
+            <button
+              onClick={() => setActiveTab("team")}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === "team"
+                  ? "border-amber-400 text-amber-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Team & Roles
+            </button>
+          )}
           <button
             onClick={() => setActiveTab("agents")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
@@ -229,7 +248,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
           </button>
         </div>
 
-        {activeTab === "team" ? (
+        {activeTab === "team" && isUserAdmin ? (
           <>
             {/* Formulario de invitación */}
         <motion.div
@@ -422,7 +441,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, operatorContext
         </div>
           </>
         ) : activeTab === "agents" ? (
-          <CognitiveAgentsManager />
+          <CognitiveAgentsManager canManage={canManageAgents} />
         ) : (
           /* ── HERMES TERMINAL TAB ── */
           <div className="flex flex-col" style={{ height: '600px' }}>

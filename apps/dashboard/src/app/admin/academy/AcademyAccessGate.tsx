@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { GraduationCap, Lock, RefreshCw, Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 
@@ -11,14 +11,48 @@ export default function AcademyAccessGate() {
   const [sentEmail, setSentEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const token = typeof window !== "undefined"
+      ? (localStorage.getItem("pandoras_nexus_token") || localStorage.getItem("nexus_token"))
+      : null;
+
+    if (token) {
+      setLoading(true);
+      fetch("/api/admin/academy/unlock", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-nexus-token": token,
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({}),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.ok && data.unlocked) {
+            window.location.reload();
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+  }, []);
+
   const handleRequest = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError(null);
     try {
+      const token = typeof window !== "undefined"
+        ? (localStorage.getItem("pandoras_nexus_token") || localStorage.getItem("nexus_token"))
+        : null;
+
       const res = await fetch("/api/admin/academy/unlock", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "x-nexus-token": token, "Authorization": `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ email: email.trim() || undefined }),
       });
       const data = await res.json();

@@ -33,6 +33,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, unlocked: true, role: "admin", reason: "admin-session" });
     }
 
+    // 1.1 Colaborador autenticado vía Nexus Token / Cookie → desbloqueo inmediato
+    const { getNexusAuthContext, checkNexusPermission } = await import('@/lib/nexus/nexus-rbac');
+    const auth = await getNexusAuthContext(req.headers);
+    if (
+      auth.isAuthenticated &&
+      (auth.role === "SUPER_ADMIN" ||
+        auth.role === "ADMIN" ||
+        checkNexusPermission(auth, "nexus.manage") ||
+        checkNexusPermission(auth, "users.manage") ||
+        (auth.permissions as any)?.academyAdmin === true)
+    ) {
+      const inheritedRole = (auth.role === "SUPER_ADMIN" || auth.role === "ADMIN") ? "admin" : "manager";
+      return NextResponse.json({
+        ok: true,
+        unlocked: true,
+        role: inheritedRole,
+        email: auth.email,
+        reason: "nexus-session",
+      });
+    }
+
     // 2. Parse payload
     let targetEmail = "";
     try {
@@ -44,17 +65,30 @@ export async function POST(req: NextRequest) {
       // Body may be empty if clicked default unlock button
     }
 
-    if (!targetEmail && ADMIN_EMAILS[0]) {
+    if (!targetEmail && auth.email) {
+      targetEmail = auth.email.toLowerCase();
+    } else if (!targetEmail && ADMIN_EMAILS[0]) {
       targetEmail = ADMIN_EMAILS[0];
     }
 
-    // 3. Resolve role & authorization
+    // 3. Resolve role & authorization (Environment list + Nexus Collaborators Directory)
     let resolvedRole: "admin" | "manager" | null = null;
 
     if (ADMIN_EMAILS.includes(targetEmail)) {
       resolvedRole = "admin";
     } else if (MANAGER_EMAILS.includes(targetEmail)) {
       resolvedRole = "manager";
+    } else {
+      // Check in nexus_collaborators table
+      const { getCollaboratorByEmail } = await import('@/lib/nexus/collaborators-service');
+      const collab = await getCollaboratorByEmail(targetEmail);
+      if (collab && collab.status === 'ACTIVE') {
+        if (collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
+          resolvedRole = "admin";
+        } else if (collab.permissions?.academyAdmin || collab.role === 'MARKETING' || collab.role === 'OPERATOR') {
+          resolvedRole = "manager";
+        }
+      }
     }
 
     if (!resolvedRole) {

@@ -147,20 +147,27 @@ export class InterlocutorResolver {
       if (superWallet && lowerWallet === superWallet) return true;
     }
 
-    // 2. Phone check (E.164 digits)
+    // 2. Phone check (E.164 digits, normalized by last 10 digits for Mexico and regional mobile variants)
     if (phone) {
       const digits = cleanDigits(phone);
+      const phoneSuffix10 = digits.length >= 10 ? digits.slice(-10) : digits;
       const bossPhones = [
         process.env.MARCO_PHONE,
         process.env.FOUNDER_PHONE,
         process.env.BOSS_PHONE,
         ...(process.env.ADMIN_PHONES ? process.env.ADMIN_PHONES.split(',') : []),
-        '523222741987', // Known institutional phone
+        '523222741987',
+        '5213222741987',
+        '3222741987',
       ]
         .filter(Boolean)
         .map(p => cleanDigits(p));
 
-      if (bossPhones.some(bp => bp && (digits.endsWith(bp) || bp.endsWith(digits)))) {
+      if (bossPhones.some(bp => {
+        if (!bp) return false;
+        const bpSuffix10 = bp.length >= 10 ? bp.slice(-10) : bp;
+        return (phoneSuffix10 && bpSuffix10 && phoneSuffix10 === bpSuffix10) || digits.endsWith(bp) || bp.endsWith(digits);
+      })) {
         return true;
       }
     }

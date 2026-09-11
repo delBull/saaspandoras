@@ -41,6 +41,26 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
   const { user, status } = useAuth();
   const router = useRouter();
 
+  // Auto-rehidratación simétrica: Si el usuario vuelve a /nexus desde otra subpágina,
+  // restaurar la sesión desde localStorage y sincronizar la cookie para entrar al Command Center
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      const urlToken = new URLSearchParams(window.location.search).get("token");
+      const savedToken = localStorage.getItem("pandoras_nexus_token");
+      const tokenToUse = urlToken || savedToken;
+
+      if (tokenToUse) {
+        document.cookie = `pandoras_nexus_token=${encodeURIComponent(tokenToUse)}; path=/; max-age=2592000; SameSite=Lax`;
+        if (!urlToken && !requireCompletion) {
+          window.location.replace(`/nexus?token=${encodeURIComponent(tokenToUse)}`);
+        }
+      }
+    } catch (e) {
+      console.warn("[NexusLoginGate] Auto-rehydration warning:", e);
+    }
+  }, [requireCompletion]);
+
   useEffect(() => {
     async function handleWeb3Registration() {
       if (user && (status === "has_access" || status === "authenticated") && !requireCompletion) {
@@ -141,7 +161,11 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
         // Hard navigation (full server render) instead of router.refresh():
         // guarantees NexusRootPage re-resolves auth fresh so the completion gate
         // actually clears (wallet/SUPER_ADMIN sessions previously looped forever).
-        const token = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('token');
+        const token = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('token') 
+          || (typeof window !== 'undefined' ? localStorage.getItem('pandoras_nexus_token') : null);
+        if (token && typeof document !== 'undefined') {
+          document.cookie = `pandoras_nexus_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+        }
         setTimeout(() => {
           const target = '/nexus' + (token ? `?token=${encodeURIComponent(token)}` : '');
           if (typeof window !== 'undefined') {

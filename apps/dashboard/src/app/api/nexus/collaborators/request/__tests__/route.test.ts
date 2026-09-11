@@ -66,7 +66,7 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     expect(data.error).toBe('Email is required');
   });
 
-  it('REQ-02: Returns 400 when new user has no whatsappPhone in payload or DB', async () => {
+  it('REQ-02: Allows email-only magic link requests gracefully without requiring whatsappPhone', async () => {
     mockExistingCollaborator = null;
     mockIsNexusAdminEmail = false;
 
@@ -77,9 +77,11 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.error).toBe('WhatsApp phone number is required for Hermes notifications');
+    expect(data.ok).toBe(true);
+    expect(createOrUpdateCalls.length).toBe(1);
+    expect(sendMagicLinkCalls.length).toBe(1);
   });
 
   it('REQ-03: Allows existing collaborator with stored whatsapp to request magic link without re-entering phone', async () => {

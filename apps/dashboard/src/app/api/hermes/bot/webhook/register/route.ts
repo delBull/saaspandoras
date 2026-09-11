@@ -20,12 +20,12 @@ export async function POST(req: NextRequest) {
   }
 
   const botToken = process.env.HERMES_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
-  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || process.env.TELEGRAM_BOT_WEBHOOK_SECRET;
   if (!botToken) {
     return NextResponse.json({ ok: false, error: 'HERMES_TELEGRAM_BOT_TOKEN/TELEGRAM_BOT_TOKEN not configured' }, { status: 500 });
   }
   if (!webhookSecret) {
-    return NextResponse.json({ ok: false, error: 'TELEGRAM_WEBHOOK_SECRET not configured' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'TELEGRAM_WEBHOOK_SECRET/TELEGRAM_BOT_WEBHOOK_SECRET not configured' }, { status: 500 });
   }
 
   const { searchParams } = new URL(req.url);

@@ -2,7 +2,6 @@ name: Cron Jobs
 
 on:
   schedule:
-    - cron: '*/1 * * * *'
     - cron: '*/5 * * * *'
     - cron: '*/15 * * * *'
     - cron: '*/30 * * * *'
@@ -10,7 +9,7 @@ on:
 
 jobs:
   dispatch-webhooks:
-    if: github.event.schedule == '*/1 * * * *'
+    if: github.event.schedule == '*/5 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call dispatch-webhooks
@@ -48,6 +47,16 @@ jobs:
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "https://pandoras.finance/api/cron/marketing"
+
+  scheduling-reminders:
+    if: github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call scheduling-reminders
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://pandoras.finance/api/cron/scheduling-reminders"
 
   gas-check:
     if: github.event.schedule == '*/30 * * * *'

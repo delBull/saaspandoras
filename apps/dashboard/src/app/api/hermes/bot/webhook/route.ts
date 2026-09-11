@@ -18,7 +18,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     // 0. Authenticate Webhook Caller (Fail-closed anti-forgery)
-    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET || process.env.TELEGRAM_BOT_WEBHOOK_SECRET;
     const allowUnsigned = process.env.TELEGRAM_ALLOW_UNSIGNED_WEBHOOK === 'true';
     if (expectedSecret) {
       const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');

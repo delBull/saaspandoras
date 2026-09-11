@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
+import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { listAgents } from '@/lib/nexus/agents-service';
 
 function getCorsHeaders(req: NextRequest) {
@@ -7,7 +7,7 @@ function getCorsHeaders(req: NextRequest) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-wallet-address, x-thirdweb-address, x-user-address',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-wallet-address, x-thirdweb-address, x-user-address, x-nexus-token',
     'Access-Control-Allow-Credentials': 'true',
   };
 }
@@ -19,8 +19,9 @@ export async function OPTIONS(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const cors = getCorsHeaders(req);
   try {
-    if (!(await requireNexusAdmin(req))) {
-      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403, headers: cors });
+    const auth = await getNexusAuthContext(req.headers);
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: cors });
     }
     const agents = await listAgents();
     return NextResponse.json({ ok: true, agents }, { headers: cors });

@@ -176,7 +176,16 @@ export async function POST(req: NextRequest) {
       console.warn('[Nexus Register] Wallet→users link skipped (non-blocking):', linkErr);
     }
 
-    return NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true, token: tokenParam });
+    if (tokenParam) {
+      response.cookies.set('pandoras_nexus_token', tokenParam, {
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
+    }
+    return response;
   } catch (error: any) {
     console.error('[Nexus Register] Error:', error);
     return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 });

@@ -94,4 +94,26 @@ describe('🛡️ Nexus RBAC Domain Engine', () => {
     expect(checkNexusPermission(unauthCtx, 'growth.manage')).toBe(false);
     expect(checkNexusPermission(unauthCtx, 'ecosystem')).toBe(false);
   });
+
+  it('RBAC-08: getNexusAuthContext extracts token from cookie header safely', async () => {
+    const { getNexusAuthContext } = await import('../nexus-rbac');
+    const customHeaders = new Headers({
+      cookie: 'pandoras_nexus_token=non_existent_mock_token_123',
+    });
+
+    const ctx = await getNexusAuthContext(customHeaders);
+    // Non-existent token fails closed safely
+    expect(ctx.isAuthenticated).toBe(false);
+    expect(ctx.role).toBe(null);
+  });
+
+  it('RBAC-09: SUPER_ADMIN is the sole authority for institutional books and master operations', () => {
+    const superPerms = resolveEffectivePermissions('SUPER_ADMIN');
+    const adminPerms = resolveEffectivePermissions('ADMIN');
+    const opsPerms = resolveEffectivePermissions('ADMIN_OPERATIONS');
+
+    expect(superPerms.institutionalBooks).toBe(true);
+    expect(adminPerms.institutionalBooks).toBe(false);
+    expect(opsPerms.institutionalBooks).toBe(false);
+  });
 });

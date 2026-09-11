@@ -138,11 +138,14 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
             const hostUserId = parts[1] || 'usr_platform_admin_default';
             const startMs = parts[2] || '0';
             const endMs = parts[3] || '0';
+            const slotStartTime = new Date(Number(startMs));
+            const slotEndTime = new Date(Number(endMs));
+
             const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
             const holdResult = await SovereignCalendarEngine.acquireAtomicHold({
                 hostUserId,
-                startTime: new Date(Number(startMs)),
-                endTime: new Date(Number(endMs)),
+                startTime: slotStartTime,
+                endTime: slotEndTime,
                 heldBy: normalizedEmail,
                 holdMinutes: 15,
                 idempotencyKey: leadData.fingerprint || normalizedEmail,
@@ -162,9 +165,21 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
                 notes: leadData.notes,
             });
 
-            if (!bookResult.success) {
+            if (!bookResult.success || !bookResult.bookingId) {
                 return { success: false, error: bookResult.error || "Failed to process booking" };
             }
+
+            // Centralized pipeline sync (Idempotent scoring + CRM + Email w/ brand & ICS + Telegram + WhatsApp)
+            const { syncBookingToPipeline } = await import('@/lib/scheduling/syncBookingPipeline');
+            await syncBookingToPipeline({
+                bookingId: bookResult.bookingId,
+                slotStartTime,
+                slotEndTime,
+                leadData,
+                meetingLink: bookResult.meetingLink,
+                projectId,
+                hostUserId,
+            });
 
             return { success: true, bookingId: bookResult.bookingId };
         }
@@ -181,9 +196,27 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
                 notes: leadData.notes,
             });
 
-            if (!bookResult.success) {
+            if (!bookResult.success || !bookResult.bookingId) {
                 return { success: false, error: bookResult.error || "Failed to process booking" };
             }
+
+            // Retrieve slot details to ensure accurate calendar notifications
+            const [heldSlot] = await db
+                .select()
+                .from(schedulingSlots)
+                .where(eq(schedulingSlots.id, slotId))
+                .limit(1);
+
+            const { syncBookingToPipeline } = await import('@/lib/scheduling/syncBookingPipeline');
+            await syncBookingToPipeline({
+                bookingId: bookResult.bookingId,
+                slotStartTime: heldSlot ? heldSlot.startTime : new Date(),
+                slotEndTime: heldSlot ? heldSlot.endTime : new Date(Date.now() + 30 * 60000),
+                leadData,
+                meetingLink: bookResult.meetingLink,
+                projectId,
+                hostUserId: heldSlot?.userId,
+            });
 
             return { success: true, bookingId: bookResult.bookingId };
         }
@@ -233,98 +266,20 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
               leadPhone: leadData.phone,
               notificationPreference: leadData.preference,
               notes: leadData.notes,
-              status: "pending"
+              status: "confirmed",
+              confirmedAt: new Date()
           });
 
-          // 3. PIPELINE SYNC (Idempotent & Normalized)
-          try {
-            // A. Update Marketing Lead with Idempotent Scoring
-            const { IdentityService } = await import("@/lib/marketing/identity-service");
-            const identityHash = IdentityService.getIdentityHash(normalizedEmail, null, leadData.fingerprint);
-            
-            await tx.insert(marketingLeads).values({
-              projectId: projectId,
-              email: normalizedEmail,
-              name: leadData.name,
-              phoneNumber: leadData.phone,
-              status: 'scheduled',
-              intent: 'other',
-              quality: 'high',
-              score: 50,
-              scope: 'b2b',
-              fingerprint: leadData.fingerprint || null,
-              identityHash: identityHash as string
-            }).onConflictDoUpdate({
-              target: [marketingLeads.projectId, marketingLeads.identityHash],
-              set: {
-                status: 'scheduled',
-                quality: 'high',
-                // Idempotent Score: Only add if not already scheduled
-                score: sql`
-                  CASE 
-                    WHEN ${marketingLeads.status} != 'scheduled' 
-                    THEN ${marketingLeads.score} + 50 
-                    ELSE ${marketingLeads.score} 
-                  END`,
-                updatedAt: new Date(),
-                name: leadData.name, // Update metadata
-                phoneNumber: leadData.phone
-              }
-            });
-
-            // B. Sync to CRM (Clients)
-            await tx.insert(clients).values({
-              email: normalizedEmail,
-              name: leadData.name,
-              whatsapp: leadData.phone,
-              status: 'negotiating',
-              source: 'scheduling',
-              metadata: {
-                bookingId,
-                bookedAt: now.toISOString(),
-                notes: leadData.notes
-              }
-            }).onConflictDoUpdate({
-              target: [clients.email],
-              set: {
-                status: 'negotiating',
-                name: leadData.name,
-                whatsapp: leadData.phone,
-                metadata: sql`jsonb_set(
-                  COALESCE(${clients.metadata}, '{}'::jsonb), 
-                  '{lastBooking}', 
-                  ${JSON.stringify({ bookingId, bookedAt: now.toISOString() })}::jsonb
-                )`
-              }
-            });
-          } catch (syncErr) {
-            console.error("[Scheduler] Pipeline sync failed (non-blocking):", syncErr);
-          }
-
-          // 4. Trigger Notifications (Async)
-          const { sendSchedulerNotification } = await import("@/lib/discord/scheduler-notifier");
-          const { sendBookingPendingEmail } = await import("@/lib/email/scheduler-mailer");
-
-          await Promise.allSettled([
-              sendSchedulerNotification(
-                  bookingId,
-                  updatedSlot.startTime,
-                  {
-                      name: leadData.name,
-                      email: normalizedEmail,
-                      notes: leadData.notes,
-                      phone: leadData.phone,
-                      projectTitle: undefined, // could be fetched
-                  },
-                  true,
-                  projectWebhookUrl
-              ),
-              sendBookingPendingEmail(normalizedEmail, {
-                  name: leadData.name,
-                  date: updatedSlot.startTime.toLocaleDateString(),
-                  time: updatedSlot.startTime.toLocaleTimeString()
-              })
-          ]);
+          // 3. Centralized Pipeline Sync & Multi-channel notifications
+          const { syncBookingToPipeline } = await import('@/lib/scheduling/syncBookingPipeline');
+          await syncBookingToPipeline({
+              bookingId,
+              slotStartTime: updatedSlot.startTime,
+              slotEndTime: updatedSlot.endTime,
+              leadData,
+              projectId,
+              hostUserId: updatedSlot.userId
+          });
 
           return { success: true, bookingId };
         });

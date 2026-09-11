@@ -190,6 +190,7 @@ describe('📅 SOVEREIGN CALENDAR ENGINE — Test Suite', () => {
       const startTime = new Date(Date.now() + 200 * 24 * 60 * 60 * 1000 + randMs2);
       const endTime = new Date(startTime.getTime() + 30 * 60 * 1000);
 
+      const idemKey = `booking_lead_carlos_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       // 1. Hold
       const hold = await SovereignCalendarEngine.acquireAtomicHold({
         hostUserId: testHost,
@@ -197,7 +198,7 @@ describe('📅 SOVEREIGN CALENDAR ENGINE — Test Suite', () => {
         endTime,
         heldBy: 'carlos@partner.com',
         holdMinutes: 15,
-        idempotencyKey: 'booking_lead_carlos',
+        idempotencyKey: idemKey,
       });
 
       expect(hold.success).toBe(true);
@@ -206,7 +207,7 @@ describe('📅 SOVEREIGN CALENDAR ENGINE — Test Suite', () => {
       // 2. Book
       const booking = await SovereignCalendarEngine.executeIdempotentBooking({
         holdId: hold.holdId!,
-        idempotencyKey: 'booking_lead_carlos',
+        idempotencyKey: idemKey,
         leadName: 'Carlos Mendoza',
         leadEmail: 'carlos@partner.com',
         leadPhone: '+525512345678',

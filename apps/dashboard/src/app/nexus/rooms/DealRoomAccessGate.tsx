@@ -84,7 +84,7 @@ export default function DealRoomAccessGate() {
             </button>
 
             <a
-              href="/nexus/settings"
+              href="/nexus"
               className="w-full bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-sm text-zinc-300 transition-all duration-200 font-light tracking-wide flex items-center justify-center gap-2"
             >
               <Mail className="w-4 h-4" />

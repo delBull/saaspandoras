@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { getNexusAuthContext, checkNexusPermission } from "@/lib/nexus/nexus-rbac";
 import { verifyAcademyToken, verifyUnlockToken } from "@/lib/nexus-deals/tokens";
 import AcademyAccessGate from "./AcademyAccessGate";
@@ -12,9 +13,19 @@ export default async function AdminAcademyPage({
 }) {
   const { unlock, token } = await searchParams;
 
-  const auth = await getNexusAuthContext(null, token);
+  const reqHeaders = await headers();
+  const auth = await getNexusAuthContext(reqHeaders, token);
 
-  let unlocked = checkNexusPermission(auth, "nexus.manage");
+  const hasAcademyPermission = 
+    auth.isAuthenticated && (
+      auth.role === "SUPER_ADMIN" ||
+      auth.role === "ADMIN" ||
+      checkNexusPermission(auth, "nexus.manage") ||
+      checkNexusPermission(auth, "users.manage") ||
+      (auth.permissions as any)?.academyAdmin === true
+    );
+
+  let unlocked = hasAcademyPermission;
   let userRole: "admin" | "manager" =
     auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" ? "admin" : "manager";
   let userEmail: string | undefined = auth.email || undefined;

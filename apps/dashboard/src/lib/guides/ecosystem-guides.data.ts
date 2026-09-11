@@ -175,6 +175,40 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
       },
     ],
   },
+  {
+    id: 'nexus_scheduling',
+    order: 6,
+    title: 'Agenda Soberana & Pipeline de Citas',
+    subtitle: 'Agendamiento Autónomo con Hermes, Hold Atómico & Lead Nurturing',
+    category: 'GROWTH',
+    badgeColor: 'amber',
+    iconName: 'Calendar',
+    targetUrl: '/nexus/settings',
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'OPERATOR'],
+    hermesGreeting: 'El motor de citas autónomas y conversión de alta fidelidad.',
+    hermesNarrative:
+      'La Agenda Soberana permite a prospectos e inversores reservar llamadas de 15, 30 o 60 minutos con tu equipo. Hermes propone y confirma slots en tiempo real por WhatsApp y Telegram, o los usuarios pueden agendar directamente desde tu link soberano público. Cada cita confirmada crea un lead en el CRM (+50 score), genera un hold atómico anti-colisiones, envía invitaciones de Google Meet con archivos .ics y activa recordatorios automáticos T-24h y T-1h.',
+    keyHighlights: [
+      'Agendamiento conversacional autónomo por Hermes en WhatsApp y Telegram.',
+      'Hold atómico de 10 minutos para prevenir dobles reservas concurrentes.',
+      'Sincronización transaccional con CRM, Growth Engine y alertas por Telegram.',
+      'Invitaciones con Google Meet, archivo de calendario .ics y recordatorios automáticos por email y mensajería.',
+    ],
+    faqs: [
+      {
+        question: '¿Cómo configuro mis horarios disponibles?',
+        answer: 'Haz clic en el botón "Agenda Soberana" en Nexus Settings, Deal Room o Marketing Dashboard para definir tus días hábiles, buffers entre llamadas y link de Google Meet.',
+      },
+      {
+        question: '¿Cómo funciona la integración con Hermes en WhatsApp?',
+        answer: 'Cuando un prospecto escribe solicitando una reunión, Hermes consulta tus slots libres en tiempo real, le propone opciones y concreta la cita sin intervención humana.',
+      },
+      {
+        question: '¿Puedo tener un enlace público para compartir?',
+        answer: 'Sí. Tu enlace soberano es https://dash.pandoras.finance/p/scheduling/[slug]. Puedes compartirlo en firmas de correo, redes sociales o portales.',
+      },
+    ],
+  },
 ];
 
 /**

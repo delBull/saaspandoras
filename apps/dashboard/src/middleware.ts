@@ -76,11 +76,13 @@ export function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/nexus", request.url));
     }
-    // /deal/* and /admin/* stay untouched on the nexus subdomain
-    // (Sovereign Sign portals and the admin/academy console).
-    if (!pathname.startsWith("/nexus/") && pathname !== "/nexus"
-        && !pathname.startsWith("/deal/")
-        && !pathname.startsWith("/admin")) {
+    // Only rewrite paths that are dedicated sub-modules of /nexus (rooms, settings, developers, print, etc.)
+    // All top-level platform routes (/onboarding, /access, /growth-os, /admin, /deal, /portal, etc.)
+    // must be served normally without appending /nexus prefix.
+    const nexusSubmodules = ["/rooms", "/settings", "/academy", "/developers", "/print", "/roles"];
+    const isNexusSubmodule = nexusSubmodules.some(sub => pathname === sub || pathname.startsWith(`${sub}/`));
+    
+    if (isNexusSubmodule && !pathname.startsWith("/nexus/")) {
       return NextResponse.rewrite(new URL(`/nexus${pathname}`, request.url));
     }
   }
@@ -155,6 +157,9 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const token = request.cookies.get('__pbox_sid')?.value ||
       request.cookies.get('auth_token')?.value ||
+      request.cookies.get('pandoras_nexus_token')?.value ||
+      request.cookies.get('nexus_token')?.value ||
+      request.headers.get('x-nexus-token') ||
       request.headers.get('authorization')?.replace('Bearer ', '');
 
     if (!token) {

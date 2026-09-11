@@ -19,6 +19,7 @@ import {
   Bot,
   Compass,
   Check,
+  Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useActiveAccount } from 'thirdweb/react';
@@ -46,6 +47,7 @@ const PRODUCTS: ProductOption[] = [
     icon: <Bot className="w-5 h-5 text-emerald-400" />,
     features: [
       'Atención y calificación de prospectos en WhatsApp, Telegram y Web',
+      'Agenda Soberana: Agendamiento autónomo de llamadas con Google Meet y recordatorios automáticos',
       'Entrenamiento con la documentación y respuestas de tu negocio',
       'Traspaso inteligente a asesores humanos ante intención de compra',
     ],
@@ -60,6 +62,7 @@ const PRODUCTS: ProductOption[] = [
     icon: <TrendingUp className="w-5 h-5 text-violet-400" />,
     features: [
       'Pipeline de cualificación e inversores relacionales',
+      'Agenda Soberana Multi-Canal y Lead Nurturing (+50 score por cita confirmada)',
       'Email marketing institucional con cuota mensual',
       'Tesorería soberana Safe con guardias de retiro',
     ],
@@ -477,6 +480,7 @@ export function UnifiedOnboardingClient() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {[
                           { id: 'INVESTOR_RELATIONS', label: 'Atención e información a inversionistas' },
+                          { id: 'SCHEDULING', label: 'Agenda Soberana & Agendamiento de Citas' },
                           { id: 'CLIENT_SUPPORT', label: 'Atención y soporte a clientes' },
                           { id: 'LEAD_GENERATION', label: 'Captación y cualificación de prospectos' },
                           { id: 'FAQ_AUTOMATION', label: 'Soporte institucional & FAQ' },
@@ -513,6 +517,7 @@ export function UnifiedOnboardingClient() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {[
                           { id: 'ACQUIRE_LEADS', label: 'Conseguir nuevos prospectos' },
+                          { id: 'SCHEDULING_PIPELINE', label: 'Pipeline de Citas & Agenda Soberana' },
                           { id: 'CONVERT_LEADS', label: 'Convertir prospectos existentes' },
                           { id: 'MARKETING_AUTOMATION', label: 'Automatizar marketing & emails' },
                           { id: 'INVESTOR_PIPELINE', label: 'Administrar pipeline de inversionistas' },
@@ -575,6 +580,26 @@ export function UnifiedOnboardingClient() {
                     </div>
                   )}
                 </div>
+
+                {/* Sovereign Agenda Pre-activation Card */}
+                {(selectedProducts.includes('HERMES') || selectedProducts.includes('GROWTH_OS')) && (
+                  <div className="bg-[#D4A853]/10 border border-[#D4A853]/30 rounded-2xl p-4 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#D4A853]/20 rounded-xl border border-[#D4A853]/30 text-[#D4A853] flex-shrink-0">
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-zinc-200">Agenda Soberana Incluida</span>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">
+                          Tu enlace público: <code className="text-[#D4A853] font-mono">/p/scheduling/{orgSlug || 'tu-slug'}</code> con Google Meet y sincronización de CRM.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hidden sm:inline-block">
+                      ACTIVA
+                    </span>
+                  </div>
+                )}
 
                 {/* Compact Wallet & Identity Summary */}
                 <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-4 flex items-center justify-between text-xs">

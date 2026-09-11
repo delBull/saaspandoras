@@ -24,6 +24,8 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || pro
   .split(',')
   .map((e) => e.trim());
 
+import { getNexusAuthContext } from './nexus-rbac';
+
 export function isNexusAdminEmail(email: string): boolean {
   if (!email) return false;
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
@@ -38,6 +40,11 @@ export async function requireNexusAdmin(req?: Request | Headers): Promise<boolea
       reqHeaders = req.headers as Headers;
     } else {
       reqHeaders = await nextHeaders();
+    }
+
+    const auth = await getNexusAuthContext(reqHeaders);
+    if (auth.isAuthenticated && (auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN')) {
+      return true;
     }
 
     const { session, isVerified } = await getAuth(reqHeaders);

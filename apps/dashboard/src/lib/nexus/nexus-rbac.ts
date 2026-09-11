@@ -10,7 +10,7 @@ import { db } from '@/db';
 import { users, nexusCollaborators, type NexusPermissionsOverride, type NexusProvisionStatus } from '@/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { getAuth, isAdmin } from '@/lib/auth';
-import { headers as nextHeaders } from 'next/headers';
+import { headers as nextHeaders, cookies as nextCookies } from 'next/headers';
 
 export type NexusRole = 
   | 'SUPER_ADMIN' 
@@ -318,18 +318,39 @@ export async function getNexusAuthContext(
         'viewer'
       ];
       
-      if (user && validAdminRoles.includes(user.role)) {
+      if (user) {
+        let effectiveRole = validAdminRoles.includes(user.role) ? (user.role.toUpperCase() as NexusRole) : null;
+        let collaboratorOverrides: NexusPermissionsOverride = {};
+
         let whatsappPhone: string | null = null;
         if (user.email) {
           try {
             const collabRecords = await db
-              .select({ name: nexusCollaborators.name })
+              .select({
+                name: nexusCollaborators.name,
+                role: nexusCollaborators.role,
+                permissions: nexusCollaborators.permissions,
+                status: nexusCollaborators.status,
+                whatsappPhone: nexusCollaborators.whatsappPhone,
+              })
               .from(nexusCollaborators)
               .where(eq(nexusCollaborators.email, user.email))
               .limit(1);
             if (collabRecords.length > 0 && collabRecords[0]) {
-              if (!user.name && collabRecords[0].name) {
-                user.name = collabRecords[0].name;
+              const c = collabRecords[0];
+              if (c.status !== 'REJECTED' && c.status !== 'DISABLED') {
+                if (!effectiveRole && c.role) {
+                  effectiveRole = c.role.toUpperCase() as NexusRole;
+                }
+                if (c.permissions) {
+                  collaboratorOverrides = c.permissions as NexusPermissionsOverride;
+                }
+                if (c.whatsappPhone) {
+                  whatsappPhone = c.whatsappPhone;
+                }
+              }
+              if (!user.name && c.name) {
+                user.name = c.name;
               }
             }
           } catch (collabErr) {
@@ -337,23 +358,35 @@ export async function getNexusAuthContext(
           }
         }
 
-        return {
-          isAuthenticated: true,
-          role: user.role.toUpperCase() as NexusRole,
-          wallet: sessionWallet,
-          email: user.email,
-          name: user.name,
-          whatsappPhone,
-          permissions: resolveEffectivePermissions(
-            user.role.toUpperCase() as NexusRole, 
-            {}
-          ),
-        };
+        if (effectiveRole) {
+          return {
+            isAuthenticated: true,
+            role: effectiveRole,
+            wallet: sessionWallet,
+            email: user.email,
+            name: user.name,
+            whatsappPhone,
+            permissions: resolveEffectivePermissions(
+              effectiveRole, 
+              collaboratorOverrides
+            ),
+          };
+        }
       }
     }
 
-    // 2. Check Magic Link / Collaborator Token (from query param or header)
-    const token = tokenParam || reqHeaders.get('x-nexus-token') || reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, '');
+    // 2. Check Magic Link / Collaborator Token (from query param, cookie, or header)
+    let cookieToken: string | null = null;
+    try {
+      const cookieStore = await nextCookies();
+      cookieToken = cookieStore.get('pandoras_nexus_token')?.value || cookieStore.get('nexus_token')?.value || null;
+    } catch {
+      const rawCookie = reqHeaders.get('cookie') || '';
+      const match = rawCookie.match(/(?:pandoras_nexus_token|nexus_token)=([^;]+)/);
+      if (match && match[1]) cookieToken = decodeURIComponent(match[1]);
+    }
+
+    const token = tokenParam || cookieToken || reqHeaders.get('x-nexus-token') || reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, '');
 
     if (token) {
       const now = new Date();

@@ -18,6 +18,7 @@ import {
   Globe,
   Cpu,
   GraduationCap,
+  Calendar,
   Bot,
   Sparkles,
   ArrowRight,
@@ -88,6 +89,8 @@ export function HermesFloatingGuide({
         return <Cpu className="w-5 h-5 text-purple-400" />;
       case 'GraduationCap':
         return <GraduationCap className="w-5 h-5 text-rose-400" />;
+      case 'Calendar':
+        return <Calendar className="w-5 h-5 text-amber-400" />;
       default:
         return <Compass className="w-5 h-5 text-amber-400" />;
     }

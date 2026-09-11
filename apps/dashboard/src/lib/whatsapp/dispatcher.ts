@@ -378,12 +378,21 @@ export class WhatsAppDispatcher {
       text: message.text ? { body: message.text.body } : undefined,
       contactName,
       flowFromLanding: null,
+      alreadyClaimed: true,
     };
 
     let result = await routeSimpleMessage(routerPayload);
 
-    // If the caller is the Boss, or legacy flow is completed, or user sends general conversation, delegate directly to Hermes AI Runtime
-    if (resolvedInterlocutor?.isBoss || !result.handled || result.isCompleted || result.action === 'flow_completed' || messageText.toLowerCase().includes('hola') || messageText.toLowerCase().includes('test')) {
+    // If the caller is the Boss, or legacy flow is completed, or simpleRouter did not produce a user-facing response, delegate directly to Hermes AI Runtime
+    if (
+      resolvedInterlocutor?.isBoss || 
+      !result.handled || 
+      result.isCompleted || 
+      result.action === 'flow_completed' || 
+      !result.response || 
+      messageText.toLowerCase().includes('hola') || 
+      messageText.toLowerCase().includes('test')
+    ) {
       try {
         const runtime = getDefaultRuntime();
         const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone);

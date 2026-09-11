@@ -37,6 +37,7 @@ interface NexusCommandCenterProps {
   initialTour?: string;
   initialRole?: string;
   iframeToken?: string;
+  token?: string;
 }
 
 interface NexusLink {
@@ -45,6 +46,7 @@ interface NexusLink {
   href: string;
   external?: boolean;
   cap?: string | string[];
+  superAdminOnly?: boolean;
 }
 
 interface NexusSection {
@@ -179,7 +181,7 @@ const SECTIONS: NexusSection[] = [
   }
 ];
 
-export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken }: NexusCommandCenterProps) {
+export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken, token }: NexusCommandCenterProps) {
   const { role, wallet } = auth;
   const isFirstVisitParam = initialTour === "ecosystem" || initialTour === "onboarding";
   const [isTourOpen, setIsTourOpen] = useState(isFirstVisitParam);
@@ -191,6 +193,25 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   const [showWelcomePanel, setShowWelcomePanel] = useState(false);
   const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
   const sidebarOpen = showGuideSidebar === true;
+
+  // Sincronización simétrica de sesión para que nunca se pierda el token al navegar entre páginas
+  useEffect(() => {
+    try {
+      const urlToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") : null;
+      const effectiveToken = urlToken || token;
+      if (effectiveToken) {
+        localStorage.setItem("pandoras_nexus_token", effectiveToken);
+        document.cookie = `pandoras_nexus_token=${encodeURIComponent(effectiveToken)}; path=/; max-age=2592000; SameSite=Lax`;
+      } else {
+        const stored = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
+        if (stored && !document.cookie.includes("pandoras_nexus_token=")) {
+          document.cookie = `pandoras_nexus_token=${encodeURIComponent(stored)}; path=/; max-age=2592000; SameSite=Lax`;
+        }
+      }
+    } catch (e) {
+      console.warn("[Nexus] Failed to sync token storage/cookie:", e);
+    }
+  }, [token]);
 
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
     if (typeof window === "undefined") return INITIAL_TASKS;
@@ -224,7 +245,11 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
     return (Array.isArray(cap) ? cap : [cap]).some((c) => Boolean(perms[c]));
   };
   const visibleSections = SECTIONS.filter((s) => hasCap(s.cap));
-  const sectionLinks = (sec: NexusSection) => sec.links.filter((l) => hasCap(l.cap));
+  const sectionLinks = (sec: NexusSection) =>
+    sec.links.filter((l) => {
+      if (l.superAdminOnly && auth.role !== "SUPER_ADMIN") return false;
+      return hasCap(l.cap);
+    });
 
   const [customStations, setCustomStations] = useState<any[] | undefined>();
   useEffect(() => {
@@ -383,19 +408,20 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
         <div className="pt-4 mt-auto border-t border-white/10">
           <div className="flex gap-2">
-            {auth.role === 'SUPER_ADMIN' && (
-              <Link
-                href="/nexus/settings"
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800/50 text-zinc-300 text-[10px] tracking-wider hover:bg-zinc-700 hover:text-white transition-colors"
-                title="Configuración"
-              >
-                <Settings className="w-3 h-3 text-zinc-400" />
-                SETTINGS
-              </Link>
-            )}
+            <Link
+              href="/nexus/settings"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-800/50 text-zinc-300 text-[10px] tracking-wider hover:bg-zinc-700 hover:text-white transition-colors"
+              title="Configuración"
+            >
+              <Settings className="w-3 h-3 text-zinc-400" />
+              SETTINGS
+            </Link>
             <button
               onClick={() => {
-                localStorage.removeItem('pandoras_nexus_token');
+                try {
+                  localStorage.removeItem('pandoras_nexus_token');
+                  document.cookie = 'pandoras_nexus_token=; path=/; max-age=0; SameSite=Lax';
+                } catch {}
                 window.location.href = '/login';
               }}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-[10px] tracking-wider hover:bg-red-500/20 transition-colors"

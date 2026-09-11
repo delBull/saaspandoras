@@ -37,16 +37,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isAdmin = await requireNexusAdmin(req);
-    if (!isAdmin) {
+    const { getNexusAuthContext } = await import('@/lib/nexus/nexus-rbac');
+    const auth = await getNexusAuthContext(req.headers);
+    if (!auth.isAuthenticated) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 403 });
     }
 
     const body = await req.json();
     const rawMessage: string = (body.message ?? '').trim();
-    const rawRole: string = (body.role ?? 'OPERATOR').toUpperCase().trim();
+    const rawRole: string = (auth.role || body.role || 'OPERATOR').toUpperCase().trim();
     const isBootSequence: boolean = body.isBootSequence === true;
-    const operatorContext = body.operatorContext;
+    const operatorContext = {
+      id: auth.email || body.operatorContext?.id || (auth.wallet ? `wallet_${auth.wallet}` : undefined),
+      name: auth.name || body.operatorContext?.name,
+      email: auth.email || body.operatorContext?.email,
+      role: auth.role || body.operatorContext?.role,
+      whatsappPhone: auth.whatsappPhone || body.operatorContext?.whatsappPhone,
+      wallet: auth.wallet || body.operatorContext?.wallet,
+      address: auth.wallet || body.operatorContext?.address || body.operatorContext?.wallet,
+    };
 
     const validatedRole = ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'MARKETING', 'VIEWER'].includes(rawRole)
       ? (rawRole as any)

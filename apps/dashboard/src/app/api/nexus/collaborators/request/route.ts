@@ -13,6 +13,10 @@ import {
 } from '@/lib/nexus/collaborators-service';
 import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 
+import { db } from '@/db';
+import { marketingLeads } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';
   return {
@@ -64,17 +68,24 @@ export async function POST(req: NextRequest) {
       ? (permissions || existingCollaborator?.permissions || {})
       : (existingCollaborator?.permissions || {});
 
-    // Resolve WhatsApp: provided in payload, or fallback to existing stored number
-    const effectiveWhatsapp = (whatsappPhone && typeof whatsappPhone === 'string' && whatsappPhone.trim())
+    // Resolve WhatsApp: provided in payload, or fallback to existing stored number, or marketing leads
+    let effectiveWhatsapp = (whatsappPhone && typeof whatsappPhone === 'string' && whatsappPhone.trim())
       ? whatsappPhone.trim()
       : (existingCollaborator?.whatsappPhone || undefined);
 
-    // Require WhatsApp phone number if not already present in the existing profile or admin target
-    if (!effectiveWhatsapp && !isExistingCollaborator && !isAdminTarget) {
-      return NextResponse.json(
-        { error: 'WhatsApp phone number is required for Hermes notifications' },
-        { status: 400, headers: cors }
-      );
+    if (!effectiveWhatsapp) {
+      try {
+        const [lead] = await db
+          .select({ phoneNumber: marketingLeads.phoneNumber })
+          .from(marketingLeads)
+          .where(eq(marketingLeads.email, cleanEmail))
+          .limit(1);
+        if (lead?.phoneNumber) {
+          effectiveWhatsapp = lead.phoneNumber;
+        }
+      } catch {
+        // Non-blocking lookup
+      }
     }
 
     const { collaborator, magicLink } = await createOrUpdateCollaborator(

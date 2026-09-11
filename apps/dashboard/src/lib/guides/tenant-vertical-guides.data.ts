@@ -206,6 +206,35 @@ export function getStationsForTenantVertical(
             },
           ],
         },
+        {
+          id: 'rwa_sovereign_agenda',
+          order: 6,
+          title: 'Agenda Soberana para Inversores & Visitas',
+          subtitle: 'Agendamiento Automatizado de Asesorías y Citas Privadas',
+          category: 'COMMERCIAL',
+          badgeColor: 'amber',
+          iconName: 'Calendar',
+          targetUrl: `/p/scheduling/${cleanSlug}`,
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
+          hermesGreeting: 'Organiza las citas con tus compradores e inversores sin fricción.',
+          hermesNarrative:
+            'Tus prospectos e inversores pueden agendar videollamadas privadas con tus ejecutivos comerciales o coordinar visitas presenciales al desarrollo. Hermes califica el perfil del inversor, valida disponibilidad en tiempo real, bloquea el slot con hold atómico y envía invitaciones oficiales con enlace de videollamada y recordatorios automáticos por WhatsApp y correo.',
+          keyHighlights: [
+            'Enlace soberano público para prospectos e inversores.',
+            'Sincronización de llamadas con el CRM y Deal Room.',
+            'Recordatorios automáticos en ventanas T-24h y T-1h con marca de tu desarrollo.',
+          ],
+          faqs: [
+            {
+              question: '¿Dónde configuro mis horarios de atención para visitas o llamadas?',
+              answer: 'Desde el panel de configuración de tu proyecto, abriendo el drawer de Agenda Soberana.',
+            },
+            {
+              question: '¿Los correos llevan el nombre de mi desarrollo?',
+              answer: 'Sí, la identidad visual del correo destaca a tu proyecto como anfitrión y organizador, incluyendo el archivo .ics para agregar a Google Calendar o Outlook.',
+            },
+          ],
+        },
       ];
 
     case 'SAAS_GROWTH':
@@ -310,6 +339,35 @@ export function getStationsForTenantVertical(
             },
           ],
         },
+        {
+          id: 'saas_sovereign_agenda',
+          order: 5,
+          title: 'Agenda Soberana & Demos Comerciales',
+          subtitle: 'Agendamiento Autónomo de Llamadas B2B y Demos de Producto',
+          category: 'COMMERCIAL',
+          badgeColor: 'emerald',
+          iconName: 'Calendar',
+          targetUrl: `/p/scheduling/${cleanSlug}`,
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
+          hermesGreeting: 'Convierte conversaciones en demos agendadas en piloto automático.',
+          hermesNarrative:
+            'Permite a tus prospectos reservar demos comerciales de 15, 30 o 45 minutos directamente desde WhatsApp, Telegram o tu portal web. Hermes detecta el interés de compra en la conversación, ofrece tus mejores slots disponibles y concreta la reunión al instante, sumando +50 puntos al score de marketing del lead.',
+          keyHighlights: [
+            'Agendamiento conversacional sin salir del chat de WhatsApp o Telegram.',
+            'Integración directa con Google Meet y links personalizados.',
+            'Notificaciones instantáneas a tu equipo comercial al confirmarse una nueva demo.',
+          ],
+          faqs: [
+            {
+              question: '¿Cómo evita Hermes que dos clientes agenden a la misma hora?',
+              answer: 'El motor utiliza un hold atómico en base de datos con bloqueo de 10 minutos mientras el prospecto confirma sus datos.',
+            },
+            {
+              question: '¿Puedo definir un tiempo de anticipación mínima para agendar?',
+              answer: 'Sí, puedes exigir por ejemplo mínimo 24 horas de antelación para que tu equipo tenga tiempo de preparar la demo.',
+            },
+          ],
+        },
       ];
 
     case 'CREATOR_COMMUNITY':
@@ -386,6 +444,31 @@ export function getStationsForTenantVertical(
             {
               question: '¿Cómo se asigna el poder de voto?',
               answer: 'En proporción al nivel de membresía o tiempo de permanencia en la comunidad.',
+            },
+          ],
+        },
+        {
+          id: 'creator_sovereign_agenda',
+          order: 4,
+          title: 'Agenda Soberana para Mentorías & Office Hours',
+          subtitle: 'Sesiones 1-a-1 Exclusivas para Miembros y Holders',
+          category: 'PORTAL',
+          badgeColor: 'indigo',
+          iconName: 'Calendar',
+          targetUrl: `/p/scheduling/${cleanSlug}`,
+          allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'VIEWER'],
+          hermesGreeting: 'Facilita a tus miembros el acceso directo a tus sesiones.',
+          hermesNarrative:
+            'Ofrece a tu comunidad la posibilidad de agendar mentorías privadas, revisiones de proyectos o sesiones de office hours. Cada cita genera su sala de reunión y notifica automáticamente al miembro en su WhatsApp o correo.',
+          keyHighlights: [
+            'Office hours y mentorías personalizadas para tu comunidad.',
+            'Sincronización automática de horarios y recordatorios para evitar inasistencias.',
+            'Enlace soberano compartible en Telegram, Discord o boletines.',
+          ],
+          faqs: [
+            {
+              question: '¿Puedo limitar cuántas citas recibo por semana?',
+              answer: 'Sí, configurando el rango de disponibilidad por día y los buffers de descanso entre sesiones.',
             },
           ],
         },

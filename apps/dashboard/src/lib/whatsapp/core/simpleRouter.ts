@@ -785,21 +785,23 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
   try {
     console.log(`🔄 [SIMPLE-ROUTER] Mensaje de ${maskPhoneNumber(phone)}: "${messageText.substring(0, 50)}..."`);
 
-    // 1. IDEMPOTENCY: Verificar si ya procesamos este mensaje
-    try {
-      await ensureIncomingWamidColumn();
-      const [existingMessage] = await sql`
-        SELECT 1 FROM whatsapp_messages 
-        WHERE incoming_wamid = ${messageId}
-        LIMIT 1
-      ` as any[];
+    // 1. IDEMPOTENCY: Verificar si ya procesamos este mensaje (solo si no fue reclamado atómicamente por WhatsAppDispatcher)
+    if (!payload?.alreadyClaimed) {
+      try {
+        await ensureIncomingWamidColumn();
+        const [existingMessage] = await sql`
+          SELECT 1 FROM whatsapp_messages 
+          WHERE incoming_wamid = ${messageId}
+          LIMIT 1
+        ` as any[];
 
-      if (existingMessage) {
-        console.log(`⚡ [SIMPLE-ROUTER] Mensaje duplicado ${messageId} ignorado`);
-        return { handled: true, flowType: 'duplicate', action: 'ignored' };
+        if (existingMessage) {
+          console.log(`⚡ [SIMPLE-ROUTER] Mensaje duplicado ${messageId} ignorado`);
+          return { handled: true, flowType: 'duplicate', action: 'ignored' };
+        }
+      } catch (idempotencyErr) {
+        console.warn(`⚠️ [SIMPLE-ROUTER] Idempotency check bypassed:`, idempotencyErr);
       }
-    } catch (idempotencyErr) {
-      console.warn(`⚠️ [SIMPLE-ROUTER] Idempotency check bypassed:`, idempotencyErr);
     }
 
     // 2. VERIFICAR FLUJO EXISTENTE

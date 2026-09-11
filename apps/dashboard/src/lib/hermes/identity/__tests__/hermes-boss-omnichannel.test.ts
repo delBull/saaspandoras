@@ -31,6 +31,18 @@ describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
       expect(result.executivePrivilege).toBe(true);
     });
 
+    it('detects Marco as Boss via Meta Cloud API Mexican format (5213222741987)', async () => {
+      const result = await InterlocutorResolver.resolve({
+        channel: 'whatsapp',
+        phone: '5213222741987',
+      });
+
+      expect(result.isBoss).toBe(true);
+      expect(result.name).toBe('Marco');
+      expect(result.role).toBe('FOUNDER_BOSS');
+      expect(result.executivePrivilege).toBe(true);
+    });
+
     it('detects Marco as Boss via Telegram ID / Username', async () => {
       const result = await InterlocutorResolver.resolve({
         channel: 'telegram',

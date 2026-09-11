@@ -21,6 +21,10 @@ import {
   Loader2,
   Sparkles,
   ExternalLink,
+  HelpCircle,
+  BookOpen,
+  MessageSquare,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SovereignCalendarConfig, DayAvailability } from '@/lib/scheduling/sovereign-calendar-engine';
@@ -59,7 +63,7 @@ export function SovereignAgendaDrawer({
   userRole = 'ADMIN',
   onConfigSaved,
 }: SovereignAgendaDrawerProps) {
-  const [activeTab, setActiveTab] = useState<'visual' | 'terminal'>('visual');
+  const [activeTab, setActiveTab] = useState<'visual' | 'terminal' | 'guide'>('visual');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -337,6 +341,17 @@ export function SovereignAgendaDrawer({
                 <Terminal className="w-3.5 h-3.5" />
                 Consola Hermes CLI
               </button>
+              <button
+                onClick={() => setActiveTab('guide')}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-t-lg transition-colors ${
+                  activeTab === 'guide'
+                    ? 'bg-[#0C0C10] text-[#D4A853] border-t border-x border-[#D4A853]/30'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                Guía &amp; Funcionamiento
+              </button>
             </div>
 
             {/* Content Area */}
@@ -513,7 +528,7 @@ export function SovereignAgendaDrawer({
                     </div>
                   </div>
                 </>
-              ) : (
+              ) : activeTab === 'terminal' ? (
                 /* Terminal CLI View */
                 <div className="h-full flex flex-col space-y-3 font-mono text-xs">
                   <div className="flex-1 bg-black/80 border border-zinc-800 rounded-xl p-4 overflow-y-auto max-h-96 space-y-1.5">
@@ -551,6 +566,179 @@ export function SovereignAgendaDrawer({
                       Ejecutar
                     </button>
                   </form>
+                </div>
+              ) : (
+                /* ── PESTAÑA: GUÍA & FUNCIONAMIENTO ── */
+                <div className="space-y-6">
+                  {/* Hero Banner */}
+                  <div className="bg-gradient-to-br from-[#D4A853]/15 via-zinc-900/60 to-zinc-950 border border-[#D4A853]/30 rounded-2xl p-5 relative overflow-hidden">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#D4A853]/20 border border-[#D4A853]/40 flex items-center justify-center text-[#D4A853] flex-shrink-0">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                          Cómo Funciona la Agenda Soberana
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#D4A853]/20 text-[#D4A853] border border-[#D4A853]/30">
+                            ZERO-TRUST
+                          </span>
+                        </h3>
+                        <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
+                          Infraestructura autónoma de agendamiento que conecta a prospectos, inversores y clientes directamente con tus canales de atención y CRM comercial sin intermediarios ni cobros por asiento.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tu Enlace Público */}
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+                        <LinkIcon className="w-4 h-4 text-[#D4A853]" />
+                        Tu Enlace Soberano Compartible
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        PUBLIC LINK ONLINE
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400">
+                      Comparte este enlace directo en tus firmas de correo, redes sociales, botones de tu portal o bio de WhatsApp:
+                    </p>
+                    <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800/80 rounded-xl p-2.5">
+                      <code className="text-xs text-zinc-300 font-mono flex-1 truncate select-all">
+                        {`https://dash.pandoras.finance/p/scheduling/${tenantSlug}`}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`https://dash.pandoras.finance/p/scheduling/${tenantSlug}`);
+                          setCopiedLink(true);
+                          toast.success('Enlace copiado al portapapeles');
+                          setTimeout(() => setCopiedLink(false), 2000);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-200 hover:text-white transition-colors flex items-center gap-1.5"
+                      >
+                        {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedLink ? 'Copiado' : 'Copiar'}
+                      </button>
+                      <a
+                        href={`/p/scheduling/${tenantSlug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                        title="Probar enlace público"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Ciclo de Vida de una Cita (Flujo Paso a Paso) */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#D4A853]" />
+                      Ciclo de Vida de una Cita (Pipeline Automatizado)
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 gap-2.5">
+                      <div className="p-3.5 bg-zinc-900/30 border border-zinc-800/60 rounded-xl flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-500/10 text-[#D4A853] font-mono text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                          1
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-zinc-200">Captación y Propuesta de Slots</div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">
+                            El prospecto solicita una llamada por WhatsApp/Telegram o abre tu enlace web. Hermes o la interfaz le presentan únicamente horarios reales disponibles según tu zona horaria y buffers configurados.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 bg-zinc-900/30 border border-zinc-800/60 rounded-xl flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-500/10 text-[#D4A853] font-mono text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                          2
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-zinc-200">Hold Atómico Anti-Colisiones (10 min)</div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">
+                            Al seleccionar una hora, el motor adquiere un bloqueo atómico transaccional en la base de datos para impedir que dos personas agenden simultáneamente la misma ventana.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 bg-zinc-900/30 border border-zinc-800/60 rounded-xl flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-500/10 text-[#D4A853] font-mono text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                          3
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-zinc-200">Sincronización Inmediata con CRM &amp; Leads</div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">
+                            Al enviar el formulario, el contacto se inserta de inmediato en Marketing Leads como prospecto calificado (+50 puntos) y en el CRM como cliente en negociación, entrando al ciclo de Growth OS.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 bg-zinc-900/30 border border-zinc-800/60 rounded-xl flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-500/10 text-[#D4A853] font-mono text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                          4
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-zinc-200">Invitación Google Meet &amp; Archivo .ICS</div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">
+                            El usuario y el anfitrión reciben un correo electrónico adaptativo con su marca, detalles del encuentro, enlace de Google Meet y archivo <code className="text-amber-300 font-mono text-[10px]">invite.ics</code> compatible con Google Calendar, Apple Calendar y Outlook.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 bg-zinc-900/30 border border-zinc-800/60 rounded-xl flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-500/10 text-[#D4A853] font-mono text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                          5
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-zinc-200">Recordatorios Automáticos (T-24h y T-1h) &amp; Alerta Telegram</div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">
+                            El cron programado de GitHub Actions ejecuta revisiones cada 15 minutos, enviando recordatorios al asistente y notificando al chat de Telegram correspondiente (con enrutamiento VIP para el Founder o para Operaciones).
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Guía de Configuración Rápida */}
+                  <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4 space-y-3">
+                    <h4 className="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+                      <Sliders className="w-3.5 h-3.5 text-[#D4A853]" />
+                      Pasos Clave para Configurar en la Pestaña Visual
+                    </h4>
+                    <ul className="space-y-2 text-[11px] text-zinc-300">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#D4A853] font-bold">•</span>
+                        <span><strong>Zona Horaria:</strong> Selecciona la zona base de tu equipo para que las conversiones internacionales sean matemáticamente exactas.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#D4A853] font-bold">•</span>
+                        <span><strong>Duración y Buffers:</strong> 30 minutos de reunión con 15 minutos de buffer entre citas es el estándar recomendado para descansar y tomar notas.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#D4A853] font-bold">•</span>
+                        <span><strong>Anticipación Mínima:</strong> 24 horas previene que un cliente agende con 10 minutos de antelación sin que alcances a prepararte.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#D4A853] font-bold">•</span>
+                        <span><strong>Enlace Predeterminado:</strong> Ingresa tu sala fija de Google Meet, Zoom o Teams.</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Operación con Hermes en WhatsApp / Telegram */}
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                      <MessageSquare className="w-4 h-4" />
+                      Activación con Hermes en Mensajería
+                    </div>
+                    <p className="text-[11px] text-zinc-300 leading-relaxed">
+                      No requieres compartir el enlace manualmente si tienes activo Hermes en WhatsApp o Telegram. Cuando un cliente dice frases como <em>"quiero agendar una llamada"</em> o <em>"¿tienes espacio mañana?"</em>, Hermes consulta tus slots en la base de datos y le propone las mejores 3 opciones en lenguaje natural.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

@@ -1,43 +1,32 @@
-import { getAuth, isAdmin } from "@/lib/auth";
-import { getCollaboratorForOperator } from "@/lib/nexus/collaborators-service";
+import { redirect } from "next/navigation";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import SettingsClient from "./SettingsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function NexusSettingsPage() {
-  const { session, isVerified } = await getAuth();
+  const auth = await getNexusAuthContext();
 
-  let isUserAdmin = false;
-  let operatorContext: {
-    name: string;
-    email: string;
-    whatsappPhone?: string | null;
-    role: string;
-    permissions: Record<string, boolean | undefined>;
-  } | null = null;
-
-  try {
-    if (isVerified && session?.address && (await isAdmin(session.address))) {
-      isUserAdmin = true;
-      // Resolve full collaborator identity from DB
-      const collab = await getCollaboratorForOperator(session.address);
-      if (collab) {
-        operatorContext = {
-          name: collab.name,
-          email: collab.email,
-          whatsappPhone: collab.whatsappPhone,
-          role: collab.role,
-          permissions: (collab.permissions as Record<string, boolean | undefined>) || {},
-        };
-      }
-    }
-  } catch {
-    isUserAdmin = false;
+  // 🛡️ REGLA: Settings es accesible para todos los colaboradores autenticados del Nexus.
+  // Cada módulo dentro de Settings se restringe según el rol del usuario (Team & Roles solo para SUPER_ADMIN).
+  if (!auth.isAuthenticated) {
+    redirect("/nexus");
   }
+
+  const isSuperAdmin = auth.role === "SUPER_ADMIN";
+
+  const operatorContext = {
+    name: auth.name || (isSuperAdmin ? "Marco" : "Operador"),
+    email: auth.email || "admin@pandoras.finance",
+    whatsappPhone: auth.whatsappPhone,
+    role: auth.role || "OPERATOR",
+    permissions: (auth.permissions as unknown as Record<string, boolean | undefined>) || {},
+  };
 
   return (
     <SettingsClient
-      isUserAdmin={isUserAdmin}
+      isUserAdmin={isSuperAdmin}
+      userRole={auth.role || "OPERATOR"}
       operatorContext={operatorContext}
     />
   );
