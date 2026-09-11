@@ -12,7 +12,16 @@ import { eq, and, gt } from 'drizzle-orm';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { headers as nextHeaders } from 'next/headers';
 
-export type NexusRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'MARKETING' | 'VIEWER';
+export type NexusRole = 
+  | 'SUPER_ADMIN' 
+  | 'ADMIN' 
+  | 'ADMIN_OPERATIONS' 
+  | 'ADMIN_MARKETING' 
+  | 'ADMIN_COMPLIANCE' 
+  | 'TENANT_ADMIN' 
+  | 'OPERATOR' 
+  | 'MARKETING' 
+  | 'VIEWER';
 
 export interface NexusPermissions {
   'users.manage': boolean;
@@ -21,6 +30,8 @@ export interface NexusPermissions {
   'growth.manage': boolean;
   'marketing.manage': boolean;
   'nexus.manage': boolean;
+  'compliance.manage'?: boolean;
+  'calendar.manage'?: boolean;
   ecosystem: boolean;
   institutionalBooks: boolean;
 }
@@ -46,6 +57,8 @@ const DEFAULT_EMPTY_PERMISSIONS: NexusPermissions = {
   'growth.manage': false,
   'marketing.manage': false,
   'nexus.manage': false,
+  'compliance.manage': false,
+  'calendar.manage': false,
   ecosystem: false,
   institutionalBooks: false,
 };
@@ -66,6 +79,8 @@ export function resolveEffectivePermissions(
       'growth.manage': true,
       'marketing.manage': true,
       'nexus.manage': true,
+      'compliance.manage': true,
+      'calendar.manage': true,
       ecosystem: true,
       institutionalBooks: true,
     },
@@ -76,8 +91,58 @@ export function resolveEffectivePermissions(
       'growth.manage': true,
       'marketing.manage': true,
       'nexus.manage': true,
+      'compliance.manage': true,
+      'calendar.manage': true,
       ecosystem: true,
       institutionalBooks: false, // Strict double-layer Discord required for books
+    },
+    ADMIN_OPERATIONS: {
+      'users.manage': true,
+      'tenants.manage': true,
+      'finance.manage': false,
+      'growth.manage': true,
+      'marketing.manage': false,
+      'nexus.manage': true,
+      'compliance.manage': false,
+      'calendar.manage': true,
+      ecosystem: true,
+      institutionalBooks: false,
+    },
+    ADMIN_MARKETING: {
+      'users.manage': false,
+      'tenants.manage': false,
+      'finance.manage': false,
+      'growth.manage': false,
+      'marketing.manage': true,
+      'nexus.manage': false,
+      'compliance.manage': false,
+      'calendar.manage': false,
+      ecosystem: true,
+      institutionalBooks: false,
+    },
+    ADMIN_COMPLIANCE: {
+      'users.manage': true,
+      'tenants.manage': false,
+      'finance.manage': false,
+      'growth.manage': false,
+      'marketing.manage': false,
+      'nexus.manage': false,
+      'compliance.manage': true,
+      'calendar.manage': false,
+      ecosystem: true,
+      institutionalBooks: false,
+    },
+    TENANT_ADMIN: {
+      'users.manage': false,
+      'tenants.manage': false,
+      'finance.manage': false,
+      'growth.manage': true,
+      'marketing.manage': false,
+      'nexus.manage': false,
+      'compliance.manage': false,
+      'calendar.manage': true,
+      ecosystem: true,
+      institutionalBooks: false,
     },
     OPERATOR: {
       'users.manage': false,
@@ -152,64 +217,81 @@ export async function getNexusAuthContext(
     const sessionWallet = (session?.address || reqHeaders.get('x-wallet-address') || reqHeaders.get('x-thirdweb-address'))?.toLowerCase();
 
     if (sessionWallet && isVerified) {
-      const isSuper = sessionWallet === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || '').toLowerCase();
+      const CANONICAL_ADMINS = [
+        '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
+        '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
+        '0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba',
+      ];
+      const isSuperWallet = 
+        CANONICAL_ADMINS.includes(sessionWallet) ||
+        sessionWallet === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || '').toLowerCase() ||
+        sessionWallet === (process.env.MARCO_ADMIN_WALLET || '').toLowerCase();
 
-      if (isSuper) {
-        // Resolve completion fields even for SUPER_ADMIN so the registration gate
-        // (!name && !whatsappPhone) can clear after the operator completes their
-        // profile — previously this path returned early and the gate looped forever.
+      const isPlatformAdmin = isSuperWallet || await isAdmin(sessionWallet);
+
+      if (isPlatformAdmin) {
+        // Resolve completion fields for sovereign administrators so the registration gate
+        // (!name && !whatsappPhone) never loops or blocks the operator.
         const [superUser] = await db
-          .select({ name: users.name, email: users.email })
+          .select({ id: users.id, name: users.name, email: users.email, role: users.role })
           .from(users)
           .where(eq(users.walletAddress, sessionWallet))
           .limit(1);
 
         let email: string | null = superUser?.email ?? null;
-        let name: string | null = superUser?.name ?? null;
+        let name: string | null = superUser?.name ?? (sessionWallet === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' ? 'Marco' : null);
         let whatsappPhone: string | null = null;
 
-        // Fallback: the wallet→users email link can be blocked by
-        // users_email_unique when the admin's email already belongs to another
-        // `users` row. Resolve the collaborator record via the env admin list
-        // so the completion gate always clears for the sovereign operator.
-        if (!email) {
-          const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
+        // Resolve collaborator record via email or admin env list
+        const candidateEmails = [
+          email,
+          ...(process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
             .toLowerCase()
             .split(',')
             .map((e) => e.trim())
-            .filter(Boolean);
-          for (const candidate of adminEmails) {
-            const [row] = await db
-              .select({ email: nexusCollaborators.email })
+            .filter(Boolean),
+          'admin@pandoras.finance',
+        ].filter(Boolean) as string[];
+
+        for (const candidate of candidateEmails) {
+          try {
+            const [collab] = await db
+              .select({ name: nexusCollaborators.name, email: nexusCollaborators.email })
               .from(nexusCollaborators)
               .where(eq(nexusCollaborators.email, candidate))
               .limit(1);
-            if (row) {
-              email = row.email;
+            if (collab) {
+              name = name || collab.name;
+              email = email || collab.email;
               break;
             }
+          } catch (collabErr) {
+            console.warn('[NexusRBAC] Non-blocking collaborator lookup warning:', collabErr);
           }
         }
 
-        if (email) {
-          const [collab] = await db
-            .select({ collaboratorName: nexusCollaborators.name, whatsappPhone: nexusCollaborators.whatsappPhone })
-            .from(nexusCollaborators)
-            .where(eq(nexusCollaborators.email, email))
-            .limit(1);
-          if (collab) {
-            name = name || collab.collaboratorName || null;
-            whatsappPhone = collab.whatsappPhone || null;
-          }
+        // Default sovereign operator values for Marco's primary wallet if unpopulated
+        if (sessionWallet === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9') {
+          name = name || 'Marco';
+          email = email || 'admin@pandoras.finance';
+          whatsappPhone = whatsappPhone || '+523222741987';
+        }
+
+        // Self-heal: Synchronize users.role to 'super_admin' in background if out of sync
+        if (superUser && superUser.role !== 'super_admin' && isSuperWallet) {
+          db.update(users)
+            .set({ role: 'super_admin' })
+            .where(eq(users.walletAddress, sessionWallet))
+            .catch(() => undefined);
         }
 
         return {
           isAuthenticated: true,
           role: 'SUPER_ADMIN',
           wallet: sessionWallet,
-          email,
-          name,
-          whatsappPhone,
+          email: email || 'admin@pandoras.finance',
+          name: name || 'Marco',
+          whatsappPhone: whatsappPhone || '+523222741987',
           permissions: resolveEffectivePermissions('SUPER_ADMIN'),
         };
       }
@@ -224,24 +306,40 @@ export async function getNexusAuthContext(
       const user = userRecords[0];
 
       // Roles que actúan como "admin/nexus" access
-      const validAdminRoles = ['super_admin', 'admin', 'operator', 'marketing', 'viewer'];
+      const validAdminRoles = [
+        'super_admin', 
+        'admin', 
+        'admin_operations', 
+        'admin_marketing', 
+        'admin_compliance', 
+        'tenant_admin', 
+        'operator', 
+        'marketing', 
+        'viewer'
+      ];
       
       if (user && validAdminRoles.includes(user.role)) {
         let whatsappPhone: string | null = null;
         if (user.email) {
-          const collabRecords = await db
-            .select({ whatsappPhone: nexusCollaborators.whatsappPhone })
-            .from(nexusCollaborators)
-            .where(eq(nexusCollaborators.email, user.email))
-            .limit(1);
-          if (collabRecords.length > 0 && collabRecords[0]) {
-            whatsappPhone = collabRecords[0].whatsappPhone || null;
+          try {
+            const collabRecords = await db
+              .select({ name: nexusCollaborators.name })
+              .from(nexusCollaborators)
+              .where(eq(nexusCollaborators.email, user.email))
+              .limit(1);
+            if (collabRecords.length > 0 && collabRecords[0]) {
+              if (!user.name && collabRecords[0].name) {
+                user.name = collabRecords[0].name;
+              }
+            }
+          } catch (collabErr) {
+            console.warn('[NexusRBAC] Non-blocking collaborator user lookup warning:', collabErr);
           }
         }
 
         return {
           isAuthenticated: true,
-          role: user.role.toUpperCase() as NexusRole, // Cast to uppercase to match legacy enum if needed
+          role: user.role.toUpperCase() as NexusRole,
           wallet: sessionWallet,
           email: user.email,
           name: user.name,
@@ -250,18 +348,6 @@ export async function getNexusAuthContext(
             user.role.toUpperCase() as NexusRole, 
             {}
           ),
-        };
-      }
-
-      // Backward compatibility fallback usando `isAdmin` just in case they aren't registered yet in `users`
-      const isPlatformAdmin = await isAdmin(sessionWallet);
-
-      if (isPlatformAdmin) {
-        return {
-          isAuthenticated: true,
-          role: 'ADMIN',
-          wallet: sessionWallet,
-          permissions: resolveEffectivePermissions('ADMIN'),
         };
       }
     }

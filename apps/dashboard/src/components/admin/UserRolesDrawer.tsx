@@ -120,10 +120,15 @@ export function UserRolesDrawer({ user, isOpen, onClose, currentActor }: UserRol
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white disabled:opacity-50 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
             >
               <option value="user">Usuario Básico (user)</option>
-              <option value="viewer">Viewer (viewer)</option>
+              <option value="viewer">Visualizador (viewer)</option>
+              <option value="investor">Inversionista VIP (investor)</option>
               <option value="marketing">Marketing (marketing)</option>
               <option value="operator">Operador (operator)</option>
-              <option value="admin">Administrador (admin)</option>
+              <option value="tenant_admin">Admin de Tenant (tenant_admin)</option>
+              <option value="admin_marketing">Admin de Marketing & Crecimiento (admin_marketing)</option>
+              <option value="admin_operations">Admin de Operaciones (admin_operations)</option>
+              <option value="admin_compliance">Admin de Cumplimiento & KYC (admin_compliance)</option>
+              <option value="admin">Administrador General (admin)</option>
               <option value="super_admin">Super Admin (super_admin)</option>
             </select>
           </div>

@@ -17,7 +17,7 @@ import { WhatsAppAdapter } from '@/lib/pandoras/core/domains/channels/adapters/w
 import type { NexusProvisionStatus } from '@/db/schema';
 
 const TOKEN_EXPIRY_HOURS = 24;
-const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandas.finance';
+const NEXUS_BASE_URL = process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandoras.finance';
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
   .toLowerCase()

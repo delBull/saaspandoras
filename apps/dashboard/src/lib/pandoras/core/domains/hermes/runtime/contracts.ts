@@ -217,6 +217,20 @@ export interface ReasoningContext {
    * but the IPFS/K25 vault was completely unreachable or compromised.
    */
   knowledgeUnavailable?: boolean;
+  /**
+   * Verified identity of the interlocutor / user speaking with Hermes.
+   */
+    interlocutor?: {
+    name?: string;
+    role?: string;
+    actorId?: string;
+    isBoss?: boolean;
+    title?: string;
+    executivePrivilege?: boolean;
+    welcomeDirective?: string;
+    permissions?: string[];
+    tenantSlug?: string;
+  };
   conversationHistory: RuntimeMessage[];
   currentMessage: RuntimeMessage;
 }

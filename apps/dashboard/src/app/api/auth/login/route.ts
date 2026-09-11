@@ -63,6 +63,7 @@ export async function POST(request: Request) {
         const isLocalDev = process.env.NODE_ENV !== "production";
 
         const hostHeader = request.headers.get("host")?.split(":")[0];
+        const isPandorasDomain = domain.endsWith(".pandoras.finance") || domain === "pandoras.finance" || domain.endsWith(".pandoras.org") || domain === "pandoras.org";
         const allowedDomains = [
             config.domain,
             "dash.pandoras.finance",
@@ -71,16 +72,20 @@ export async function POST(request: Request) {
             "app.pandoras.finance",
             "nexus.pandoras.finance",
             "admin.pandoras.finance",
+            "staging.admin.pandoras.finance",
             hostHeader
         ].filter(Boolean);
 
-        if (!isLocalDev && !allowedDomains.includes(domain) && !domain.endsWith(".vercel.app")) {
+        if (!isLocalDev && !isPandorasDomain && !allowedDomains.includes(domain) && !domain.endsWith(".vercel.app")) {
             console.error(`❌ [Login] Domain mismatch: expected one of ${allowedDomains.join(", ")}, got ${domain}`);
             return NextResponse.json({ error: `Invalid domain: expected one of ${allowedDomains.join(", ")} but got ${domain}` }, { status: 401 });
         }
 
         // URI Check
         const originHeader = request.headers.get("origin");
+        let uriHost = "";
+        try { uriHost = new URL(uri).hostname; } catch { uriHost = uri; }
+        const isPandorasUri = uriHost.endsWith(".pandoras.finance") || uriHost === "pandoras.finance" || uriHost.endsWith(".pandoras.org");
         const allowedUris = [
             config.origin,
             "https://dash.pandoras.finance",
@@ -88,10 +93,11 @@ export async function POST(request: Request) {
             "https://app.pandoras.org",
             "https://nexus.pandoras.finance",
             "https://admin.pandoras.finance",
+            "https://staging.admin.pandoras.finance",
             originHeader
         ].filter(Boolean);
 
-        if (!isLocalDev && !allowedUris.includes(uri) && !uri.includes(".vercel.app")) {
+        if (!isLocalDev && !isPandorasUri && !allowedUris.includes(uri) && !uri.includes(".vercel.app")) {
             console.error(`❌ [Login] URI mismatch: expected one of ${allowedUris.join(", ")}, got ${uri}`);
             return NextResponse.json({ error: `Invalid URI: expected one of ${allowedUris.join(", ")} but got ${uri}` }, { status: 401 });
         }
@@ -160,6 +166,15 @@ export async function POST(request: Request) {
             console.error("Gate check error:", e);
             hasAccess = false;
         }
+
+        // 🛡️ RBAC / Admin & Whitelist Bypass Guard
+        const { isAdmin } = await import("@/lib/auth");
+        const userIsAdmin = await isAdmin(address).catch(() => false);
+        if (userIsAdmin) {
+            hasAccess = true;
+            console.log("👑 [LOGIN] Admin identity detected, granting elite access bypass.");
+        }
+
         console.log("🔐 [LOGIN] Gate Check:", hasAccess ? "GRANTED" : "DENIED");
 
         // 7. Upsert User & Session (Hardened with Retry to handle ECONNRESET)
@@ -355,9 +370,9 @@ export async function POST(request: Request) {
             }
 
             const isPreview = process.env.VERCEL_ENV === "preview";
-            // IN DASH: We prefer HOST-ONLY cookies for stability unless we need cross-subdomain sharing.
-            // But since we use .pandoras.finance for shared state normally, let's try auto-domain first or no domain.
-            const cookieDomain = (isProd && !isPreview) ? ".pandoras.finance" : undefined;
+            const cookieDomain = (isProd && !isPreview) || (hostHeader?.endsWith("pandoras.finance") && !hostHeader.includes("localhost"))
+                ? ".pandoras.finance"
+                : undefined;
             
             console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'host-only'} | Secure: ${isProd} | SameSite: lax`);
 
@@ -365,11 +380,13 @@ export async function POST(request: Request) {
             console.log("🔐 [LOGIN] Emitting Production-Ready Session Cookie...");
 
             const isProduction = process.env.NODE_ENV === "production";
+
             const baseOptions = {
                 httpOnly: true,
-                secure: isProduction, // Use production check for staging compatibility
+                secure: isProduction,
                 sameSite: "lax" as const,
                 path: "/",
+                domain: cookieDomain,
                 maxAge: 60 * 60 * 24 
             };
 
@@ -384,16 +401,39 @@ export async function POST(request: Request) {
 
             console.log("✅ [LOGIN] Dual-session cookies emitted successfully");
 
-            console.log(`✅ [LOGIN] SUCCESS: Session created and cookies set for ${walletAddress}`);
+            // Invalidate access cache so next access-state read is immediate and accurate
+            try {
+                const { accessCache } = await import("@/lib/access/resilience");
+                const cacheKey = `access:${walletAddress}`;
+                // Overwrite cache directly with authenticated positive state
+                await accessCache.set(cacheKey, {
+                    state: userIsAdmin ? "admin" : (hasAccess ? "has_access" : "wallet_no_access"),
+                    authenticated: true,
+                    isAdmin: !!userIsAdmin,
+                    hasAccess: !!hasAccess,
+                    betaOpen: true,
+                    ritualEnabled: false,
+                    user: {
+                        id: userId,
+                        address: walletAddress,
+                        hasAccess: !!hasAccess,
+                        isAdmin: !!userIsAdmin,
+                    }
+                }, 60);
+            } catch (cacheErr) {
+                console.warn("⚠️ [LOGIN] accessCache sync non-blocking error:", cacheErr);
+            }
 
             return NextResponse.json({
                 success: true,
                 hasAccess,
+                isAdmin: !!userIsAdmin,
                 user: {
                     id: userId,
                     address: walletAddress,
-                    role: "user",
-                    hasAccess
+                    role: userIsAdmin ? "admin" : "user",
+                    hasAccess,
+                    isAdmin: !!userIsAdmin
                 }
             });
 

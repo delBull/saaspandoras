@@ -58,15 +58,21 @@ async function runMigrations() {
   `;
   await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "role" VARCHAR(32) DEFAULT 'COLLABORATOR' NOT NULL;`;
   await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "permissions" JSONB DEFAULT '{}'::jsonb;`;
-  // Migration 0048 — Nexus collaborators provisioning status
+  // Migration 0048 & 0050 — Nexus collaborators provisioning & omnichannel status
   await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "status" VARCHAR(16) DEFAULT 'ACTIVE' NOT NULL;`;
   await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "status_changed_at" TIMESTAMP WITH TIME ZONE;`;
   await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "discord_user_id" VARCHAR(255);`;
-  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "whatsapp_phone" VARCHAR(32);`;
+  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "whatsapp_phone" VARCHAR(50);`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_email_unique" ON "nexus_collaborators" ("email");`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_token_unique" ON "nexus_collaborators" ("token");`;
 
   console.log("✅ nexus_collaborators migrated successfully!");
+
+  // Migration 0049 — Scheduling slots reservations & sovereign holds
+  console.log("📦 Applying scheduling_slots reservation columns...");
+  await sql`ALTER TABLE "scheduling_slots" ADD COLUMN IF NOT EXISTS "reserved_until" TIMESTAMP WITH TIME ZONE;`;
+  await sql`ALTER TABLE "scheduling_slots" ADD COLUMN IF NOT EXISTS "reserved_by" VARCHAR(255);`;
+  console.log("✅ scheduling_slots reservations migrated successfully!");
 
   // 2. hermes_tenant_credits table
   console.log("📦 Applying hermes_tenant_credits DDL...");

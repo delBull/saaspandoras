@@ -49,11 +49,18 @@ export function UsersTable({ users, currentActor }: UsersTableProps) {
       super_admin: 0,
       operator: 0,
       marketing: 0,
-      viewer: 0
+      viewer: 0,
+      investor: 0,
+      admin_operations: 0,
+      admin_marketing: 0,
+      admin_compliance: 0,
+      tenant_admin: 0,
     };
 
     usersArray.forEach(user => {
-      counts[user.role]++;
+      if (counts[user.role] !== undefined) {
+        counts[user.role]++;
+      }
     });
 
     return counts;
@@ -68,6 +75,18 @@ export function UsersTable({ users, currentActor }: UsersTableProps) {
         return { text: '✨ Pandorian', className: 'bg-blue-600 text-white' };
       case 'admin':
         return { text: '⚙️ Admin', className: 'bg-red-600 text-white' };
+      case 'super_admin':
+        return { text: '👑 Super Admin', className: 'bg-purple-600 text-white' };
+      case 'admin_operations':
+        return { text: '🛠️ Ops Admin', className: 'bg-amber-600 text-white' };
+      case 'admin_marketing':
+        return { text: '🚀 Mktg Admin', className: 'bg-pink-600 text-white' };
+      case 'admin_compliance':
+        return { text: '🛡️ Compliance', className: 'bg-emerald-600 text-white' };
+      case 'tenant_admin':
+        return { text: '🏢 Tenant Admin', className: 'bg-indigo-600 text-white' };
+      case 'investor':
+        return { text: '💎 Inversionista', className: 'bg-cyan-600 text-white' };
       default:
         return { text: role, className: 'bg-gray-600 text-white' };
     }

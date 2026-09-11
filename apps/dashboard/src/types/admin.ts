@@ -125,7 +125,20 @@ export interface UserData {
   hasCognitiveProfile?: boolean;
 }
 
-export type UserRole = "applicant" | "pandorian" | "user" | "super_admin" | "admin" | "operator" | "marketing" | "viewer";
+export type UserRole = 
+  | "applicant" 
+  | "pandorian" 
+  | "user" 
+  | "super_admin" 
+  | "admin" 
+  | "admin_operations" 
+  | "admin_marketing" 
+  | "admin_compliance" 
+  | "tenant_admin" 
+  | "investor" 
+  | "operator" 
+  | "marketing" 
+  | "viewer";
 
 export type HermesBindingMode = 'existing' | 'provisioned';
 

@@ -74,17 +74,17 @@ export async function approveCollaboratorAction(id: number, roleOverride?: strin
       .limit(1);
 
     if (linkedUser) {
-      const canonicalRole = role === "SUPER_ADMIN" ? "super_admin" : role === "ADMIN" ? "admin" : "viewer";
+      const canonicalRole = role.toLowerCase();
       await db
         .update(users)
-        .set({ role: canonicalRole })
+        .set({ role: canonicalRole as any })
         .where(eq(users.id, linkedUser.id));
     }
 
     // Dispatch the magic link (non-blocking: approval succeeds even if email
     // delivery fails — the collaborator can also re-request a link).
     try {
-      const base = process.env.NEXT_PUBLIC_NEXUS_URL || "https://nexus.pandas.finance";
+      const base = process.env.NEXT_PUBLIC_NEXUS_URL || "https://nexus.pandoras.finance";
       const magicLink = `${base}/nexus?token=${encodeURIComponent(token)}`;
       const displayName = collaborator.name || collaborator.email.split("@")[0] || "Sovereign Actor";
       const sent = await sendCollaboratorMagicLink(displayName, collaborator.email, magicLink);

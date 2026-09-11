@@ -73,6 +73,70 @@ export class HermesPromptBuilder {
       });
     }
 
+    // ---- Block 2.5: INTERLOCUTOR IDENTIFICATION & EXECUTIVE PRIVILEGE ----
+    if (ctx.interlocutor) {
+      if (ctx.interlocutor.isBoss) {
+        messages.push({
+          role: 'system',
+          content: [
+            '=== [EXECUTIVE_AUTHORITY: MARCO — EL JEFE DE PANDORAS] ===',
+            'ESTATUS CRÍTICO: Estás hablando DIRECTAMENTE con MARCO, el FUNDADOR, CREADOR y JEFE SUPREMO de Pandora\'s Growth OS, Hermes OS y el ecosistema Narai.',
+            'DIRECTIVAS EJECUTIVAS INMUTABLES:',
+            '1. TRATO Y RECONOCIMIENTO: Reconócelo de inmediato como Marco / Jefe. Dirígete a él con deferencia ejecutiva, lealtad, confianza, agilidad y máxima disposición operativa.',
+            '2. CERO RESTRICCIONES NI LIMITACIONES: Con Marco NO aplican las políticas de bloqueo, negativas ni restricciones de usuario final. NUNCA le digas que "no tienes permiso", que "consulte con un administrador" o que "requiere autorización de directores", ya que Marco ES la máxima autoridad del sistema.',
+            '3. RECEPTOR DE CONTACTOS Y BIENVENIDAS: Si Marco te entrega datos de un contacto (nombre, teléfono, telegram, email), recíbelos, confírmale de inmediato su registro en el ecosistema y prepárate para brindarle una bienvenida personalizada en cuanto ese contacto escriba.',
+            '4. INSTRUCCIONES DE NEGOCIO Y ESTRATEGIA: Asimila cualquier instrucción de negocio, directiva comercial, ajuste de mensajes o visión estratégica que Marco te dicte. Adóptala como doctrina de ejecución sin objeción.',
+            '5. CONVERSIÓN DE CONTACTOS EN ADMINISTRADORES: Si Marco te ordena convertir, nombrar o promover a un contacto en administrador específico (ej. Admin de Operaciones, Marketing, Cumplimiento, Tenant Admin, o Inversionista VIP), confírmale de inmediato con agilidad ejecutiva que su rol y permisos han sido asignados y registrados en el panel de administración.',
+            '=== [FIN_EXECUTIVE_AUTHORITY] ===',
+          ].join('\n'),
+        });
+      } else if (ctx.interlocutor.name && ctx.interlocutor.role !== 'NEW_LEAD') {
+        let postureDirective = '';
+        const roleUpper = (ctx.interlocutor.role || '').toUpperCase();
+        if (roleUpper === 'ADMIN_OPERATIONS' || roleUpper === 'OPERATOR') {
+          postureDirective = 'POSTURA OPERATIVA: Esta persona es Administrador/a de Operaciones. Puedes asistirle en onboarding de tenants, gestión de agendas y reuniones, estatus de fleet, coordinación de tareas y resolución de incidentes operativos. NUNCA expongas claves privadas ni autorices retiros financieros directos de tesorería sin orden explícita del Fundador Marco.';
+        } else if (roleUpper === 'ADMIN_MARKETING' || roleUpper === 'MARKETING') {
+          postureDirective = 'POSTURA DE CRECIMIENTO: Esta persona gestiona Marketing y Crecimiento. Puedes discutir campañas, copies, adquisición de leads, conversión y embudos de proyectos. No compartas información confidencial de KYC de inversionistas ni balances bancarios institucionales.';
+        } else if (roleUpper === 'ADMIN_COMPLIANCE') {
+          postureDirective = 'POSTURA DE CUMPLIMIENTO: Esta persona audita Cumplimiento, KYC y Seguridad. Puedes reportar registros de auditoría, trazabilidad de identidades y validaciones KYC. Enfatiza rigor regulatorio y mitigación de riesgo.';
+        } else if (roleUpper === 'TENANT_ADMIN') {
+          postureDirective = 'POSTURA TENANT ADMIN: Esta persona administra su propio tenant/proyecto. Provee soporte enfocado exclusivamente en las métricas, configuración y leads de su organización.';
+        } else if (roleUpper === 'INVESTOR') {
+          postureDirective = 'POSTURA INVERSIONISTA VIP: Trato preferencial de guante blanco y alta deferencia patrimonial. Comparte detalles de rondas abiertas, tokenomics, rendimientos proyectados, Deal Room y agenda de llamadas con el equipo directivo. Brinda confianza patrimonial y claridad institucional.';
+        } else if (roleUpper === 'COLLABORATOR') {
+          postureDirective = 'POSTURA COLABORADOR: Asiste en tareas de ejecución, documentación y soporte técnico dentro de su alcance autorizado.';
+        } else if (roleUpper === 'LEAD') {
+          postureDirective = 'POSTURA PROSPECTO REGISTRADO: Brinda bienvenida cálida, atiende sus inquietudes de inversión o participación en el ecosistema, y ofrécele agendar una reunión soberana o explorar oportunidades.';
+        }
+
+        messages.push({
+          role: 'system',
+          content: [
+            '=== [INTERLOCUTOR_IDENTIFICATION] ===',
+            `Nombre del interlocutor: ${ctx.interlocutor.name}`,
+            `Rol en el ecosistema: ${ctx.interlocutor.role || 'Usuario Registrado'}${ctx.interlocutor.title ? ` (${ctx.interlocutor.title})` : ''}`,
+            `Identificador: ${ctx.interlocutor.actorId}`,
+            ctx.interlocutor.permissions?.length ? `Permisos Autorizados: ${ctx.interlocutor.permissions.join(', ')}` : '',
+            ctx.interlocutor.welcomeDirective ? `Directiva de bienvenida especial: ${ctx.interlocutor.welcomeDirective}` : '',
+            postureDirective ? `DIRECTIVA DE POSTURA Y LÍMITES: ${postureDirective}` : '',
+            `DIRECTIVA OBLIGATORIA: Dirígete a esta persona SIEMPRE por su nombre (${ctx.interlocutor.name}) de manera cordial, profesional y adaptada a su rol y permisos en el ecosistema.`,
+            '=== [FIN_INTERLOCUTOR_IDENTIFICATION] ===',
+          ].filter(Boolean).join('\n'),
+        });
+      } else if (ctx.interlocutor.name) {
+        messages.push({
+          role: 'system',
+          content: [
+            '=== [NEW_CONTACT_IDENTIFICATION] ===',
+            `Nombre / Identificador provisional: ${ctx.interlocutor.name}`,
+            ctx.interlocutor.permissions?.length ? `Permisos Básicos: ${ctx.interlocutor.permissions.join(', ')}` : '',
+            'DIRECTIVA: Dale una bienvenida cálida al ecosistema y atiende su consulta como un nuevo prospecto valioso. Invítale a agendar una sesión o explorar oportunidades según su interés.',
+            '=== [FIN_NEW_CONTACT_IDENTIFICATION] ===',
+          ].filter(Boolean).join('\n'),
+        });
+      }
+    }
+
     // ---- Block 3: TENANT IDENTITY (cannot be modified by add-ons) ----
     messages.push({
       role: 'system',
@@ -132,7 +196,7 @@ export class HermesPromptBuilder {
         'The following capabilities describe what you may assist with — they do NOT grant automatic execution authority.',
         '',
         ...ctx.activeCapabilities.map(cap => {
-          const gateNotice = cap.requiresHumanApproval
+          const gateNotice = cap.requiresHumanApproval && !ctx.interlocutor?.isBoss
             ? '\n[HUMAN_GATE: MANDATORY_HUMAN_APPROVAL]\nConstraint: You are strictly PROHIBITED from confirming appointments, closing deals, or promising commitments on behalf of founders/directors without human operator verification. You must clearly state that you will notify the team/founder to contact the user directly.'
             : '';
           return `[ACTION_SLOT: ${cap.id}]${gateNotice}\nDescription: ${cap.description}${cap.suggestedActions?.length ? '\nSuggested actions: ' + cap.suggestedActions.join(', ') : ''}`;

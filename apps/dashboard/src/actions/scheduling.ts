@@ -19,14 +19,26 @@ export async function getAvailableSlots(userId: string) {
         const now = new Date();
         const bufferTime = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48h buffer
         
-        const slots = await db.select()
+        let slots;
+        try {
+            slots = await db.select({
+                id: schedulingSlots.id,
+                userId: schedulingSlots.userId,
+                startTime: schedulingSlots.startTime,
+                endTime: schedulingSlots.endTime,
+                isBooked: schedulingSlots.isBooked,
+                reservedUntil: schedulingSlots.reservedUntil,
+                reservedBy: schedulingSlots.reservedBy,
+                type: schedulingSlots.type,
+                createdAt: schedulingSlots.createdAt,
+                updatedAt: schedulingSlots.updatedAt,
+            })
             .from(schedulingSlots)
             .where(
                 and(
                     eq(schedulingSlots.userId, userId),
                     eq(schedulingSlots.isBooked, false),
                     gte(schedulingSlots.startTime, bufferTime),
-                    // Check for active reservations
                     or(
                       lt(schedulingSlots.reservedUntil, now),
                       sql`${schedulingSlots.reservedUntil} IS NULL`
@@ -34,6 +46,33 @@ export async function getAvailableSlots(userId: string) {
                 )
             )
             .orderBy(desc(schedulingSlots.startTime));
+        } catch (dbErr: any) {
+            // Resilient fallback when reserved_until / reserved_by are not yet migrated in target database
+            if (dbErr?.message?.includes('reserved_until') || dbErr?.message?.includes('column') || dbErr?.code === '42703') {
+                console.warn('[Scheduler] Falling back to core columns for getAvailableSlots');
+                slots = await db.select({
+                    id: schedulingSlots.id,
+                    userId: schedulingSlots.userId,
+                    startTime: schedulingSlots.startTime,
+                    endTime: schedulingSlots.endTime,
+                    isBooked: schedulingSlots.isBooked,
+                    type: schedulingSlots.type,
+                    createdAt: schedulingSlots.createdAt,
+                    updatedAt: schedulingSlots.updatedAt,
+                })
+                .from(schedulingSlots)
+                .where(
+                    and(
+                        eq(schedulingSlots.userId, userId),
+                        eq(schedulingSlots.isBooked, false),
+                        gte(schedulingSlots.startTime, bufferTime)
+                    )
+                )
+                .orderBy(desc(schedulingSlots.startTime));
+            } else {
+                throw dbErr;
+            }
+        }
 
         return { success: true, slots };
     } catch (error) {
@@ -97,24 +136,38 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
 
         // 1. ATOMIC TRANSACTION: Lock slot FIRST
         return await db.transaction(async (tx) => {
-          const [updatedSlot] = await tx.update(schedulingSlots)
-            .set({ 
-              isBooked: true, 
-              reservedUntil: null, 
-              reservedBy: null 
-            })
-            .where(
-              and(
-                eq(schedulingSlots.id, slotId),
-                eq(schedulingSlots.isBooked, false),
-                or(
-                  lt(schedulingSlots.reservedUntil, now),
-                  sql`${schedulingSlots.reservedUntil} IS NULL`,
-                  eq(schedulingSlots.reservedBy, leadData.fingerprint || normalizedEmail)
+          let updatedSlot;
+          try {
+            const [res] = await tx.update(schedulingSlots)
+              .set({ 
+                isBooked: true, 
+                reservedUntil: null, 
+                reservedBy: null 
+              })
+              .where(
+                and(
+                  eq(schedulingSlots.id, slotId),
+                  eq(schedulingSlots.isBooked, false),
+                  or(
+                    lt(schedulingSlots.reservedUntil, now),
+                    sql`${schedulingSlots.reservedUntil} IS NULL`,
+                    eq(schedulingSlots.reservedBy, leadData.fingerprint || normalizedEmail)
+                  )
                 )
               )
-            )
-            .returning();
+              .returning();
+            updatedSlot = res;
+          } catch (slotErr: any) {
+            if (slotErr?.message?.includes('reserved_until') || slotErr?.code === '42703') {
+              const [res] = await tx.update(schedulingSlots)
+                .set({ isBooked: true })
+                .where(and(eq(schedulingSlots.id, slotId), eq(schedulingSlots.isBooked, false)))
+                .returning();
+              updatedSlot = res;
+            } else {
+              throw slotErr;
+            }
+          }
 
           if (!updatedSlot) {
             return { success: false, error: "Slot no longer available or held by another person" };
@@ -521,13 +574,45 @@ export async function resolveUserByAlias(alias: string) {
         }
 
         // 2. Direct User ID check (UUID)
-        // Simple regex for UUID or just try fetch
         const user = await db.query.users.findFirst({
             where: eq(users.id, alias)
         });
 
         if (user) {
             return { success: true, userId: user.id, name: user.name || "Usuario" };
+        }
+
+        // 3. Tenant / Project Slug Lookup (e.g. /schedule/snarai, /schedule/pandoras)
+        const project = await db.query.projects.findFirst({
+            where: eq(projects.slug, alias)
+        });
+
+        if (project) {
+            // Find owner user from applicant wallet address
+            if (project.applicantWalletAddress) {
+                const ownerUser = await db.query.users.findFirst({
+                    where: eq(users.walletAddress, project.applicantWalletAddress.toLowerCase())
+                });
+                if (ownerUser) {
+                    return { success: true, userId: ownerUser.id, name: project.title || ownerUser.name || "Equipo" };
+                }
+            }
+
+            // Fallback to platform admin
+            const adminUser = await db.query.users.findFirst({
+                where: or(eq(users.role, 'super_admin'), eq(users.role, 'admin'))
+            });
+            if (adminUser) {
+                return { success: true, userId: adminUser.id, name: project.title || "Equipo" };
+            }
+        }
+
+        // 4. Username lookup
+        const userByUsername = await db.query.users.findFirst({
+            where: eq(users.username, alias)
+        });
+        if (userByUsername) {
+            return { success: true, userId: userByUsername.id, name: userByUsername.name || userByUsername.username || "Usuario" };
         }
 
         return { success: false, error: "User not found" };

@@ -116,12 +116,15 @@ export class CognitiveContextAdapter {
         const hasOperationalReadCap = actorPermissions.includes('knowledge.read') || actorPermissions.includes('runtime.respond');
 
         // Least-Privilege Lattice Resolution:
-        // - CONFIDENTIAL: ONLY platform master scope ('pandoras') with SUPER_ADMIN/OWNER role OR ADMIN with explicit governance capability.
+        // - CONFIDENTIAL: ONLY platform master scope ('pandoras') with SUPER_ADMIN/OWNER role OR ADMIN with explicit governance capability, OR the Boss (Marco).
         // - INTERNAL_OPERATIONAL: Operators or Admins with operational read capabilities.
         // - TENANT_RESTRICTED: Authenticated tenant members/viewers.
         // - PUBLIC: All external leads and visitors.
+        const rawInterlocutorCheck = (effectiveContext as any)?.interlocutor || (effectiveContext.core as any)?.interlocutor || (effectiveContext.core as any)?.identity;
+        const isBossActor = Boolean(rawInterlocutorCheck?.isBoss || rawInterlocutorCheck?.role === 'FOUNDER_BOSS' || actorRole === 'FOUNDER_BOSS');
+
         let maxClearanceLevel: string = 'PUBLIC';
-        if (isPlatformMasterScope && (['SUPER_ADMIN', 'OWNER'].includes(actorRole) || (actorRole === 'ADMIN' && hasGovernanceAdminCap))) {
+        if (isBossActor || (isPlatformMasterScope && (['SUPER_ADMIN', 'OWNER'].includes(actorRole) || (actorRole === 'ADMIN' && hasGovernanceAdminCap)))) {
           maxClearanceLevel = 'CONFIDENTIAL';
         } else if (['SUPER_ADMIN', 'OWNER', 'ADMIN', 'OPERATOR', 'MARKETING'].includes(actorRole) && (isPlatformMasterScope || hasOperationalReadCap)) {
           maxClearanceLevel = 'INTERNAL_OPERATIONAL';
@@ -211,6 +214,22 @@ export class CognitiveContextAdapter {
       });
     }
 
+    // Inyectar Capacidad Soberana de Agendado (Agenda Soberana)
+    const rawInterlocutorFinal = (effectiveContext as any)?.interlocutor || (effectiveContext.core as any)?.interlocutor;
+    const isBossFinal = Boolean(rawInterlocutorFinal?.isBoss || (effectiveContext.core as any)?.role === 'OWNER');
+    const tenantIdClean = ((effectiveContext.core as any)?.tenantId || 'pandoras').toLowerCase().replace(/^org_/, '');
+
+    activeCapabilities.push({
+      id: 'scheduling.book',
+      description: 'Permite proponer, verificar disponibilidad y coordinar agendado de llamadas o reuniones institucionales.',
+      suggestedActions: [
+        `Proponer horarios en https://dash.pandoras.finance/schedule/${tenantIdClean}`,
+        `Ofrecer widget incrustable https://dash.pandoras.finance/widget/calendar/${tenantIdClean}`,
+        'Recoger preferencias de fecha/hora para agendar'
+      ],
+      requiresHumanApproval: !isBossFinal,
+    });
+
     // -------------------------------------------------------------------------
     // 3. Governance restrictions (K11-A13: Governance cannot be overridden)
     // These come from the effective context style/soul restrictions
@@ -250,6 +269,28 @@ export class CognitiveContextAdapter {
     }
 
     // -------------------------------------------------------------------------
+    // 5.5. Interlocutor Identity & Executive Privilege Resolution
+    // -------------------------------------------------------------------------
+    const rawInterlocutor = (effectiveContext as any)?.interlocutor ||
+      (effectiveContext.core as any)?.interlocutor ||
+      (effectiveContext.core as any)?.identity;
+
+    let interlocutor: ReasoningContext['interlocutor'] = undefined;
+    if (rawInterlocutor) {
+      interlocutor = {
+        name: rawInterlocutor.name,
+        role: rawInterlocutor.role,
+        actorId: rawInterlocutor.actorId || rawInterlocutor.identityId,
+        isBoss: Boolean(rawInterlocutor.isBoss || rawInterlocutor.role === 'FOUNDER_BOSS'),
+        title: rawInterlocutor.title,
+        executivePrivilege: Boolean(rawInterlocutor.executivePrivilege || rawInterlocutor.isBoss),
+        welcomeDirective: rawInterlocutor.welcomeDirective,
+        permissions: rawInterlocutor.permissions,
+        tenantSlug: rawInterlocutor.tenantSlug,
+      };
+    }
+
+    // -------------------------------------------------------------------------
     // 6. Assemble ReasoningContext
     // -------------------------------------------------------------------------
     const reasoningContext: ReasoningContext = {
@@ -260,6 +301,7 @@ export class CognitiveContextAdapter {
       activeCapabilities,
       styleOverlay,
       knowledgeUnavailable: Boolean(effectiveContext.knowledgeUnavailable),
+      interlocutor,
       conversationHistory,
       currentMessage,
     };

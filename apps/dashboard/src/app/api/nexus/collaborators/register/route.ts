@@ -149,6 +149,7 @@ export async function POST(req: NextRequest) {
             .set({
               ...(emailIsFree ? { email: normalizedEmail } : {}),
               name: name.trim(),
+              ...(isPrivilegedActor ? { role: 'super_admin' } : {}),
             })
             .where(eq(users.walletAddress, walletLower));
         } else if (emailIsFree) {
@@ -157,7 +158,7 @@ export async function POST(req: NextRequest) {
             walletAddress: walletLower,
             email: normalizedEmail,
             name: name.trim(),
-            role: 'user',
+            role: isPrivilegedActor ? 'super_admin' : 'user',
           }).onConflictDoNothing();
         } else {
           // Email owned by another row → create an email-less wallet stub so
@@ -167,7 +168,7 @@ export async function POST(req: NextRequest) {
             id: crypto.randomUUID(),
             walletAddress: walletLower,
             name: name.trim(),
-            role: 'user',
+            role: isPrivilegedActor ? 'super_admin' : 'user',
           }).onConflictDoNothing();
         }
       }

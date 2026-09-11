@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
-  if (['admin', 'api', 'dashboard', '_next', 'w', 's'].includes(slug)) {
+  if (['admin', 'api', 'dashboard', '_next', 'w', 's', 'llms-txt', 'skill-md', 'robots-txt', 'favicon-ico'].includes(slug) || rawSlug.includes('.')) {
     return { title: 'Pandoras System' };
   }
 
@@ -90,6 +90,19 @@ async function handleShortlink(rawSlug: string, searchParams: URLSearchParams, h
     // Clean slug to match database format (lowercase, no spaces)
     const slug = decodeURIComponent(rawSlug).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
     
+    // Ignore static files, discovery documents, and common bot targets
+    const lowerRaw = rawSlug.toLowerCase();
+    if (
+      lowerRaw.endsWith('.txt') ||
+      lowerRaw.endsWith('.md') ||
+      lowerRaw.endsWith('.json') ||
+      lowerRaw.endsWith('.ico') ||
+      lowerRaw.endsWith('.xml') ||
+      ['llms-txt', 'skill-md', 'robots-txt', 'favicon-ico', 'sitemap-xml'].includes(slug)
+    ) {
+      throw new Error('not_found');
+    }
+
     console.log(`🔗 Processing shortlink: ${slug} (raw: ${rawSlug})`);
 
     // Get shortlink from database

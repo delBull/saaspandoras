@@ -68,20 +68,44 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Build Sovereign ControlPlaneContext for the verified operator
-    const actorId = operatorContext?.email || operatorContext?.id || `nexus_${validatedRole.toLowerCase()}`;
+    // Build Sovereign ControlPlaneContext with Universal Interlocutor Recognition
+    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const interlocutor = await InterlocutorResolver.resolve({
+      channel: 'nexus',
+      externalUserId: operatorContext?.id || operatorContext?.email,
+      email: operatorContext?.email,
+      nameHint: operatorContext?.name,
+      walletAddress: operatorContext?.wallet || operatorContext?.address,
+    });
+
+    const isBoss = interlocutor.isBoss || validatedRole === 'SUPER_ADMIN';
+    const effectiveName = interlocutor.name || operatorContext?.name || (isBoss ? 'Marco' : 'Operador');
+    const actorId = interlocutor.actorId || operatorContext?.email || operatorContext?.id || `nexus_${validatedRole.toLowerCase()}`;
+
     const controlPlaneContext: ControlPlaneContext = {
       actorId,
       organizationId: 'pandoras',
-      role: validatedRole === 'SUPER_ADMIN' ? 'OWNER' : (validatedRole as any),
+      role: isBoss ? 'OWNER' : (validatedRole as any),
       permissions: [
         'knowledge.read',
         'runtime.respond',
-        ...(validatedRole === 'SUPER_ADMIN' || validatedRole === 'ADMIN' ? ['governance.admin', 'claims.verify'] : []),
+        ...(isBoss || validatedRole === 'ADMIN' ? ['governance.admin', 'claims.verify', 'platform.decrees'] : []),
       ],
       identity: {
         userId: operatorContext?.id,
         identityId: actorId,
+        name: effectiveName,
+        isBoss,
+        title: isBoss ? "Jefe / Fundador de Pandora's Growth OS" : `Operador Nexus (${validatedRole})`,
+        executivePrivilege: isBoss,
+      },
+      interlocutor: {
+        name: effectiveName,
+        role: isBoss ? 'FOUNDER_BOSS' : validatedRole,
+        actorId,
+        isBoss,
+        title: isBoss ? "Jefe / Fundador de Pandora's Growth OS" : `Operador Nexus (${validatedRole})`,
+        executivePrivilege: isBoss,
       },
     };
 

@@ -358,7 +358,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const errData = await loginRes.json().catch(() => null);
                 throw new Error(errData?.details || errData?.error || "Login verification failed");
             }
+
+            const loginData = await loginRes.json().catch(() => null);
             toast({ title: "Welcome!", description: "Identity verified successfully." });
+            return loginData;
         } catch (e: any) {
             console.error("[AuthMachine] Login error object:", e);
             console.error("[AuthMachine] Login error stringified:", JSON.stringify(e, Object.getOwnPropertyNames(e)));
@@ -368,8 +371,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     /**
      * UNIFIED ORCHESTRATOR (Elite Level: Atomic Resets + Scoped Aborts)
+     * ============================================================================
+     * FRACTURE #2: Strictly latest-wins execution with immediate reset.
+     * Prevents overlapping flows and state overwriting.
+     * ============================================================================
      */
-    const runAuthFlow = async (signal?: AbortSignal) => {
+    const runAuthFlow = async (signal?: AbortSignal): Promise<void> => {
         // IDEMPOTENCY LOCK: Prevent multiple concurrent auth flows
         if (runningFlow.current) {
             console.log("[AuthMachine] 🛡️ Auth flow already in progress, skipping redundant call.");
@@ -400,10 +407,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Patrón Ideal: Si no hay sesión, login y luego un solo refresh final
                 if (!currentSession || !currentSession.authenticated) {
                     console.log(`[AuthMachine] 🔐 Session stale in flow #${id}, triggering login...`);
-                    await login(id);
+                    const loginResult = await login(id);
                     if (signal?.aborted) return;
                     currentSession = await refreshSession(account?.address, signal);
                     
+                    // Fallback to login payload if refreshSession had a race condition with cookies
+                    if (!currentSession?.authenticated && loginResult?.success && !signal?.aborted) {
+                        console.log(`[AuthMachine] ⚡ Using immediate login payload as fallback session (Flow #${id})`);
+                        currentSession = {
+                            authenticated: true,
+                            hasAccess: loginResult.hasAccess,
+                            isAdmin: loginResult.isAdmin || loginResult.user?.isAdmin || false,
+                            state: (loginResult.isAdmin || loginResult.user?.isAdmin) ? "admin" : (loginResult.hasAccess ? "has_access" : "wallet_no_access"),
+                            user: loginResult.user,
+                            betaOpen: true,
+                            ritualEnabled: false,
+                        };
+                    }
+
                     if (!currentSession?.authenticated && !signal?.aborted) {
                         throw new Error("Verification failed after login");
                     }
@@ -414,7 +435,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // At this point we have a valid currentSession
                 safeDispatch({ 
                     type: "SET_STATUS", 
-                    status: currentSession.hasAccess ? "has_access" : "no_access",
+                    status: (currentSession.hasAccess || currentSession.isAdmin) ? "has_access" : "no_access",
                     user: currentSession.user,
                     remoteState: currentSession.state,
                     ux: currentSession.ux,

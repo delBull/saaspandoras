@@ -344,6 +344,20 @@
       "when": 1789023560147,
       "tag": "0048_nexus_collaborators_provisioning",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1789030000000,
+      "tag": "0049_scheduling_slots_reservations",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1789035000000,
+      "tag": "0050_nexus_collaborators_channels",
+      "breakpoints": true
     }
   ]
 }

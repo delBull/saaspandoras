@@ -173,6 +173,68 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         controlPlaneContext.actorId,
       );
 
+      // Forward interlocutor and Boss executive authority
+      const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
+      if (rawInterlocutor) {
+        (effectiveContext as any).interlocutor = rawInterlocutor;
+      }
+
+      // Executive privilege: Opportunistic detection of contact registration directive from the Boss
+      if (rawInterlocutor?.isBoss || (controlPlaneContext as any)?.role === 'OWNER') {
+        const msgText = message.content || '';
+        const phoneMatch = msgText.match(/(\+?\d{10,15})/);
+        const emailMatch = msgText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        const isRegisterIntent = /(?:agrega|registra|guarda|nuevo contacto|bienvenida|contacto|recibir)/i.test(msgText);
+
+        if (isRegisterIntent && (phoneMatch || emailMatch)) {
+          const nameMatch = msgText.match(/(?:contacto|para|a|llamado|nombre)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+)?)/i);
+          const contactName = (nameMatch && nameMatch[1]) ? nameMatch[1].trim() : 'Contacto de Marco';
+          const resolvedPhone = (phoneMatch && phoneMatch[1]) ? phoneMatch[1] : undefined;
+          const resolvedEmail = (emailMatch && emailMatch[1]) ? emailMatch[1] : undefined;
+          import('@/lib/hermes/identity/interlocutor-resolver')
+            .then(({ InterlocutorResolver }) => {
+              return InterlocutorResolver.registerContactFromBoss({
+                name: contactName,
+                phone: resolvedPhone,
+                email: resolvedEmail,
+                notes: `Instrucción ejecutiva directa de Marco: "${msgText}"`,
+                tenantSlug: organizationId,
+              });
+            })
+            .catch(err => console.warn('[HermesRuntime] Non-blocking auto-register contact from boss notice:', err));
+        }
+
+        // Executive promotion directive: convert/assign contacts as specific admins
+        const isPromoteIntent = /(?:convierte|asigna|haz|promueve|cambia el rol|hazlo admin|hazla admin|dale permisos?|nombrar?|ponlo como|ponla como)/i.test(msgText);
+        if (isPromoteIntent) {
+          let detectedRole = 'ADMIN';
+          if (/(?:operacion(?:es)?|operations?)/i.test(msgText)) detectedRole = 'ADMIN_OPERATIONS';
+          else if (/(?:marketing|crecimiento|growth)/i.test(msgText)) detectedRole = 'ADMIN_MARKETING';
+          else if (/(?:cumplimiento|compliance|kyc|seguridad)/i.test(msgText)) detectedRole = 'ADMIN_COMPLIANCE';
+          else if (/(?:tenant|proyecto)/i.test(msgText)) detectedRole = 'TENANT_ADMIN';
+          else if (/(?:inversionista|inversor|investor|vip)/i.test(msgText)) detectedRole = 'INVESTOR';
+          else if (/(?:super\s*admin|jefe)/i.test(msgText)) detectedRole = 'SUPER_ADMIN';
+
+          const emailTarget = msgText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)?.[0];
+          const phoneTarget = msgText.match(/(\+?\d{10,15})/)?.[0];
+          const nameTargetMatch = msgText.match(/(?:a|para|contacto|usuario)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+)?)/i);
+          const targetIdentifier = emailTarget || phoneTarget || (nameTargetMatch && nameTargetMatch[1] ? nameTargetMatch[1].trim() : undefined);
+
+          if (targetIdentifier) {
+            import('@/lib/hermes/identity/interlocutor-resolver')
+              .then(({ InterlocutorResolver }) => {
+                return InterlocutorResolver.promoteContactFromBoss({
+                  targetIdentifier,
+                  targetRole: detectedRole,
+                  notes: `Promoción ejecutiva dictada por el Jefe Marco: "${msgText}"`,
+                  tenantSlug: organizationId,
+                });
+              })
+              .catch(err => console.warn('[HermesRuntime] Non-blocking boss promotion error:', err));
+          }
+        }
+      }
+
       await this.traceRecorder.record(traceHandle, {
         type: 'CONTEXT_LOADED',
         metadata: {}

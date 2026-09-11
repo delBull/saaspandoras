@@ -63,7 +63,17 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
   // ── RBAC visibility helper ──────────────────────────────────────────────────
   // Each nav item declares the roles that can see it. Items are filtered at
   // render time — roles NOT in allowedRoles never see the nav entry.
-  const ALL_ROLES: PlatformRole[] = ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'MARKETING', 'VIEWER'];
+  const ALL_ROLES: PlatformRole[] = [
+    'SUPER_ADMIN', 
+    'ADMIN', 
+    'ADMIN_OPERATIONS', 
+    'ADMIN_MARKETING', 
+    'ADMIN_COMPLIANCE', 
+    'TENANT_ADMIN', 
+    'OPERATOR', 
+    'MARKETING', 
+    'VIEWER'
+  ];
 
   const platformNavItems: Array<{
     id: string; label: string; href?: string; icon: any;
@@ -76,7 +86,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin',
       icon: LayoutDashboard,
       active: currentTab === 'overview',
-      allowedRoles: ALL_ROLES, // Everyone
+      allowedRoles: ALL_ROLES,
     },
     {
       id: 'guides',
@@ -84,7 +94,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=guides',
       icon: Compass,
       active: currentTab === 'guides',
-      allowedRoles: ALL_ROLES, // Everyone
+      allowedRoles: ALL_ROLES,
     },
     {
       id: 'billing',
@@ -92,7 +102,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=billing',
       icon: Cpu,
       active: currentTab === 'billing',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'VIEWER'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'ADMIN_OPERATIONS', 'VIEWER'] as PlatformRole[],
     },
     {
       id: 'payments',
@@ -100,7 +110,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin/payments',
       icon: CreditCard,
       active: currentTab === 'payments',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN'] as PlatformRole[], // Strictly Super Admin (Marco)
     },
     {
       id: 'crm',
@@ -108,7 +118,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/?tab=crm',
       icon: Briefcase,
       active: currentTab === 'crm',
-      allowedRoles: ['SUPER_ADMIN'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN_OPERATIONS', 'ADMIN'] as PlatformRole[],
     },
     {
       id: 'marketing',
@@ -116,15 +126,15 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin/marketing',
       icon: Sparkles,
       active: currentTab === 'marketing',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN_MARKETING', 'MARKETING', 'ADMIN'] as PlatformRole[],
     },
     {
       id: 'growth',
       label: 'HQ Growth OS',
       icon: ExternalLink,
       active: false,
-      isPortalButton: true, // Renders as button, not Link
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'MARKETING'] as PlatformRole[],
+      isPortalButton: true,
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'ADMIN_OPERATIONS', 'ADMIN_MARKETING', 'OPERATOR', 'MARKETING'] as PlatformRole[],
     },
     {
       id: 'identity',
@@ -132,7 +142,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin/users',
       icon: UserCheck,
       active: currentTab === 'users' || currentTab === 'identity',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN_COMPLIANCE', 'ADMIN_OPERATIONS', 'ADMIN'] as PlatformRole[],
     },
     {
       id: 'collaborators',
@@ -140,7 +150,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin/collaborators',
       icon: ClipboardList,
       active: currentTab === 'collaborators',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN_OPERATIONS', 'ADMIN'] as PlatformRole[],
     },
     {
       id: 'security',
@@ -148,7 +158,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin?tab=security',
       icon: ShieldAlert,
       active: currentTab === 'security',
-      allowedRoles: ['SUPER_ADMIN', 'VIEWER'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN_COMPLIANCE', 'VIEWER'] as PlatformRole[],
     },
     {
       id: 'operations',
@@ -164,7 +174,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       href: '/admin/hermes',
       icon: Bot,
       active: currentTab === 'hermes',
-      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN_OPERATIONS', 'ADMIN'] as PlatformRole[],
     },
   ].filter(item => item.allowedRoles.includes(actor.role));
 
@@ -188,7 +198,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       icon: ShieldCheck,
       active: currentTab === 'rwa',
       badge: 'Deal Room',
-      allowedRoles: ['SUPER_ADMIN'] as PlatformRole[],
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN_OPERATIONS'] as PlatformRole[],
     },
   ].filter(item => item.allowedRoles.includes(actor.role));
 

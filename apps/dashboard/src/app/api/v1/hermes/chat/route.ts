@@ -154,27 +154,45 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Mandatory Actor Identity Binding with Cryptographic Proof
+    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const callerWallet = req.headers.get('x-wallet-address') || req.headers.get('x-thirdweb-address') || undefined;
+    const interlocutor = await InterlocutorResolver.resolve({
+      channel: 'web',
+      externalUserId: effectiveActorId,
+      walletAddress: callerWallet,
+      tenantSlug: effectiveOrgId,
+    });
+
     const boundActorSession = ActorIdentityBindingService.createBoundSession(
       {
-        actorId: effectiveActorId,
+        actorId: interlocutor.actorId,
         tenantId: effectiveOrgId,
         authProvider,
         nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         proofSignature: auth.sessionId || `sig_${effectiveOrgId}_${Date.now()}`,
         issuedAt: Date.now(),
       },
-      channelType === 'INTERNAL_WORKBENCH' ? 'CONFIDENTIAL' : 'TENANT_RESTRICTED',
+      channelType === 'INTERNAL_WORKBENCH' || interlocutor.isBoss ? 'CONFIDENTIAL' : 'TENANT_RESTRICTED',
       3600
     );
 
-    // 4. ControlPlaneContext with cryptographic session
+    // 4. ControlPlaneContext with cryptographic session & interlocutor
     const controlPlaneContext: ControlPlaneContext & { boundActorSession: any } = {
       organizationId: effectiveOrgId,
-      actorId: effectiveActorId,
-      role: auth.role as any,
+      actorId: interlocutor.actorId,
+      role: (interlocutor.isBoss ? 'OWNER' : auth.role) as any,
       sessionId: boundActorSession.sessionToken,
-      permissions: ['read:knowledge', 'execute:capabilities'],
+      permissions: interlocutor.isBoss
+        ? ['governance.admin', 'knowledge.read', 'runtime.respond', 'platform.decrees']
+        : ['read:knowledge', 'execute:capabilities'],
       boundActorSession,
+      identity: {
+        name: interlocutor.name,
+        isBoss: interlocutor.isBoss,
+        title: interlocutor.title,
+        executivePrivilege: interlocutor.executivePrivilege,
+      },
+      interlocutor,
     };
 
     // 5. Canonical Runtime (respects HERMES_REASONING_PROVIDER or Mock default)

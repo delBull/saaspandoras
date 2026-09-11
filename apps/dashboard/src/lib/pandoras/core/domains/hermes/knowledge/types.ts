@@ -105,6 +105,20 @@ export interface ControlPlaneContext {
   identity?: {
     identityId?: string;
     userId?: string;
+    name?: string;
+    isBoss?: boolean;
+    title?: string;
+    executivePrivilege?: boolean;
+    welcomeDirective?: string;
+  };
+  interlocutor?: {
+    name?: string;
+    role?: string;
+    actorId?: string;
+    isBoss?: boolean;
+    title?: string;
+    executivePrivilege?: boolean;
+    welcomeDirective?: string;
   };
 }
 

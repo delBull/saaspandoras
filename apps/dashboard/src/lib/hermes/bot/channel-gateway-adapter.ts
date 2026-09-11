@@ -463,9 +463,29 @@ export class ChannelGatewayAdapter {
       return this.executeTopupCommand(ctx, userId);
     }
 
-    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const interlocutor = await InterlocutorResolver.resolve({
+      channel: ctx.channel as any,
+      externalUserId: userId,
+      telegramId: userId,
+      telegramUsername: ctx.metadata?.username,
+      nameHint: ctx.metadata?.firstName ? `${ctx.metadata.firstName} ${ctx.metadata.lastName || ''}`.trim() : ctx.metadata?.username,
+      tenantSlug: ctx.tenantHint,
+    });
+
+    let tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0 && interlocutor.isBoss) {
+      tenants = [{
+        organizationId: 'pandoras',
+        tenantSlug: 'pandoras',
+        organizationName: "Pandora's Growth OS",
+        role: 'OWNER',
+        permissions: ['*'],
+      } as any];
+    }
+
     if (tenants.length === 0) {
-      const helpText = `🤖 <b>Hermes OS</b>\n\nHola. Tu cuenta (ID: <code>${escapeHtml(userId)}</code>) no está vinculada a ningún Workspace activo en Hermes OS.\n\nUsa <code>/start</code> para ver opciones o ingresa al Dashboard para vincularla.`;
+      const helpText = `🤖 <b>Hermes OS</b>\n\nHola ${escapeHtml(interlocutor.name)}. Tu cuenta (ID: <code>${escapeHtml(userId)}</code>) no está vinculada a ningún Workspace activo en Hermes OS.\n\nUsa <code>/start</code> para ver opciones o ingresa al Dashboard para vincularla.`;
       return { channel: ctx.channel, externalConversationId: ctx.externalConversationId, externalUserId: ctx.externalUserId, replyText: helpText };
     }
 
@@ -486,7 +506,7 @@ export class ChannelGatewayAdapter {
       }
 
       if (projectRecord) {
-        // HITL Check: Verify if the conversation is escalated to a human
+        // HITL Check: Verify if the conversation is escalated to a human (Boss is never blocked)
         const { hermesConversations } = await import('@/db/schema');
         const activeConversation = await db.query.hermesConversations.findFirst({
             where: (conv, { eq, and }) => and(
@@ -495,7 +515,7 @@ export class ChannelGatewayAdapter {
             )
         });
 
-        if (activeConversation?.status === 'PAUSED_HUMAN') {
+        if (!interlocutor.isBoss && activeConversation?.status === 'PAUSED_HUMAN') {
             // Send directly to the Discord webhook as an update from the user
             const { DiscordWebhookService } = await import('@/lib/integrations/discord/webhook');
             const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';

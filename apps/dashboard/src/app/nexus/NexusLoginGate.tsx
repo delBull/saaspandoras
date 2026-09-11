@@ -192,60 +192,56 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
         {/* Auth Methods Box */}
         <div className="bg-[#0e0e16] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
           
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-zinc-300">
-              {requireCompletion ? "Registro Obligatorio de Operador" : "Completa tu identidad operativa"}
-            </h3>
-            {requireCompletion && (
-               <p className="text-xs text-amber-400/90 leading-relaxed bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
-                 Tu cuenta tiene una sesión activa, pero debes completar tu información operativa obligatoria para acceder al Nexus.
-               </p>
-            )}
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nombre Completo"
-                className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
-                required
-              />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={!!initialAuth?.email}
-                placeholder="tu-correo@empresa.com"
-                className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors disabled:opacity-50"
-                required
-              />
-              <input
-                type="tel"
-                value={whatsappPhone}
-                onChange={(e) => { setWhatsappPhone(e.target.value); setPhoneError(''); }}
-                placeholder="+5215551234567 (WhatsApp)"
-                className={`w-full bg-zinc-900/80 border rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors ${
-                  phoneError ? 'border-rose-500/60 focus:border-rose-500' : 'border-zinc-700/80 focus:border-amber-500/50'
-                }`}
-                required
-              />
-              {phoneError && (
-                <p className="text-[10px] text-rose-400 font-mono pl-1">{phoneError}</p>
-              )}
-            </div>
-          </div>
-
           {requireCompletion ? (
-             <button
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-zinc-300">
+                Registro Obligatorio de Operador
+              </h3>
+              <p className="text-xs text-amber-400/90 leading-relaxed bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                Tu cuenta tiene una sesión activa, pero debes completar tu información operativa para acceder al Nexus.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nombre Completo"
+                  className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
+                  required
+                />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!!initialAuth?.email}
+                  placeholder="tu-correo@empresa.com"
+                  className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors disabled:opacity-50"
+                  required
+                />
+                <input
+                  type="tel"
+                  value={whatsappPhone}
+                  onChange={(e) => { setWhatsappPhone(e.target.value); setPhoneError(''); }}
+                  placeholder="+5215551234567 (WhatsApp - opcional)"
+                  className={`w-full bg-zinc-900/80 border rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors ${
+                    phoneError ? 'border-rose-500/60 focus:border-rose-500' : 'border-zinc-700/80 focus:border-amber-500/50'
+                  }`}
+                />
+                {phoneError && (
+                  <p className="text-[10px] text-rose-400 font-mono pl-1">{phoneError}</p>
+                )}
+              </div>
+              <button
                 onClick={handleUpdateRegistration}
-                disabled={loading || !name || !email || !whatsappPhone}
+                disabled={loading || !name || !email}
                 className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 mt-4"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 {loading ? "Actualizando..." : "Actualizar Registro y Entrar"}
               </button>
+            </div>
           ) : (
-            <div className={`space-y-6 transition-opacity duration-300 ${(!name || !email || !whatsappPhone) ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+            <div className="space-y-6">
               {/* Method 1: Web3 Wallet */}
               <div className="space-y-2.5">
                 <label className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
@@ -282,9 +278,17 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
                 <label className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
                   2. Correo Autorizado
                 </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu-correo@empresa.com"
+                  className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
+                  required
+                />
                 <button
                   type="submit"
-                  disabled={loading || !name || !email || !whatsappPhone}
+                  disabled={loading || !email}
                   className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all disabled:opacity-40"
                 >
                   <Mail className="w-3.5 h-3.5" />

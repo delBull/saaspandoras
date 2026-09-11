@@ -169,27 +169,38 @@ export class WhatsAppDispatcher {
     const contactName = changes?.contacts?.[0]?.profile?.name || message.contactName || null;
     const phoneNumberId = changes?.metadata?.phone_number_id;
 
-    // ── 0.5. Cyber Security: Identity Resolution ────────────────
+    // ── 0.5. Cyber Security: Identity & Interlocutor Resolution ────────────────
     const cleanPhone = phone.replace(/\D/g, '');
     let resolvedRole = 'USER';
     let resolvedPermissions: string[] = [];
     let resolvedActorId = `wa_actor_${cleanPhone}`;
     let resolvedName = contactName || 'User';
+    let resolvedInterlocutor: any = null;
 
     try {
-      const collaborator = await db.query.nexusCollaborators.findFirst({
-        where: eq(nexusCollaborators.whatsappPhone, cleanPhone)
+      const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+      resolvedInterlocutor = await InterlocutorResolver.resolve({
+        channel: 'whatsapp',
+        phone: cleanPhone,
+        nameHint: contactName || undefined,
       });
-      if (collaborator) {
-        resolvedRole = collaborator.role; // e.g. 'ADMIN' | 'OPERATOR'
-        // Type assertion since jsonb is basically any in drizzle if not mapped perfectly
-        resolvedPermissions = ((collaborator.permissions as any)?.grants || []) as string[];
-        resolvedActorId = `nexus_collab_${collaborator.id}`;
-        resolvedName = collaborator.name;
-        console.log(`[WhatsAppDispatcher] 🛡️ Identity Resolved: ${collaborator.name} (${resolvedRole})`);
-      }
+
+      resolvedName = resolvedInterlocutor.name;
+      resolvedActorId = resolvedInterlocutor.actorId;
+      resolvedRole = resolvedInterlocutor.isBoss ? 'OWNER' : (resolvedInterlocutor.role || 'USER');
+      resolvedPermissions = resolvedInterlocutor.isBoss 
+        ? ['governance.admin', 'knowledge.read', 'runtime.respond', 'platform.decrees']
+        : (resolvedInterlocutor.isCollaborator ? ['knowledge.read', 'runtime.respond'] : []);
+
+      console.log(`[WhatsAppDispatcher] 🛡️ Interlocutor Resolved: ${resolvedName} (${resolvedRole}) | Boss: ${resolvedInterlocutor.isBoss}`);
     } catch (err) {
       console.warn('[WhatsAppDispatcher] Error resolving identity:', err);
+      resolvedInterlocutor = {
+        isBoss: false,
+        name: resolvedName,
+        role: resolvedRole,
+        actorId: resolvedActorId,
+      };
     }
 
     // ── 0.6. Cyber Security: Persistent Atomic Deduplication ────────────────
@@ -243,8 +254,8 @@ export class WhatsAppDispatcher {
       const tenant = target;
       console.log(`🏛️ [WhatsAppDispatcher] Routing message to TENANT COGNITIVE ENGINE: ${tenant.title} (${tenant.slug})`);
 
-      // 2.1 Check if conversation is PAUSED by an active human handoff
-      const isPaused = await HumanHandoffProtocol.isPaused(tenant.id, phone);
+      // 2.1 Check if conversation is PAUSED by an active human handoff (Boss never paused)
+      const isPaused = !resolvedInterlocutor?.isBoss && await HumanHandoffProtocol.isPaused(tenant.id, phone);
       if (isPaused) {
         console.log(`⏸️ [WhatsAppDispatcher] Conversation with ${maskPhoneNumber(phone)} is currently PAUSED for ${tenant.slug}. AI response suppressed.`);
         return {
@@ -254,9 +265,9 @@ export class WhatsAppDispatcher {
         };
       }
 
-      // 1.2 Human handoff detection via keywords or low confidence (< 70)
+      // 1.2 Human handoff detection via keywords or low confidence (< 70) (Boss never handed off)
       const routeCheck = InteractionRouter.route(messageText);
-      if (routeCheck.requiresHuman || (routeCheck.confidence !== undefined && routeCheck.confidence < 70)) {
+      if (!resolvedInterlocutor?.isBoss && (routeCheck.requiresHuman || (routeCheck.confidence !== undefined && routeCheck.confidence < 70))) {
         await HumanHandoffProtocol.triggerHandoff({
           projectId: tenant.id,
           chatId: phone,
@@ -302,6 +313,13 @@ export class WhatsAppDispatcher {
             role: resolvedRole as any,
             permissions: resolvedPermissions,
             sessionId: `wa_sess_${tenant.slug}_${cleanPhone}`,
+            identity: {
+              name: resolvedName,
+              isBoss: resolvedInterlocutor?.isBoss,
+              title: resolvedInterlocutor?.title,
+              executivePrivilege: resolvedInterlocutor?.executivePrivilege,
+            },
+            interlocutor: resolvedInterlocutor,
           }
         });
 
@@ -364,8 +382,8 @@ export class WhatsAppDispatcher {
 
     let result = await routeSimpleMessage(routerPayload);
 
-    // If the legacy flow is already completed or user is sending general conversation, delegate directly to Hermes AI Runtime
-    if (!result.handled || result.isCompleted || result.action === 'flow_completed' || messageText.toLowerCase().includes('hola') || messageText.toLowerCase().includes('test')) {
+    // If the caller is the Boss, or legacy flow is completed, or user sends general conversation, delegate directly to Hermes AI Runtime
+    if (resolvedInterlocutor?.isBoss || !result.handled || result.isCompleted || result.action === 'flow_completed' || messageText.toLowerCase().includes('hola') || messageText.toLowerCase().includes('test')) {
       try {
         const runtime = getDefaultRuntime();
         const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone);
@@ -385,6 +403,13 @@ export class WhatsAppDispatcher {
             role: resolvedRole as any,
             permissions: resolvedPermissions,
             sessionId: `wa_sess_pandoras_${cleanPhone}`,
+            identity: {
+              name: resolvedName,
+              isBoss: resolvedInterlocutor?.isBoss,
+              title: resolvedInterlocutor?.title,
+              executivePrivilege: resolvedInterlocutor?.executivePrivilege,
+            },
+            interlocutor: resolvedInterlocutor,
           }
         });
 

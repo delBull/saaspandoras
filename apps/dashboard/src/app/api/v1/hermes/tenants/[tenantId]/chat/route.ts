@@ -118,10 +118,20 @@ export async function POST(
       });
     }
 
-    // 3. Mandatory Actor Identity Binding
+    // 3. Mandatory Actor Identity Binding & Interlocutor Resolution
+    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const interlocutor = await InterlocutorResolver.resolve({
+      channel: 'telegram',
+      externalUserId: actorId,
+      telegramId: actorId.replace(/^tg_/, ''),
+      telegramUsername: body.username,
+      nameHint: body.name || body.firstName,
+      tenantSlug: canonical.canonicalOrgId,
+    });
+
     const boundActorSession = ActorIdentityBindingService.createBoundSession(
       {
-        actorId,
+        actorId: interlocutor.actorId,
         tenantId: canonical.canonicalOrgId,
         authProvider: 'TELEGRAM_INIT_DATA',
         nonce: `tg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
@@ -132,14 +142,23 @@ export async function POST(
       3600
     );
 
-    // 4. ControlPlaneContext
+    // 4. ControlPlaneContext with Verified Interlocutor Identity
     const controlPlaneContext = {
       organizationId: canonical.canonicalOrgId,
-      actorId,
-      role: 'VIEWER' as const,
+      actorId: interlocutor.actorId,
+      role: (interlocutor.isBoss ? 'OWNER' : (interlocutor.isCollaborator ? 'OPERATOR' : 'VIEWER')) as any,
       sessionId: boundActorSession.sessionToken,
-      permissions: ['read:knowledge', 'execute:capabilities'] as string[],
+      permissions: interlocutor.isBoss 
+        ? ['governance.admin', 'knowledge.read', 'runtime.respond', 'platform.decrees']
+        : ['read:knowledge', 'execute:capabilities'],
       boundActorSession,
+      identity: {
+        name: interlocutor.name,
+        isBoss: interlocutor.isBoss,
+        title: interlocutor.title,
+        executivePrivilege: interlocutor.executivePrivilege,
+      },
+      interlocutor,
     };
 
     // 5. Execute Hermes Cognitive Turn (Env-configured multi-provider via getDefaultRuntime)
