@@ -46,38 +46,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!whatsappPhone) {
-      return NextResponse.json(
-        { error: 'WhatsApp phone number is required for Hermes notifications' },
-        { status: 400, headers: cors }
-      );
-    }
-
     const cleanEmail = email.trim().toLowerCase();
     const cleanName: string = (name && typeof name === 'string' && name.trim()) ? name.trim() : (isNexusAdminEmail(cleanEmail) ? 'Admin' : (cleanEmail.split('@')[0] || 'Collaborator'));
-
-    // Authorized if:
-    // 1. Caller is an admin wallet
-    // 2. Target email is in ADMIN_EMAILS env var
-    // 3. Target email already exists in nexus_collaborators (self-renewal of magic link)
-    const isAdminCaller = await requireNexusAdmin(req);
-    const isAdminTarget = isNexusAdminEmail(cleanEmail);
 
     // Check if email already has an existing collaborator record (allows self-renewal)
     const existingCollaborator = await getCollaboratorByEmail(cleanEmail);
     const isExistingCollaborator = !!existingCollaborator;
 
-    if (!isAdminCaller && !isAdminTarget && !isExistingCollaborator) {
+    const isAdminCaller = await requireNexusAdmin(req);
+    const isAdminTarget = isNexusAdminEmail(cleanEmail);
+
+    // Enforce role safety: only admin callers can assign elevated roles or custom permissions
+    const effectiveRole = isAdminCaller
+      ? (role || existingCollaborator?.role || 'COLLABORATOR')
+      : (existingCollaborator?.role || 'COLLABORATOR');
+    const effectivePermissions = isAdminCaller
+      ? (permissions || existingCollaborator?.permissions || {})
+      : (existingCollaborator?.permissions || {});
+
+    // Resolve WhatsApp: provided in payload, or fallback to existing stored number
+    const effectiveWhatsapp = (whatsappPhone && typeof whatsappPhone === 'string' && whatsappPhone.trim())
+      ? whatsappPhone.trim()
+      : (existingCollaborator?.whatsappPhone || undefined);
+
+    // Require WhatsApp phone number if not already present in the existing profile or admin target
+    if (!effectiveWhatsapp && !isExistingCollaborator && !isAdminTarget) {
       return NextResponse.json(
-        { error: 'Admin authentication required to invite external collaborators' },
-        { status: 403, headers: cors }
+        { error: 'WhatsApp phone number is required for Hermes notifications' },
+        { status: 400, headers: cors }
       );
     }
-
-    // Preserve existing role if self-renewal (don't downgrade admins)
-    const effectiveRole = role || existingCollaborator?.role || 'COLLABORATOR';
-    const effectivePermissions = permissions || existingCollaborator?.permissions || {};
-    const effectiveWhatsapp = whatsappPhone || existingCollaborator?.whatsappPhone || undefined;
 
     const { collaborator, magicLink } = await createOrUpdateCollaborator(
       cleanName,

@@ -8,7 +8,14 @@ import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
  * X-Telegram-Bot-Api-Secret-Token — matched by the fail-closed POST handler.
  */
 export async function POST(req: NextRequest) {
-  if (!(await requireNexusAdmin(req))) {
+  const adminSecretHeader = req.headers.get('x-admin-secret') || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  const isSecretAdmin = adminSecretHeader && (
+    (process.env.ADMIN_SECRET && adminSecretHeader === process.env.ADMIN_SECRET) ||
+    (process.env.CRON_SECRET && adminSecretHeader === process.env.CRON_SECRET) ||
+    (process.env.TELEGRAM_WEBHOOK_SECRET && adminSecretHeader === process.env.TELEGRAM_WEBHOOK_SECRET)
+  );
+
+  if (!isSecretAdmin && !(await requireNexusAdmin(req))) {
     return NextResponse.json({ ok: false, error: 'Admin authentication required' }, { status: 403 });
   }
 
@@ -22,8 +29,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const baseUrlParam = (searchParams.get('baseUrl') || req.headers.get('x-forwarded-host') || '').replace(/\/$/, '');
-  const webhookUrl = `${baseUrlParam.startsWith('http') ? baseUrlParam : `https://${baseUrlParam}`}/api/hermes/bot/webhook`;
+  const defaultHost = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+  const rawBase = searchParams.get('baseUrl') || (req.headers.get('x-forwarded-host') ? `https://${req.headers.get('x-forwarded-host')}` : defaultHost);
+  const cleanBase = rawBase.replace(/\/$/, '');
+  const webhookUrl = `${cleanBase.startsWith('http') ? cleanBase : `https://${cleanBase}`}/api/hermes/bot/webhook`;
 
   const res = await fetch(
     `https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}&secret_token=${encodeURIComponent(webhookSecret)}&allowed_updates=${encodeURIComponent(JSON.stringify(['message', 'edited_message', 'callback_query']))}`,

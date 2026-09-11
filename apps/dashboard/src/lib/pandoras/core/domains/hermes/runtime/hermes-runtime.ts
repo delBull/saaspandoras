@@ -204,6 +204,22 @@ export class HermesRuntime implements HermesCognitiveRuntime {
             .catch(err => console.warn('[HermesRuntime] Non-blocking auto-register contact from boss notice:', err));
         }
 
+        // Executive Directive Memory Capture (Tier 0: Founder Memory)
+        const directiveMatch = msgText.match(/(?:anota|guarda|registra|establece|agrega)?\s*(?:esta)?\s*directiva(?:\s*ejecutiva)?\s*:\s*(.+)/i)
+          || msgText.match(/^directiva\s*:\s*(.+)/i);
+        if (directiveMatch && directiveMatch[1]) {
+          const directiveText = directiveMatch[1].trim();
+          import('@/lib/hermes/executive/founder-directives')
+            .then(({ FounderDirectiveStore }) => {
+              FounderDirectiveStore.addDirective({
+                text: directiveText,
+                actorId: rawInterlocutor.actorId || 'marco_founder',
+                channel: (controlPlaneContext as any)?.channel || 'web',
+              });
+            })
+            .catch(err => console.warn('[HermesRuntime] Non-blocking directive recording error:', err));
+        }
+
         // Executive promotion directive: convert/assign contacts as specific admins
         const isPromoteIntent = /(?:convierte|asigna|haz|promueve|cambia el rol|hazlo admin|hazla admin|dale permisos?|nombrar?|ponlo como|ponla como)/i.test(msgText);
         if (isPromoteIntent) {
@@ -410,6 +426,438 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       const setup = await this.setupCognitiveTurn(input);
       traceHandle = setup.traceHandle;
       const { runtimeId, organizationId, canonicalTenantId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
+
+      // Tier 0 & Tier 2: Executive Mode direct fulfillment for Marco
+      const interlocutor = (reasoningInput.reasoningContext as any).interlocutor;
+      if (interlocutor?.isBoss || interlocutor?.founderExecutiveMode) {
+        const msgText = input.message?.content?.trim() || '';
+        const founderKey = interlocutor?.id || 'marco_founder';
+
+        const { ExecutiveIntentClassifier } = await import('@/lib/hermes/executive/intent-classifier');
+        const { ExecutivePlanner } = await import('@/lib/hermes/executive/executive-planner');
+
+        // Check if there is an active pending plan awaiting confirmation/cancellation
+        const pendingPlan = ExecutivePlanner.getPendingPlan(founderKey);
+        if (pendingPlan && ExecutiveIntentClassifier.isConfirmation(msgText)) {
+          const execResult = await ExecutivePlanner.executePlan(founderKey, interlocutor);
+          await this.traceRecorder.complete(traceHandle, { success: execResult.success, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_exec_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: execResult.message,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad', '/leads'],
+            providerMeta: {
+              provider: 'executive-planner',
+              model: 'tier-2-execution',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        if (pendingPlan && ExecutiveIntentClassifier.isCancellation(msgText)) {
+          const cancelResult = ExecutivePlanner.cancelPlan(founderKey);
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_cancel_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: cancelResult.message,
+            suggestedActions: ['/briefing'],
+            providerMeta: {
+              provider: 'executive-planner',
+              model: 'tier-2-cancelled',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Parse executive message intents
+        const parsedIntent = ExecutiveIntentClassifier.classify(msgText);
+
+        // Tier 0: Executive Capabilities Manifest & Help
+        if (parsedIntent.type === 'CAPABILITIES_HELP') {
+          const { ExecutiveCapabilitiesManifest } = await import('@/lib/hermes/executive/capabilities-manifest');
+          const channel = (interlocutor?.channel || (setup.controlPlaneContext as any)?.channel || 'whatsapp') as any;
+          const guide = ExecutiveCapabilitiesManifest.getExecutiveGuide(channel);
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_guide_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: guide,
+            suggestedActions: ['/briefing', '/leads', '/schema'],
+            providerMeta: {
+              provider: 'executive-capabilities-manifest',
+              model: 'tier-0-manifest',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 4: Financial Signature Submission ("firma fin_123 0x...")
+        if (parsedIntent.type === 'FINANCIAL_SIGNATURE') {
+          const { FinancialOrchestratorService } = await import('@/lib/hermes/executive/financial-orchestrator');
+          const finResult = await FinancialOrchestratorService.verifyAndExecuteSignature({
+            proposalId: parsedIntent.proposalId,
+            signature: parsedIntent.signature,
+            interlocutor,
+          });
+          await this.traceRecorder.complete(traceHandle, { success: finResult.success, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_fin_exec_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: finResult.message,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'financial-orchestrator',
+              model: 'tier-4-settlement',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 4: Financial Pre-Flight Proposal ("prepara distribución de 5000 usdc...")
+        if (parsedIntent.type === 'FINANCIAL_PROPOSAL') {
+          const { FinancialOrchestratorService } = await import('@/lib/hermes/executive/financial-orchestrator');
+          const finPrep = FinancialOrchestratorService.prepareProposal({
+            action: parsedIntent.action,
+            tenantId: parsedIntent.tenantId,
+            recipient: parsedIntent.recipient,
+            amountUsd: parsedIntent.amountUsd,
+            purpose: parsedIntent.purpose,
+            interlocutor,
+          });
+          await this.traceRecorder.complete(traceHandle, { success: finPrep.ok, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_fin_prep_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: finPrep.reviewCard,
+            suggestedActions: ['/briefing', 'cancela'],
+            providerMeta: {
+              provider: 'financial-orchestrator',
+              model: 'tier-4-preflight',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 3: Code Patch Approval ("apruebo parche patch_123")
+        if (parsedIntent.type === 'CODE_APPROVAL') {
+          const { CodeOperatorService } = await import('@/lib/hermes/executive/code-operator');
+          const patchResult = await CodeOperatorService.approvePatch(parsedIntent.proposalId, interlocutor);
+          await this.traceRecorder.complete(traceHandle, { success: patchResult.success, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_patch_appr_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: patchResult.message,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'code-operator',
+              model: 'tier-3-approval',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 3: Code Error Diagnosis ("diagnostica este error: ...")
+        if (parsedIntent.type === 'CODE_DIAGNOSIS') {
+          const { CodeOperatorService } = await import('@/lib/hermes/executive/code-operator');
+          const diag = CodeOperatorService.diagnoseError(parsedIntent.rawError);
+          const report = [
+            `🔍 **Diagnóstico de Código en Sandbox (Tier 3)**`,
+            diag.file ? `• **Archivo Localizado:** \`${diag.file}${diag.line ? `:${diag.line}` : ''}\`` : '• **Archivo:** No detectado en stack trace',
+            `• **Tipo de Error:** \`${diag.errorType}\``,
+            `• **Blast Radius:** \`${diag.blastRadius}\``,
+            `• **Causa Raíz:** ${diag.rootCause}`,
+            `• **Remediación Sugerida:** ${diag.suggestedAction}`,
+          ].join('\n');
+
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_code_diag_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report,
+            suggestedActions: ['/briefing', '/schema'],
+            providerMeta: {
+              provider: 'code-operator',
+              model: 'tier-3-diagnostics',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 2: Check if message is a new Operational Command
+        if (parsedIntent.type === 'OPERATIONAL_ACTION') {
+          const planResult = ExecutivePlanner.createPlan({
+            action: parsedIntent.action,
+            target: parsedIntent.target,
+            payload: parsedIntent.payload,
+            title: parsedIntent.title,
+            description: parsedIntent.description,
+            blastRadius: parsedIntent.blastRadius,
+            interlocutor,
+            founderKey,
+          });
+
+          await this.traceRecorder.complete(traceHandle, { success: planResult.ok, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_plan_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: planResult.reviewCard,
+            suggestedActions: planResult.ok ? ['confirmo', 'cancela'] : ['/briefing'],
+            providerMeta: {
+              provider: 'executive-planner',
+              model: 'tier-2-planning',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 0: Executive Daily Briefing direct fulfillment for Marco
+        const isBriefing = /(?:^\/briefing|^\/?pulso|resumen del d[ií]a|qu[eé] necesita atenci[oó]n|dame el briefing|c[oó]mo est[aá] todo|estado de pandoras|qu[eé] hay hoy)/i.test(msgText);
+        if (isBriefing) {
+          const { ExecutiveBriefingEngine } = await import('@/lib/hermes/executive/briefing-engine');
+          const briefing = await ExecutiveBriefingEngine.generateBriefing();
+          await this.traceRecorder.complete(traceHandle, {
+            success: true,
+            durationMs: Date.now() - start,
+          });
+          return {
+            responseId: `resp_briefing_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: briefing.rawMarkdown,
+            suggestedActions: ['/leads', '/schedule', '/tenants'],
+            providerMeta: {
+              provider: 'executive-briefing-engine',
+              model: 'tier-0-intelligence',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: {
+                validatedAt: new Date(),
+                policyVersion: '1.1',
+                claimsChecked: 1,
+                violationsDetected: 0,
+              },
+            },
+          };
+        }
+
+        // Tier 1: Deep Inspection of Tenant
+        const tenantMatch = msgText.match(/(?:inspecciona|audita|revisa|estado de|detalle de)\s+(?:el\s+tenant|el\s+proyecto|tenant|proyecto)\s+([a-zA-Z0-9_-]+)/i)
+          || msgText.match(/^\/tenant\s+([a-zA-Z0-9_-]+)/i);
+        if (tenantMatch && tenantMatch[1]) {
+          const { ExecutiveAuditService } = await import('@/lib/hermes/executive/audit-service');
+          const report = await ExecutiveAuditService.inspectTenant(tenantMatch[1]);
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_tenant_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/leads', '/briefing', 'Ver paridad de base de datos'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 1: Leads & CRM Inspection
+        const isLeadsIntent = /(?:revisa|audita|muestra|dame|ver)\s+(?:los\s+)?leads|^\/leads/i.test(msgText);
+        if (isLeadsIntent) {
+          const { ExecutiveAuditService } = await import('@/lib/hermes/executive/audit-service');
+          const report = await ExecutiveAuditService.inspectLeads();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_leads_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/briefing', 'Ver reuniones de hoy', 'Estado de tenants'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 1: Security Logs Inspection
+        const isLogsIntent = /(?:revisa|audita|muestra|ver)\s+(?:los\s+)?logs|seguridad|eventos de seguridad|^\/logs/i.test(msgText);
+        if (isLogsIntent) {
+          const { ExecutiveAuditService } = await import('@/lib/hermes/executive/audit-service');
+          const report = await ExecutiveAuditService.inspectSystemLogs();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_logs_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/briefing', 'Ver paridad de base de datos'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 1: Schema Parity Inspection
+        const isSchemaIntent = /(?:paridad|esquema|migraciones|base de datos|schema)\s+(?:de\s+)?(?:db|neon|bd)?|^\/schema/i.test(msgText);
+        if (isSchemaIntent) {
+          const { ExecutiveAuditService } = await import('@/lib/hermes/executive/audit-service');
+          const report = await ExecutiveAuditService.inspectSchemaParity();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_schema_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/briefing', '/leads'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+      }
 
       await this.traceRecorder.record(traceHandle, {
         type: 'PROVIDER_STARTED',

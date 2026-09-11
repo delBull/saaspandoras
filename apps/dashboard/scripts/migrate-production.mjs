@@ -27,17 +27,21 @@ const candidates = [
   localParsed.DATABASE_URL_STAGING,
 ];
 
-const dbUrl = candidates.find((url) => url && !url.includes('localhost') && !url.includes('127.0.0.1'));
+const dbUrls = Array.from(
+  new Set(
+    candidates.filter((url) => url && !url.includes('localhost') && !url.includes('127.0.0.1'))
+  )
+);
 
-if (!dbUrl) {
+if (dbUrls.length === 0) {
   console.error("❌ Fatal: Valid remote Neon DATABASE_URL is missing in environment (localhost rejected).");
   process.exit(1);
 }
 
-const sql = neon(dbUrl);
-
-async function runMigrations() {
-  console.log("⚡ [Pandoras Migration Runner] Connecting to database...");
+async function migrateDatabase(dbUrl) {
+  const host = new URL(dbUrl).host;
+  console.log(`\n⚡ [Pandoras Migration Runner] Connecting to database: ${host}...`);
+  const sql = neon(dbUrl);
   
   // 1. nexus_collaborators table
   console.log("📦 Applying nexus_collaborators DDL & RBAC columns...");
@@ -73,6 +77,41 @@ async function runMigrations() {
   await sql`ALTER TABLE "scheduling_slots" ADD COLUMN IF NOT EXISTS "reserved_until" TIMESTAMP WITH TIME ZONE;`;
   await sql`ALTER TABLE "scheduling_slots" ADD COLUMN IF NOT EXISTS "reserved_by" VARCHAR(255);`;
   console.log("✅ scheduling_slots reservations migrated successfully!");
+
+  // Migration 0038 & 0043 — hermes_conversations collaborator & identity links
+  console.log("📦 Applying hermes_conversations assigned_collaborator_id & identity_id columns...");
+  await sql`ALTER TABLE "hermes_conversations" ADD COLUMN IF NOT EXISTS "assigned_collaborator_id" integer;`;
+  await sql`ALTER TABLE "hermes_conversations" ADD COLUMN IF NOT EXISTS "identity_id" uuid;`;
+  console.log("✅ hermes_conversations columns migrated successfully!");
+
+  // Migration 0052 — contact_doctrine_seals table (K25 Sovereign Knowledge Vault)
+  console.log("📦 Applying contact_doctrine_seals DDL...");
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS "contact_doctrine_seals" (
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+        "lead_id" UUID NOT NULL REFERENCES "marketing_leads"("id") ON DELETE CASCADE,
+        "version" INTEGER DEFAULT 1 NOT NULL,
+        "cid" VARCHAR(128) NOT NULL,
+        "ipfs_uri" VARCHAR(160),
+        "content_hash" VARCHAR(64) NOT NULL,
+        "contact_ref" VARCHAR(64) NOT NULL,
+        "hmac_signature" VARCHAR(128),
+        "agent_signature" TEXT,
+        "pinned" BOOLEAN DEFAULT false NOT NULL,
+        "integrity" BOOLEAN DEFAULT false NOT NULL,
+        "pending_replica" BOOLEAN DEFAULT true NOT NULL,
+        "provider" VARCHAR(32),
+        "sealed_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+        CONSTRAINT "contact_doctrine_seals_lead_version_uq" UNIQUE("lead_id", "version")
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS "contact_doctrine_seals_lead_idx" ON "contact_doctrine_seals" ("lead_id");`;
+    await sql`CREATE INDEX IF NOT EXISTS "contact_doctrine_seals_cid_idx" ON "contact_doctrine_seals" ("cid");`;
+    console.log("✅ contact_doctrine_seals migrated successfully!");
+  } catch (err) {
+    console.warn(`⚠️ [Pandoras Migration Runner] Skipping contact_doctrine_seals on ${host} (${err.message})`);
+  }
 
   // 2. hermes_tenant_credits table
   console.log("📦 Applying hermes_tenant_credits DDL...");
@@ -151,12 +190,19 @@ async function runMigrations() {
   }
 }
 
-runMigrations()
+async function runAll() {
+  for (const url of dbUrls) {
+    await migrateDatabase(url);
+  }
+}
+
+runAll()
   .then(() => {
-    console.log("🏁 All migrations executed cleanly.");
+    console.log("\n🏁 All configured databases migrated cleanly.");
     process.exit(0);
   })
   .catch((err) => {
     console.error("❌ Migration error:", err);
     process.exit(1);
   });
+

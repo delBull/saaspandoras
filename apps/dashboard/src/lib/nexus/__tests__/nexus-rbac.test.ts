@@ -31,10 +31,10 @@ describe('🛡️ Nexus RBAC Domain Engine', () => {
     expect(perms.institutionalBooks).toBe(false);
   });
 
-  it('RBAC-03: MARKETING defaults to Academy Admin & Hermes QA, but blocked from Deal Room and Settings', () => {
+  it('RBAC-03: MARKETING defaults to Marketing Hub, but blocked from Deal Room, Users, and Settings', () => {
     const perms = resolveEffectivePermissions('MARKETING');
     expect(perms["users.manage"]).toBe(false);
-    expect(perms["growth.manage"]).toBe(true);
+    expect(perms["growth.manage"]).toBe(false);
     expect(perms["nexus.manage"]).toBe(false);
     expect(perms["marketing.manage"]).toBe(true);
     expect(perms.ecosystem).toBe(true);
@@ -54,7 +54,7 @@ describe('🛡️ Nexus RBAC Domain Engine', () => {
   it('RBAC-05: Granular override allows giving Deal Room access to a Manager or Collaborator', () => {
     const perms = resolveEffectivePermissions('MARKETING', { "users.manage": true });
     expect(perms["users.manage"]).toBe(true);
-    expect(perms["growth.manage"]).toBe(true);
+    expect(perms["marketing.manage"]).toBe(true);
 
     const collabPerms = resolveEffectivePermissions('VIEWER', { "users.manage": true, "growth.manage": true });
     expect(collabPerms["users.manage"]).toBe(true);

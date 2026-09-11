@@ -28,6 +28,7 @@ import {
 import { eq, or, sql, desc } from 'drizzle-orm';
 import { isAdmin } from '@/lib/auth';
 import { resolveEffectivePermissions, NexusRole, NexusPermissions } from '@/lib/nexus/nexus-rbac';
+import { FounderCapability, ALL_FOUNDER_CAPABILITIES } from '../executive/types';
 
 export interface InterlocutorQuery {
   channel: 'whatsapp' | 'telegram' | 'web' | 'nexus';
@@ -55,6 +56,8 @@ export interface ResolvedInterlocutor {
   isLead?: boolean;
   isNewLead?: boolean;
   executivePrivilege?: boolean;
+  capabilities?: FounderCapability[];
+  founderExecutiveMode?: boolean;
   welcomeDirective?: string;
   permissions?: string[];
   tenantSlug?: string;
@@ -91,6 +94,33 @@ const CANONICAL_ADMIN_WALLETS = [
 
 function cleanDigits(phone?: string | null): string {
   return (phone || '').replace(/\D/g, '');
+}
+
+/**
+ * Garantía institucional: TODO contacto registrado por el Boss recibe una
+ * directiva de bienvenida personalizada por nombre y rol — aunque Marco no
+ * dicte una explícitamente. El contexto específico se puede enriquecer después.
+ */
+function buildDefaultWelcomeDirective(params: {
+  name: string;
+  role?: string;
+  notes?: string;
+  channel?: string;
+}): string {
+  const name = params.name.trim();
+  const role = (params.role || 'LEAD').toUpperCase();
+  const persona = role === 'INVESTOR'
+    ? 'Cliente potencial → trato V.I.P, calidez institucional, claridad patrimonial, acceso al Deal Room y a la agenda de Technical Discovery.'
+    : role === 'COLLABORATOR' || role === 'OPERATOR' || role === 'ADMIN'
+      ? 'Colaborador del ecosistema → tono de socio operativo: pregunta su contexto del día, ofrécele Nexus, agenda soberana y Hermes OS como copiloto.'
+      : 'Prospecto / contacto de crecimiento → tono cálido-institucional, interés por su objetivo, sin presión, caminos naturales de exploración.';
+  return [
+    `Bienvenida personalizada para ${name} (registrado por orden ejecutiva del Fundador):`,
+    `1. Sálvalo SIEMPRE por su nombre: "${name}". Nunca lo trates como lead frío.`,
+    `2. Postura según su rol (${role}): ${persona}`,
+    params.notes ? `3. Contexto que Hermes ya conoce: ${params.notes}` : `3. Si aún no conoces su contexto, pregúntale directamente qué lo trajo al ecosistema — escucha antes de vender.`,
+    '4. Nunca repitas preguntas de datos básicos si ya están registrados en el ecosistema.',
+  ].filter(Boolean).join('\n');
 }
 
 export class InterlocutorResolver {
@@ -209,6 +239,8 @@ export class InterlocutorResolver {
         walletAddress: rawWallet || '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
         email: rawEmail || 'admin@pandoras.finance',
         executivePrivilege: true,
+        capabilities: ALL_FOUNDER_CAPABILITIES,
+        founderExecutiveMode: true,
         permissions: ALL_BOSS_PERMISSIONS,
         tenantSlug: query.tenantSlug,
       };
@@ -234,6 +266,8 @@ export class InterlocutorResolver {
             walletAddress: rawWallet,
             email: rawEmail,
             executivePrivilege: isPrimaryAdmin,
+            capabilities: isPrimaryAdmin ? ALL_FOUNDER_CAPABILITIES : undefined,
+            founderExecutiveMode: isPrimaryAdmin,
             permissions: adminPerms,
             tenantSlug: query.tenantSlug,
           };
@@ -243,10 +277,20 @@ export class InterlocutorResolver {
       }
     }
 
-    // ── STEP 2: Check Nexus Collaborators (Email) ──────────
-    if (rawEmail) {
+    // ── STEP 2: Check Nexus Collaborators (Email OR WhatsApp phone) ──────────
+    // Phone matching is SUFFIX-based (last 10 digits) to absorb regional variants:
+    // Meta Cloud API delivers MX numbers as '521XXXXXXXXXX' while collaborators
+    // may be stored as '+52XXXXXXXXXX' — exact equality would break resolution.
+    const phoneDigits = cleanDigits(rawPhone);
+    const phoneSuffix10 = phoneDigits.slice(-10);
+    if (rawEmail || phoneSuffix10) {
       try {
-        const [collab] = await db
+        const collabConditions = [];
+        if (rawEmail) collabConditions.push(eq(nexusCollaborators.email, rawEmail));
+        if (phoneSuffix10) {
+          collabConditions.push(sql`right(regexp_replace(coalesce(${nexusCollaborators.whatsappPhone}, ''), '[^0-9]', '', 'g'), 10) = ${phoneSuffix10}`);
+        }
+        let collab: any = await db
           .select({
             id: nexusCollaborators.id,
             name: nexusCollaborators.name,
@@ -255,10 +299,30 @@ export class InterlocutorResolver {
             permissions: nexusCollaborators.permissions,
           })
           .from(nexusCollaborators)
-          .where(eq(nexusCollaborators.email, rawEmail))
+          .where(or(...collabConditions))
           .limit(1);
 
-        if (collab) {
+        let collabWelcomeDirective: string | undefined;
+        try {
+          const welcomeLeadConditions = [];
+          if (collab?.email) welcomeLeadConditions.push(eq(marketingLeads.email, collab.email));
+          if (phoneSuffix10) {
+            welcomeLeadConditions.push(sql`right(regexp_replace(coalesce(${marketingLeads.phoneNumber}, ''), '[^0-9]', '', 'g'), 10) = ${phoneSuffix10}`);
+          }
+          if (welcomeLeadConditions.length > 0) {
+            const [welcomeLead] = await db
+              .select({ metadata: marketingLeads.metadata })
+              .from(marketingLeads)
+              .where(or(...welcomeLeadConditions))
+              .orderBy(desc(marketingLeads.lastEngagementAt))
+              .limit(1);
+            collabWelcomeDirective = (welcomeLead?.metadata as any)?.customWelcome || undefined;
+          }
+        } catch {
+          /* non-blocking welcome directive hydration */
+        }
+
+        if (collab && collab.id && (collab.name || collab.email)) {
           const isSuperAdminCollab = collab.email === 'admin@pandoras.finance';
           const isBossCollab = isSuperAdminCollab || (collab.name && collab.name.toLowerCase().includes('marco'));
           const collabRole = (collab.role?.toUpperCase() || 'COLLABORATOR') as NexusRole;
@@ -278,6 +342,7 @@ export class InterlocutorResolver {
             executivePrivilege: Boolean(isBossCollab),
             permissions: effectivePerms,
             tenantSlug: query.tenantSlug,
+            welcomeDirective: collabWelcomeDirective,
           };
         }
       } catch (err) {
@@ -349,7 +414,11 @@ export class InterlocutorResolver {
         const lead = await db.query.marketingLeads.findFirst({
           where: (l, { or, eq }) => {
             const conditions = [];
-            if (rawPhone) conditions.push(eq(l.phoneNumber, rawPhone));
+            if (rawPhone) {
+              // Suffix-based phone matching (last 10 digits) — absorbs +52/521/523/+34 regional variants
+              const suffix = cleanDigits(rawPhone).slice(-10);
+              conditions.push(sql`right(regexp_replace(coalesce(${marketingLeads.phoneNumber}, ''), '[^0-9]', '', 'g'), 10) = ${suffix}`);
+            }
             if (rawEmail) conditions.push(eq(l.email, rawEmail));
             return or(...conditions);
           },
@@ -401,9 +470,31 @@ export class InterlocutorResolver {
     const effectiveName = query.nameHint || (rawPhone ? `Contacto ${rawPhone.slice(-4)}` : (query.telegramUsername ? `@${query.telegramUsername}` : 'Visitante'));
     const actorId = rawPhone ? `wa_lead_${rawPhone}` : (rawTgId ? `tg_lead_${rawTgId}` : `anon_${Date.now()}`);
 
-    // Non-blocking auto-lead capture
+    // Non-blocking auto-lead capture (deduped by phone SUFFIX to avoid
+    // duplicate anonymous identities for the same person across +52/521/+34 variants)
     try {
       if (rawPhone || rawEmail) {
+        const suffix = phoneSuffix10 || (rawPhone ? cleanDigits(rawPhone).slice(-10) : '');
+        if (rawPhone && suffix) {
+          const dupCount = await db
+            .select({ n: sql<number>`count(*)::int` })
+            .from(marketingLeads)
+            .where(sql`right(regexp_replace(coalesce(${marketingLeads.phoneNumber}, ''), '[^0-9]', '', 'g'), 10) = ${suffix}`);
+          if ((dupCount[0]?.n ?? 0) > 0) {
+            // Same person already tracked — skip duplicate capture
+            return {
+              isBoss: false,
+              name: effectiveName,
+              role: 'NEW_LEAD',
+              title: 'Nuevo Contacto',
+              actorId,
+              phone: rawPhone || undefined,
+              telegramId: rawTgId || undefined,
+              isNewLead: false,
+            };
+          }
+        }
+
         // Resolve target project or fallback to pandoras / snarai
         let projectId = 17; // S'Narai default or Pandoras
         if (query.tenantSlug) {
@@ -496,7 +587,8 @@ export class InterlocutorResolver {
         isInvestor: isInvestorRole,
         assignedRole: role,
         bossNotes: params.notes,
-        customWelcome: params.welcomeMessage,
+        customWelcome: params.welcomeMessage || buildDefaultWelcomeDirective(params),
+        welcomeDirective: params.welcomeMessage || buildDefaultWelcomeDirective(params),
         telegramId: params.telegramId,
         telegramUsername: params.telegramUsername,
         registeredAt: new Date().toISOString(),
@@ -525,6 +617,16 @@ export class InterlocutorResolver {
           }
         }
       }
+    }
+
+    const finalContactId = String(insertedLead?.id || 'lead_registered');
+
+    // 🌐 Sovereign Seal: pinea la doctrina de contacto (K25 envelope + CID derivable)
+    // al nodo IPFS soberano — audit trail inmutable de qué se le instruyó a Hermes.
+    if (insertedLead?.id) {
+      import('@/lib/hermes/identity/contact-doctrine')
+        .then(({ sealContactDoctrine }) => sealContactDoctrine(insertedLead.id!, { trigger: 'boss_directive' }))
+        .catch((err) => console.warn('[InterlocutorResolver] Non-blocking contact doctrine seal notice:', err?.message));
     }
 
     return {
@@ -643,5 +745,16 @@ export class InterlocutorResolver {
       assignedRole: normalizedRole,
       message: `Contacto '${targetName}' promovido exitosamente al rol '${normalizedRole}' por orden ejecutiva del Fundador Marco.`,
     };
+  }
+
+  /**
+   * Capability-based authority check (Role != Capability)
+   */
+  public static hasFounderCapability(
+    interlocutor: ResolvedInterlocutor | null | undefined,
+    cap: FounderCapability
+  ): boolean {
+    if (!interlocutor) return false;
+    return Boolean(interlocutor.capabilities?.includes(cap));
   }
 }

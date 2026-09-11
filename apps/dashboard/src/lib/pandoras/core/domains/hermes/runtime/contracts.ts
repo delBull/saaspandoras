@@ -225,6 +225,8 @@ export interface ReasoningContext {
     role?: string;
     actorId?: string;
     isBoss?: boolean;
+    founderExecutiveMode?: boolean;
+    capabilities?: string[];
     title?: string;
     executivePrivilege?: boolean;
     welcomeDirective?: string;

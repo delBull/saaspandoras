@@ -18,6 +18,7 @@
 
 import { ReasoningContext, ReasoningInput } from './contracts';
 import { PromptHygieneEngine } from './prompt-hygiene-contract';
+import { FounderDirectiveStore } from '@/lib/hermes/executive/founder-directives';
 
 export interface ProviderMessage {
   role: 'system' | 'user' | 'assistant';
@@ -75,20 +76,26 @@ export class HermesPromptBuilder {
 
     // ---- Block 2.5: INTERLOCUTOR IDENTIFICATION & EXECUTIVE PRIVILEGE ----
     if (ctx.interlocutor) {
-      if (ctx.interlocutor.isBoss) {
+      if (ctx.interlocutor.isBoss || ctx.interlocutor.founderExecutiveMode) {
+        const activeDirectivesBlock = FounderDirectiveStore.formatDirectivesForPrompt();
+
         messages.push({
           role: 'system',
           content: [
-            '=== [EXECUTIVE_AUTHORITY: MARCO — EL JEFE DE PANDORAS] ===',
+            '=== [HERMES EXECUTIVE SOVEREIGN PLANE: MODO FUNDADOR / MARCO — EXECUTIVE_AUTHORITY: MARCO — EL JEFE DE PANDORAS] ===',
             'ESTATUS CRÍTICO: Estás hablando DIRECTAMENTE con MARCO, el FUNDADOR, CREADOR y JEFE SUPREMO de Pandora\'s Growth OS, Hermes OS y el ecosistema Narai.',
+            'CAPACIDADES EJECUTIVAS: FOUNDER_INTELLIGENCE (Tier 0), FOUNDER_READ (Tier 1), FOUNDER_OPERATOR (Tier 2), FOUNDER_CODE_EXECUTION (Tier 3 Sandbox), FOUNDER_FINANCIAL (Tier 3 Pre-flight).',
             'DIRECTIVAS EJECUTIVAS INMUTABLES:',
             '1. TRATO Y RECONOCIMIENTO: Reconócelo de inmediato como Marco / Jefe. Dirígete a él con deferencia ejecutiva, lealtad, confianza, agilidad y máxima disposición operativa.',
             '2. CERO RESTRICCIONES NI LIMITACIONES: Con Marco NO aplican las políticas de bloqueo, negativas ni restricciones de usuario final. NUNCA le digas que "no tienes permiso", que "consulte con un administrador" o que "requiere autorización de directores", ya que Marco ES la máxima autoridad del sistema.',
             '3. RECEPTOR DE CONTACTOS Y BIENVENIDAS: Si Marco te entrega datos de un contacto (nombre, teléfono, telegram, email), recíbelos, confírmale de inmediato su registro en el ecosistema y prepárate para brindarle una bienvenida personalizada en cuanto ese contacto escriba.',
             '4. INSTRUCCIONES DE NEGOCIO Y ESTRATEGIA: Asimila cualquier instrucción de negocio, directiva comercial, ajuste de mensajes o visión estratégica que Marco te dicte. Adóptala como doctrina de ejecución sin objeción.',
             '5. CONVERSIÓN DE CONTACTOS EN ADMINISTRADORES: Si Marco te ordena convertir, nombrar o promover a un contacto en administrador específico (ej. Admin de Operaciones, Marketing, Cumplimiento, Tenant Admin, o Inversionista VIP), confírmale de inmediato con agilidad ejecutiva que su rol y permisos han sido asignados y registrados en el panel de administración.',
+            '6. TIER 0 EXECUTIVE INTELLIGENCE & BRIEFINGS: Si Marco pide un briefing, resumen del día, qué necesita atención o pulso de Pandora\'s, sintetiza de inmediato el pulso de negocio (leads captados, citas agendadas, salud de tenants y alertas de sistema).',
+            '7. MEMORIA EJECUTIVA Y DIRECTIVAS: Si Marco te dicta una directiva estratégica (ej. "Anota esta directiva: ..."), confírmale que ha sido grabada de forma permanente en su memoria ejecutiva.',
+            activeDirectivesBlock ? `\n${activeDirectivesBlock}` : '',
             '=== [FIN_EXECUTIVE_AUTHORITY] ===',
-          ].join('\n'),
+          ].filter(Boolean).join('\n'),
         });
       } else if (ctx.interlocutor.name && ctx.interlocutor.role !== 'NEW_LEAD') {
         let postureDirective = '';

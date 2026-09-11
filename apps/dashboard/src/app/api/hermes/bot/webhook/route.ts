@@ -19,13 +19,18 @@ export async function POST(req: NextRequest) {
   try {
     // 0. Authenticate Webhook Caller (Fail-closed anti-forgery)
     const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    const allowUnsigned = process.env.TELEGRAM_ALLOW_UNSIGNED_WEBHOOK === 'true';
     if (expectedSecret) {
       const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');
       if (!incomingSecret || incomingSecret !== expectedSecret) {
-        console.warn('[Hermes Telegram Webhook] 🚫 Unauthorized: Missing or invalid X-Telegram-Bot-Api-Secret-Token');
-        return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+        if (allowUnsigned && !incomingSecret) {
+          console.warn('[Hermes Telegram Webhook] ⚠️ Accepting unsigned Telegram request due to TELEGRAM_ALLOW_UNSIGNED_WEBHOOK=true. Register webhook with secret_token at /api/hermes/bot/webhook/register');
+        } else {
+          console.warn(`[Hermes Telegram Webhook] 🚫 Unauthorized: ${incomingSecret ? 'Invalid' : 'Missing'} X-Telegram-Bot-Api-Secret-Token. Set secret in Telegram via /api/hermes/bot/webhook/register or scripts/register-telegram-webhook.ts`);
+          return NextResponse.json({ ok: false, error: 'Unauthorized: Missing or invalid secret token' }, { status: 401 });
+        }
       }
-    } else if (process.env.NODE_ENV === 'production') {
+    } else if (process.env.NODE_ENV === 'production' && !allowUnsigned) {
       console.warn('[Hermes Telegram Webhook] 🚨 TELEGRAM_WEBHOOK_SECRET not configured in production; rejecting unsigned requests.');
       return NextResponse.json({ ok: false, error: 'Unauthorized: Webhook secret not configured' }, { status: 401 });
     }

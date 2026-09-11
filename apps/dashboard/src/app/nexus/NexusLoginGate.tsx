@@ -65,6 +65,13 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
   const handleRequestMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
+
+    const cleanPhone = whatsappPhone.trim();
+    if (cleanPhone && !isValidPhone(cleanPhone)) {
+      setPhoneError('Ingresa un número válido con código de país (ej. +521234567890).');
+      return;
+    }
+    setPhoneError('');
     setLoading(true);
     setResult(null);
 
@@ -72,7 +79,11 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
       const res = await fetch("/api/nexus/collaborators/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, whatsappPhone }),
+        body: JSON.stringify({
+          name: name.trim() || undefined,
+          email: email.trim(),
+          whatsappPhone: cleanPhone ? normalizePhone(cleanPhone) : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -83,6 +94,7 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
         });
         setEmail("");
         setWhatsappPhone("");
+        setPhoneError("");
       } else {
         setResult({
           type: "error",
@@ -275,17 +287,37 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
 
               {/* Method 2: Magic Link */}
               <form onSubmit={handleRequestMagicLink} className="space-y-3">
-                <label className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-                  2. Correo Autorizado
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu-correo@empresa.com"
-                  className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
-                  required
-                />
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                    2. Correo y WhatsApp
+                  </label>
+                  <span className="text-[10px] text-zinc-500 font-mono">Hermes Ready</span>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu-correo@empresa.com"
+                    className="w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 transition-colors"
+                    required
+                  />
+                  <input
+                    type="tel"
+                    value={whatsappPhone}
+                    onChange={(e) => {
+                      setWhatsappPhone(e.target.value);
+                      setPhoneError('');
+                    }}
+                    placeholder="+52 1 55 1234 5678 (WhatsApp para notificaciones de Hermes)"
+                    className={`w-full bg-zinc-900/80 border rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors ${
+                      phoneError ? 'border-rose-500/60 focus:border-rose-500' : 'border-zinc-700/80 focus:border-amber-500/50'
+                    }`}
+                  />
+                  {phoneError && (
+                    <p className="text-[10px] text-rose-400 font-mono pl-1">{phoneError}</p>
+                  )}
+                </div>
                 <button
                   type="submit"
                   disabled={loading || !email}

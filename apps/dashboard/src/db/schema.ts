@@ -3597,6 +3597,32 @@ export const hermesAddonAudit = pgTable("hermes_addon_audit", {
   installationAuditIdx: index("hermes_addon_audit_installation_idx").on(t.installationId),
 }));
 
+/**
+ * 🔐 Contact Doctrine Seals — Registro de sellos K25 de las directivas de contacto.
+ * Cada versi n de una doctrina de contacto (directivas de bienvenida, pol ticas y
+ * contexto de negocio) se sella a IPFS (Kubo soberano) con envelope cifrado; esta
+ * tabla guarda el puntero de integridad (CID derivable === pinneado) y la firma.
+ */
+export const contactDoctrineSeals = pgTable("contact_doctrine_seals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id, { onDelete: 'cascade' }).notNull(),
+  version: integer("version").notNull().default(1),
+  cid: varchar("cid", { length: 128 }).notNull(),
+  ipfsUri: varchar("ipfs_uri", { length: 160 }),
+  contentHash: varchar("content_hash", { length: 64 }).notNull(),
+  contactRef: varchar("contact_ref", { length: 64 }).notNull(),
+  hmacSignature: varchar("hmac_signature", { length: 128 }),
+  agentSignature: text("agent_signature"),
+  pinned: boolean("pinned").default(false).notNull(),
+  integrity: boolean("integrity").default(false).notNull(),
+  pendingReplica: boolean("pending_replica").default(true).notNull(),
+  provider: varchar("provider", { length: 32 }),
+  sealedAt: timestamp("sealed_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  leadVersionUnique: uniqueIndex("contact_doctrine_seals_lead_version_uq").on(t.leadId, t.version),
+  leadIdx: index("contact_doctrine_seals_lead_idx").on(t.leadId),
+}));
+
 export const hermesConversations = pgTable("hermes_conversations", {
   id: varchar("id", { length: 256 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
