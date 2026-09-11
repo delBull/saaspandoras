@@ -99,16 +99,30 @@ export class A2AOutboundDispatcher {
     const transportHmac = A2ASecurityValidator.computeTransportHmac('POST', pathNorm, tsMs, rawBody);
 
     // 4. Dispatch HTTP Request
-    const response = await SafeHttpClient.fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-a2a-timestamp': tsMs,
-        'x-bridge-signature': transportHmac,
-        ...(options?.extraHeaders || {}),
-      },
-      body: rawBody,
-    });
+    let response: Response;
+    try {
+      response = await SafeHttpClient.fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-a2a-timestamp': tsMs,
+          'x-bridge-signature': transportHmac,
+          ...(options?.extraHeaders || {}),
+        },
+        body: rawBody,
+      });
+    } catch (fetchErr: any) {
+      return {
+        success: false,
+        messageId,
+        correlationId: options?.correlationId,
+        type,
+        error: {
+          code: 'A2A_GATEWAY_UNREACHABLE',
+          message: `No se pudo conectar con el endpoint A2A de Sofia (${endpoint}): ${fetchErr?.message || 'Host inalcanzable'}. Verifica SOFIA_BRIDGE_WEBHOOK_URL.`,
+        },
+      };
+    }
 
     const responseData = await response.json().catch(() => ({}));
 

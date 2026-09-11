@@ -594,29 +594,40 @@ export async function createAdminBooking(userId: string, data: {
  */
 export async function resolveUserByAlias(alias: string) {
     try {
+        if (!alias) return { success: false, error: "Empty alias" };
+        const cleanAlias = alias.trim();
+
         // 1. Static Aliases for Landing Pages
         // Added 'pandoras' for generic scheduling link
         const LANDING_ALIASES = ["founders", "protocol", "protocol-story", "start", "utility-protocol", "pandoras"];
 
-        if (LANDING_ALIASES.includes(alias)) {
-            // For V1, map all these to the FIRST user in the DB (Lead Admin)
-            // TODO: In production, fetch specific user by role 'admin' or env var
-            const admin = await db.query.users.findFirst();
+        if (LANDING_ALIASES.includes(cleanAlias.toLowerCase())) {
+            // Map to the Lead Admin in DB with fallback to first user
+            const admin = await db.query.users.findFirst({
+                where: or(eq(users.role, 'super_admin'), eq(users.role, 'admin'))
+            }) || await db.query.users.findFirst();
             if (admin) return { success: true, userId: admin.id, name: "Equipo Pandora's" };
         }
 
-        // 2. Direct User ID check (UUID)
+        // 2. Direct User ID check (UUID / User ID)
         const user = await db.query.users.findFirst({
-            where: eq(users.id, alias)
+            where: eq(users.id, cleanAlias)
         });
 
         if (user) {
             return { success: true, userId: user.id, name: user.name || "Usuario" };
         }
 
-        // 3. Tenant / Project Slug Lookup (e.g. /schedule/snarai, /schedule/pandoras)
+        // 3. Tenant / Project Lookup (by slug, organizationId UUID, or numeric ID)
+        const isNumeric = /^\d+$/.test(cleanAlias);
+        const isUuidVal = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanAlias);
         const project = await db.query.projects.findFirst({
-            where: eq(projects.slug, alias)
+            where: or(
+                eq(projects.slug, cleanAlias),
+                eq(projects.slug, cleanAlias.toLowerCase()),
+                ...(isUuidVal ? [eq(projects.organizationId, cleanAlias)] : []),
+                ...(isNumeric ? [eq(projects.id, parseInt(cleanAlias, 10))] : [])
+            )
         });
 
         if (project) {
@@ -630,10 +641,10 @@ export async function resolveUserByAlias(alias: string) {
                 }
             }
 
-            // Fallback to platform admin
+            // Fallback to platform admin or any available user
             const adminUser = await db.query.users.findFirst({
                 where: or(eq(users.role, 'super_admin'), eq(users.role, 'admin'))
-            });
+            }) || await db.query.users.findFirst();
             if (adminUser) {
                 return { success: true, userId: adminUser.id, name: project.title || "Equipo" };
             }
@@ -641,7 +652,7 @@ export async function resolveUserByAlias(alias: string) {
 
         // 4. Username lookup
         const userByUsername = await db.query.users.findFirst({
-            where: eq(users.username, alias)
+            where: eq(users.username, cleanAlias)
         });
         if (userByUsername) {
             return { success: true, userId: userByUsername.id, name: userByUsername.name || userByUsername.username || "Usuario" };

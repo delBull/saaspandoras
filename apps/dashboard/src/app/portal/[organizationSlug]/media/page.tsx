@@ -1,13 +1,16 @@
-import React from 'react';
-import { MediaStudioDashboard } from '@/components/hermes-portal/media/MediaStudioDashboard';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MediaStudioPage({
+/**
+ * Backwards compatibility redirect:
+ * /portal/[organizationSlug]/media -> /portal/[organizationSlug]/demand
+ */
+export default async function MediaRedirectPage({
   params,
 }: {
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
-  return <MediaStudioDashboard organizationSlug={organizationSlug} />;
+  redirect(`/portal/${organizationSlug}/demand`);
 }

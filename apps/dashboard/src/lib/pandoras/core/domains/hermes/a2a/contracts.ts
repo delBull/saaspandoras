@@ -54,6 +54,17 @@ export type A2AMessageType =
   | A2ACapabilityMessageType
   | A2AEventMessageType
   | A2ASystemMessageType
+  // Demand & Distribution capabilities
+  | 'demand.plan'
+  | 'demand.propose'
+  | 'demand.approve'
+  | 'demand.distribute'
+  | 'media.plan'
+  | 'media.create'
+  | 'media.publish.channel:x'
+  | 'media.publish.channel:telegram'
+  | 'media.publish.channel:newsletter'
+  | 'media.publish.channel:instagram'
   // Backwards compatibility aliases
   | 'event.tenant.updated'
   | 'event.document.received'

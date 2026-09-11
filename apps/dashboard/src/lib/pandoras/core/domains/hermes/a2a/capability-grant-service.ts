@@ -13,6 +13,13 @@ import { CapabilityGrant, SovereignArtifactManifest } from './contracts';
 import { AgentRegistry } from './agent-registry';
 
 export const SUPPORTED_MEDIA_CAPABILITIES = [
+  { id: 'demand.view', label: '👁️ Demand Console Access', defaultEnabled: true },
+  { id: 'demand.plan', label: '📋 Campaign Planning & Strategy', defaultEnabled: true },
+  { id: 'demand.approve', label: '✅ Campaign Approval', defaultEnabled: true },
+  { id: 'demand.distribute', label: '🚀 Multi-Channel Distribution', defaultEnabled: true },
+  { id: 'media.publish.channel:telegram', label: '✈️ Publish to Telegram', defaultEnabled: true },
+  { id: 'media.publish.channel:x', label: '🐦 Publish to X (Twitter)', defaultEnabled: true },
+  { id: 'media.publish.channel:newsletter', label: '📰 Publish to Newsletter', defaultEnabled: true },
   { id: 'media.image.create', label: '📸 Image Creation (Pixel)', defaultEnabled: true },
   { id: 'media.video.create', label: '🎥 Video & Reels (Pixel)', defaultEnabled: false },
   { id: 'media.copy.create', label: '✍️ Copy & Editorial (Minerva)', defaultEnabled: true },
@@ -23,10 +30,27 @@ export const SUPPORTED_MEDIA_CAPABILITIES = [
 
 export class CapabilityGrantService {
   /**
+   * Baseline capabilities authorized for verified Growth OS tenants (e.g. S'Narai, Pandoras)
+   */
+  private static readonly TENANT_BASELINE_CAPABILITIES = new Set<string>([
+    'demand.view',
+    'demand.plan',
+    'demand.approve',
+    'demand.distribute',
+    'media.publish.channel:telegram',
+    'media.publish.channel:x',
+    'media.publish.channel:newsletter',
+    'media.image.create',
+    'media.copy.create',
+    'media.newsletter.create',
+    'research.report.create',
+  ]);
+
+  /**
    * Checks if a tenant has an ACTIVE capability grant.
    */
   public static async isCapabilityGranted(tenantId: string, capability: string): Promise<boolean> {
-    const normalizedTenant = tenantId.toLowerCase();
+    const normalizedTenant = tenantId.toLowerCase().trim();
     
     // First check memory registry (instant / test fallback)
     if (AgentRegistry.hasCapability('hermes', capability, normalizedTenant)) {
@@ -41,14 +65,16 @@ export class CapabilityGrantService {
           .where(
             and(
               eq(hermesCapabilityGrants.tenantId, normalizedTenant),
-              eq(hermesCapabilityGrants.capability, capability),
-              eq(hermesCapabilityGrants.status, 'ACTIVE')
+              eq(hermesCapabilityGrants.capability, capability)
             )
           )
           .limit(1);
 
         if (rows.length > 0 && rows[0]) {
           const grant = rows[0];
+          if (grant.status !== 'ACTIVE') {
+            return false;
+          }
           if (grant.expiresAt && Date.now() > new Date(grant.expiresAt).getTime()) {
             return false;
           }
@@ -56,12 +82,12 @@ export class CapabilityGrantService {
         }
       }
     } catch (err) {
-      console.warn('[CapabilityGrantService] DB check error, falling back to memory:', err);
+      console.warn('[CapabilityGrantService] DB check error, checking verified baseline:', err);
     }
 
-    // Default bootstrap grant for S'Narai and Pandoras
-    if (normalizedTenant === 'snarai' || normalizedTenant === 'pandoras') {
-      return capability === 'media.image.create' || capability === 'media.copy.create';
+    // Default bootstrap grant for verified Growth OS organizations
+    if (normalizedTenant === 'snarai' || normalizedTenant === 'pandoras' || normalizedTenant === 'default') {
+      return this.TENANT_BASELINE_CAPABILITIES.has(capability);
     }
 
     return false;

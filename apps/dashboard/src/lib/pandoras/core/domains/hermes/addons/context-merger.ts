@@ -15,6 +15,7 @@ import { SovereignIpfsAlerting } from '../knowledge/ipfs/ipfs-alerting';
 export interface CoreSecurityContext {
   organizationId: string;
   organizationName?: string;
+  projectSlug?: string;
   tenantId: string;
   projectId: string;
   authorizedChannels: string[];
@@ -357,6 +358,7 @@ export class CognitiveContextBuilder {
       return {
         organizationId: 'pandoras',
         organizationName: "Pandora's Growth OS",
+        projectSlug: 'pandoras',
         tenantId: 'pandoras',
         projectId: 'pandoras_core',
         authorizedChannels: ['whatsapp', 'telegram', 'portal'],
@@ -396,11 +398,13 @@ export class CognitiveContextBuilder {
       }
     }
 
-    const orgName = project?.title || (tenantId.toLowerCase().includes('snarai') ? "S'Narai" : tenantId);
+    const isPandoras = tenantId.toLowerCase() === 'pandoras' || tenantId.toLowerCase() === 'pandoras-core';
+    const orgName = project?.title || (tenantId.toLowerCase().includes('snarai') ? "S'Narai" : (isPandoras ? "Pandora's Growth OS" : tenantId));
 
     return {
       organizationId: project?.organizationId || tenantId,
       organizationName: orgName,
+      projectSlug: project?.slug || (!tenantIsUuid ? cleanSlug : (tenantId.toLowerCase().includes('snarai') ? 'snarai' : undefined)),
       tenantId,
       projectId: project?.id?.toString() || 'project_1',
       authorizedChannels: ['telegram', 'whatsapp', 'portal'],
@@ -410,7 +414,7 @@ export class CognitiveContextBuilder {
 
   private static async getTenantKnowledge(tenantId: string, activeKnowledge: any[], orgName?: string): Promise<TenantKnowledge> {
     const isPandorasCore = tenantId === 'pandoras' || tenantId === 'pandoras-core';
-    const finalOrgName = orgName || (tenantId.toLowerCase().includes('snarai') ? "S'Narai" : tenantId);
+    const finalOrgName = orgName || (tenantId.toLowerCase().includes('snarai') ? "S'Narai" : (isPandorasCore ? "Pandora's Growth OS" : tenantId));
 
     // ── Build Team Directory (Identity Resolution & Contacts) ──
     let directoryFact: any = null;

@@ -901,6 +901,92 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         }
       }
 
+      // 🚀 TENANT BUSINESS INTENT: Demand & Distribution (Sofia / Media Co bridge)
+      const rawUserMsg = input.message?.content?.trim() || '';
+      const { DemandIntentHandler } = await import('@/lib/hermes/demand/demand-intent-handler');
+      
+      const pendingDemandProposal = DemandIntentHandler.getPendingProposal(organizationId);
+      if (pendingDemandProposal && /^(?:confirmo|confirmar|aprobar|apruebo|ejecuta|ejecutar|procede|proceder|s[ií]|adelante|\/confirm)$/i.test(rawUserMsg)) {
+        const confirmResult = await DemandIntentHandler.confirmProposal(organizationId);
+        await this.traceRecorder.complete(traceHandle, { success: confirmResult.success, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_demand_confirm_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: confirmResult.content,
+          suggestedActions: confirmResult.suggestedActions,
+          providerMeta: {
+            provider: 'demand-intent-handler',
+            model: 'demand-distribution-v1',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      if (pendingDemandProposal && /^(?:cancela|cancelar|descarta|descartar|aborta|abortar|no|\/cancel)$/i.test(rawUserMsg)) {
+        const cancelResult = DemandIntentHandler.cancelProposal(organizationId);
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_demand_cancel_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: cancelResult.content,
+          suggestedActions: cancelResult.suggestedActions,
+          providerMeta: {
+            provider: 'demand-intent-handler',
+            model: 'demand-distribution-v1',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      if (DemandIntentHandler.isDemandIntent(rawUserMsg)) {
+        const proposalResult = await DemandIntentHandler.handleDemandProposal(organizationId, rawUserMsg);
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_demand_prop_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: proposalResult.content,
+          suggestedActions: proposalResult.suggestedActions,
+          providerMeta: {
+            provider: 'demand-intent-handler',
+            model: 'demand-distribution-v1',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
       await this.traceRecorder.record(traceHandle, {
         type: 'PROVIDER_STARTED',
         metadata: {}

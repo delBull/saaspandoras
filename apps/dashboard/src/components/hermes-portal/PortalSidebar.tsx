@@ -56,8 +56,8 @@ const NAV_ITEMS: NavItem[] = [
     section: 'primary',
   },
   {
-    label: 'Media Studio',
-    href: '/media',
+    label: 'Demand & Distribution',
+    href: '/demand',
     icon: Sparkles,
     requiredPermission: 'organization.read',
     section: 'primary',

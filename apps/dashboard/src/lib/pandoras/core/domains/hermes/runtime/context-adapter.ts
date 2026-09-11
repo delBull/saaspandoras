@@ -217,14 +217,17 @@ export class CognitiveContextAdapter {
     // Inyectar Capacidad Soberana de Agendado (Agenda Soberana)
     const rawInterlocutorFinal = (effectiveContext as any)?.interlocutor || (effectiveContext.core as any)?.interlocutor;
     const isBossFinal = Boolean(rawInterlocutorFinal?.isBoss || (effectiveContext.core as any)?.role === 'OWNER');
-    const tenantIdClean = ((effectiveContext.core as any)?.tenantId || 'pandoras').toLowerCase().replace(/^org_/, '');
+    const rawTenantId = ((effectiveContext.core as any)?.tenantId || 'pandoras').toLowerCase().replace(/^org_/, '');
+    const isUuidTenant = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawTenantId);
+    const scheduleSlug = (effectiveContext.core as any)?.projectSlug 
+      || (isUuidTenant ? (rawTenantId === '9079ecf5-2162-4078-bddf-66b607e2d32f' ? 'snarai' : 'pandoras') : rawTenantId);
 
     activeCapabilities.push({
       id: 'scheduling.book',
       description: 'Permite proponer, verificar disponibilidad y coordinar agendado de llamadas o reuniones institucionales.',
       suggestedActions: [
-        `Proponer horarios en https://dash.pandoras.finance/schedule/${tenantIdClean}`,
-        `Ofrecer widget incrustable https://dash.pandoras.finance/widget/calendar/${tenantIdClean}`,
+        `Proponer horarios en https://dash.pandoras.finance/schedule/${scheduleSlug}`,
+        `Ofrecer widget incrustable https://dash.pandoras.finance/widget/calendar/${scheduleSlug}`,
         'Recoger preferencias de fecha/hora para agendar'
       ],
       requiresHumanApproval: !isBossFinal,
@@ -239,9 +242,10 @@ export class CognitiveContextAdapter {
     // Extend here as governance data becomes richer.
 
     // Tenant identity from core security context
+    const isPandorasRoot = effectiveContext.core.tenantId.toLowerCase() === 'pandoras' || effectiveContext.core.tenantId.toLowerCase() === 'pandoras-core';
     const tenantIdentity = {
       agentName: 'Hermes',
-      organizationName: effectiveContext.core.organizationName || (effectiveContext.core.tenantId.toLowerCase().includes('snarai') ? "S'Narai" : effectiveContext.core.tenantId),
+      organizationName: effectiveContext.core.organizationName || (effectiveContext.core.tenantId.toLowerCase().includes('snarai') ? "S'Narai" : (isPandorasRoot ? "Pandora's Growth OS" : effectiveContext.core.tenantId)),
       language: (effectiveContext.style as any)?.language || 'es',
       tone: (effectiveContext.style as any)?.tone || 'Formal, Concierge Patrimonial Institucional',
     };

@@ -71,21 +71,32 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Hermes Telegram Webhook] 🤖 Update received from ${interlocutor.name} (ID: ${telegramId}) | Boss: ${interlocutor.isBoss}`);
 
-    // 2. Resolve Tenant / Organization Scope
+    // 2. Resolve Tenant / Organization Scope (Default is Hermes OS / Pandora's Growth OS)
     let tenantSlug = 'pandoras';
 
-    // Parse /start command parameter: /start <tenantSlug>
+    // Parse /start command parameter: /start <tenantSlug> (e.g. /start snarai)
     const startMatch = rawText.match(/^\/start\s+([a-zA-Z0-9_-]+)/i);
     if (startMatch && startMatch[1]) {
       tenantSlug = startMatch[1].toLowerCase();
-    } else if (!interlocutor.isBoss) {
-      // Check if this chat had a previous tenant bound or check default project
-      const knownProject = await db.query.projects.findFirst({
-        where: or(eq(projects.slug, 'snarai'), eq(projects.slug, 'pandoras')),
-        columns: { slug: true }
+      // If user has a telegram binding, persist active organization switch
+      if (telegramId) {
+        const { telegramBindings } = await import('@/db/schema');
+        await db.update(telegramBindings)
+          .set({ activeOrganizationId: tenantSlug, lastSeenAt: new Date() })
+          .where(eq(telegramBindings.telegramUserId, telegramId))
+          .catch(() => undefined);
+      }
+    } else if (interlocutor.tenantSlug) {
+      tenantSlug = interlocutor.tenantSlug;
+    } else if (telegramId) {
+      // Check if user has an explicit active organization bound in telegramBindings
+      const { telegramBindings } = await import('@/db/schema');
+      const binding = await db.query.telegramBindings.findFirst({
+        where: eq(telegramBindings.telegramUserId, telegramId),
+        columns: { activeOrganizationId: true }
       });
-      if (knownProject) {
-        tenantSlug = knownProject.slug;
+      if (binding?.activeOrganizationId) {
+        tenantSlug = binding.activeOrganizationId;
       }
     }
 

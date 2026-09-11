@@ -60,6 +60,21 @@ const nextConfig = {
     }
     return config;
   },
+  async redirects() {
+    return [
+      // ── Historically promoted sovereign booking link → canonical /schedule route ──
+      {
+        source: '/p/scheduling/:slug',
+        destination: '/schedule/:slug',
+        permanent: false,
+      },
+      {
+        source: '/p/scheduling/:slug/:path*',
+        destination: '/schedule/:slug/:path*',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       // ── Global Security Headers ──────────────────────────────────────────

@@ -98,6 +98,43 @@ function cleanDigits(phone?: string | null): string {
 }
 
 /**
+ * Produce all comparable forms of a phone number so identity matching absorbs
+ * every ingestion format: +52XXXX, 52XXXX, 521XXXX (MX mobile trunk), +52 1 XXX,
+ * raw local 10-digit, and short 9-digit suffixes. Two phone numbers are
+ * considered the same identity if they share any candidate form.
+ */
+function phoneCandidates(digits: string): string[] {
+  if (!digits) return [];
+  const candidates = new Set<string>([digits]);
+  const len = digits.length;
+  if (len >= 10) candidates.add(digits.slice(-10));
+  if (len >= 9) candidates.add(digits.slice(-9));
+
+  // Mexican mobile trunk: +52 1 XXX (13 digits: country 52 + trunk 1 + 10 local)
+  if (len === 13 && digits.startsWith('521')) {
+    const withoutMobileTrunk = `${digits.slice(0, 2)}${digits.slice(3)}`;
+    candidates.add(withoutMobileTrunk);
+    if (withoutMobileTrunk.length >= 10) candidates.add(withoutMobileTrunk.slice(-10));
+  }
+
+  // Colombian / regional variants with leading 1 mobile trunk (11 digits)
+  if (len === 11 && digits.startsWith('1')) {
+    const withoutMobileTrunk = digits.slice(1);
+    candidates.add(withoutMobileTrunk);
+  }
+
+  return [...candidates];
+}
+
+function phonesShareIdentity(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const aCandidates = phoneCandidates(a);
+  const bCandidates = phoneCandidates(b);
+  return aCandidates.some(c => bCandidates.includes(c));
+}
+
+/**
  * Garantía institucional: TODO contacto registrado por el Boss recibe una
  * directiva de bienvenida personalizada por nombre y rol — aunque Marco no
  * dicte una explícitamente. El contexto específico se puede enriquecer después.
@@ -166,7 +203,11 @@ export class InterlocutorResolver {
       if (bossPhones.some(bp => {
         if (!bp) return false;
         const bpSuffix10 = bp.length >= 10 ? bp.slice(-10) : bp;
-        return (phoneSuffix10 && bpSuffix10 && phoneSuffix10 === bpSuffix10) || digits.endsWith(bp) || bp.endsWith(digits);
+        if ((phoneSuffix10 && bpSuffix10 && phoneSuffix10 === bpSuffix10) || digits.endsWith(bp) || bp.endsWith(digits)) {
+          return true;
+        }
+        // All-format candidate matching (absorbs +52/521/+52 1/regional trunks)
+        return phonesShareIdentity(digits, bp);
       })) {
         return true;
       }
@@ -503,15 +544,14 @@ export class InterlocutorResolver {
           }
         }
 
-        // Resolve target project or fallback to pandoras / snarai
-        let projectId = 17; // S'Narai default or Pandoras
-        if (query.tenantSlug) {
-          const proj = await db.query.projects.findFirst({
-            where: (p, { or, eq }) => or(eq(p.slug, query.tenantSlug!), eq(p.organizationId, query.tenantSlug!)),
-            columns: { id: true }
-          });
-          if (proj) projectId = proj.id;
-        }
+        // Resolve target project or fallback to pandoras
+        let projectId = 1;
+        const targetSlug = query.tenantSlug || 'pandoras';
+        const proj = await db.query.projects.findFirst({
+          where: (p, { or, eq }) => or(eq(p.slug, targetSlug), eq(p.organizationId, targetSlug)),
+          columns: { id: true }
+        });
+        if (proj) projectId = proj.id;
 
         await db.insert(marketingLeads).values({
           projectId,
@@ -567,14 +607,13 @@ export class InterlocutorResolver {
     const cleanEmail = params.email?.toLowerCase().trim();
     const role = params.role || 'LEAD';
 
-    let projectId = 17;
-    if (params.tenantSlug) {
-      const p = await db.query.projects.findFirst({
-        where: (pr, { or, eq }) => or(eq(pr.slug, params.tenantSlug!), eq(pr.organizationId, params.tenantSlug!)),
-        columns: { id: true }
-      });
-      if (p) projectId = p.id;
-    }
+    let projectId = 1;
+    const targetSlug = params.tenantSlug || 'pandoras';
+    const p = await db.query.projects.findFirst({
+      where: (pr, { or, eq }) => or(eq(pr.slug, targetSlug), eq(pr.organizationId, targetSlug)),
+      columns: { id: true }
+    });
+    if (p) projectId = p.id;
 
     const isInvestorRole = role.toUpperCase() === 'INVESTOR';
 
