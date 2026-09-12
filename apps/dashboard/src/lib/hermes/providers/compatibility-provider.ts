@@ -24,42 +24,35 @@ export class CompatibilityProvider {
     try {
       const mappedCtx = this.mapContext(context);
 
-      // Phase 1 Certification: Route S'Narai explicitly to native HermesKernel v1.1
+      // Phase 1 Certification: Route S'Narai to Hermes Cognitive Intelligence & BotEngine
       if (mappedCtx.project?.slug === 'snarai' || mappedCtx.projectId === 'snarai' || context.tenantId === '2') {
-        console.log(`[CompatibilityProvider] 🚀 Intercepting S'Narai execution and routing to native HermesKernel v1.1`);
+        console.log(`[CompatibilityProvider] 🚀 Routing S'Narai execution to Hermes Cognitive Intelligence (BotEngine)`);
         
-        const { HermesKernel } = require('../runtimes/hermes-kernel');
-        const { DomainPackLoader } = require('../packs/domain-pack-loader');
-        
-        const kernel = new HermesKernel();
-        // Load the pack explicitly to prove it reaches runtime (Throws DomainPackNotFound if invalid)
-        const domainPack = await DomainPackLoader.load(mappedCtx.project?.slug || 'snarai');
-        
-        const experience = await kernel.processInput({
-          tenantId: mappedCtx.project?.id || 2,
-          sessionId: chatId.toString(),
-          input: userMessage,
-          artifacts: {
-            domainPack // Injected for JourneyEngine and LLM Providers
-          },
-          state: {}
+        const replyObj = await generateBotResponse({
+          userMessage: userMessage,
+          chatId: chatId.toString(),
+          projectSlug: 'snarai',
         });
 
-        const messages = experience.actions.messages.join('\n');
+        const replyContent = replyObj.replyText || '';
+
+        if (replyObj.action === 'OFFER_CALL') {
+          await sendTelegramMessage(botToken, mappedCtx.chatId, replyContent, reunionKeyboard());
+          return this.success('');
+        } else if (replyObj.action === 'SEND_CHECKOUT') {
+          await sendTelegramMessage(botToken, mappedCtx.chatId, replyContent, buySelectorKeyboard());
+          return this.success('');
+        }
 
         return {
           status: 'completed',
           events: [{ type: 'DELEGATED_TO_COMPATIBILITY', to: 'CompatibilityProvider' }],
           artifacts: [
-            { id: 'reply', type: 'message', content: messages }
+            { id: 'reply', type: 'message', content: replyContent }
           ],
           telemetry: {
-            // Surface escalation / evidence signals to the reply contract so the
-            // Channel Mesh bot can render human-escalation + evidence buttons.
-            blocked: experience.blocked,
-            blockReason: experience.blockReason,
-            fallbackTriggered: experience.fallbackTriggered,
-            evidenceCid: (experience as any).evidenceCid || null,
+            action: replyObj.action,
+            rationale: replyObj.rationale
           },
         };
       }

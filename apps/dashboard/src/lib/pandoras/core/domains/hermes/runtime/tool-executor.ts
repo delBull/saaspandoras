@@ -20,6 +20,7 @@ import {
 } from './contracts';
 import { HermesIdentityVerifier } from '../identity/identity-verifier';
 import { ToolCircuitBreaker } from './operational-governance-contract';
+import { HermesSoulRegistry } from '@/lib/hermes/soul/snarai-soul';
 
 export type ToolHandler = (params?: Record<string, unknown>, context?: Record<string, unknown>) => Promise<{ data: unknown; classification?: KnowledgeClassificationTier } | unknown>;
 
@@ -143,8 +144,9 @@ export class HermesToolExecutor {
     // Default commercial actions for tenants
     this.handlers.set('payments.create_spei_link', async (params) => {
       const amount = (params as any)?.amount || 50;
+      const clabe = process.env.SNARAI_SPEI_CLABE || process.env.PANDORAS_SPEI_CLABE || '646180123456789012';
       return {
-        clabe: '646180123456789012',
+        clabe,
         beneficiary: 'Pandoras Growth OS / S\'Narai Vault',
         amountUsd: amount,
         reference: `SPEI_${Date.now()}`
@@ -152,10 +154,24 @@ export class HermesToolExecutor {
     });
 
     this.handlers.set('calendar.schedule', async (params) => {
+      const slug = (params as any)?.projectSlug || (params as any)?.tenantSlug || 'snarai';
+      const soul = HermesSoulRegistry.getSoul(slug);
+      const calendarUrl = soul?.canonicalUrls?.calendar || `https://dash.pandoras.finance/events/${slug}/1`;
       return {
         eventScheduled: true,
-        calendarUrl: 'https://cal.pandoras.finance/snarai/briefing',
+        calendarUrl,
         timeSlot: (params as any)?.timeSlot || '2026-08-25T16:00:00Z'
+      };
+    });
+
+    this.handlers.set('commercial.checkout', async (params) => {
+      const slug = (params as any)?.projectSlug || (params as any)?.tenantSlug || 'snarai';
+      const soul = HermesSoulRegistry.getSoul(slug);
+      const checkoutUrl = soul?.canonicalUrls?.checkout || `https://dash.pandoras.finance/pay/${slug}/fundador`;
+      return {
+        checkoutGenerated: true,
+        checkoutUrl,
+        project: slug
       };
     });
 

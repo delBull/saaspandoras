@@ -11,7 +11,6 @@ import { sendPaymentNotification } from "@/lib/discord/notifier";
 // USDC addresses (native) per chain
 const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-const MERCHANT_WALLET = (process.env.PANDORAS_ADMIN_WALLET || "0xc52BB6f53C91ff7134e7508B102E5A22BA415954").toLowerCase();
 
 const ERC20_TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
@@ -25,6 +24,23 @@ function isHash(v: unknown): v is Hash {
 }
 
 /**
+ * Resolves destination wallet strictly fail-closed:
+ * 1. link.destinationWallet (explicit per payment link)
+ * 2. PANDORAS_ADMIN_WALLET environment variable
+ * Never falls back to a hardcoded wallet address.
+ */
+function resolveDestinationWallet(link: { destinationWallet: string | null }): string | null {
+  if (link.destinationWallet && /^0x[a-fA-F0-9]{40}$/i.test(link.destinationWallet.trim())) {
+    return link.destinationWallet.trim().toLowerCase();
+  }
+  const envWallet = process.env.PANDORAS_ADMIN_WALLET?.trim();
+  if (envWallet && /^0x[a-fA-F0-9]{40}$/i.test(envWallet)) {
+    return envWallet.toLowerCase();
+  }
+  return null;
+}
+
+/**
  * Server-side on-chain verification of a USDC payment.
  * Rejects txHash "unknown" (client-side callback without a real hash).
  * Verifies: receipt success + an ERC20 Transfer to the link destination
@@ -34,13 +50,20 @@ async function verifyCryptoPayment(txHash: Hash, chainId: number, link: { destin
   const chainCfg = CHAIN_BY_ID[chainId];
   if (!chainCfg) return { ok: false, reason: `Unsupported chainId: ${chainId}` };
 
+  const destination = resolveDestinationWallet(link);
+  if (!destination) {
+    return {
+      ok: false,
+      reason: "Destination wallet not configured (payment link lacks destinationWallet and PANDORAS_ADMIN_WALLET environment variable is unset)"
+    };
+  }
+
   const publicClient = createPublicClient({ chain: chainCfg.chain, transport: http() });
 
   const receipt = await publicClient.getTransactionReceipt({ hash: txHash }).catch(() => null);
   if (!receipt) return { ok: false, reason: "Transaction not found on-chain" };
   if (receipt.status !== "success") return { ok: false, reason: "Transaction reverted on-chain" };
 
-  const destination = (link.destinationWallet || MERCHANT_WALLET).toLowerCase();
   const expectedWei = parseUnits(link.amount, 6);
 
   let matched = false;

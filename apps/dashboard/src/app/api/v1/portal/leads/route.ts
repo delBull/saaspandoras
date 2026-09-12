@@ -54,3 +54,44 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch portal leads', details: err.message }, { status: 500 });
   }
 }
+
+/**
+ * POST /api/v1/portal/leads
+ * Public capture of prospective client leads from Revenue Closer and portal landing forms.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { name, email, phone, source = 'revenue_closer_landing', metadata } = body;
+
+    if (!email && !phone) {
+      return NextResponse.json({ error: 'Email or phone required' }, { status: 400 });
+    }
+
+    const cleanEmail = email ? String(email).trim().toLowerCase() : undefined;
+    const cleanPhone = phone ? String(phone).trim() : undefined;
+
+    const [lead] = await db.insert(marketingLeads).values({
+      projectId: 1, // Pandora Genesis Project
+      name: name ? String(name).trim() : undefined,
+      email: cleanEmail,
+      phoneNumber: cleanPhone,
+      intent: 'revenue_closer' as any,
+      origin: source,
+      metadata: {
+        source_api: '/api/v1/portal/leads',
+        capturedAt: new Date().toISOString(),
+        ...(metadata || {})
+      }
+    }).returning({ id: marketingLeads.id });
+
+    return NextResponse.json({
+      success: true,
+      leadId: lead?.id,
+      message: 'Lead captured successfully'
+    });
+  } catch (err: any) {
+    console.error('[Capture Portal Lead Error]:', err);
+    return NextResponse.json({ error: 'Failed to capture lead', details: err.message }, { status: 500 });
+  }
+}

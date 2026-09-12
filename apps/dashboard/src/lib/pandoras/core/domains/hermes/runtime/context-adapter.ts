@@ -33,6 +33,7 @@ import {
 } from './contracts';
 // Import from context-merger — this is the type produced by CognitiveContextBuilder.
 import { ConversationContext as EffectiveContext } from '../addons/context-merger';
+import { HermesSoulRegistry } from '@/lib/hermes/soul/snarai-soul';
 
 /**
  * Platform-level system rules that always apply regardless of tenant.
@@ -214,7 +215,7 @@ export class CognitiveContextAdapter {
       });
     }
 
-    // Inyectar Capacidad Soberana de Agendado (Agenda Soberana)
+    // Inyectar Capacidad Soberana de Agendado y Checkout (Agenda & Adquisición Soberana)
     const rawInterlocutorFinal = (effectiveContext as any)?.interlocutor || (effectiveContext.core as any)?.interlocutor;
     const isBossFinal = Boolean(rawInterlocutorFinal?.isBoss || (effectiveContext.core as any)?.role === 'OWNER');
     const rawTenantId = ((effectiveContext.core as any)?.tenantId || 'pandoras').toLowerCase().replace(/^org_/, '');
@@ -222,32 +223,55 @@ export class CognitiveContextAdapter {
     const scheduleSlug = (effectiveContext.core as any)?.projectSlug 
       || (isUuidTenant ? (rawTenantId === '9079ecf5-2162-4078-bddf-66b607e2d32f' ? 'snarai' : 'pandoras') : rawTenantId);
 
+    // Resolver Soul canónica para el proyecto/tenant
+    const registeredSoul = HermesSoulRegistry.getSoul(scheduleSlug) || HermesSoulRegistry.getSoul(rawTenantId);
+    const calendarCanonicalUrl = registeredSoul?.canonicalUrls?.calendar || `https://dash.pandoras.finance/events/${scheduleSlug}/1`;
+    const checkoutCanonicalUrl = registeredSoul?.canonicalUrls?.checkout || `https://dash.pandoras.finance/pay/${scheduleSlug}/fundador`;
+
     activeCapabilities.push({
       id: 'scheduling.book',
-      description: 'Permite proponer, verificar disponibilidad y coordinar agendado de llamadas o reuniones institucionales.',
+      description: 'Permite proponer, verificar disponibilidad y coordinar agendado de llamadas o reuniones institucionales con fundadores.',
       suggestedActions: [
-        `Proponer horarios en https://dash.pandoras.finance/schedule/${scheduleSlug}`,
-        `Ofrecer widget incrustable https://dash.pandoras.finance/widget/calendar/${scheduleSlug}`,
-        'Recoger preferencias de fecha/hora para agendar'
+        `Proponer horarios de sesión estratégica en ${calendarCanonicalUrl}`,
+        `Ofrecer enlace de agenda oficial ${calendarCanonicalUrl}`,
+        'Recoger preferencias de fecha/hora para agendar con el equipo fundador'
       ],
       requiresHumanApproval: !isBossFinal,
+    });
+
+    activeCapabilities.push({
+      id: 'commercial.checkout',
+      description: 'Permite proveer el enlace oficial de checkout y adquisición directa de participaciones/títulos del desarrollo.',
+      suggestedActions: [
+        `Proponer enlace oficial de adquisición en ${checkoutCanonicalUrl}`,
+        `Invitar al usuario a seleccionar sus títulos y fondear en ${checkoutCanonicalUrl}`,
+      ],
+      requiresHumanApproval: false,
     });
 
     // -------------------------------------------------------------------------
     // 3. Governance restrictions (K11-A13: Governance cannot be overridden)
     // These come from the effective context style/soul restrictions
     // -------------------------------------------------------------------------
-    // Populated from policy packs and governance documents
-    // Currently governance restrictions live in the old PolicyPack.
-    // Extend here as governance data becomes richer.
+    // Populated from policy packs, soul policies, and governance documents
+    if (registeredSoul) {
+      if (registeredSoul.claimsPolicy?.prohibited?.length) {
+        for (const claim of registeredSoul.claimsPolicy.prohibited) {
+          governanceRestrictions.push(`PROHIBIDO AFIRMAR (Sovereign Soul Policy): ${claim}`);
+        }
+      }
+      governanceRestrictions.push(
+        `URLS OFICIALES RESTRINGIDAS: Agenda oficial exclusiva en ${calendarCanonicalUrl}. Checkout oficial exclusivo en ${checkoutCanonicalUrl}. Prohibido citar dominios no autorizados.`
+      );
+    }
 
     // Tenant identity from core security context
     const isPandorasRoot = effectiveContext.core.tenantId.toLowerCase() === 'pandoras' || effectiveContext.core.tenantId.toLowerCase() === 'pandoras-core';
     const tenantIdentity = {
-      agentName: 'Hermes',
-      organizationName: effectiveContext.core.organizationName || (effectiveContext.core.tenantId.toLowerCase().includes('snarai') ? "S'Narai" : (isPandorasRoot ? "Pandora's Growth OS" : effectiveContext.core.tenantId)),
+      agentName: registeredSoul?.agentName || 'Hermes',
+      organizationName: effectiveContext.core.organizationName || (effectiveContext.core.tenantId.toLowerCase().includes('snarai') ? "S'Narai Riviera Nayarit" : (isPandorasRoot ? "Pandora's Growth OS" : effectiveContext.core.tenantId)),
       language: (effectiveContext.style as any)?.language || 'es',
-      tone: (effectiveContext.style as any)?.tone || 'Formal, Concierge Patrimonial Institucional',
+      tone: (registeredSoul?.tone?.dos ? registeredSoul.tone.dos.slice(0, 2).join('. ') : undefined) || (effectiveContext.style as any)?.tone || 'Formal, Concierge Patrimonial Institucional',
     };
 
     // Enrich identity from ACTIVE identity-dimension knowledge

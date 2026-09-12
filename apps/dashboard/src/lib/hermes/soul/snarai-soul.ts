@@ -186,6 +186,13 @@ const SOUL_REGISTRY: Record<string, AgentSoul> = {
 };
 
 export class HermesSoulRegistry {
+  static registerTenantSoul(projectSlug: string, soul: AgentSoul): void {
+    const slug = (projectSlug || '').toLowerCase().trim();
+    if (slug) {
+      SOUL_REGISTRY[slug] = soul;
+    }
+  }
+
   static getSoul(projectSlug: string, customConfig?: any): AgentSoul {
     const slug = (projectSlug || 'snarai').toLowerCase();
     if (SOUL_REGISTRY[slug]) {

@@ -19,6 +19,7 @@ import { sendWhatsAppMessage } from './utils/client';
 import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from './utils/conversation-id';
 import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 import { formatWhatsAppText } from './utils/formatter';
+import { CommercialCloserService } from '@/lib/hermes/revenue-closer';
 
 export interface WhatsAppIncomingMessage {
   from: string;
@@ -293,8 +294,24 @@ export class WhatsAppDispatcher {
         };
       }
 
-      // 2.3 Process via Governed Cognitive Runtime with Canonical Conversation ID
+      // 2.3 Process via Governed Cognitive Runtime with Commercial Closer
       try {
+        // Evaluar señales comerciales y doctrina Real Estate
+        const closerResult = await CommercialCloserService.evaluateInbound({
+          tenantSlug: tenant.slug,
+          leadId: phone,
+          messageText,
+          channel: 'whatsapp',
+          leadName: resolvedName,
+        });
+
+        // Si se generó un handoff ejecutivo, notificar al equipo
+        if (closerResult.executiveHandoff) {
+          CommercialCloserService.notifySalesTeam(closerResult.executiveHandoff).catch((err) => {
+            console.warn('[WhatsAppDispatcher] Error notifying sales team of handoff:', err);
+          });
+        }
+
         const runtime = getDefaultRuntime();
         const conversationId = buildCanonicalWhatsAppConversationId(tenant.slug, phone);
 
@@ -323,8 +340,17 @@ export class WhatsAppDispatcher {
           }
         });
 
-        const cognitiveAnswer = runtimeResponse.content || "Gracias por tu mensaje. Estamos procesando tu consulta con base en nuestra información oficial.";
+        let cognitiveAnswer = runtimeResponse.content || "Gracias por tu mensaje. Estamos procesando tu consulta con base en nuestra información oficial.";
         
+        // Si el closer determinó un CTA prioritario (agenda o checkout) y no está en la respuesta, anexarlo
+        if (closerResult.recommendedCallToAction && !cognitiveAnswer.includes(closerResult.recommendedCallToAction.url)) {
+          if (closerResult.recommendedCallToAction.type === 'MEETING') {
+            cognitiveAnswer += `\n\n📅 *Agenda tu sesión estratégica:* ${closerResult.recommendedCallToAction.url}`;
+          } else if (closerResult.recommendedCallToAction.type === 'CHECKOUT') {
+            cognitiveAnswer += `\n\n💳 *Checkout oficial:* ${closerResult.recommendedCallToAction.url}`;
+          }
+        }
+
         await this.sendReply({
           to: phone,
           text: cognitiveAnswer,

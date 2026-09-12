@@ -6,6 +6,7 @@ import { JourneyEngine } from './journey-engine';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { HermesSoulRegistry } from '@/lib/hermes/soul/snarai-soul';
 
 const FALLBACK_ORG_NAME = 'Pandoras';
 const FALLBACK_BRAND_NAME = 'Pandoras';
@@ -75,20 +76,36 @@ export class ConversationContextBuilder {
   }
 
   private resolveIdentity(normalized: NormalizedInboundMessage) {
-    // Basic mock for 6.6.2. The org name is resolved lazily from the DB by
-    // buildContext so no tenant identity is hardcoded.
+    const orgId = normalized.organizationId || this.orgName?.toLowerCase();
+    const soul = HermesSoulRegistry.getSoul(orgId?.includes('narai') ? 'snarai' : orgId);
+
     return {
-      agentName: 'Hermes',
+      agentName: soul?.agentName || 'Hermes',
       organizationName: this.orgName,
       brand: {
         name: this.brandName,
-        tone: 'professional',
+        tone: soul?.voice || 'professional',
         language: 'es-MX'
       }
     };
   }
 
   private resolveSoul(normalized: NormalizedInboundMessage) {
+    const orgId = normalized.organizationId || this.orgName?.toLowerCase();
+    const soul = HermesSoulRegistry.getSoul(orgId?.includes('narai') ? 'snarai' : orgId);
+
+    if (soul) {
+      return {
+        mission: soul.tone.dos.slice(0, 3),
+        personality: [soul.voice, 'autónomo', 'patrimonial'],
+        principles: soul.tone.donts.slice(0, 3),
+        communication: soul.languagePolicy.avoidAsDefault.length 
+          ? [`Evitar: ${soul.languagePolicy.avoidAsDefault.join(', ')}`]
+          : ['Respuestas concisas', 'Adaptarse al usuario'],
+        escalationRules: Object.entries(soul.escalationPolicy).map(([k, v]) => `${k}: ${v}`)
+      };
+    }
+
     return {
       mission: ['Representar fielmente a la organización', 'Guiar al usuario inteligentemente'],
       personality: ['inteligente', 'cálido', 'respetuoso'],

@@ -21,6 +21,7 @@ export async function generateBotResponse(context: {
   const { HermesDecisionEngine } = await import('@/lib/hermes/decision-engine');
   const { dataProviderSingleton } = await import('@/lib/hermes/data-provider');
   const { HermesSoulRegistry } = await import('@/lib/hermes/soul/snarai-soul');
+  const { CommercialCloserService } = await import('@/lib/hermes/revenue-closer');
   
   const projectSlug = context.projectSlug || projectContext?.slug || projectName || 'snarai';
   const pack = await KnowledgePackLoader.getPack(projectSlug, projectContext);
@@ -65,17 +66,34 @@ export async function generateBotResponse(context: {
 
   console.info(`[Hermes Engine] Mission Goal: ${mission.goal}, Target State: ${mission.targetState}`);
 
+  // Evaluate commercial closer signals & doctrine
+  const closerResult = await CommercialCloserService.evaluateInbound({
+    tenantSlug: projectSlug,
+    leadId: chatId || 'anonymous_telegram',
+    messageText: userMessage,
+    channel: 'telegram',
+  });
+
+  if (closerResult.executiveHandoff) {
+    CommercialCloserService.notifySalesTeam(closerResult.executiveHandoff).catch((err) => {
+      console.warn('[BotEngine] Error notifying sales team of handoff:', err);
+    });
+  }
+
   // Build the system prompt. If a customSystemPrompt is passed (e.g. from Sandbox or dynamic tenant), use it.
-  // Otherwise build from Soul (identity + policies) + Knowledge (project facts) + live data.
+  // Otherwise build from Soul (identity + policies) + Knowledge (project facts) + live data + Closer doctrine.
   const systemPrompt = customSystemPrompt || `${soulPrompt}
 
 ROL Y OBJETIVO:
 Eres "${soul?.agentName || 'HERMES PATRIMONIAL'}", el Gestor Patrimonial IA Autónomo para el proyecto "${liveContext?.title || projectName}".
 Tu objetivo es asesorar, calificar prospectos, resolver dudas y guiar hacia el cierre de forma ejecutiva y profesional.
 
-ACCIONES RECOMENDADAS POR HERMES DECISION ENGINE:
+ACCIONES RECOMENDADAS POR HERMES DECISION ENGINE Y REVENUE CLOSER:
 - Meta de la Misión: ${mission.goal} (Estado Objetivo: ${mission.targetState})
 - Recomendación de Cierre: ${recommendedAction}
+- Next Best Action (Revenue Closer): ${closerResult.nextBestAction.action} (${closerResult.nextBestAction.reason})
+${closerResult.doctrinalGuidance ? `- DOCTRINA OFICIAL DATA ROOM APLICABLE: ${closerResult.doctrinalGuidance.responseStrategy}` : ''}
+${closerResult.recommendedCallToAction ? `- LLAMADO A LA ACCIÓN REQUERIDO: ${closerResult.recommendedCallToAction.label} (${closerResult.recommendedCallToAction.url})` : ''}
 
 CONTEXTO DEL PROYECTO (DATA EN TIEMPO REAL):
 - Título/Proyecto: ${liveContext?.title || projectName}
@@ -230,6 +248,22 @@ ${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para a
       structuredResponse.replyText = botResponseText;
     }
 
+    // Alinear acción con directivas deterministas de Revenue Closer
+    if (closerResult.nextBestAction.action === 'PROPOSE_MEETING' && structuredResponse.action !== 'OFFER_CALL') {
+      structuredResponse.action = 'OFFER_CALL';
+    } else if (closerResult.recommendedCallToAction?.type === 'CHECKOUT' && structuredResponse.action !== 'SEND_CHECKOUT') {
+      structuredResponse.action = 'SEND_CHECKOUT';
+    }
+
+    // Si el texto del bot no incluye el link oficial de cierre requerido, anexarlo limpiamente
+    if (closerResult.recommendedCallToAction && !structuredResponse.replyText.includes(closerResult.recommendedCallToAction.url)) {
+      if (closerResult.recommendedCallToAction.type === 'MEETING') {
+        structuredResponse.replyText += `\n\n📅 <b>Sesión Estratégica:</b> <a href="${closerResult.recommendedCallToAction.url}">Agendar con Fundadores</a>`;
+      } else if (closerResult.recommendedCallToAction.type === 'CHECKOUT') {
+        structuredResponse.replyText += `\n\n💳 <b>Checkout Oficial:</b> <a href="${closerResult.recommendedCallToAction.url}">Adquirir Títulos</a>`;
+      }
+    }
+
     // Save updated conversational memory back to Redis
     if (redis && redisKey) {
       try {
@@ -246,9 +280,6 @@ ${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para a
       }
     }
 
-    // Backwards compatibility for callers expecting string
-    // Return the string object that has properties, or explicitly change the signature
-    // Actually, we'll return the object. We will update the callers immediately.
     return structuredResponse;
   } catch (error: any) {
     console.error("[BotEngine] Error generating response:", error);
