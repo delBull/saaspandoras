@@ -117,7 +117,7 @@ export default function TaskTerminal({ onTaskCreated, userName, userRole, mode =
   const suggestedType = suggestTipo(contextText);
   const dueDate = futureDate(7);
 
-  const advance = (raw: string) => {
+  const advance = async (raw: string) => {
     const value = raw.trim();
     const append = [...log];
 
@@ -248,15 +248,38 @@ export default function TaskTerminal({ onTaskCreated, userName, userRole, mode =
         append.push({ kind: 'cmd', text: `$ ${value}` });
         setLog(append);
         setBusy(true);
-        setTimeout(() => {
+        try {
+          const res = await fetch('/api/nexus/hermes-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: value,
+              role: userRole || 'OPERATOR',
+              operatorContext: { name: userName, role: userRole }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setLog((l) => [
+              ...l,
+              { kind: 'ok', text: `Hermes: ${data.reply || 'Instrucción procesada con éxito por el Sovereign Runtime.'}` },
+            ]);
+          } else {
+            const errData = await res.json().catch(() => null);
+            setLog((l) => [
+              ...l,
+              { kind: 'err', text: `Hermes: Conexión restringida (${errData?.error || res.status})` },
+            ]);
+          }
+        } catch {
           setLog((l) => [
             ...l,
-            { kind: 'ok', text: `Hermes: Entendido. Integrando contexto de ${userName || 'Operador'} y analizando requerimiento...` },
-            { kind: 'out', text: 'Hermes: (Modo simulación interactiva activo. La integración A2A de IA procesaría esta instrucción para crear tareas automáticamente).' },
+            { kind: 'err', text: 'Hermes: Error de enlace de red con el Sovereign Runtime.' },
           ]);
+        } finally {
           setBusy(false);
-        }, 1500);
-        setInput('');
+          setInput('');
+        }
         return;
       }
     }
