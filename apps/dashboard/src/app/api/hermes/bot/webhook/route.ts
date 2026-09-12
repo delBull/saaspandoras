@@ -122,7 +122,19 @@ export async function POST(req: NextRequest) {
       console.warn(`[Hermes Telegram Webhook] ⚠️ No Telegram bot token found in environment or tenant config for '${tenantSlug}'. Cannot deliver message to chat ${chatId}.`);
     }
 
-    // 4. Dispatch to HermesRuntime with Cognitive Context
+    // 4. Resolve Canonical Organization Context (Security Authority = canonicalOrgId UUID)
+    let canonicalOrgId = tenantSlug;
+    let canonicalOrgName = tenantSlug === 'pandoras' ? "Pandora's Growth OS" : tenantSlug;
+    try {
+      const { OrganizationSDK } = await import('@/lib/platform/organization-sdk');
+      const org = await OrganizationSDK.resolve(tenantSlug, 'HERMES');
+      canonicalOrgId = org.organizationId;
+      canonicalOrgName = org.name;
+    } catch {
+      // Non-blocking fallback preserves routing key
+    }
+
+    // 5. Dispatch to HermesRuntime with Cognitive Context
     const runtime = getDefaultRuntime();
     const runtimeResponse = await runtime.respond({
       organizationId: tenantSlug,
@@ -135,7 +147,7 @@ export async function POST(req: NextRequest) {
       },
       controlPlaneContext: {
         actorId: interlocutor.actorId,
-        organizationId: tenantSlug,
+        organizationId: canonicalOrgId,
         role: interlocutor.isBoss ? 'OWNER' : (interlocutor.isCollaborator ? 'OPERATOR' : 'VIEWER'),
         permissions: interlocutor.isBoss
           ? ['governance.admin', 'knowledge.read', 'runtime.respond', 'platform.decrees']

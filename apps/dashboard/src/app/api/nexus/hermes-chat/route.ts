@@ -45,21 +45,22 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const rawMessage: string = (body.message ?? '').trim();
-    const rawRole: string = (auth.role || body.role || 'OPERATOR').toUpperCase().trim();
     const isBootSequence: boolean = body.isBootSequence === true;
-    const operatorContext = {
-      id: auth.email || body.operatorContext?.id || (auth.wallet ? `wallet_${auth.wallet}` : undefined),
-      name: auth.name || body.operatorContext?.name,
-      email: auth.email || body.operatorContext?.email,
-      role: auth.role || body.operatorContext?.role,
-      whatsappPhone: auth.whatsappPhone || body.operatorContext?.whatsappPhone,
-      wallet: auth.wallet || body.operatorContext?.wallet,
-      address: auth.wallet || body.operatorContext?.address || body.operatorContext?.wallet,
-    };
+    // Hardened: Auth context is the primary authority. Client body CANNOT override role or identity.
+    const authenticatedRole = (auth.role || 'VIEWER').toUpperCase().trim();
+    const validatedRole = ['SUPER_ADMIN', 'ADMIN', 'ADMIN_OPERATIONS', 'ADMIN_MARKETING', 'OPERATOR', 'MARKETING', 'VIEWER'].includes(authenticatedRole)
+      ? authenticatedRole
+      : 'VIEWER';
 
-    const validatedRole = ['SUPER_ADMIN', 'ADMIN', 'OPERATOR', 'MARKETING', 'VIEWER'].includes(rawRole)
-      ? (rawRole as any)
-      : 'OPERATOR';
+    const operatorContext = {
+      id: auth.email || (auth.wallet ? `wallet_${auth.wallet.toLowerCase()}` : undefined),
+      name: auth.name || body.operatorContext?.name || 'Operador Nexus',
+      email: auth.email || undefined,
+      role: validatedRole,
+      whatsappPhone: auth.whatsappPhone || undefined,
+      wallet: auth.wallet?.toLowerCase() || undefined,
+      address: auth.wallet?.toLowerCase() || undefined,
+    };
 
     if (isBootSequence) {
       return NextResponse.json({ reply: hermesGreeting(validatedRole, operatorContext) });
