@@ -9,30 +9,11 @@ export interface LearningExtraction {
 
 export class HermesLearningLoop {
   /**
-   * Resumes the conversation history and extracts behavioral traits using a lightweight LLM.
+   * Universal resilient query helper for lightweight inference (Ollama / Railway / OpenAI fallback).
    */
-  static async extractLearnings(userId: string, conversationHistory: { role: string; content: string }[]): Promise<LearningExtraction | null> {
-    const model = process.env.HERMES_LEARNING_MODEL || "llama3.1"; // Can be a cheaper model
-    const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-    
-    if (conversationHistory.length < 4) {
-      // Not enough data to learn yet
-      return null;
-    }
-
-    const systemPrompt = `You are a metacognitive learning module for an AI Sales Agent.
-Analyze the following conversation history between a USER and an ASSISTANT.
-Extract behavioral traits about the USER (e.g. how they negotiate, what they care about, their tone).
-Also define an 'optimalApproach' - a brief instruction for the ASSISTANT on how to handle this USER in the future.
-
-You MUST respond ONLY with a valid JSON object matching this schema:
-{
-  "behavioralTraits": ["string", "string"],
-  "optimalApproach": "string"
-}
-Do not include markdown blocks or any other text.
-`;
-
+  private static async queryLightweightLlm(systemPrompt: string, userContent: string): Promise<string | null> {
+    const model = process.env.HERMES_LEARNING_MODEL || process.env.OLLAMA_MODEL || "llama3.1";
+    const baseUrl = process.env.OLLAMA_BASE_URL || process.env.OLLAMA_HOST || "http://localhost:11434";
     const cleanBase = baseUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/v1$/, '');
     let content: string | null = null;
 
@@ -45,7 +26,7 @@ Do not include markdown blocks or any other text.
           model,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: JSON.stringify(conversationHistory) }
+            { role: "user", content: userContent }
           ],
           format: 'json',
           stream: false,
@@ -61,7 +42,7 @@ Do not include markdown blocks or any other text.
       // Fall through to /v1
     }
 
-    // 2. Try OpenAI-compatible /v1/chat/completions
+    // 2. Try OpenAI-compatible /v1/chat/completions (Ollama on Railway / Vercel bridge)
     if (!content) {
       try {
         const v1Res = await fetch(`${cleanBase}/v1/chat/completions`, {
@@ -71,7 +52,7 @@ Do not include markdown blocks or any other text.
             model,
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: JSON.stringify(conversationHistory) }
+              { role: "user", content: userContent }
             ],
             temperature: 0.1,
           })
@@ -99,7 +80,7 @@ Do not include markdown blocks or any other text.
             model: 'gpt-4o-mini',
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: JSON.stringify(conversationHistory) }
+              { role: "user", content: userContent }
             ],
             temperature: 0.1,
           })
@@ -114,6 +95,32 @@ Do not include markdown blocks or any other text.
       }
     }
 
+    return content;
+  }
+
+  /**
+   * Resumes the conversation history and extracts behavioral traits using a lightweight LLM.
+   */
+  static async extractLearnings(userId: string, conversationHistory: { role: string; content: string }[]): Promise<LearningExtraction | null> {
+    if (conversationHistory.length < 4) {
+      // Not enough data to learn yet
+      return null;
+    }
+
+    const systemPrompt = `You are a metacognitive learning module for an AI Sales Agent.
+Analyze the following conversation history between a USER and an ASSISTANT.
+Extract behavioral traits about the USER (e.g. how they negotiate, what they care about, their tone).
+Also define an 'optimalApproach' - a brief instruction for the ASSISTANT on how to handle this USER in the future.
+
+You MUST respond ONLY with a valid JSON object matching this schema:
+{
+  "behavioralTraits": ["string", "string"],
+  "optimalApproach": "string"
+}
+Do not include markdown blocks or any other text.
+`;
+
+    const content = await this.queryLightweightLlm(systemPrompt, JSON.stringify(conversationHistory));
     if (!content) {
       return null;
     }
@@ -182,31 +189,18 @@ You MUST respond ONLY with a valid JSON object matching this schema:
 }
 Do not include markdown blocks or any other text.`;
 
-      const model = process.env.HERMES_LEARNING_MODEL || "llama3.1";
-      const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-
-      const response = await fetch(`${baseUrl}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Events:\n${eventDescriptions}` }
-          ],
-          format: 'json',
-          stream: false,
-          options: { temperature: 0.1 }
-        })
-      });
-
-      if (!response.ok) throw new Error(`LLM API error: ${response.statusText}`);
-
-      const data: any = await response.json();
-      const content = data?.message?.content;
+      const content = await this.queryLightweightLlm(systemPrompt, `Events:\n${eventDescriptions}`);
       if (!content) return;
 
-      const result = JSON.parse(content) as { transactionalScore: number; persona: string };
+      let result: { transactionalScore: number; persona: string } | null = null;
+      try {
+        const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
+        result = JSON.parse(cleanJson);
+      } catch {
+        return;
+      }
+
+      if (!result) return;
 
       // 3. Upsert Profile
       await db.insert(hermesCognitiveProfiles)
@@ -226,7 +220,7 @@ Do not include markdown blocks or any other text.`;
 
       console.log(`[HermesLearningLoop] Inferred score ${result.transactionalScore} and persona ${result.persona} for lead ${leadId} via web events.`);
     } catch (error) {
-      console.error(`[HermesLearningLoop] Error processing lead events for ${leadId}:`, error);
+      console.warn(`[HermesLearningLoop] Non-blocking notice processing lead events for ${leadId}:`, error);
     }
   }
 }
