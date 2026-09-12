@@ -32,6 +32,11 @@ export class ExecutiveIntentClassifier {
       return { type: 'FOUNDER_IDENTITY_QUERY', raw: text };
     }
 
+    // 1.8. Executive Daily Briefing ("¿Qué pendientes tenemos?", "/briefing", "pulso")
+    if (this.isBriefingQuery(text)) {
+      return { type: 'EXECUTIVE_BRIEFING', raw: text };
+    }
+
     // 2. Two-phase confirmation
     if (this.isConfirmation(text)) {
       return { type: 'CONFIRMATION', raw: text };
@@ -93,6 +98,16 @@ export class ExecutiveIntentClassifier {
       .replace(/\s+/g, ' ');
 
     return /^(?:(?:sabes\s+)?qui[eé]n\s+(?:soy(?:\s+yo)?|te\s+habla|te\s+escribe)|sabes\s+con\s+qui[eé]n\s+hablas|me\s+conoces|te\s+acuerdas\s+de\s+m[ií]|qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador)|sabes\s+qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador))$/i.test(clean);
+  }
+
+  public static isBriefingQuery(text: string): boolean {
+    const clean = (text || '')
+      .toLowerCase()
+      .replace(/[¿?¡!.,;:_]/g, '')
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    return /^(?:(?:\/)?briefing|pulso(?:\s+de\s+pandoras)?|qu[eé]\s+hay\s+hoy|qu[eé]\s+pendientes?\s+(?:tenemos|hay|tengo)|pendientes?(?:\s+del\s+d[ií]a)?|resumen\s+ejecutivo|qu[eé]\s+tenemos\s+pendiente)$/i.test(clean);
   }
 
   private static parseFinancialSignatureIntent(text: string): ParsedExecutiveIntent | null {

@@ -402,7 +402,17 @@ describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
       expect(ExecutiveIntentClassifier.classify('¿Quién es tu jefe?').type).toBe('FOUNDER_IDENTITY_QUERY');
     });
 
-    it('injects Post-History Founder Executive Re-affirmation Anchor in PromptBuilder', async () => {
+    it('classifies briefing and pending tasks queries as EXECUTIVE_BRIEFING', async () => {
+      const { ExecutiveIntentClassifier } = await import('@/lib/hermes/executive/intent-classifier');
+
+      expect(ExecutiveIntentClassifier.classify('¿Qué pendientes tenemos?').type).toBe('EXECUTIVE_BRIEFING');
+      expect(ExecutiveIntentClassifier.classify('/briefing').type).toBe('EXECUTIVE_BRIEFING');
+      expect(ExecutiveIntentClassifier.classify('pulso').type).toBe('EXECUTIVE_BRIEFING');
+      expect(ExecutiveIntentClassifier.classify('¿Qué tenemos pendiente?').type).toBe('EXECUTIVE_BRIEFING');
+      expect(ExecutiveIntentClassifier.classify('pendientes del día').type).toBe('EXECUTIVE_BRIEFING');
+    });
+
+    it('injects Post-History Canonical Session Actor & Context Grounding Anchor in PromptBuilder', async () => {
       const { HermesPromptBuilder } = await import('@/lib/pandoras/core/domains/hermes/runtime/prompt-builder');
 
       const prompt = HermesPromptBuilder.build({
@@ -429,8 +439,17 @@ describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
 
       // Assert post-history anchor exists right before current user message
       const lastSystemMsg = prompt.messages.filter(m => m.role === 'system').pop();
-      expect(lastSystemMsg?.content).toContain('DIRECTIVA PRIORITARIA: RE-AFIRMACIÓN DE IDENTIDAD DEL FUNDADOR');
-      expect(lastSystemMsg?.content).toContain('El usuario actual es MARCO, tu JEFE y FUNDADOR');
+      expect(lastSystemMsg?.content).toContain('CANONICAL SESSION ACTOR GROUNDING & COGNITIVE ANCHOR');
+      expect(lastSystemMsg?.content).toContain('Nombre del Interlocutor: Marco');
+      expect(lastSystemMsg?.content).toContain('Identificador Canónico: marco_founder');
+      expect(lastSystemMsg?.content).toContain('NUNCA respondas diciendo que eres una IA sin acceso a información personal');
+      expect(lastSystemMsg?.content).toContain('Si el usuario pregunta quién es ("¿Quién soy?", "¿Sabes quién soy?", "¿Quién te habla?"): Confírmale de inmediato con total seguridad que es Marco');
+      expect(lastSystemMsg?.content).toContain('Si el usuario pregunta su nombre ("¿Cómo me llamo?")');
+      expect(lastSystemMsg?.content).toContain('Si el usuario pregunta su rol ("¿Cuál es mi rol?", "¿Qué puesto tengo?")');
+      expect(lastSystemMsg?.content).toContain('Si el usuario pregunta su organización ("¿Cuál es mi organización?", "¿De qué empresa soy?")');
+      expect(lastSystemMsg?.content).toContain('Si el usuario pregunta qué estamos construyendo');
+      expect(lastSystemMsg?.content).toContain('Si el usuario pregunta qué sabes de su contexto');
+      expect(lastSystemMsg?.content).toContain('Si el usuario pide un resumen de la conversación');
 
       // Assert Block 2.5 has directive 8
       const founderBlock = prompt.messages.find(m => m.content.includes('HERMES EXECUTIVE SOVEREIGN PLANE: MODO FUNDADOR'));

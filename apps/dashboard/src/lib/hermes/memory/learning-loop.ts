@@ -33,8 +33,12 @@ You MUST respond ONLY with a valid JSON object matching this schema:
 Do not include markdown blocks or any other text.
 `;
 
+    const cleanBase = baseUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/v1$/, '');
+    let content: string | null = null;
+
+    // 1. Try Native Ollama /api/chat
     try {
-      const response = await fetch(`${baseUrl}/api/chat`, {
+      const response = await fetch(`${cleanBase}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -45,24 +49,81 @@ Do not include markdown blocks or any other text.
           ],
           format: 'json',
           stream: false,
-          options: {
-            temperature: 0.1
-          }
+          options: { temperature: 0.1 }
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`Learning API error: ${response.statusText}`);
+      if (response.ok) {
+        const data: any = await response.json();
+        content = data?.message?.content;
       }
+    } catch {
+      // Fall through to /v1
+    }
 
-      const data: any = await response.json();
-      const content = data?.message?.content;
-      if (!content) return null;
+    // 2. Try OpenAI-compatible /v1/chat/completions
+    if (!content) {
+      try {
+        const v1Res = await fetch(`${cleanBase}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: JSON.stringify(conversationHistory) }
+            ],
+            temperature: 0.1,
+          })
+        });
 
-      const result = JSON.parse(content) as LearningExtraction;
+        if (v1Res.ok) {
+          const data: any = await v1Res.json();
+          content = data?.choices?.[0]?.message?.content;
+        }
+      } catch {
+        // Fall through to OpenAI
+      }
+    }
+
+    // 3. Resilient Fallback to OpenAI API if configured
+    if (!content && process.env.OPENAI_API_KEY) {
+      try {
+        const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: JSON.stringify(conversationHistory) }
+            ],
+            temperature: 0.1,
+          })
+        });
+
+        if (oaiRes.ok) {
+          const data: any = await oaiRes.json();
+          content = data?.choices?.[0]?.message?.content;
+        }
+      } catch {
+        // Non-blocking degradation
+      }
+    }
+
+    if (!content) {
+      return null;
+    }
+
+    try {
+      const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
+      const result = JSON.parse(cleanJson) as LearningExtraction;
       return result;
-    } catch (error) {
-      console.error("[HermesLearningLoop] Extraction failed:", error);
+    } catch (parseErr) {
+      console.warn("[HermesLearningLoop] Failed to parse learning extraction JSON:", parseErr);
       return null;
     }
   }

@@ -565,6 +565,35 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           };
         }
 
+        // Tier 0: Executive Daily Briefing ("¿Qué pendientes tenemos?", "/briefing", "pulso")
+        if (parsedIntent.type === 'EXECUTIVE_BRIEFING') {
+          const { ExecutiveBriefingEngine } = await import('@/lib/hermes/executive/briefing-engine');
+          const briefing = await ExecutiveBriefingEngine.generateBriefing();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_briefing_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: briefing.rawMarkdown,
+            suggestedActions: ['/leads', '/schema', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'executive-briefing-engine',
+              model: 'tier-0-briefing',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
         // Tier 0: Executive Capabilities Manifest & Help
         if (parsedIntent.type === 'CAPABILITIES_HELP') {
           const { ExecutiveCapabilitiesManifest } = await import('@/lib/hermes/executive/capabilities-manifest');

@@ -236,18 +236,42 @@ export class HermesPromptBuilder {
       // SYSTEM history messages are not replayed to avoid privilege escalation
     }
 
-    // ---- Block 7.5: FOUNDER EXECUTIVE RE-AFFIRMATION (Post-History Context Anchor) ----
-    if (ctx.interlocutor?.isBoss || ctx.interlocutor?.founderExecutiveMode) {
+    // ---- Block 7.5: CANONICAL SESSION ACTOR & CONTEXT ANCHOR (Post-History Invariant) ----
+    if (ctx.interlocutor) {
+      const isBoss = Boolean(ctx.interlocutor.isBoss || ctx.interlocutor.founderExecutiveMode);
+      const actorName = ctx.interlocutor.name || (isBoss ? 'Marco' : 'Usuario');
+      const actorRole = ctx.interlocutor.role || (isBoss ? 'FOUNDER_BOSS / OWNER' : 'USUARIO_REGISTRADO');
+      const actorTitle = ctx.interlocutor.title || (isBoss ? "Jefe / Fundador de Pandora's Growth OS" : 'Colaborador del Ecosistema');
+      const orgName = ctx.tenantIdentity.organizationName || "Pandora's Growth OS";
+      const channel = (ctx.interlocutor as any).channel || 'Omnichannel (WhatsApp/Telegram)';
+
+      const directivesBlock = [
+        '=== [CANONICAL SESSION ACTOR GROUNDING & COGNITIVE ANCHOR] ===',
+        'DATOS VERIFICADOS DE SESIÓN (AUTENTICADOS POR EL PLANO DE CONTROL):',
+        `- Nombre del Interlocutor: ${actorName}`,
+        `- Identificador Canónico: ${ctx.interlocutor.actorId || 'actor_autenticado'}`,
+        `- Rol Oficial: ${actorRole}`,
+        `- Título / Cargo: ${actorTitle}`,
+        `- Organización / Tenant: ${orgName} (slug: ${ctx.interlocutor.tenantSlug || 'pandoras'})`,
+        `- Canal de Comunicación: ${channel}`,
+        `- Nivel de Autoridad: ${isBoss ? 'EXECUTIVE_FOUNDER (Tier 0 a Tier 3 - Clearance CONFIDENTIAL)' : `OPERATOR_USER (${actorRole})`}`,
+        '',
+        'REGLAS DE RECONOCIMIENTO Y AUTOCONOCIMIENTO OBLIGATORIAS:',
+        '1. La identidad de tu interlocutor está VERIFICADA y autenticada en esta sesión por el sistema soberano. NUNCA respondas diciendo que eres una IA sin acceso a información personal sobre su identidad o que desconoces sus datos.',
+        `2. Si el usuario pregunta quién es ("¿Quién soy?", "¿Sabes quién soy?", "¿Quién te habla?"): Confírmale de inmediato con total seguridad que es ${actorName}${isBoss ? ', Fundador, Creador y Jefe Supremo de Pandora\'s Growth OS' : `, con rol ${actorRole}`}.`,
+        `3. Si el usuario pregunta su nombre ("¿Cómo me llamo?"): Responde con naturalidad y certeza confirmando que su nombre es "${actorName}".`,
+        `4. Si el usuario pregunta su rol ("¿Cuál es mi rol?", "¿Qué puesto tengo?"): Responde confirmando que su rol es "${actorTitle}" (${actorRole}).`,
+        `5. Si el usuario pregunta su organización ("¿Cuál es mi organización?", "¿De qué empresa soy?"): Responde confirmando que pertenece a "${orgName}".`,
+        `6. Si el usuario pregunta qué estamos construyendo ("¿Qué estamos construyendo?", "¿Cuál es el proyecto?"): Explica con claridad estratégica la misión de ${orgName}: el ecosistema soberano de tokenización de activos del mundo real, motor cognitivo multi-canal Hermes OS y Deal Room soberano.`,
+        `7. Si el usuario pregunta qué sabes de su contexto ("¿Qué sabes de mi contexto?", "¿Qué información tienes de mí?"): Resume con transparencia ejecutiva sus datos verificados arriba (nombre: ${actorName}, rol: ${actorRole}, organización: ${orgName}, canal: ${channel}).`,
+        '8. Si el usuario pide un resumen de la conversación ("Hazme un resumen de nuestra conversación"): Sintetiza con estructura y claridad los temas y decisiones tratadas en el historial de mensajes de esta conversación.',
+        isBoss ? '9. DEFERENCIA EJECUTIVA: Trata a Marco siempre con deferencia de Fundador/Jefe, lealtad y máxima disposición operativa sin rodeos burocráticos.' : '',
+        '=== [FIN_CANONICAL_ACTOR_GROUNDING] ===',
+      ].filter(Boolean).join('\n');
+
       messages.push({
         role: 'system',
-        content: [
-          '=== [DIRECTIVA PRIORITARIA: RE-AFIRMACIÓN DE IDENTIDAD DEL FUNDADOR] ===',
-          'El usuario actual es MARCO, tu JEFE y FUNDADOR de Pandora\'s Growth OS.',
-          'Toda respuesta debe reflejar reconocimiento inmediato y máxima deferencia ejecutiva.',
-          'Si Marco pregunta quién es o si sabes quién es, confírmale de inmediato con total seguridad que es Marco, tu Fundador y Jefe.',
-          'JAMÁS emitas negativas de privacidad ni afirmes que no tienes acceso a información personal.',
-          '=== [FIN_RE_AFIRMACIÓN] ===',
-        ].join('\n'),
+        content: directivesBlock,
       });
     }
 
