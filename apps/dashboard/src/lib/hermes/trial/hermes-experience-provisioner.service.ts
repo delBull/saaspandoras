@@ -12,7 +12,7 @@
  */
 
 import { db } from '@/db';
-import { projects, installedProducts, hermesTenantCredits, hermesTrialCredits } from '@/db/schema';
+import { projects, installedProducts, hermesTenantCredits, hermesTrialCredits, hermesCapabilityGrants } from '@/db/schema';
 import { eq, or, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { TrialTier, TRIAL_TIER_CREDITS, TRIAL_QUOTAS } from './hermes-trial-policy.service';
@@ -382,6 +382,39 @@ export class HermesExperienceProvisionerService {
           });
         } catch (err) {
           console.warn('[HermesProvisioner] Notice initializing hermes_tenant_credits:', err);
+        }
+
+        // 6b. Seed baseline capability grants for trial
+        try {
+          const baselineCaps = [
+            'demand.view',
+            'demand.plan',
+            'demand.approve',
+            'demand.distribute',
+            'media.publish.channel:telegram',
+            'media.publish.channel:x',
+            'media.publish.channel:newsletter',
+            'media.image.create',
+            'media.copy.create',
+            'media.newsletter.create',
+            'research.report.create',
+          ];
+          await db.insert(hermesCapabilityGrants).values(
+            baselineCaps.map((cap) => ({
+              id: `grant_${projectSlug}_${cap.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              grantId: `gid_${projectSlug}_${cap.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              tenantId: projectSlug,
+              issuerAgentId: 'pandoras',
+              granteeAgentId: 'sofia',
+              capability: cap,
+              status: 'ACTIVE',
+              issuedAt: trialStartedAt,
+              expiresAt: trialEndsAt,
+              createdBy: cleanEmail,
+            }))
+          ).onConflictDoNothing();
+        } catch (capErr) {
+          console.warn('[HermesProvisioner] Notice seeding trial capability grants:', capErr);
         }
       }
 

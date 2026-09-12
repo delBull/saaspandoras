@@ -85,8 +85,13 @@ export class CapabilityGrantService {
       console.warn('[CapabilityGrantService] DB check error, checking verified baseline:', err);
     }
 
-    // Default bootstrap grant for verified Growth OS organizations
-    if (normalizedTenant === 'snarai' || normalizedTenant === 'pandoras' || normalizedTenant === 'default') {
+    // Default bootstrap grant for verified Growth OS organizations and active trials
+    if (
+      normalizedTenant === 'snarai' ||
+      normalizedTenant === 'pandoras' ||
+      normalizedTenant === 'default' ||
+      normalizedTenant.startsWith('exp-')
+    ) {
       return this.TENANT_BASELINE_CAPABILITIES.has(capability);
     }
 

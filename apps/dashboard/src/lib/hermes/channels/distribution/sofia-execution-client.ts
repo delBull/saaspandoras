@@ -13,6 +13,7 @@
 
 import type { DistributionJob } from '@/db/schema';
 import type { PublicationReceipt } from '../publishers/publisher.types';
+import { A2ASecurityValidator } from '@/lib/pandoras/core/domains/hermes/a2a/a2a-security-validator';
 
 export interface SofiaLeaseAck {
   jobId: string;
@@ -29,9 +30,9 @@ export class SofiaPreAckError extends Error {
 }
 
 export class SofiaPostAckTimeoutError extends Error {
-  readonly executionId: string;
+  public executionId: string;
   constructor(executionId: string, message: string) {
-    super(`[SofiaPostAckTimeoutError] Sofia ACK was granted (${executionId}), but broadcast response timed out: ${message}`);
+    super(`[SofiaPostAckTimeoutError] Execution ${executionId}: ${message}`);
     this.name = 'SofiaPostAckTimeoutError';
     this.executionId = executionId;
   }
@@ -67,7 +68,15 @@ export class DefaultSofiaExecutionClient implements ISofiaExecutionClient {
     preAckTimeoutMs = 2500,  // Rule F4-5: Fail-fast 2500ms pre-ACK
     postAckTimeoutMs = 15000 // Extended post-ACK execution window
   ) {
-    this.baseUrl = baseUrl || process.env.SOFIA_A2A_URL || 'http://localhost:8000';
+    let resolvedBaseUrl = baseUrl || process.env.SOFIA_A2A_URL;
+    if (!resolvedBaseUrl && process.env.SOFIA_BRIDGE_WEBHOOK_URL) {
+      try {
+        resolvedBaseUrl = new URL(process.env.SOFIA_BRIDGE_WEBHOOK_URL).origin;
+      } catch {
+        // Fallback
+      }
+    }
+    this.baseUrl = resolvedBaseUrl || 'http://localhost:8000';
     this.preAckTimeoutMs = preAckTimeoutMs;
     this.postAckTimeoutMs = postAckTimeoutMs;
   }
@@ -83,19 +92,30 @@ export class DefaultSofiaExecutionClient implements ISofiaExecutionClient {
     const timer = setTimeout(() => controller.abort(), this.preAckTimeoutMs);
 
     try {
+      const rawBody = JSON.stringify({
+        jobId: job.id,
+        idempotencyKey: job.idempotencyKey,
+        channel: job.channel,
+        campaignId: job.campaignId,
+        pieceId: job.pieceId,
+      });
+      const tsMs = String(Date.now());
+      let hmacSignature: string | undefined;
+      try {
+        hmacSignature = A2ASecurityValidator.computeTransportHmac('POST', '/api/v1/distribution/lease', tsMs, rawBody);
+      } catch {
+        // Fallback in dev/test if HMAC secret not configured
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-id': job.tenantId,
+          'x-a2a-timestamp': tsMs,
+          ...(hmacSignature ? { 'x-bridge-signature': hmacSignature } : {}),
         },
-        body: JSON.stringify({
-          jobId: job.id,
-          idempotencyKey: job.idempotencyKey,
-          channel: job.channel,
-          campaignId: job.campaignId,
-          pieceId: job.pieceId,
-        }),
+        body: rawBody,
         signal: controller.signal,
       });
 
@@ -135,17 +155,28 @@ export class DefaultSofiaExecutionClient implements ISofiaExecutionClient {
     const timer = setTimeout(() => controller.abort(), this.postAckTimeoutMs);
 
     try {
+      const rawBody = JSON.stringify({
+        executionId: ack.executionId,
+        payload: job.payload,
+      });
+      const tsMs = String(Date.now());
+      let hmacSignature: string | undefined;
+      try {
+        hmacSignature = A2ASecurityValidator.computeTransportHmac('POST', '/api/v1/distribution/execute', tsMs, rawBody);
+      } catch {
+        // Fallback in dev/test if HMAC secret not configured
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-id': job.tenantId,
           'x-execution-id': ack.executionId,
+          'x-a2a-timestamp': tsMs,
+          ...(hmacSignature ? { 'x-bridge-signature': hmacSignature } : {}),
         },
-        body: JSON.stringify({
-          executionId: ack.executionId,
-          payload: job.payload,
-        }),
+        body: rawBody,
         signal: controller.signal,
       });
 

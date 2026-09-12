@@ -7,9 +7,10 @@
  */
 
 import { db } from '@/db';
-import { installedProducts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { installedProducts, projects } from '@/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { PlanKey } from './product-registry';
+import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
 
 export class OrganizationLifecycleManager {
   static async updateStatus(opts: {
@@ -42,7 +43,7 @@ export class OrganizationLifecycleManager {
   }
 
   static async checkTrialExpirations() {
-    // Audit trials that have passed trialEndsAt date
+    // 1. Audit trials that have passed trialEndsAt date in installedProducts
     const trials = await db.query.installedProducts.findMany({
       where: eq(installedProducts.status, 'trial'),
     });
@@ -57,6 +58,35 @@ export class OrganizationLifecycleManager {
       }
     }
 
-    return { checked: trials.length, expiredCount: expired.length, expiredIds: expired };
+    // 2. Audit and update projects table (tenantType === 'TRIAL' and trialEndsAt < now and trialStatus === 'ACTIVE')
+    const expiredProjects = await db
+      .select({ id: projects.id, slug: projects.slug })
+      .from(projects)
+      .where(
+        and(
+          eq(projects.tenantType, 'TRIAL'),
+          eq(projects.trialStatus, 'ACTIVE'),
+          sql`${projects.trialEndsAt} < ${now}`
+        )
+      );
+
+    for (const p of expiredProjects) {
+      await db
+        .update(projects)
+        .set({ trialStatus: 'EXPIRED', updatedAt: now })
+        .where(eq(projects.id, p.id));
+
+      await HermesTrialTimelineService.recordEvent(p.slug, 'TRIAL_EXPIRED', {
+        metadata: { expiredAt: now.toISOString(), reason: '72h_duration_elapsed' },
+      }).catch(() => {});
+    }
+
+    return {
+      checked: trials.length,
+      expiredCount: expired.length,
+      expiredIds: expired,
+      expiredProjectsCount: expiredProjects.length,
+      expiredProjectSlugs: expiredProjects.map((p) => p.slug),
+    };
   }
 }

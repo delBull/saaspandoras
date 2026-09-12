@@ -730,7 +730,12 @@ export class HermesMediaOrchestratorService {
 
   private static async getArtifact(tenantId: string, artifactId: string): Promise<any> {
     const inMem = this.inMemoryArtifacts.get(artifactId);
-    if (inMem) return inMem;
+    if (inMem) {
+      if (inMem.tenantId && inMem.tenantId.toLowerCase() !== tenantId.toLowerCase()) {
+        return null; // Strict cross-tenant boundary
+      }
+      return inMem;
+    }
     if (db) {
       const [row] = await db
         .select()

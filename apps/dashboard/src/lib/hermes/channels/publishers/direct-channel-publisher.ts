@@ -95,8 +95,9 @@ export class DirectChannelPublisher {
       };
     }
 
-    // Check recent duplicate execution
-    const cachedReceipt = this.idempotencyStore.get(payload.idempotencyKey);
+    // Check recent duplicate execution scoped strictly to canonicalOrgId
+    const scopedIdempotencyKey = `${canonicalOrgId || 'global'}:${payload.idempotencyKey}`;
+    const cachedReceipt = this.idempotencyStore.get(scopedIdempotencyKey);
     if (cachedReceipt) {
       return cachedReceipt;
     }
@@ -226,8 +227,8 @@ export class DirectChannelPublisher {
       // 6. Direct Provider Dispatch
       const receipt = await publisher.publish(decryptedCredentials, payload, publisherContext);
 
-      // Record in local idempotency cache
-      this.idempotencyStore.set(payload.idempotencyKey, receipt);
+      // Record in local idempotency cache scoped by tenant
+      this.idempotencyStore.set(scopedIdempotencyKey, receipt);
 
       // Gate 5 & Acceptance Criterion C: Only confirmed successful distributions consume quota
       if (receipt.success) {
@@ -243,7 +244,7 @@ export class DirectChannelPublisher {
 
       // Clean up cache after 10 minutes to avoid memory leaks
       setTimeout(() => {
-        this.idempotencyStore.delete(payload.idempotencyKey);
+        this.idempotencyStore.delete(scopedIdempotencyKey);
       }, 10 * 60 * 1000);
 
       return receipt;

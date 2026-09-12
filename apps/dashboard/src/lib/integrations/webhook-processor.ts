@@ -85,11 +85,14 @@ export class WebhookProcessor {
             };
 
             // Use the SDK to sign and send
-            // NOTE: Using callbackSecretHash as the key for now per integration status.
-            // In production this must be the raw decrypted secret.
-            const secretToUse = client.callbackSecretHash || "default-secret";
+            // Fail-closed in production if client callback secret is missing
+            const secretToUse = client.callbackSecretHash;
+            if (!secretToUse && process.env.NODE_ENV === 'production') {
+                throw new Error(`[WebhookProcessor] Client callback secret missing for ${client.name}. Refusing dispatch without HMAC secret.`);
+            }
+            const activeSecret = secretToUse || (process.env.NODE_ENV === 'test' ? 'test-secret' : 'dev-fallback-secret');
 
-            const result = await sendWebhook(client.callbackUrl, secretToUse, webhookEvent);
+            const result = await sendWebhook(client.callbackUrl, activeSecret, webhookEvent);
 
             if (!result.success) {
                 console.error(`🛑 Webhook Dispatch Failed for ${client.name}: ${result.error} (Status: ${result.statusCode})`);

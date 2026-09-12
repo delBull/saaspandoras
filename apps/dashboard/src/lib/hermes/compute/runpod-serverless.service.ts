@@ -40,6 +40,9 @@ export class RunPodServerlessService {
     const perSecondCost = req.perSecondCostUsd ?? this.DEFAULT_PER_SECOND_COST;
 
     if (!apiKey) {
+      if (process.env.NODE_ENV === 'production' && !process.env.RUNPOD_ALLOW_MOCK_IN_PRODUCTION) {
+        throw new Error('[RunPodServerless] RUNPOD_API_KEY is missing in production. Refusing simulated mock GPU execution.');
+      }
       // 🧪 Dev / Sandbox simulated serverless execution
       const simStart = Date.now();
       await new Promise(resolve => setTimeout(resolve, 800)); // Simulate cold-start / GPU inference

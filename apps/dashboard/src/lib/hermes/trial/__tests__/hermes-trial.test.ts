@@ -223,7 +223,7 @@ describe('🏛️ Hermes Experience — Governed Trial Tenant Architecture (Gate
     it('provisions a clean trial tenant with 72h duration and 3 media credits', async () => {
       const result = await HermesExperienceProvisionerService.provision({
         companyName: 'Acme Robotics',
-        email: 'founder@acmerobotics.io',
+        email: `founder_${Date.now()}@acmerobotics.io`,
         contactName: 'Alice',
         industry: 'Robotics',
         trialTier: 'MEDIA_ENABLED',

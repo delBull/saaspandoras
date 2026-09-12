@@ -431,7 +431,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       const interlocutor = (reasoningInput.reasoningContext as any).interlocutor;
       if (interlocutor?.isBoss || interlocutor?.founderExecutiveMode) {
         const msgText = input.message?.content?.trim() || '';
-        const founderKey = interlocutor?.id || 'marco_founder';
+        const founderKey = `${canonicalTenantId || organizationId || 'system'}:${interlocutor?.id || 'founder'}`;
 
         // 🛡️ HARD INVIOLABLE BOUNDS: System Invariants apply universally, even to Marco
         const { SystemInvariantEnforcer } = await import('@/lib/hermes/executive/invariants');

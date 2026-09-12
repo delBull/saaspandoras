@@ -3,3 +3,4 @@ export * from './mission-contracts';
 export * from './execution-contracts';
 export * from './capability-contracts';
 export * from './pack-contracts';
+export * from './governance-contracts';

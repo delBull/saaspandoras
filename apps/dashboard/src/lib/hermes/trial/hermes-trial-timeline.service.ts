@@ -23,6 +23,7 @@ export type TrialTimelineEventType =
   | 'MEDIA_GENERATED'
   | 'DISTRIBUTION_EXECUTED'
   | 'TRIAL_EXPIRED'
+  | 'TRIAL_CANCELLED'
   | 'UPGRADE_STARTED';
 
 export interface TrialTimelineEvent {
