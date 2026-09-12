@@ -6,7 +6,6 @@ export const metadata = {
   openGraph: {
     title: "Hermes Revenue Closer | Tu Equipo Comercial Inmobiliario 24/7",
     description: "Capa de conversión cognitiva para desarrolladores, agencias y brokers inmobiliarios.",
-    images: ["https://images.openai.com/static-rsc-4/sK2ugWU0lXvoxSFu1vNXPj9jE2WyL8b2ySOMUgnvjEa9eyWjaANfHdmL3EulnBc6O8ys9-TppGiLsWWUQLHRIzil3PD9s2Nv8uiprSATnKQ3aff0eBnqcYGM0O1gBs2VUowdxbGpjTZ82K3rhWHt62NcgF89c8R66Xm5eAbqI_LSdbXLJ0A8o4h06sMyuImv?purpose=fullsize"]
   }
 };
 
