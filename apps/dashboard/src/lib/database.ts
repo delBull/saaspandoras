@@ -1,35 +1,87 @@
-import { neon } from "@neondatabase/serverless";
+import pg from "pg";
+const { Pool } = pg;
 
-// Connection configuration for Serverless (Neon HTTP Driver)
-// This strictly prevents TCP connection exhaustion in Vercel Edge functions.
+// Connection configuration for PostgreSQL Pool (Node.js runtime / Serverless Pooler)
+// Connects to Neon via connection pooler (-pooler) with full interactive transaction support.
 const DATABASE_URL = process.env.DATABASE_URL || "";
 if (DATABASE_URL && !DATABASE_URL.includes("-pooler") && DATABASE_URL.includes("neon.tech")) {
-  console.warn("⚠️ DATABASE_URL detected without '-pooler' suffix. Using Neon HTTP driver mitigates this, but pooler is still recommended for heavy backend tasks.");
+  console.warn("⚠️ DATABASE_URL detected without '-pooler' suffix. Using pooler endpoint is strongly recommended for serverless workloads.");
 }
 
 // Standard Next.js caching mechanism for Serverless
-const globalForNeon = globalThis as unknown as {
+const globalForDb = globalThis as unknown as {
+  poolInstance: pg.Pool | undefined;
   sqlInstance: any | undefined;
 };
 
-// Use the highly resilient stateless HTTP driver for Vercel
-// Safely bypass neon initialization during build if URL is missing to prevent crash
-const neonClient = DATABASE_URL 
-  ? neon(DATABASE_URL) 
-  : (() => {
-      // Return a dummy function that throws only if actually called at runtime
-      const dummy = async () => { throw new Error("DATABASE_URL is not set"); };
-      dummy.transaction = async () => { throw new Error("DATABASE_URL is not set"); };
-      return dummy as any;
-    })();
+export function createPool(): pg.Pool {
+  if (!DATABASE_URL) {
+    // Return a dummy proxy to allow static builds without crashing
+    return new Proxy({} as pg.Pool, {
+      get(_, prop) {
+        if (prop === 'connect' || prop === 'query') {
+          return async () => {
+            throw new Error("DATABASE_URL environment variable is not set.");
+          };
+        }
+        return undefined;
+      },
+    });
+  }
 
-// Type alias to satisfy typescript for legacy postgres-js calls
-export type LegacySql = ((strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>) & ReturnType<typeof neon>;
+  const isLocal = DATABASE_URL.includes("localhost") || DATABASE_URL.includes("127.0.0.1");
 
-export const sqlInstance = (globalForNeon.sqlInstance || neonClient) as LegacySql;
+  return new Pool({
+    connectionString: DATABASE_URL,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
+}
 
-// Shared singleton across ALL environments
-globalForNeon.sqlInstance = sqlInstance;
+export function getPool(): pg.Pool {
+  if (!globalForDb.poolInstance) {
+    globalForDb.poolInstance = createPool();
+  }
+  return globalForDb.poolInstance;
+}
+
+export const pool = getPool();
+
+// Type alias to satisfy typescript for legacy tagged template sql calls
+export type LegacySql = ((strings: TemplateStringsArray | string, ...values: any[]) => Promise<any[]>) & {
+  query: (text: string, params?: any[]) => Promise<any>;
+  transaction?: any;
+};
+
+export function createSqlFunction(p: pg.Pool): LegacySql {
+  const sqlFn = async (strings: TemplateStringsArray | string, ...values: any[]) => {
+    if (typeof strings === "string") {
+      const params = values[0] && Array.isArray(values[0]) ? values[0] : values;
+      const res = await p.query(strings, params);
+      return res.rows;
+    }
+    let queryText = "";
+    for (let i = 0; i < strings.length; i++) {
+      queryText += strings[i];
+      if (i < values.length) {
+        queryText += `$${i + 1}`;
+      }
+    }
+    const res = await p.query(queryText, values);
+    return res.rows;
+  };
+
+  sqlFn.query = async (text: string, params?: any[]) => {
+    return p.query(text, params);
+  };
+
+  return sqlFn as LegacySql;
+}
+
+export const sqlInstance = (globalForDb.sqlInstance || createSqlFunction(pool)) as LegacySql;
+globalForDb.sqlInstance = sqlInstance;
 
 export default sqlInstance;
 export { sqlInstance as sql };
@@ -37,7 +89,8 @@ export { sqlInstance as sql };
 // Health check function
 export async function checkDatabaseHealth() {
   try {
-    await sqlInstance`SELECT 1`;
+    const currentPool = getPool();
+    await currentPool.query("SELECT 1");
     return true;
   } catch (error) {
     console.error('Database health check failed:', error);

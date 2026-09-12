@@ -1,11 +1,11 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
-import { sql } from "../lib/database";
+import { drizzle } from "drizzle-orm/node-postgres";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { getPool } from "../lib/database";
 import * as schema from "./schema";
 
-// Lazy initialization for Drizzle to prevent early DB connection
-type DrizzleClientBase = NeonHttpDatabase<typeof schema>;
-type DrizzleClient = Omit<DrizzleClientBase, 'execute'> & {
+// Lazy initialization for Drizzle with NodePgDatabase
+type DrizzleClientBase = NodePgDatabase<typeof schema>;
+export type DrizzleClient = Omit<DrizzleClientBase, 'execute'> & {
     execute: (query: any) => Promise<any[]>;
 };
 
@@ -17,10 +17,11 @@ const globalForDrizzle = globalThis as unknown as {
 };
 
 if (!globalForDrizzle.dbInstance) {
-    const rawDb = drizzle(sql, { schema, logger: true });
+    const pool = getPool();
+    const rawDb = drizzle(pool, { schema, logger: process.env.NODE_ENV === 'development' });
     
-    // Monkey-patch execute to maintain backward compatibility with postgres-js
-    // drizzle-orm/neon-http execute() returns { rows: [] } instead of an array directly
+    // Monkey-patch execute to maintain backward compatibility
+    // drizzle-orm/node-postgres execute() returns QueryResult with rows array
     const originalExecute = rawDb.execute.bind(rawDb);
     const patchedDb = Object.assign(rawDb, {
         execute: async (query: any) => {
@@ -33,4 +34,5 @@ if (!globalForDrizzle.dbInstance) {
 }
 
 export const db = globalForDrizzle.dbInstance!;
+
 
