@@ -37,6 +37,7 @@ const publicRoute = [
   "/(\\w{2}/)?about(.*)",
   "/(\\w{2}/)?whitepaper(.*)",
   "/(\\w{2}/)?nexus(.*)",
+  "/(\\w{2}/)?revenue-closer(.*)",
   "^/\\w{2}$",
 ];
 
