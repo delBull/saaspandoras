@@ -27,10 +27,17 @@ export interface ChannelCredentialsPayload {
 }
 
 export class ChannelVaultAdapter {
-  private vault: KnowledgeEnvelopeVault;
+  private _vault: KnowledgeEnvelopeVault | null = null;
 
   constructor(vault?: KnowledgeEnvelopeVault) {
-    this.vault = vault || new KnowledgeEnvelopeVault();
+    if (vault) this._vault = vault;
+  }
+
+  private get vault(): KnowledgeEnvelopeVault {
+    if (!this._vault) {
+      this._vault = new KnowledgeEnvelopeVault();
+    }
+    return this._vault;
   }
 
   /**

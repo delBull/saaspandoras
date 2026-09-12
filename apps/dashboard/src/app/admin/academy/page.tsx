@@ -20,15 +20,33 @@ export default async function AdminAcademyPage({
     auth.isAuthenticated && (
       auth.role === "SUPER_ADMIN" ||
       auth.role === "ADMIN" ||
+      (auth.role as string) === "MANAGER" ||
       checkNexusPermission(auth, "nexus.manage") ||
       checkNexusPermission(auth, "users.manage") ||
-      (auth.permissions as any)?.academyAdmin === true
+      Boolean(auth.permissions?.academyAdmin)
     );
 
   let unlocked = hasAcademyPermission;
   let userRole: "admin" | "manager" =
     auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" ? "admin" : "manager";
   let userEmail: string | undefined = auth.email || undefined;
+
+  // Fallback directo por email si el colaborador está activo en la tabla de colaboradores
+  if (!unlocked && auth.email) {
+    try {
+      const { getCollaboratorByEmail } = await import('@/lib/nexus/collaborators-service');
+      const collab = await getCollaboratorByEmail(auth.email);
+      if (collab && collab.status === 'ACTIVE') {
+        if (collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
+          unlocked = true;
+          userRole = 'admin';
+        } else if (collab.permissions?.academyAdmin || (collab.role as string) === 'MANAGER') {
+          unlocked = true;
+          userRole = 'manager';
+        }
+      }
+    } catch {}
+  }
 
   // Legacy fallback: Token de desbloqueo firmado (Magic Link por email o Discord HMAC)
   if (!unlocked && typeof unlock === "string" && unlock) {

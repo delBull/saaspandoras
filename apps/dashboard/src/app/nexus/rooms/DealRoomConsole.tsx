@@ -26,6 +26,10 @@ import {
   Download,
   GraduationCap,
   ExternalLink,
+  Users,
+  Share2,
+  UserPlus,
+  UserCheck,
 } from "lucide-react";
 import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 import { CognitiveProfileWidget } from "@/components/hermes/CognitiveProfileWidget";
@@ -56,6 +60,13 @@ interface Signer {
   wallet?: string | null;
 }
 
+export interface DealSharedCollaborator {
+  email: string;
+  name?: string;
+  sharedAt: string;
+  sharedBy: string;
+}
+
 interface Room {
   id: string;
   publicId: string;
@@ -70,6 +81,11 @@ interface Room {
   openSign?: boolean | null;
   nextRoomId?: string | null;
   enteredIntoForceAt?: string | null;
+  createdBy?: string | null;
+  sharedWith?: DealSharedCollaborator[];
+  isMine?: boolean;
+  isShared?: boolean;
+  creatorDisplay?: string;
   createdAt: string;
   updatedAt: string;
   sections: Section[];
@@ -157,13 +173,26 @@ export default function DealRoomConsole() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [view, setView] = useState<"sections" | "signers" | "audit">("sections");
+  const [view, setView] = useState<"sections" | "signers" | "audit" | "team">("sections");
   const [sectionId, setSectionId] = useState("01");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftContent, setDraftContent] = useState("");
   const [showNewRoom, setShowNewRoom] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+
+  // Multi-collaborator isolation & scope filters
+  const [scopeFilter, setScopeFilter] = useState<"mine" | "shared" | "all">("mine");
+  const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
+  const [currentUserIdent, setCurrentUserIdent] = useState<string | null>(null);
+
+  // Collaborator sharing state
+  const [availableCollabs, setAvailableCollabs] = useState<Array<{ id: number; name: string; email: string; role?: string }>>([]);
+  const [selectedCollabEmail, setSelectedCollabEmail] = useState("");
+  const [customCollabEmail, setCustomCollabEmail] = useState("");
+  const [sharingWithCollab, setSharingWithCollab] = useState(false);
+  const [isCreatorOfSelected, setIsCreatorOfSelected] = useState(false);
+
   const [nrTitle, setNrTitle] = useState("");
   const [nrKind, setNrKind] = useState<Room["kind"]>("PROPOSAL");
   const [nrCounterparty, setNrCounterparty] = useState("");
@@ -180,24 +209,36 @@ export default function DealRoomConsole() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  const apiUrl = (path: string) => {
-    const unlock = new URLSearchParams(window.location.search).get("unlock");
-    return unlock ? `${path}?unlock=${encodeURIComponent(unlock)}` : path;
+  const apiUrl = (path: string, extraParams?: Record<string, string>) => {
+    const unlock = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("unlock") : null;
+    const url = new URL(path, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+    if (unlock) url.searchParams.set("unlock", unlock);
+    if (extraParams) {
+      for (const [k, v] of Object.entries(extraParams)) {
+        if (v) url.searchParams.set(k, v);
+      }
+    }
+    return url.pathname + url.search;
   };
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (forcedScope?: "mine" | "shared" | "all") => {
     try {
-      const res = await fetch(apiUrl("/api/nexus/deals"), { cache: "no-store" });
+      const activeScope = forcedScope || scopeFilter;
+      const res = await fetch(apiUrl("/api/nexus/deals", { scope: activeScope }), { cache: "no-store" });
       if (!res.ok) throw new Error("No autorizado");
       const data = await res.json();
       setRooms(data.rooms ?? []);
+      if (data.meta) {
+        setIsSuperAdminUser(Boolean(data.meta.isSuperAdmin));
+        setCurrentUserIdent(data.meta.email || data.meta.userIdentifier || null);
+      }
       setSelectedId((cur) => (cur && data.rooms.some((r: Room) => r.id === cur) ? cur : data.rooms[0]?.id ?? null));
     } catch (e: any) {
       setFlash(`✗ ${e.message}`);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scopeFilter]);
 
   useEffect(() => {
     load();
@@ -435,6 +476,81 @@ export default function DealRoomConsole() {
     }
   };
 
+  const fetchCollaboratorAccess = useCallback(async (roomId: string) => {
+    try {
+      const res = await fetch(apiUrl(`/api/nexus/deals/${roomId}/collaborators`), { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.ok) {
+        setAvailableCollabs(data.availableCollaborators || []);
+        setIsCreatorOfSelected(Boolean(data.isCreator));
+      }
+    } catch (e) {
+      console.error("Error fetching collaborator access:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selected?.id) {
+      fetchCollaboratorAccess(selected.id);
+    }
+  }, [selected?.id, fetchCollaboratorAccess]);
+
+  const handleShareWithCollab = async () => {
+    if (!selected) return;
+    const emailToShare = (selectedCollabEmail || customCollabEmail).trim().toLowerCase();
+    if (!emailToShare || !emailToShare.includes("@")) {
+      flashMsg("✗ Por favor selecciona o ingresa un email válido");
+      return;
+    }
+
+    const matchedCollab = availableCollabs.find(c => c.email.toLowerCase() === emailToShare);
+    const name = matchedCollab ? matchedCollab.name : undefined;
+
+    setSharingWithCollab(true);
+    try {
+      const res = await fetch(apiUrl(`/api/nexus/deals/${selected.id}/collaborators`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailToShare, name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al compartir deal");
+
+      flashMsg(`✓ Deal compartido con ${name ? `${name} (${emailToShare})` : emailToShare}`);
+      setSelectedCollabEmail("");
+      setCustomCollabEmail("");
+      setRooms(prev => prev.map(r => r.id === data.room.id ? { ...r, ...data.room } : r));
+      await fetchCollaboratorAccess(selected.id);
+    } catch (e: any) {
+      flashMsg(`✗ ${e.message}`);
+    } finally {
+      setSharingWithCollab(false);
+    }
+  };
+
+  const handleRevokeCollab = async (email: string) => {
+    if (!selected) return;
+    setSharingWithCollab(true);
+    try {
+      const res = await fetch(apiUrl(`/api/nexus/deals/${selected.id}/collaborators`), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al revocar acceso");
+
+      flashMsg(`✓ Acceso revocado a ${email}`);
+      setRooms(prev => prev.map(r => r.id === data.room.id ? { ...r, ...data.room } : r));
+      await fetchCollaboratorAccess(selected.id);
+    } catch (e: any) {
+      flashMsg(`✗ ${e.message}`);
+    } finally {
+      setSharingWithCollab(false);
+    }
+  };
+
   const copyPublicLink = async () => {
     if (!selected) return;
     const url = `${window.location.origin}/deal/${selected.publicId}`;
@@ -551,6 +667,52 @@ export default function DealRoomConsole() {
             >
               <Plus className="w-3 h-3" /> NUEVA ROOM
             </button>
+          </div>
+
+          {/* Scope Filter Tabs */}
+          <div className="px-3 py-1.5 flex items-center gap-1 border-b border-white/10 bg-black/30">
+            <button
+              onClick={() => {
+                setScopeFilter("mine");
+                load("mine");
+              }}
+              className={`flex-1 text-[9px] font-mono py-1 px-1.5 rounded text-center transition-colors ${
+                scopeFilter === "mine"
+                  ? "bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40"
+                  : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+              }`}
+            >
+              MIS DEALS
+            </button>
+            <button
+              onClick={() => {
+                setScopeFilter("shared");
+                load("shared");
+              }}
+              className={`flex-1 text-[9px] font-mono py-1 px-1.5 rounded text-center transition-colors ${
+                scopeFilter === "shared"
+                  ? "bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/40"
+                  : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+              }`}
+            >
+              COMPARTIDOS
+            </button>
+            {isSuperAdminUser && (
+              <button
+                onClick={() => {
+                  setScopeFilter("all");
+                  load("all");
+                }}
+                className={`text-[9px] font-mono py-1 px-2 rounded transition-colors ${
+                  scopeFilter === "all"
+                    ? "bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/40"
+                    : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+                }`}
+                title="SuperAdmin: Ver todos los deals del ecosistema"
+              >
+                👑 TODOS
+              </button>
+            )}
           </div>
 
           {showNewRoom && (
@@ -684,6 +846,15 @@ export default function DealRoomConsole() {
                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border ${STATUS_ACCENT[room.status]}`}>
                         {STATUS_LABEL[room.status]}
                       </span>
+                      {room.isShared ? (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border border-purple-500/30 bg-purple-500/10 text-purple-300">
+                          COMPARTIDO
+                        </span>
+                      ) : room.isMine ? (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                          MÍO
+                        </span>
+                      ) : null}
                       {room.signers.length > 0 && (
                         <span className="ml-auto text-[8px] font-mono text-zinc-600">{signed}/{room.signers.length} firmas</span>
                       )}
@@ -959,6 +1130,14 @@ export default function DealRoomConsole() {
                   >
                     <Clock className="w-3 h-3" /> AUDIT ({selected.audit.length})
                   </button>
+                  <button
+                    onClick={() => setView("team")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-mono tracking-wider whitespace-nowrap transition-colors ${
+                      view === "team" ? "bg-amber-500/15 border border-amber-500/40 text-amber-200" : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <Users className="w-3 h-3" /> COMPARTIR EQUIPO ({selected.sharedWith?.length || 0})
+                  </button>
                 </div>
                 {view === "sections" && (
                   <>
@@ -1084,6 +1263,155 @@ export default function DealRoomConsole() {
                       ))}
                       {selected.signers.length === 0 && (
                         <p className="text-[10px] font-mono text-zinc-600 p-2">Sin firmantes registrados.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {view === "team" && (
+                  <div className="space-y-4">
+                    {/* Header card explaining isolation & sharing */}
+                    <div className="p-4 rounded-2xl border border-white/10 bg-[#0C0C10]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-4 h-4 text-amber-300" />
+                        <h3 className="text-xs font-semibold text-zinc-100">Gobernanza & Acceso Compartido entre Colaboradores</h3>
+                      </div>
+                      <p className="text-[10px] text-zinc-400">
+                        Cada Deal Room en Nexus es privado e independiente por defecto. Solo el creador original y los colaboradores explícitamente autorizados aquí pueden ver y editar este documento.
+                      </p>
+                    </div>
+
+                    {/* Creador del Deal */}
+                    <div className="p-4 rounded-2xl border border-white/10 bg-[#0C0C10] space-y-2">
+                      <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">CREADOR ORIGINAL</p>
+                      <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300">
+                            <UserCheck className="w-4 h-4" />
+                          </span>
+                          <div>
+                            <p className="text-[11px] font-semibold text-zinc-100">
+                              {selected.creatorDisplay || selected.createdBy || "Nexus Ops"}
+                            </p>
+                            <p className="text-[9px] font-mono text-zinc-500">
+                              Propietario / Autor del Deal {isCreatorOfSelected ? "· (Tú eres el creador)" : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[9px] font-mono font-bold">
+                          CREADOR
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Formulario para compartir con colaborador */}
+                    <div className="p-4 rounded-2xl border border-white/10 bg-[#0C0C10] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-mono text-amber-300 uppercase tracking-widest">
+                          COMPARTIR CON MIEMBRO DEL EQUIPO
+                        </p>
+                        <span className="text-[9px] font-mono text-zinc-500">Nexus Collaborators</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {/* Selector de colaboradores registrados */}
+                        <div>
+                          <label className="block text-[9px] font-mono text-zinc-400 mb-1">
+                            Seleccionar colaborador de Nexus:
+                          </label>
+                          <select
+                            value={selectedCollabEmail}
+                            onChange={(e) => {
+                              setSelectedCollabEmail(e.target.value);
+                              if (e.target.value) setCustomCollabEmail("");
+                            }}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-[11px] text-white focus:outline-none focus:border-amber-500/40"
+                          >
+                            <option value="">-- Elegir del equipo --</option>
+                            {availableCollabs.map((c) => (
+                              <option key={c.id} value={c.email}>
+                                {c.name} ({c.email}) {c.role ? `· ${c.role}` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* O escribir email directamente */}
+                        <div>
+                          <label className="block text-[9px] font-mono text-zinc-400 mb-1">
+                            O escribir email directo:
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="colaborador@pandoras.finance"
+                            value={customCollabEmail}
+                            onChange={(e) => {
+                              setCustomCollabEmail(e.target.value);
+                              if (e.target.value) setSelectedCollabEmail("");
+                            }}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-[11px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-1">
+                        <button
+                          onClick={handleShareWithCollab}
+                          disabled={sharingWithCollab || (!selectedCollabEmail && !customCollabEmail)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-[10px] font-mono transition-colors disabled:opacity-50"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          {sharingWithCollab ? "COMPARTIENDO..." : "COMPARTIR ACCESO AL DEAL"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lista de Colaboradores Compartidos */}
+                    <div className="p-4 rounded-2xl border border-white/10 bg-[#0C0C10] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest">
+                          COLABORADORES CON ACCESO ({selected.sharedWith?.length || 0})
+                        </p>
+                      </div>
+
+                      {(!selected.sharedWith || selected.sharedWith.length === 0) ? (
+                        <p className="text-[10px] text-zinc-500 italic py-2">
+                          No has compartido este deal con ningún colaborador todavía.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {selected.sharedWith.map((sw) => (
+                            <div
+                              key={sw.email}
+                              className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-black/40 hover:border-white/20 transition-colors"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 shrink-0">
+                                  <Users className="w-3.5 h-3.5" />
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-semibold text-zinc-100 truncate">
+                                    {sw.name || sw.email}
+                                  </p>
+                                  <p className="text-[9px] font-mono text-zinc-500 truncate">
+                                    {sw.email} · Compartido por {sw.sharedBy} el {shortAt(sw.sharedAt)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {(isCreatorOfSelected || isSuperAdminUser) && (
+                                <button
+                                  onClick={() => handleRevokeCollab(sw.email)}
+                                  disabled={sharingWithCollab}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 text-[9px] font-mono transition-colors disabled:opacity-50"
+                                  title="Revocar acceso compartido a este colaborador"
+                                >
+                                  <Trash2 className="w-3 h-3" /> REVOCAR
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>

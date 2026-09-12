@@ -39,6 +39,8 @@ import { TelegramPublisher } from './telegram-publisher';
 import { XPublisher } from './x-publisher';
 import { NewsletterPublisher } from './newsletter-publisher';
 import { EphemeralMemoryScrubber } from '@/lib/pandoras/core/domains/hermes/runtime/sandbox/memory-scrubber';
+import { HermesTrialPolicyService } from '@/lib/hermes/trial/hermes-trial-policy.service';
+import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
 
 export class DirectChannelPublisher {
   private publishers: Map<ChannelType, IChannelPublisher> = new Map();
@@ -129,6 +131,22 @@ export class DirectChannelPublisher {
       };
     }
 
+    // Gate 7 & Gate 5: Trial Mutation & Side-Effect Quota Enforcement
+    try {
+      await HermesTrialPolicyService.assertTrialMutationAllowed(canonicalOrgId);
+      const confirmedPubs = HermesTrialPolicyService.getConfirmedDistributionCount(canonicalOrgId);
+      await HermesTrialPolicyService.checkSoftwareQuota(canonicalOrgId, 'distribution', confirmedPubs);
+    } catch (trialErr: any) {
+      return {
+        success: false,
+        channel: inferredChannel,
+        idempotencyKey: payload.idempotencyKey,
+        errorCode: trialErr?.name === 'HermesTrialExpiredError' ? 'PROVIDER_AUTH_EXPIRED' : 'PROVIDER_RATE_LIMIT',
+        errorMessage: trialErr?.message || 'Trial policy restriction violated.',
+        retryable: false,
+      };
+    }
+
     const channel = record.channel as ChannelType;
     const publisher = this.publishers.get(channel);
 
@@ -210,6 +228,18 @@ export class DirectChannelPublisher {
 
       // Record in local idempotency cache
       this.idempotencyStore.set(payload.idempotencyKey, receipt);
+
+      // Gate 5 & Acceptance Criterion C: Only confirmed successful distributions consume quota
+      if (receipt.success) {
+        HermesTrialPolicyService.recordConfirmedDistribution(canonicalOrgId);
+        try {
+          await HermesTrialTimelineService.recordEvent(canonicalOrgId, 'DISTRIBUTION_EXECUTED', {
+            metadata: { channel, integrationId, externalPostId: receipt.externalPostId },
+          });
+        } catch (timelineErr) {
+          console.warn('[DirectChannelPublisher] Notice recording timeline event:', timelineErr);
+        }
+      }
 
       // Clean up cache after 10 minutes to avoid memory leaks
       setTimeout(() => {

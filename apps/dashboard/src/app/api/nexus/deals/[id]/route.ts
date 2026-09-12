@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
 import { validateDealRoomAccess } from "@/lib/admin-auth";
-import { getRoom, updateRoom, updateSection, deleteRoom, addSigners, removeSigner, addSection, convertToAgreement, enableNdaForRoom } from "@/lib/nexus-deals/repo";
+import {
+  getRoom,
+  updateRoom,
+  updateSection,
+  deleteRoom,
+  addSigners,
+  removeSigner,
+  addSection,
+  convertToAgreement,
+  enableNdaForRoom,
+  canUserAccessDeal,
+  canUserEditDeal,
+  isUserCreatorOfDeal,
+} from "@/lib/nexus-deals/repo";
 import { DealKind } from "@/lib/nexus-deals/types";
 import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
 import { sendDealCancelledEmail } from "@/lib/nexus-deals/email";
@@ -16,6 +29,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
+
+    const isSuperAdmin = session?.role === "SUPER_ADMIN";
+    const userIdentifier = session?.address || session?.userId || "";
+    const email = session?.email;
+
+    if (!canUserAccessDeal(room, userIdentifier, email, isSuperAdmin)) {
+      return NextResponse.json({ error: "No tienes permiso para ver este deal" }, { status: 403 });
+    }
+
     return NextResponse.json({ room });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -25,17 +47,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
-  const actor = session!.address;
+
+  const isSuperAdmin = session?.role === "SUPER_ADMIN";
+  const userIdentifier = session?.address || session?.userId || "";
+  const email = session?.email;
+  const actor = email || userIdentifier || session?.name || "Nexus Ops";
 
   try {
     const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
-    // ENFORCE CREATOR ONLY CAN EDIT
-    const createEvent = room.audit?.find(a => a.action === "Room created" || a.action === "ROOM_CREATED");
-    const creator = createEvent ? createEvent.actor : "";
-    if (creator && creator.toLowerCase() !== actor.toLowerCase()) {
-      return NextResponse.json({ error: "Solo el creador original puede editar esta sala." }, { status: 403 });
+    if (!canUserEditDeal(room, userIdentifier, email, isSuperAdmin)) {
+      return NextResponse.json({ error: "Solo el creador original o colaboradores con acceso compartido pueden editar este deal." }, { status: 403 });
     }
 
     const body = await request.json();
@@ -107,17 +130,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
-  const actor = session!.address;
+
+  const isSuperAdmin = session?.role === "SUPER_ADMIN";
+  const userIdentifier = session?.address || session?.userId || "";
+  const email = session?.email;
+  const actor = email || userIdentifier || session?.name || "Nexus Ops";
 
   try {
     const room = await getRoom((await params).id);
     if (!room) return NextResponse.json({ error: "Room no encontrada" }, { status: 404 });
 
-    // ENFORCE CREATOR ONLY CAN DELETE
-    const createEvent = room.audit?.find(a => a.action === "Room created" || a.action === "ROOM_CREATED");
-    const creator = createEvent ? createEvent.actor : "";
-    if (creator && creator.toLowerCase() !== actor.toLowerCase()) {
-      return NextResponse.json({ error: "Solo el creador original puede eliminar esta sala." }, { status: 403 });
+    const isCreator = isUserCreatorOfDeal(room, userIdentifier, email);
+    if (!isCreator && !isSuperAdmin) {
+      return NextResponse.json({ error: "Solo el creador original o SuperAdmin puede eliminar esta sala." }, { status: 403 });
     }
 
     await deleteRoom((await params).id, actor);

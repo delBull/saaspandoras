@@ -40,9 +40,10 @@ export async function POST(req: NextRequest) {
       auth.isAuthenticated &&
       (auth.role === "SUPER_ADMIN" ||
         auth.role === "ADMIN" ||
+        (auth.role as string) === "MANAGER" ||
         checkNexusPermission(auth, "nexus.manage") ||
         checkNexusPermission(auth, "users.manage") ||
-        (auth.permissions as any)?.academyAdmin === true)
+        Boolean(auth.permissions?.academyAdmin))
     ) {
       const inheritedRole = (auth.role === "SUPER_ADMIN" || auth.role === "ADMIN") ? "admin" : "manager";
       return NextResponse.json({
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       if (collab && collab.status === 'ACTIVE') {
         if (collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
           resolvedRole = "admin";
-        } else if (collab.permissions?.academyAdmin || collab.role === 'MARKETING' || collab.role === 'OPERATOR') {
+        } else if (collab.permissions?.academyAdmin || collab.role === 'MARKETING' || collab.role === 'OPERATOR' || (collab.role as string) === 'MANAGER') {
           resolvedRole = "manager";
         }
       }
@@ -96,6 +97,17 @@ export async function POST(req: NextRequest) {
         { ok: false, error: "El correo no está autorizado para acceder a Pandora's Academy." },
         { status: 403 }
       );
+    }
+
+    // Si el usuario ya cuenta con sesión autenticada en Nexus para este email, desbloquear de inmediato sin forzar email
+    if (auth.isAuthenticated && auth.email && auth.email.toLowerCase() === targetEmail) {
+      return NextResponse.json({
+        ok: true,
+        unlocked: true,
+        role: resolvedRole,
+        email: targetEmail,
+        reason: "collaborator-session-verified",
+      });
     }
 
     // 4. Generate signed Academy token (24h validity)

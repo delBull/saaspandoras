@@ -39,10 +39,21 @@ export interface PortalOrganization {
   activeProduct: string | null;
 }
 
+/** Trial State and Quota Metadata for Governed Trial Tenants */
+export interface PortalTrialContext {
+  isTrial: boolean;
+  tier?: 'SOFTWARE_ONLY' | 'MEDIA_ENABLED' | 'FOUNDER';
+  startedAt?: Date | null;
+  endsAt?: Date | null;
+  status?: 'ACTIVE' | 'EXPIRED' | 'CONVERTED' | 'PRESERVED' | null;
+  isExpired?: boolean;
+}
+
 /** The full context passed to PortalShell */
 export interface PortalContext {
   tenant: PortalTenantContext;
   organization: PortalOrganization;
+  trial?: PortalTrialContext;
 }
 
 /**

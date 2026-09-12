@@ -51,6 +51,13 @@ export interface SignerInput {
   email: string;
 }
 
+export interface DealSharedCollaborator {
+  email: string;
+  name?: string;
+  sharedAt: string;
+  sharedBy: string;
+}
+
 /**
  * 🛡️ ON-CHAIN KYC GATEWAY (Future Infrastructure)
  * Consultar especificación y mini-roadmap en:

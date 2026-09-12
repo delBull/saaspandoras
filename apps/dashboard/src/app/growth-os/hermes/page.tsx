@@ -81,11 +81,11 @@ export default function HermesEnterpriseLandingPage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/hermes/simulator"
+              href="/hermes/experience"
               className="px-4 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-lg shadow-purple-600/20"
             >
               <Zap className="w-3.5 h-3.5" />
-              <span>Probar Simulador</span>
+              <span>Hermes Experience (72h)</span>
             </Link>
             <Button 
               onClick={() => handleOpenCTA('hermes_nav_cta')}
@@ -132,11 +132,11 @@ export default function HermesEnterpriseLandingPage() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
           <Link
-            href="/hermes/simulator"
+            href="/hermes/experience"
             className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-medium transition-all flex items-center justify-center gap-2 shadow-xl shadow-purple-600/25 group hover:scale-[1.02]"
           >
             <Zap className="w-4 h-4 text-amber-300" />
-            <span>Probar Simulador en Vivo (Sin Registro)</span>
+            <span>Iniciar Hermes Experience (72h Real)</span>
             <ChevronRight className="w-4 h-4 text-purple-200 group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <Button

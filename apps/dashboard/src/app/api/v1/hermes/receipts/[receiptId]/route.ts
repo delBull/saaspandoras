@@ -9,6 +9,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ReceiptExplorerService } from '@/lib/pandoras/core/domains/hermes/receipts/receipt-explorer';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ receiptId: string }> }

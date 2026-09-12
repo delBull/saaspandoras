@@ -9,6 +9,9 @@ export interface AdminSession {
   address: string;
   isVerified: boolean;
   role?: string;
+  email?: string;
+  name?: string;
+  collaboratorId?: number;
 }
 
 /**
@@ -86,12 +89,18 @@ export async function validateDealRoomAccess(
 ): Promise<{ session?: AdminSession; errorResponse?: NextResponse }> {
   // Check unified context
   const auth = await getNexusAuthContext(request.headers);
+  const hasDealRoomPermission = Boolean(auth.permissions?.dealRoom);
+  const isAuthorizedRole = ["SUPER_ADMIN", "ADMIN", "MARKETING", "MANAGER", "OPERATOR"].includes(auth.role || '');
   
-  if (auth.isAuthenticated && ["SUPER_ADMIN", "ADMIN", "MARKETING"].includes(auth.role || '')) {
+  if (auth.isAuthenticated && (isAuthorizedRole || hasDealRoomPermission)) {
+    const primaryId = auth.email || auth.wallet || (auth.collaboratorId ? `collab_${auth.collaboratorId}` : "nexus-user");
     return {
       session: {
-        userId: auth.wallet || auth.email || "nexus-user",
-        address: auth.wallet || auth.email || "nexus-user",
+        userId: primaryId,
+        address: auth.wallet || auth.email || primaryId,
+        email: auth.email || undefined,
+        name: auth.name || undefined,
+        collaboratorId: auth.collaboratorId || undefined,
         isVerified: true,
         role: auth.role || undefined
       }

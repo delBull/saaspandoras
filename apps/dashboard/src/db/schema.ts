@@ -392,9 +392,17 @@ export const projects = pgTable("projects", {
   // Commission Config
   ambassadorCommissionRate: decimal("ambassador_commission_rate", { precision: 5, scale: 2 }).default("4.00"), // % Gestor
   managerCommissionRate: decimal("manager_commission_rate", { precision: 5, scale: 2 }).default("3.00"), // % PSM
+  // Tenant Lifecycle & Trial Experience (Gate 1)
+  tenantType: varchar("tenant_type", { length: 32 }).default("PRODUCTION").notNull(), // 'PRODUCTION' | 'SANDBOX' | 'TRIAL'
+  trialTier: varchar("trial_tier", { length: 32 }).default("SOFTWARE_ONLY"), // 'SOFTWARE_ONLY' | 'MEDIA_ENABLED' | 'FOUNDER'
+  trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  trialStatus: varchar("trial_status", { length: 32 }).default("ACTIVE"), // 'ACTIVE' | 'EXPIRED' | 'CONVERTED'
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
   isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
+  tenantTypeIndex: index("project_tenant_type_idx").on(table.tenantType),
+  trialEndsAtIndex: index("project_trial_ends_at_idx").on(table.trialEndsAt),
 }));
 
 // --- PHASE 5: DYNAMIC TENANT KNOWLEDGE ---
@@ -3299,6 +3307,9 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   ndaEnabled: boolean("nda_enabled").notNull().default(false),
   ndaPhase: varchar("nda_phase", { length: 32 }).notNull().default("after_proposal"), // 'before_proposal' | 'after_proposal'
   ndaVersion: varchar("nda_version", { length: 32 }).notNull().default("v1.0"),
+  // Multi-collaborator isolation & sharing
+  createdBy: text("created_by"),
+  sharedWith: jsonb("shared_with").$type<Array<{ email: string; name?: string; sharedAt: string; sharedBy: string }>>().default([]).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -4127,6 +4138,35 @@ export const hermesRunpodEndpoints = pgTable("hermes_runpod_endpoints", {
 }, (t) => ({
   endpointIdIdx: uniqueIndex("hermes_runpod_endpoints_ep_unique").on(t.endpointId),
   tenantIdx: index("hermes_runpod_endpoints_tenant_idx").on(t.tenantId),
+}));
+
+// ============================================================================
+// 🏛️ HERMES GOVERNED TRIAL TENANT ECONOMY & TIMELINE (GATES 1 & 8)
+// ============================================================================
+
+export const hermesTrialCredits = pgTable("hermes_trial_credits", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull().unique(),
+  creditType: varchar("credit_type", { length: 32 }).default("MEDIA").notNull(),
+  grantedCredits: integer("granted_credits").default(0).notNull(),
+  reservedCredits: integer("reserved_credits").default(0).notNull(),
+  consumedCredits: integer("consumed_credits").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantIdx: uniqueIndex("hermes_trial_credits_tenant_unique").on(t.tenantId),
+}));
+
+export const hermesTrialEvents = pgTable("hermes_trial_events", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  actorId: varchar("actor_id", { length: 128 }),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantEventIdx: index("hermes_trial_events_tenant_event_idx").on(t.tenantId, t.eventType),
+  createdAtIdx: index("hermes_trial_events_created_at_idx").on(t.createdAt),
 }));
 
 export const hermesCognitiveProfiles = pgTable("hermes_cognitive_profiles", {

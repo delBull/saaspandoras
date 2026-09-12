@@ -3,6 +3,7 @@ import { TenantCreditLedgerService } from '@/lib/hermes/compute/tenant-credit-le
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq, or } from 'drizzle-orm';
+export const dynamic = 'force-dynamic';
 
 /**
  * 💳 HERMES TENANT CREDITS & LEDGER API

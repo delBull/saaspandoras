@@ -23,6 +23,8 @@ import {
 import { eq, and, gte, count, sql } from 'drizzle-orm';
 import { distributionOrchestratorService } from '@/lib/hermes/channels/distribution/distribution-orchestrator.service';
 import { HermesMediaOrchestratorService } from '../media/hermes-media-orchestrator.service';
+import { HermesTrialPolicyService } from '@/lib/hermes/trial/hermes-trial-policy.service';
+import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
 
 // ─── 1. OBJECTIVES ────────────────────────────────────────────────────────────
 
@@ -269,7 +271,20 @@ export class DemandDistributionService {
     const cleanTenant = tenantId.toLowerCase().trim();
     const meta = DEMAND_OBJECTIVES[objective] || DEMAND_OBJECTIVES.GENERATE_LEADS;
 
-    // Determine available channels dynamically
+    // Gate 7: Enforce trial mutation allowed
+    await HermesTrialPolicyService.assertTrialMutationAllowed(cleanTenant);
+
+    const activeCampaignsProvider = async () => {
+      const current = this.campaigns.get(cleanTenant);
+      return current && current.status !== 'COMPLETED' && current.status !== 'FAILED' ? 1 : 0;
+    };
+
+    return await HermesTrialPolicyService.atomicCheckAndReserveQuota(
+      cleanTenant,
+      'campaign',
+      activeCampaignsProvider,
+      async () => {
+        // Determine available channels dynamically
     const channelMatrix = await this.getChannelMatrix(cleanTenant);
     const activeChannels = channelMatrix.filter((c) => c.isAvailable).map((c) => c.id);
 
@@ -388,8 +403,20 @@ export class DemandDistributionService {
       proposedAt: new Date().toISOString(),
     };
 
-    this.campaigns.set(cleanTenant, campaign);
-    return campaign;
+        this.campaigns.set(cleanTenant, campaign);
+
+        // Gate 8: Record CAMPAIGN_CREATED in Trial Timeline
+        try {
+          await HermesTrialTimelineService.recordEvent(cleanTenant, 'CAMPAIGN_CREATED', {
+            metadata: { campaignId, objective, piecesCount },
+          });
+        } catch (err) {
+          console.warn('[DemandDistributionService] Notice recording trial timeline event:', err);
+        }
+
+        return campaign;
+      }
+    );
   }
 
   /**

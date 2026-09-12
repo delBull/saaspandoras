@@ -11,8 +11,10 @@
  */
 
 import { db } from '@/db';
-import { hermesTenantCredits, hermesComputeUsageEvents } from '@/db/schema';
+import { hermesTenantCredits, hermesComputeUsageEvents, hermesTrialCredits } from '@/db/schema';
 import { eq, and, or, sql } from 'drizzle-orm';
+import { HermesTrialPolicyService, getMediaCreditCost } from '../trial/hermes-trial-policy.service';
+import { HermesTrialTimelineService } from '../trial/hermes-trial-timeline.service';
 
 export interface TenantCreditsDTO {
   tenantId: string;
@@ -62,6 +64,11 @@ export class TenantCreditLedgerService {
   public static readonly DEFAULT_MARKUP_PERCENTAGE = Number(process.env.HERMES_DEFAULT_MARKUP_PERCENTAGE || 35);
   public static readonly MIN_TOPUP_AMOUNT_USD = 5.0000; // $5 USD mínimo de recarga permitido
   private static inMemoryCredits: Map<string, TenantCreditsDTO> = new Map();
+  private static inMemoryTrialCredits: Map<string, {
+    grantedCredits: number;
+    reservedCredits: number;
+    consumedCredits: number;
+  }> = new Map();
   private static inMemoryReservations: Map<string, {
     tenantId: string;
     requestId?: string;
@@ -70,6 +77,8 @@ export class TenantCreditLedgerService {
     rawCostUsd: number;
     markupPercentage: number;
     status: 'RESERVED' | 'SETTLED' | 'RELEASED';
+    source?: 'USD_BALANCE' | 'SANDBOX_BALANCE' | 'TRIAL_MEDIA_CREDIT';
+    trialCreditCost?: number;
   }> = new Map();
 
   public static updateInMemoryCredits(tenantId: string, updates: Partial<TenantCreditsDTO>): void {
@@ -169,13 +178,128 @@ export class TenantCreditLedgerService {
   }
 
   /**
+   * Clears all in-memory caches for deterministic unit tests.
+   */
+  public static clearInMemoryForTesting(): void {
+    this.inMemoryCredits.clear();
+    this.inMemoryReservations.clear();
+    this.inMemoryTrialCredits.clear();
+  }
+
+  /**
+   * Retrieves or initializes the trial credits entry for a trial tenant.
+   */
+  public static async getOrCreateTrialCredits(tenantId: string): Promise<{
+    tenantId: string;
+    grantedCredits: number;
+    reservedCredits: number;
+    consumedCredits: number;
+    availableCredits: number;
+  }> {
+    const normalizedTenant = tenantId.toLowerCase().trim();
+    if (this.inMemoryTrialCredits.has(normalizedTenant)) {
+      const c = this.inMemoryTrialCredits.get(normalizedTenant)!;
+      return {
+        tenantId: normalizedTenant,
+        ...c,
+        availableCredits: Math.max(0, c.grantedCredits - c.consumedCredits - c.reservedCredits),
+      };
+    }
+
+    if (db) {
+      try {
+        const [existing] = await db
+          .select()
+          .from(hermesTrialCredits)
+          .where(eq(hermesTrialCredits.tenantId, normalizedTenant))
+          .limit(1);
+
+        if (existing) {
+          const c = {
+            grantedCredits: existing.grantedCredits,
+            reservedCredits: existing.reservedCredits,
+            consumedCredits: existing.consumedCredits,
+          };
+          this.inMemoryTrialCredits.set(normalizedTenant, c);
+          return {
+            tenantId: normalizedTenant,
+            ...c,
+            availableCredits: Math.max(0, c.grantedCredits - c.consumedCredits - c.reservedCredits),
+          };
+        }
+
+        if (!existing) {
+          try {
+            await db
+              .insert(hermesTrialCredits)
+              .values({
+                id: `htc_${normalizedTenant}`,
+                tenantId: normalizedTenant,
+                creditType: 'MEDIA',
+                grantedCredits: 3,
+                reservedCredits: 0,
+                consumedCredits: 0,
+              })
+              .onConflictDoNothing();
+          } catch {}
+        }
+      } catch (err) {
+        console.warn(`[TenantCreditLedger] Notice fetching trial credits for ${normalizedTenant}:`, err);
+      }
+    }
+
+    const def = { grantedCredits: 3, reservedCredits: 0, consumedCredits: 0 };
+    this.inMemoryTrialCredits.set(normalizedTenant, def);
+    return {
+      tenantId: normalizedTenant,
+      ...def,
+      availableCredits: 3,
+    };
+  }
+
+  /**
    * Evaluates whether the tenant has sufficient unreserved balance for an estimated job cost.
    */
   public static async hasSufficientBalance(
     tenantId: string,
     estimatedRawCostUsd: number = 0.02,
-    isSandbox: boolean = false
-  ): Promise<{ sufficient: boolean; balance: number; estimatedCharge: number; markupPercentage: number }> {
+    isSandbox: boolean = false,
+    capability: string = 'media.image.generate'
+  ): Promise<{
+    sufficient: boolean;
+    balance: number;
+    estimatedCharge: number;
+    markupPercentage: number;
+    isTrial?: boolean;
+    error?: string;
+  }> {
+    const normalizedTenant = tenantId.toLowerCase().trim();
+    const trialState = await HermesTrialPolicyService.getTenantTrialState(normalizedTenant);
+
+    if (trialState.isTrial) {
+      if (trialState.isExpired) {
+        return {
+          sufficient: false,
+          balance: 0,
+          estimatedCharge: 0,
+          markupPercentage: 0,
+          isTrial: true,
+          error: 'TRIAL_EXPIRED',
+        };
+      }
+      const requiredCredits = getMediaCreditCost(capability);
+      const trialCredits = await this.getOrCreateTrialCredits(normalizedTenant);
+      const sufficient = trialCredits.availableCredits >= requiredCredits;
+      return {
+        sufficient,
+        balance: trialCredits.availableCredits,
+        estimatedCharge: requiredCredits,
+        markupPercentage: 0,
+        isTrial: true,
+        error: sufficient ? undefined : 'TRIAL_MEDIA_CREDITS_EXHAUSTED',
+      };
+    }
+
     const credits = await this.getOrCreateCredits(tenantId);
     const markupMultiplier = 1 + credits.markupPercentage / 100;
     const estimatedCharge = Number((estimatedRawCostUsd * markupMultiplier).toFixed(4));
@@ -208,6 +332,114 @@ export class TenantCreditLedgerService {
     }
   ): Promise<ReservationResult> {
     const normalizedTenant = tenantId.toLowerCase().trim();
+    const trialState = await HermesTrialPolicyService.getTenantTrialState(normalizedTenant);
+
+    // ── TRIAL TENANT CAPACITY RESERVATION (GATE 2 & 6) ──
+    if (trialState.isTrial) {
+      if (trialState.isExpired) {
+        return {
+          ok: false,
+          error: 'El periodo de prueba de 72 horas ha finalizado. Tu organización y base de conocimiento están 100% preservadas en el Sovereign Vault.',
+        };
+      }
+
+      const cost = getMediaCreditCost(params.capability);
+      const trialCredits = await this.getOrCreateTrialCredits(normalizedTenant);
+
+      if (trialCredits.availableCredits < cost) {
+        return {
+          ok: false,
+          error: `Créditos multimedia insuficientes (disponibles: ${trialCredits.availableCredits}, requeridos: ${cost}). Has alcanzado tu cuota de prueba.`,
+          availableBalanceUsd: trialCredits.availableCredits,
+          isSandbox: true,
+        };
+      }
+
+      const reservationId = `res_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+      if (db) {
+        try {
+          const [updated] = await db
+            .update(hermesTrialCredits)
+            .set({
+              reservedCredits: sql`${hermesTrialCredits.reservedCredits} + ${cost}`,
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(hermesTrialCredits.tenantId, normalizedTenant),
+                sql`(${hermesTrialCredits.grantedCredits} - ${hermesTrialCredits.consumedCredits} - ${hermesTrialCredits.reservedCredits}) >= ${cost}`
+              )
+            )
+            .returning();
+
+          if (!updated) {
+            return {
+              ok: false,
+              error: `Bloqueo de concurrencia: créditos multimedia insuficientes para reservar ${cost} créditos.`,
+            };
+          }
+        } catch (dbErr) {
+          console.warn('[TenantCreditLedgerService] Notice reserving DB trial credits:', dbErr);
+        }
+      }
+
+      trialCredits.reservedCredits += cost;
+      trialCredits.availableCredits = Math.max(0, trialCredits.grantedCredits - trialCredits.consumedCredits - trialCredits.reservedCredits);
+      this.inMemoryTrialCredits.set(normalizedTenant, {
+        grantedCredits: trialCredits.grantedCredits,
+        reservedCredits: trialCredits.reservedCredits,
+        consumedCredits: trialCredits.consumedCredits,
+      });
+
+      this.inMemoryReservations.set(reservationId, {
+        tenantId: normalizedTenant,
+        requestId: params.requestId,
+        isSandbox: false,
+        reservedAmountUsd: 0,
+        rawCostUsd: 0,
+        markupPercentage: 0,
+        status: 'RESERVED',
+        source: 'TRIAL_MEDIA_CREDIT',
+        trialCreditCost: cost,
+      });
+
+      if (db) {
+        try {
+          await db.insert(hermesComputeUsageEvents).values({
+            id: reservationId,
+            tenantId: normalizedTenant,
+            requestId: params.requestId,
+            capability: params.capability,
+            provider: params.provider,
+            executionSeconds: '0.000',
+            rawCostUsd: '0.00000',
+            markupCostUsd: '0.00000',
+            totalChargedUsd: '0.00000',
+            status: 'RESERVED',
+            isSandbox: false,
+            metadataJson: {
+              source: 'TRIAL_MEDIA_CREDIT',
+              trialCreditCost: cost,
+              requestId: params.requestId,
+            },
+          });
+        } catch (eventErr) {
+          console.warn('[TenantCreditLedgerService] Notice recording trial reservation event:', eventErr);
+        }
+      }
+
+      return {
+        ok: true,
+        reservationId,
+        reservedAmountUsd: 0,
+        rawCostUsd: 0,
+        markupCostUsd: 0,
+        availableBalanceUsd: trialCredits.availableCredits,
+        isSandbox: false,
+      };
+    }
+
     const isSandbox = params.isSandbox ?? false;
     const rawCostUsd = params.estimatedRawCostUsd ?? 0.02;
 
@@ -436,6 +668,77 @@ export class TenantCreditLedgerService {
       }
     }
 
+    if (reservation?.source === 'TRIAL_MEDIA_CREDIT') {
+      const cost = reservation.trialCreditCost ?? 1;
+      reservation.status = 'SETTLED';
+
+      const trialCredits = await this.getOrCreateTrialCredits(normalizedTenant);
+      trialCredits.reservedCredits = Math.max(0, trialCredits.reservedCredits - cost);
+      trialCredits.consumedCredits += cost;
+      trialCredits.availableCredits = Math.max(0, trialCredits.grantedCredits - trialCredits.consumedCredits - trialCredits.reservedCredits);
+      this.inMemoryTrialCredits.set(normalizedTenant, {
+        grantedCredits: trialCredits.grantedCredits,
+        reservedCredits: trialCredits.reservedCredits,
+        consumedCredits: trialCredits.consumedCredits,
+      });
+
+      if (db) {
+        try {
+          await db
+            .update(hermesTrialCredits)
+            .set({
+              reservedCredits: sql`GREATEST(0, ${hermesTrialCredits.reservedCredits} - ${cost})`,
+              consumedCredits: sql`${hermesTrialCredits.consumedCredits} + ${cost}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(hermesTrialCredits.tenantId, normalizedTenant));
+
+          await db
+            .update(hermesComputeUsageEvents)
+            .set({
+              status: 'SETTLED',
+              executionSeconds: String(params.actualExecutionSeconds.toFixed(3)),
+              rawCostUsd: String(params.actualRawCostUsd.toFixed(5)),
+              totalChargedUsd: '0.00000',
+            })
+            .where(
+              and(
+                eq(hermesComputeUsageEvents.tenantId, normalizedTenant),
+                or(
+                  eq(hermesComputeUsageEvents.id, resolvedReservationId),
+                  eq(hermesComputeUsageEvents.requestId, params.reservationId)
+                )
+              )
+            );
+        } catch (dbErr) {
+          console.warn('[TenantCreditLedgerService] Notice settling DB trial credits:', dbErr);
+        }
+      }
+
+      // Gate 8: Record MEDIA_GENERATED in trial timeline
+      try {
+        await HermesTrialTimelineService.recordEvent(normalizedTenant, 'MEDIA_GENERATED', {
+          metadata: {
+            reservationId: resolvedReservationId,
+            requestId: reservation.requestId,
+            cost,
+            remaining: trialCredits.availableCredits,
+          },
+        });
+      } catch (timelineErr) {
+        console.warn('[TenantCreditLedgerService] Notice logging trial timeline event:', timelineErr);
+      }
+
+      return {
+        ok: true,
+        totalChargedUsd: 0,
+        rawCostUsd: params.actualRawCostUsd,
+        markupCostUsd: 0,
+        remainingBalanceUsd: trialCredits.availableCredits,
+        isSandbox: false,
+      };
+    }
+
     const isSandbox = reservation?.isSandbox ?? false;
     const reservedAmount = reservation?.reservedAmountUsd ?? 0;
 
@@ -568,6 +871,48 @@ export class TenantCreditLedgerService {
     }
 
     if (!reservation || reservation.status !== 'RESERVED') return;
+
+    if (reservation.source === 'TRIAL_MEDIA_CREDIT') {
+      const cost = reservation.trialCreditCost ?? 1;
+      reservation.status = 'RELEASED';
+
+      const trialCredits = await this.getOrCreateTrialCredits(normalizedTenant);
+      trialCredits.reservedCredits = Math.max(0, trialCredits.reservedCredits - cost);
+      trialCredits.availableCredits = Math.max(0, trialCredits.grantedCredits - trialCredits.consumedCredits - trialCredits.reservedCredits);
+      this.inMemoryTrialCredits.set(normalizedTenant, {
+        grantedCredits: trialCredits.grantedCredits,
+        reservedCredits: trialCredits.reservedCredits,
+        consumedCredits: trialCredits.consumedCredits,
+      });
+
+      if (db) {
+        try {
+          await db
+            .update(hermesTrialCredits)
+            .set({
+              reservedCredits: sql`GREATEST(0, ${hermesTrialCredits.reservedCredits} - ${cost})`,
+              updatedAt: new Date(),
+            })
+            .where(eq(hermesTrialCredits.tenantId, normalizedTenant));
+
+          await db
+            .update(hermesComputeUsageEvents)
+            .set({ status: 'RELEASED' })
+            .where(
+              and(
+                eq(hermesComputeUsageEvents.tenantId, normalizedTenant),
+                or(
+                  eq(hermesComputeUsageEvents.id, resolvedReservationId),
+                  eq(hermesComputeUsageEvents.requestId, reservationId)
+                )
+              )
+            );
+        } catch (dbErr) {
+          console.warn('[TenantCreditLedgerService] Notice releasing DB trial credits:', dbErr);
+        }
+      }
+      return;
+    }
 
     reservation.status = 'RELEASED';
     const isSandbox = reservation.isSandbox;

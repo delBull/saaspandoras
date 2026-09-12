@@ -22,6 +22,8 @@ import type {
   KnowledgeOverviewView,
   AddKnowledgeSourceRequestDTO,
 } from '@/lib/dash-contracts/knowledge';
+import { HermesTrialPolicyService } from '@/lib/hermes/trial/hermes-trial-policy.service';
+import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
 
 export interface TenantKnowledgeSnapshot {
   facts: KnowledgeFactDTO[];
@@ -159,12 +161,45 @@ export class KnowledgeService {
     const cmd = new CreateKnowledgeSourceCommand();
     const normalizedType: any = type === 'TEXT' ? 'DOCUMENT' : type;
 
+    // Gate 7: Enforce trial mutation is allowed (fail-closed if expired)
+    await HermesTrialPolicyService.assertTrialMutationAllowed(canonicalTenant.projectSlug);
+
+    // Gate 3 & Mandatory Adjustment #2: Atomic Check + Reserve Quota
+    const currentSourcesProvider = async () => {
+      try {
+        const sources = await db
+          .select({ id: knowledgeSources.id })
+          .from(knowledgeSources)
+          .where(eq(knowledgeSources.tenantId, canonicalTenant.projectSlug));
+        return sources.length;
+      } catch {
+        return 0;
+      }
+    };
+
     // Use projectSlug as the relational storage key for knowledgeSources / knowledgeChunks
-    const sourceId = await cmd.execute(cpCtx, canonicalTenant.projectSlug, {
-      type: normalizedType,
-      content,
-      title,
-    });
+    const sourceId = await HermesTrialPolicyService.atomicCheckAndReserveQuota(
+      canonicalTenant.projectSlug,
+      'knowledge',
+      currentSourcesProvider,
+      async () => {
+        return await cmd.execute(cpCtx, canonicalTenant.projectSlug, {
+          type: normalizedType,
+          content,
+          title,
+        });
+      }
+    );
+
+    // Gate 8: Record KNOWLEDGE_ADDED in Trial Timeline
+    try {
+      await HermesTrialTimelineService.recordEvent(canonicalTenant.projectSlug, 'KNOWLEDGE_ADDED', {
+        actorId,
+        metadata: { title, type: normalizedType, sourceId },
+      });
+    } catch (timelineErr) {
+      console.warn('[KnowledgeService] Notice recording timeline event:', timelineErr);
+    }
 
     return sourceId;
   }
@@ -177,6 +212,9 @@ export class KnowledgeService {
     factId: string,
     status: 'ACTIVE' | 'REJECTED'
   ): Promise<boolean> {
+    // Gate 7: Enforce trial mutation allowed
+    await HermesTrialPolicyService.assertTrialMutationAllowed(canonicalTenant.projectSlug);
+
     const slug = canonicalTenant.projectSlug;
     const orgId = canonicalTenant.canonicalOrgId;
 

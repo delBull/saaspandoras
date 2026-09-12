@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateDealRoomAccess } from "@/lib/admin-auth";
-import { listRooms, createRoom } from "@/lib/nexus-deals/repo";
+import { listRoomsForUser, createRoom } from "@/lib/nexus-deals/repo";
 import { DealKind } from "@/lib/nexus-deals/types";
 import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
 
@@ -13,21 +13,31 @@ export async function GET(request: Request) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
   try {
-    const allRooms = await listRooms();
-    
-    // Privacy Logic: Hide deals created by Super Admin from regular operators
-    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
-    const adminWallet = (process.env.NEXT_PUBLIC_ADMIN_WALLET || "").toLowerCase();
-    
-    const rooms = isSuperAdmin 
-      ? allRooms 
-      : allRooms.filter(r => {
-          const createEvent = r.audit?.find(a => a.action === "Room created");
-          const creator = createEvent ? createEvent.actor : "";
-          return creator.toLowerCase() === session?.address?.toLowerCase();
-        });
+    const url = new URL(request.url);
+    const scopeParam = url.searchParams.get("scope");
+    const scope = (scopeParam === "all" || scopeParam === "shared") ? scopeParam : "mine";
+    const isSuperAdmin = session?.role === "SUPER_ADMIN";
 
-    return NextResponse.json({ rooms });
+    const userIdentifier = session?.address || session?.userId || "";
+    const email = session?.email;
+
+    const rooms = await listRoomsForUser({
+      userIdentifier,
+      email,
+      isSuperAdmin,
+      scope,
+    });
+
+    return NextResponse.json({
+      rooms,
+      meta: {
+        scope,
+        isSuperAdmin,
+        userIdentifier,
+        email: email || null,
+        total: rooms.length,
+      }
+    });
   } catch (e: any) {
     console.error("❌ [Deals] list error:", e);
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -37,7 +47,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const { session, errorResponse } = await validateDealRoomAccess(request);
   if (errorResponse) return errorResponse;
-  const actor = session!.address;
+  const actor = session?.email || session?.address || session?.name || "Nexus Ops";
 
   try {
     const body = await request.json();

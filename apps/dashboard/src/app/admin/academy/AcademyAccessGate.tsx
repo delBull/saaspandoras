@@ -16,26 +16,24 @@ export default function AcademyAccessGate() {
       ? (localStorage.getItem("pandoras_nexus_token") || localStorage.getItem("nexus_token"))
       : null;
 
-    if (token) {
-      setLoading(true);
-      fetch("/api/admin/academy/unlock", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-nexus-token": token,
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({}),
+    setLoading(true);
+    fetch("/api/admin/academy/unlock", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "x-nexus-token": token, "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({}),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok && data.unlocked) {
+          window.location.reload();
+        }
       })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.ok && data.unlocked) {
-            window.location.reload();
-          }
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const handleRequest = async (e?: React.FormEvent) => {

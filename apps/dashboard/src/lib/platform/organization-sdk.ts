@@ -48,6 +48,11 @@ export interface OrganizationContext {
   logoUrl: string | null;
   projectStatus: string;
   onboardingStage: string | null;
+  tenantType?: 'PRODUCTION' | 'SANDBOX' | 'TRIAL' | null;
+  trialTier?: string | null;
+  trialStartedAt?: Date | null;
+  trialEndsAt?: Date | null;
+  trialStatus?: string | null;
 
   // All installed products for this org
   installedProducts: InstalledProductContext[];
@@ -76,23 +81,37 @@ export const OrganizationSDK = {
    * Supports Dual-Read: UUID first, slug fallback, numeric ID fallback.
    */
   async resolve(projectIdOrTenant: number | string, productKey?: ProductKey): Promise<OrganizationContext> {
-    let project: { id: number; organizationId: string; slug: string; title: string; logoUrl: string | null; status: string } | undefined;
+    let project: any | undefined;
+
+    const projectColumns = {
+      id: true,
+      organizationId: true,
+      slug: true,
+      title: true,
+      logoUrl: true,
+      status: true,
+      tenantType: true,
+      trialTier: true,
+      trialStartedAt: true,
+      trialEndsAt: true,
+      trialStatus: true,
+    };
 
     if (typeof projectIdOrTenant === 'number') {
       project = await db.query.projects.findFirst({
         where: eq(projects.id, projectIdOrTenant),
-        columns: { id: true, organizationId: true, slug: true, title: true, logoUrl: true, status: true },
+        columns: projectColumns,
       });
     } else if (UUID_REGEX.test(projectIdOrTenant.trim())) {
       project = await db.query.projects.findFirst({
         where: eq(projects.organizationId, projectIdOrTenant.trim()),
-        columns: { id: true, organizationId: true, slug: true, title: true, logoUrl: true, status: true },
+        columns: projectColumns,
       });
     } else {
       // Slug lookup (dual-read fallback)
       project = await db.query.projects.findFirst({
         where: eq(projects.slug, projectIdOrTenant.trim()),
-        columns: { id: true, organizationId: true, slug: true, title: true, logoUrl: true, status: true },
+        columns: projectColumns,
       });
     }
 
@@ -176,6 +195,11 @@ export const OrganizationSDK = {
       logoUrl: project.logoUrl ?? null,
       projectStatus: (project as any).status || 'draft',
       onboardingStage,
+      tenantType: project.tenantType || null,
+      trialTier: project.trialTier || null,
+      trialStartedAt: project.trialStartedAt || null,
+      trialEndsAt: project.trialEndsAt || null,
+      trialStatus: project.trialStatus || null,
       installedProducts: enrichedProducts,
       activeProduct,
       // Convenience accessors

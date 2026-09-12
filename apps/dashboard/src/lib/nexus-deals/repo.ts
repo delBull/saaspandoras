@@ -43,6 +43,70 @@ export async function listRooms() {
   });
 }
 
+export interface ListRoomsForUserOptions {
+  userIdentifier: string; // address, email or collaboratorId
+  email?: string;
+  isSuperAdmin?: boolean;
+  scope?: "mine" | "shared" | "all";
+}
+
+export function resolveRoomCreator(room: { createdBy?: string | null; audit?: Array<{ action: string; actor: string }> }): string {
+  if (room.createdBy) return room.createdBy;
+  const createEvent = room.audit?.find(a => a.action === "Room created" || a.action === "ROOM_CREATED");
+  return createEvent ? createEvent.actor : "Nexus Ops";
+}
+
+export function isUserCreatorOfDeal(room: any, userIdentifier: string, email?: string): boolean {
+  const creator = resolveRoomCreator(room).toLowerCase().trim();
+  const ident = (userIdentifier || "").toLowerCase().trim();
+  const em = (email || "").toLowerCase().trim();
+  return (ident !== "" && creator === ident) || (em !== "" && creator === em);
+}
+
+export function isDealSharedWithUser(room: any, userIdentifier: string, email?: string): boolean {
+  if (!Array.isArray(room.sharedWith) || room.sharedWith.length === 0) return false;
+  const ident = (userIdentifier || "").toLowerCase().trim();
+  const em = (email || "").toLowerCase().trim();
+  return room.sharedWith.some((s: any) => {
+    const sEmail = (s?.email || "").toLowerCase().trim();
+    return (ident !== "" && sEmail === ident) || (em !== "" && sEmail === em);
+  });
+}
+
+export function canUserAccessDeal(room: any, userIdentifier: string, email?: string, isSuperAdmin = false): boolean {
+  if (isSuperAdmin) return true;
+  return isUserCreatorOfDeal(room, userIdentifier, email) || isDealSharedWithUser(room, userIdentifier, email);
+}
+
+export function canUserEditDeal(room: any, userIdentifier: string, email?: string, isSuperAdmin = false): boolean {
+  if (isSuperAdmin) return true;
+  return isUserCreatorOfDeal(room, userIdentifier, email) || isDealSharedWithUser(room, userIdentifier, email);
+}
+
+export async function listRoomsForUser(options: ListRoomsForUserOptions) {
+  const all = await listRooms();
+  const { userIdentifier, email, isSuperAdmin = false, scope = "mine" } = options;
+
+  return all
+    .map(room => {
+      const isMine = isUserCreatorOfDeal(room, userIdentifier, email);
+      const isShared = isDealSharedWithUser(room, userIdentifier, email);
+      const creator = resolveRoomCreator(room);
+      return {
+        ...room,
+        isMine,
+        isShared,
+        creatorDisplay: creator,
+      };
+    })
+    .filter(room => {
+      if (isSuperAdmin && scope === "all") return true;
+      if (scope === "shared") return room.isShared && !room.isMine;
+      // Default 'mine': Deals created by the user + deals shared with the user
+      return room.isMine || room.isShared;
+    });
+}
+
 export async function getRoom(id: string) {
   return db.query.nexusDealRooms.findFirst({
     where: eq(nexusDealRooms.id, id),
@@ -86,6 +150,8 @@ export async function createRoom(input: CreateRoomInput) {
       autoShare: true,
       openSign: input.openSign ?? false,
       taskRef: input.taskRef ?? null,
+      createdBy: actor,
+      sharedWith: [],
       createdAt: now,
       updatedAt: now,
     })
@@ -700,3 +766,89 @@ export async function enableNdaForRoom(
     `NDA ${enabled ? "habilitado" : "deshabilitado"} · fase: ${phase}`
   );
 }
+
+/**
+  * Share a deal room with another internal team collaborator.
+  */
+export async function shareDealWithCollaborator(
+  roomId: string,
+  collaborator: { email: string; name?: string },
+  actor: string
+) {
+  const room = await getRoom(roomId);
+  if (!room) return null;
+
+  const emailNorm = collaborator.email.toLowerCase().trim();
+  const currentShares = (room.sharedWith as Array<{ email: string; name?: string; sharedAt: string; sharedBy: string }>) || [];
+
+  const existingIndex = currentShares.findIndex(s => s.email.toLowerCase().trim() === emailNorm);
+  const updatedShares = [...currentShares];
+
+  if (existingIndex >= 0) {
+    const prev = updatedShares[existingIndex]!;
+    updatedShares[existingIndex] = {
+      email: emailNorm,
+      name: collaborator.name || prev.name,
+      sharedAt: new Date().toISOString(),
+      sharedBy: actor,
+    };
+  } else {
+    updatedShares.push({
+      email: emailNorm,
+      name: collaborator.name || emailNorm,
+      sharedAt: new Date().toISOString(),
+      sharedBy: actor,
+    });
+  }
+
+  await db
+    .update(nexusDealRooms)
+    .set({
+      sharedWith: updatedShares,
+      updatedAt: new Date(),
+    })
+    .where(eq(nexusDealRooms.id, roomId));
+
+  await appendAudit(
+    roomId,
+    actor,
+    "Deal compartido",
+    `Compartido con colaborador ${collaborator.name ? `${collaborator.name} (${emailNorm})` : emailNorm} por ${actor}`
+  );
+
+  return getRoom(roomId);
+}
+
+/**
+  * Revoke shared access from an internal team collaborator.
+  */
+export async function unshareDealWithCollaborator(
+  roomId: string,
+  collaboratorEmail: string,
+  actor: string
+) {
+  const room = await getRoom(roomId);
+  if (!room) return null;
+
+  const emailNorm = collaboratorEmail.toLowerCase().trim();
+  const currentShares = (room.sharedWith as Array<{ email: string; name?: string; sharedAt: string; sharedBy: string }>) || [];
+  const updatedShares = currentShares.filter(s => s.email.toLowerCase().trim() !== emailNorm);
+
+  await db
+    .update(nexusDealRooms)
+    .set({
+      sharedWith: updatedShares,
+      updatedAt: new Date(),
+    })
+    .where(eq(nexusDealRooms.id, roomId));
+
+  await appendAudit(
+    roomId,
+    actor,
+    "Acceso revocado",
+    `Revocado acceso compartido a colaborador ${emailNorm} por ${actor}`
+  );
+
+  return getRoom(roomId);
+}
+

@@ -128,6 +128,21 @@ export async function resolvePortalContext(
     );
   }
 
+  // Mandatory Adjustment #5: Boundary Enforcement (Trial session -> Production ❌)
+  const isTrialOrg = organization.tenantType === 'TRIAL';
+  const isTrialSession =
+    session.isTrial ||
+    session.plan === 'trial' ||
+    session.installedProductId.startsWith('inst_') ||
+    (organization.plan as string) === 'trial';
+
+  if (isTrialSession && !isTrialOrg && organization.tenantType === 'PRODUCTION') {
+    throw new PortalAuthorizationError(
+      'ORGANIZATION_ACCESS_DENIED',
+      'A Trial session cannot acquire authority over a PRODUCTION tenant.'
+    );
+  }
+
   // 5. Resolve role (default: owner for portal sessions — single-org model)
   //    Extend this when multi-user organizations are introduced.
   const role: PortalRole = 'owner';
@@ -152,7 +167,23 @@ export async function resolvePortalContext(
     activeProduct: session.product,
   };
 
-  return { tenant, organization: portalOrg };
+  // Gate 7: Enforce server-side PRESERVED state on expired trial
+  let trialContext = undefined;
+  if (isTrialOrg) {
+    const isExpired = organization.trialEndsAt ? Date.now() >= new Date(organization.trialEndsAt).getTime() : false;
+    const trialStatus = isExpired ? 'PRESERVED' : (organization.trialStatus || 'ACTIVE');
+
+    trialContext = {
+      isTrial: true,
+      tier: (organization.trialTier || 'MEDIA_ENABLED') as any,
+      startedAt: organization.trialStartedAt,
+      endsAt: organization.trialEndsAt,
+      status: trialStatus as any,
+      isExpired,
+    };
+  }
+
+  return { tenant, organization: portalOrg, trial: trialContext };
 }
 
 /**

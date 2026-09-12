@@ -48,30 +48,41 @@ export interface KekProvider {
  */
 export class DefaultKmsKekProvider implements KekProvider {
   private keyId: string;
-  private kek: Buffer;
+  private kek: Buffer | null = null;
+  private secretOrKey?: string | Buffer;
 
   constructor(keyId = 'kek_hermes_primary_v1', secretOrKey?: string | Buffer) {
     this.keyId = keyId;
-    if (secretOrKey) {
-      this.kek = typeof secretOrKey === 'string'
-        ? crypto.createHash('sha256').update(secretOrKey, 'utf8').digest()
-        : secretOrKey;
-    } else {
-      const envKey = process.env.HERMES_KMS_KEK || process.env.ENCRYPTION_KEY;
-      if (!envKey) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('[EnvelopeVault] HERMES_KMS_KEK or ENCRYPTION_KEY is required in production. Failing closed.');
-        }
-        // Ephemeral in-memory key for local development/test (deterministic salt)
-        this.kek = crypto.createHash('sha256').update('pandoras_hermes_dev_ephemeral_kek_salt_32bytes!', 'utf8').digest();
-      } else {
-        this.kek = crypto.createHash('sha256').update(envKey, 'utf8').digest();
-      }
+    this.secretOrKey = secretOrKey;
+  }
+
+  private resolveKey(): Buffer {
+    if (this.kek) return this.kek;
+
+    if (this.secretOrKey) {
+      this.kek = typeof this.secretOrKey === 'string'
+        ? crypto.createHash('sha256').update(this.secretOrKey, 'utf8').digest()
+        : this.secretOrKey;
+      return this.kek;
     }
+
+    const envKey = process.env.HERMES_KMS_KEK || process.env.ENCRYPTION_KEY;
+    if (!envKey) {
+      const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+      if (process.env.NODE_ENV === 'production' && !isBuildPhase) {
+        throw new Error('[EnvelopeVault] HERMES_KMS_KEK or ENCRYPTION_KEY is required in production. Failing closed.');
+      }
+      // Ephemeral in-memory key for local development, test, and build-time analysis
+      this.kek = crypto.createHash('sha256').update('pandoras_hermes_dev_ephemeral_kek_salt_32bytes!', 'utf8').digest();
+    } else {
+      this.kek = crypto.createHash('sha256').update(envKey, 'utf8').digest();
+    }
+
+    return this.kek;
   }
 
   async getKey(keyId?: string): Promise<{ keyId: string; kekBuffer: Buffer }> {
-    return { keyId: this.keyId, kekBuffer: this.kek };
+    return { keyId: this.keyId, kekBuffer: this.resolveKey() };
   }
 }
 

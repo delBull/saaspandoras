@@ -18,6 +18,7 @@ import { HermesTerminalBar } from '@/components/hermes-portal/HermesTerminalBar'
 import { Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { InspectorProvider } from './InspectorContext';
+import { TrialCockpitBanner } from './trial/TrialCockpitBanner';
 
 interface PortalShellProps {
   context: PortalContext;
@@ -122,6 +123,17 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
             activeModules={activeModules}
           />
         </div>
+
+        {/* Trial Cockpit & Live Upgrade Banner */}
+        {context.trial?.isTrial && (
+          <div className="z-20 shrink-0">
+            <TrialCockpitBanner
+              trial={context.trial}
+              organizationSlug={context.organization.slug}
+              organizationName={context.organization.name}
+            />
+          </div>
+        )}
 
         {/* Content Row: Main Page + Optional Inspector */}
         <div className="flex-1 flex flex-row overflow-hidden relative min-h-0 min-w-0">

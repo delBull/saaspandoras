@@ -34,6 +34,10 @@ export interface NexusPermissions {
   'calendar.manage'?: boolean;
   ecosystem: boolean;
   institutionalBooks: boolean;
+  academyAdmin?: boolean;
+  dealRoom?: boolean;
+  settings?: boolean;
+  hermesQa?: boolean;
 }
 
 // Re-export from dedicated file for client compatibility
@@ -45,6 +49,7 @@ export interface NexusAuthContext {
   wallet?: string | null;
   email?: string | null;
   name?: string | null;
+  collaboratorId?: number | null;
   whatsappPhone?: string | null;
   provisionStatus?: NexusProvisionStatus | null;
   permissions: NexusPermissions;
@@ -185,9 +190,16 @@ export function resolveEffectivePermissions(
     'growth.manage': overrides?.['growth.manage'] !== undefined ? overrides['growth.manage'] : base['growth.manage'],
     'marketing.manage': overrides?.['marketing.manage'] !== undefined ? overrides['marketing.manage'] : base['marketing.manage'],
     'nexus.manage': overrides?.['nexus.manage'] !== undefined ? overrides['nexus.manage'] : base['nexus.manage'],
+    'compliance.manage': overrides?.['compliance.manage'] !== undefined ? overrides['compliance.manage'] : base['compliance.manage'],
+    'calendar.manage': overrides?.['calendar.manage'] !== undefined ? overrides['calendar.manage'] : base['calendar.manage'],
     ecosystem: true, // Always accessible to authenticated Nexus members
     // 🛡️ SECURITY GUARD: Institutional books NEVER grants via collaborator overrides
     institutionalBooks: role === 'SUPER_ADMIN',
+    // Granular Module Overrides
+    academyAdmin: overrides?.['academyAdmin'] !== undefined ? Boolean(overrides['academyAdmin']) : (role === 'SUPER_ADMIN' || role === 'ADMIN' || (role as string) === 'MANAGER'),
+    dealRoom: overrides?.['dealRoom'] !== undefined ? Boolean(overrides['dealRoom']) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
+    settings: overrides?.['settings'] !== undefined ? Boolean(overrides['settings']) : (role === 'SUPER_ADMIN'),
+    hermesQa: overrides?.['hermesQa'] !== undefined ? Boolean(overrides['hermesQa']) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
   };
 
   return effective;
@@ -416,13 +428,26 @@ export async function getNexusAuthContext(
           };
         }
 
-        // Record last access timestamp asynchronously
+        // Slide token expiration for active collaborators (30 days) and record access
+        const extendedExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         db.update(nexusCollaborators)
-          .set({ lastAccessAt: now })
+          .set({ lastAccessAt: now, expiresAt: extendedExpiry })
           .where(eq(nexusCollaborators.id, collaborator.id))
-          .catch((err) => console.warn('[NexusRBAC] Notice updating lastAccessAt:', err));
+          .catch((err) => console.warn('[NexusRBAC] Notice updating lastAccessAt/expiresAt:', err));
 
-        const role = (collaborator.role as NexusRole) || 'COLLABORATOR';
+        let role = (collaborator.role as NexusRole) || 'COLLABORATOR';
+        const normalizedEmail = (collaborator.email || '').toLowerCase().trim();
+        const adminEmailsList = [
+          (process.env.NEXUS_ADMIN_EMAIL || '').toLowerCase(),
+          (process.env.ADMIN_EMAIL || '').toLowerCase(),
+          ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []),
+          'admin@pandoras.finance',
+        ].filter(Boolean);
+
+        if (adminEmailsList.includes(normalizedEmail)) {
+          role = 'SUPER_ADMIN';
+        }
+
         const permissions = resolveEffectivePermissions(role, collaborator.permissions as NexusPermissionsOverride);
 
         return {
@@ -430,6 +455,7 @@ export async function getNexusAuthContext(
           role,
           email: collaborator.email,
           name: collaborator.name,
+          collaboratorId: collaborator.id,
           whatsappPhone: collaborator.whatsappPhone,
           provisionStatus: provisionStatus as NexusProvisionStatus,
           permissions,

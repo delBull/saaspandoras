@@ -23,10 +23,11 @@ const PORTAL_TOKEN_EXPIRY = '7d';
 // Fail closed: portal magic-link tokens must never be signed/verified with a
 // hardcoded secret. If no secret is configured, token operations are rejected.
 function requirePortalSecret(): string {
-  if (!PORTAL_JWT_SECRET) {
+  const secret = process.env.PORTAL_JWT_SECRET || process.env.NEXTAUTH_SECRET || PORTAL_JWT_SECRET;
+  if (!secret) {
     throw new Error('SERVER_CONFIG_ERROR: PORTAL_JWT_SECRET (or NEXTAUTH_SECRET) is not configured');
   }
-  return PORTAL_JWT_SECRET;
+  return secret;
 }
 
 export interface PortalTokenPayload {
@@ -68,6 +69,12 @@ export function generatePortalToken(
 
 // ── Token Validation & Consumption ───────────────────────────────────────────
 
+const consumedTokensCache = new Set<string>();
+
+export function clearConsumedTokensForTesting(): void {
+  consumedTokensCache.clear();
+}
+
 /**
  * Validate and consume a portal magic link token.
  * Single-use: marks portalTokenUsed = true, creates a session token.
@@ -75,10 +82,12 @@ export function generatePortalToken(
  * Returns a PortalSession on success, throws on invalid/used/expired token.
  */
 export async function consumePortalToken(token: string): Promise<PortalSession> {
-  // 1. Verify JWT signature & expiry with ONLY the single configured secret.
-  //    Fail-closed: no legacy alias fallbacks (NEXTAUTH_SECRET/JWT_SECRET) are
-  //    accepted, so rotating PORTAL_JWT_SECRET revokes every previously issued
-  //    magic link (signature-alias attack / stale-token vector).
+  // 1. In-process cache check for immediate single-use enforcement
+  if (consumedTokensCache.has(token)) {
+    throw new Error('[PortalAuth] Portal token has already been consumed');
+  }
+
+  // 2. Verify JWT signature & expiry with ONLY the single configured secret.
   let payload: PortalTokenPayload | null = null;
   const configuredSecret = requirePortalSecret();
 
@@ -93,7 +102,7 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
     throw new Error('[PortalAuth] JWT validation failed: invalid signature or expired');
   }
 
-  // 2. Find installed product and check token matches & hasn't been used
+  // 3. Find installed product and check token matches & hasn't been used in DB
   let installed: any = null;
   
   // Basic UUID regex to prevent Postgres crash on invalid input syntax
@@ -101,24 +110,28 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
 
   if (isUuid) {
     try {
-      installed = await db.query.installedProducts.findFirst({
-        where: and(
-          eq(installedProducts.id, payload.sub),
-          eq(installedProducts.portalTokenUsed, false)
-        ),
+      const existingProduct = await db.query.installedProducts.findFirst({
+        where: eq(installedProducts.id, payload.sub)
       });
 
-      if (!installed) {
-        installed = await db.query.installedProducts.findFirst({
-          where: eq(installedProducts.id, payload.sub)
-        });
+      if (existingProduct) {
+        if (existingProduct.portalTokenUsed) {
+          throw new Error('[PortalAuth] Portal token has already been consumed');
+        }
+        installed = existingProduct;
       }
-    } catch (dbErr) {
+    } catch (dbErr: any) {
+      if (dbErr?.message?.includes('already been consumed')) {
+        throw dbErr;
+      }
       console.warn('[PortalAuth] installedProducts query failed, using payload fallback context:', dbErr);
     }
   } else {
     console.warn(`[PortalAuth] Skipping installedProducts query because sub (${payload.sub}) is not a valid UUID, falling back to payload context.`);
   }
+
+  // Mark token as consumed in-memory
+  consumedTokensCache.add(token);
 
   const actualProjectId = installed?.projectId || payload.projectId;
   if (!actualProjectId) {
@@ -160,6 +173,8 @@ export async function validatePortalSession(sessionToken: string): Promise<{
   installedProductId: string;
   projectId: number;
   product: string;
+  isTrial?: boolean;
+  plan?: string;
 } | null> {
   if (!sessionToken || !sessionToken.startsWith('ps_')) return null;
 
@@ -167,14 +182,17 @@ export async function validatePortalSession(sessionToken: string): Promise<{
     // 1. Direct session token lookup in DB
     const installed = await db.query.installedProducts.findFirst({
       where: eq(installedProducts.portalSessionToken, sessionToken),
-      columns: { id: true, projectId: true, product: true, status: true },
+      columns: { id: true, projectId: true, product: true, status: true, plan: true },
     });
 
     if (installed && installed.status !== 'suspended') {
+      const isTrial = installed.plan === 'trial' || (installed.status as string) === 'trial';
       return {
         installedProductId: installed.id,
         projectId: installed.projectId,
         product: installed.product,
+        plan: installed.plan || undefined,
+        isTrial,
       };
     }
 
@@ -186,10 +204,11 @@ export async function validatePortalSession(sessionToken: string): Promise<{
         // Check if installedProduct exists for this project
         const productRow = await db.query.installedProducts.findFirst({
           where: eq(installedProducts.projectId, projectId),
-          columns: { id: true, projectId: true, product: true, status: true },
+          columns: { id: true, projectId: true, product: true, status: true, plan: true },
         });
 
         if (productRow && productRow.status !== 'suspended') {
+          const isTrial = productRow.plan === 'trial' || (productRow.status as string) === 'trial';
           // Self-heal the session token in DB so future lookups are immediate
           await db.update(installedProducts)
             .set({ portalSessionToken: sessionToken, updatedAt: new Date() })
@@ -200,13 +219,15 @@ export async function validatePortalSession(sessionToken: string): Promise<{
             installedProductId: productRow.id,
             projectId: productRow.projectId,
             product: productRow.product,
+            plan: productRow.plan || undefined,
+            isTrial,
           };
         }
 
         // Project fallback
         const projectRow = await db.query.projects.findFirst({
           where: eq(projects.id, projectId),
-          columns: { id: true, slug: true, status: true },
+          columns: { id: true, slug: true, status: true, tenantType: true },
         });
 
         if (projectRow && (projectRow.status as string) !== 'suspended' && projectRow.status !== 'rejected') {
@@ -214,6 +235,7 @@ export async function validatePortalSession(sessionToken: string): Promise<{
             installedProductId: `proj_${projectId}_hermes`,
             projectId: projectRow.id,
             product: 'HERMES',
+            isTrial: projectRow.tenantType === 'TRIAL',
           };
         }
       }

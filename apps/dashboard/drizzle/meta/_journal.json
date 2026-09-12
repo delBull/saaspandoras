@@ -372,6 +372,41 @@
       "when": 1789188826923,
       "tag": "0052_tearful_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1789189000000,
+      "tag": "0053_tenant_social_integrations",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1789190000000,
+      "tag": "0054_distribution_jobs_and_attempts",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1789191000000,
+      "tag": "0055_reconciliation_sweeper_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1789192000000,
+      "tag": "0056_hermes_trial_experience",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1789193000000,
+      "tag": "0057_nexus_deal_rooms_sharing",
+      "breakpoints": true
     }
   ]
 }

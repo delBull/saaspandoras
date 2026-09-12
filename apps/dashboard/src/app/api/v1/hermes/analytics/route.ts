@@ -3,6 +3,7 @@ import { HermesIntelligenceEngine } from '@/lib/hermes/intelligence-engine';
 import { db } from '@/db';
 import { projects, marketingLeads } from '@/db/schema';
 import { count } from 'drizzle-orm';
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/v1/hermes/analytics

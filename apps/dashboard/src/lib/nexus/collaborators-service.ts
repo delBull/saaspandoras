@@ -308,7 +308,13 @@ export async function getCollaboratorByEmail(
 export async function listCollaborators(): Promise<CollaboratorDTO[]> {
   const now = new Date();
   try {
-    await db.delete(nexusCollaborators).where(lt(nexusCollaborators.expiresAt, now));
+    // Only clean up expired unapproved PENDING invitations, NEVER active collaborators
+    await db.delete(nexusCollaborators).where(
+      and(
+        eq(nexusCollaborators.status, 'PENDING'),
+        lt(nexusCollaborators.expiresAt, now)
+      )
+    );
   } catch (error) {
     console.warn('[NexusCollaborators] Failed to clean up expired tokens:', error);
   }
@@ -316,7 +322,7 @@ export async function listCollaborators(): Promise<CollaboratorDTO[]> {
   const rows = await db
     .select()
     .from(nexusCollaborators)
-    .where(gt(nexusCollaborators.expiresAt, now))
+    .where(or(eq(nexusCollaborators.status, 'ACTIVE'), eq(nexusCollaborators.status, 'PENDING')))
     .orderBy(nexusCollaborators.createdAt);
 
   return rows.map((r) => ({
