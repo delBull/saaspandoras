@@ -1,204 +1,139 @@
 /**
- * 🛰️ Hermes API Boundary — Channels Configuration Service
- * /api/v1/hermes/channels
+ * 📡 Hermes Social Distribution Channels API
+ * apps/dashboard/src/app/api/v1/hermes/channels/route.ts
+ *
+ * GET  /api/v1/hermes/channels
+ * POST /api/v1/hermes/channels/connect
+ *
+ * MANDATORY INVARIANTS:
+ * 1. Authority is EXCLUSIVELY derived from server-side authenticated context (canonicalOrgId).
+ * 2. Client-provided tenantId is NEVER an authority (only tested for anti-spoofing mismatch).
+ * 3. Never returns decrypted credentials, ciphertext, IVs, or auth tags in API responses.
+ * 4. AES-256-GCM envelope vault binds canonicalOrgId into AAD.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import type { MaskedChannelsConfigDTO, SaveChannelConfigRequestDTO } from '@/lib/dash-contracts/channels';
+import { resolveDemandSession } from '@/app/api/v1/hermes/demand/route';
+import { CapabilityGrantService } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
+import { tenantChannelService, type ConnectChannelInput } from '@/lib/hermes/channels/tenant-channel.service';
 
 export const dynamic = 'force-dynamic';
 
-const sessionTokenService = new SessionTokenService();
-
-const isUuid = (val?: string): boolean => 
-  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
-
-function buildProjectMatchCondition(targetSlug: string, orgId?: string) {
-  const canonicalTarget = targetSlug?.replace(/^org_/, '').trim();
-  const canonicalOrgId = orgId?.replace(/^org_/, '').trim();
-  return or(
-    ...(canonicalTarget ? [eq(projects.slug, canonicalTarget)] : []),
-    ...(canonicalOrgId && isUuid(canonicalOrgId) ? [eq(projects.organizationId, canonicalOrgId)] : []),
-    ...(isUuid(targetSlug) ? [eq(projects.organizationId, targetSlug)] : []),
-    ...(canonicalOrgId && !isUuid(canonicalOrgId) ? [eq(projects.slug, canonicalOrgId)] : [])
-  );
-}
-
-async function resolveAuthorizedTenant(req: NextRequest, requestedSlug?: string | null): Promise<{
-  organizationId: string;
-  organizationSlug: string;
-  projectId: number | null;
-} | null> {
-  const portalSessionCookie = req.cookies.get('pandoras_portal_session')?.value;
-  if (portalSessionCookie) {
-    const session = await validatePortalSession(portalSessionCookie);
-    if (session) {
-      const org = await OrganizationSDK.resolve(session.projectId, session.product as any);
-      if (org) {
-        if (requestedSlug && requestedSlug !== org.slug && requestedSlug !== org.organizationId) {
-          return null;
-        }
-        return {
-          organizationId: org.organizationId,
-          organizationSlug: org.slug,
-          projectId: session.projectId,
-        };
-      }
-    }
-  }
-
-  const authHeader = req.headers.get('authorization') || '';
-  const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (bearerToken) {
-    try {
-      const payload = sessionTokenService.verifyToken(bearerToken);
-      const cleanTenant = payload.organizationId.toLowerCase().replace(/^org_/, '');
-      if (requestedSlug && requestedSlug !== cleanTenant && requestedSlug !== payload.organizationId) {
-        return null;
-      }
-      return {
-        organizationId: payload.organizationId,
-        organizationSlug: cleanTenant,
-        projectId: null,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
-
+/**
+ * GET /api/v1/hermes/channels
+ * Lists configured distribution channels and the channel capabilities catalog.
+ */
 export async function GET(req: NextRequest) {
   try {
-    const ip = clientIpFromHeaders(req.headers);
-    const rl = checkRateLimit(`hermes-channels-get:${ip}`, 60, 60_000);
-    if (!rl.allowed) {
-      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
-    }
-
     const { searchParams } = new URL(req.url);
-    const requestedSlug = searchParams.get('organizationSlug');
+    const clientHint = searchParams.get('tenantId') || searchParams.get('org') || undefined;
 
-    const auth = await resolveAuthorizedTenant(req, requestedSlug);
-    if (!auth) {
-      return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes session required.' }, { status: 401 });
+    const session = await resolveDemandSession(req, clientHint);
+    if (!session) {
+      return NextResponse.json(
+        { ok: false, error: 'Authentication required or invalid session.' },
+        { status: 401 }
+      );
     }
 
-    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.organizationSlug, auth.organizationId)).limit(1);
-    const project = rows[0];
-    if (!project) {
-      return NextResponse.json({ code: 'NOT_FOUND', message: 'Project not found' }, { status: 404 });
+    // Capability check
+    const hasViewAccess = await CapabilityGrantService.isCapabilityGranted(
+      session.projectSlug,
+      'demand.view'
+    );
+    if (!hasViewAccess) {
+      return NextResponse.json(
+        { ok: false, error: "Access denied. Tenant missing 'demand.view' capability." },
+        { status: 403 }
+      );
     }
 
-    const config = (project.tenantRuntimeConfig as any) || {};
-    const secrets = config.secrets || {};
+    const { channels, catalog } = await tenantChannelService.listChannels(session.canonicalOrgId);
 
-    const response: MaskedChannelsConfigDTO = {
-      telegramConfigured: Boolean(secrets.telegramBotToken),
-      telegramBotTokenMasked: secrets.telegramBotToken ? '••••••••••••••••' : '',
-      whatsappConfigured: Boolean(secrets.whatsappToken),
-      whatsappTokenMasked: secrets.whatsappToken ? '••••••••••••••••' : '',
-      whatsappPhoneId: secrets.whatsappPhoneId || '',
-      discordConfigured: Boolean(secrets.discordWebhookUrl),
-      discordWebhookUrlMasked: secrets.discordWebhookUrl ? '••••••••••••••••' : '',
-      slackConfigured: Boolean(secrets.slackWebhookUrl),
-      slackWebhookUrlMasked: secrets.slackWebhookUrl ? '••••••••••••••••' : '',
-    };
-
-    return NextResponse.json(response);
+    // ZERO SECRETS GUARANTEE: channels DTOs are pre-sanitized by tenantChannelService
+    return NextResponse.json({
+      ok: true,
+      count: channels.length,
+      channels,
+      catalog,
+    });
   } catch (err: any) {
-    console.error('[API /api/v1/hermes/channels GET] Error:', err);
-    return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to fetch channels config' }, { status: 500 });
+    console.error('[Hermes Channels API] GET error:', err);
+    return NextResponse.json(
+      { ok: false, error: err?.message || 'Failed to list channels.' },
+      { status: 500 }
+    );
   }
 }
 
+/**
+ * POST /api/v1/hermes/channels/connect
+ * Connects and encrypts a new social channel.
+ */
 export async function POST(req: NextRequest) {
   try {
-    const ip = clientIpFromHeaders(req.headers);
-    const rl = checkRateLimit(`hermes-channels-post:${ip}`, 30, 60_000);
-    if (!rl.allowed) {
-      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
+    const body = await req.json().catch(() => ({}));
+    const clientTenantHint = body.tenantId || body.organizationSlug || undefined;
+
+    // Resolve authenticated session with anti-spoofing verification
+    const session = await resolveDemandSession(req, clientTenantHint);
+    if (!session) {
+      return NextResponse.json(
+        { ok: false, error: 'Authentication required or invalid tenant authority.' },
+        { status: 401 }
+      );
     }
 
-    const auth = await resolveAuthorizedTenant(req);
-    if (!auth) {
-      return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes session required.' }, { status: 401 });
+    // Capability check
+    const hasDistributeAccess = await CapabilityGrantService.isCapabilityGranted(
+      session.projectSlug,
+      'demand.distribute'
+    );
+    if (!hasDistributeAccess) {
+      return NextResponse.json(
+        { ok: false, error: "Access denied. Tenant missing 'demand.distribute' capability." },
+        { status: 403 }
+      );
     }
 
-    const body: SaveChannelConfigRequestDTO = await req.json();
-    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.organizationSlug, auth.organizationId)).limit(1);
-    const project = rows[0];
-    if (!project) {
-      return NextResponse.json({ code: 'NOT_FOUND', message: 'Project not found' }, { status: 404 });
+    const { channel, accountName, accountHandle, credentials, supportedCapabilities, metadata } = body;
+
+    if (!channel || !accountName || !accountHandle || !credentials) {
+      return NextResponse.json(
+        { ok: false, error: 'Missing required fields: channel, accountName, accountHandle, credentials.' },
+        { status: 400 }
+      );
     }
 
-    const currentConfig = (project.tenantRuntimeConfig as any) || {};
-    const currentSecrets = currentConfig.secrets || {};
+    const actorId = req.headers.get('x-actor-id') || `user_${session.projectSlug}`;
 
-    let updatedSecrets = { ...currentSecrets };
+    const input: ConnectChannelInput = {
+      channel,
+      accountName,
+      accountHandle,
+      credentials,
+      supportedCapabilities,
+      metadata,
+    };
 
-    if (body.channel === 'telegram') {
-      if (body.config.botToken !== undefined) {
-        if (body.config.botToken.trim() === '') {
-          delete updatedSecrets.telegramBotToken;
-        } else {
-          updatedSecrets.telegramBotToken = body.config.botToken.trim();
-        }
-      }
-    } else if (body.channel === 'whatsapp') {
-      if (body.config.token !== undefined) {
-        if (body.config.token.trim() === '') {
-          delete updatedSecrets.whatsappToken;
-        } else {
-          updatedSecrets.whatsappToken = body.config.token.trim();
-        }
-      }
-      if (body.config.phoneNumberId !== undefined) {
-        if (body.config.phoneNumberId.trim() === '') {
-          delete updatedSecrets.whatsappPhoneId;
-        } else {
-          updatedSecrets.whatsappPhoneId = body.config.phoneNumberId.trim();
-        }
-      }
-    } else if (body.channel === 'discord') {
-      if (body.config.webhookUrl !== undefined) {
-        if (body.config.webhookUrl.trim() === '') {
-          delete updatedSecrets.discordWebhookUrl;
-        } else {
-          updatedSecrets.discordWebhookUrl = body.config.webhookUrl.trim();
-        }
-      }
-    } else if (body.channel === 'slack') {
-      if (body.config.webhookUrl !== undefined) {
-        if (body.config.webhookUrl.trim() === '') {
-          delete updatedSecrets.slackWebhookUrl;
-        } else {
-          updatedSecrets.slackWebhookUrl = body.config.webhookUrl.trim();
-        }
-      }
-    }
+    const newChannel = await tenantChannelService.connectChannel(
+      session.canonicalOrgId,
+      actorId,
+      input
+    );
 
-    await db.update(projects)
-      .set({
-        tenantRuntimeConfig: {
-          ...currentConfig,
-          secrets: updatedSecrets,
-        },
-        updatedAt: new Date(),
-      })
-      .where(eq(projects.id, project.id));
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      {
+        ok: true,
+        channel: newChannel,
+      },
+      { status: 201 }
+    );
   } catch (err: any) {
-    console.error('[API /api/v1/hermes/channels POST] Error:', err);
-    return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to update channels config' }, { status: 500 });
+    console.error('[Hermes Channels API] POST error:', err);
+    return NextResponse.json(
+      { ok: false, error: err?.message || 'Failed to connect channel.' },
+      { status: 400 }
+    );
   }
 }

@@ -19,6 +19,7 @@ import {
   DemandDistributionService,
   DEMAND_OBJECTIVES,
 } from '@/lib/hermes/demand/demand-distribution.service';
+import { TenantCreditLedgerService } from '@/lib/hermes/compute/tenant-credit-ledger.service';
 
 export const dynamic = 'force-dynamic';
 
@@ -123,6 +124,9 @@ export async function GET(req: NextRequest) {
     // 4. Generate closed-loop strategic learning insight
     const insight = DemandDistributionService.getStrategicInsight(performance);
 
+    // 5. Fetch durable tenant compute credits
+    const tenantCredits = await TenantCreditLedgerService.getOrCreateCredits(tenantId).catch(() => null);
+
     return NextResponse.json({
       ok: true,
       tenantId,
@@ -132,6 +136,7 @@ export async function GET(req: NextRequest) {
       channels,
       performance,
       insight,
+      tenantCredits,
     });
   } catch (err: any) {
     console.error('[Demand API GET] Error:', err);

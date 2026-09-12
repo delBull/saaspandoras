@@ -114,4 +114,76 @@ export class RunPodServerlessService {
       };
     }
   }
+
+  /**
+   * F6-3: Queries the status of a previous RunPod serverless execution for forensic reconciliation.
+   */
+  public static async checkJobStatus(endpointId: string, jobId: string): Promise<{
+    status: 'COMPLETED' | 'FAILED' | 'IN_PROGRESS' | 'NOT_FOUND' | 'UNKNOWN';
+    output?: any;
+    error?: string;
+    executionTimeMs?: number;
+    rawCostUsd?: number;
+  }> {
+    const apiKey = process.env.RUNPOD_API_KEY;
+
+    if (!apiKey) {
+      if (jobId.startsWith('mock_job_')) {
+        return {
+          status: 'COMPLETED',
+          output: {
+            images: ['mock_bafkrei_simulated_render_runpod'],
+            message: 'Simulated RunPod execution completed',
+          },
+          executionTimeMs: 1200,
+          rawCostUsd: 0.02,
+        };
+      }
+      return { status: 'NOT_FOUND' };
+    }
+
+    const url = `${this.RUNPOD_BASE_URL}/${endpointId}/status/${jobId}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+      });
+
+      if (response.status === 404) {
+        return { status: 'NOT_FOUND' };
+      }
+
+      if (!response.ok) {
+        return { status: 'UNKNOWN', error: `RunPod status HTTP ${response.status}` };
+      }
+
+      const data = await response.json();
+      if (data.status === 'COMPLETED') {
+        const executionTimeMs = data.executionTimeMs || 1000;
+        const rawCostUsd = Number(((executionTimeMs / 1000) * this.DEFAULT_PER_SECOND_COST).toFixed(5));
+        return {
+          status: 'COMPLETED',
+          output: data.output,
+          executionTimeMs,
+          rawCostUsd,
+        };
+      }
+
+      if (data.status === 'FAILED' || data.status === 'CANCELLED') {
+        return { status: 'FAILED', error: data.error || 'RunPod job marked failed' };
+      }
+
+      if (data.status === 'IN_QUEUE' || data.status === 'IN_PROGRESS') {
+        return { status: 'IN_PROGRESS' };
+      }
+
+      return { status: 'UNKNOWN' };
+    } catch (err: any) {
+      return { status: 'UNKNOWN', error: err.message || 'Network error querying RunPod status' };
+    }
+  }
 }
+

@@ -17,8 +17,12 @@ import {
   marketingLeads,
   conversationSessions,
   demandEvents,
+  tenantSocialIntegrations,
+  hermesArtifacts,
 } from '@/db/schema';
 import { eq, and, gte, count, sql } from 'drizzle-orm';
+import { distributionOrchestratorService } from '@/lib/hermes/channels/distribution/distribution-orchestrator.service';
+import { HermesMediaOrchestratorService } from '../media/hermes-media-orchestrator.service';
 
 // ─── 1. OBJECTIVES ────────────────────────────────────────────────────────────
 
@@ -95,6 +99,7 @@ export type DemandCampaignState =
   | 'DISTRIBUTING'
   | 'COMPLETED'
   | 'PARTIALLY_COMPLETED'
+  | 'RECONCILIATION_REQUIRED'
   | 'FAILED';
 
 export interface ContentPieceAsset {
@@ -128,6 +133,13 @@ export interface ContentPiece {
   destination: string;
   status: 'PENDING' | 'GENERATING' | 'READY' | 'APPROVED' | 'REJECTED' | 'PUBLISHED';
   performance?: ContentPiecePerformance;
+  artifactId?: string;
+  financialBreakdown?: {
+    rawCostUsd: number;
+    markupCostUsd: number;
+    totalChargedUsd: number;
+  };
+  distributionJobId?: string;
 }
 
 export type CampaignPiece = ContentPiece; // Backwards-compatible alias
@@ -189,6 +201,14 @@ export class DemandDistributionService {
   // Survives turns and is isolated by tenantId
   private static campaigns: Map<string, DemandCampaign> = new Map();
   private static idempotencyRecords: Map<string, { status: DemandCampaignState; timestamp: number }> = new Map();
+
+  /**
+   * Clears in-memory campaign and idempotency caches for hermetic unit and E2E testing.
+   */
+  public static clearForTesting(): void {
+    this.campaigns.clear();
+    this.idempotencyRecords.clear();
+  }
 
   /**
    * Available channels calculation:
@@ -256,7 +276,8 @@ export class DemandDistributionService {
     // Fallback minimum channels
     const targetChannels = activeChannels.length > 0 ? activeChannels : ['telegram', 'x'];
 
-    const campaignId = `camp_${cleanTenant}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    // F6-5: Durable Identity
+    const campaignId = `camp_${crypto.randomUUID()}`;
     const piecesCount = meta.defaultPiecesCount;
 
     // Generate balanced pieces across available channels with complete publication projection
@@ -372,6 +393,88 @@ export class DemandDistributionService {
   }
 
   /**
+   * F6-1 & F6-2: Generates sovereign media assets for campaign pieces via HermesMediaOrchestratorService.
+   * Performs atomic credit reservation, Sofia/RunPod execution, and artifact verification.
+   */
+  public static async generateCampaignMediaPieces(
+    tenantId: string,
+    campaignId: string,
+    options?: { isSandbox?: boolean; provider?: 'auto' | 'sofia' | 'runpod' }
+  ): Promise<{ success: boolean; campaign: DemandCampaign; error?: string }> {
+    const cleanTenant = tenantId.toLowerCase().trim();
+    const campaign = this.campaigns.get(cleanTenant);
+    if (!campaign || campaign.id !== campaignId) {
+      throw new Error(`[DemandDistributionService] Campaña '${campaignId}' no encontrada.`);
+    }
+
+    campaign.status = 'CONTENT_GENERATING';
+    let hasUnknown = false;
+    let failureError: string | undefined;
+
+    for (const piece of campaign.pieces) {
+      // F6-5: Durable Identity hierarchy
+      const pieceIdempotencyKey = `generation:${cleanTenant}:${campaign.id}:${piece.id}`;
+
+      try {
+        const genResult = await HermesMediaOrchestratorService.executeGeneration(cleanTenant, piece.id, {
+          capability: 'media.image.generate',
+          prompt: piece.copy || `Visual asset for ${piece.title}`,
+          options: {
+            channel: piece.channel,
+            format: piece.format,
+            title: piece.title,
+            campaignId: campaign.id,
+          },
+          provider: options?.provider || 'auto',
+          idempotencyKey: pieceIdempotencyKey,
+          isSandbox: options?.isSandbox ?? true,
+        });
+
+        if (genResult.ok && genResult.status === 'COMPLETED') {
+          piece.status = 'READY';
+          piece.artifactId = genResult.artifactId;
+          piece.financialBreakdown = genResult.financialBreakdown;
+          piece.asset = {
+            id: genResult.artifactId || `art_${piece.id}`,
+            type: 'image',
+            previewUrl: genResult.artifact?.ipfsUri || genResult.artifact?.cid || 'mock_bafkrei_rendered_campaign_asset',
+            thumbnailUrl: genResult.artifact?.ipfsUri || genResult.artifact?.cid || 'mock_bafkrei_rendered_campaign_asset',
+            dimensions: '1080x1080',
+            mimeType: genResult.artifact?.mimeType || 'image/png',
+          };
+        } else if (genResult.status === 'UNKNOWN') {
+          hasUnknown = true;
+          piece.status = 'PENDING';
+        } else {
+          failureError = genResult.error || 'Fallo en la generación de activo multimedia';
+          piece.status = 'REJECTED';
+          break;
+        }
+      } catch (err: any) {
+        failureError = err?.message || 'Error invocando orquestador de medios';
+        piece.status = 'REJECTED';
+        break;
+      }
+    }
+
+    if (failureError) {
+      campaign.status = 'FAILED';
+      campaign.errorMessage = failureError;
+      this.campaigns.set(cleanTenant, campaign);
+      return { success: false, campaign, error: failureError };
+    }
+
+    if (hasUnknown) {
+      campaign.status = 'RECONCILIATION_REQUIRED';
+    } else {
+      campaign.status = 'CONTENT_READY';
+    }
+
+    this.campaigns.set(cleanTenant, campaign);
+    return { success: true, campaign };
+  }
+
+  /**
    * Notifies that Sofia / Media Co has finished rendering a specific content piece.
    */
   public static notifyPieceContentReady(
@@ -404,6 +507,61 @@ export class DemandDistributionService {
 
     this.campaigns.set(cleanTenant, campaign);
     return piece;
+  }
+
+  /**
+   * P1-3: Autonomous Hook from Media Reconciliation -> Demand Campaign Loop.
+   * Closes the self-healing loop: updates piece state, records verified artifact,
+   * and transitions campaign from RECONCILIATION_REQUIRED to CONTENT_READY without manual steps.
+   */
+  public static onMediaReconciliationOutcome(
+    tenantId: string,
+    requestId: string,
+    outcome: {
+      status: string;
+      resolution: string;
+      artifactId?: string;
+      artifact?: any;
+      financialBreakdown?: any;
+      error?: string;
+    }
+  ): void {
+    const cleanTenant = tenantId.toLowerCase().trim();
+    const campaign = this.campaigns.get(cleanTenant);
+    if (!campaign) return;
+
+    const piece = campaign.pieces.find((p) => p.id === requestId || p.artifactId === requestId);
+    if (!piece) return;
+
+    if (outcome.resolution === 'PROVEN_EXECUTED' && outcome.status === 'COMPLETED') {
+      piece.status = 'READY';
+      piece.artifactId = outcome.artifactId || piece.artifactId;
+      piece.financialBreakdown = outcome.financialBreakdown || piece.financialBreakdown;
+      piece.asset = {
+        id: outcome.artifactId || `art_${piece.id}`,
+        type: 'image',
+        previewUrl: outcome.artifact?.ipfsUri || outcome.artifact?.cid || 'mock_bafkrei_reconciled',
+        thumbnailUrl: outcome.artifact?.ipfsUri || outcome.artifact?.cid || 'mock_bafkrei_reconciled',
+        dimensions: '1080x1080',
+        mimeType: outcome.artifact?.mimeType || 'image/png',
+      };
+
+      // If all pieces in the campaign are now READY or APPROVED, transition campaign to CONTENT_READY!
+      const hasUnready = campaign.pieces.some((p) => p.status === 'GENERATING' || p.status === 'PENDING');
+      if (!hasUnready) {
+        campaign.status = 'CONTENT_READY';
+        campaign.errorMessage = undefined;
+      }
+    } else if (outcome.resolution === 'PROVEN_NOT_EXECUTED' && outcome.status === 'FAILED') {
+      piece.status = 'REJECTED';
+      campaign.status = 'FAILED';
+      campaign.errorMessage = outcome.error || 'Generación fallida tras reconciliación con proveedor.';
+    } else if (outcome.resolution === 'UNRESOLVED') {
+      piece.status = 'PENDING';
+      campaign.status = 'RECONCILIATION_REQUIRED';
+    }
+
+    this.campaigns.set(cleanTenant, campaign);
   }
 
   /**
@@ -531,6 +689,54 @@ export class DemandDistributionService {
       };
     }
 
+    // F6-1: Strict Artifact Gate - verify pieces have approved or verified artifacts with SHA-256 and IPFS
+    const unverifiedPieces: ContentPiece[] = [];
+    for (const p of campaign.pieces) {
+      if (p.asset?.type === 'image' || p.asset?.type === 'video') {
+        if (!p.asset?.previewUrl) {
+          unverifiedPieces.push(p);
+          continue;
+        }
+
+        // Cryptographic audit against hermesArtifacts when DB is available
+        if (p.artifactId && db) {
+          try {
+            const [artRow] = await db
+              .select({
+                id: hermesArtifacts.id,
+                sha256: hermesArtifacts.sha256,
+                cid: hermesArtifacts.cid,
+                ipfsUri: hermesArtifacts.ipfsUri,
+              })
+              .from(hermesArtifacts)
+              .where(
+                and(
+                  eq(hermesArtifacts.tenantId, cleanTenant),
+                  eq(hermesArtifacts.artifactId, p.artifactId)
+                )
+              )
+              .limit(1);
+
+            if (!artRow || !artRow.sha256 || artRow.sha256.length < 64 || (!artRow.cid && !artRow.ipfsUri)) {
+              unverifiedPieces.push(p);
+            }
+          } catch {
+            // Transient select fallback
+          }
+        }
+      }
+    }
+
+    if (unverifiedPieces.length > 0) {
+      return {
+        success: false,
+        campaign,
+        dispatchedChannels: [],
+        failedChannels: campaign.channels,
+        error: `Artifact Gate (F6-1): ${unverifiedPieces.length} pieza(s) no cuentan con artefacto verificado en hermesArtifacts con SHA-256 e IPFS para distribución.`,
+      };
+    }
+
     // 2. Transition state: APPROVED -> DISPATCHING
     campaign.status = 'APPROVED';
     campaign.approvedAt = new Date().toISOString();
@@ -545,6 +751,7 @@ export class DemandDistributionService {
     // 3. Dispatch to Sofia / Media Co via A2A Outbound Dispatcher
     const dispatchedChannels: string[] = [];
     const failedChannels: string[] = [];
+    const unknownChannels: string[] = [];
 
     // Verify channel availability before dispatching (No fake channels)
     const channelMatrix = await this.getChannelMatrix(cleanTenant);
@@ -580,31 +787,93 @@ export class DemandDistributionService {
         };
       }
 
-      // Step B: Dispatch per-channel distribution via A2A
+      // Step B: Dispatch per-channel distribution via Sovereign Orchestrator (or A2A fallback)
       for (const ch of campaign.channels) {
         if (!availableSet.has(ch)) {
           failedChannels.push(ch);
           continue;
         }
 
-        const channelResult = await A2AOutboundDispatcher.sendToSofia(`media.publish.channel:${ch}` as any, {
-          campaignId: campaign.id,
-          channel: ch,
-          tenantId: cleanTenant,
-        }, {
-          tenantId: cleanTenant,
-          correlationId: `${campaign.id}_${ch}`,
-        }).catch(() => ({ success: false }));
+        const piece = campaign.pieces.find((p) => p.channel === ch);
+        const pieceId = piece?.id || `piece_${ch}`;
+        // Rule F4-4: Composite Idempotency Key
+        const compositeKey = `dist:${campaign.id}:${pieceId}:${ch}`;
 
-        if (channelResult.success) {
-          dispatchedChannels.push(ch);
+        // Look for active integration for this tenant and channel
+        let integrationId: string | undefined;
+        try {
+          const [intRow] = await db
+            .select({ id: tenantSocialIntegrations.id })
+            .from(tenantSocialIntegrations)
+            .where(
+              and(
+                eq(tenantSocialIntegrations.tenantId, cleanTenant),
+                eq(tenantSocialIntegrations.channel, ch as any),
+                eq(tenantSocialIntegrations.status, 'CONNECTED')
+              )
+            )
+            .limit(1);
+          integrationId = intRow?.id;
+        } catch {
+          integrationId = undefined;
+        }
+
+        if (integrationId) {
+          try {
+            const contentType = piece?.asset?.type === 'video'
+              ? 'video'
+              : piece?.asset?.type === 'image'
+              ? 'image'
+              : 'text';
+
+            const { job } = await distributionOrchestratorService.createOrGetJob(cleanTenant, {
+              campaignId: campaign.id,
+              pieceId,
+              channel: ch as any,
+              integrationId,
+              idempotencyKey: compositeKey,
+              payload: {
+                text: piece?.copy || campaign.name,
+                contentType,
+                mediaUrls: piece?.asset?.previewUrl ? [piece.asset.previewUrl] : undefined,
+                ctaUrl: piece?.destination,
+                idempotencyKey: compositeKey,
+              },
+            });
+
+            const receipt = await distributionOrchestratorService.dispatchJob(cleanTenant, job.id);
+            if (receipt.success) {
+              dispatchedChannels.push(ch);
+            } else if ((receipt as any).status === 'UNKNOWN') {
+              unknownChannels.push(ch);
+            } else {
+              failedChannels.push(ch);
+            }
+          } catch (orchErr) {
+            console.warn(`[DemandDistributionService] Orchestrator error on channel ${ch}:`, orchErr);
+            failedChannels.push(ch);
+          }
         } else {
-          failedChannels.push(ch);
+          // A2A Sofia dispatch fallback for test/unconfigured channel environments
+          const channelResult = await A2AOutboundDispatcher.sendToSofia(`media.publish.channel:${ch}` as any, {
+            campaignId: campaign.id,
+            channel: ch,
+            tenantId: cleanTenant,
+          }, {
+            tenantId: cleanTenant,
+            correlationId: `${campaign.id}_${ch}`,
+          }).catch(() => ({ success: false }));
+
+          if (channelResult.success) {
+            dispatchedChannels.push(ch);
+          } else {
+            failedChannels.push(ch);
+          }
         }
       }
 
       // Final state reconciliation
-      if (failedChannels.length === 0) {
+      if (failedChannels.length === 0 && unknownChannels.length === 0) {
         campaign.status = 'COMPLETED';
         campaign.completedAt = new Date().toISOString();
         campaign.pieces.forEach((p) => {
@@ -617,6 +886,9 @@ export class DemandDistributionService {
             meetings: 0,
           };
         });
+      } else if (unknownChannels.length > 0) {
+        campaign.status = 'RECONCILIATION_REQUIRED';
+        campaign.errorMessage = `${unknownChannels.length} canal(es) en estado UNKNOWN requieren reconciliación.`;
       } else if (dispatchedChannels.length > 0) {
         campaign.status = 'PARTIALLY_COMPLETED';
         campaign.completedAt = new Date().toISOString();

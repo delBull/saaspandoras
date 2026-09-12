@@ -3953,6 +3953,7 @@ export const hermesMediaRequests = pgTable("hermes_media_requests", {
   requestId: varchar("request_id", { length: 128 }).notNull(),
   correlationId: varchar("correlation_id", { length: 128 }),
   tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 256 }),
   capability: varchar("capability", { length: 128 }).notNull(),
   requestedBy: varchar("requested_by", { length: 128 }),
   provider: varchar("provider", { length: 64 }).default('sofia'),
@@ -3962,12 +3963,43 @@ export const hermesMediaRequests = pgTable("hermes_media_requests", {
   artifactId: varchar("artifact_id", { length: 128 }),
   failureCode: varchar("failure_code", { length: 64 }),
   failureMessage: text("failure_message"),
+  reconciliationAttempts: integer("reconciliation_attempts").default(0).notNull(),
+  lastReconciledAt: timestamp("last_reconciled_at", { withTimezone: true }),
+  nextReconciliationAt: timestamp("next_reconciliation_at", { withTimezone: true }),
+  reconciliationLockUntil: timestamp("reconciliation_lock_until", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 }, (t) => ({
   tenantStatusIdx: index("hermes_media_req_ts_idx").on(t.tenantId, t.status),
   requestIdIdx: uniqueIndex("hermes_media_req_id_unique").on(t.requestId),
+  tenantIdempotencyIdx: uniqueIndex("hermes_media_req_tenant_idem_unique").on(t.tenantId, t.idempotencyKey),
+  reconciliationIdx: index("hermes_media_req_reconcile_idx").on(t.status, t.nextReconciliationAt),
 }));
+
+export const hermesGenerationAttempts = pgTable("hermes_generation_attempts", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  requestId: varchar("request_id", { length: 128 }).notNull().references(() => hermesMediaRequests.id, { onDelete: 'cascade' }),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  attemptNumber: integer("attempt_number").notNull().default(1),
+  provider: varchar("provider", { length: 64 }).notNull(), // 'sofia', 'runpod'
+  executionId: varchar("execution_id", { length: 128 }),
+  status: varchar("status", { length: 32 }).notNull().default('DISPATCHING'), // 'DISPATCHING', 'ACKNOWLEDGED', 'EXECUTING', 'COMPLETED', 'FAILED', 'UNKNOWN'
+  computeSeconds: decimal("compute_seconds", { precision: 8, scale: 3 }).default("0.000"),
+  rawCostUsd: decimal("raw_cost_usd", { precision: 10, scale: 5 }).default("0.00000"),
+  markupCostUsd: decimal("markup_cost_usd", { precision: 10, scale: 5 }).default("0.00000"),
+  totalChargedUsd: decimal("total_charged_usd", { precision: 10, scale: 5 }).default("0.00000"),
+  artifactId: varchar("artifact_id", { length: 128 }),
+  errorCode: varchar("error_code", { length: 64 }),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  requestAttemptIdx: uniqueIndex("hermes_gen_attempt_req_num_idx").on(t.requestId, t.attemptNumber),
+  tenantReqIdx: index("hermes_gen_attempt_tenant_idx").on(t.tenantId, t.requestId),
+}));
+
+export type HermesGenerationAttempt = typeof hermesGenerationAttempts.$inferSelect;
+export type NewHermesGenerationAttempt = typeof hermesGenerationAttempts.$inferInsert;
 
 export const hermesArtifacts = pgTable("hermes_artifacts", {
   id: varchar("id", { length: 128 }).primaryKey(),
@@ -4048,11 +4080,13 @@ export const hermesTenantCredits = pgTable("hermes_tenant_credits", {
   id: varchar("id", { length: 128 }).primaryKey(),
   tenantId: varchar("tenant_id", { length: 128 }).notNull().unique(),
   creditBalanceUsd: decimal("credit_balance_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
+  reservedBalanceUsd: decimal("reserved_balance_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
   totalDepositedUsd: decimal("total_deposited_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
   totalSpentUsd: decimal("total_spent_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
   markupPercentage: integer("markup_percentage").notNull().default(35), // Dynamic markup (default 35%), configurable in admin
   isSandboxEnabled: boolean("is_sandbox_enabled").notNull().default(true),
   sandboxBalanceUsd: decimal("sandbox_balance_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"), // Inicia en $0.00 (Mínimo de recarga: $5.00 USD)
+  sandboxReservedBalanceUsd: decimal("sandbox_reserved_balance_usd", { precision: 12, scale: 4 }).notNull().default("0.0000"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
@@ -4167,3 +4201,114 @@ export const a2aNonces = pgTable("a2a_nonces", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/**
+ * 📢 Tenant Social Distribution Channels & Secret Vault
+ *
+ * Stores external distribution channels configured by tenants (Telegram, X, Newsletter, etc.)
+ *
+ * SECURITY INVARIANTS:
+ * 1. `tenantId` ALWAYS stores the authenticated `canonicalOrgId`. It is NEVER accepted as an authority from client request bodies.
+ * 2. Raw credentials, tokens, or API secrets are NEVER stored in plaintext. They are encrypted as an `EncryptedKnowledgeArtifact`
+ *    via Pandora's AES-256-GCM KnowledgeEnvelopeVault adapter, binding `canonicalOrgId` into the AAD.
+ * 3. Deletion triggers logical revocation (`status = 'REVOKED'`) and cryptographic destruction (`encryptedPayload = null`).
+ * 4. `supportedCapabilities` declares what content types this channel can publish (e.g. ['text', 'image', 'video']),
+ *    independent of `status` ('CONNECTED' | 'REVOKED' | 'ERROR' | 'CONNECTING').
+ */
+export const tenantSocialIntegrations = pgTable("tenant_social_integrations", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(), // Canonical organization UUID (never client authority)
+  channel: varchar("channel", { length: 32 }).notNull(), // 'telegram' | 'x' | 'newsletter'
+  accountName: varchar("account_name", { length: 255 }).notNull(), // e.g. "S'Narai Official Channel"
+  accountHandle: varchar("account_handle", { length: 255 }).notNull(), // e.g. "@snarai_official"
+  status: varchar("status", { length: 32 }).default("CONNECTED").notNull(), // 'CONNECTED' | 'REVOKED' | 'ERROR' | 'CONNECTING'
+  supportedCapabilities: jsonb("supported_capabilities").default([]).notNull(), // string[]: ['text', 'image', 'video']
+  encryptedPayload: jsonb("encrypted_payload"), // EncryptedKnowledgeArtifact | null (shredded on revocation)
+  credentialFingerprint: varchar("credential_fingerprint", { length: 64 }), // Safe truncated SHA-256 for audit
+  metadata: jsonb("metadata").default({}), // Non-sensitive provider metadata (chatId, etc.)
+  lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokedBy: varchar("revoked_by", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    tenantChannelIdx: index("tenant_social_integrations_tenant_channel_idx").on(t.tenantId, t.channel),
+    tenantStatusIdx: index("tenant_social_integrations_tenant_status_idx").on(t.tenantId, t.status),
+  };
+});
+
+export type TenantSocialIntegration = typeof tenantSocialIntegrations.$inferSelect;
+export type NewTenantSocialIntegration = typeof tenantSocialIntegrations.$inferInsert;
+
+/**
+ * 📦 Distribution Jobs (Fase 3)
+ *
+ * Authoritative, transactional record of distribution intentions.
+ * Enforces durable, database-backed idempotency per tenant.
+ */
+export const distributionJobs = pgTable("distribution_jobs", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(), // Canonical organization UUID (never client authority)
+  campaignId: varchar("campaign_id", { length: 128 }).notNull(),
+  pieceId: varchar("piece_id", { length: 128 }).notNull(),
+  channel: varchar("channel", { length: 32 }).notNull(), // 'telegram' | 'x' | 'newsletter'
+  integrationId: varchar("integration_id", { length: 36 }),
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull(),
+  status: varchar("status", { length: 32 }).default("PENDING").notNull(), // 'PENDING' | 'DISPATCHING' | 'ACKNOWLEDGED' | 'PUBLISHING' | 'PUBLISHED' | 'FAILED' | 'UNKNOWN' | 'RECONCILIATION'
+  payload: jsonb("payload").notNull(), // PublicationPayload
+  primaryProvider: varchar("primary_provider", { length: 32 }).default("SOFIA").notNull(),
+  activeAttemptId: varchar("active_attempt_id", { length: 36 }),
+  activeProvider: varchar("active_provider", { length: 32 }), // 'SOFIA' | 'DIRECT'
+  receipt: jsonb("receipt"), // PublicationReceipt
+  reconciliationNotes: text("reconciliation_notes"),
+  reconciliationAttempts: integer("reconciliation_attempts").default(0).notNull(),
+  lastReconciledAt: timestamp("last_reconciled_at", { withTimezone: true }),
+  nextReconciliationAt: timestamp("next_reconciliation_at", { withTimezone: true }),
+  reconciliationLockUntil: timestamp("reconciliation_lock_until", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    tenantIdempotencyUq: uniqueIndex("distribution_jobs_tenant_idempotency_uq").on(t.tenantId, t.idempotencyKey),
+    tenantStatusIdx: index("distribution_jobs_tenant_status_idx").on(t.tenantId, t.status),
+    campaignPieceIdx: index("distribution_jobs_campaign_piece_idx").on(t.campaignId, t.pieceId),
+    reconciliationIdx: index("distribution_jobs_reconcile_idx").on(t.status, t.nextReconciliationAt),
+  };
+});
+
+export type DistributionJob = typeof distributionJobs.$inferSelect;
+export type NewDistributionJob = typeof distributionJobs.$inferInsert;
+
+/**
+ * 🎯 Distribution Execution Attempts (Fase 3)
+ *
+ * Forensic record of every discrete execution attempt (Sofia vs Direct).
+ * Tracks ownership leases, acknowledgments, and outcomes.
+ */
+export const distributionExecutionAttempts = pgTable("distribution_execution_attempts", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  jobId: varchar("job_id", { length: 36 }).notNull().references(() => distributionJobs.id, { onDelete: 'cascade' }),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(), // Canonical organization UUID
+  attemptNumber: integer("attempt_number").notNull(),
+  provider: varchar("provider", { length: 32 }).notNull(), // 'SOFIA' | 'DIRECT'
+  executionId: varchar("execution_id", { length: 255 }), // Handshake ID (e.g. from Sofia ACK)
+  status: varchar("status", { length: 32 }).default("DISPATCHING").notNull(), // 'DISPATCHING' | 'ACKNOWLEDGED' | 'PUBLISHING' | 'PUBLISHED' | 'FAILED' | 'UNKNOWN' | 'BLOCKED'
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+  receipt: jsonb("receipt"), // PublicationReceipt
+  errorCode: varchar("error_code", { length: 64 }),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    jobAttemptIdx: index("distribution_attempts_job_attempt_idx").on(t.jobId, t.attemptNumber),
+    tenantProviderIdx: index("distribution_attempts_tenant_provider_idx").on(t.tenantId, t.provider),
+    executionIdIdx: index("distribution_attempts_execution_id_idx").on(t.executionId),
+  };
+});
+
+export type DistributionExecutionAttempt = typeof distributionExecutionAttempts.$inferSelect;
+export type NewDistributionExecutionAttempt = typeof distributionExecutionAttempts.$inferInsert;
+
+

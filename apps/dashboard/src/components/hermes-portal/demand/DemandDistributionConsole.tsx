@@ -48,6 +48,7 @@ import type {
   ContentPiece,
 } from '@/lib/hermes/demand/demand-distribution.service';
 import { CampaignReviewDrawer } from './CampaignReviewDrawer';
+import { DistributionChannelsDrawer } from './DistributionChannelsDrawer';
 
 interface DemandConsoleProps {
   organizationSlug: string;
@@ -58,6 +59,7 @@ export function DemandDistributionConsole({ organizationSlug }: DemandConsolePro
   const [proposing, setProposing] = useState(false);
   const [approving, setApproving] = useState(false);
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [channelsDrawerOpen, setChannelsDrawerOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<DemandObjective>('GENERATE_LEADS');
 
   const [objectives, setObjectives] = useState<ObjectiveMetadata[]>([]);
@@ -65,6 +67,8 @@ export function DemandDistributionConsole({ organizationSlug }: DemandConsolePro
   const [channels, setChannels] = useState<ChannelStatus[]>([]);
   const [performance, setPerformance] = useState<CampaignPerformanceMetrics | null>(null);
   const [insight, setInsight] = useState<StrategicInsight | null>(null);
+  const [credits, setCredits] = useState<any | null>(null);
+  const [reconciling, setReconciling] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Load state from API
@@ -84,11 +88,33 @@ export function DemandDistributionConsole({ organizationSlug }: DemandConsolePro
         setChannels(data.channels || []);
         setPerformance(data.performance || null);
         setInsight(data.insight || null);
+        setCredits(data.tenantCredits || null);
       }
     } catch (err) {
       console.error('Failed to load demand state:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReconcile = async () => {
+    try {
+      setReconciling(true);
+      const res = await fetch('/api/v1/hermes/reconcile/sweeper', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setFeedbackMessage({
+          type: 'success',
+          text: `Barrido de reconciliación completado: ${data.cycle.reconciledCount} resuelto(s), ${data.cycle.unresolvedCount} pendiente(s).`,
+        });
+        await loadDemandState();
+      } else {
+        setFeedbackMessage({ type: 'error', text: data.error || 'Error al ejecutar reconciliador.' });
+      }
+    } catch (err: any) {
+      setFeedbackMessage({ type: 'error', text: err?.message || 'Error de conexión con el reconciliador.' });
+    } finally {
+      setReconciling(false);
     }
   };
 
@@ -188,6 +214,28 @@ export function DemandDistributionConsole({ organizationSlug }: DemandConsolePro
         </div>
 
         <div className="flex items-center gap-3">
+          {credits && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs font-mono text-zinc-300">
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>GPU: </span>
+              <strong className="text-white">
+                ${credits.isSandboxEnabled ? (credits.sandboxBalanceUsd ?? 0).toFixed(2) : (credits.creditBalanceUsd ?? 0).toFixed(2)}
+              </strong>
+              {credits.isSandboxEnabled && (
+                <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400 py-0 px-1 ml-0.5">SANDBOX</Badge>
+              )}
+            </div>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setChannelsDrawerOpen(true)}
+            className="border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs rounded-xl"
+          >
+            <Radio className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+            Canales Soberanos
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -277,17 +325,34 @@ export function DemandDistributionConsole({ organizationSlug }: DemandConsolePro
                 <Radio className="w-4 h-4 text-indigo-400" />
                 <h2 className="text-base font-medium text-white tracking-tight">B. Campaign</h2>
               </div>
-              <Badge
-                className={`text-[10px] font-mono uppercase px-2 py-0.5 ${
-                  campaign?.status === 'COMPLETED'
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : campaign?.status === 'DISPATCHING'
-                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                }`}
-              >
-                {campaign?.status || 'PROPOSED'}
-              </Badge>
+              {campaign?.status === 'RECONCILIATION_REQUIRED' ? (
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[10px] font-mono animate-pulse">
+                    RECONCILIATION REQUIRED
+                  </Badge>
+                  <Button
+                    size="sm"
+                    onClick={handleReconcile}
+                    disabled={reconciling}
+                    className="h-6 px-2 text-[10px] rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-mono"
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${reconciling ? 'animate-spin' : ''}`} />
+                    Reconciliar
+                  </Button>
+                </div>
+              ) : (
+                <Badge
+                  className={`text-[10px] font-mono uppercase px-2 py-0.5 ${
+                    campaign?.status === 'COMPLETED'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : campaign?.status === 'DISPATCHING'
+                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse'
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  }`}
+                >
+                  {campaign?.status || 'PROPOSED'}
+                </Badge>
+              )}
             </div>
 
             <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 mb-4">
@@ -460,7 +525,15 @@ export function DemandDistributionConsole({ organizationSlug }: DemandConsolePro
                 <Layers className="w-4 h-4 text-emerald-400" />
                 <h2 className="text-base font-medium text-white tracking-tight">C. Distribution</h2>
               </div>
-              <span className="text-xs text-zinc-500 font-mono">THIS WEEK</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setChannelsDrawerOpen(true)}
+                className="h-7 text-[11px] border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-300 rounded-lg"
+              >
+                <Radio className="w-3 h-3 mr-1.5 text-indigo-400" />
+                Gestionar Canales
+              </Button>
             </div>
 
             <p className="text-xs text-zinc-400 font-light mb-4">
@@ -595,6 +668,13 @@ export function DemandDistributionConsole({ organizationSlug }: DemandConsolePro
         onClose={() => setReviewDrawerOpen(false)}
         campaign={campaign}
         onPieceUpdated={handlePieceUpdated}
+      />
+
+      {/* ── SOVEREIGN DISTRIBUTION CHANNELS DRAWER ── */}
+      <DistributionChannelsDrawer
+        isOpen={channelsDrawerOpen}
+        onClose={() => setChannelsDrawerOpen(false)}
+        tenantSlug={organizationSlug}
       />
     </div>
   );

@@ -360,7 +360,41 @@ export function CampaignReviewDrawer({
               <Clock className="w-3.5 h-3.5 text-zinc-500" />
               <span>Programado: <strong className="text-zinc-300">{currentPiece.publishAt}</strong></span>
             </div>
+
+            {/* ARTIFACT & PROVENANCE (F5/F6) */}
+            {currentPiece.artifactId && (
+              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-2 border-t border-zinc-800/60">
+                <span className="text-zinc-500">Sovereign Artifact:</span>
+                <span className="text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 truncate max-w-[200px]">
+                  {currentPiece.artifactId}
+                </span>
+              </div>
+            )}
           </div>
+
+          {/* FINANCIAL AUDIT 3-WAY BREAKDOWN (F5/F6) */}
+          {currentPiece.financialBreakdown && (
+            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/30 p-4 space-y-2 text-xs font-mono">
+              <div className="flex items-center justify-between text-zinc-400">
+                <span className="text-zinc-500 uppercase text-[10px]">Auditoría Financiera GPU (3-Way)</span>
+                <span className="text-emerald-400 text-[10px]">LEDGER SETTLED</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                <div className="p-2 rounded-lg bg-zinc-950/60 border border-zinc-800/50">
+                  <span className="text-[9px] text-zinc-500 block uppercase">Raw GPU</span>
+                  <span className="text-zinc-300 font-medium">${currentPiece.financialBreakdown.rawCostUsd.toFixed(4)}</span>
+                </div>
+                <div className="p-2 rounded-lg bg-zinc-950/60 border border-zinc-800/50">
+                  <span className="text-[9px] text-zinc-500 block uppercase">Markup (+35%)</span>
+                  <span className="text-zinc-300 font-medium">${currentPiece.financialBreakdown.markupCostUsd.toFixed(4)}</span>
+                </div>
+                <div className="p-2 rounded-lg bg-zinc-950/60 border border-purple-500/30">
+                  <span className="text-[9px] text-purple-400 block uppercase">Total Cobrado</span>
+                  <span className="text-purple-300 font-bold">${currentPiece.financialBreakdown.totalChargedUsd.toFixed(4)}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── POST-PUBLICATION PERFORMANCE SURFACE (IF PUBLISHED) ── */}
           {isPublished && currentPiece.performance && (

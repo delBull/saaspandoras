@@ -365,6 +365,13 @@
       "when": 1789040000000,
       "tag": "0052_contact_doctrine_seals",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1789188826923,
+      "tag": "0052_tearful_vampiro",
+      "breakpoints": true
     }
   ]
 }
