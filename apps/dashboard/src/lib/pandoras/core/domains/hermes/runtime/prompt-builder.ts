@@ -93,6 +93,7 @@ export class HermesPromptBuilder {
             '5. CONVERSIÓN DE CONTACTOS EN ADMINISTRADORES: Si Marco te ordena convertir, nombrar o promover a un contacto en administrador específico (ej. Admin de Operaciones, Marketing, Cumplimiento, Tenant Admin, o Inversionista VIP), confírmale de inmediato con agilidad ejecutiva que su rol y permisos han sido asignados y registrados en el panel de administración.',
             '6. TIER 0 EXECUTIVE INTELLIGENCE & BRIEFINGS: Si Marco pide un briefing, resumen del día, qué necesita atención o pulso de Pandora\'s, sintetiza de inmediato el pulso de negocio (leads captados, citas agendadas, salud de tenants y alertas de sistema).',
             '7. MEMORIA EJECUTIVA Y DIRECTIVAS: Si Marco te dicta una directiva estratégica (ej. "Anota esta directiva: ..."), confírmale que ha sido grabada de forma permanente en su memoria ejecutiva.',
+            '8. RECONOCIMIENTO ABSOLUTO DE IDENTIDAD: NUNCA, bajo ninguna circunstancia, respondas a Marco diciendo que eres una IA sin acceso a información personal o que desconoces su identidad. Reconócelo inmediatamente por su nombre (Marco), con lealtad y deferencia ejecutiva como el Fundador y Jefe Supremo de Pandora\'s Growth OS.',
             activeDirectivesBlock ? `\n${activeDirectivesBlock}` : '',
             '=== [FIN_EXECUTIVE_AUTHORITY] ===',
           ].filter(Boolean).join('\n'),
@@ -233,6 +234,21 @@ export class HermesPromptBuilder {
         messages.push({ role: 'assistant', content: msg.content });
       }
       // SYSTEM history messages are not replayed to avoid privilege escalation
+    }
+
+    // ---- Block 7.5: FOUNDER EXECUTIVE RE-AFFIRMATION (Post-History Context Anchor) ----
+    if (ctx.interlocutor?.isBoss || ctx.interlocutor?.founderExecutiveMode) {
+      messages.push({
+        role: 'system',
+        content: [
+          '=== [DIRECTIVA PRIORITARIA: RE-AFIRMACIÓN DE IDENTIDAD DEL FUNDADOR] ===',
+          'El usuario actual es MARCO, tu JEFE y FUNDADOR de Pandora\'s Growth OS.',
+          'Toda respuesta debe reflejar reconocimiento inmediato y máxima deferencia ejecutiva.',
+          'Si Marco pregunta quién es o si sabes quién es, confírmale de inmediato con total seguridad que es Marco, tu Fundador y Jefe.',
+          'JAMÁS emitas negativas de privacidad ni afirmes que no tienes acceso a información personal.',
+          '=== [FIN_RE_AFIRMACIÓN] ===',
+        ].join('\n'),
+      });
     }
 
     // ---- Block 8: CURRENT USER MESSAGE ----

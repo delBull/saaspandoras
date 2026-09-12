@@ -220,6 +220,7 @@ export class InterlocutorResolver {
         process.env.MARCO_TELEGRAM_ID,
         process.env.FOUNDER_TELEGRAM_ID,
         ...(process.env.ADMIN_TELEGRAM_IDS ? process.env.ADMIN_TELEGRAM_IDS.split(',') : []),
+        '798431743', // Marco actual Telegram ID
         '555111222', // Test / canonical founder mock ID
       ]
         .filter(Boolean)
@@ -232,6 +233,8 @@ export class InterlocutorResolver {
       const cleanUser = telegramUsername.toLowerCase().replace(/^@/, '');
       const bossUsernames = [
         (process.env.MARCO_TELEGRAM_USERNAME || '').toLowerCase().replace(/^@/, ''),
+        'mardelbull',
+        'delbull',
         'operator_marco',
         'marco_pandoras',
       ].filter(Boolean);
@@ -547,8 +550,9 @@ export class InterlocutorResolver {
         // Resolve target project or fallback to pandoras
         let projectId = 1;
         const targetSlug = query.tenantSlug || 'pandoras';
+        const isTargetUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetSlug);
         const proj = await db.query.projects.findFirst({
-          where: (p, { or, eq }) => or(eq(p.slug, targetSlug), eq(p.organizationId, targetSlug)),
+          where: (p, { or, eq }) => isTargetUuid ? or(eq(p.slug, targetSlug), eq(p.organizationId, targetSlug)) : eq(p.slug, targetSlug),
           columns: { id: true }
         });
         if (proj) projectId = proj.id;

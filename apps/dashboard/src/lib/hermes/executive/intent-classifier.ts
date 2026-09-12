@@ -27,6 +27,11 @@ export class ExecutiveIntentClassifier {
       return { type: 'CAPABILITIES_HELP', raw: text };
     }
 
+    // 1.5. Founder Identity Query ("¿Sabes quién soy?", "¿Quién soy?", etc.)
+    if (this.isFounderIdentityQuery(text)) {
+      return { type: 'FOUNDER_IDENTITY_QUERY', raw: text };
+    }
+
     // 2. Two-phase confirmation
     if (this.isConfirmation(text)) {
       return { type: 'CONFIRMATION', raw: text };
@@ -78,6 +83,16 @@ export class ExecutiveIntentClassifier {
 
   public static isCancellation(text: string): boolean {
     return /^(?:cancela|cancelar|aborta|abortar|no|det[eé]n|detener|descarta|descartar|\/cancel|\/abortar)$/i.test(text.trim());
+  }
+
+  public static isFounderIdentityQuery(text: string): boolean {
+    const clean = (text || '')
+      .toLowerCase()
+      .replace(/[¿?¡!.,;:_]/g, '')
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    return /^(?:(?:sabes\s+)?qui[eé]n\s+(?:soy(?:\s+yo)?|te\s+habla|te\s+escribe)|sabes\s+con\s+qui[eé]n\s+hablas|me\s+conoces|te\s+acuerdas\s+de\s+m[ií]|qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador)|sabes\s+qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador))$/i.test(clean);
   }
 
   private static parseFinancialSignatureIntent(text: string): ParsedExecutiveIntent | null {

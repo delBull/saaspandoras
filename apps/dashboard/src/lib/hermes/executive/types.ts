@@ -100,6 +100,7 @@ export type ParsedExecutiveIntent =
   | { type: 'CONFIRMATION'; raw: string }
   | { type: 'CANCELLATION'; raw: string }
   | { type: 'CAPABILITIES_HELP'; raw: string }
+  | { type: 'FOUNDER_IDENTITY_QUERY'; raw: string }
   | {
       type: 'OPERATIONAL_ACTION';
       action: ExecutiveActionType;

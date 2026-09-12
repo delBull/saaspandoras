@@ -56,6 +56,26 @@ describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
       expect(result.executivePrivilege).toBe(true);
     });
 
+    it('detects Marco as Boss via live production Telegram ID (798431743) and username (@mardelbull)', async () => {
+      const resultA = await InterlocutorResolver.resolve({
+        channel: 'telegram',
+        telegramId: '798431743',
+        telegramUsername: 'mardelbull',
+      });
+
+      expect(resultA.isBoss).toBe(true);
+      expect(resultA.name).toBe('Marco');
+      expect(resultA.role).toBe('FOUNDER_BOSS');
+
+      const resultB = await InterlocutorResolver.resolve({
+        channel: 'telegram',
+        telegramUsername: 'delbull',
+      });
+
+      expect(resultB.isBoss).toBe(true);
+      expect(resultB.name).toBe('Marco');
+    });
+
     it('detects Marco as Boss on Nexus Terminal with admin context', async () => {
       const result = await InterlocutorResolver.resolve({
         channel: 'nexus',
@@ -366,6 +386,55 @@ describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
       } finally {
         process.env.TELEGRAM_WEBHOOK_SECRET = originalSecret;
       }
+    });
+  });
+
+  describe('6. Founder Identity Direct Recognition & Prompt Anchoring', () => {
+    it('classifies identity queries as FOUNDER_IDENTITY_QUERY in ExecutiveIntentClassifier', async () => {
+      const { ExecutiveIntentClassifier } = await import('@/lib/hermes/executive/intent-classifier');
+
+      expect(ExecutiveIntentClassifier.classify('Sabes quién soy ?').type).toBe('FOUNDER_IDENTITY_QUERY');
+      expect(ExecutiveIntentClassifier.classify('¿Quién soy?').type).toBe('FOUNDER_IDENTITY_QUERY');
+      expect(ExecutiveIntentClassifier.classify('¿Quién te habla?').type).toBe('FOUNDER_IDENTITY_QUERY');
+      expect(ExecutiveIntentClassifier.classify('¿Sabes con quién hablas?').type).toBe('FOUNDER_IDENTITY_QUERY');
+      expect(ExecutiveIntentClassifier.classify('¿Me conoces?').type).toBe('FOUNDER_IDENTITY_QUERY');
+      expect(ExecutiveIntentClassifier.classify('¿Quién es tu creador?').type).toBe('FOUNDER_IDENTITY_QUERY');
+      expect(ExecutiveIntentClassifier.classify('¿Quién es tu jefe?').type).toBe('FOUNDER_IDENTITY_QUERY');
+    });
+
+    it('injects Post-History Founder Executive Re-affirmation Anchor in PromptBuilder', async () => {
+      const { HermesPromptBuilder } = await import('@/lib/pandoras/core/domains/hermes/runtime/prompt-builder');
+
+      const prompt = HermesPromptBuilder.build({
+        reasoningContext: {
+          systemRules: ['Rule 1'],
+          governanceRestrictions: [],
+          tenantIdentity: { agentName: 'Hermes', organizationName: "Pandora's Growth OS" },
+          activeKnowledge: [],
+          activeCapabilities: [],
+          interlocutor: {
+            isBoss: true,
+            name: 'Marco',
+            role: 'FOUNDER_BOSS',
+            actorId: 'marco_founder',
+            executivePrivilege: true,
+          },
+          conversationHistory: [
+            { id: '1', role: 'USER', content: 'Pregunta anterior', createdAt: new Date() },
+            { id: '2', role: 'ASSISTANT', content: 'Respuesta anterior', createdAt: new Date() },
+          ],
+          currentMessage: { id: '3', role: 'USER', content: 'Sabes quién soy ?', createdAt: new Date() },
+        },
+      });
+
+      // Assert post-history anchor exists right before current user message
+      const lastSystemMsg = prompt.messages.filter(m => m.role === 'system').pop();
+      expect(lastSystemMsg?.content).toContain('DIRECTIVA PRIORITARIA: RE-AFIRMACIÓN DE IDENTIDAD DEL FUNDADOR');
+      expect(lastSystemMsg?.content).toContain('El usuario actual es MARCO, tu JEFE y FUNDADOR');
+
+      // Assert Block 2.5 has directive 8
+      const founderBlock = prompt.messages.find(m => m.content.includes('HERMES EXECUTIVE SOVEREIGN PLANE: MODO FUNDADOR'));
+      expect(founderBlock?.content).toContain('8. RECONOCIMIENTO ABSOLUTO DE IDENTIDAD');
     });
   });
 });

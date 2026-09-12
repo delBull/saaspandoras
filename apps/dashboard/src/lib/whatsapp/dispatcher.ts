@@ -154,7 +154,7 @@ export class WhatsAppDispatcher {
   /**
    * Main dispatch entrypoint
    */
-  static async dispatch(payload: WhatsAppWebhookPayload): Promise<{ status: string; handled: boolean; target: 'tenant_cognitive' | 'pandoras_acquisition' | 'unrecognized'; response?: string }> {
+  static async dispatch(payload: WhatsAppWebhookPayload): Promise<{ status: string; handled: boolean; target: 'tenant_cognitive' | 'pandoras_acquisition' | 'boss_executive_runtime' | 'unrecognized'; response?: string }> {
     const changes = payload.entry?.[0]?.changes?.[0]?.value;
     const messages = changes?.messages;
 
@@ -371,6 +371,61 @@ export class WhatsAppDispatcher {
 
     // ── 2. Route to Pandora's Acquisition / Hermes Cognitive Engine ────────
     console.log(`🌐 [WhatsAppDispatcher] Routing message to PANDORA'S COGNITIVE RUNTIME`);
+
+    // EXECUTIVE PRIVILEGE: If the interlocutor is the Boss (Marco), bypass legacy acquisition funnels completely
+    if (resolvedInterlocutor?.isBoss) {
+      console.log(`👑 [WhatsAppDispatcher] Interlocutor is Boss/Founder (${resolvedName}) — bypassing simpleRouter and delegating directly to Executive Cognitive Runtime`);
+      try {
+        const runtime = getDefaultRuntime();
+        const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone);
+
+        const runtimeResponse = await runtime.respond({
+          organizationId: 'pandoras',
+          conversationId,
+          message: {
+            id: messageId,
+            role: 'USER',
+            content: messageText,
+            createdAt: new Date(),
+          },
+          controlPlaneContext: {
+            actorId: resolvedActorId,
+            organizationId: 'pandoras',
+            role: 'OWNER',
+            permissions: resolvedPermissions,
+            sessionId: `wa_sess_pandoras_${cleanPhone}`,
+            identity: {
+              name: resolvedName,
+              isBoss: true,
+              title: resolvedInterlocutor?.title,
+              executivePrivilege: true,
+            },
+            interlocutor: resolvedInterlocutor,
+          }
+        });
+
+        const bossReply = runtimeResponse.content || "A tus órdenes, Marco. ¿En qué te asisto hoy?";
+        await sendWhatsAppMessage(phone, bossReply, messageId);
+
+        return {
+          status: 'success',
+          handled: true,
+          target: 'boss_executive_runtime',
+          response: bossReply,
+        };
+      } catch (err) {
+        console.error('[WhatsAppDispatcher] Error in Boss executive runtime response:', err);
+        const fallbackText = "Marco, he recibido tu instrucción. Hubo una breve intermitencia en el motor de respuesta, pero el enlace soberano sigue activo.";
+        await sendWhatsAppMessage(phone, fallbackText, messageId);
+        return {
+          status: 'error_boss_runtime',
+          handled: true,
+          target: 'boss_executive_runtime',
+          response: fallbackText,
+        };
+      }
+    }
+
     const routerPayload = {
       from: phone,
       id: messageId,
@@ -383,9 +438,8 @@ export class WhatsAppDispatcher {
 
     let result = await routeSimpleMessage(routerPayload);
 
-    // If the caller is the Boss, or legacy flow is completed, or simpleRouter did not produce a user-facing response, delegate directly to Hermes AI Runtime
+    // If legacy flow is completed, or simpleRouter did not produce a user-facing response, delegate to Hermes AI Runtime
     if (
-      resolvedInterlocutor?.isBoss || 
       !result.handled || 
       result.isCompleted || 
       result.action === 'flow_completed' || 

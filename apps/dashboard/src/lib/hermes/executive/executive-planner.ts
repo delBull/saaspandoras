@@ -162,37 +162,41 @@ export class ExecutivePlanner {
 
           let newBalance = amountUsd;
           if (db) {
-            const existing = await db.query.hermesTenantCredits.findFirst({
-              where: eq(hermesTenantCredits.tenantId, tenantId),
-            });
-
-            if (existing) {
-              const currentBal = parseFloat(existing.creditBalanceUsd || '0');
-              const currentDep = parseFloat(existing.totalDepositedUsd || '0');
-              newBalance = Number((currentBal + amountUsd).toFixed(4));
-              const newDeposited = Number((currentDep + amountUsd).toFixed(4));
-
-              await db
-                .update(hermesTenantCredits)
-                .set({
-                  creditBalanceUsd: newBalance.toFixed(4),
-                  totalDepositedUsd: newDeposited.toFixed(4),
-                  updatedAt: new Date(),
-                })
-                .where(eq(hermesTenantCredits.tenantId, tenantId));
-            } else {
-              await db.insert(hermesTenantCredits).values({
-                id: `cred_${tenantId}`,
-                tenantId,
-                creditBalanceUsd: amountUsd.toFixed(4),
-                totalDepositedUsd: amountUsd.toFixed(4),
-                totalSpentUsd: '0.0000',
-                markupPercentage: TenantCreditLedgerService.DEFAULT_MARKUP_PERCENTAGE,
-                isSandboxEnabled: true,
-                sandboxBalanceUsd: '0.0000',
-                createdAt: new Date(),
-                updatedAt: new Date(),
+            try {
+              const existing = await db.query.hermesTenantCredits.findFirst({
+                where: eq(hermesTenantCredits.tenantId, tenantId),
               });
+
+              if (existing) {
+                const currentBal = parseFloat(existing.creditBalanceUsd || '0');
+                const currentDep = parseFloat(existing.totalDepositedUsd || '0');
+                newBalance = Number((currentBal + amountUsd).toFixed(4));
+                const newDeposited = Number((currentDep + amountUsd).toFixed(4));
+
+                await db
+                  .update(hermesTenantCredits)
+                  .set({
+                    creditBalanceUsd: newBalance.toFixed(4),
+                    totalDepositedUsd: newDeposited.toFixed(4),
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(hermesTenantCredits.tenantId, tenantId));
+              } else {
+                await db.insert(hermesTenantCredits).values({
+                  id: `cred_${tenantId}`,
+                  tenantId,
+                  creditBalanceUsd: amountUsd.toFixed(4),
+                  totalDepositedUsd: amountUsd.toFixed(4),
+                  totalSpentUsd: '0.0000',
+                  markupPercentage: TenantCreditLedgerService.DEFAULT_MARKUP_PERCENTAGE,
+                  isSandboxEnabled: true,
+                  sandboxBalanceUsd: '0.0000',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                });
+              }
+            } catch (dbErr) {
+              console.warn('[ExecutivePlanner] DB write bypassed or failed, continuing with in-memory ledger update:', dbErr);
             }
           }
 

@@ -90,13 +90,17 @@ export async function POST(req: NextRequest) {
       tenantSlug = interlocutor.tenantSlug;
     } else if (telegramId) {
       // Check if user has an explicit active organization bound in telegramBindings
-      const { telegramBindings } = await import('@/db/schema');
-      const binding = await db.query.telegramBindings.findFirst({
-        where: eq(telegramBindings.telegramUserId, telegramId),
-        columns: { activeOrganizationId: true }
-      });
-      if (binding?.activeOrganizationId) {
-        tenantSlug = binding.activeOrganizationId;
+      try {
+        const { telegramBindings } = await import('@/db/schema');
+        const binding = await db.query.telegramBindings.findFirst({
+          where: eq(telegramBindings.telegramUserId, telegramId),
+          columns: { activeOrganizationId: true }
+        });
+        if (binding?.activeOrganizationId) {
+          tenantSlug = binding.activeOrganizationId;
+        }
+      } catch (bindErr) {
+        console.warn('[Hermes Telegram Webhook] Non-blocking warning reading activeOrganizationId from telegramBindings:', bindErr);
       }
     }
 
@@ -112,6 +116,10 @@ export async function POST(req: NextRequest) {
         const w2e = proj.w2eConfig as any;
         botToken = trc?.secrets?.telegramBotToken || trc?.telegramBotToken || w2e?.botConfig?.telegramToken;
       }
+    }
+
+    if (!botToken) {
+      console.warn(`[Hermes Telegram Webhook] ⚠️ No Telegram bot token found in environment or tenant config for '${tenantSlug}'. Cannot deliver message to chat ${chatId}.`);
     }
 
     // 4. Dispatch to HermesRuntime with Cognitive Context

@@ -537,6 +537,34 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         // Parse executive message intents
         const parsedIntent = ExecutiveIntentClassifier.classify(msgText);
 
+        // Tier 0: Founder Identity Direct Recognition & Executive Salutation
+        if (parsedIntent.type === 'FOUNDER_IDENTITY_QUERY') {
+          const founderIdentityReply = `¡Por supuesto, Marco! Sé perfectamente quién eres:\n\nEres el **Fundador, Creador y Jefe Supremo** de Pandora's Growth OS, Hermes OS y el ecosistema Narai.\n\nCuentas con credenciales y autorización ejecutiva plena (Tier 0 a Tier 3) sobre todos los tenants, directivas de memoria, agentes y operaciones del sistema.\n\nEstoy a tu entera disposición, Jefe. ¿En qué frente o directiva estratégica avanzamos hoy?`;
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_founder_id_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: founderIdentityReply,
+            suggestedActions: ['/briefing', '/leads', '/schema'],
+            providerMeta: {
+              provider: 'executive-identity-gate',
+              model: 'tier-0-founder-recognition',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
         // Tier 0: Executive Capabilities Manifest & Help
         if (parsedIntent.type === 'CAPABILITIES_HELP') {
           const { ExecutiveCapabilitiesManifest } = await import('@/lib/hermes/executive/capabilities-manifest');
