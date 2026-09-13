@@ -25,6 +25,7 @@ import {
   ClipboardList,
   Share2,
   Upload,
+  Sparkles,
 } from "lucide-react";
 import type { NexusRole } from "@/lib/nexus/nexus-rbac";
 import type { NexusPermissionsOverride } from "@/db/schema";
@@ -59,7 +60,7 @@ export function CollaboratorPermissionsDrawer({
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<"permisos" | "dataroom">("permisos");
+  const [activeTab, setActiveTab] = useState<"permisos" | "dataroom" | "academy">("permisos");
 
   // Data Room state
   interface DealRoomRef {
@@ -228,11 +229,12 @@ export function CollaboratorPermissionsDrawer({
               {[
                 { id: "permisos", label: "Permisos & Rol", icon: Shield },
                 { id: "dataroom", label: "Data Room", icon: FolderOpen },
+                { id: "academy", label: "Cursos Academy", icon: GraduationCap },
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as "permisos" | "dataroom")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-semibold transition-all border-b-2 ${
+                  onClick={() => setActiveTab(tab.id as "permisos" | "dataroom" | "academy")}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition-all border-b-2 ${
                     activeTab === tab.id
                       ? "border-amber-500 text-amber-400 bg-amber-500/5"
                       : "border-transparent text-zinc-500 hover:text-zinc-300"
@@ -341,13 +343,38 @@ export function CollaboratorPermissionsDrawer({
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-white">Academy Control Plane (Admin)</p>
-                        <p className="text-[10px] text-zinc-400">Gestionar alumnos, currículum COO/CFO y certificados</p>
+                        <p className="text-[10px] text-zinc-400">Supervisar todos los tracks y emitir certificaciones</p>
                       </div>
                     </div>
                     <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
                       permissions.academyAdmin ? "bg-violet-500 border-violet-500 text-white font-bold" : "border-zinc-700 bg-zinc-800/60"
                     }`}>
                       {permissions.academyAdmin && <Check className="w-3.5 h-3.5" />}
+                    </div>
+                  </div>
+
+                  {/* Academy Course Creator */}
+                  <div
+                    onClick={() => togglePermission("academyCreator")}
+                    className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                      permissions.academyCreator
+                        ? "bg-[#D4A853]/[0.07] border-[#D4A853]/30 text-white"
+                        : "bg-zinc-900/40 border-white/5 text-zinc-400 hover:border-white/10"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${permissions.academyCreator ? "bg-[#D4A853]/20 text-[#D4A853]" : "bg-zinc-800 text-zinc-500"}`}>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-white">Academy Course Creator</p>
+                        <p className="text-[10px] text-zinc-400">Diseñar y publicar programas educativos socráticos</p>
+                      </div>
+                    </div>
+                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                      permissions.academyCreator ? "bg-[#D4A853] border-[#D4A853] text-black font-bold" : "border-zinc-700 bg-zinc-800/60"
+                    }`}>
+                      {permissions.academyCreator && <Check className="w-3.5 h-3.5" />}
                     </div>
                   </div>
 
@@ -653,6 +680,109 @@ export function CollaboratorPermissionsDrawer({
                   </div>
                 </div>
               )} {/* end DATA ROOM TAB */}
+
+              {/* ── ACADEMY COURSES TAB (DEAL ROOM STYLE ISOLATION) ── */}
+              {activeTab === "academy" && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/10">
+                      <GraduationCap className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        Cursos &amp; Tracks Asignados
+                      </span>
+                      <p className="text-[10px] text-zinc-500">
+                        Control de Co-Administración Delegada · Pandora&apos;s Academy
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-zinc-950 border border-white/10 space-y-2 text-xs">
+                    <div className="font-bold text-[#D4A853] flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5" />
+                      Aislamiento Estricto por Creador (Deal Room Model)
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Los cursos creados por el Fundador son 100% privados y exclusivos. Para que <strong>{collaborator.name}</strong> ({collaborator.email}) pueda ver, co-administrar o evaluar exámenes en un track, debes concederle un rol delegado aquí.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      { id: "prog_rwa_real_estate_master_v1", name: "Master Executive en Tokenización Inmobiliaria (RWA)", code: "RWA-REALESTATE-MASTER-v1.0" },
+                      { id: "prog_coo_executive_v2", name: "Chief Operating Officer (COO Track)", code: "COO-EXEC-v2.0" },
+                      { id: "prog_cmo_executive_v1", name: "Chief Marketing Officer (CMO Track)", code: "CMO-GROWTH-v1.0" },
+                      { id: "prog_cfo_executive_v1", name: "Chief Financial Officer (CFO Track)", code: "CFO-TREASURY-v1.0" },
+                      { id: "prog_hermes_operator_v1", name: "Hermes AI Kernel Operator (Operator Track)", code: "HERMES-OPERATOR-v1.0" },
+                    ].map((course) => {
+                      // Read current role from localStorage if present
+                      let currentRole = "NONE";
+                      try {
+                        const shares = JSON.parse(localStorage.getItem("pandoras_academy_tracks_shares") || "{}");
+                        const courseShares = shares[course.id] || [];
+                        const userShare = courseShares.find((s: any) => s.email.toLowerCase() === collaborator.email.toLowerCase());
+                        if (userShare) currentRole = userShare.role;
+                      } catch {}
+
+                      const handleRoleSelect = (newRole: string) => {
+                        try {
+                          const shares = JSON.parse(localStorage.getItem("pandoras_academy_tracks_shares") || "{}");
+                          let courseShares = shares[course.id] || [];
+                          courseShares = courseShares.filter((s: any) => s.email.toLowerCase() !== collaborator.email.toLowerCase());
+                          if (newRole !== "NONE") {
+                            courseShares.push({
+                              email: collaborator.email.toLowerCase(),
+                              role: newRole,
+                              addedAt: new Date().toISOString(),
+                              addedBy: "Settings Admin",
+                            });
+                          }
+                          shares[course.id] = courseShares;
+                          localStorage.setItem("pandoras_academy_tracks_shares", JSON.stringify(shares));
+                          setFeedback({ type: "success", message: `Rol actualizado en ${course.code}` });
+                        } catch {}
+                      };
+
+                      return (
+                        <div key={course.id} className="p-3.5 rounded-2xl bg-zinc-900/50 border border-white/10 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-semibold text-white">{course.name}</p>
+                              <span className="text-[10px] font-mono text-zinc-500 uppercase">{course.code}</span>
+                            </div>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                              currentRole === "CO_ADMIN"
+                                ? "bg-purple-500/20 text-purple-300 border-purple-500/40 font-bold"
+                                : currentRole === "INSTRUCTOR"
+                                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold"
+                                : currentRole === "VIEWER"
+                                ? "bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold"
+                                : "bg-zinc-800 text-zinc-500 border-zinc-700"
+                            }`}>
+                              {currentRole === "NONE" ? "Sin Acceso" : currentRole}
+                            </span>
+                          </div>
+
+                          <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
+                            <span className="text-[10px] text-zinc-400 font-mono">Nivel de Delegación:</span>
+                            <select
+                              defaultValue={currentRole}
+                              onChange={(e) => handleRoleSelect(e.target.value)}
+                              className="bg-black/60 border border-white/15 rounded-lg px-2.5 py-1 text-xs text-zinc-200 focus:outline-none focus:border-purple-500 font-mono cursor-pointer"
+                            >
+                              <option value="NONE">Sin Acceso (Privado)</option>
+                              <option value="CO_ADMIN">👑 Co-Admin (Total)</option>
+                              <option value="INSTRUCTOR">🎓 Instructor (Exámenes)</option>
+                              <option value="VIEWER">👁️ Viewer (Solo Lectura)</option>
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )} {/* end ACADEMY COURSES TAB */}
 
             </div> {/* end scrollable content */}
 

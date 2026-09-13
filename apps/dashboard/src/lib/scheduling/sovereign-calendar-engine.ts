@@ -31,6 +31,9 @@ export interface DayAvailability {
 
 export interface SovereignCalendarConfig {
   isActive: boolean;
+  title?: string;
+  tagline?: string;
+  description?: string;
   timezone: string; // e.g. "America/Mexico_City"
   durationMinutes: number; // 30
   bufferMinutes: number;   // 15
@@ -164,6 +167,68 @@ export class SovereignCalendarEngine {
   }
 
   /**
+   * Converts a local date reference and local time string ("HH:MM") in a specific IANA timeZone
+   * to an unambiguous UTC instant (Date object).
+   */
+  public static localTimeToUtcInstant(
+    referenceDate: Date,
+    timeStr: string,
+    timeZone: string
+  ): Date {
+    const [h = 9, m = 0] = timeStr.split(':').map(Number);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    }).formatToParts(referenceDate);
+
+    let year = referenceDate.getUTCFullYear();
+    let month = referenceDate.getUTCMonth() + 1;
+    let day = referenceDate.getUTCDate();
+
+    for (const p of parts) {
+      if (p.type === 'year') year = parseInt(p.value, 10);
+      if (p.type === 'month') month = parseInt(p.value, 10);
+      if (p.type === 'day') day = parseInt(p.value, 10);
+    }
+
+    const tentativeUtc = new Date(Date.UTC(year, month - 1, day, h, m, 0, 0));
+
+    const localParts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(tentativeUtc);
+
+    let lYear = year;
+    let lMonth = month;
+    let lDay = day;
+    let lHour = h;
+    let lMinute = m;
+
+    for (const p of localParts) {
+      if (p.type === 'year') lYear = parseInt(p.value, 10);
+      if (p.type === 'month') lMonth = parseInt(p.value, 10);
+      if (p.type === 'day') day = parseInt(p.value, 10);
+      if (p.type === 'hour') {
+        const val = parseInt(p.value, 10);
+        lHour = val === 24 ? 0 : val;
+      }
+      if (p.type === 'minute') lMinute = parseInt(p.value, 10);
+    }
+
+    const localAsUtc = Date.UTC(lYear, lMonth - 1, lDay, lHour, lMinute, 0, 0);
+    const diffMs = tentativeUtc.getTime() - localAsUtc;
+
+    return new Date(tentativeUtc.getTime() + diffMs);
+  }
+
+  /**
    * Dynamic Slot Calculation (Zero Pre-Seeding Dependency).
    * Generates valid candidate time windows on-the-fly and subtracts active bookings/holds.
    */
@@ -241,21 +306,26 @@ export class SovereignCalendarEngine {
     currentCursor.setMinutes(0, 0, 0);
 
     while (currentCursor < rangeEnd) {
-      const dayIndex = currentCursor.getDay();
-      const dayName = daysMap[dayIndex];
+      const dayName = new Intl.DateTimeFormat('en-US', {
+        timeZone: config.timezone,
+        weekday: 'long',
+      }).format(currentCursor).toLowerCase() as keyof SovereignCalendarConfig['availability'];
 
       const dayRule = dayName ? config.availability[dayName] : null;
 
       if (dayRule && dayRule.enabled && dayRule.start && dayRule.end) {
-        const [startH = 9, startM = 0] = dayRule.start.split(':').map(Number);
-        const [endH = 18, endM = 0] = dayRule.end.split(':').map(Number);
-
         // Day start and end instants in target timezone
-        const dayStartInstant = new Date(currentCursor);
-        dayStartInstant.setHours(startH, startM, 0, 0);
+        const dayStartInstant = SovereignCalendarEngine.localTimeToUtcInstant(
+          currentCursor,
+          dayRule.start,
+          config.timezone
+        );
 
-        const dayEndInstant = new Date(currentCursor);
-        dayEndInstant.setHours(endH, endM, 0, 0);
+        const dayEndInstant = SovereignCalendarEngine.localTimeToUtcInstant(
+          currentCursor,
+          dayRule.end,
+          config.timezone
+        );
 
         let slotCursor = dayStartInstant.getTime();
         const dayLimit = dayEndInstant.getTime();
@@ -278,6 +348,7 @@ export class SovereignCalendarEngine {
                 formattedLocalTime: slotStart.toLocaleTimeString('es-MX', {
                   hour: '2-digit',
                   minute: '2-digit',
+                  hour12: false,
                   timeZone: config.timezone,
                 }),
                 formattedLocalDate: slotStart.toLocaleDateString('es-MX', {

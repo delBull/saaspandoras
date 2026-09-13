@@ -30,18 +30,32 @@ import {
   BookOpen,
   Cpu,
   TrendingUp,
-  Coins,
-  ShieldAlert,
-  Play
+  Coins, 
+  ShieldAlert, 
+  Play,
+  Share2,
+  UserPlus,
+  Lock,
+  Shield,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { COO_EXECUTIVE_PROGRAM } from "@/lib/pandoras/core/domains/academy/curriculum/coo-program";
 import { AcademyCandidate } from "@/lib/pandoras/core/domains/academy/candidates/types";
 import { AcademyModule } from "@/lib/pandoras/core/domains/academy/types";
 
 // ─── TRACKS & PROGRAMS CATALOG ───────────────────────────────────────────────
 
-interface AcademyTrack {
+export interface TrackSharedCollaborator {
+  email: string;
+  name?: string;
+  role: "CO_ADMIN" | "INSTRUCTOR" | "VIEWER";
+  addedAt: string;
+  addedBy?: string;
+}
+
+export interface AcademyTrack {
   id: string;
   name: string;
   code: string;
@@ -54,10 +68,41 @@ interface AcademyTrack {
   status: "ACTIVE" | "UPCOMING" | "BETA";
   badgeColor: string;
   icon: any;
+  createdBy: string;
+  creatorName: string;
+  isFounderExclusive?: boolean;
+  sharedWith: TrackSharedCollaborator[];
   modules: { title: string; weight: number; focus: string }[];
 }
 
 const ACADEMY_TRACKS: AcademyTrack[] = [
+  {
+    id: "prog_rwa_real_estate_master_v1",
+    name: "Master Executive en Tokenización Inmobiliaria (RWA Track)",
+    code: "RWA-REALESTATE-MASTER-v1.0",
+    targetRole: "RWA_REAL_ESTATE_SPECIALIST",
+    level: "Tier 1 · Fiduciary & Real Estate Clearance",
+    duration: "7 Módulos Socráticos + Tesis S'Narai (~70 min)",
+    modulesCount: 7,
+    passingScore: 85,
+    description: "Especialización para realtors, agencias y desarrolladores en fideicomisos inmobiliarios, bóvedas PAS v1.0, operación hotelera y auditoría RevPAR, tributación cross-border (USA/Canadá) y fondeo de preventas. Culmina con la adquisición de participación real en S'Narai como tesis de inversión.",
+    status: "ACTIVE",
+    badgeColor: "border-[#D4A853]/40 bg-[#D4A853]/10 text-[#D4A853]",
+    icon: Building2,
+    createdBy: "SUPER_ADMIN",
+    creatorName: "Super Admin (Sovereign Authority)",
+    isFounderExclusive: true,
+    sharedWith: [],
+    modules: [
+      { title: "Arquitectura Jurídica, Fideicomisos y Blindaje Registral", weight: 14, focus: "Fideicomiso de Garantía vs SPV" },
+      { title: "Finanzas RWA: Rendimientos Duales y Bóvedas On-Chain", weight: 14, focus: "Rentas en USDC + Plusvalía PAS v1.0" },
+      { title: "Operación Hotelera, Property Mgmt y Auditoría RevPAR", weight: 14, focus: "Master Host & Conciliación de Flujo" },
+      { title: "Fiscalidad Cross-Border (USA/Canadá) y Cumplimiento AML", weight: 14, focus: "W-8BEN, ISR & LFPIORPI" },
+      { title: "Psicología de Venta y Cierre Consultivo para Realtors", weight: 14, focus: "Manejo de Objeciones & Anti-Venta" },
+      { title: "Estructuración de Preventas para Desarrolladores", weight: 15, focus: "Sustitución de Crédito Puente Bancario" },
+      { title: "Tesis de Graduación: Inversión en Fracción Real de S'Narai", weight: 15, focus: "Skin in the Game & Broker License" },
+    ]
+  },
   {
     id: "prog_coo_executive_v2",
     name: "Chief Operating Officer (COO Track)",
@@ -71,6 +116,10 @@ const ACADEMY_TRACKS: AcademyTrack[] = [
     status: "ACTIVE",
     badgeColor: "border-purple-500/30 bg-purple-500/10 text-purple-300",
     icon: ShieldCheck,
+    createdBy: "SUPER_ADMIN",
+    creatorName: "Super Admin (Sovereign Authority)",
+    isFounderExclusive: true,
+    sharedWith: [],
     modules: [
       { title: "Gobernanza y Separación Institucional de Entidades", weight: 10, focus: "Holding vs OpCos vs SPVs" },
       { title: "Pandoras Asset Standard (PAS v1.0) y Estructuración", weight: 10, focus: "Reglas de Capital y Tokenización" },
@@ -97,6 +146,10 @@ const ACADEMY_TRACKS: AcademyTrack[] = [
     status: "ACTIVE",
     badgeColor: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
     icon: TrendingUp,
+    createdBy: "SUPER_ADMIN",
+    creatorName: "Super Admin (Sovereign Authority)",
+    isFounderExclusive: true,
+    sharedWith: [],
     modules: [
       { title: "Pandoras Media Co Architecture y Velocidad de Distribución", weight: 20, focus: "Contenido y Owned Media" },
       { title: "Protección de Marcas IMPI y Co-Branding con Partners", weight: 20, focus: "Brand Moat & Clases 36/42" },
@@ -118,6 +171,10 @@ const ACADEMY_TRACKS: AcademyTrack[] = [
     status: "ACTIVE",
     badgeColor: "border-amber-500/30 bg-amber-500/10 text-amber-300",
     icon: Coins,
+    createdBy: "SUPER_ADMIN",
+    creatorName: "Super Admin (Sovereign Authority)",
+    isFounderExclusive: true,
+    sharedWith: [],
     modules: [
       { title: "Pandoras Asset Standard (PAS v1.0) y Bóvedas Fiduciarias", weight: 20, focus: "Colateral 1:1 y Escrow" },
       { title: "Gobernanza de Tesorería On-Chain, Multi-Sig y Safe-Stops", weight: 20, focus: "Protección de Fondos 3/5" },
@@ -139,6 +196,10 @@ const ACADEMY_TRACKS: AcademyTrack[] = [
     status: "ACTIVE",
     badgeColor: "border-blue-500/30 bg-blue-500/10 text-blue-300",
     icon: Cpu,
+    createdBy: "SUPER_ADMIN",
+    creatorName: "Super Admin (Sovereign Authority)",
+    isFounderExclusive: true,
+    sharedWith: [],
     modules: [
       { title: "Arquitectura del Event Spine e Ingesta Multicanal", weight: 20, focus: "Idempotencia & Outbox" },
       { title: "Aislamiento de Contexto Multi-Tenant y Scope Validator", weight: 20, focus: "Prevención de Data Leakage" },
@@ -184,12 +245,155 @@ async function apiFetch(path: string, options: RequestInit = {}) {
 interface AcademyConsoleProps {
   role?: "admin" | "manager";
   userEmail?: string;
+  userName?: string;
+  userWallet?: string;
+  isSuperAdmin?: boolean;
   unlockToken?: string;
 }
 
-export default function AcademyConsole({ role = "admin", userEmail, unlockToken }: AcademyConsoleProps) {
+export default function AcademyConsole({ 
+  role = "admin", 
+  userEmail, 
+  userName,
+  userWallet,
+  isSuperAdmin = false, 
+  unlockToken 
+}: AcademyConsoleProps) {
   const [activeTab, setActiveTab] = useState<"PROGRAMS" | "CANDIDATES" | "SIMULATOR" | "METRICS">("CANDIDATES");
+  
+  // Sovereign Super Admin Access & Identity Resolution (Dynamic)
+  const isSovereignSuperAdmin = Boolean(
+    isSuperAdmin || 
+    (role === "admin" && (
+      !userEmail || 
+      userWallet?.toLowerCase() === "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9" ||
+      userWallet?.toLowerCase() === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || "").toLowerCase()
+    ))
+  );
+  const isFounderOrAdmin = isSovereignSuperAdmin || role === "admin";
+  const currentUserId = (userEmail || userWallet || (isSovereignSuperAdmin ? "SUPER_ADMIN" : "admin")).toLowerCase().trim();
+  const currentDisplayName = userName || (isSovereignSuperAdmin ? "Super Admin (Sovereign Authority)" : (userEmail || "Admin"));
+
+  const [courseScope, setCourseScope] = useState<"mine" | "shared" | "all">(isFounderOrAdmin ? "all" : "mine");
+  const [tracksState, setTracksState] = useState<AcademyTrack[]>(ACADEMY_TRACKS);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [trackToShare, setTrackToShare] = useState<AcademyTrack | null>(null);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareRole, setShareRole] = useState<"CO_ADMIN" | "INSTRUCTOR" | "VIEWER">("CO_ADMIN");
+
+  // Load persistent shares from storage
+  useEffect(() => {
+    try {
+      const savedShares = localStorage.getItem("pandoras_academy_tracks_shares");
+      if (savedShares) {
+        const parsed = JSON.parse(savedShares) as Record<string, TrackSharedCollaborator[]>;
+        setTracksState((prev) =>
+          prev.map((t) => (parsed[t.id] ? { ...t, sharedWith: parsed[t.id]! } : t))
+        );
+      }
+    } catch {}
+  }, []);
+
+  // Helper to test track ownership dynamically:
+  // If user is Sovereign Super Admin, all founder-exclusive or SUPER_ADMIN tracks belong to them.
+  const checkIsTrackOwner = (track: AcademyTrack) => {
+    if (isSovereignSuperAdmin && (track.createdBy === "SUPER_ADMIN" || track.isFounderExclusive)) {
+      return true;
+    }
+    return track.createdBy.toLowerCase().trim() === currentUserId;
+  };
+
+  // Filter visible tracks based on user, scope and dynamic super admin authority
+  const visibleTracks = tracksState.filter((track) => {
+    const isOwner = checkIsTrackOwner(track);
+    const isShared = track.sharedWith.some((s) => s.email.toLowerCase().trim() === currentUserId);
+
+    if (courseScope === "mine") {
+      return isOwner;
+    }
+    if (courseScope === "shared") {
+      return isShared;
+    }
+    if (courseScope === "all") {
+      // Super Admin sees all; regular collaborators only see mine + shared
+      if (isFounderOrAdmin) return true;
+      return isOwner || isShared;
+    }
+    return true;
+  });
+
   const [selectedTrack, setSelectedTrack] = useState<AcademyTrack>(ACADEMY_TRACKS[0]!);
+
+  const handleShareTrack = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trackToShare || !shareEmail.trim()) return;
+
+    const emailClean = shareEmail.trim().toLowerCase();
+    const newShare: TrackSharedCollaborator = {
+      email: emailClean,
+      role: shareRole,
+      addedAt: new Date().toISOString(),
+      addedBy: currentDisplayName,
+    };
+
+    const updatedTracks = tracksState.map((t) => {
+      if (t.id === trackToShare.id) {
+        const filtered = t.sharedWith.filter((s) => s.email.toLowerCase() !== emailClean);
+        return { ...t, sharedWith: [...filtered, newShare] };
+      }
+      return t;
+    });
+
+    setTracksState(updatedTracks);
+    const updatedSelected = updatedTracks.find((t) => t.id === trackToShare.id);
+    if (updatedSelected) {
+      setTrackToShare(updatedSelected);
+      if (selectedTrack.id === trackToShare.id) {
+        setSelectedTrack(updatedSelected);
+      }
+    }
+
+    // Persist
+    try {
+      const sharesMap: Record<string, TrackSharedCollaborator[]> = {};
+      updatedTracks.forEach((t) => {
+        if (t.sharedWith.length > 0) sharesMap[t.id] = t.sharedWith;
+      });
+      localStorage.setItem("pandoras_academy_tracks_shares", JSON.stringify(sharesMap));
+    } catch {}
+
+    toast.success(`Acceso de co-administración otorgado a ${emailClean}`);
+    setShareEmail("");
+  };
+
+  const handleRevokeShare = (trackId: string, emailToRevoke: string) => {
+    const emailClean = emailToRevoke.trim().toLowerCase();
+    const updatedTracks = tracksState.map((t) => {
+      if (t.id === trackId) {
+        return { ...t, sharedWith: t.sharedWith.filter((s) => s.email.toLowerCase() !== emailClean) };
+      }
+      return t;
+    });
+
+    setTracksState(updatedTracks);
+    const updatedSelected = updatedTracks.find((t) => t.id === trackId);
+    if (updatedSelected) {
+      setTrackToShare(updatedSelected);
+      if (selectedTrack.id === trackId) {
+        setSelectedTrack(updatedSelected);
+      }
+    }
+
+    try {
+      const sharesMap: Record<string, TrackSharedCollaborator[]> = {};
+      updatedTracks.forEach((t) => {
+        if (t.sharedWith.length > 0) sharesMap[t.id] = t.sharedWith;
+      });
+      localStorage.setItem("pandoras_academy_tracks_shares", JSON.stringify(sharesMap));
+    } catch {}
+
+    toast.info(`Acceso revocado para ${emailClean}`);
+  };
 
   // Candidate state
   const [candidates, setCandidates] = useState<AcademyCandidate[]>([]);
@@ -357,12 +561,19 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
             </Link>
             <div className="min-w-0">
               <div className="flex items-center gap-2.5">
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-widest bg-purple-500/10 border border-purple-500/30 text-purple-300 font-bold">
-                  {role === "manager" ? "ACADEMY MANAGER" : "INSTITUTIONAL ADMIN"}
-                </span>
-                {userEmail && (
-                  <span className="hidden sm:inline-block text-xs font-mono text-zinc-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
-                    {userEmail}
+                {isSovereignSuperAdmin ? (
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-widest bg-amber-500/10 border border-[#D4A853]/40 text-[#D4A853] font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(212,168,83,0.15)]">
+                    <span>👑</span>
+                    SUPER ADMIN SOVEREIGN
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-widest bg-purple-500/10 border border-purple-500/30 text-purple-300 font-bold">
+                    {role === "manager" ? "ACADEMY MANAGER" : "INSTITUTIONAL ADMIN"}
+                  </span>
+                )}
+                {(userName || userEmail) && (
+                  <span className="hidden sm:inline-block text-xs font-mono text-zinc-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                    {userName ? `${userName}${userEmail ? ` (${userEmail})` : ''}` : userEmail}
                   </span>
                 )}
                 <span className="hidden md:inline-block text-xs font-mono text-zinc-500">v2.0 · MULTI-TRACK</span>
@@ -461,43 +672,132 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
         {/* ─── TAB 1: PROGRAMS & TRACKS ────────────────────────────────────────── */}
         {activeTab === "PROGRAMS" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {ACADEMY_TRACKS.map((track) => {
-                const Icon = track.icon;
-                const isSelected = selectedTrack.id === track.id;
-                return (
-                  <div
-                    key={track.id}
-                    onClick={() => setSelectedTrack(track)}
-                    className={`p-5 rounded-2xl bg-[#0C0C10] border cursor-pointer transition-all space-y-3 ${
-                      isSelected
-                        ? "border-purple-500/60 shadow-[0_0_30px_rgba(168,85,247,0.15)] bg-[#0F0F16]"
-                        : "border-white/10 hover:border-white/20"
+            {/* Deal Room-like Scope Selector Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-[#0C0C10] border border-white/10">
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setCourseScope("mine")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
+                    courseScope === "mine"
+                      ? "bg-purple-500 text-black font-bold shadow-md shadow-purple-500/20"
+                      : "text-zinc-400 hover:text-white bg-white/5 border border-white/5"
+                  }`}
+                >
+                  Mis Cursos ({tracksState.filter(t => checkIsTrackOwner(t)).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCourseScope("shared")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
+                    courseScope === "shared"
+                      ? "bg-purple-500 text-black font-bold shadow-md shadow-purple-500/20"
+                      : "text-zinc-400 hover:text-white bg-white/5 border border-white/5"
+                  }`}
+                >
+                  Compartidos Conmigo ({tracksState.filter(t => t.sharedWith.some(s => s.email.toLowerCase() === currentUserId)).length})
+                </button>
+                {isFounderOrAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setCourseScope("all")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
+                      courseScope === "all"
+                        ? "bg-purple-500 text-black font-bold shadow-md shadow-purple-500/20"
+                        : "text-zinc-400 hover:text-white bg-white/5 border border-white/5"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-mono uppercase font-bold border ${track.badgeColor}`}>
-                        {track.status}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase">{track.code}</span>
-                      <h3 className="text-sm font-bold text-white leading-snug">{track.name}</h3>
-                    </div>
-                    <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
-                      {track.description}
-                    </p>
-                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-zinc-500">
-                      <span>{track.modulesCount} Módulos</span>
-                      <span className="text-purple-300">Aprobación: {track.passingScore}%</span>
-                    </div>
-                  </div>
-                );
-              })}
+                    👑 Todos los Cursos ({tracksState.length})
+                  </button>
+                )}
+              </div>
+
+              <div className="text-[11px] text-zinc-500 font-mono flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-[#D4A853]" />
+                <span>Aislamiento de Cursos: Activo estilo Deal Room</span>
+              </div>
             </div>
+
+            {/* Tracks Grid */}
+            {visibleTracks.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-[#0C0C10] border border-white/10 space-y-3">
+                <Lock className="w-8 h-8 text-zinc-600 mx-auto" />
+                <p className="text-sm text-zinc-300 font-medium">No hay cursos disponibles en esta vista ({courseScope})</p>
+                <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                  Los cursos creados por el Fundador están protegidos. Solo verás los cursos de tu autoría o aquellos que te hayan sido explícitamente compartidos.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {visibleTracks.map((track) => {
+                  const Icon = track.icon;
+                  const isSelected = selectedTrack.id === track.id;
+                  const isOwner = checkIsTrackOwner(track);
+                  return (
+                    <div
+                      key={track.id}
+                      onClick={() => setSelectedTrack(track)}
+                      className={`p-5 rounded-2xl bg-[#0C0C10] border cursor-pointer transition-all space-y-3 relative group ${
+                        isSelected
+                          ? "border-purple-500/60 shadow-[0_0_30px_rgba(168,85,247,0.15)] bg-[#0F0F16]"
+                          : "border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {track.isFounderExclusive && (
+                            <span className="px-2 py-0.5 rounded-md text-[9px] font-mono uppercase font-bold border border-[#D4A853]/40 bg-[#D4A853]/10 text-[#D4A853]">
+                              Founder Exclusivo
+                            </span>
+                          )}
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-mono uppercase font-bold border ${track.badgeColor}`}>
+                            {track.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-zinc-500 uppercase">{track.code}</span>
+                          {track.sharedWith.length > 0 && (
+                            <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">
+                              {track.sharedWith.length} Co-Admin{track.sharedWith.length > 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-sm font-bold text-white leading-snug mt-0.5">{track.name}</h3>
+                      </div>
+
+                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                        {track.description}
+                      </p>
+
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                        <span>{track.modulesCount} Módulos</span>
+                        {isOwner && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTrackToShare(track);
+                              setShowShareModal(true);
+                            }}
+                            className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors p-1 rounded hover:bg-purple-500/10"
+                            title="Compartir Administración"
+                          >
+                            <Share2 className="w-3 h-3" />
+                            <span>Compartir</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Selected Track Detail Drawer */}
             <div className="p-6 md:p-8 rounded-3xl bg-[#0C0C10] border border-white/10 space-y-6">
@@ -508,11 +808,29 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
                       {selectedTrack.level}
                     </span>
                     <span className="text-xs font-mono text-zinc-500">{selectedTrack.code}</span>
+                    {selectedTrack.isFounderExclusive && (
+                      <span className="text-[10px] font-mono text-[#D4A853] bg-[#D4A853]/10 border border-[#D4A853]/30 px-2 py-0.5 rounded">
+                        Creado por: {isSovereignSuperAdmin && selectedTrack.isFounderExclusive ? (currentDisplayName || selectedTrack.creatorName) : selectedTrack.creatorName}
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-xl md:text-2xl font-bold text-white">{selectedTrack.name}</h2>
                   <p className="text-xs text-zinc-400 max-w-3xl leading-relaxed">{selectedTrack.description}</p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  {(isFounderOrAdmin || checkIsTrackOwner(selectedTrack)) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTrackToShare(selectedTrack);
+                        setShowShareModal(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-zinc-200 hover:text-white font-semibold text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4 text-purple-400" />
+                      COMPARTIR ({selectedTrack.sharedWith.length})
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setNewCandidateRole(selectedTrack.targetRole);
@@ -520,7 +838,7 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
                       setInviteError(null);
                       setShowInviteModal(true);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     INVITAR A ESTE TRACK
@@ -961,6 +1279,142 @@ export default function AcademyConsole({ role = "admin", userEmail, unlockToken 
                     </button>
                   </form>
                 )}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* ─── SHARE COURSE / DELEGATE ADMINISTRATION MODAL (DEAL ROOM STYLE) ─── */}
+        <AnimatePresence>
+          {showShareModal && trackToShare && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                className="relative w-full max-w-xl bg-[#0C0C10] border border-white/15 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                      <Share2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white">Compartir Administración del Curso</h3>
+                      <p className="text-xs text-zinc-400 font-mono">
+                        {trackToShare.name} ({trackToShare.code})
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowShareModal(false)}
+                    className="p-1 rounded-lg text-zinc-500 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Owner & Exclusivity Banner */}
+                <div className="p-4 rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase">Titular / Autor Exclusivo</span>
+                    <div className="text-xs font-bold text-white flex items-center gap-2">
+                      <span>{trackToShare.creatorName}</span>
+                      <span className="text-zinc-500 font-normal font-mono">({trackToShare.createdBy})</span>
+                    </div>
+                  </div>
+                  {trackToShare.isFounderExclusive && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-[#D4A853]/10 text-[#D4A853] border border-[#D4A853]/30">
+                      👑 Founder Protected
+                    </span>
+                  )}
+                </div>
+
+                {/* Delegated Collaborators List */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono uppercase tracking-widest text-zinc-400">
+                      Co-Administradores &amp; Instructores Delegados ({trackToShare.sharedWith.length})
+                    </h4>
+                    <span className="text-[10px] text-zinc-500">Aislamiento estilo Deal Room</span>
+                  </div>
+
+                  {trackToShare.sharedWith.length === 0 ? (
+                    <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center text-xs text-zinc-500">
+                      Este curso es privado y exclusivo. Ningún colaborador externo tiene acceso administrativo a sus métricas o evaluaciones.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {trackToShare.sharedWith.map((collab) => (
+                        <div
+                          key={collab.email}
+                          className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-white/5"
+                        >
+                          <div>
+                            <div className="text-xs font-semibold text-white">{collab.email}</div>
+                            <div className="text-[10px] text-zinc-500 font-mono">
+                              Rol: <strong className="text-purple-300">{collab.role}</strong> · Asignado: {new Date(collab.addedAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRevokeShare(trackToShare.id, collab.email)}
+                            className="p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+                            title="Revocar acceso"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Form to delegate new collaborator */}
+                <form onSubmit={handleShareTrack} className="p-4 rounded-2xl bg-zinc-950/60 border border-white/10 space-y-4">
+                  <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-purple-400" />
+                    Asignar Nuevo Co-Administrador o Instructor
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="space-y-1">
+                      <label className="text-zinc-400">Correo Electrónico</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="colaborador@inmobiliaria.com"
+                        value={shareEmail}
+                        onChange={(e) => setShareEmail(e.target.value)}
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-zinc-400">Nivel de Acceso / Rol</label>
+                      <select
+                        value={shareRole}
+                        onChange={(e) => setShareRole(e.target.value as any)}
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="CO_ADMIN">👑 Co-Admin (Invitar &amp; Calificar)</option>
+                        <option value="INSTRUCTOR">🎓 Instructor (Revisar Exámenes)</option>
+                        <option value="VIEWER">👁️ Viewer (Solo Lectura de Alumnos)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    Conceder Acceso al Curso
+                  </button>
+                </form>
+
+                <p className="text-[10px] text-zinc-600 text-center">
+                  Al delegar acceso, el colaborador verá este track en su consola de Academy bajo la pestaña "Compartidos Conmigo".
+                </p>
               </motion.div>
             </div>
           )}

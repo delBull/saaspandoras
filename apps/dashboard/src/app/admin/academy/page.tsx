@@ -64,8 +64,24 @@ export default async function AdminAcademyPage({
     }
   }
 
+  const isSuperAdmin = Boolean(
+    auth.role === "SUPER_ADMIN" ||
+    (auth.wallet && (
+      auth.wallet.toLowerCase() === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9").toLowerCase() ||
+      auth.wallet.toLowerCase() === (process.env.SUPER_ADMIN_WALLET || "").toLowerCase() ||
+      auth.wallet.toLowerCase() === "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9"
+    ))
+  );
+
   return unlocked ? (
-    <AcademyConsole role={userRole} userEmail={userEmail} unlockToken={unlock} />
+    <AcademyConsole 
+      role={userRole} 
+      userEmail={userEmail} 
+      userName={auth.name || (isSuperAdmin ? "Super Admin" : undefined)}
+      userWallet={auth.wallet || undefined}
+      isSuperAdmin={isSuperAdmin}
+      unlockToken={unlock} 
+    />
   ) : (
     <AcademyAccessGate />
   );

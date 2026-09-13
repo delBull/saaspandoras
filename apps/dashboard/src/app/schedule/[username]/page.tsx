@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { resolveUserByAlias, getAvailableSlots, seedDefaultSlots } from "@/actions/scheduling";
+import { SovereignCalendarEngine } from "@/lib/scheduling/sovereign-calendar-engine";
 import { SchedulerForm, type MeetingType } from "@/components/scheduler/SchedulerForm";
 
 export const metadata: Metadata = {
-    title: "Agendar Llamada | Pandora's Finance",
+    title: "Agenda Soberana | Pandora's Finance",
     description: "Agenda una sesión soberana.",
 };
 
@@ -25,8 +26,23 @@ export default async function SchedulePage({
 
     if (!success || !userId) return notFound();
 
+    const { config: calendarConfig } = await SovereignCalendarEngine.resolveConfig({
+        tenantSlug: username,
+        hostUserId: userId,
+    });
+
+    const effectiveTagline = calendarConfig.tagline?.trim() || 
+        (name && !name.includes("Pandora") ? `${name} — Sesión Estratégica Soberana` : "Infraestructura soberana, tokenización y automatización de vanguardia.");
+
+    const effectiveTitle = calendarConfig.title?.trim() || "Conversemos";
+
+    const effectiveDescription = calendarConfig.description?.trim() || 
+        "Agenda una sesión privada con el equipo. Sin compromiso, sin presión. Solo una conversación para conocer tu visión y explorar cómo podemos colaborar.";
+
+    const sessionDurationText = `${calendarConfig.durationMinutes || (meetingType === 'architecture' ? 20 : 30)} minutos`;
+
     const isWidget = widget === 'true';
-    const { slots } = await getAvailableSlots(userId);
+    const { slots } = await getAvailableSlots(userId, username);
     const hasSlots = slots && slots.length > 0;
 
     if (isWidget) {
@@ -67,12 +83,11 @@ export default async function SchedulePage({
                     {/* Left: Info */}
                     <div className="lg:col-span-2 space-y-8">
                         <div>
-                            <h2 className="text-3xl font-bold tracking-tight">
-                                Conversemos
+                            <h2 className="text-3xl font-bold tracking-tight text-white">
+                                {effectiveTitle}
                             </h2>
                             <p className="text-zinc-400 text-sm mt-2 leading-relaxed">
-                                Agenda una sesión privada con el equipo. Sin compromiso, sin presión.
-                                Solo una conversación para conocer tu visión y explorar cómo podemos colaborar.
+                                {effectiveDescription}
                             </p>
                         </div>
 
@@ -83,7 +98,7 @@ export default async function SchedulePage({
                                 </div>
                                 <div>
                                     <div className="text-sm font-medium text-white">
-                                        {meetingType === 'architecture' ? '20 minutos' : '30 minutos'}
+                                        {sessionDurationText}
                                     </div>
                                     <div className="text-xs text-zinc-500">Duración de la sesión</div>
                                 </div>
@@ -108,8 +123,8 @@ export default async function SchedulePage({
                             </div>
                         </div>
 
-                        <blockquote className="border-l-2 border-[#D4A853]/30 pl-4 text-sm text-zinc-500 italic">
-                            "No vendemos propiedades. Construimos acceso."
+                        <blockquote className="border-l-2 border-[#D4A853]/30 pl-4 text-sm text-zinc-400 italic">
+                            "{effectiveTagline}"
                         </blockquote>
                     </div>
 
@@ -128,9 +143,9 @@ export default async function SchedulePage({
 
             {/* Footer */}
             <div className="border-t border-[#D4A853]/10 mt-12">
-                <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-zinc-600">
-                    <span>Pandora's Finance</span>
-                    <span>No vendemos propiedades. Construimos acceso.</span>
+                <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
+                    <span>{name || "Pandora's Finance"}</span>
+                    <span className="italic">{effectiveTagline}</span>
                 </div>
             </div>
         </div>

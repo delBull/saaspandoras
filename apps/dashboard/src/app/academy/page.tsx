@@ -46,6 +46,18 @@ export default function AcademyPublicLanding() {
 
   const tracks = [
     {
+      role: 'RWA_REAL_ESTATE',
+      title: 'Master en Tokenización Inmobiliaria (RWA)',
+      code: 'RWA_REAL_ESTATE_MASTER_V1',
+      badge: 'Cohorte Génesis · 10 Plazas · Bahía de Banderas',
+      badgeColor: 'border-[#D4A853]/40 bg-[#D4A853]/10 text-[#D4A853]',
+      icon: Building,
+      desc: 'Fideicomisos fiduciarios, bóvedas PAS v1.0, psicología de venta para realtors y estructuración de preventas. Tesis final con inversión real en S\'Narai.',
+      modulesCount: 5,
+      passingScore: 85,
+      href: '/academy/master-tokenizacion'
+    },
+    {
       role: 'COO',
       title: 'Chief Operating Officer (COO)',
       code: 'COO_EXECUTIVE_V2',
@@ -302,10 +314,13 @@ export default function AcademyPublicLanding() {
 
                     <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                       <Link
-                        href="/admin/academy"
-                        className="text-xs font-mono text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1"
+                        href={(t as any).href || "/admin/academy"}
+                        className={`text-xs font-mono font-bold flex items-center gap-1 ${
+                          (t as any).href ? 'text-[#D4A853] hover:text-amber-300' : 'text-purple-400 hover:text-purple-300'
+                        }`}
                       >
-                        SOLICITAR INVITACIÓN OFICIAL <ArrowRight className="w-3.5 h-3.5" />
+                        {(t as any).href ? 'POSTULAR A LA COHORTE GÉNESIS (10 PLAZAS)' : 'SOLICITAR INVITACIÓN OFICIAL'}{' '}
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
                   </div>

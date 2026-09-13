@@ -12,67 +12,30 @@ import { headers } from "next/headers";
 // Helper: Ensure valid UUIDs are used (implement per your project needs or rely on crypto.randomUUID default in schema)
 
 /**
- * Get available slots for a specific host (user)
+ * Get available slots for a specific host (user) and optional tenant
  */
-export async function getAvailableSlots(userId: string) {
+export async function getAvailableSlots(userId: string, tenantSlug?: string) {
     try {
-        const now = new Date();
-        const bufferTime = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48h buffer
-        
-        let slots;
-        try {
-            slots = await db.select({
-                id: schedulingSlots.id,
-                userId: schedulingSlots.userId,
-                startTime: schedulingSlots.startTime,
-                endTime: schedulingSlots.endTime,
-                isBooked: schedulingSlots.isBooked,
-                reservedUntil: schedulingSlots.reservedUntil,
-                reservedBy: schedulingSlots.reservedBy,
-                type: schedulingSlots.type,
-                createdAt: schedulingSlots.createdAt,
-                updatedAt: schedulingSlots.updatedAt,
-            })
-            .from(schedulingSlots)
-            .where(
-                and(
-                    eq(schedulingSlots.userId, userId),
-                    eq(schedulingSlots.isBooked, false),
-                    gte(schedulingSlots.startTime, bufferTime),
-                    or(
-                      lt(schedulingSlots.reservedUntil, now),
-                      sql`${schedulingSlots.reservedUntil} IS NULL`
-                    )
-                )
-            )
-            .orderBy(desc(schedulingSlots.startTime));
-        } catch (dbErr: any) {
-            if (dbErr?.message?.includes('reserved_until') || dbErr?.message?.includes('reserved_by') || dbErr?.code === '42703') {
-                console.error('[Scheduler] 🚨 SCHEMA CAPABILITY ERROR: Neon database is missing reserved_until / reserved_by columns. Migration 0049 required.');
-                return { success: false, error: "Scheduling unavailable: schema migration required (missing reserved_until/reserved_by)" };
-            }
-            throw dbErr;
-        }
+        const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
+        const dynamicSlots = await SovereignCalendarEngine.calculateDynamicSlots({
+            hostUserId: userId,
+            tenantSlug,
+        });
 
-        if (!slots || slots.length === 0) {
-            const { SovereignCalendarEngine } = await import('@/lib/scheduling/sovereign-calendar-engine');
-            const dynamicSlots = await SovereignCalendarEngine.calculateDynamicSlots({ hostUserId: userId });
-            const mappedSlots = dynamicSlots.map((s) => ({
-                id: `dyn_${userId}_${new Date(s.startTime).getTime()}_${new Date(s.endTime).getTime()}`,
-                userId: userId,
-                startTime: new Date(s.startTime),
-                endTime: new Date(s.endTime),
-                isBooked: false,
-                reservedUntil: null,
-                reservedBy: null,
-                type: `${s.durationMinutes}_min`,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            }));
-            return { success: true, slots: mappedSlots };
-        }
+        const mappedSlots = dynamicSlots.map((s) => ({
+            id: s.slotId || `dyn_${userId}_${new Date(s.startTime).getTime()}_${new Date(s.endTime).getTime()}`,
+            userId: userId,
+            startTime: new Date(s.startTime),
+            endTime: new Date(s.endTime),
+            isBooked: false,
+            reservedUntil: null,
+            reservedBy: null,
+            type: `${s.durationMinutes}_min`,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }));
 
-        return { success: true, slots };
+        return { success: true, slots: mappedSlots };
     } catch (error) {
         console.error("[Scheduler] Error fetching slots:", error);
         return { success: false, error: "Failed to load availability" };

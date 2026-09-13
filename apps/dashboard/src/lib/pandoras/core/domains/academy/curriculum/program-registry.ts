@@ -8,8 +8,10 @@ import { COO_EXECUTIVE_PROGRAM } from './coo-program';
 import { CMO_EXECUTIVE_PROGRAM } from './cmo-program';
 import { CFO_EXECUTIVE_PROGRAM } from './cfo-program';
 import { HERMES_OPERATOR_PROGRAM } from './hermes-operator-program';
+import { REAL_ESTATE_MASTER_PROGRAM } from './real-estate-master-program';
 
 export const ALL_ACADEMY_PROGRAMS: AcademyProgram[] = [
+  REAL_ESTATE_MASTER_PROGRAM,
   COO_EXECUTIVE_PROGRAM,
   CMO_EXECUTIVE_PROGRAM,
   CFO_EXECUTIVE_PROGRAM,
@@ -17,7 +19,7 @@ export const ALL_ACADEMY_PROGRAMS: AcademyProgram[] = [
 ];
 
 export function getProgramByRoleOrId(roleOrId?: string): AcademyProgram {
-  if (!roleOrId) return COO_EXECUTIVE_PROGRAM;
+  if (!roleOrId) return REAL_ESTATE_MASTER_PROGRAM;
 
   const normalized = roleOrId.trim().toUpperCase();
 
@@ -26,6 +28,9 @@ export function getProgramByRoleOrId(roleOrId?: string): AcademyProgram {
   if (byId) return byId;
 
   // Match by Target Role
+  if (normalized === 'RWA' || normalized.includes('REAL_ESTATE') || normalized.includes('REALTOR') || normalized.includes('INMOBILIAR')) {
+    return REAL_ESTATE_MASTER_PROGRAM;
+  }
   if (normalized === 'COO' || normalized.includes('OPERAT')) {
     return COO_EXECUTIVE_PROGRAM;
   }
@@ -40,5 +45,5 @@ export function getProgramByRoleOrId(roleOrId?: string): AcademyProgram {
   }
 
   // Default fallback
-  return COO_EXECUTIVE_PROGRAM;
+  return REAL_ESTATE_MASTER_PROGRAM;
 }

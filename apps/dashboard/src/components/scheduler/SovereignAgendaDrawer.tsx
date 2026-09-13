@@ -475,6 +475,65 @@ export function SovereignAgendaDrawer({
                     </div>
                   </div>
 
+                  {/* Branding & Custom Copy */}
+                  <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/80 space-y-3">
+                    <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#D4A853]" />
+                      Textos &amp; Branding Soberano
+                    </h3>
+
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Tagline Soberano (Frase Destacada)</label>
+                      <input
+                        type="text"
+                        placeholder="ej: Infraestructura soberana, tokenización y automatización."
+                        value={config.tagline || ''}
+                        onChange={(e) => setConfig({ ...config, tagline: e.target.value })}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-[#D4A853]/40"
+                      />
+                      <span className="text-[10px] text-zinc-500 mt-0.5 block">
+                        Aparece citado en la barra lateral y pie de página de tu enlace de agenda pública.
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Título Principal</label>
+                        <input
+                          type="text"
+                          placeholder="ej: Conversemos"
+                          value={config.title || ''}
+                          onChange={(e) => setConfig({ ...config, title: e.target.value })}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-[#D4A853]/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Ventana Rodante (Días Futuros)</label>
+                        <select
+                          value={config.maxDaysInFuture || 14}
+                          onChange={(e) => setConfig({ ...config, maxDaysInFuture: Number(e.target.value) })}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-[#D4A853]/40"
+                        >
+                          <option value={7}>7 días (1 semana rodante)</option>
+                          <option value={14}>14 días (2 semanas rodantes)</option>
+                          <option value={21}>21 días (3 semanas rodantes)</option>
+                          <option value={30}>30 días (1 mes rodante)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Descripción de la Sesión</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Agenda una sesión privada con el equipo. Sin compromiso, sin presión..."
+                        value={config.description || ''}
+                        onChange={(e) => setConfig({ ...config, description: e.target.value })}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-[#D4A853]/40 resize-none"
+                      />
+                    </div>
+                  </div>
+
                   {/* Weekly Days & Hours */}
                   <div className="space-y-3">
                     <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
