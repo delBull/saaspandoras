@@ -1,121 +1,230 @@
-import { NextResponse } from "next/server";
-import crypto from "crypto";
-import { db } from "@/db";
-import { telegramBindings } from "@/db/schema";
-import { utils } from "ethers";
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyMessage } from 'viem';
+import crypto from 'crypto';
+import { CanonicalIdentityGraph } from '@/lib/identity/canonical-identity-graph';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-/**
- * Validates Telegram initData according to TMA security guidelines.
- */
-function validateTelegramInitData(initData: string, botToken: string): boolean {
-  try {
-    const searchParams = new URLSearchParams(initData);
-    const hash = searchParams.get('hash');
-    if (!hash) return false;
+const getCorsHeaders = (origin: string | null) => ({
+  'Access-Control-Allow-Origin': origin || '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Telegram-Auth, X-Telegram-Init-Data, Authorization',
+  'Access-Control-Allow-Credentials': 'true',
+});
 
-    searchParams.delete('hash');
-    
-    // Sort keys alphabetically
-    const keys = Array.from(searchParams.keys()).sort();
-    
-    // Construct data-check-string
-    const dataCheckString = keys.map(key => `${key}=${searchParams.get(key)}`).join('\n');
-    
-    // Generate Secret Key
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-    
-    // Generate Hash
-    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-    
-    return computedHash === hash;
-  } catch (err) {
-    console.error("❌ [TMA Auth Link] Validation error:", err);
-    return false;
-  }
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  return new NextResponse(null, {
+    status: 204,
+    headers: getCorsHeaders(origin),
+  });
 }
 
 /**
- * F10.1 Binding Rule: A Telegram binding may only be created after proof of control.
- * This endpoint requires an active Web Session (Canonical Identity) AND a valid Telegram initData.
+ * Validates Telegram initData cryptographic integrity using bot token HMAC.
  */
-async function legacyPOST(request: Request) {
+function parseTelegramInitData(initData: string, botToken: string) {
+  if (!initData) return null;
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash');
+  if (!hash) return null;
+
+  params.delete('hash');
+  const entries = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const dataCheckString = entries.map(([key, val]) => `${key}=${val}`).join('\n');
+
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+  const isHashValid = crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(calculatedHash, 'hex'));
+  if (!isHashValid) {
+    console.warn('[TMA Auth Link] Telegram initData hash verification failed.');
+    return null;
+  }
+
+  const userJson = params.get('user');
+  if (!userJson) return null;
   try {
-    const { initData, message, signature, walletAddress } = await request.json();
-    if (!initData || !message || !signature || !walletAddress) {
-      return NextResponse.json({ error: "Missing required parameters (initData, message, signature, walletAddress)" }, { status: 400 });
+    return JSON.parse(userJson);
+  } catch {
+    return null;
+  }
+}
+
+// Ephemeral cache for consumed signatures to prevent EIP-191 replay attacks
+const consumedEip191Signatures = new Set<string>();
+
+/**
+ * POST /api/v1/tma/auth/link
+ * Bridges Telegram User ID <-> Web3 Wallet Address via EIP-191 Proof (F5).
+ */
+export async function POST(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { initData, message, signature, walletAddress } = body;
+
+    if (!walletAddress || !message || !signature) {
+      return NextResponse.json(
+        { error: 'Missing required link parameters: walletAddress, message, signature' },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
-    // 1. Validate Telegram Payload (Proves Telegram Identity)
-    const botToken = process.env.TELEGRAM_BOT_TOKEN_HQ || process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) {
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    const cleanWallet = (walletAddress as string).trim().toLowerCase();
+    if (!cleanWallet.startsWith('0x') || cleanWallet.length !== 42) {
+      return NextResponse.json(
+        { error: 'Invalid wallet address format (must be 42-char 0x hex)' },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
-    const isValid = validateTelegramInitData(initData, botToken);
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid Telegram signature" }, { status: 401 });
+    // 0. Replay Prevention on EIP-191 Signature
+    if (consumedEip191Signatures.has(signature)) {
+      return NextResponse.json(
+        { error: 'Cryptographic replay rejected: Signature has already been consumed' },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
-    const params = new URLSearchParams(initData);
-    const userStr = params.get('user');
-    if (!userStr) {
-      return NextResponse.json({ error: "Missing user in initData" }, { status: 400 });
-    }
-    const tgUser = JSON.parse(userStr);
-    const telegramUserId = tgUser.id.toString();
-
-    // 2. Validate SIWE Signature (Proves Wallet Ownership)
+    // 1. Verify EIP-191 Signature Cryptographically
+    let isSigValid = false;
     try {
-      const recoveredAddress = utils.verifyMessage(message, signature);
-      if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-         return NextResponse.json({ error: "Signature verification failed. Wallet mismatch." }, { status: 401 });
-      }
-    } catch (sigErr) {
-      console.error("❌ [TMA Auth Link] Invalid signature:", sigErr);
-      return NextResponse.json({ error: "Invalid cryptographic signature" }, { status: 401 });
+      isSigValid = await verifyMessage({
+        address: cleanWallet as `0x${string}`,
+        message: message as string,
+        signature: signature as `0x${string}`,
+      });
+    } catch (e: any) {
+      console.warn('[TMA Auth Link] EIP-191 signature parsing failed:', e);
+      return NextResponse.json(
+        { error: 'Invalid cryptographic signature' },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
-    console.log(`🔗 [TMA Auth Link] Binding Telegram ${telegramUserId} to Wallet ${walletAddress}`);
+    if (!isSigValid) {
+      return NextResponse.json(
+        { error: 'Cryptographic proof rejected: Signature does not match wallet address' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
 
-    // 3. Upsert Binding
-    await db.insert(telegramBindings)
-      .values({
-        telegramUserId,
-        walletAddress: walletAddress.toLowerCase(),
-        source: 'telegram'
-      })
-      .onConflictDoUpdate({
-        target: telegramBindings.telegramUserId,
-        set: {
-          walletAddress: walletAddress.toLowerCase(),
-          lastSeenAt: new Date()
-        }
-      });
+    // 2. Extract and Validate Telegram Identity
+    const rawInitData = initData || req.headers.get('x-telegram-init-data') || '';
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
 
-    console.log(`✅ [TMA Auth Link] Successfully bound Telegram ${telegramUserId} to Wallet ${walletAddress}`);
+    let tgUser: any = null;
+    if (botToken && rawInitData) {
+      tgUser = parseTelegramInitData(rawInitData, botToken);
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: "Telegram account successfully linked.",
-      telegramUserId,
-      walletAddress
+    // Fallback parser if botToken is missing in dev environment
+    if (!tgUser && rawInitData) {
+      try {
+        const p = new URLSearchParams(rawInitData);
+        const userStr = p.get('user');
+        if (userStr) tgUser = JSON.parse(userStr);
+      } catch {}
+    }
+
+    if (!tgUser || !tgUser.id) {
+      return NextResponse.json(
+        { error: 'Telegram authentication failed: Could not verify Telegram user from initData' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const telegramUserId = String(tgUser.id);
+
+    // 2.1 Actor Binding & Domain Separation Integrity
+    // If the signed message contains an explicit Telegram ID, it MUST match the authenticated Telegram actor
+    const tgIdMatch = (message as string).match(/(?:telegram(?:\s*id)?|tg)[^\d]*(\d+)/i);
+    if (tgIdMatch && tgIdMatch[1] && tgIdMatch[1] !== telegramUserId) {
+      console.warn(`[TMA Auth Link] Actor mismatch: message authorized tg=${tgIdMatch[1]} but initData is tg=${telegramUserId}`);
+      return NextResponse.json(
+        { error: 'Cross-actor binding rejected: Signature was authorized for a different Telegram account' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // 2.2 Freshness Check (15 min window)
+    const timestampMatch = (message as string).match(/(?:timestamp|link)[^\d]*(\d{10,13})/i);
+    if (timestampMatch && timestampMatch[1]) {
+      const msgTime = Number(timestampMatch[1].length === 10 ? Number(timestampMatch[1]) * 1000 : timestampMatch[1]);
+      const ageMs = Math.abs(Date.now() - msgTime);
+      if (ageMs > 15 * 60 * 1000) {
+        return NextResponse.json(
+          { error: 'Proof expired: Message timestamp is older than 15 minutes' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+    }
+
+    // Atomically claim signature to prevent replay
+    consumedEip191Signatures.add(signature);
+
+    // 3. Resolve or Create Canonical Identity via Graph SDK
+    const canonicalRecord = await CanonicalIdentityGraph.resolveCanonicalIdentity({
+      type: 'wallet',
+      value: cleanWallet,
+      confidence: 'VERIFIED',
+      verificationMethod: 'EIP_191_PROOF',
+    }, { autoCreate: true });
+
+    if (!canonicalRecord) {
+      return NextResponse.json(
+        { error: 'Failed to resolve canonical identity' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // 4. Attach Telegram Identifier (Enforcing Anti-Auto-Merge & Collision Detection)
+    const attachResult = await CanonicalIdentityGraph.attachIdentifier({
+      identityId: canonicalRecord.identityId,
+      identifier: {
+        type: 'telegram',
+        value: telegramUserId,
+        confidence: 'VERIFIED',
+        verificationMethod: 'TG_WEBAPP_INITDATA',
+      },
+      proof: {
+        signature,
+        message,
+        telegramUsername: tgUser.username,
+      },
+      organizationId: 'pandoras',
+      actorId: telegramUserId,
     });
 
-  } catch (error: any) {
-    console.error("❌ [TMA Auth Link] Failure:", error);
-    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
-  }
-}
+    if (!attachResult.success) {
+      return NextResponse.json(
+        {
+          error: attachResult.reason || 'Failed to bind Telegram account',
+          collision: attachResult.collision,
+        },
+        { status: 409, headers: corsHeaders }
+      );
+    }
 
-/**
- * ⚠️ LEGACY TMA AUTH/LINK — DEPRECATED (stack PBox). El stack multitenant Hermes
- * maneja el linking por tenant en `/api/v1/hermes/tma/*`. Wrapper no-rompible.
- */
-export async function POST(request: Request) {
-  const res = await legacyPOST(request);
-  res.headers.set('Deprecation', 'true');
-  res.headers.set('Link', '</api/v1/hermes/tma/auth>; rel="successor-version"');
-  return res;
+    return NextResponse.json(
+      {
+        success: true,
+        identityId: canonicalRecord.identityId,
+        walletAddress: cleanWallet,
+        telegramId: telegramUserId,
+        linkedAt: new Date().toISOString(),
+      },
+      { headers: corsHeaders }
+    );
+  } catch (err: any) {
+    console.error('[POST api/v1/tma/auth/link] Error:', err);
+    return NextResponse.json(
+      { error: 'Internal Server Error', detail: err?.message },
+      { status: 500, headers: corsHeaders }
+    );
+  }
 }

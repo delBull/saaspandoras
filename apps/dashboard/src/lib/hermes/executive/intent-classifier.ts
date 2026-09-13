@@ -146,10 +146,10 @@ export class ExecutiveIntentClassifier {
       .replace(/[¡!¿?.,;:]/g, '')
       .trim();
 
-    const match = raw.match(/^(?:hola,?\s*)?(?:me\s+llamo|mi\s+nombre\s+es|soy|aqu[ií])\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+)?)$/i);
+    const match = raw.match(/^(?:hola,?\s*)?(?:me\s+llamo|mi\s+nombre\s+es|(?:yo\s+)?soy|aqu[ií])\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+)?)$/i);
     if (match && match[1]) {
       const candidate = match[1].trim();
-      const forbiddenRoles = /^(?:el\s+)?(?:jefe|dueño|admin|administrador|founder|fundador|creador|boss|owner|inversionista|usuario|lead|desarrollador|operador|sistema|hermes)$/i;
+      const forbiddenRoles = /^(?:el\s+|la\s+)?(?:jefe|dueño|admin|administrador|superadmin|super_admin|founder|fundador|creador|boss|owner|inversionista|usuario|lead|desarrollador|operador|sistema|hermes|ceo|cto|cfo|director|gerente|root|staff)$/i;
       if (!forbiddenRoles.test(candidate) && candidate.length >= 2 && candidate.length <= 40) {
         return { isDisclosure: true, declaredName: candidate };
       }

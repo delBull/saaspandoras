@@ -126,15 +126,17 @@ export async function sendSchedulerTelegramAlert(
     return { success: false, channel: 'skipped', error: 'NO_MASTER_BOT_TOKEN' };
   }
 
-  // Determine role destination
-  const isFounderHost =
-    hostRole === 'FOUNDER' ||
-    (hostUserId && (
-      hostUserId === 'marco_founder' ||
-      hostUserId.toLowerCase().includes('founder') ||
-      hostUserId.toLowerCase().includes('admin') ||
-      hostUserId === 'usr_platform_admin_default'
-    ));
+  // Determine role destination (Strict Canonical Identity, ZERO lax substring matching)
+  let isFounderHost = hostRole === 'FOUNDER' || hostUserId === 'marco_founder' || hostUserId === 'usr_platform_admin_default';
+  if (!isFounderHost && hostUserId) {
+    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    isFounderHost = InterlocutorResolver.isBossIdentity({
+      walletAddress: hostUserId.startsWith('0x') ? hostUserId : undefined,
+      email: hostUserId.includes('@') ? hostUserId : undefined,
+      telegramId: /^\d+$/.test(hostUserId) ? hostUserId : undefined,
+      telegramUsername: hostUserId.startsWith('@') ? hostUserId.slice(1) : undefined,
+    });
+  }
 
   let targetChatId: string | undefined;
   let targetRole: 'pandoras_founder' | 'pandoras_ops';

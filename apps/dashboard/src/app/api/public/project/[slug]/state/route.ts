@@ -246,34 +246,83 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         console.warn(`[API] Error fetching metrics for ${slug}:`, metricError);
     }
 
-    // 4.5 Fetch User DB State (Leads, Whitelist, etc.)
+    // 4.5 Fetch User DB State via Canonical Identity & Tenant Context SDK (F2/F3)
     let isWhitelisted = false;
     let dbUserStatus = "visitor";
     let isGestor = false;
     let gestorStatus = "none";
     if (wallet && wallet.startsWith("0x")) {
-        const lead = await db.query.marketingLeads.findFirst({
+      try {
+        const { resolveCanonicalIdentity, resolveTenantContext } = await import('@/lib/identity');
+        const canonicalIdentity = await resolveCanonicalIdentity({
+          type: 'wallet',
+          value: wallet,
+          confidence: 'VERIFIED',
+          verificationMethod: 'PORTAL_WALLET_SESSION',
+        }, { autoCreate: true });
+
+        let resolvedFromSdk = false;
+        if (canonicalIdentity) {
+          const tenantContext = await resolveTenantContext(canonicalIdentity, slug);
+          if (tenantContext) {
+            isWhitelisted = tenantContext.membership.isWhitelisted;
+            dbUserStatus = tenantContext.membership.status;
+            isGestor = tenantContext.membership.isGestor;
+            gestorStatus = tenantContext.membership.gestorStatus;
+            resolvedFromSdk = true;
+          }
+        }
+
+        // Resilient Fallback: If tenantContext is null or unmapped, execute single-table lookup
+        // strictly scoped to project.id (SAME tenant boundary, zero cross-tenant leak)
+        if (!resolvedFromSdk) {
+          const lead = await db.query.marketingLeads.findFirst({
             where: and(
-                eq(leadsSchema.projectId, project.id),
-                eq(leadsSchema.walletAddress, wallet)
+              eq(leadsSchema.projectId, project.id),
+              eq(leadsSchema.walletAddress, wallet)
             )
-        });
-        if (lead) {
+          });
+          if (lead) {
             isWhitelisted = lead.status === "whitelisted" || lead.status === "active";
             dbUserStatus = lead.status || "active";
+          }
+          
+          const ambassadorData = await db.query.ambassadors.findFirst({
+            where: and(
+              eq(ambassadors.projectId, project.id),
+              ilike(ambassadors.walletAddress, wallet)
+            )
+          });
+          if (ambassadorData) {
+            isGestor = true;
+            gestorStatus = ambassadorData.status;
+          }
+        }
+      } catch (identityErr) {
+        console.warn(`[API:state] Non-blocking identity SDK lookup error for ${wallet}:`, identityErr);
+        // Fallback to legacy single-table lookup if identity engine throws (strictly scoped to project.id)
+        const lead = await db.query.marketingLeads.findFirst({
+          where: and(
+            eq(leadsSchema.projectId, project.id),
+            eq(leadsSchema.walletAddress, wallet)
+          )
+        });
+        if (lead) {
+          isWhitelisted = lead.status === "whitelisted" || lead.status === "active";
+          dbUserStatus = lead.status || "active";
         }
         
-        // Check for Ambassador / Gestor status
         const ambassadorData = await db.query.ambassadors.findFirst({
-            where: and(
-                eq(ambassadors.projectId, project.id),
-                ilike(ambassadors.walletAddress, wallet)
-            )
+          where: and(
+            eq(ambassadors.projectId, project.id),
+            ilike(ambassadors.walletAddress, wallet)
+          )
         });
         if (ambassadorData) {
-            isGestor = true;
-            gestorStatus = ambassadorData.status; // 'APPLIED', 'FOUNDER', etc.
+          isGestor = true;
+          gestorStatus = ambassadorData.status;
         }
+      }
     }
 
     // 4.6 Fetch User Rewards & Voting Power (Parallelized)

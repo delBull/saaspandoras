@@ -442,7 +442,45 @@ export async function handleTelegramMessage(params: {
     let extractedWallet: string | undefined = undefined;
     if (trimmed.startsWith('/start ')) {
       const param = trimmed.replace('/start ', '').trim();
-      if (param.startsWith('ref_')) {
+      if (param.startsWith('link_')) {
+        const rawToken = param.replace('link_', '').trim();
+        try {
+          const { LinkIntentService } = await import('@/lib/identity/link-intent-token');
+          const verifiedPayload = LinkIntentService.consumeToken(rawToken);
+          if (verifiedPayload) {
+            extractedWallet = verifiedPayload.wallet;
+            // Cryptographically bind Telegram ID to this verified wallet in Canonical Identity Graph
+            const { CanonicalIdentityGraph } = await import('@/lib/identity/canonical-identity-graph');
+            const canonicalId = await CanonicalIdentityGraph.resolveCanonicalIdentity({
+              type: 'wallet',
+              value: verifiedPayload.wallet,
+              confidence: 'VERIFIED',
+              verificationMethod: 'PORTAL_SIGNED_LINK_INTENT',
+            });
+            if (canonicalId) {
+              await CanonicalIdentityGraph.attachIdentifier({
+                identityId: canonicalId.identityId,
+                identifier: {
+                  type: 'telegram',
+                  value: String(chatId),
+                  confidence: 'VERIFIED',
+                  verificationMethod: 'SIGNED_LINK_INTENT',
+                },
+                proof: {
+                  nonce: verifiedPayload.nonce,
+                  tenant: verifiedPayload.tenant,
+                },
+                organizationId: verifiedPayload.tenant,
+                actorId: String(chatId),
+              });
+            }
+          } else {
+            console.warn(`[TelegramRouter] Signed link token verification failed or expired for chatId=${chatId}`);
+          }
+        } catch (linkErr) {
+          console.error('[TelegramRouter] Failed to process signed link intent:', linkErr);
+        }
+      } else if (param.startsWith('ref_')) {
         extractedRef = param.replace('ref_', '').trim();
       } else if (param.startsWith('wallet_')) {
         extractedWallet = param.replace('wallet_', '').trim();
