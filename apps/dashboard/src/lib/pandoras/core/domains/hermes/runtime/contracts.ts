@@ -317,6 +317,14 @@ export interface HermesCognitiveRuntime {
     input: RuntimeInput,
     options?: RuntimeStreamOptions
   ): Promise<AsyncIterable<RuntimeStreamEvent>>;
+
+  /**
+   * Executes a governed tool through the Tool Gateway.
+   */
+  executeTool?(
+    request: ToolAuthorizationRequest,
+    activeCapabilities?: GovernedCapability[]
+  ): Promise<any>;
 }
 
 // ---------------------------------------------------------------------------

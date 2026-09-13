@@ -287,13 +287,35 @@ export class CognitiveContextBuilder {
     const styleOverlay = this.resolveStyleConflicts(tenantKnowledge.soul, activeAddOns);
     const knowledgeOverlay = this.resolveKnowledgeConflicts(tenantKnowledge, activeAddOns);
     
-    // 4. Build Effective Runtime
-    const allCapabilities = activeAddOns.flatMap(a =>
-      (a.capabilities || []).map(cap => ({
-        ...cap,
-        requiresHumanApproval: a.governanceRequirements?.requiresHumanApproval ?? false,
-      }))
-    );
+    // 4. Build Effective Runtime (Multi-Tenant Baseline Intelligence Mesh)
+    const BASELINE_SEARCH_CAPABILITIES = [
+      { id: 'web.extract', description: 'Extracción segura de contenido web' },
+      { id: 'web.search', description: 'Búsqueda web estructurada' },
+      { id: 'web.crawl', description: 'Rastreo web acotado (máx 50 páginas)' },
+      { id: 'seo.audit', description: 'Auditoría SEO técnica y Health Score' },
+      { id: 'seo.content', description: 'Análisis de legibilidad y contenido' },
+      { id: 'seo.schema', description: 'Validación de Schema.org' },
+      { id: 'seo.competitor', description: 'Benchmarking y análisis de competidores' },
+      { id: 'seo.geo', description: 'Auditoría de robots AI y visibilidad de IA' },
+      { id: 'seo.llms_txt', description: 'Generación canónica de llms.txt' },
+      { id: 'research.run_mission', description: 'Misiones de investigación autónoma de mercado' },
+    ];
+
+    const capabilityMap = new Map<string, any>();
+    for (const baseCap of BASELINE_SEARCH_CAPABILITIES) {
+      capabilityMap.set(baseCap.id, { ...baseCap, requiresHumanApproval: false });
+    }
+
+    for (const a of activeAddOns) {
+      for (const cap of (a.capabilities || [])) {
+        capabilityMap.set(cap.id, {
+          ...cap,
+          requiresHumanApproval: a.governanceRequirements?.requiresHumanApproval ?? false,
+        });
+      }
+    }
+
+    const allCapabilities = Array.from(capabilityMap.values());
 
     return {
       core: coreContext,

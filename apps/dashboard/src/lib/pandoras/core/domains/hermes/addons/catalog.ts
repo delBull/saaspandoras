@@ -201,6 +201,34 @@ export const CANONICAL_ADDONS: HermesAddOnManifest[] = [
     },
     status: 'AVAILABLE',
   },
+  {
+    id: 'hermes.composite.search_intelligence',
+    name: 'Search, SEO & GEO Intelligence Mesh',
+    version: '1.0.0',
+    type: 'COMPOSITE',
+    description: 'Suite completa de inteligencia exterior: auditorías técnicas SEO (Health Score), optimización para modelos generativos (GEO, robots.txt AI y llms.txt), vigilancia competitiva continua y navegación web segura.',
+    capabilities: [
+      { id: 'web.extract', category: 'UTILITY', description: 'Extracción semántica y markdown limpio de sitios web' },
+      { id: 'web.search', category: 'INTEGRATION', description: 'Búsqueda web estructurada' },
+      { id: 'web.crawl', category: 'UTILITY', description: 'Rastreo seguro y acotado del propio dominio (máximo 50 páginas)' },
+      { id: 'web.browser', category: 'INTEGRATION', description: 'Navegación dinámica en sandbox seguro' },
+      { id: 'seo.audit', category: 'UTILITY', description: 'Auditoría SEO técnica y cálculo de Health Score' },
+      { id: 'seo.content', category: 'UTILITY', description: 'Análisis de legibilidad y densidad de palabras clave' },
+      { id: 'seo.schema', category: 'UTILITY', description: 'Validación y generación de Schema.org' },
+      { id: 'seo.competitor', category: 'INTEGRATION', description: 'Comparación competitiva y detección de brechas' },
+      { id: 'seo.geo', category: 'INTEGRATION', description: 'Auditoría de robots AI y visibilidad en ChatGPT/Perplexity' },
+      { id: 'seo.llms_txt', category: 'UTILITY', description: 'Generación canónica de archivo llms.txt' },
+      { id: 'research.run_mission', category: 'JOURNEY', description: 'Misiones programadas de investigación y detección de deltas' },
+    ],
+    governanceRequirements: {
+      requiresHumanApproval: false,
+      allowedChannels: ['web', 'whatsapp', 'telegram'],
+    },
+    compatibility: {
+      minHermesVersion: '1.0.0',
+    },
+    status: 'AVAILABLE',
+  },
 ];
 
 /**

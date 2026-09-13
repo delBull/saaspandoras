@@ -72,6 +72,7 @@ export default function HermesEnterpriseLandingPage() {
             <a href="#ecosystem" className="hover:text-white transition-colors">Ecosistema</a>
             <Link href="/growth-os/hermes/architecture" className="hover:text-purple-400 transition-colors">Arquitectura</Link>
             <a href="#packs" className="hover:text-white transition-colors">Domain Packs</a>
+            <a href="#search-intelligence" className="hover:text-purple-400 transition-colors">Search & SEO/GEO</a>
             <a href="#whitelabel" className="hover:text-white transition-colors">White-Label Platform</a>
             <a href="#web3-vault" className="hover:text-purple-400 transition-colors flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
@@ -337,6 +338,119 @@ export default function HermesEnterpriseLandingPage() {
                 Crea un agente completamente adaptado a las reglas, documentos y herramientas de tu negocio.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEARCH, SEO & GEO INTELLIGENCE MESH (F0-F7.5) */}
+      <section id="search-intelligence" className="py-24 px-6 border-t border-zinc-800/80 bg-zinc-950/60 relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-[500px] h-[300px] bg-indigo-500/5 blur-[140px] pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-xs px-3 py-1 font-mono mb-4">
+              Intelligence Mesh — F0 to F7.5 Certified
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-light text-white mb-4">
+              Search, SEO & GEO Intelligence Mesh
+            </h2>
+            <p className="text-sm md:text-base text-zinc-400 max-w-3xl mx-auto font-light leading-relaxed">
+              Hermes ya no solo conversa: observa el mercado exterior, audita a tus competidores, optimiza tu visibilidad para modelos de Inteligencia Artificial (ChatGPT, Perplexity, Claude) y detecta oportunidades de negocio con gobernanza Zero-Trust.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Card 1: SEO Intelligence */}
+            <div className="border border-zinc-800/80 rounded-2xl bg-zinc-900/50 p-6 flex flex-col justify-between hover:border-purple-500/40 transition-all group">
+              <div>
+                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 w-fit mb-4 group-hover:scale-105 transition-transform">
+                  <BarChart3 className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-medium text-white mb-2">SEO Intelligence Engine</h3>
+                <p className="text-xs text-zinc-400 font-light leading-relaxed mb-4">
+                  Auditoría técnica en segundos con Health Score (0-100), legibilidad Flesch-Szigriszt, densidad semántica de keywords y generación de Schema.org canónico.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-zinc-800/60 flex flex-wrap gap-1.5 text-[10px] font-mono text-purple-300">
+                <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">seo.audit</span>
+                <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">seo.content</span>
+                <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">seo.schema</span>
+              </div>
+            </div>
+
+            {/* Card 2: GEO & AI Discoverability */}
+            <div className="border border-zinc-800/80 rounded-2xl bg-zinc-900/50 p-6 flex flex-col justify-between hover:border-indigo-500/40 transition-all group">
+              <div>
+                <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 w-fit mb-4 group-hover:scale-105 transition-transform">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-medium text-white mb-2">GEO & AI Discoverability</h3>
+                <p className="text-xs text-zinc-400 font-light leading-relaxed mb-4">
+                  Generative Engine Optimization. Audita permisividad de robots AI (GPTBot, PerplexityBot, ClaudeBot), mide densidad de hechos atómicos y genera /llms.txt.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-zinc-800/60 flex flex-wrap gap-1.5 text-[10px] font-mono text-indigo-300">
+                <span className="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">seo.geo</span>
+                <span className="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">robots.txt AI</span>
+                <span className="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">llms.txt</span>
+              </div>
+            </div>
+
+            {/* Card 3: Autonomous Competitor Research */}
+            <div className="border border-zinc-800/80 rounded-2xl bg-zinc-900/50 p-6 flex flex-col justify-between hover:border-emerald-500/40 transition-all group">
+              <div>
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 w-fit mb-4 group-hover:scale-105 transition-transform">
+                  <Workflow className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-medium text-white mb-2">Vigilancia Competitiva</h3>
+                <p className="text-xs text-zinc-400 font-light leading-relaxed mb-4">
+                  Misiones automáticas de investigación y detección de deltas fácticos en competidores (cambios de precios, nuevos lanzamientos y vacíos de oferta).
+                </p>
+              </div>
+              <div className="pt-4 border-t border-zinc-800/60 flex flex-wrap gap-1.5 text-[10px] font-mono text-emerald-300">
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">research.run_mission</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">delta-tracking</span>
+              </div>
+            </div>
+
+            {/* Card 4: Web & Cloud Browser Intelligence */}
+            <div className="border border-zinc-800/80 rounded-2xl bg-zinc-900/50 p-6 flex flex-col justify-between hover:border-cyan-500/40 transition-all group">
+              <div>
+                <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 w-fit mb-4 group-hover:scale-105 transition-transform">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-medium text-white mb-2">Web & Cloud Browser</h3>
+                <p className="text-xs text-zinc-400 font-light leading-relaxed mb-4">
+                  Extracción limpia de artículos, rastreo acotado de hasta 50 páginas y navegador headless en sandbox seguro, 100% blindado contra ataques SSRF.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-zinc-800/60 flex flex-wrap gap-1.5 text-[10px] font-mono text-cyan-300">
+                <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">web.extract</span>
+                <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">web.crawl</span>
+                <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">web.browser</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Banner de Gobernanza Soberana */}
+          <div className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-purple-950/20 to-zinc-950 border border-indigo-500/20 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 shrink-0">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-white">Inviolabilidad Criptográfica: Hermes Propone, Tú Gobiernas</h4>
+                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                  Toda evidencia externa recolectada entra como candidato gobernado. Jamás se promueve a la base oficial de conocimiento sin la aprobación explícita del dueño del tenant.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/onboarding"
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold whitespace-nowrap transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-1.5"
+            >
+              <span>Activar en Onboarding</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>

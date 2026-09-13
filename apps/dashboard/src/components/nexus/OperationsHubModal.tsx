@@ -14,11 +14,13 @@ import {
   Cpu,
   TerminalSquare,
   Activity,
+  Bell,
 } from 'lucide-react';
 import TaskTerminal, { TerminalTask } from './TaskTerminal';
 import { TaskItem } from './taskTypes';
 import { NexusHermesTerminal } from '@/app/nexus/settings/NexusHermesTerminal';
 import type { OperatorContext } from '@/app/nexus/settings/SettingsClient';
+import { OperationsBroadcastTab } from './OperationsBroadcastTab';
 
 interface IPAsset {
   id: string;
@@ -120,7 +122,7 @@ const INITIAL_ASSETS: IPAsset[] = [
   }
 ];
 
-type Tab = 'REGISTER' | 'DATAROOM' | 'TERMINAL';
+type Tab = 'REGISTER' | 'DATAROOM' | 'TERMINAL' | 'BROADCASTS';
 
 interface OpsModalProps {
   isOpen: boolean;
@@ -310,6 +312,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     { id: 'TERMINAL', label: 'TERMINAL', icon: <TerminalSquare className="w-3.5 h-3.5" /> },
     { id: 'REGISTER', label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'DATAROOM', label: 'DATA ROOM', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
+    { id: 'BROADCASTS', label: '📢 AVISOS / BROADCASTS', icon: <Bell className="w-3.5 h-3.5" /> },
   ];
 
   const assetBadge = (status: IPAsset['status']) => {
@@ -650,6 +653,16 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB: BROADCASTS & NOTIFICATIONS */}
+          {tab === 'BROADCASTS' && (
+            <OperationsBroadcastTab
+              userName={userName}
+              userEmail={userEmail}
+              userRole={userRole}
+              collaborators={collaborators}
+            />
           )}
 
           {/* Footer status bar */}

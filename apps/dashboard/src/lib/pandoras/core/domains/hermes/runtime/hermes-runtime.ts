@@ -42,7 +42,10 @@ import {
   PolicyDecision,
   RuntimeTraceRecorder,
   RuntimeTraceHandle,
+  ToolAuthorizationRequest,
+  GovernedCapability,
 } from './contracts';
+import { HermesToolExecutor, ToolExecutionResponse } from './tool-executor';
 import { CognitiveContextAdapter } from './context-adapter';
 import { HermesPromptBuilder } from './prompt-builder';
 import { CognitiveContextBuilder } from '../addons/context-merger';
@@ -102,16 +105,37 @@ export class HermesRuntime implements HermesCognitiveRuntime {
   private readonly provider: ReasoningProvider;
   private readonly memoryProvider: ConversationMemoryProvider;
   private readonly traceRecorder: RuntimeTraceRecorder;
+  private readonly toolExecutor: HermesToolExecutor;
 
   constructor(
     provider?: ReasoningProvider,
     memoryProvider?: ConversationMemoryProvider,
-    traceRecorder?: RuntimeTraceRecorder
+    traceRecorder?: RuntimeTraceRecorder,
+    toolExecutor?: HermesToolExecutor
   ) {
     this.provider = provider ?? new MockReasoningProvider();
     this.memoryProvider = memoryProvider ?? new PostgresConversationMemoryProvider();
     // K12-A45: trace recorder is always wrapped in a FailSafe to avoid cognitive failure
     this.traceRecorder = new FailSafeRuntimeTraceRecorder(traceRecorder ?? new NoOpRuntimeTraceRecorder());
+    this.toolExecutor = toolExecutor ?? new HermesToolExecutor();
+  }
+
+  /**
+   * Returns the underlying governed Tool Gateway executor.
+   */
+  public getToolExecutor(): HermesToolExecutor {
+    return this.toolExecutor;
+  }
+
+  /**
+   * Executes a governed tool through the Tool Gateway, enforcing ToolAuthorizationGate,
+   * tenant capabilities, Anti-SSRF and quota boundaries.
+   */
+  public async executeTool(
+    request: ToolAuthorizationRequest,
+    activeCapabilities: GovernedCapability[] = []
+  ): Promise<ToolExecutionResponse> {
+    return this.toolExecutor.executeTool(request, activeCapabilities);
   }
 
   // ---------------------------------------------------------------------------

@@ -42,6 +42,22 @@ const TENANT_COMMERCIAL_TOOLS = Object.freeze(new Set([
   'dossier.send_public_materials'
 ]));
 
+export const TOOL_CAPABILITY_BINDINGS: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  'web.fetch': ['web.fetch', 'web.extract', 'web_intelligence'],
+  'web.extract': ['web.extract', 'web_intelligence', 'seo_audit'],
+  'web.search': ['web.search', 'web_intelligence', 'competitor_research'],
+  'web.crawl': ['web.crawl', 'web_intelligence'],
+  'web.browser': ['web.browser'], // Estrictamente exclusivo: requiere web.browser
+  'seo.audit': ['seo.audit', 'web.extract', 'seo_audit', 'web_intelligence'],
+  'seo.content': ['seo.content', 'web.extract', 'seo_audit', 'web_intelligence'],
+  'seo.schema': ['seo.schema', 'web.extract', 'seo_audit', 'web_intelligence'],
+  'seo.competitor': ['seo.competitor', 'competitor_research', 'growth_intelligence'],
+  'seo.geo': ['seo.geo', 'web.extract', 'seo_audit'],
+  'seo.llms_txt': ['seo.llms_txt', 'seo_audit', 'web_intelligence'],
+  'mcp.execute': ['mcp.execute'], // Estrictamente exclusivo: requiere mcp.execute
+  'research.run_mission': ['research.run_mission', 'autonomous_research'],
+});
+
 export class ToolAuthorizationGate {
   /**
    * Evaluates authorization and firewall rules before tool execution.
@@ -144,11 +160,39 @@ export class ToolAuthorizationGate {
     }
 
     // 4. Tenant Capability Check: Tool must belong to an active capability in tenant context
-    const hasCapability = activeCapabilities.some(c => 
-      c.id === request.capabilityId || 
-      c.id === toolName || 
-      TENANT_COMMERCIAL_TOOLS.has(toolName)
-    );
+    const validBindings = TOOL_CAPABILITY_BINDINGS[toolName];
+
+    // 4.1 Anti-Capability Spoofing: Check if caller tries to invoke a tool under an unrelated capability
+    if (request.capabilityId && validBindings && !validBindings.includes(request.capabilityId)) {
+      await SecurityAuditLogger.logEvent({
+        organizationId,
+        actorId,
+        eventType: 'TOOL_UNAUTHORIZED',
+        severity: 'CRITICAL',
+        policyDecision: 'DENY',
+        correlationId,
+        toolId: toolName,
+        metadata: { 
+          reason: 'CAPABILITY_MISMATCH_SPOOFING_ATTEMPT',
+          requestedCapability: request.capabilityId,
+          toolName 
+        }
+      });
+
+      return {
+        authorized: false,
+        reason: `Capability mismatch: Tool '${toolName}' cannot be invoked under mismatched capability '${request.capabilityId}'.`,
+        violationCode: 'UNAUTHORIZED_CAPABILITY'
+      };
+    }
+
+    const hasCapability = activeCapabilities.some(c => {
+      if (validBindings && validBindings.includes(c.id)) return true;
+      if (c.id === toolName) return true;
+      if (request.capabilityId && c.id === request.capabilityId && (!validBindings || validBindings.includes(request.capabilityId))) return true;
+      if (TENANT_COMMERCIAL_TOOLS.has(toolName)) return true;
+      return false;
+    });
 
     if (!hasCapability && !RESTRICTED_INTERNAL_TOOLS.has(toolName)) {
       await SecurityAuditLogger.logEvent({
@@ -164,7 +208,7 @@ export class ToolAuthorizationGate {
 
       return {
         authorized: false,
-        reason: `Tool '${toolName}' (capability '${request.capabilityId}') is not enabled for tenant '${organizationId}'.`,
+        reason: `Tool '${toolName}' (capability '${request.capabilityId || 'none'}') is not enabled for tenant '${organizationId}'.`,
         violationCode: 'UNAUTHORIZED_CAPABILITY'
       };
     }
@@ -225,16 +269,28 @@ export class ToolAuthorizationGate {
       }
     }
 
-    const hasCapability = activeCapabilities.some(c => 
-      c.id === request.capabilityId || 
-      c.id === toolName || 
-      TENANT_COMMERCIAL_TOOLS.has(toolName)
-    );
+    const validBindings = TOOL_CAPABILITY_BINDINGS[toolName];
+
+    if (request.capabilityId && validBindings && !validBindings.includes(request.capabilityId)) {
+      return {
+        authorized: false,
+        reason: `Capability mismatch: Tool '${toolName}' cannot be invoked under mismatched capability '${request.capabilityId}'.`,
+        violationCode: 'UNAUTHORIZED_CAPABILITY'
+      };
+    }
+
+    const hasCapability = activeCapabilities.some(c => {
+      if (validBindings && validBindings.includes(c.id)) return true;
+      if (c.id === toolName) return true;
+      if (request.capabilityId && c.id === request.capabilityId && (!validBindings || validBindings.includes(request.capabilityId))) return true;
+      if (TENANT_COMMERCIAL_TOOLS.has(toolName)) return true;
+      return false;
+    });
 
     if (!hasCapability && !RESTRICTED_INTERNAL_TOOLS.has(toolName)) {
       return {
         authorized: false,
-        reason: `Tool '${toolName}' (capability '${request.capabilityId}') is not enabled for tenant '${organizationId}'.`,
+        reason: `Tool '${toolName}' (capability '${request.capabilityId || 'none'}') is not enabled for tenant '${organizationId}'.`,
         violationCode: 'UNAUTHORIZED_CAPABILITY'
       };
     }

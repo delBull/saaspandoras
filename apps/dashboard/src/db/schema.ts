@@ -4077,6 +4077,41 @@ export const projectCollaborators = pgTable("project_collaborators", {
   pk: primaryKey({ columns: [t.projectId, t.collaboratorId] }),
 }));
 
+// ── Nexus Broadcasts & Central Notifications ──────────────────────────────
+export const nexusBroadcastTypeEnum = pgEnum("nexus_broadcast_type", [
+  "ANNOUNCEMENT",
+  "ALERT",
+  "UPDATE",
+  "URGENT",
+]);
+
+export const nexusBroadcastTargetEnum = pgEnum("nexus_broadcast_target", [
+  "GLOBAL",
+  "USER",
+  "ROLE",
+]);
+
+export const nexusBroadcasts = pgTable("nexus_broadcasts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: varchar("title", { length: 256 }).notNull(),
+  content: text("content").notNull(),
+  type: nexusBroadcastTypeEnum("type").notNull().default("ANNOUNCEMENT"),
+  targetType: nexusBroadcastTargetEnum("target_type").notNull().default("GLOBAL"),
+  targetUserId: varchar("target_user_id", { length: 256 }),
+  targetEmail: varchar("target_email", { length: 255 }),
+  targetRole: varchar("target_role", { length: 64 }),
+  authorName: varchar("author_name", { length: 128 }).notNull().default("Nexus Ops"),
+  authorEmail: varchar("author_email", { length: 255 }),
+  authorRole: varchar("author_role", { length: 64 }),
+  isActive: boolean("is_active").notNull().default(true),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type NexusBroadcast = typeof nexusBroadcasts.$inferSelect;
+export type NewNexusBroadcast = typeof nexusBroadcasts.$inferInsert;
+
 // ── HERMES RUNPOD SERVERLESS & TENANT CREDIT LEDGER ──────────────────────────
 
 /**

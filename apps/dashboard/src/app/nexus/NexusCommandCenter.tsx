@@ -21,7 +21,8 @@ import {
   TerminalSquare,
   Handshake,
   Code2,
-  GraduationCap
+  GraduationCap,
+  Bell,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
@@ -29,6 +30,7 @@ import { HermesFloatingGuide } from "@/components/guides/HermesFloatingGuide";
 import type { EcosystemTourRole } from "@/lib/guides/ecosystem-guides.data";
 import TasksPanel from "@/components/nexus/TasksPanel";
 import { OperationsHubModal } from "@/components/nexus/OperationsHubModal";
+import { NexusCentralNotificationModal, NexusBroadcastItem } from "@/components/nexus/NexusCentralNotificationModal";
 import { INITIAL_TASKS, TaskItem } from "@/components/nexus/taskTypes";
 import Link from "next/link";
 
@@ -229,6 +231,45 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       localStorage.setItem("pandoras_ip_tasks_30d", JSON.stringify(tasks));
     } catch {}
   }, [tasks]);
+
+  // ── Nexus Broadcasts & Central Notification Engine ──
+  const [broadcasts, setBroadcasts] = useState<NexusBroadcastItem[]>([]);
+  const [unreadBroadcasts, setUnreadBroadcasts] = useState<NexusBroadcastItem[]>([]);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchBroadcasts() {
+      try {
+        const emailParam = auth?.email ? `&email=${encodeURIComponent(auth.email)}` : '';
+        const roleParam = role ? `&role=${encodeURIComponent(role)}` : '';
+        const res = await fetch(`/api/nexus/broadcasts?${emailParam}${roleParam}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.broadcasts)) {
+          setBroadcasts(data.broadcasts);
+          const dismissed: string[] = JSON.parse(localStorage.getItem('nexus_dismissed_broadcasts') || '[]');
+          const unread = data.broadcasts.filter((b: any) => !dismissed.includes(b.id));
+          setUnreadBroadcasts(unread);
+          if (unread.length > 0) {
+            setIsBroadcastModalOpen(true);
+          }
+        }
+      } catch (err) {
+        console.error('[Nexus] Failed to fetch broadcasts:', err);
+      }
+    }
+    fetchBroadcasts();
+  }, [auth?.email, role]);
+
+  const handleDismissBroadcast = (broadcastId: string) => {
+    try {
+      const dismissed: string[] = JSON.parse(localStorage.getItem('nexus_dismissed_broadcasts') || '[]');
+      if (!dismissed.includes(broadcastId)) {
+        dismissed.push(broadcastId);
+        localStorage.setItem('nexus_dismissed_broadcasts', JSON.stringify(dismissed));
+      }
+      setUnreadBroadcasts((prev) => prev.filter((b) => b.id !== broadcastId));
+    } catch {}
+  };
 
   const validRoles: EcosystemTourRole[] = ["SUPER_ADMIN", "ADMIN", "MARKETING", "VIEWER"];
   const tourRole: EcosystemTourRole = validRoles.includes(role as EcosystemTourRole)
@@ -486,6 +527,19 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             UNIFIED INDEX
           </span>
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setIsBroadcastModalOpen(true)}
+              className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors cursor-pointer"
+              title="Avisos y Comunicados Oficiales de Nexus"
+            >
+              <Bell className="w-3 h-3 text-purple-300" />
+              <span className="hidden sm:inline">AVISOS</span>
+              {unreadBroadcasts.length > 0 && (
+                <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-[0_0_8px_rgba(244,63,94,0.6)]">
+                  {unreadBroadcasts.length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setIsOpsModalOpen(true)}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
@@ -774,6 +828,13 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         userName={auth.name ?? undefined}
         userEmail={auth.email ?? undefined}
         userRole={role ?? undefined}
+      />
+
+      <NexusCentralNotificationModal
+        broadcasts={isBroadcastModalOpen && unreadBroadcasts.length > 0 ? unreadBroadcasts : broadcasts}
+        isOpen={isBroadcastModalOpen}
+        onClose={() => setIsBroadcastModalOpen(false)}
+        onDismiss={handleDismissBroadcast}
       />
     </div>
   );

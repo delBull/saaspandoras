@@ -181,5 +181,29 @@ export class HermesToolExecutor {
         contactId: `lead_${Date.now()}`
       };
     });
+
+    // Register canonical Web Intelligence tools (F2)
+    const { registerWebTools } = require('../tools/web');
+    registerWebTools(this);
+
+    // Register canonical Browser tools (F3)
+    const { registerBrowserTools } = require('../tools/browser');
+    registerBrowserTools(this);
+
+    // Register canonical SEO Intelligence tools (F4)
+    const { registerSeoTools } = require('../intelligence/seo');
+    registerSeoTools(this);
+
+    // Register canonical GEO Intelligence tools (F5)
+    const { registerGeoTools } = require('../intelligence/geo');
+    registerGeoTools(this);
+
+    // Register canonical MCP Gateway tools (F6)
+    const { registerMcpTools } = require('../mcp');
+    registerMcpTools(this);
+
+    // Register canonical Autonomous Research tools (F7)
+    const { registerResearchTools } = require('../intelligence/research');
+    registerResearchTools(this);
   }
 }

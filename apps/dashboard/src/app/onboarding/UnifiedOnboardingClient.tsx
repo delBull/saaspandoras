@@ -47,7 +47,9 @@ const PRODUCTS: ProductOption[] = [
     icon: <Bot className="w-5 h-5 text-emerald-400" />,
     features: [
       'Atención y calificación de prospectos en WhatsApp, Telegram y Web',
-      'Agenda Soberana: Agendamiento autónomo de llamadas con Google Meet y recordatorios automáticos',
+      'Agenda Soberana: Agendamiento autónomo de llamadas con Google Meet y recordatorios',
+      'SEO & GEO Intelligence: Auditoría técnica, robots IA y llms.txt para visibilidad en ChatGPT',
+      'Vigilancia Competitiva: Rastreo web y detección de deltas de mercado de competidores',
       'Entrenamiento con la documentación y respuestas de tu negocio',
       'Traspaso inteligente a asesores humanos ante intención de compra',
     ],
@@ -481,6 +483,8 @@ export function UnifiedOnboardingClient() {
                         {[
                           { id: 'INVESTOR_RELATIONS', label: 'Atención e información a inversionistas' },
                           { id: 'SCHEDULING', label: 'Agenda Soberana & Agendamiento de Citas' },
+                          { id: 'SEO_GEO_INTELLIGENCE', label: 'Auditoría SEO, GEO (llms.txt) & Robots IA' },
+                          { id: 'COMPETITOR_VIGILANCE', label: 'Vigilancia Competitiva & Mercado Autónomo' },
                           { id: 'CLIENT_SUPPORT', label: 'Atención y soporte a clientes' },
                           { id: 'LEAD_GENERATION', label: 'Captación y cualificación de prospectos' },
                           { id: 'FAQ_AUTOMATION', label: 'Soporte institucional & FAQ' },
