@@ -14,7 +14,6 @@ import { projects, whatsappMessages, nexusCollaborators } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { HumanHandoffProtocol } from '@/lib/hermes/human-handoff';
 import { InteractionRouter } from '@/lib/hermes/interaction-router';
-import { routeSimpleMessage } from './core/simpleRouter';
 import { sendWhatsAppMessage } from './utils/client';
 import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from './utils/conversation-id';
 import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
@@ -80,6 +79,12 @@ export interface ResolvedPhoneTarget {
 }
 
 export class WhatsAppDispatcher {
+  /**
+   * Resets the in-memory deduplication cache. Strictly for tests.
+   */
+  static resetDeduplicationForTesting(): void {
+    processedMessageIds.clear();
+  }
   /**
    * Resolves whether a phoneNumberId belongs to Pandora's Master or a provisioned Tenant.
    * Returns NULL for any unrecognized number, which must be strictly rejected fail-closed.
@@ -155,7 +160,7 @@ export class WhatsAppDispatcher {
   /**
    * Main dispatch entrypoint
    */
-  static async dispatch(payload: WhatsAppWebhookPayload): Promise<{ status: string; handled: boolean; target: 'tenant_cognitive' | 'pandoras_acquisition' | 'boss_executive_runtime' | 'unrecognized'; response?: string }> {
+  static async dispatch(payload: WhatsAppWebhookPayload): Promise<{ status: string; handled: boolean; target: 'tenant_cognitive' | 'pandoras_acquisition' | 'boss_executive_runtime' | 'hermes_cognitive_runtime' | 'unrecognized'; response?: string }> {
     const changes = payload.entry?.[0]?.changes?.[0]?.value;
     const messages = changes?.messages;
 
@@ -204,7 +209,19 @@ export class WhatsAppDispatcher {
       };
     }
 
-    // ── 0.6. Cyber Security: Persistent Atomic Deduplication ────────────────
+    // ── 0.6. Cyber Security: Strict Phone Registry Evaluation (Fail-Closed) ───
+    const target = await this.resolveTargetByPhoneNumberId(phoneNumberId);
+
+    if (!target) {
+      console.warn(`🔒 [WhatsAppDispatcher] REJECT: Incoming message from ${maskPhoneNumber(phone)} targeted UNRECOGNIZED PhoneID: ${phoneNumberId}`);
+      return {
+        status: 'unrecognized_phone_number',
+        handled: false,
+        target: 'unrecognized',
+      };
+    }
+
+    // ── 0.7. Cyber Security: Persistent Atomic Deduplication ────────────────
     if (isMessageDuplicate(messageId)) {
       console.log(`⚡ [WhatsAppDispatcher] Duplicate Meta message ID detected in memory (${messageId}), ignoring.`);
       return { status: 'duplicate_ignored', handled: true, target: 'pandoras_acquisition' };
@@ -237,18 +254,6 @@ export class WhatsAppDispatcher {
     }
 
     console.log(`📱 [WhatsAppDispatcher] Inbound message from ${maskPhoneNumber(phone)} to PhoneID ${phoneNumberId} (len: ${messageText.length})`);
-
-    // ── 1. Cyber Security: Strict Phone Registry Evaluation ─────────────────
-    const target = await this.resolveTargetByPhoneNumberId(phoneNumberId);
-
-    if (!target) {
-      console.warn(`🔒 [WhatsAppDispatcher] REJECT: Incoming message from ${maskPhoneNumber(phone)} targeted UNRECOGNIZED PhoneID: ${phoneNumberId}`);
-      return {
-        status: 'unrecognized_phone_number',
-        handled: false,
-        target: 'unrecognized',
-      };
-    }
 
     // ── 2. Route to Specific Tenant ─────────────────────────────────────────
     if (target.kind === 'TENANT') {
@@ -417,132 +422,72 @@ export class WhatsAppDispatcher {
     // ── 2. Route to Pandora's Acquisition / Hermes Cognitive Engine ────────
     console.log(`🌐 [WhatsAppDispatcher] Routing message to PANDORA'S COGNITIVE RUNTIME`);
 
-    // EXECUTIVE PRIVILEGE: If the interlocutor is the Boss (Marco), bypass legacy acquisition funnels completely
-    if (resolvedInterlocutor?.isBoss) {
-      console.log(`👑 [WhatsAppDispatcher] Interlocutor is Boss/Founder (${resolvedName}) — bypassing simpleRouter and delegating directly to Executive Cognitive Runtime`);
-      try {
-        const runtime = getDefaultRuntime();
-        const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone);
+    // ALL messages directed to Pandora's Master WhatsApp (+52 MX) are governed by Hermes Cognitive Runtime
+    try {
+      const runtime = getDefaultRuntime();
+      const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone);
 
-        const runtimeResponse = await runtime.respond({
+      const isBoss = !!resolvedInterlocutor?.isBoss;
+      const isCollaborator = !!resolvedInterlocutor?.isCollaborator;
+
+      console.log(`🌐 [WhatsAppDispatcher] Routing to Hermes Cognitive Runtime for ${resolvedName} (Boss: ${isBoss}, Collaborator: ${isCollaborator}, Role: ${resolvedRole})`);
+
+      const runtimeResponse = await runtime.respond({
+        organizationId: 'pandoras',
+        conversationId,
+        message: {
+          id: messageId,
+          role: 'USER',
+          content: messageText,
+          createdAt: new Date(),
+        },
+        controlPlaneContext: {
+          actorId: resolvedActorId,
           organizationId: 'pandoras',
-          conversationId,
-          message: {
-            id: messageId,
-            role: 'USER',
-            content: messageText,
-            createdAt: new Date(),
+          role: isBoss ? 'OWNER' : (resolvedRole as any),
+          permissions: resolvedPermissions,
+          sessionId: `wa_sess_pandoras_${cleanPhone}`,
+          identity: {
+            name: resolvedName,
+            isBoss,
+            title: resolvedInterlocutor?.title,
+            executivePrivilege: Boolean(isBoss || resolvedInterlocutor?.executivePrivilege),
           },
-          controlPlaneContext: {
-            actorId: resolvedActorId,
-            organizationId: 'pandoras',
-            role: 'OWNER',
-            permissions: resolvedPermissions,
-            sessionId: `wa_sess_pandoras_${cleanPhone}`,
-            identity: {
-              name: resolvedName,
-              isBoss: true,
-              title: resolvedInterlocutor?.title,
-              executivePrivilege: true,
-            },
-            interlocutor: resolvedInterlocutor,
-          }
-        });
-
-        const bossReply = runtimeResponse.content || "A tus órdenes, Marco. ¿En qué te asisto hoy?";
-        await sendWhatsAppMessage(phone, bossReply, messageId);
-
-        return {
-          status: 'success',
-          handled: true,
-          target: 'boss_executive_runtime',
-          response: bossReply,
-        };
-      } catch (err) {
-        console.error('[WhatsAppDispatcher] Error in Boss executive runtime response:', err);
-        const fallbackText = "Marco, he recibido tu instrucción. Hubo una breve intermitencia en el motor de respuesta, pero el enlace soberano sigue activo.";
-        await sendWhatsAppMessage(phone, fallbackText, messageId);
-        return {
-          status: 'error_boss_runtime',
-          handled: true,
-          target: 'boss_executive_runtime',
-          response: fallbackText,
-        };
-      }
-    }
-
-    const routerPayload = {
-      from: phone,
-      id: messageId,
-      type: message.type || 'text',
-      text: message.text ? { body: message.text.body } : undefined,
-      contactName,
-      flowFromLanding: null,
-      alreadyClaimed: true,
-    };
-
-    let result = await routeSimpleMessage(routerPayload);
-
-    // If legacy flow is completed, or simpleRouter did not produce a user-facing response, delegate to Hermes AI Runtime
-    if (
-      !result.handled || 
-      result.isCompleted || 
-      result.action === 'flow_completed' || 
-      !result.response || 
-      messageText.toLowerCase().includes('hola') || 
-      messageText.toLowerCase().includes('test')
-    ) {
-      try {
-        const runtime = getDefaultRuntime();
-        const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone);
-
-        const runtimeResponse = await runtime.respond({
-          organizationId: 'pandoras',
-          conversationId,
-          message: {
-            id: messageId,
-            role: 'USER',
-            content: messageText,
-            createdAt: new Date(),
-          },
-          controlPlaneContext: {
-            actorId: resolvedActorId,
-            organizationId: 'pandoras',
-            role: resolvedRole as any,
-            permissions: resolvedPermissions,
-            sessionId: `wa_sess_pandoras_${cleanPhone}`,
-            identity: {
-              name: resolvedName,
-              isBoss: resolvedInterlocutor?.isBoss,
-              title: resolvedInterlocutor?.title,
-              executivePrivilege: resolvedInterlocutor?.executivePrivilege,
-            },
-            interlocutor: resolvedInterlocutor,
-          }
-        });
-
-        if (runtimeResponse.content) {
-          result = {
-            handled: true,
-            flowType: 'hermes_cognitive',
-            response: runtimeResponse.content,
-          };
+          interlocutor: resolvedInterlocutor,
+          canonicalIdentity: resolvedInterlocutor?.canonicalIdentity,
+          tenantContext: resolvedInterlocutor?.tenantContext,
         }
-      } catch (err) {
-        console.warn('[WhatsAppDispatcher] Hermes runtime fallback for master WhatsApp failed:', err);
-      }
-    }
+      });
 
-    if (result.response && result.handled) {
-      await sendWhatsAppMessage(phone, result.response, messageId);
-    }
+      const replyText = runtimeResponse.content || (
+        isBoss 
+          ? "A tus órdenes, Marco. ¿En qué te asisto hoy?"
+          : `Hola ${resolvedName}, estoy procesando tu solicitud en Pandora's Growth OS.`
+      );
 
-    return {
-      status: 'success',
-      handled: true,
-      target: 'pandoras_acquisition',
-      response: result.response,
-    };
+      await sendWhatsAppMessage(phone, replyText, messageId);
+
+      return {
+        status: 'success',
+        handled: true,
+        target: isBoss ? 'boss_executive_runtime' : 'hermes_cognitive_runtime',
+        response: replyText,
+      };
+    } catch (err) {
+      console.error('[WhatsAppDispatcher] Error in Hermes cognitive runtime response:', err);
+      const isBoss = !!resolvedInterlocutor?.isBoss;
+      const fallbackText = isBoss
+        ? "Marco, he recibido tu instrucción. Hubo una breve intermitencia en el motor de respuesta, pero el enlace soberano sigue activo."
+        : `Hola ${resolvedName}, he recibido tu mensaje en Pandora's Growth OS. Hubo una breve sincronización en el sistema; por favor envíame tu consulta nuevamente.`;
+      
+      await sendWhatsAppMessage(phone, fallbackText, messageId);
+      return {
+        status: 'error_runtime_fallback',
+        handled: true,
+        target: isBoss ? 'boss_executive_runtime' : 'hermes_cognitive_runtime',
+        response: fallbackText,
+      };
+    }
   }
 
   /**

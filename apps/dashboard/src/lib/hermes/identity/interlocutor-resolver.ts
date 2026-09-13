@@ -636,18 +636,24 @@ export class InterlocutorResolver {
           }
         }
 
-        // Resolve target project or fallback to pandoras
-        let projectId = 1;
+        // Resolve target project or find any active project to satisfy not-null FK
+        let projectId: number | null = null;
         const targetSlug = query.tenantSlug || 'pandoras';
         const isTargetUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetSlug);
         const proj = await db.query.projects.findFirst({
           where: (p, { or, eq }) => isTargetUuid ? or(eq(p.slug, targetSlug), eq(p.organizationId, targetSlug)) : eq(p.slug, targetSlug),
           columns: { id: true }
         });
-        if (proj) projectId = proj.id;
+        if (proj) {
+          projectId = proj.id;
+        } else {
+          const fallbackProj = await db.query.projects.findFirst({ columns: { id: true } });
+          if (fallbackProj) projectId = fallbackProj.id;
+        }
 
-        await db.insert(marketingLeads).values({
-          projectId,
+        if (projectId) {
+          await db.insert(marketingLeads).values({
+            projectId,
           name: effectiveName,
           phoneNumber: rawPhone || null,
           email: rawEmail || null,
@@ -662,6 +668,7 @@ export class InterlocutorResolver {
             nameHint: query.nameHint,
           },
         }).onConflictDoNothing();
+        }
       }
     } catch (leadErr) {
       console.warn('[InterlocutorResolver] Non-blocking lead auto-capture notice:', leadErr);

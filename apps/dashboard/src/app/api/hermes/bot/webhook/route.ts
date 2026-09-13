@@ -108,6 +108,18 @@ export async function POST(req: NextRequest) {
 
     if (!tenantSlug) {
       tenantSlug = 'pandoras';
+    } else if (tenantSlug !== 'pandoras') {
+      try {
+        const { TenantAuthorityService } = await import('@/lib/pandoras/core/domains/hermes/tenants/tenant-authority');
+        const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantSlug);
+        if (!canonical) {
+          console.warn(`[Hermes Telegram Webhook] 🔒 Rejected unverified/spoofed tenant slug: '${tenantSlug}'. Falling back to 'pandoras'.`);
+          tenantSlug = 'pandoras';
+        }
+      } catch (authErr) {
+        console.warn('[Hermes Telegram Webhook] Non-blocking tenant verification warning:', authErr);
+        tenantSlug = 'pandoras';
+      }
     }
 
     // 2.5 Enrich Interlocutor with Authoritative Tenant Context (F6 Capa 4)
@@ -145,7 +157,7 @@ export async function POST(req: NextRequest) {
       console.warn(`[Hermes Telegram Webhook] ⚠️ No Telegram bot token found in environment or tenant config for '${tenantSlug}'. Cannot deliver message to chat ${chatId}.`);
     }
 
-    // 3.5 Handle Human Escalation Callback or Intent
+    // 3.5 Handle Human Escalation Callback or Intent (Gate 24: REQUESTED, not falsely ASSIGNED)
     const isEscalateCallback = callbackQuery?.data?.startsWith('escalate_human_');
     const isHumanRequest = /(?:asesor|humano|persona|agente humano|atenci[oó]n humana|hablar con alguien|ejecutivo|soporte humano)/i.test(rawText);
 
@@ -154,7 +166,7 @@ export async function POST(req: NextRequest) {
       try {
         const { SecurityAuditLogger } = await import('@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger');
         await SecurityAuditLogger.logEvent({
-          eventType: 'A2A_ESCALATION_TRIGGERED',
+          eventType: 'HUMAN_ESCALATION_REQUESTED',
           actorId: interlocutor.actorId,
           organizationId: tenantSlug,
           severity: 'INFO',
@@ -165,6 +177,7 @@ export async function POST(req: NextRequest) {
             telegramId,
             userName: interlocutor.name,
             reason: isEscalateCallback ? 'Botón inline presionado' : 'Intención conversacional detectada',
+            stage: 'REQUESTED',
           },
         });
       } catch (auditErr) {

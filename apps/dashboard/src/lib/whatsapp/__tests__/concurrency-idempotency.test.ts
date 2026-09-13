@@ -6,9 +6,11 @@ import { WhatsAppDispatcher } from '../dispatcher';
 describe('⚡ Suite B: Concurrency, Idempotency & Persistent Ledger', () => {
   beforeEach(() => {
     PlatformAuditLedgerService.resetForTesting();
+    WhatsAppDispatcher.resetDeduplicationForTesting();
   });
 
   it('IDEMP-01: Inbound message with already processed wamid is deduplicated fail-safe', async () => {
+    const testWamid = `wamid.test_${Date.now()}`;
     const payload = {
       object: 'whatsapp_business_account',
       entry: [
@@ -25,7 +27,7 @@ describe('⚡ Suite B: Concurrency, Idempotency & Persistent Ledger', () => {
                 messages: [
                   {
                     from: '5215512345678',
-                    id: 'wamid.HBgLMTIzNDU2Nzg5MA==',
+                    id: testWamid,
                     timestamp: '1700000000',
                     text: { body: 'Hola equipo' },
                     type: 'text',

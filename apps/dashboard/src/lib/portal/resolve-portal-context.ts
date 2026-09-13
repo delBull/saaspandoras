@@ -58,8 +58,7 @@ export async function resolvePortalContext(
       const reqHeaders = await headers();
       const auth = await getAuth(reqHeaders);
       const callerWallet = auth.session?.address?.toLowerCase() ||
-        reqHeaders.get('x-wallet-address')?.toLowerCase() ||
-        reqHeaders.get('x-thirdweb-address')?.toLowerCase();
+        (auth.isVerified ? (reqHeaders.get('x-wallet-address')?.toLowerCase() || reqHeaders.get('x-thirdweb-address')?.toLowerCase()) : null);
 
       if (callerWallet) {
         const isUserAdmin = await isAdmin(callerWallet);
