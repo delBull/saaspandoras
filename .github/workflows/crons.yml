@@ -77,3 +77,13 @@ jobs:
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "https://pandoras.finance/api/cron/reconcile-withdrawals"
+
+  hermes-workflows:
+    if: github.event.schedule == '*/30 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call hermes-workflows
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://dash.pandoras.finance/api/v1/hermes/cron/workflows?secret=${{ secrets.CRON_SECRET }}"
+

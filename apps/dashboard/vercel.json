@@ -2,11 +2,5 @@
   "version": 2,
   "framework": "nextjs",
   "buildCommand": "turbo run build --filter=@saasfly/dashboard...",
-  "installCommand": "bun install --no-frozen-lockfile",
-  "crons": [
-    {
-      "path": "/api/v1/hermes/cron/workflows",
-      "schedule": "0 * * * *"
-    }
-  ]
+  "installCommand": "bun install --no-frozen-lockfile"
 }
