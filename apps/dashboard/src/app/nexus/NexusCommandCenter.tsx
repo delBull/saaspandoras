@@ -530,19 +530,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
           </span>
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setIsBroadcastModalOpen(true)}
-              className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors cursor-pointer"
-              title="Avisos y Comunicados Oficiales de Nexus"
-            >
-              <Bell className="w-3 h-3 text-purple-300" />
-              <span className="hidden sm:inline">AVISOS</span>
-              {unreadBroadcasts.length > 0 && (
-                <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-[0_0_8px_rgba(244,63,94,0.6)]">
-                  {unreadBroadcasts.length}
-                </span>
-              )}
-            </button>
-            <button
               onClick={() => setIsOpsModalOpen(true)}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
             >
