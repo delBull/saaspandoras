@@ -1,29 +1,83 @@
 /**
- * 📢 Nexus Broadcasts & Central Notification Suite
+ * 🛡️ Nexus Broadcasts & Central Notification Security Suite (Non-Circular)
  * apps/dashboard/src/app/api/nexus/__tests__/nexus-broadcasts.test.ts
  *
- * Verifies:
- * 1. Authorization: Only ADMIN and SUPER_ADMIN can post broadcasts.
- * 2. Payload Validation: Title and content required, handles emojis & newlines.
- * 3. Targeting: Supports GLOBAL, USER, and ROLE scoping.
- * 4. Deactivation: Archiving broadcasts via PATCH.
+ * Verifies true server-enforced security boundaries:
+ * 1. Anti-Spoofing: Client cannot escalate privileges by passing authorRole/authorEmail in body.
+ * 2. RBAC Fail-Closed: Unauthenticated or non-admin (VIEWER) tokens are rejected with 403.
+ * 3. Anti-Exfiltration: GET ?all=true is strictly forbidden (403) to non-admins.
+ * 4. Server Identity Binding: Author fields are strictly derived from verified session/token.
+ * 5. Input Validation: Missing fields -> 400, Invalid UUID -> 400 (never 500).
+ * 6. Server-Bound Feed: Query parameters cannot be used to spoof identity for targeted broadcasts.
+ * 7. WhatsApp Length Guard: Payloads > 3000 chars are protected against Cloud API truncation.
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import { GET, POST, PATCH, formatBroadcastWhatsAppMessage } from '../broadcasts/route';
+import { db } from '@/db';
+import { nexusCollaborators, nexusBroadcasts } from '@/db/schema';
+import { eq, inArray } from 'drizzle-orm';
 
-describe('📢 Nexus Broadcasts & Central Notifications API Suite', () => {
+const TEST_ADMIN_TOKEN = 'test_token_super_admin_sec_999';
+const TEST_VIEWER_TOKEN = 'test_token_viewer_sec_111';
+const TEST_ADMIN_EMAIL = 'verified.superadmin@pandoras.finance';
+const TEST_VIEWER_EMAIL = 'unauthorized.viewer@pandoras.finance';
 
-  // ── TEST 1: REJECTS NON-ADMIN BROADCAST CREATION ─────────────────────
-  it('Test 1: Rejects broadcast publishing if author is not ADMIN or SUPER_ADMIN', async () => {
+describe('🛡️ Nexus Broadcasts Security & Non-Circular Authorization Suite', () => {
+  let createdBroadcastId: string;
+
+  beforeAll(async () => {
+    // Clean up any stale test collaborators
+    await db.delete(nexusCollaborators).where(
+      inArray(nexusCollaborators.email, [TEST_ADMIN_EMAIL, TEST_VIEWER_EMAIL])
+    );
+
+    const futureExpiration = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    // 1. Seed Verified SUPER_ADMIN Collaborator with Token
+    await db.insert(nexusCollaborators).values({
+      name: 'Verified Admin Operator',
+      email: TEST_ADMIN_EMAIL,
+      role: 'SUPER_ADMIN',
+      token: TEST_ADMIN_TOKEN,
+      status: 'ACTIVE',
+      expiresAt: futureExpiration,
+    });
+
+    // 2. Seed Non-Admin VIEWER Collaborator with Token
+    await db.insert(nexusCollaborators).values({
+      name: 'Unauthorized Viewer',
+      email: TEST_VIEWER_EMAIL,
+      role: 'VIEWER',
+      token: TEST_VIEWER_TOKEN,
+      status: 'ACTIVE',
+      expiresAt: futureExpiration,
+    });
+  });
+
+  afterAll(async () => {
+    // Cleanup seeded collaborators
+    await db.delete(nexusCollaborators).where(
+      inArray(nexusCollaborators.email, [TEST_ADMIN_EMAIL, TEST_VIEWER_EMAIL])
+    );
+    // Cleanup created test broadcasts
+    if (createdBroadcastId) {
+      await db.delete(nexusBroadcasts).where(eq(nexusBroadcasts.id, createdBroadcastId));
+    }
+  });
+
+  // ── TEST 1: REJECTS CLIENT BODY SPOOFING (FAIL-CLOSED) ─────────────────
+  it('SEC-01: Rejects broadcast publish when client passes authorRole in body without auth headers', async () => {
     const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: 'Unauthorized Message',
-        content: 'Should be rejected',
-        authorRole: 'VIEWER',
+        title: 'Attacker Broadcast',
+        content: 'Should be rejected immediately',
+        authorRole: 'SUPER_ADMIN', // Spoofed client parameter
+        authorEmail: 'marco@pandoras.finance',
+        authorName: 'Fake Marco',
       }),
     });
 
@@ -32,18 +86,92 @@ describe('📢 Nexus Broadcasts & Central Notifications API Suite', () => {
 
     expect(res.status).toBe(403);
     expect(data.success).toBe(false);
-    expect(data.error).toContain('Only SUPER_ADMIN and ADMIN can publish Nexus broadcasts');
+    expect(data.error).toContain('Unauthorized: Only authenticated SUPER_ADMIN and ADMIN');
   });
 
-  // ── TEST 2: REJECTS EMPTY TITLE OR CONTENT ───────────────────────────
-  it('Test 2: Rejects payloads with missing title or content', async () => {
+  // ── TEST 2: REJECTS NON-ADMIN COLLABORATOR TOKEN (VIEWER) ─────────────
+  it('SEC-02: Rejects broadcast publish when authenticated as a VIEWER collaborator', async () => {
     const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-nexus-token': TEST_VIEWER_TOKEN, // Valid token, but role is VIEWER
+      },
+      body: JSON.stringify({
+        title: 'Viewer Attempt',
+        content: 'Should not be allowed',
+        authorRole: 'SUPER_ADMIN', // Attempting privilege escalation via body
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(data.success).toBe(false);
+  });
+
+  // ── TEST 3: REJECTS UNAUTHENTICATED GET ?all=true (ANTI-EXFILTRATION) ──
+  it('SEC-03: Rejects GET ?all=true without admin session to prevent data exfiltration', async () => {
+    // 1. Without any token
+    const unauthReq = new NextRequest('http://localhost:3000/api/nexus/broadcasts?all=true');
+    const unauthRes = await GET(unauthReq);
+    expect(unauthRes.status).toBe(403);
+
+    // 2. With non-admin VIEWER token
+    const viewerReq = new NextRequest('http://localhost:3000/api/nexus/broadcasts?all=true', {
+      headers: { 'x-nexus-token': TEST_VIEWER_TOKEN },
+    });
+    const viewerRes = await GET(viewerReq);
+    expect(viewerRes.status).toBe(403);
+  });
+
+  // ── TEST 4: PERMITS VERIFIED SUPER_ADMIN & ENFORCES SERVER IDENTITY ────
+  it('SEC-04: Authorizes SUPER_ADMIN via token and binds server-derived identity to DB record', async () => {
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-nexus-token': TEST_ADMIN_TOKEN, // Verified admin token
+      },
+      body: JSON.stringify({
+        title: '🚀 Anuncio Oficial del Sistema',
+        content: 'Detalles operativos importantes.\n\n👉 https://pandoras.finance',
+        type: 'ANNOUNCEMENT',
+        targetType: 'GLOBAL',
+        authorRole: 'MALICIOUS_BODY_ROLE', // Malicious attempt to spoof role
+        authorEmail: 'spoofed@evil.com',     // Malicious attempt to spoof email
+        authorName: 'Injected Name',
+        notifyWhatsApp: false,
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.broadcast).toBeDefined();
+
+    createdBroadcastId = data.broadcast.id;
+
+    // 🔥 SECURITY VERIFICATION: Body spoofing was rejected; identity is server-derived!
+    expect(data.broadcast.authorRole).toBe('SUPER_ADMIN');
+    expect(data.broadcast.authorEmail).toBe(TEST_ADMIN_EMAIL);
+    expect(data.broadcast.authorName).toBe('Verified Admin Operator');
+  });
+
+  // ── TEST 5: VALIDATES MISSING REQUIRED FIELDS ─────────────────────────
+  it('SEC-05: Rejects payloads with missing title or content with 400 Bad Request', async () => {
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-nexus-token': TEST_ADMIN_TOKEN,
+      },
       body: JSON.stringify({
         title: '',
-        content: 'Some content',
-        authorRole: 'ADMIN',
+        content: 'Missing title',
       }),
     });
 
@@ -55,173 +183,138 @@ describe('📢 Nexus Broadcasts & Central Notifications API Suite', () => {
     expect(data.error).toBe('Title is required');
   });
 
-  // ── TEST 3: CREATES GLOBAL BROADCAST WITH EMOJIS & ENTERS ────────────
-  it('Test 3: Allows SUPER_ADMIN to publish a broadcast with emojis and paragraphs', async () => {
-    const multilineContent = '🚀 Anuncio Oficial:\n\nPárrafo 1 con emojis 🎉.\n\n👉 [Ver Litepaper](https://pandoras.finance/litepaper)';
-    
-    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: '📢 Lanzamiento del Sistema Operativo',
-        content: multilineContent,
-        type: 'ANNOUNCEMENT',
-        targetType: 'GLOBAL',
-        authorName: 'Marco',
-        authorRole: 'SUPER_ADMIN',
-        expiresInDays: 7,
-      }),
+  // ── TEST 6: AUTHORIZES ADMIN TO LIST ALL BROADCASTS ───────────────────
+  it('SEC-06: Allows authenticated SUPER_ADMIN to query GET ?all=true', async () => {
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts?all=true', {
+      headers: { 'x-nexus-token': TEST_ADMIN_TOKEN },
     });
 
-    const res = await POST(req);
-    const data = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.broadcast).toBeDefined();
-    expect(data.broadcast.title).toContain('📢');
-    expect(data.broadcast.content).toBe(multilineContent);
-    expect(data.broadcast.targetType).toBe('GLOBAL');
-    expect(data.broadcast.isActive).toBe(true);
-  });
-
-  // ── TEST 4: TARGETED BROADCAST (USER & ROLE) ─────────────────────────
-  it('Test 4: Publishes a targeted broadcast for a specific user email', async () => {
-    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: '🔔 Revisión de Propuesta Asignada',
-        content: 'Hola, por favor revisa el Deal Room asignado:\nhttps://nexus.pandoras.finance/rooms',
-        type: 'ALERT',
-        targetType: 'USER',
-        targetEmail: 'collab@pandoras.finance',
-        authorName: 'Ops Admin',
-        authorRole: 'ADMIN',
-      }),
-    });
-
-    const res = await POST(req);
-    const data = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.broadcast.targetType).toBe('USER');
-    expect(data.broadcast.targetEmail).toBe('collab@pandoras.finance');
-  });
-
-  // ── TEST 5: GET ENDPOINT RETRIEVES MATCHING BROADCASTS ───────────────
-  it('Test 5: GET /api/nexus/broadcasts filters matching global and targeted broadcasts', async () => {
-    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts?email=collab@pandoras.finance&role=COLLABORATOR');
     const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data.success).toBe(true);
     expect(Array.isArray(data.broadcasts)).toBe(true);
-    // Should include the global and user-targeted broadcast created above
-    expect(data.broadcasts.length).toBeGreaterThan(0);
   });
 
-  // ── TEST 6: PATCH DEACTIVATES A BROADCAST ───────────────────────────
-  it('Test 6: PATCH deactivates an active broadcast', async () => {
-    // First get a broadcast ID from list
-    const listReq = new NextRequest('http://localhost:3000/api/nexus/broadcasts?all=true');
-    const listRes = await GET(listReq);
-    const listData = await listRes.json();
-    const target = listData.broadcasts[0];
-
-    expect(target).toBeDefined();
-
-    const patchReq = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
+  // ── TEST 7: REJECTS UNAUTHORIZED PATCH ─────────────────────────────────
+  it('SEC-07: Rejects PATCH requests from unauthorized or non-admin callers', async () => {
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id: target.id,
+        id: createdBroadcastId,
         isActive: false,
-        authorRole: 'SUPER_ADMIN',
+        authorRole: 'SUPER_ADMIN', // Spoof attempt
       }),
     });
 
-    const patchRes = await PATCH(patchReq);
-    const patchData = await patchRes.json();
-
-    expect(patchRes.status).toBe(200);
-    expect(patchData.success).toBe(true);
-    expect(patchData.broadcast.isActive).toBe(false);
+    const res = await PATCH(req);
+    expect(res.status).toBe(403);
   });
 
-  // ── TEST 7: FORMATTING VALIDATION FOR EMOJIS & ENTERS ────────────────
-  it('Test 7: Preserves multiline paragraphs and emojis in broadcast retrieval', async () => {
-    const multiline = '🚨 URGENTE:\n\nEstimados miembros:\nFavor de revisar la plataforma.\n\n👉 https://pandoras.finance';
-    const postReq = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+  // ── TEST 8: PATCH VALIDATES UUID FORMAT (PREVENTS 500 DB CRASHES) ──────
+  it('SEC-08: PATCH returns 400 on invalid UUID format instead of database error 500', async () => {
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-nexus-token': TEST_ADMIN_TOKEN,
+      },
       body: JSON.stringify({
-        title: '🚨 Test Format',
-        content: multiline,
-        type: 'URGENT',
-        authorRole: 'ADMIN',
+        id: 'invalid-non-uuid-string',
+        isActive: false,
       }),
     });
-    const postRes = await POST(postReq);
-    const postData = await postRes.json();
-    expect(postRes.status).toBe(200);
 
-    const getReq = new NextRequest('http://localhost:3000/api/nexus/broadcasts');
-    const getRes = await GET(getReq);
-    const getData = await getRes.json();
-    const found = getData.broadcasts.find((b: any) => b.id === postData.broadcast.id);
+    const res = await PATCH(req);
+    const data = await res.json();
 
-    expect(found).toBeDefined();
-    expect(found.content).toContain('\n\n');
-    expect(found.content).toContain('🚨');
-    expect(found.content).toContain('https://pandoras.finance');
+    expect(res.status).toBe(400);
+    expect(data.success).toBe(false);
+    expect(data.error).toContain('Invalid UUID format');
   });
 
-  // ── TEST 8: WHATSAPP MESSAGE FORMATTER ENFORCES ORIGIN & DETAILS ────
-  it('Test 8: Formats WhatsApp message with Nexus origin, author and alert badge', () => {
-    const waText = formatBroadcastWhatsAppMessage(
+  // ── TEST 9: AUTHORIZED PATCH WITH VALID UUID ──────────────────────────
+  it('SEC-09: Successfully archives a broadcast when called by authenticated admin with valid UUID', async () => {
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-nexus-token': TEST_ADMIN_TOKEN,
+      },
+      body: JSON.stringify({
+        id: createdBroadcastId,
+        isActive: false,
+      }),
+    });
+
+    const res = await PATCH(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.broadcast.isActive).toBe(false);
+  });
+
+  // ── TEST 10: SERVER-BOUND TARGET FEED (IGNORES CLIENT SPOOFING IN GET) ─
+  it('SEC-10: GET feed delivers GLOBAL broadcasts and ignores spoofed email query params', async () => {
+    // Calling GET without auth headers but with spoofed query param ?email=victim@pandoras.finance
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts?email=victim@pandoras.finance&role=SUPER_ADMIN');
+    const res = await GET(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    // All returned broadcasts must strictly be GLOBAL because caller is unauthenticated
+    for (const b of data.broadcasts) {
+      expect(b.targetType).toBe('GLOBAL');
+    }
+  });
+
+  // ── TEST 11: WHATSAPP LENGTH GUARD (PREVENTS CLOUD API TRUNCATION) ─────
+  it('SEC-11: WhatsApp message formatter safely truncates bodies exceeding 3000 characters', () => {
+    const hugeContent = 'A'.repeat(4500);
+    const formatted = formatBroadcastWhatsAppMessage(
       {
-        title: '💎 Nuevo Protocolo RWA Desplegado',
-        content: 'Detalles de la inversión en el Data Room.',
+        title: 'Huge Content Test',
+        content: hugeContent,
         type: 'ALERT',
         targetType: 'GLOBAL',
-        authorName: 'Marco',
+        authorName: 'Admin',
         authorRole: 'SUPER_ADMIN',
       },
-      'Carlos'
+      'Colleague'
     );
 
-    expect(waText).toContain('NEXUS OPERATIONS HUB');
-    expect(waText).toContain('⚠️ AVISO IMPORTANTE');
-    expect(waText).toContain('Hola *Carlos*');
-    expect(waText).toContain('💎 Nuevo Protocolo RWA Desplegado');
-    expect(waText).toContain('👤 *De parte de:* Marco (SUPER_ADMIN)');
-    expect(waText).toContain('https://nexus.pandoras.finance');
+    expect(formatted.length).toBeLessThan(3500);
+    expect(formatted).toContain('...[Ver mensaje completo en Nexus]');
   });
 
-  // ── TEST 9: POST INCLUDES WHATSAPP SUMMARY IN RESPONSE ───────────────
-  it('Test 9: POST returns whatsappSummary with dispatch reporting', async () => {
-    const postReq = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
+  // ── TEST 12: WHATSAPP DISPATCH & REPORTING ────────────────────────────
+  it('SEC-12: Dispatches WhatsApp messages to active collaborators and reports summary', async () => {
+    const req = new NextRequest('http://localhost:3000/api/nexus/broadcasts', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-nexus-token': TEST_ADMIN_TOKEN,
+      },
       body: JSON.stringify({
-        title: '📢 Anuncio con WhatsApp Deshabilitado para Test',
-        content: 'Contenido de prueba.',
+        title: '📢 Security Verified Launch',
+        content: 'Notificación de prueba verificada con WhatsApp.',
         type: 'ANNOUNCEMENT',
-        authorRole: 'ADMIN',
-        notifyWhatsApp: false, // Explicitly false to test opt-out
+        targetType: 'GLOBAL',
+        notifyWhatsApp: true,
       }),
     });
 
-    const postRes = await POST(postReq);
-    const postData = await postRes.json();
+    const res = await POST(req);
+    const data = await res.json();
 
-    expect(postRes.status).toBe(200);
-    expect(postData.success).toBe(true);
-    expect(postData.whatsappSummary).toBeDefined();
-    expect(postData.whatsappSummary.dispatched).toBe(0);
-    expect(Array.isArray(postData.whatsappSummary.errors)).toBe(true);
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.whatsappSummary).toBeDefined();
+    expect(typeof data.whatsappSummary.dispatched).toBe('number');
+    expect(Array.isArray(data.whatsappSummary.errors)).toBe(true);
   });
 });

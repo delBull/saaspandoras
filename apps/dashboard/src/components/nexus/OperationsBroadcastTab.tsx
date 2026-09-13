@@ -57,7 +57,11 @@ export function OperationsBroadcastTab({
   const fetchRecentBroadcasts = async () => {
     setIsLoadingList(true);
     try {
-      const res = await fetch('/api/nexus/broadcasts?all=true');
+      const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
+      const res = await fetch('/api/nexus/broadcasts?all=true', {
+        headers: storedToken ? { 'x-nexus-token': storedToken } : {},
+        credentials: 'include',
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.broadcasts)) {
         setRecentBroadcasts(data.broadcasts);
@@ -97,6 +101,7 @@ export function OperationsBroadcastTab({
     const toastId = toast.loading('Publicando notificación en Nexus...');
 
     try {
+      const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
       const payload = {
         title: title.trim(),
         content: content.trim(),
@@ -104,16 +109,17 @@ export function OperationsBroadcastTab({
         targetType,
         targetEmail: targetType === 'USER' ? targetEmail.trim() : undefined,
         targetRole: targetType === 'ROLE' ? targetRole : undefined,
-        authorName: userName,
-        authorEmail: userEmail,
-        authorRole: normalizedRole,
         expiresInDays: expiresInDays ? Number(expiresInDays) : undefined,
         notifyWhatsApp,
       };
 
       const res = await fetch('/api/nexus/broadcasts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(storedToken ? { 'x-nexus-token': storedToken } : {}),
+        },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
@@ -139,13 +145,17 @@ export function OperationsBroadcastTab({
 
   const handleToggleActive = async (id: string, currentActive: boolean) => {
     try {
+      const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
       const res = await fetch('/api/nexus/broadcasts', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(storedToken ? { 'x-nexus-token': storedToken } : {}),
+        },
+        credentials: 'include',
         body: JSON.stringify({
           id,
           isActive: !currentActive,
-          authorRole: normalizedRole,
         }),
       });
 

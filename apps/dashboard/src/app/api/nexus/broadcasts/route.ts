@@ -4,7 +4,13 @@
  *
  * Handles creation, listing, and archiving of global or targeted announcements
  * for nexus.pandoras.finance.
- * Restricted creation: Only SUPER_ADMIN and ADMIN can emit broadcasts.
+ *
+ * SECURITY MODEL (Fail-Closed):
+ * - Authorization strictly derived from server-side Web3 / Collaborator session (getNexusAuthContext).
+ * - Client body parameters (authorRole, authorEmail) are NEVER trusted as authority.
+ * - GET ?all=true requires SUPER_ADMIN or ADMIN authentication.
+ * - Standard GET only serves targeted broadcasts if server-authenticated identity matches.
+ * - PATCH requires SUPER_ADMIN or ADMIN authentication and validates UUID format.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,22 +18,35 @@ import { db } from '@/db';
 import { nexusBroadcasts, nexusCollaborators } from '@/db/schema';
 import { eq, desc, and, or, isNull, isNotNull, gt } from 'drizzle-orm';
 import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
+import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 
 export const dynamic = 'force-dynamic';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * GET /api/nexus/broadcasts
- * Retrieves all active broadcasts relevant to the requester (Global + User-targeted + Role-targeted).
+ * Retrieves active broadcasts.
+ * - If `?all=true`: Requires SUPER_ADMIN or ADMIN authentication.
+ * - Otherwise: Delivers GLOBAL broadcasts + broadcasts targeted to the verified server session.
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get('email')?.toLowerCase().trim();
-    const role = searchParams.get('role')?.toUpperCase().trim();
-    const all = searchParams.get('all') === 'true'; // For Operations Hub management
+    const all = searchParams.get('all') === 'true';
 
+    // 1. Server-side Authentication Resolution
+    const auth = await getNexusAuthContext(req.headers);
+
+    // 2. Admin Management Listing (all=true)
     if (all) {
-      // Returns last 50 broadcasts for admin management
+      if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: Admin authentication required to list all broadcasts.' },
+          { status: 403 }
+        );
+      }
+
       const broadcasts = await db
         .select()
         .from(nexusBroadcasts)
@@ -37,24 +56,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, broadcasts });
     }
 
-    // Filter active broadcasts for the user
+    // 3. User Facing Active Feed (Delivers GLOBAL + Authenticated Targets)
     const now = new Date();
     const conditions = [
       eq(nexusBroadcasts.isActive, true),
       or(isNull(nexusBroadcasts.expiresAt), gt(nexusBroadcasts.expiresAt, now)),
     ];
 
-    // Target matching: GLOBAL, or matching user email, or matching user role
+    // Base: Always deliver GLOBAL announcements
     const targetConditions = [eq(nexusBroadcasts.targetType, 'GLOBAL')];
-    if (email) {
-      targetConditions.push(
-        and(eq(nexusBroadcasts.targetType, 'USER'), eq(nexusBroadcasts.targetEmail, email))!
-      );
-    }
-    if (role) {
-      targetConditions.push(
-        and(eq(nexusBroadcasts.targetType, 'ROLE'), eq(nexusBroadcasts.targetRole, role))!
-      );
+
+    // Only deliver user/role targeted broadcasts if actor is cryptographically authenticated
+    if (auth.isAuthenticated) {
+      if (auth.email) {
+        targetConditions.push(
+          and(eq(nexusBroadcasts.targetType, 'USER'), eq(nexusBroadcasts.targetEmail, auth.email.toLowerCase().trim()))!
+        );
+      }
+      if (auth.role) {
+        targetConditions.push(
+          and(eq(nexusBroadcasts.targetType, 'ROLE'), eq(nexusBroadcasts.targetRole, auth.role))!
+        );
+      }
     }
 
     const broadcasts = await db
@@ -77,10 +100,23 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/nexus/broadcasts
  * Creates and publishes a new central notification.
- * Security: Only SUPER_ADMIN and ADMIN roles are authorized.
+ * Security: Server-side enforced. Only authenticated SUPER_ADMIN or ADMIN can publish.
  */
 export async function POST(req: NextRequest) {
   try {
+    // 1. Server-side Authentication (Fail-Closed)
+    const auth = await getNexusAuthContext(req.headers);
+    if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized: Only authenticated SUPER_ADMIN and ADMIN can publish Nexus broadcasts.',
+        },
+        { status: 403 }
+      );
+    }
+
+    // 2. Validate Payload
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== 'object') {
       return NextResponse.json({ success: false, error: 'Invalid JSON payload' }, { status: 400 });
@@ -93,13 +129,10 @@ export async function POST(req: NextRequest) {
       targetType = 'GLOBAL',
       targetEmail,
       targetRole,
-      authorName = 'Nexus Ops',
-      authorEmail,
-      authorRole = 'COLLABORATOR',
       expiresInDays,
+      notifyWhatsApp = true,
     } = body;
 
-    // 1. Validation
     if (!title || typeof title !== 'string' || !title.trim()) {
       return NextResponse.json({ success: false, error: 'Title is required' }, { status: 400 });
     }
@@ -107,19 +140,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Content is required' }, { status: 400 });
     }
 
-    // 2. Authorization Check (Fail-closed: Only SUPER_ADMIN and ADMIN)
-    const normalizedRole = authorRole.toUpperCase().trim();
-    const isAuthorizedRole = normalizedRole === 'SUPER_ADMIN' || normalizedRole === 'ADMIN';
-
-    if (!isAuthorizedRole) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized: Only SUPER_ADMIN and ADMIN can publish Nexus broadcasts.',
-        },
-        { status: 403 }
-      );
-    }
+    // Server-enforced author identity (CLIENT CANNOT SPOOF ROLE OR EMAIL)
+    const authorRole = auth.role;
+    const authorEmail = auth.email || null;
+    const authorName = (auth.name || body.authorName || auth.wallet || 'Nexus Admin').trim();
 
     // Calculate expiration if provided
     let expiresAt: Date | null = null;
@@ -127,7 +151,7 @@ export async function POST(req: NextRequest) {
       expiresAt = new Date(Date.now() + Number(expiresInDays) * 24 * 60 * 60 * 1000);
     }
 
-    // 3. Persist to Neon DB
+    // 3. Persist to Database
     const [inserted] = await db
       .insert(nexusBroadcasts)
       .values({
@@ -137,9 +161,9 @@ export async function POST(req: NextRequest) {
         targetType: ['GLOBAL', 'USER', 'ROLE'].includes(targetType) ? targetType : 'GLOBAL',
         targetEmail: targetType === 'USER' && targetEmail ? targetEmail.toLowerCase().trim() : null,
         targetRole: targetType === 'ROLE' && targetRole ? targetRole.toUpperCase().trim() : null,
-        authorName: authorName.trim(),
-        authorEmail: authorEmail ? authorEmail.toLowerCase().trim() : null,
-        authorRole: normalizedRole,
+        authorName,
+        authorEmail,
+        authorRole,
         isActive: true,
         expiresAt,
       })
@@ -153,7 +177,7 @@ export async function POST(req: NextRequest) {
     let whatsappDispatched = 0;
     const whatsappErrors: string[] = [];
 
-    if (body.notifyWhatsApp !== false) {
+    if (notifyWhatsApp !== false) {
       try {
         const collabConditions = [
           eq(nexusCollaborators.status, 'ACTIVE'),
@@ -214,6 +238,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * Formats a broadcast alert for WhatsApp delivery with clear origin, title, and structure.
+ * Includes length guard to protect against WhatsApp Cloud API body truncation.
  */
 export function formatBroadcastWhatsAppMessage(
   broadcast: {
@@ -238,13 +263,19 @@ export function formatBroadcastWhatsAppMessage(
     ? `${broadcast.authorName} (${broadcast.authorRole})`
     : broadcast.authorName;
 
+  // Length guard for WhatsApp Cloud API (4096 char limit)
+  let safeContent = broadcast.content;
+  if (safeContent.length > 3000) {
+    safeContent = safeContent.slice(0, 3000) + '\n\n...[Ver mensaje completo en Nexus]';
+  }
+
   return `*🔔 NEXUS OPERATIONS HUB · ${badge}*
 
 Hola *${recipientName}*,
 
 *${broadcast.title}*
 
-${broadcast.content}
+${safeContent}
 
 ━━━━━━━━━━━━━━━━━━━━
 👤 *De parte de:* ${authorBadge}
@@ -255,23 +286,30 @@ _Notificación oficial emitida desde Nexus Operations Hub_`;
 /**
  * PATCH /api/nexus/broadcasts
  * Deactivates or reactivates a broadcast.
+ * Security: Server-side enforced. Only authenticated SUPER_ADMIN or ADMIN can modify.
  */
 export async function PATCH(req: NextRequest) {
   try {
+    // 1. Server-side Authentication (Fail-Closed)
+    const auth = await getNexusAuthContext(req.headers);
+    if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Only authenticated SUPER_ADMIN and ADMIN can modify broadcasts.' },
+        { status: 403 }
+      );
+    }
+
+    // 2. Validate Payload
     const body = await req.json().catch(() => null);
     if (!body || !body.id) {
       return NextResponse.json({ success: false, error: 'Broadcast ID is required' }, { status: 400 });
     }
 
-    const { id, isActive, authorRole } = body;
+    const { id, isActive } = body;
 
-    // Authorization check
-    const normalizedRole = (authorRole || '').toUpperCase().trim();
-    if (normalizedRole !== 'SUPER_ADMIN' && normalizedRole !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized: Only SUPER_ADMIN and ADMIN can modify broadcasts.' },
-        { status: 403 }
-      );
+    // UUID format validation
+    if (typeof id !== 'string' || !UUID_REGEX.test(id)) {
+      return NextResponse.json({ success: false, error: 'Invalid UUID format for broadcast ID' }, { status: 400 });
     }
 
     const [updated] = await db

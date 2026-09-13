@@ -240,9 +240,11 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   useEffect(() => {
     async function fetchBroadcasts() {
       try {
-        const emailParam = auth?.email ? `&email=${encodeURIComponent(auth.email)}` : '';
-        const roleParam = role ? `&role=${encodeURIComponent(role)}` : '';
-        const res = await fetch(`/api/nexus/broadcasts?${emailParam}${roleParam}`);
+        const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
+        const res = await fetch('/api/nexus/broadcasts', {
+          headers: storedToken ? { 'x-nexus-token': storedToken } : {},
+          credentials: 'include',
+        });
         const data = await res.json();
         if (data.success && Array.isArray(data.broadcasts)) {
           setBroadcasts(data.broadcasts);

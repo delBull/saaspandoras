@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
   // 0. Global OPTIONS Handling (CORS Preflight)
   if (request.method === "OPTIONS") {
     const origin = request.headers.get("origin") || "*";
-    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public') || pathname.startsWith('/api/v1/deal-signing') || pathname.startsWith('/api/nexus');
+    const isPublicMarketingApi = pathname.startsWith('/api/v1/marketing') || pathname.startsWith('/api/public') || pathname.startsWith('/api/v1/deal-signing');
     const isAllowed = 
       origin === "https://pandoras.finance" || 
       origin === "http://pandoras.finance" || 
