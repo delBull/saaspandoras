@@ -235,7 +235,11 @@ export interface ReasoningContext {
     selfDeclaredName?: string;
     permissions?: string[];
     tenantSlug?: string;
+    canonicalIdentity?: import('@/lib/identity/types').CanonicalIdentityRecord;
+    tenantContext?: import('@/lib/identity/tenant-context-resolver').TenantContextRecord;
   };
+  canonicalIdentity?: import('@/lib/identity/types').CanonicalIdentityRecord;
+  tenantContext?: import('@/lib/identity/tenant-context-resolver').TenantContextRecord;
   conversationHistory: RuntimeMessage[];
   currentMessage: RuntimeMessage;
 }

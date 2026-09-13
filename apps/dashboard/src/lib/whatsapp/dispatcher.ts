@@ -312,6 +312,23 @@ export class WhatsAppDispatcher {
           });
         }
 
+        // 0.8 Enrich Interlocutor with Authoritative Tenant Context (F6 Capa 4)
+        if (!resolvedInterlocutor?.tenantContext && tenant?.slug) {
+          try {
+            const { TenantContextResolver } = await import('@/lib/identity/tenant-context-resolver');
+            const resolvedTc = await TenantContextResolver.resolveTenantContext(
+              resolvedInterlocutor?.canonicalIdentity || resolvedActorId,
+              tenant.slug
+            );
+            if (resolvedTc && resolvedInterlocutor) {
+              resolvedInterlocutor.tenantContext = resolvedTc;
+              resolvedInterlocutor.tenantSlug = tenant.slug;
+            }
+          } catch (tcErr) {
+            console.warn('[WhatsAppDispatcher] Non-blocking warning resolving tenantContext:', tcErr);
+          }
+        }
+
         const runtime = getDefaultRuntime();
         const conversationId = buildCanonicalWhatsAppConversationId(tenant.slug, phone);
 
@@ -337,6 +354,8 @@ export class WhatsAppDispatcher {
               executivePrivilege: resolvedInterlocutor?.executivePrivilege,
             },
             interlocutor: resolvedInterlocutor,
+            canonicalIdentity: resolvedInterlocutor?.canonicalIdentity,
+            tenantContext: resolvedInterlocutor?.tenantContext,
           }
         });
 

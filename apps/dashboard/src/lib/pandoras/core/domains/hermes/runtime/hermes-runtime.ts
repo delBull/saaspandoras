@@ -173,10 +173,46 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         controlPlaneContext.actorId,
       );
 
-      // Forward interlocutor and Boss executive authority
+      // Forward interlocutor, Boss executive authority and Sovereign Canonical Identity Context (F6)
       const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
       if (rawInterlocutor) {
         (effectiveContext as any).interlocutor = rawInterlocutor;
+        if ((rawInterlocutor as any).canonicalIdentity) {
+          (effectiveContext as any).canonicalIdentity = (rawInterlocutor as any).canonicalIdentity;
+        }
+        if ((rawInterlocutor as any).tenantContext) {
+          (effectiveContext as any).tenantContext = (rawInterlocutor as any).tenantContext;
+        }
+      }
+      if ((controlPlaneContext as any).canonicalIdentity) {
+        (effectiveContext as any).canonicalIdentity = (controlPlaneContext as any).canonicalIdentity;
+      }
+      if ((controlPlaneContext as any).tenantContext) {
+        (effectiveContext as any).tenantContext = (controlPlaneContext as any).tenantContext;
+      }
+
+      // Auto-resolución defensiva de TenantContext (F6 Zero-Trust Boundary):
+      // Si effectiveContext aún carece de tenantContext, resolverlo usando TenantContextResolver
+      if (!(effectiveContext as any).tenantContext && canonicalTenantId) {
+        try {
+          const { TenantContextResolver } = await import('@/lib/identity/tenant-context-resolver');
+          const target = (effectiveContext as any).canonicalIdentity ||
+            (rawInterlocutor as any)?.canonicalIdentity ||
+            (rawInterlocutor as any)?.actorId ||
+            controlPlaneContext.actorId;
+
+          if (target) {
+            const resolvedTc = await TenantContextResolver.resolveTenantContext(target, canonicalTenantId);
+            if (resolvedTc) {
+              (effectiveContext as any).tenantContext = resolvedTc;
+              if (rawInterlocutor) {
+                (rawInterlocutor as any).tenantContext = resolvedTc;
+              }
+            }
+          }
+        } catch (tcErr) {
+          console.warn('[HermesRuntime] Non-blocking notice auto-resolving tenantContext in setupCognitiveTurn:', tcErr);
+        }
       }
 
       // Executive privilege: Opportunistic detection of contact registration directive from the Boss

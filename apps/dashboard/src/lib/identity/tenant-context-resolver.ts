@@ -57,6 +57,9 @@ export class TenantContextResolver {
     // 1. Resolve Identity Record if ID string is provided
     let identity: CanonicalIdentityRecord | null;
     if (typeof identityOrId === 'string') {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identityOrId);
+      if (!isUuid) return null;
+
       // Find by ID in DB
       const row = await db.query.marketingIdentities.findFirst({
         where: (m, { eq }) => eq(m.id, identityOrId),

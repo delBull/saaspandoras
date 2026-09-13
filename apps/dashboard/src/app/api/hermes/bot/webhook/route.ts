@@ -72,7 +72,9 @@ export async function POST(req: NextRequest) {
     console.log(`[Hermes Telegram Webhook] 🤖 Update received from ${interlocutor.name} (ID: ${telegramId}) | Boss: ${interlocutor.isBoss}`);
 
     // 2. Resolve Tenant / Organization Scope (Default is Hermes OS / Pandora's Growth OS)
-    let tenantSlug = 'pandoras';
+    // Priority: Query param ?tenant= (whitelabel bot) -> /start <slug> -> interlocutor.tenantSlug -> bindings -> 'pandoras'
+    const urlParamTenant = req.nextUrl?.searchParams?.get('tenant');
+    let tenantSlug = (urlParamTenant || '').toLowerCase();
 
     // Parse /start command parameter: /start <tenantSlug> (e.g. /start snarai)
     const startMatch = rawText.match(/^\/start\s+([a-zA-Z0-9_-]+)/i);
@@ -86,9 +88,9 @@ export async function POST(req: NextRequest) {
           .where(eq(telegramBindings.telegramUserId, telegramId))
           .catch(() => undefined);
       }
-    } else if (interlocutor.tenantSlug) {
+    } else if (!tenantSlug && interlocutor.tenantSlug) {
       tenantSlug = interlocutor.tenantSlug;
-    } else if (telegramId) {
+    } else if (!tenantSlug && telegramId) {
       // Check if user has an explicit active organization bound in telegramBindings
       try {
         const { telegramBindings } = await import('@/db/schema');
@@ -101,6 +103,27 @@ export async function POST(req: NextRequest) {
         }
       } catch (bindErr) {
         console.warn('[Hermes Telegram Webhook] Non-blocking warning reading activeOrganizationId from telegramBindings:', bindErr);
+      }
+    }
+
+    if (!tenantSlug) {
+      tenantSlug = 'pandoras';
+    }
+
+    // 2.5 Enrich Interlocutor with Authoritative Tenant Context (F6 Capa 4)
+    if (!interlocutor.tenantContext && tenantSlug) {
+      try {
+        const { TenantContextResolver } = await import('@/lib/identity/tenant-context-resolver');
+        const resolvedTc = await TenantContextResolver.resolveTenantContext(
+          interlocutor.canonicalIdentity || interlocutor.actorId,
+          tenantSlug
+        );
+        if (resolvedTc) {
+          interlocutor.tenantContext = resolvedTc;
+          interlocutor.tenantSlug = tenantSlug;
+        }
+      } catch (tcErr) {
+        console.warn('[Hermes Telegram Webhook] Non-blocking warning resolving tenantContext:', tcErr);
       }
     }
 
@@ -120,6 +143,61 @@ export async function POST(req: NextRequest) {
 
     if (!botToken) {
       console.warn(`[Hermes Telegram Webhook] ⚠️ No Telegram bot token found in environment or tenant config for '${tenantSlug}'. Cannot deliver message to chat ${chatId}.`);
+    }
+
+    // 3.5 Handle Human Escalation Callback or Intent
+    const isEscalateCallback = callbackQuery?.data?.startsWith('escalate_human_');
+    const isHumanRequest = /(?:asesor|humano|persona|agente humano|atenci[oó]n humana|hablar con alguien|ejecutivo|soporte humano)/i.test(rawText);
+
+    if (isEscalateCallback || isHumanRequest) {
+      // Human Escalation Gate: Registrar alerta y confirmar
+      try {
+        const { SecurityAuditLogger } = await import('@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger');
+        await SecurityAuditLogger.logEvent({
+          eventType: 'A2A_ESCALATION_TRIGGERED',
+          actorId: interlocutor.actorId,
+          organizationId: tenantSlug,
+          severity: 'INFO',
+          policyDecision: 'ESCALATE',
+          correlationId: `esc_tg_${telegramId}_${Date.now()}`,
+          metadata: {
+            channel: 'telegram',
+            telegramId,
+            userName: interlocutor.name,
+            reason: isEscalateCallback ? 'Botón inline presionado' : 'Intención conversacional detectada',
+          },
+        });
+      } catch (auditErr) {
+        console.warn('[Hermes Telegram Webhook] Non-blocking escalation audit error:', auditErr);
+      }
+
+      if (botToken) {
+        if (callbackQuery?.id) {
+          await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              callback_query_id: callbackQuery.id,
+              text: 'Tu solicitud ha sido remitida a un asesor humano oficial.',
+              show_alert: true,
+            }),
+          }).catch(() => undefined);
+        }
+
+        const escalationMessage = `🤝 *Solicitud de Atención Humana Registrada*\n\nHemos canalizado tu consulta con el equipo de dirección patrimonial de *${tenantSlug.toUpperCase()}*. Un asesor se pondrá en contacto contigo a la brevedad.\n\nMientras tanto, puedes consultar los documentos oficiales y títulos en tu portal.`;
+
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: escalationMessage,
+            parse_mode: 'Markdown',
+          }),
+        }).catch(() => undefined);
+
+        return NextResponse.json({ ok: true, escalated: true, actor: interlocutor.name });
+      }
     }
 
     // 4. Resolve Canonical Organization Context (Security Authority = canonicalOrgId UUID)
@@ -154,32 +232,73 @@ export async function POST(req: NextRequest) {
           : ['runtime.respond'],
         sessionId: `tg_sess_${telegramId}`,
         interlocutor,
+        canonicalIdentity: interlocutor.canonicalIdentity,
+        tenantContext: interlocutor.tenantContext,
       },
     });
 
     const replyContent = runtimeResponse.content || 'Entendido. Estoy procesando tu solicitud en Pandora\'s Growth OS.';
 
-    // 5. Deliver Response to Telegram Chat
+    // 6. Build Rich Inline Keyboard (IPFS Evidence, Portal & Escalation Buttons)
+    const inlineKeyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> = [];
+
+    // Detection of IPFS CIDs in response content or provenance metadata
+    const ipfsMatch = replyContent.match(/(?:ipfs:\/\/)?(bafkrei[a-z0-9]{40,}|Qm[a-zA-Z0-9]{44})/i);
+    const receiptCid =
+      (runtimeResponse as any)?.claimProvenanceReceipt?.claims?.find((c: any) => c.contractCid)?.contractCid ||
+      (runtimeResponse as any)?.trace?.claimProvenanceReceipt?.claims?.find((c: any) => c.contractCid)?.contractCid;
+    const rawCid = ipfsMatch?.[1] || receiptCid;
+
+    if (rawCid) {
+      inlineKeyboard.push([
+        { text: '📜 Ver Evidencia Notarizada (IPFS)', url: `https://gateway.pinata.cloud/ipfs/${rawCid}` }
+      ]);
+    }
+
+    // Portal / TMA Deep Link button
+    const portalBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+    if (tenantSlug === 'snarai') {
+      inlineKeyboard.push([
+        { text: "🏛️ Abrir Portal S'Narai", url: 'https://snarai.com/portal' },
+      ]);
+    } else if (tenantSlug !== 'pandoras') {
+      inlineKeyboard.push([
+        { text: `🏛️ Abrir Portal (${tenantSlug})`, url: `${portalBaseUrl}/portal/${tenantSlug}` }
+      ]);
+    }
+
+    // Advisor button for commercial engagement
+    if (!interlocutor.isBoss) {
+      inlineKeyboard.push([
+        { text: '👤 Hablar con un Asesor Humano', callback_data: `escalate_human_${tenantSlug}` }
+      ]);
+    }
+
+    // 7. Deliver Response to Telegram Chat
     if (botToken && replyContent) {
+      const payload: Record<string, any> = {
+        chat_id: chatId,
+        text: replyContent,
+        parse_mode: 'Markdown',
+      };
+
+      if (inlineKeyboard.length > 0) {
+        payload.reply_markup = { inline_keyboard: inlineKeyboard };
+      }
+
       const sendRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: replyContent,
-          parse_mode: 'Markdown',
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!sendRes.ok) {
         // Fallback to plain text if Markdown parsing failed due to unescaped special characters
+        delete payload.parse_mode;
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: replyContent,
-          }),
+          body: JSON.stringify(payload),
         }).catch(err => console.error('[Hermes Telegram Webhook] Error sending fallback message:', err));
       }
     }

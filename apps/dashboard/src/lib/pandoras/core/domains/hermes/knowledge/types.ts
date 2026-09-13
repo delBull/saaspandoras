@@ -119,7 +119,13 @@ export interface ControlPlaneContext {
     title?: string;
     executivePrivilege?: boolean;
     welcomeDirective?: string;
+    canonicalIdentity?: import('@/lib/identity/types').CanonicalIdentityRecord;
+    tenantContext?: import('@/lib/identity/tenant-context-resolver').TenantContextRecord;
+    tenantSlug?: string;
+    [key: string]: any;
   };
+  canonicalIdentity?: import('@/lib/identity/types').CanonicalIdentityRecord;
+  tenantContext?: import('@/lib/identity/tenant-context-resolver').TenantContextRecord;
 }
 
 // -------------------------------------

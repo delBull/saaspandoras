@@ -29,6 +29,8 @@ import { eq, or, sql, desc } from 'drizzle-orm';
 import { isAdmin } from '@/lib/auth';
 import { resolveEffectivePermissions, NexusRole, NexusPermissions } from '@/lib/nexus/nexus-rbac';
 import { FounderCapability, ALL_FOUNDER_CAPABILITIES } from '../executive/types';
+import type { CanonicalIdentityRecord } from '@/lib/identity/types';
+import type { TenantContextRecord } from '@/lib/identity/tenant-context-resolver';
 
 export interface InterlocutorQuery {
   channel: 'whatsapp' | 'telegram' | 'web' | 'nexus';
@@ -64,6 +66,8 @@ export interface ResolvedInterlocutor {
   welcomeDirective?: string;
   permissions?: string[];
   tenantSlug?: string;
+  canonicalIdentity?: CanonicalIdentityRecord;
+  tenantContext?: TenantContextRecord;
 }
 
 const ALL_BOSS_PERMISSIONS = [
@@ -266,8 +270,67 @@ export class InterlocutorResolver {
    * Omnichannel Resolver: Takes whatever caller data is known and determines
    * who Hermes is talking to, whether it's Marco (The Boss), an active Collaborator,
    * a known Lead, or an unregistered visitor.
+   *
+   * Grounded in the Universal Identity SDK (F1-F5) and Tenant Context Resolver.
    */
   static async resolve(query: InterlocutorQuery): Promise<ResolvedInterlocutor> {
+    const rawPhone = cleanDigits(query.phone || (query.channel === 'whatsapp' ? query.externalUserId : undefined));
+    const rawTgId = query.telegramId || (query.channel === 'telegram' ? query.externalUserId : undefined);
+    const rawWallet = query.walletAddress?.toLowerCase();
+    const rawEmail = query.email?.toLowerCase().trim();
+    const rawTgUsername = query.telegramUsername?.toLowerCase().replace(/^@/, '');
+
+    // ── STEP 0: Universal Canonical Identity Grounding (F1-F5) ───────────────
+    let canonicalIdentity: CanonicalIdentityRecord | null = null;
+    try {
+      const { resolveCanonicalIdentity } = await import('@/lib/identity');
+      if (rawWallet) {
+        canonicalIdentity = await resolveCanonicalIdentity({ type: 'wallet', value: rawWallet }, { autoCreate: false });
+      } else if (rawTgId) {
+        canonicalIdentity = await resolveCanonicalIdentity({ type: 'telegram', value: rawTgId }, { autoCreate: false });
+      } else if (rawPhone) {
+        canonicalIdentity = await resolveCanonicalIdentity({ type: 'phone', value: rawPhone }, { autoCreate: false });
+      } else if (rawEmail) {
+        canonicalIdentity = await resolveCanonicalIdentity({ type: 'email', value: rawEmail }, { autoCreate: false });
+      }
+    } catch (canonErr) {
+      console.warn('[InterlocutorResolver] Non-blocking canonical identity resolution notice:', canonErr);
+    }
+
+    const effectiveWallet = rawWallet || (canonicalIdentity?.identifiers?.wallet ? canonicalIdentity.identifiers.wallet.toLowerCase() : undefined);
+    const effectivePhone = rawPhone || (canonicalIdentity?.identifiers?.phone ? cleanDigits(canonicalIdentity.identifiers.phone) : undefined);
+    const effectiveEmail = rawEmail || (canonicalIdentity?.identifiers?.email ? canonicalIdentity.identifiers.email.toLowerCase().trim() : undefined);
+    const effectiveTgId = rawTgId || (canonicalIdentity?.identifiers?.telegramId ? canonicalIdentity.identifiers.telegramId : undefined);
+    const effectiveTgUsername = rawTgUsername;
+
+    const res = await this.resolveInternal({
+      ...query,
+      walletAddress: effectiveWallet,
+      phone: effectivePhone,
+      email: effectiveEmail,
+      telegramId: effectiveTgId,
+      telegramUsername: effectiveTgUsername,
+    });
+
+    // ── STEP FINAL: Enrich with Canonical Identity & Authoritative Tenant Context
+    res.canonicalIdentity = canonicalIdentity || undefined;
+    if (query.tenantSlug) {
+      try {
+        const { resolveTenantContext } = await import('@/lib/identity');
+        const identityTarget = canonicalIdentity || res.actorId;
+        const tenantCtx = await resolveTenantContext(identityTarget, query.tenantSlug);
+        if (tenantCtx) {
+          res.tenantContext = tenantCtx;
+        }
+      } catch (tErr) {
+        console.warn('[InterlocutorResolver] Error resolving tenantContext:', tErr);
+      }
+    }
+
+    return res;
+  }
+
+  private static async resolveInternal(query: InterlocutorQuery): Promise<ResolvedInterlocutor> {
     const rawPhone = cleanDigits(query.phone || (query.channel === 'whatsapp' ? query.externalUserId : undefined));
     const rawTgId = query.telegramId || (query.channel === 'telegram' ? query.externalUserId : undefined);
     const rawWallet = query.walletAddress?.toLowerCase();

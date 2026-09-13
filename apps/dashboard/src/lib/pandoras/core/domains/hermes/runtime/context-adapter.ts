@@ -322,6 +322,17 @@ export class CognitiveContextAdapter {
     }
 
     // -------------------------------------------------------------------------
+    // 5.8. Canonical Identity & Tenant Authority Bounds (F6 Enforcement)
+    // -------------------------------------------------------------------------
+    const canonicalIdentity = (effectiveContext as any)?.canonicalIdentity ||
+      (effectiveContext.core as any)?.canonicalIdentity ||
+      (rawInterlocutor as any)?.canonicalIdentity;
+
+    const tenantContext = (effectiveContext as any)?.tenantContext ||
+      (effectiveContext.core as any)?.tenantContext ||
+      (rawInterlocutor as any)?.tenantContext;
+
+    // -------------------------------------------------------------------------
     // 6. Assemble ReasoningContext
     // -------------------------------------------------------------------------
     const reasoningContext: ReasoningContext = {
@@ -333,6 +344,8 @@ export class CognitiveContextAdapter {
       styleOverlay,
       knowledgeUnavailable: Boolean(effectiveContext.knowledgeUnavailable),
       interlocutor,
+      canonicalIdentity,
+      tenantContext,
       conversationHistory,
       currentMessage,
     };

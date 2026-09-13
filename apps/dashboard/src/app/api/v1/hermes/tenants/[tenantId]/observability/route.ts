@@ -31,7 +31,7 @@ export async function GET(
   // Auth: channel secret (edge/daemon) OR authenticated portal session (browser)
   const channelSecret = req.headers.get('x-hermes-channel-secret');
   const expectedSecret = process.env.HERMES_CHANNEL_SECRET;
-  const isChannelClient = !expectedSecret || channelSecret === expectedSecret;
+  const isChannelClient = Boolean(expectedSecret) && channelSecret === expectedSecret;
 
   if (!isChannelClient) {
     const portalCtx = await resolvePortalContext(tenantId).catch(() => null);
