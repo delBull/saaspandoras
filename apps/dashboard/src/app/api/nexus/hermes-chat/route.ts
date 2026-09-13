@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
         executivePrivilege: isBoss,
       },
       interlocutor: {
+        ...interlocutor,
         name: effectiveName,
         role: isBoss ? 'FOUNDER_BOSS' : validatedRole,
         actorId,
@@ -117,6 +118,8 @@ export async function POST(req: NextRequest) {
         title: isBoss ? "Jefe / Fundador de Pandora's Growth OS" : `Operador Nexus (${validatedRole})`,
         executivePrivilege: isBoss,
       },
+      canonicalIdentity: interlocutor.canonicalIdentity,
+      tenantContext: interlocutor.tenantContext,
     };
 
     const runtimeMessage: RuntimeMessage = {

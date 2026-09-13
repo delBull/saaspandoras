@@ -35,8 +35,14 @@ export function createPool(): pg.Pool {
 
   const isLocal = DATABASE_URL.includes("localhost") || DATABASE_URL.includes("127.0.0.1");
 
+  // Normalize sslmode to prevent pg-connection-string libpq compatibility warning
+  let connectionString = DATABASE_URL;
+  if (!isLocal && connectionString.includes("sslmode=require") && !connectionString.includes("uselibpqcompat=true")) {
+    connectionString = connectionString.replace("sslmode=require", "uselibpqcompat=true&sslmode=require");
+  }
+
   return new Pool({
-    connectionString: DATABASE_URL,
+    connectionString,
     ssl: isLocal ? false : { rejectUnauthorized: false },
     max: 10,
     idleTimeoutMillis: 30000,

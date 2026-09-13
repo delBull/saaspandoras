@@ -225,7 +225,7 @@ export async function POST(req: NextRequest) {
       },
       controlPlaneContext: {
         actorId: interlocutor.actorId,
-        organizationId: canonicalOrgId,
+        organizationId: tenantSlug,
         role: interlocutor.isBoss ? 'OWNER' : (interlocutor.isCollaborator ? 'OPERATOR' : 'VIEWER'),
         permissions: interlocutor.isBoss
           ? ['governance.admin', 'knowledge.read', 'runtime.respond', 'platform.decrees']

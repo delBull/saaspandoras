@@ -82,6 +82,23 @@ export async function POST(request: Request) {
       abortController.abort();
     });
 
+    // Grounding with InterlocutorResolver for authoritative recognition
+    let resolvedInterlocutor: any = undefined;
+    try {
+      const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+      const walletCandidate = context.tenant.actorId.startsWith('wallet_')
+        ? context.tenant.actorId.replace('wallet_', '')
+        : undefined;
+      resolvedInterlocutor = await InterlocutorResolver.resolve({
+        channel: 'web',
+        externalUserId: context.tenant.actorId,
+        walletAddress: walletCandidate,
+        tenantSlug,
+      });
+    } catch {
+      // Non-blocking fallback
+    }
+
     // Start the runtime stream
     const runtimeStream = await runtime.stream({
       organizationId: tenantSlug,
@@ -93,6 +110,9 @@ export async function POST(request: Request) {
         role: context.tenant.role as any,
         permissions: context.tenant.permissions as any,
         sessionId: context.tenant.sessionId,
+        interlocutor: resolvedInterlocutor,
+        canonicalIdentity: resolvedInterlocutor?.canonicalIdentity,
+        tenantContext: resolvedInterlocutor?.tenantContext,
       }
     }, { signal: abortController.signal });
 
