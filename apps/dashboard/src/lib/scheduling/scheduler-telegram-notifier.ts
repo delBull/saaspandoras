@@ -130,7 +130,7 @@ export async function sendSchedulerTelegramAlert(
   const isFounderHost =
     hostRole === 'FOUNDER' ||
     (hostUserId && (
-      hostUserId.toLowerCase().includes('marco') ||
+      hostUserId === 'marco_founder' ||
       hostUserId.toLowerCase().includes('founder') ||
       hostUserId.toLowerCase().includes('admin') ||
       hostUserId === 'usr_platform_admin_default'

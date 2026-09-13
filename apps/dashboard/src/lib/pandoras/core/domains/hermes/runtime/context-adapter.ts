@@ -313,6 +313,9 @@ export class CognitiveContextAdapter {
         title: rawInterlocutor.title,
         executivePrivilege: Boolean(rawInterlocutor.executivePrivilege || rawInterlocutor.isBoss),
         welcomeDirective: rawInterlocutor.welcomeDirective,
+        isVerified: Boolean(rawInterlocutor.isVerified || rawInterlocutor.isBoss),
+        nameSource: rawInterlocutor.nameSource || (rawInterlocutor.isBoss ? 'VERIFIED' : undefined),
+        selfDeclaredName: rawInterlocutor.selfDeclaredName,
         permissions: rawInterlocutor.permissions,
         tenantSlug: rawInterlocutor.tenantSlug,
       };

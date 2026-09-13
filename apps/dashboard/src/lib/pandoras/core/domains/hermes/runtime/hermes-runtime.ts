@@ -535,7 +535,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         }
 
         // Parse executive message intents
-        const parsedIntent = ExecutiveIntentClassifier.classify(msgText);
+        const parsedIntent = ExecutiveIntentClassifier.classify(msgText, true);
 
         // Tier 0: Founder Identity Direct Recognition & Executive Salutation
         if (parsedIntent.type === 'FOUNDER_IDENTITY_QUERY') {
@@ -1029,6 +1029,94 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           providerMeta: {
             provider: 'demand-intent-handler',
             model: 'demand-distribution-v1',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      // ── Deterministic Omnichannel Identity Handler (0 tokens LLM) ────────
+      const { ExecutiveIntentClassifier } = await import('@/lib/hermes/executive/intent-classifier');
+      const generalIntent = ExecutiveIntentClassifier.classify(rawUserMsg, false);
+
+      if (generalIntent.type === 'GENERAL_IDENTITY_QUERY') {
+        const rawInterlocutor = (reasoningInput.reasoningContext as any).interlocutor;
+        const orgName = setup.reasoningContext.tenantIdentity.organizationName || "Pandora's Growth OS";
+        let generalReply = '';
+
+        if (rawInterlocutor && rawInterlocutor.isVerified && rawInterlocutor.name && rawInterlocutor.name !== 'Usuario' && rawInterlocutor.name !== 'Visitante' && rawInterlocutor.name !== 'User') {
+          const roleDesc = rawInterlocutor.title || (rawInterlocutor.role === 'INVESTOR' ? 'Inversionista Registrado' : (rawInterlocutor.isCollaborator ? 'Colaborador del Ecosistema' : 'Contacto Registrado'));
+          generalReply = `¡Hola, **${rawInterlocutor.name}**! Por supuesto que te reconozco.\n\nTe tengo identificado/a como **${roleDesc}** en ${orgName}.\n\n¿En qué te puedo asistir el día de hoy?`;
+        } else if (rawInterlocutor && rawInterlocutor.name && rawInterlocutor.name !== 'Usuario' && rawInterlocutor.name !== 'Visitante' && rawInterlocutor.name !== 'User' && !rawInterlocutor.name.startsWith('Contacto ') && !rawInterlocutor.name.startsWith('wa_') && !rawInterlocutor.name.startsWith('tg_')) {
+          generalReply = `¡Hola, **${rawInterlocutor.name}**! Te tengo presente en nuestro canal de atención de ${orgName}.\n\n¿En qué proyecto u oportunidad puedo apoyarte hoy?`;
+        } else {
+          generalReply = `Todavía no tengo una identidad verificada con tu nombre para esta conversación en ${orgName}.\n\n¿Me podrías compartir tu nombre o correo para registrarte adecuadamente y brindarte atención personalizada?`;
+        }
+
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_identity_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: generalReply,
+          suggestedActions: ['Explorar oportunidades', 'Agendar una reunión', 'Conocer proyectos'],
+          providerMeta: {
+            provider: 'deterministic-identity-handler',
+            model: 'tier-0-general-recognition',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      if (generalIntent.type === 'NAME_DISCLOSURE') {
+        const declaredName = generalIntent.declaredName;
+        const orgName = setup.reasoningContext.tenantIdentity.organizationName || "Pandora's Growth OS";
+
+        // Non-blocking enrichment of lead with self-declared name (Zero privilege elevation)
+        if (setup.controlPlaneContext.actorId && setup.controlPlaneContext.actorId.startsWith('lead_')) {
+          const leadId = setup.controlPlaneContext.actorId.replace(/^lead_/, '');
+          import('@/db')
+            .then(async ({ db }) => {
+              const { marketingLeads } = await import('@/db/schema');
+              const { eq } = await import('drizzle-orm');
+              await db.update(marketingLeads)
+                .set({ name: declaredName, updatedAt: new Date() })
+                .where(eq(marketingLeads.id, leadId))
+                .catch(() => undefined);
+            })
+            .catch(() => undefined);
+        }
+
+        const reply = `¡Mucho gusto, **${declaredName}**! Es un placer saludarte.\n\nHe tomado nota de tu nombre para dirigirme a ti en esta sesión de ${orgName}.\n\n¿En qué podemos colaborar o en qué proyecto estás interesado/a hoy?`;
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_name_disc_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: reply,
+          suggestedActions: ['Explorar proyectos', 'Agendar una reunión'],
+          providerMeta: {
+            provider: 'deterministic-identity-handler',
+            model: 'tier-0-name-disclosure',
             promptTokens: 0,
             completionTokens: 0,
             durationMs: Date.now() - start,

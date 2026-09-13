@@ -55,6 +55,9 @@ export interface ResolvedInterlocutor {
   isCollaborator?: boolean;
   isLead?: boolean;
   isNewLead?: boolean;
+  isVerified?: boolean;
+  nameSource?: 'VERIFIED' | 'SYSTEM_RESOLVED' | 'SELF_DECLARED' | 'ANONYMOUS';
+  selfDeclaredName?: string;
   executivePrivilege?: boolean;
   capabilities?: FounderCapability[];
   founderExecutiveMode?: boolean;
@@ -247,6 +250,7 @@ export class InterlocutorResolver {
       const cleanEmail = email.toLowerCase().trim();
       const bossEmails = [
         'admin@pandoras.finance',
+        'marco.munoz9@gmail.com',
         (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
         (process.env.NEXUS_ADMIN_EMAIL || '').toLowerCase().trim(),
         ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []),
@@ -282,6 +286,8 @@ export class InterlocutorResolver {
     if (isDirectBoss) {
       return {
         isBoss: true,
+        isVerified: true,
+        nameSource: 'VERIFIED',
         name: 'Marco',
         role: 'FOUNDER_BOSS',
         title: "Jefe / Fundador de Pandora's Growth OS",
@@ -342,7 +348,7 @@ export class InterlocutorResolver {
         if (phoneSuffix10) {
           collabConditions.push(sql`right(regexp_replace(coalesce(${nexusCollaborators.whatsappPhone}, ''), '[^0-9]', '', 'g'), 10) = ${phoneSuffix10}`);
         }
-        let collab: any = await db
+        const [collab] = await db
           .select({
             id: nexusCollaborators.id,
             name: nexusCollaborators.name,
@@ -376,7 +382,11 @@ export class InterlocutorResolver {
 
         if (collab && collab.id && (collab.name || collab.email)) {
           const isSuperAdminCollab = collab.email === 'admin@pandoras.finance';
-          const isBossCollab = isSuperAdminCollab || (collab.name && collab.name.toLowerCase().includes('marco'));
+          // STRICT SECURITY BOUND: Role and authority are governed by verified channel or explicit RBAC, NEVER by loose name matching
+          const isBossCollab = isSuperAdminCollab || 
+            this.isBossIdentity({ email: collab.email, phone: rawPhone }) || 
+            collab.role === 'OWNER' || 
+            collab.role === 'SUPER_ADMIN';
           const collabRole = (collab.role?.toUpperCase() || 'COLLABORATOR') as NexusRole;
           const effectivePerms = isBossCollab 
             ? ALL_BOSS_PERMISSIONS 
@@ -384,6 +394,8 @@ export class InterlocutorResolver {
 
           return {
             isBoss: Boolean(isBossCollab),
+            isVerified: true,
+            nameSource: 'VERIFIED',
             name: collab.name,
             role: isBossCollab ? 'FOUNDER_BOSS' : collabRole,
             title: isBossCollab ? "Jefe / Fundador de Pandora's Growth OS" : `Colaborador Nexus (${collabRole})`,
@@ -417,7 +429,15 @@ export class InterlocutorResolver {
         });
 
         if (user) {
-          const isSuperAdmin = user.role === 'super_admin' || user.role === 'admin' && (CANONICAL_ADMIN_WALLETS.includes(user.walletAddress || '') || user.name?.toLowerCase().includes('marco'));
+          // STRICT SECURITY BOUND: Super Admin authority requires verified channel identity or super_admin role, never conversational name matching
+          const isSuperAdmin = user.role === 'super_admin' || 
+            this.isBossIdentity({
+              walletAddress: user.walletAddress ?? undefined,
+              email: user.email ?? undefined,
+              telegramId: user.telegramId ?? undefined,
+              telegramUsername: user.telegramUsername ?? undefined,
+            }) ||
+            (user.role === 'admin' && CANONICAL_ADMIN_WALLETS.includes(user.walletAddress || ''));
           const displayName = user.name || user.firstName || user.username || query.nameHint || 'Usuario';
 
           let canonicalRole = user.role ? user.role.toUpperCase() : 'USER';
@@ -443,6 +463,8 @@ export class InterlocutorResolver {
 
           return {
             isBoss: Boolean(isSuperAdmin),
+            isVerified: true,
+            nameSource: 'VERIFIED',
             name: displayName,
             role: canonicalRole,
             title,
@@ -500,6 +522,8 @@ export class InterlocutorResolver {
 
           return {
             isBoss: false,
+            isVerified: Boolean(lead.walletAddress),
+            nameSource: 'SYSTEM_RESOLVED',
             name: lead.name,
             role,
             title,
@@ -536,6 +560,8 @@ export class InterlocutorResolver {
             // Same person already tracked — skip duplicate capture
             return {
               isBoss: false,
+              isVerified: false,
+              nameSource: 'ANONYMOUS',
               name: effectiveName,
               role: 'NEW_LEAD',
               title: 'Nuevo Contacto',
@@ -580,6 +606,8 @@ export class InterlocutorResolver {
 
     return {
       isBoss: false,
+      isVerified: false,
+      nameSource: 'ANONYMOUS',
       name: effectiveName,
       role: 'NEW_LEAD',
       title: 'Nuevo Contacto',

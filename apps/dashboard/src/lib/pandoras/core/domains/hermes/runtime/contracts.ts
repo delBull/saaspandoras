@@ -230,6 +230,9 @@ export interface ReasoningContext {
     title?: string;
     executivePrivilege?: boolean;
     welcomeDirective?: string;
+    isVerified?: boolean;
+    nameSource?: 'VERIFIED' | 'SYSTEM_RESOLVED' | 'SELF_DECLARED' | 'ANONYMOUS';
+    selfDeclaredName?: string;
     permissions?: string[];
     tenantSlug?: string;
   };

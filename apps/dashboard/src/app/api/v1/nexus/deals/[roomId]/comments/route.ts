@@ -40,9 +40,13 @@ export async function POST(
     if (room) {
       // Logic to notify counterparties
       // If author is the user (e.g. from Pandoras), we notify all signers
-      // If author is a signer, we notify the internal Pandoras team (or the counterparty field)
-      
-      const isInternal = author.toLowerCase().includes('pandoras') || author.toLowerCase().includes('marco');
+      // If author is one of the room signers, they are external counterparty.
+      // Otherwise, or if domain is @pandoras.finance or internal system alias, they are internal Pandoras team.
+      const isSigner = room.signers.some(s => 
+        (s.email && s.email.toLowerCase() === author.toLowerCase()) ||
+        (s.signatureName && s.signatureName.toLowerCase() === author.toLowerCase())
+      );
+      const isInternal = !isSigner || author.toLowerCase().includes('@pandoras.finance') || author.toLowerCase().includes('pandoras');
       
       const roomUrl = `https://dash.pandoras.finance/nexus/deals/${room.publicId}`; // Adjust if actual path differs
 

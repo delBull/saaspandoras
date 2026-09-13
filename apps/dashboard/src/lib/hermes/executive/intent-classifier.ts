@@ -18,7 +18,7 @@ export class ExecutiveIntentClassifier {
   /**
    * Parse founder utterance into an executive intent.
    */
-  public static classify(message: string): ParsedExecutiveIntent {
+  public static classify(message: string, isBoss: boolean = true): ParsedExecutiveIntent {
     const text = (message || '').trim();
     if (!text) return { type: 'NONE' };
 
@@ -27,9 +27,18 @@ export class ExecutiveIntentClassifier {
       return { type: 'CAPABILITIES_HELP', raw: text };
     }
 
-    // 1.5. Founder Identity Query ("¿Sabes quién soy?", "¿Quién soy?", etc.)
-    if (this.isFounderIdentityQuery(text)) {
-      return { type: 'FOUNDER_IDENTITY_QUERY', raw: text };
+    // 1.5. Identity Inquiry ("¿Sabes quién soy?", "okay entonces no me reconoces verdad?", etc.)
+    if (this.isIdentityQuery(text)) {
+      if (isBoss) {
+        return { type: 'FOUNDER_IDENTITY_QUERY', raw: text };
+      }
+      return { type: 'GENERAL_IDENTITY_QUERY', raw: text };
+    }
+
+    // 1.6. Self-Declared Name Disclosure ("Me llamo Carlos", "Soy Roberto")
+    const nameDisc = this.parseNameDisclosure(text);
+    if (nameDisc.isDisclosure && nameDisc.declaredName) {
+      return { type: 'NAME_DISCLOSURE', raw: text, declaredName: nameDisc.declaredName };
     }
 
     // 1.8. Executive Daily Briefing ("¿Qué pendientes tenemos?", "/briefing", "pulso")
@@ -90,14 +99,62 @@ export class ExecutiveIntentClassifier {
     return /^(?:cancela|cancelar|aborta|abortar|no|det[eé]n|detener|descarta|descartar|\/cancel|\/abortar)$/i.test(text.trim());
   }
 
-  public static isFounderIdentityQuery(text: string): boolean {
+  /**
+   * Deterministically detects if an utterance is inquiring about identity or recognition:
+   * e.g. "sabes quién soy?", "¿me reconoces?", "okay entonces no me reconoces verdad?", "¿cómo me llamo?"
+   */
+  public static isIdentityQuery(text: string): boolean {
     const clean = (text || '')
       .toLowerCase()
       .replace(/[¿?¡!.,;:_]/g, '')
       .trim()
       .replace(/\s+/g, ' ');
 
-    return /^(?:(?:sabes\s+)?qui[eé]n\s+(?:soy(?:\s+yo)?|te\s+habla|te\s+escribe)|sabes\s+con\s+qui[eé]n\s+hablas|me\s+conoces|te\s+acuerdas\s+de\s+m[ií]|qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador)|sabes\s+qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador))$/i.test(clean);
+    if (!clean) return false;
+
+    return (
+      /(?:sabes|recuerdas|tienes\s+idea|ubicas)?\s*(?:de\s+casualidad\s+)?qui[eé]n\s+(?:soy(?:\s+yo)?|te\s+habla|te\s+escribe)/i.test(clean) ||
+      /(?:sabes|recuerdas|ubicas)?\s*(?:con\s+)?qui[eé]n\s+(?:est[aá]s\s+)?(?:hablas|hablando)/i.test(clean) ||
+      /(?:me\s+)?(?:conoces|reconoces|recuerdas|ubicas)(?:\s+verdad)?/i.test(clean) ||
+      /(?:no\s+me\s+)?(?:reconoces|conoces|ubicas|recuerdas)(?:\s+verdad)?/i.test(clean) ||
+      /qui[eé]n\s+soy(?:\s+yo)?/i.test(clean) ||
+      /c[oó]mo\s+me\s+llamo/i.test(clean) ||
+      /cu[aá]l\s+es\s+mi\s+nombre/i.test(clean) ||
+      /me\s+tienes\s+(?:registrado|identificado|en\s+cuenta)/i.test(clean) ||
+      /te\s+acuerdas\s+de\s+m[ií]/i.test(clean) ||
+      /qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador)/i.test(clean) ||
+      /sabes\s+qui[eé]n\s+es\s+tu\s+(?:jefe|creador|fundador)/i.test(clean) ||
+      /sabes\s+qui[eé]n\s+soy\s+verdad/i.test(clean) ||
+      /entonces\s+no\s+me\s+reconoces/i.test(clean)
+    );
+  }
+
+  /**
+   * Backwards-compatible alias for founder identity inquiries
+   */
+  public static isFounderIdentityQuery(text: string): boolean {
+    return this.isIdentityQuery(text);
+  }
+
+  /**
+   * Detects conversational self-identification: e.g. "Me llamo Carlos", "Soy Roberto", "Mi nombre es Sofía"
+   * CRITICAL SECURITY BOUND: Explicitly rejects role/privilege self-claims ("Soy el jefe", "Soy admin")
+   * to strictly prevent conversational privilege escalation.
+   */
+  public static parseNameDisclosure(text: string): { isDisclosure: boolean; declaredName?: string } {
+    const raw = (text || '')
+      .replace(/[¡!¿?.,;:]/g, '')
+      .trim();
+
+    const match = raw.match(/^(?:hola,?\s*)?(?:me\s+llamo|mi\s+nombre\s+es|soy|aqu[ií])\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+)?)$/i);
+    if (match && match[1]) {
+      const candidate = match[1].trim();
+      const forbiddenRoles = /^(?:el\s+)?(?:jefe|dueño|admin|administrador|founder|fundador|creador|boss|owner|inversionista|usuario|lead|desarrollador|operador|sistema|hermes)$/i;
+      if (!forbiddenRoles.test(candidate) && candidate.length >= 2 && candidate.length <= 40) {
+        return { isDisclosure: true, declaredName: candidate };
+      }
+    }
+    return { isDisclosure: false };
   }
 
   public static isBriefingQuery(text: string): boolean {

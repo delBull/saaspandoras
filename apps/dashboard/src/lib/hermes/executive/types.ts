@@ -101,6 +101,8 @@ export type ParsedExecutiveIntent =
   | { type: 'CANCELLATION'; raw: string }
   | { type: 'CAPABILITIES_HELP'; raw: string }
   | { type: 'FOUNDER_IDENTITY_QUERY'; raw: string }
+  | { type: 'GENERAL_IDENTITY_QUERY'; raw: string }
+  | { type: 'NAME_DISCLOSURE'; raw: string; declaredName: string }
   | { type: 'EXECUTIVE_BRIEFING'; raw: string }
   | {
       type: 'OPERATIONAL_ACTION';

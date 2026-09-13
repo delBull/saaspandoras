@@ -17,14 +17,18 @@ const globalForDb = globalThis as unknown as {
 export function createPool(): pg.Pool {
   if (!DATABASE_URL) {
     // Return a dummy proxy to allow static builds without crashing
-    return new Proxy({} as pg.Pool, {
+    const dummyTarget = Object.create(Pool.prototype);
+    return new Proxy(dummyTarget as pg.Pool, {
       get(_, prop) {
         if (prop === 'connect' || prop === 'query') {
           return async () => {
             throw new Error("DATABASE_URL environment variable is not set.");
           };
         }
-        return undefined;
+        if (prop === 'on') {
+          return () => dummyTarget;
+        }
+        return Reflect.get(dummyTarget, prop);
       },
     });
   }
