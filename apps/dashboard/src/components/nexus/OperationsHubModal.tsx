@@ -15,6 +15,9 @@ import {
   TerminalSquare,
   Activity,
   Bell,
+  ExternalLink,
+  FileText,
+  Handshake,
 } from 'lucide-react';
 import TaskTerminal, { TerminalTask } from './TaskTerminal';
 import { TaskItem } from './taskTypes';
@@ -135,12 +138,25 @@ interface OpsModalProps {
 }
 
 export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userEmail, userRole }: OpsModalProps) {
+  const isSuperAdmin = (userRole || '').toUpperCase().trim() === 'SUPER_ADMIN';
+
   const [tab, setTab] = useState<Tab>('TERMINAL');
   const [terminalMode, setTerminalMode] = useState<'TASK' | 'HERMES'>('TASK');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
   const [notifying, setNotifying] = useState(false);
   const [notified, setNotified] = useState(false);
+
+  // Data Room deals & user-connected documents
+  const [deals, setDeals] = useState<any[]>([]);
+  const [loadingDeals, setLoadingDeals] = useState(false);
+
+  // Auto-fallback if a non-superadmin was on REGISTER
+  useEffect(() => {
+    if (tab === 'REGISTER' && !isSuperAdmin) {
+      setTab('TERMINAL');
+    }
+  }, [tab, isSuperAdmin]);
 
   const operatorContext: OperatorContext | null = userName
     ? {
@@ -178,6 +194,29 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
       })
       .catch(console.error);
   }, []);
+
+  // Fetch real documents for connected user when entering DATAROOM tab
+  useEffect(() => {
+    if (tab === 'DATAROOM') {
+      setLoadingDeals(true);
+      const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
+      fetch('/api/nexus/deals', {
+        headers: {
+          ...getWalletHeaders(),
+          ...(storedToken ? { 'x-nexus-token': storedToken } : {}),
+        },
+        credentials: 'include',
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data.rooms)) {
+            setDeals(data.rooms);
+          }
+        })
+        .catch(err => console.error('[OpsHub] Error fetching deals:', err))
+        .finally(() => setLoadingDeals(false));
+    }
+  }, [tab]);
 
   const saveAssets = (updated: IPAsset[]) => {
     setAssets(updated);
@@ -310,7 +349,9 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'TERMINAL', label: 'TERMINAL', icon: <TerminalSquare className="w-3.5 h-3.5" /> },
-    { id: 'REGISTER', label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> },
+    ...(isSuperAdmin
+      ? [{ id: 'REGISTER' as Tab, label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> }]
+      : []),
     { id: 'DATAROOM', label: 'DATA ROOM', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
     { id: 'BROADCASTS', label: '📢 AVISOS / BROADCASTS', icon: <Bell className="w-3.5 h-3.5" /> },
   ];
@@ -595,61 +636,152 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
           {/* TAB: DATA ROOM */}
           {tab === 'DATAROOM' && (
-            <div className="p-5 overflow-y-auto flex-1 space-y-5">
-              <div className="p-4 rounded-xl border border-purple-500/20 bg-purple-500/[0.03]">
-                <p className="text-[11px] text-purple-300 font-mono uppercase mb-1">Estructura del Corporate Data Room (/nexus)</p>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Cadena documental organizada en 6 módulos institucionales para due diligence e inversionistas estratégicos.
-                </p>
+            <div className="p-5 overflow-y-auto flex-1 space-y-6">
+              {/* Header Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-purple-500/20 bg-purple-500/[0.04]">
+                <div>
+                  <p className="text-[11px] text-purple-300 font-mono uppercase font-bold flex items-center gap-1.5">
+                    <FolderGit2 className="w-3.5 h-3.5" />
+                    <span>DATA ROOM & EXPEDIENTES CORPORATIVOS</span>
+                  </p>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Acuerdos, contratos bilaterales, NDAs y resoluciones notarizadas vinculadas a tu cuenta.
+                  </p>
+                </div>
+                <a
+                  href="/nexus/rooms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-mono flex items-center gap-1.5 transition-colors shrink-0"
+                >
+                  <Handshake className="w-3.5 h-3.5" />
+                  <span>Consola Deal Room (/nexus/rooms)</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
-                  <div className="flex items-center gap-2 text-purple-300 font-mono text-xs">
-                    <FolderGit2 className="w-4 h-4" />
-                    <span>01_company</span>
-                  </div>
-                  <p className="text-xs text-zinc-300">Estatutos de constitución, libro de accionistas de MXHUB S.A. de C.V. y resoluciones corporativas de asamblea.</p>
+              {/* Connected User Deals Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>DOCUMENTOS & ACUERDOS VINCULADOS ({deals.length})</span>
+                  </h4>
+                  <span className="text-[11px] font-mono text-zinc-400">
+                    {userEmail || userName || 'Usuario Conectado'}
+                  </span>
                 </div>
 
-                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
-                  <div className="flex items-center gap-2 text-rose-300 font-mono text-xs">
-                    <Shield className="w-4 h-4" />
-                    <span>02_ip</span>
+                {loadingDeals ? (
+                  <div className="p-8 text-center border border-white/5 rounded-xl bg-[#0C0C10]">
+                    <RefreshCw className="w-5 h-5 text-purple-400 animate-spin mx-auto mb-2" />
+                    <p className="text-xs text-zinc-400 font-mono">Cargando expedientes del usuario...</p>
                   </div>
-                  <p className="text-xs text-zinc-300">Registro IMPI PANDORAS™, depósitos de código fuente, marcas denominativas y expedientes AEP.</p>
-                </div>
+                ) : deals.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {deals.map((deal) => (
+                      <a
+                        key={deal.id}
+                        href="/nexus/rooms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] hover:border-purple-500/40 hover:bg-purple-950/10 transition-all block group"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 uppercase">
+                            {deal.kind || 'ACUERDO'}
+                          </span>
+                          <span
+                            className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                              deal.status === 'SIGNED' || deal.status === 'EXECUTED'
+                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                                : deal.status === 'REVIEW'
+                                ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
+                                : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                            }`}
+                          >
+                            {deal.status}
+                          </span>
+                        </div>
+                        <h5 className="text-xs font-bold text-white mt-2 group-hover:text-purple-300 transition-colors line-clamp-1">
+                          {deal.title || 'Acuerdo Institucional'}
+                        </h5>
+                        <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
+                          Contraparte: <span className="text-zinc-300">{deal.counterparty || deal.company || 'Ecosistema'}</span>
+                        </p>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 text-[10px] font-mono text-zinc-500">
+                          <span>{deal.createdAt ? new Date(deal.createdAt).toLocaleDateString() : 'Activo'}</span>
+                          <span className="flex items-center gap-1 text-purple-400 group-hover:translate-x-0.5 transition-transform">
+                            <span>Abrir en Deal Room</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl border border-white/5 bg-[#0C0C10] text-center space-y-1.5">
+                    <p className="text-xs text-zinc-300 font-medium">No hay acuerdos bilaterales registrados directamente para tu usuario.</p>
+                    <p className="text-[11px] text-zinc-500">
+                      Los documentos que se compartan contigo o en los que figures como firmante en el Deal Room aparecerán listados aquí.
+                    </p>
+                  </div>
+                )}
+              </div>
 
-                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
-                  <div className="flex items-center gap-2 text-indigo-300 font-mono text-xs">
-                    <Code2 className="w-4 h-4" />
-                    <span>03_technology</span>
+              {/* Corporate Data Room Directory Structure */}
+              <div className="space-y-3 pt-2">
+                <p className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider">
+                  Estructura General del Corporate Data Room (/nexus)
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-2 text-purple-300 font-mono text-xs">
+                      <FolderGit2 className="w-4 h-4" />
+                      <span>01_company</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Estatutos de constitución, libro de accionistas de MXHUB S.A. de C.V. y resoluciones corporativas de asamblea.</p>
                   </div>
-                  <p className="text-xs text-zinc-300">Arquitectura Growth OS v3.0, repositorios bajo control, smart contracts verificados y deployer keys.</p>
-                </div>
 
-                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
-                  <div className="flex items-center gap-2 text-emerald-300 font-mono text-xs">
-                    <Cpu className="w-4 h-4" />
-                    <span>04_business</span>
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-2 text-rose-300 font-mono text-xs">
+                      <Shield className="w-4 h-4" />
+                      <span>02_ip</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Registro IMPI PANDORAS™, depósitos de código fuente, marcas denominativas y expedientes AEP.</p>
                   </div>
-                  <p className="text-xs text-zinc-300">Modelos financieros, proyecciones de cobro de Platform Fees/Royalty Fees y pipeline de alianzas RWA.</p>
-                </div>
 
-                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
-                  <div className="flex items-center gap-2 text-cyan-300 font-mono text-xs">
-                    <FolderGit2 className="w-4 h-4" />
-                    <span>05_legal</span>
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-2 text-indigo-300 font-mono text-xs">
+                      <Code2 className="w-4 h-4" />
+                      <span>03_technology</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Arquitectura Growth OS v3.0, repositorios bajo control, smart contracts verificados y deployer keys.</p>
                   </div>
-                  <p className="text-xs text-zinc-300">Master License Agreement (Holding ➔ USA LLC), convenios de confidencialidad NDA y licencias territoriales.</p>
-                </div>
 
-                <div className="p-4 rounded-xl border border-white/10 bg-[#0C0C10] space-y-2 hover:border-white/20 transition-colors">
-                  <div className="flex items-center gap-2 text-amber-300 font-mono text-xs">
-                    <ArrowUpRight className="w-4 h-4" />
-                    <span>06_investor</span>
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-2 text-emerald-300 font-mono text-xs">
+                      <Cpu className="w-4 h-4" />
+                      <span>04_business</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Modelos financieros, proyecciones de cobro de Platform Fees/Royalty Fees y pipeline de alianzas RWA.</p>
                   </div>
-                  <p className="text-xs text-zinc-300">Institutional Pitch, Data Room index, modelos SAFE y estructura de participación en Pandoras USA LLC.</p>
+
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-2 text-cyan-300 font-mono text-xs">
+                      <FolderGit2 className="w-4 h-4" />
+                      <span>05_legal</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Master License Agreement (Holding ➔ USA LLC), convenios de confidencialidad NDA y licencias territoriales.</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-2 text-amber-300 font-mono text-xs">
+                      <ArrowUpRight className="w-4 h-4" />
+                      <span>06_investor</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Institutional Pitch, Data Room index, modelos SAFE y estructura de participación en Pandoras USA LLC.</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -671,27 +803,32 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. · HOLDING
             </span>
             <div className="flex items-center gap-3 shrink-0">
-              <select
-                value={selectedAssignee}
-                onChange={(e) => setSelectedAssignee(e.target.value)}
-                className="bg-[#0C0C10] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 font-mono outline-none focus:border-amber-500/50"
-              >
-                <option value="">Sin Asignar (Discord)</option>
-                {collaborators.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
-                ))}
-              </select>
-              <button
-                onClick={() => assignTask(selectedAssignee ? `Operación asignada a ${collaborators.find(c => c.id === selectedAssignee)?.name}` : 'Resumen de Operaciones Enviado')}
-                disabled={notifying}
-                className="px-3.5 py-2 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[11px] font-mono transition-colors flex items-center gap-1.5"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${notifying ? 'animate-spin' : ''}`} />
-                <span>{notified ? 'ENVIADO ✓' : selectedAssignee ? 'ASIGNAR (HERMES WA)' : 'ENVIAR A DISCORD'}</span>
-              </button>
+              {/* Assignee & Discord controls strictly visible on TERMINAL tab */}
+              {tab === 'TERMINAL' && (
+                <>
+                  <select
+                    value={selectedAssignee}
+                    onChange={(e) => setSelectedAssignee(e.target.value)}
+                    className="bg-[#0C0C10] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-zinc-300 font-mono outline-none focus:border-amber-500/50"
+                  >
+                    <option value="">Sin Asignar (Discord)</option>
+                    {collaborators.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => assignTask(selectedAssignee ? `Operación asignada a ${collaborators.find(c => c.id === selectedAssignee)?.name}` : 'Resumen de Operaciones Enviado')}
+                    disabled={notifying}
+                    className="px-3.5 py-2 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[11px] font-mono transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${notifying ? 'animate-spin' : ''}`} />
+                    <span>{notified ? 'ENVIADO ✓' : selectedAssignee ? 'ASIGNAR (HERMES WA)' : 'ENVIAR A DISCORD'}</span>
+                  </button>
+                </>
+              )}
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-black/40 hover:bg-white/5 border border-white/10 text-zinc-300 rounded-lg text-[11px] font-mono transition-colors"
+                className="px-4 py-2 bg-black/40 hover:bg-white/5 border border-white/10 text-zinc-300 rounded-lg text-[11px] font-mono transition-colors cursor-pointer"
               >
                 CERRAR
               </button>
