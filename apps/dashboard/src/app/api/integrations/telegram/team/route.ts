@@ -42,29 +42,38 @@ async function handleStartCommand(
   firstName?: string
 ): Promise<void> {
   const tmaUrl = process.env.NEXUS_TMA_URL || 'https://nexus.pandoras.finance';
-  const greeting = firstName ? `Hola, <b>${firstName}</b>.` : 'Hola.';
+  const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+  const name = firstName || 'Operador';
 
   await transport.sendMessage({
     chat_id: chatId,
     parse_mode: 'HTML',
     text: [
-      `⚡ <b>Nexus OS · Team</b>`,
+      `<b>⬡ NEXUS OS · TEAM</b>`,
       ``,
-      `${greeting}`,
+      `Bienvenido, <b>${name}</b>.`,
       ``,
-      `Soy tu canal de comando operativo móvil. Aquí recibirás:`,
-      `• 🔐 Solicitudes de aprobación (colaboradores, depósitos, campañas)`,
-      `• 🧠 Intervenciones urgentes de Hermes (HITL)`,
-      `• 📊 Alertas de operaciones del equipo`,
+      `Este es tu centro de mando operativo.`,
+      `Tus herramientas de alto nivel al alcance:`,
       ``,
-      `Pulsa el botón para abrir tu <b>Command Center</b>.`,
+      `🔐 <b>Aprobaciones</b> — KYC, depósitos y campañas pendientes`,
+      `🧠 <b>Hermes HITL</b> — Intervenciones que requieren operador`,
+      `📊 <b>Operaciones</b> — Alertas del ecosistema en tiempo real`,
+      ``,
+      `Todo bajo control. Todo desde aquí.`,
     ].join('\n'),
     reply_markup: {
       inline_keyboard: [
         [
           {
-            text: '⚡ Abrir Nexus Command Center',
+            text: '⚡ Command Center',
             web_app: { url: tmaUrl },
+          },
+        ],
+        [
+          {
+            text: '🌐 Dashboard Completo',
+            url: dashboardUrl,
           },
         ],
       ],
