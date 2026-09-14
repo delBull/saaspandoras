@@ -4057,6 +4057,13 @@ export const nexusCollaborators = pgTable("nexus_collaborators", {
   permissions: jsonb("permissions").$type<NexusPermissionsOverride>().default({}),
   discordUserId: varchar("discord_user_id", { length: 255 }),
   whatsappPhone: varchar("whatsapp_phone", { length: 50 }),
+  // ── Nexus TMA Channel Binding (Phase F2) ─────────────────────────────
+  // Telegram channel identity. NULLABLE: only set when operator links their account.
+  // INVARIANT: This is a channel binding, NOT an authority identity.
+  // Authorization always re-validates via resolveEffectivePermissions().
+  telegramUserId: varchar("telegram_user_id", { length: 64 }),
+  telegramUsername: varchar("telegram_username", { length: 128 }),
+  // ─────────────────────────────────────────────────────────────────────
   status: varchar("status", { length: 16 }).default("ACTIVE").notNull(),
   statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
@@ -4065,9 +4072,31 @@ export const nexusCollaborators = pgTable("nexus_collaborators", {
 }, (t) => ({
   emailIdx: uniqueIndex("nexus_collaborators_email_unique").on(t.email),
   tokenIdx: uniqueIndex("nexus_collaborators_token_unique").on(t.token),
+  // Unique index for O(1) Telegram auth lookup (NULL values excluded by Postgres)
+  telegramUserIdIdx: uniqueIndex("nexus_collaborators_telegram_user_id_unique").on(t.telegramUserId),
 }));
 
 export type NexusCollaborator = typeof nexusCollaborators.$inferSelect;
+
+export const nexusActionRequests = pgTable("nexus_action_requests", {
+  id: serial("id").primaryKey(),
+  actionToken: varchar("action_token", { length: 255 }).notNull().unique(),
+  actionType: varchar("action_type", { length: 64 }).notNull(),
+  targetResource: varchar("target_resource", { length: 256 }),
+  canonicalOrgId: varchar("canonical_org_id", { length: 128 }),
+  actorIdentityId: integer("actor_identity_id").notNull(),
+  requiredCapability: varchar("required_capability", { length: 64 }).notNull(),
+  payload: jsonb("payload").default({}),
+  status: varchar("status", { length: 32 }).default("PENDING").notNull(),
+  result: varchar("result", { length: 256 }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type NexusActionRequest = typeof nexusActionRequests.$inferSelect;
+export type NewNexusActionRequest = typeof nexusActionRequests.$inferInsert;
 
 export const projectCollaborators = pgTable("project_collaborators", {
   projectId: varchar("project_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),

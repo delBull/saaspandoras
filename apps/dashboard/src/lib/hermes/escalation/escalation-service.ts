@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { hermesConversations, hermesEscalations, hermesConversationMessages } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { NexusTeamNotificationDispatcher } from '@/lib/nexus/nexus-team-notification-dispatcher';
 
 export type EscalationReason = 'FRUSTRATION' | 'USER_REQUEST' | 'POLICY_VIOLATION' | 'KNOWLEDGE_GAP' | 'MANUAL';
 export type EscalationStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
@@ -69,10 +70,16 @@ export class EscalationService {
 
     // 3. Registrar auditoría de seguridad / gobernanza (best-effort, non-blocking)
     try {
-      // hermesSecurityEvents requires hash-chain fields — skip audit for now;
       // escalation record itself is the audit trail.
       console.log(`[EscalationService] Escalation triggered: ${escalation!.id} org=${organizationId} reason=${reason}`);
-    } catch (e) {
+      
+      const notificationDispatcher = new NexusTeamNotificationDispatcher();
+      await notificationDispatcher.notifyHermesEscalation(
+        conversationId,
+        `Reason: ${reason}. Notes: ${notes || 'No notes'}`
+      ).catch((e: any) => console.error("Failed to dispatch TMA escalation notification", e));
+      
+    } catch (e: any) {
       console.warn('Failed to record escalation audit event:', e);
     }
 

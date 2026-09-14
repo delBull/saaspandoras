@@ -421,6 +421,27 @@
       "when": 1789338054448,
       "tag": "0059_keen_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1789353883011,
+      "tag": "0060_huge_switch",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1789361803370,
+      "tag": "0061_outstanding_tana_nile",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1789362908731,
+      "tag": "0062_adversarial_security_gate",
+      "breakpoints": true
     }
   ]
 }

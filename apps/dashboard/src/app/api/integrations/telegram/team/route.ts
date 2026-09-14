@@ -75,9 +75,11 @@ async function handleStartCommand(
   await transport.setChatMenuButton(chatId);
 }
 
+import { NexusActionDispatcher } from '@/lib/nexus/nexus-action-dispatcher';
+
 /**
  * Handle callback_query updates.
- * Phase 1: acknowledges the query; Phase 5 will add action execution.
+ * Dispatches the action to NexusActionDispatcher.
  */
 async function handleCallbackQuery(
   transport: NexusTeamTransport,
@@ -85,19 +87,22 @@ async function handleCallbackQuery(
   callbackData: string | undefined,
   from: { id: number; first_name?: string }
 ): Promise<void> {
-  // Phase 5 will route to NexusActionDispatcher based on callbackData.
-  // For now: acknowledge to remove the Telegram loading spinner.
   console.info(
     `[NexusTeamBot] Callback from user ${from.id}: ${callbackData ?? '(no data)'}`
   );
 
-  await transport.answerCallbackQuery({
-    callback_query_id: callbackQueryId,
-    text: '⏳ Funcionalidad de acción en construcción.',
-    show_alert: false,
-  });
-}
+  if (!callbackData) {
+    await transport.answerCallbackQuery({
+      callback_query_id: callbackQueryId,
+      text: '❌ Datos de acción inválidos.',
+      show_alert: true,
+    });
+    return;
+  }
 
+  const dispatcher = new NexusActionDispatcher(transport);
+  await dispatcher.executeAction(callbackData, from.id.toString(), callbackQueryId);
+}
 /**
  * POST /api/integrations/telegram/team
  * Receives all updates from @nexusPandoras_bot.

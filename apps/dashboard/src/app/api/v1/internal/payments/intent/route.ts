@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { sendBusinessNotification } from "@/lib/discord/business-notifier";
+import { NexusTeamNotificationDispatcher } from "@/lib/nexus/nexus-team-notification-dispatcher";
 
 /**
  * POST /api/v1/internal/payments/intent
@@ -148,6 +149,14 @@ export async function POST(req: Request) {
             },
             "info"
         );
+
+        // Also notify Nexus TMA team
+        const notificationDispatcher = new NexusTeamNotificationDispatcher();
+        await notificationDispatcher.notifyPendingApproval(
+            project.id.toString(),
+            `$${amount} USD`,
+            user.name || `User ${telegramId}`
+        ).catch(e => console.error("Failed to dispatch TMA notification", e));
 
         if (process.env.NODE_ENV === 'production') {
             console.log(JSON.stringify({
