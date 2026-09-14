@@ -37,4 +37,5 @@ export const wallets = [
     createWallet("com.coinbase.wallet"),
     createWallet("app.phantom"),
     createWallet("me.rainbow"),
+    createWallet("walletConnect"),
 ];

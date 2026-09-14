@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Shield, Lock, Mail, ArrowRight, Wallet, CheckCircle2, AlertCircle, ChevronDown, MessageCircle } from "lucide-react";
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
+import { wallets } from "@/lib/wallets";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 
@@ -285,14 +286,20 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
                 </label>
                 <div className="flex justify-center w-full">
                   {client ? (
-                    <ConnectButton
-                      client={client}
-                      theme="dark"
-                      connectButton={{
-                        label: "Conectar Wallet Web3",
-                        className: "!w-full !py-3 !rounded-xl !bg-zinc-800 !text-white !font-semibold !border !border-zinc-700 !hover:bg-zinc-700 !text-xs",
-                      }}
-                    />
+                    <div className="w-full space-y-1.5">
+                      <ConnectButton
+                        client={client}
+                        theme="dark"
+                        wallets={wallets}
+                        connectButton={{
+                          label: "Conectar Wallet Web3",
+                          className: "!w-full !py-3 !rounded-xl !bg-zinc-800 !text-white !font-semibold !border !border-zinc-700 !hover:bg-zinc-700 !text-xs",
+                        }}
+                      />
+                      <p className="text-[10px] text-zinc-500 text-center leading-relaxed">
+                        Soporta MetaMask, Rabby, Phantom, Rainbow y <span className="text-purple-400 font-medium">WalletConnect</span> para cualquier app móvil.
+                      </p>
+                    </div>
                   ) : (
                     <div className="w-full py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center text-xs text-zinc-500">
                       Web3 Provider Initializing...
