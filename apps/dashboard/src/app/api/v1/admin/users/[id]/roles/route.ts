@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, nexusCollaborators } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformActor } from '@/lib/dash-contracts/admin';
@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // 3. Fetch Target User
     const [targetUser] = await db
-      .select({ role: users.role })
+      .select({ role: users.role, email: users.email })
       .from(users)
       .where(eq(users.id, targetUserId));
 
@@ -47,13 +47,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    // 5. Apply Updates
+    // 5. Apply Updates to canonical `users` table
     await db
       .update(users)
       .set({
         role: role as UserRole,
       })
       .where(eq(users.id, targetUserId));
+
+    // 6. Sync with Sovereign Nexus (nexus_collaborators) if it exists
+    if (targetUser.email) {
+      const [collab] = await db
+        .select({ id: nexusCollaborators.id })
+        .from(nexusCollaborators)
+        .where(eq(nexusCollaborators.email, targetUser.email));
+
+      if (collab) {
+        // We sync the permissions override and role to Nexus Identity
+        await db
+          .update(nexusCollaborators)
+          .set({
+            role: role.toUpperCase(),
+            permissions: capabilities,
+          })
+          .where(eq(nexusCollaborators.id, collab.id));
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

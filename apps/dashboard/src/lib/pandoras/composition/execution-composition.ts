@@ -3,6 +3,7 @@ import { ExecutionOS } from '../core/domains/execution/execution-os';
 import { FeedbackLoop } from '../core/domains/execution/feedback-loop';
 import { CreateReferralCampaignCapability } from '../core/domains/execution/capabilities/create-referral-campaign';
 import { SendTelegramNotificationCapability } from '../core/domains/execution/capabilities/send-telegram-notification';
+import { CrmUpdateStageCapability } from '../core/domains/execution/capabilities/crm-update-stage';
 import { ExecutionBridgeHandlers } from '../core/domains/execution/outbox-handlers';
 import { registry as outboxRegistry } from '~/lib/outbox/registry';
 
@@ -13,6 +14,7 @@ const feedbackLoop = new FeedbackLoop();
 // 2. Registrar capabilities
 capabilityRegistry.register(new CreateReferralCampaignCapability());
 capabilityRegistry.register(new SendTelegramNotificationCapability());
+capabilityRegistry.register(new CrmUpdateStageCapability());
 
 // 3. Instanciar el Execution OS
 export const executionOS = new ExecutionOS(capabilityRegistry, feedbackLoop);
