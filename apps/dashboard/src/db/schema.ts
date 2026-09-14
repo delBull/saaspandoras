@@ -1762,6 +1762,23 @@ export const telegramBindings = pgTable("telegram_bindings", {
 export type TelegramBinding = typeof telegramBindings.$inferSelect;
 
 /**
+ * nexus_telegram_invites — audit and persistence for Magic Link invites.
+ */
+export const nexusTelegramInvites = pgTable("nexus_telegram_invites", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  collaboratorId: integer("collaborator_id").notNull(), // FK to nexus_collaborators
+  tokenHash: varchar("token_hash", { length: 255 }).notNull().unique(),
+  createdByIdentityId: integer("created_by_identity_id").notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("PENDING"), // PENDING, CONSUMED, EXPIRED, REVOKED
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  consumedByTelegramUserId: varchar("consumed_by_telegram_user_id", { length: 64 }),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type NexusTelegramInvite = typeof nexusTelegramInvites.$inferSelect;
+/**
  * pbox_balances — off-chain PBOX token accounting per wallet.
  *
  * Fields:
