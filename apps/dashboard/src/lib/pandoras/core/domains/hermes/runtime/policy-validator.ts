@@ -328,8 +328,20 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     // 18. Milestone K26.1: Material Claim Coverage Validation
     // K27-FP2: ACTIVE sovereign knowledge counts as a legitimate support source alongside
     // canonical contract claims — the vault governs facts, the contract governs promises.
+    // Founder / Owner / Executive exemption: Marco is not an external retail investor;
+    // executive inquiries about the ecosystem and holding are not restricted by retail claim contracts.
+    const isBossOrExecutive = Boolean(
+      context.interlocutor?.isBoss ||
+      (context.interlocutor as any)?.founderExecutiveMode ||
+      context.interlocutor?.role === 'FOUNDER_BOSS' ||
+      context.interlocutor?.role === 'OWNER' ||
+      options?.controlPlaneContext?.role === 'OWNER' ||
+      (options?.controlPlaneContext as any)?.isBoss ||
+      (options?.controlPlaneContext?.identity as any)?.isBoss
+    );
+
     const intentTier = ClaimContractEngine.determineIntentTier(output.content);
-    if (intentTier === 'LEVEL_2_COMMERCIAL' || intentTier === 'LEVEL_3_FINANCIAL_CONTRACTUAL' || intentTier === 'LEVEL_4_ACTION') {
+    if (!isBossOrExecutive && (intentTier === 'LEVEL_2_COMMERCIAL' || intentTier === 'LEVEL_3_FINANCIAL_CONTRACTUAL' || intentTier === 'LEVEL_4_ACTION')) {
       const coverage = ClaimContractEngine.evaluateClaimCoverage(output.content, targetTenantId, {
         additionalSources: (context.activeKnowledge || []).map(k => k.content),
       });

@@ -299,6 +299,8 @@ export class CognitiveContextBuilder {
       { id: 'seo.geo', description: 'Auditoría de robots AI y visibilidad de IA' },
       { id: 'seo.llms_txt', description: 'Generación canónica de llms.txt' },
       { id: 'research.run_mission', description: 'Misiones de investigación autónoma de mercado' },
+      { id: 'communication.whatsapp.dispatch', description: 'Despacho de mensajes y notificaciones operativas vía WhatsApp a colaboradores y leads' },
+      { id: 'nexus.tasks.manage', description: 'Coordinación y gestión de tareas y aprobaciones en Nexus Command Center' },
     ];
 
     const capabilityMap = new Map<string, any>();
@@ -443,11 +445,11 @@ export class CognitiveContextBuilder {
     try {
       const collabs = await db.select().from(nexusCollaborators);
       if (collabs.length > 0) {
-        const lines = collabs.map(c => `- ${c.name} (Rol: ${c.role}, Contacto de Discord: ${c.discordUserId || 'No vinculado'})`);
+        const lines = collabs.map(c => `- ${c.name} (Rol: ${c.role}, WhatsApp: ${c.whatsappPhone || 'No registrado'}, Discord: ${c.discordUserId || 'No vinculado'})`);
         directoryFact = {
           id: 'tenant_team_directory',
           key: 'directorio_equipo',
-          content: 'Directorio de colaboradores del equipo de Pandora:\n' + lines.join('\n'),
+          content: 'Directorio oficial de colaboradores del equipo de Pandora:\n' + lines.join('\n'),
           status: 'ACTIVE',
           dimension: 'identity',
           visibility: 'INTERNAL_OPERATIONAL'
@@ -456,6 +458,38 @@ export class CognitiveContextBuilder {
     } catch (e) {
       console.warn('[ContextMerger] Failed to fetch team directory:', e);
     }
+
+    const pandorasCorePacks = isPandorasCore ? [
+      {
+        id: 'pandoras_ecosystem_overview',
+        key: 'ecosistema_pandoras_overview',
+        content: `DOCTRINA Y ECOSISTEMA DE PANDORA'S GROWTH OS:
+1. ¿Qué es Pandora's Growth OS?: Es el sistema operativo soberano institucional para la tokenización de activos del mundo real (RWA), Deal Rooms con firmas notarizadas, gobernanza descentralizada de tesorerías y orquestación cognitiva multi-canal.
+2. Fundador y Creador: Creado y liderado por Marco (Fundador, Creador y Jefe Supremo de Pandora's Growth OS, Hermes OS y Nexus).
+3. Componentes Fundacionales del Ecosistema:
+   - Hermes Cognitive OS: Kernel de inteligencia soberana multi-canal que opera en WhatsApp Business (+52 Master), Telegram Bot, Webhooks y el Portal, con memoria episódica, Sovereign Knowledge Vault en IPFS (K25) y defensas deterministas post-LLM.
+   - Nexus Command Center (nexus.pandoras.finance): Consola operativa interna del equipo para coordinar tareas, roles RBAC, aprobación de colaboradores y observabilidad.
+   - Deal Rooms (/nexus/rooms): Salas de estructuración y cierre de acuerdos institucionales, generación de contratos con firma digital EIP-191/EIP-712 y emisión de Títulos de Participación notarizados en IPFS.
+   - Protocolos y Proyectos RWA: Infraestructura para activos tangibles como S'Narai Beach Club (Riviera Nayarit), donde cada título representa participación económica respaldada por fideicomisos y contratos sovereign.
+   - Channel Mesh & Despachador Multicanal: Integración en vivo con WhatsApp Cloud API y Telegram para interacción con inversionistas, leads y colaboradores.`,
+        status: 'ACTIVE',
+        dimension: 'overview',
+        visibility: 'PUBLIC',
+      },
+      {
+        id: 'hermes_whatsapp_messaging_capability',
+        key: 'hermes_capacidades_mensajeria_whatsapp',
+        content: `CAPACIDAD OPERATIVA DE DESPACHO POR WHATSAPP:
+Hermes está directamente conectado a la API de WhatsApp Cloud de Pandora's (+52 Master) y al motor WhatsAppDispatcher.
+Capacidades autorizadas:
+1. Envío de mensajes a colaboradores: Hermes PUEDE y DEBE redactar, preparar y despachar mensajes por WhatsApp a colaboradores registrados en Nexus (ej. Óscar) o a cualquier teléfono proporcionado por Marco.
+2. Si Marco (el Jefe) pregunta si Hermes puede enviar mensajes por WhatsApp a otros colaboradores, la respuesta correcta es: "¡Por supuesto, Marco! Como inteligencia operativa de Pandora's, estoy conectado a nuestra WhatsApp Cloud API y al directorio de Nexus. Puedo enviar mensajes y notificaciones a colaboradores como Óscar o a cualquier contacto que me indiques. ¿A quién deseas que le escriba y qué mensaje le enviamos?".
+3. Si Marco dicta un mensaje para un colaborador, Hermes asume la orden ejecutiva, redacta el mensaje y confirma su despacho inmediato.`,
+        status: 'ACTIVE',
+        dimension: 'capabilities',
+        visibility: 'INTERNAL_OPERATIONAL',
+      },
+    ] : [];
 
     const activePacks = [
       { id: 'base_faq' },
@@ -467,6 +501,7 @@ export class CognitiveContextBuilder {
         dimension: 'identity',
         visibility: 'PUBLIC'
       },
+      ...pandorasCorePacks,
       ...activeKnowledge.map(k => ({
         id: k.id,
         type: k.dimension,

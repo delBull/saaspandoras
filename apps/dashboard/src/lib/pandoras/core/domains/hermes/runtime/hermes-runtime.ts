@@ -309,6 +309,50 @@ export class HermesRuntime implements HermesCognitiveRuntime {
               .catch(err => console.warn('[HermesRuntime] Non-blocking boss promotion error:', err));
           }
         }
+
+        // Executive WhatsApp Dispatch Directive: send a message to a collaborator or phone number
+        const isSendWhatsAppIntent = /(?:env[ií]a|manda|enviar|mandar|escribe|escribir)\s*(?:un\s*)?(?:mensaje|whatsapp|wa|texto)?\s*(?:a|para)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+|\+?\d{10,15})\s*(?:dici[eé]ndole|diciendo|con|que diga|que\s*:\s*|:)\s*(.+)/i;
+        const sendMatch = msgText.match(isSendWhatsAppIntent);
+        if (sendMatch && sendMatch[1] && sendMatch[2]) {
+          const targetNameOrPhone = sendMatch[1].trim();
+          const messageToSend = sendMatch[2].trim().replace(/^["']|["']$/g, '');
+
+          (async () => {
+            try {
+              const { db } = await import('@/db');
+              const { nexusCollaborators } = await import('@/db/schema');
+              const { sendWhatsAppMessage } = await import('@/lib/whatsapp/utils/client');
+              const { ilike, or, eq } = await import('drizzle-orm');
+
+              let destPhone: string | null = null;
+              let destName = targetNameOrPhone;
+
+              if (/^\+?\d{10,15}$/.test(targetNameOrPhone)) {
+                destPhone = targetNameOrPhone.replace(/\D/g, '');
+              } else {
+                const [collab] = await db
+                  .select()
+                  .from(nexusCollaborators)
+                  .where(or(
+                    ilike(nexusCollaborators.name, `%${targetNameOrPhone}%`),
+                    eq(nexusCollaborators.name, targetNameOrPhone)
+                  ))
+                  .limit(1);
+                if (collab?.whatsappPhone) {
+                  destPhone = collab.whatsappPhone.replace(/\D/g, '');
+                  destName = collab.name;
+                }
+              }
+
+              if (destPhone) {
+                console.log(`📤 [ExecutiveWhatsAppDispatch] Dispatching message from Boss Marco to ${destName} (${destPhone}): "${messageToSend}"`);
+                await sendWhatsAppMessage(destPhone, `*Mensaje de Marco (Fundador):*\n\n${messageToSend}`);
+              }
+            } catch (dispatchErr) {
+              console.warn('[HermesRuntime] Error in opportunistic WhatsApp dispatch from Boss directive:', dispatchErr);
+            }
+          })();
+        }
       }
 
       await this.traceRecorder.record(traceHandle, {

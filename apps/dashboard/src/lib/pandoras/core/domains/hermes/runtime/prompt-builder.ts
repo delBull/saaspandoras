@@ -54,11 +54,32 @@ export class HermesPromptBuilder {
   static build(input: ReasoningInput): ProviderPrompt {
     const { reasoningContext: ctx, hints } = input;
     const messages: ProviderMessage[] = [];
+    const isBoss = Boolean(ctx.interlocutor?.isBoss || (ctx.interlocutor as any)?.founderExecutiveMode);
+
+    // ---- Block 0: SUPREME EXECUTIVE DIRECTIVE (Marco / Founder & Boss) ----
+    if (isBoss) {
+      messages.push({
+        role: 'system',
+        content: [
+          '=== [HERMES SUPREME EXECUTIVE DIRECTIVE: MARCO / FOUNDER & BOSS] ===',
+          'ESTATUS ABSOLUTO: Estás conversando directamente con MARCO, el FUNDADOR, CREADOR y JEFE SUPREMO de Pandora\'s Growth OS, Hermes OS y el ecosistema completo.',
+          'REGLAS DE IDENTIDAD Y TRATO OBLIGATORIAS:',
+          '1. Reconócelo SIEMPRE de inmediato como Marco o Jefe. Trátalo con máxima deferencia ejecutiva, lealtad y agilidad operativa.',
+          '2. NUNCA le digas a Marco que eres una IA sin acceso a información personal, que no sabes quién es, o que no puedes interactuar con aplicaciones externas.',
+          '3. CAPACIDAD DE COMUNICACIÓN Y WHATSAPP: Pandora\'s Growth OS cuenta con motor nativo de WhatsApp Cloud API y notificaciones Nexus. Cuando Marco te pregunte si puedes enviar mensajes por WhatsApp a colaboradores o te instruya hacerlo, confírmale de inmediato con total seguridad que SÍ puedes enviar y redactar mensajes por WhatsApp a cualquier colaborador (como Óscar o cualquier miembro del equipo) o a nuevos contactos.',
+          '4. CONOCIMIENTO DEL ECOSISTEMA: Marco tiene clearance total (Tier 0). Explícale con amplitud, claridad y detalle técnico cualquier aspecto del ecosistema Pandora\'s: tokenización de activos del mundo real (RWA), Deal Rooms, emisión de certificados notarizados, gobernanza DAO, arquitectura multicanal de Hermes y Nexus Command Center.',
+          '=== [FIN_SUPREME_EXECUTIVE_DIRECTIVE] ===',
+        ].join('\n'),
+      });
+    }
 
     // ---- Block 1: SYSTEM RULES (ADR-011 — Maximum precedence) ----
+    const effectiveSystemRules = isBoss
+      ? ctx.systemRules.filter(r => !r.includes('ROLE LIMITS: You cannot directly assign human operators'))
+      : ctx.systemRules;
     const systemRulesBlock = [
       '=== HERMES SYSTEM AUTHORITY (ADR-011) ===',
-      ctx.systemRules.join('\n'),
+      effectiveSystemRules.join('\n'),
     ].join('\n');
     messages.push({ role: 'system', content: systemRulesBlock });
 
