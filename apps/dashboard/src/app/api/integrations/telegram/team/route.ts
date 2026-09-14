@@ -32,18 +32,111 @@ function getTransport(): NexusTeamTransport {
   return new NexusTeamTransport();
 }
 
+import { db } from '@/db';
+import { nexusCollaborators, nexusTelegramInvites } from '@/db/schema';
+import { eq, or, isNull } from 'drizzle-orm';
+import crypto from 'crypto';
+
 /**
  * Handle command: /start
  * Greets the operator and sets up the persistent Nexus Command button.
+ * If an invite token is provided (/start inv_...), validates it and binds the Telegram ID securely.
  */
 async function handleStartCommand(
   transport: NexusTeamTransport,
   chatId: number,
-  firstName?: string
+  firstName?: string,
+  text?: string
 ): Promise<void> {
   const tmaUrl = process.env.NEXUS_TMA_URL || 'https://nexus.pandoras.finance';
   const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
   const name = firstName || 'Operador';
+
+  let linkedMessage = '';
+
+  // Process potential magic link
+  if (text && text.startsWith('/start inv_')) {
+    const rawToken = text.split(' ')[1];
+    
+    if (rawToken && rawToken.startsWith('inv_')) {
+      // Remove 'inv_' prefix for hashing
+      const pureToken = rawToken.substring(4);
+      const tokenHash = crypto.createHash('sha256').update(pureToken).digest('hex');
+
+      try {
+        await db.transaction(async (tx) => {
+          // 1. Validate invite using FOR UPDATE skip locked or standard row lock
+          const [invite] = await tx
+            .select()
+            .from(nexusTelegramInvites)
+            .where(eq(nexusTelegramInvites.tokenHash, tokenHash))
+            .for('update'); // ATOMIC ROW LOCK
+
+          if (!invite) {
+            throw new Error('Invitación inválida o inexistente.');
+          }
+          if (invite.status !== 'PENDING') {
+            throw new Error('Esta invitación ya fue consumida o expirada.');
+          }
+          if (new Date() > invite.expiresAt) {
+            throw new Error('La invitación ha expirado.');
+          }
+
+          // 2. Validate Collaborator using FOR UPDATE
+          const [collaborator] = await tx
+            .select()
+            .from(nexusCollaborators)
+            .where(eq(nexusCollaborators.id, invite.collaboratorId))
+            .for('update'); // ATOMIC ROW LOCK
+
+          if (!collaborator) {
+            throw new Error('El perfil de operador ya no existe.');
+          }
+
+          // 3. Collision Protection: Prevent silent rebinding
+          if (collaborator.telegramUserId) {
+            throw new Error('El operador ya tiene una cuenta vinculada.');
+          }
+
+          // 4. Collision Protection: Ensure this Telegram ID isn't used by someone else
+          const [existingBinding] = await tx
+            .select()
+            .from(nexusCollaborators)
+            .where(eq(nexusCollaborators.telegramUserId, chatId.toString()))
+            .limit(1);
+
+          if (existingBinding) {
+            throw new Error('Tu cuenta de Telegram ya está vinculada a otro perfil.');
+          }
+
+          // 5. Consume & Bind
+          await tx
+            .update(nexusCollaborators)
+            .set({ telegramUserId: chatId.toString() })
+            .where(eq(nexusCollaborators.id, collaborator.id));
+
+          await tx
+            .update(nexusTelegramInvites)
+            .set({
+              status: 'CONSUMED',
+              consumedAt: new Date(),
+              consumedByTelegramUserId: chatId.toString(),
+            })
+            .where(eq(nexusTelegramInvites.id, invite.id));
+
+          linkedMessage = `Tu cuenta de Nexus ha sido vinculada exitosamente.\n\n`;
+        });
+      } catch (err: any) {
+        console.warn(`[NexusTeamBot] Invite consumption failed: ${err.message}`);
+        await transport.sendMessage({
+          chat_id: chatId,
+          parse_mode: 'HTML',
+          text: `❌ <b>Error de Vinculación</b>\n\n${err.message}`,
+        });
+        return;
+      }
+    }
+  }
 
   await transport.sendMessage({
     chat_id: chatId,
@@ -51,8 +144,8 @@ async function handleStartCommand(
     text: [
       `<b>⬡ NEXUS OS · TEAM</b>`,
       ``,
-      `Bienvenido, <b>${name}</b>.`,
-      ``,
+      `Hola, <b>${name}</b> 👋.`,
+      linkedMessage,
       `Este es tu centro de mando operativo.`,
       `Tus herramientas de alto nivel al alcance:`,
       ``,
@@ -66,7 +159,7 @@ async function handleStartCommand(
       inline_keyboard: [
         [
           {
-            text: '⚡ Command Center',
+            text: '⚡ Abrir Nexus',
             web_app: { url: tmaUrl },
           },
         ],
@@ -152,7 +245,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const chatId = chat.id;
 
       if (text?.startsWith('/start')) {
-        await handleStartCommand(transport, chatId, from?.first_name);
+        await handleStartCommand(transport, chatId, from?.first_name, text);
       } else if (text) {
         // Unknown messages: nudge to use the Command Center UI
         await transport.sendMessage({
