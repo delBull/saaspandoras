@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import { ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
 import { ConnectButton } from 'thirdweb/react';
 import { client } from '@/lib/thirdweb-client';
+import { wallets } from '@/lib/wallets';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -63,6 +64,7 @@ export function AdminAccessGate({ reason }: AdminAccessGateProps) {
             <ConnectButton
               client={client}
               theme="dark"
+              wallets={wallets}
               connectButton={{
                 label: 'Conectar Billetera de Plataforma',
                 className: '!bg-purple-600 hover:!bg-purple-500 !text-white !font-semibold !rounded-xl !text-xs !py-3 !px-5',

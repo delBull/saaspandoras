@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { wallets } from "@/lib/wallets";
 import { useSearchParams } from 'next/navigation';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 import { defineChain } from 'thirdweb/chains';
@@ -121,17 +121,6 @@ function AuthContent() {
             });
         }
     }, [account?.address, authStatus, runAuthFlow]);
-
-    const wallets = useMemo(() => [
-        inAppWallet({ 
-            auth: { 
-                options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
-                mode: "redirect",
-            },
-            executionMode: { mode: "EIP7702", sponsorGas: true }
-        }),
-        createWallet("io.metamask")
-    ], []);
 
     if (loading) {
         return (

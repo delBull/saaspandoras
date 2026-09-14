@@ -12,7 +12,7 @@ import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRigh
 import { LegalDocModal } from '@/components/legal/LegalDocModal';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useConnectModal } from "thirdweb/react";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { wallets } from "@/lib/wallets";
 import useSWR from 'swr';
 
 // Protocol Engine Imports
@@ -498,20 +498,6 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
             setIsSubmittingFastLane(false);
         }
     };
-
-    const wallets = useMemo(() => [
-        inAppWallet({ 
-            auth: { 
-                options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
-                mode: "redirect",
-            },
-            executionMode: { 
-                mode: "EIP7702", 
-                sponsorGas: true, 
-            },
-        }),
-        createWallet("io.metamask")
-    ], []);
 
     // 🛡️ AUTH GATE: Force centered login if no wallet is connected
     if (!account?.address) {

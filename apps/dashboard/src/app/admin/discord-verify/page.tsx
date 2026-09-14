@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
+import { wallets } from "@/lib/wallets";
 import { Loader2, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -76,7 +77,7 @@ function DiscordVerifyContent() {
       ) : (
         <>
           <div className="w-full flex justify-center mb-6">
-            <ConnectButton client={client} />
+            <ConnectButton client={client} wallets={wallets} theme="dark" />
           </div>
 
           {account && status === "idle" && (

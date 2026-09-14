@@ -6,8 +6,8 @@ import { ShieldCheck, ArrowRight, CheckCircle, Zap, Loader2, Landmark, Crown } f
 import { toast } from "sonner";
 import { ConnectButton, darkTheme, useActiveAccount, TransactionButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
+import { wallets } from "@/lib/wallets";
 import { defineChain, getContract, prepareContractCall } from "thirdweb";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { useRouter } from "next/navigation";
 
 // USDT Contract on Arbitrum as an example for $500 Web3 checkout, 
@@ -26,11 +26,6 @@ export default function HermesCheckoutClient({ lead, project, plan = 'monthly' }
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stage, setStage] = useState<'selection' | 'form' | 'instructions' | 'success'>('selection');
     const [purchaseRef, setPurchaseRef] = useState<string | null>(null);
-
-    const wallets = [
-        inAppWallet({ auth: { options: ["email", "google", "apple"] } }),
-        createWallet("io.metamask")
-    ];
 
     const submitFastLane = async () => {
         if (!fastLaneEmail || !fastLaneEmail.includes('@') || !fastLaneName) {

@@ -21,7 +21,7 @@ import {
   KeyIcon,
 } from '@heroicons/react/24/outline';
 import { useActiveAccount, ConnectButton, useWalletBalance } from 'thirdweb/react';
-import { inAppWallet, createWallet } from 'thirdweb/wallets';
+import { wallets } from '@/lib/wallets';
 import { base, sepolia, baseSepolia } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
@@ -233,20 +233,8 @@ export default function WalletProPage() {
                     </div>
                     <ConnectButton
                       client={client}
-                      showAllWallets={false}
                       chains={SUPPORTED_NETWORKS.map(network => network.chain)}
-                      wallets={[
-                        inAppWallet({
-                          auth: {
-                            options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
-                          },
-                          executionMode: {
-                            mode: "EIP7702",
-                            sponsorGas: true,
-                          },
-                        }),
-                        createWallet("io.metamask"),
-                      ]}
+                      wallets={wallets}
                       theme="dark"
                       locale="es_ES"
                       autoConnect={{ timeout: 20000 }}
@@ -340,20 +328,8 @@ export default function WalletProPage() {
                         </div>
                         <ConnectButton
                           client={client}
-                          showAllWallets={false}
                           chains={SUPPORTED_NETWORKS.map(network => network.chain)}
-                          wallets={[
-                            inAppWallet({
-                              auth: {
-                                options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
-                              },
-                              executionMode: {
-                                mode: "EIP7702",
-                                sponsorGas: true,
-                              },
-                            }),
-                            createWallet("io.metamask"),
-                          ]}
+                          wallets={wallets}
                           theme="dark"
                           locale="es_ES"
                           autoConnect={{ timeout: 20000 }}
@@ -478,20 +454,8 @@ export default function WalletProPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <ConnectButton
                   client={client}
-                  showAllWallets={false}
                   chains={SUPPORTED_NETWORKS.map(network => network.chain)}
-                  wallets={[
-                    inAppWallet({
-                      auth: {
-                        options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
-                      },
-                      executionMode: {
-                        mode: "EIP7702",
-                        sponsorGas: true,
-                      },
-                    }),
-                    createWallet("io.metamask"),
-                  ]}
+                  wallets={wallets}
                   theme="dark"
                   locale="es_ES"
                   autoConnect={{ timeout: 20000 }}

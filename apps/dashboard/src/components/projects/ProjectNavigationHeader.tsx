@@ -2,6 +2,7 @@
 
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
+import { wallets } from "@/lib/wallets";
 import { defineChain } from "thirdweb";
 import { Shield, ChevronLeft, Globe } from "lucide-react";
 
@@ -42,6 +43,7 @@ export default function ProjectNavigationHeader() {
             <ConnectButton 
               client={client}
               theme="dark"
+              wallets={wallets}
               connectButton={{
                 className: "!bg-white !text-black !font-bold !rounded-xl !px-6 !h-10 !text-sm hover:!bg-zinc-200 !transition-all",
                 label: "Conectar"

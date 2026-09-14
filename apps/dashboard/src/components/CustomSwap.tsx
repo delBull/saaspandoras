@@ -36,7 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@saasfly/ui/sheet";
 import { toast } from "sonner";
 import { ArrowDownIcon } from "lucide-react";
-import { createWallet, inAppWallet } from "thirdweb/wallets";
+import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 
 // --- LÓGICA DE COMISIÓN DE PLATAFORMA ---
@@ -908,18 +908,7 @@ export function CustomSwap() {
             client,
             chain: config.chain,
             showThirdwebBranding: false,
-            wallets: [
-              inAppWallet({
-                auth: {
-                  options: ["telegram", "email", "google", "apple", "facebook", "passkey"],
-                },
-                executionMode: {
-                  mode: "EIP7702",
-                  sponsorGas: true,
-                },
-              }),
-              createWallet("io.metamask"),
-            ],
+            wallets,
           })}
          className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90"
         >

@@ -60,8 +60,9 @@ const signerWallets = [
     },
   }),
   createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet"),
   createWallet("io.rabby"),
+  createWallet("com.coinbase.wallet"),
+  createWallet("app.phantom"),
   createWallet("me.rainbow"),
   createWallet("walletConnect"),
 ];
