@@ -1,3 +1,6 @@
+import { executionOS } from '@/lib/pandoras/composition/execution-composition';
+import { OrganizationSDK } from '@/lib/platform/organization-sdk';
+
 /**
  * ⚡ Pandora's Platform OS — Hermes Capability Dispatcher
  * lib/hermes/capability-dispatcher.ts
@@ -33,13 +36,55 @@ export class CapabilityDispatcher {
           userSummary: `Cita agendada tentativamente para ${payload.requestedSlot || 'el horario solicitado'}.`
         };
 
-      case 'crm.update_stage':
-        return {
-          success: true,
-          actionExecuted: 'crm.update_stage',
-          data: { newStage: payload.stage || 'PROPOSAL' },
-          userSummary: 'Etapa del CRM actualizada.'
-        };
+      case 'crm.update_stage': {
+        try {
+          // Resolver el canonicalOrgId server-side usando OrganizationSDK
+          const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
+
+          const result = await executionOS.execute({
+            capabilityId: 'CRM_UPDATE_STAGE',
+            version: 'v1',
+            input: { 
+              leadId: String(payload.leadId),
+              projectId: projectId, 
+              stage: payload.stage 
+            },
+            context: {
+              intentId: `hermes-chat-${Date.now()}`,
+              organizationId: orgContext.organizationId,
+              idempotencyKey: `hermes-chat-${Date.now()}`,
+              actorId: 'system',
+              missionId: 'none',
+              correlationId: `hermes-chat-${Date.now()}`
+            }
+          });
+
+          if (result.status === 'succeeded') {
+            return {
+              success: true,
+              actionExecuted: 'crm.update_stage',
+              data: result.data,
+              userSummary: 'Etapa del CRM actualizada correctamente.'
+            };
+          } else {
+            console.error(`[CapabilityDispatcher] CRM Update failed:`, result.error);
+            return {
+              success: false,
+              actionExecuted: 'crm.update_stage',
+              data: null,
+              userSummary: `No se pudo actualizar la etapa: ${result.error?.message}`
+            };
+          }
+        } catch (error: any) {
+          console.error(`[CapabilityDispatcher] Exception executing CRM Update:`, error);
+          return {
+            success: false,
+            actionExecuted: 'crm.update_stage',
+            data: null,
+            userSummary: 'Error de servidor al intentar actualizar el CRM.'
+          };
+        }
+      }
 
       case 'payments.create_spei_link':
         return {

@@ -1408,6 +1408,31 @@ export const webhookStatusEnum = pgEnum("webhook_status", [
   "failed"
 ]);
 
+export const publicIntegrations = pgTable("public_integrations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).references(() => projects.slug, { onDelete: 'cascade' }).notNull(),
+  landingPublicId: varchar("landing_public_id", { length: 255 }).notNull().unique(),
+  productFamilyId: integer("product_family_id"), // Optional: Route leads to a specific family
+  
+  // Security & Capabilities
+  apiKeyHash: text("api_key_hash").notNull(),
+  keyFingerprint: varchar("key_fingerprint", { length: 255 }).notNull(),
+  allowedCapabilities: jsonb("allowed_capabilities").default([]).notNull(), // ['hermes:chat:public', 'leads:capture:public']
+  knowledgeScope: varchar("knowledge_scope", { length: 50 }).default('PUBLIC_LANDING').notNull(),
+  rateLimitPolicy: jsonb("rate_limit_policy").default({ requestsPerMinute: 30, messagesPerMinute: 10 }).notNull(),
+  
+  // State
+  isActive: boolean("is_active").default(true).notNull(),
+  
+  // Audit
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const integrationClients = pgTable("integration_clients", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
