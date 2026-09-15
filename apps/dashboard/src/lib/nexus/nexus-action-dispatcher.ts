@@ -1,8 +1,9 @@
 import { db } from '@/db';
 import { eq, and } from 'drizzle-orm';
-import { nexusActionRequests, nexusCollaborators, users, purchases, auditLogs, hermesConversations, hermesEscalations } from '@/db/schema';
+import { nexusActionRequests, nexusCollaborators, users, purchases, auditLogs, hermesConversations, hermesEscalations, nexusCampaignProposals } from '@/db/schema';
 import { NexusTeamTransport } from './telegram-team-transport';
 import { resolveEffectivePermissions, NexusRole, NexusPermissions } from './nexus-rbac';
+import { DemandDistributionService } from '@/lib/hermes/demand/demand-distribution.service';
 
 export interface ActionPayload {
   [key: string]: any;
@@ -37,6 +38,14 @@ const ACTION_POLICY: Record<string, PolicyDefinition> = {
   'HERMES_TAKEOVER': {
     requiredCapability: 'nexus.manage', // Ops/Support context
     description: 'Toma de control de conversación Hermes'
+  },
+  'CAMPAIGN_AUTHORIZE': {
+    requiredCapability: 'growth.manage',
+    description: 'Autorización y distribución de campaña de Demand'
+  },
+  'CAMPAIGN_REJECT': {
+    requiredCapability: 'growth.manage',
+    description: 'Rechazo de propuesta de campaña'
   }
 };
 
@@ -178,6 +187,75 @@ const ACTION_HANDLERS: Record<string, (payload: ActionPayload, context: any) => 
     });
 
     return `🧠 Control de Hermes asumido para chat ${chatId}. Bot pausado, tú tienes el control.`;
+  },
+  'CAMPAIGN_AUTHORIZE': async (payload, { collaborator }) => {
+    const campaignId = payload.campaignId as string;
+    const canonicalOrgId = payload.canonicalOrgId as string;
+    if (!campaignId) throw new Error("Missing campaignId");
+
+    // Retrieve proposal
+    const [proposal] = await db.select().from(nexusCampaignProposals).where(eq(nexusCampaignProposals.id, campaignId)).limit(1);
+    
+    if (!proposal || proposal.canonicalOrgId !== canonicalOrgId) {
+      throw new Error("Campaña no encontrada o acceso denegado");
+    }
+
+    if (proposal.status !== 'CONTENT_READY' && proposal.status !== 'PROPOSED') {
+      throw new Error(`La campaña no está lista para ser autorizada (${proposal.status})`);
+    }
+
+    let dispatchedChannels = 0;
+    try {
+      // Try to dispatch via memory service (best effort, throws if not found)
+      const result = await DemandDistributionService.approveAndDistribute(canonicalOrgId, proposal.externalCampaignId || campaignId);
+      dispatchedChannels = result.dispatchedChannels?.length || 0;
+    } catch (e: any) {
+      console.warn('[NexusActionDispatcher] DemandDistributionService dispatch skipped/failed:', e.message);
+      // We continue to update DB status even if memory service fails (resilience)
+    }
+
+    await db.transaction(async (tx) => {
+      // Update proposal state
+      await tx.update(nexusCampaignProposals).set({
+        status: 'DISPATCHING',
+        approvedBy: collaborator.id,
+        approvedAt: new Date(),
+        idempotencyKey: `idem_${canonicalOrgId}_${campaignId}`,
+      }).where(eq(nexusCampaignProposals.id, campaignId));
+
+      await tx.insert(auditLogs).values({
+        event: 'CAMPAIGN_AUTHORIZE',
+        category: 'nexus_tma',
+        ip: 'system',
+        success: true,
+        metadata: { source: 'nexus_tma', actorId: collaborator.id.toString(), targetResource: `campaign:${campaignId}` }
+      });
+    });
+
+    return `🚀 Campaña aprobada y encolada para distribución.`;
+  },
+  'CAMPAIGN_REJECT': async (payload, { collaborator }) => {
+    const campaignId = payload.campaignId as string;
+    const canonicalOrgId = payload.canonicalOrgId as string;
+    if (!campaignId) throw new Error("Missing campaignId");
+
+    await db.transaction(async (tx) => {
+      await tx.update(nexusCampaignProposals).set({
+        status: 'REJECTED',
+        rejectedBy: collaborator.id,
+        rejectedAt: new Date(),
+      }).where(eq(nexusCampaignProposals.id, campaignId));
+
+      await tx.insert(auditLogs).values({
+        event: 'CAMPAIGN_REJECT',
+        category: 'nexus_tma',
+        ip: 'system',
+        success: true,
+        metadata: { source: 'nexus_tma', actorId: collaborator.id.toString(), targetResource: `campaign:${campaignId}` }
+      });
+    });
+
+    return `🚫 Campaña rechazada correctamente.`;
   }
 };
 

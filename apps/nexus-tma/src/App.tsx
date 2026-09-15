@@ -6,9 +6,12 @@
  * Manages the auth gate and routing to the main Command Center view.
  */
 
+import { useState } from 'react';
 import './index.css';
 import { useNexusAuth } from './lib/use-nexus-auth';
 import { CommandCenter } from './views/CommandCenter';
+import { TasksView } from './views/TasksView';
+import { MoreView } from './views/MoreView';
 
 // ─── Loading Screen ──────────────────────────────────────────────────────────
 
@@ -80,6 +83,7 @@ function ErrorScreen({ message, code, onRetry }: ErrorScreenProps) {
 
 export default function App() {
   const auth = useNexusAuth();
+  const [currentTab, setCurrentTab] = useState<'INBOX' | 'TASKS' | 'MORE'>('INBOX');
 
   if (auth.isLoading) {
     return <LoadingScreen />;
@@ -95,5 +99,24 @@ export default function App() {
     );
   }
 
-  return <CommandCenter session={auth.session!} hasCapability={auth.hasCapability} />;
+  return (
+    <div className="app-container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="tab-content" style={{ flex: 1, paddingBottom: '70px', overflowY: 'auto' }}>
+        {currentTab === 'INBOX' && <CommandCenter session={auth.session!} hasCapability={auth.hasCapability} />}
+        {currentTab === 'TASKS' && <TasksView session={auth.session!} />}
+        {currentTab === 'MORE' && <MoreView session={auth.session!} hasCapability={auth.hasCapability} />}
+      </div>
+      <nav className="bottom-nav">
+        <button onClick={() => setCurrentTab('INBOX')} className={currentTab === 'INBOX' ? 'active' : ''}>
+          <span>⚡</span> Inbox
+        </button>
+        <button onClick={() => setCurrentTab('TASKS')} className={currentTab === 'TASKS' ? 'active' : ''}>
+          <span>✓</span> Tasks
+        </button>
+        <button onClick={() => setCurrentTab('MORE')} className={currentTab === 'MORE' ? 'active' : ''}>
+          <span>☰</span> More
+        </button>
+      </nav>
+    </div>
+  );
 }

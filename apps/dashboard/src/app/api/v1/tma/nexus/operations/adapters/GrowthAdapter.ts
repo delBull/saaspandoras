@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { eq, and, gt } from 'drizzle-orm';
-import { marketingLeads, projects } from '@/db/schema';
+import { marketingLeads, projects, nexusCampaignProposals } from '@/db/schema';
 import { DomainAdapter, NexusOperation } from './DomainAdapter';
 import { NexusAuthContext, checkNexusPermission } from '@/lib/nexus/nexus-rbac';
 
@@ -20,19 +20,17 @@ export class GrowthAdapter implements DomainAdapter {
       limit: 1
     });
 
-    if (!project) return [];
-
-    const leads = await db.query.marketingLeads.findMany({
+    const leads = project ? await db.query.marketingLeads.findMany({
       where: and(
         eq(marketingLeads.projectId, project.id),
         gt(marketingLeads.createdAt, twentyFourHoursAgo),
         eq(marketingLeads.status, 'active')
       ),
       orderBy: (l, { desc }) => [desc(l.createdAt)],
-      limit: 50
-    });
+      limit: 10
+    }) : [];
 
-    return leads.map(lead => ({
+    const leadOps: NexusOperation[] = leads.map(lead => ({
       id: `lead_${lead.id}`,
       type: 'ALERT', 
       priority: 'NORMAL',
@@ -47,5 +45,34 @@ export class GrowthAdapter implements DomainAdapter {
         { label: 'View CRM', action: 'VIEW_CRM', intent: 'secondary' }
       ]
     }));
+
+    // 2. Fetch Pending Campaign Proposals
+    const campaigns = await db.query.nexusCampaignProposals.findMany({
+      where: and(
+        eq(nexusCampaignProposals.canonicalOrgId, authCtx.canonicalOrgId),
+        eq(nexusCampaignProposals.status, 'PROPOSED')
+      ),
+      orderBy: (c, { asc }) => [asc(c.createdAt)],
+      limit: 20
+    });
+
+    const campaignOps: NexusOperation[] = campaigns.map(c => ({
+      id: c.id,
+      type: 'DECISION',
+      priority: 'HIGH',
+      domain: 'GROWTH',
+      title: `Autorizar: ${c.name}`,
+      description: `Objetivo: ${c.objective} | Contenidos: ${c.piecesCount} | Canales: ${c.channels.join(', ')}`,
+      status: c.status,
+      requiredCapability: 'growth.manage',
+      visibility: 'ORG',
+      createdAt: c.createdAt,
+      actions: [
+        { label: '✓ Aprobar y Distribuir', action: 'CAMPAIGN_AUTHORIZE', intent: 'primary' },
+        { label: '✗ Rechazar', action: 'CAMPAIGN_REJECT', intent: 'danger' }
+      ]
+    }));
+
+    return [...campaignOps, ...leadOps];
   }
 }

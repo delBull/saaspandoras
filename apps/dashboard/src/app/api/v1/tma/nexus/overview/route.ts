@@ -7,13 +7,14 @@
  */
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, count, or } from 'drizzle-orm';
 import {
   nexusActionRequests,
   hermesEscalations,
   marketingLeads,
   projectCollaborators,
   projects,
+  nexusTasks,
 } from '@/db/schema';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 
@@ -58,7 +59,7 @@ export async function GET(req: Request) {
     // ── 3. Badge counts (parallel queries, one per vertical enabled) ──────────
     const orgId = canonicalOrgId ?? 'pandoras';
 
-    const [hermesCount, growthCount, financeCount] = await Promise.all([
+    const [hermesCount, growthCount, financeCount, tasksCount] = await Promise.all([
       // HERMES badge: PENDING escalations
       enabledVerticals.includes('HERMES')
         ? db
@@ -78,6 +79,8 @@ export async function GET(req: Request) {
         ? db
             .select({ n: count() })
             .from(marketingLeads)
+            .innerJoin(projects, eq(projects.id, marketingLeads.projectId))
+            .where(eq(projects.slug, orgId))
             .then((r) => r[0]?.n ?? 0)
         : Promise.resolve(0),
 
@@ -94,13 +97,27 @@ export async function GET(req: Request) {
             )
             .then((r) => r[0]?.n ?? 0)
         : Promise.resolve(0),
+
+      // TASKS badge: open or in-progress tasks assigned to the user
+      db
+        .select({ n: count() })
+        .from(nexusTasks)
+        .where(
+          and(
+            eq(nexusTasks.canonicalOrgId, orgId),
+            eq(nexusTasks.assigneeCollaboratorId, collaboratorId!),
+            or(eq(nexusTasks.status, 'OPEN'), eq(nexusTasks.status, 'IN_PROGRESS'))
+          )
+        )
+        .then((r) => r[0]?.n ?? 0),
     ]);
 
     const badges = {
       hitlUrgentChats: Number(hermesCount),
       growthHotLeadsToday: Number(growthCount),
       rwaPendingDeposits: Number(financeCount),
-      total: Number(hermesCount) + Number(growthCount) + Number(financeCount),
+      myActiveTasks: Number(tasksCount),
+      total: Number(hermesCount) + Number(growthCount) + Number(financeCount) + Number(tasksCount),
     };
 
     return NextResponse.json({

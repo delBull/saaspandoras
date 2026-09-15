@@ -135,4 +135,20 @@ export class NexusTeamNotificationDispatcher {
       rejectText: 'Ignorar',
     });
   }
+
+  /**
+   * Dedicated method to notify about a new Campaign Proposal.
+   */
+  async notifyCampaignProposal(canonicalOrgId: string, campaignId: string, name: string, objective: string, piecesCount: number, channels: string[]) {
+    const text = `🚀 <b>Propuesta de Campaña</b>\n\nSe ha generado una nueva campaña para <code>${canonicalOrgId}</code>.\n\n<b>Campaña:</b> ${name}\n<b>Objetivo:</b> ${objective}\n<b>Contenidos:</b> ${piecesCount}\n<b>Canales:</b> ${channels.join(', ')}\n\n¿Deseas aprobar y distribuir esta campaña?`;
+    
+    await this.notifyTeam(text, 'growth.manage', {
+      actionType: 'CAMPAIGN',
+      targetResource: campaignId,
+      canonicalOrgId,
+      payload: { campaignId, canonicalOrgId },
+      approveText: 'Aprobar y Distribuir',
+      rejectText: 'Rechazar',
+    });
+  }
 }
