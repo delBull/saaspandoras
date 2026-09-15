@@ -8,6 +8,18 @@
  * - Session expires after 8h TTL (validated client-side)
  */
 
+export interface NexusWorkspace {
+  id: string;
+  name: string;
+}
+
+export interface NexusBadges {
+  hitlUrgentChats: number;
+  growthHotLeadsToday: number;
+  rwaPendingDeposits: number;
+  total: number;
+}
+
 export interface NexusTmaSession {
   collaboratorId: number;
   name: string;
@@ -15,7 +27,11 @@ export interface NexusTmaSession {
   telegramUserId: string;
   telegramUsername?: string;
   capabilities: string[];
-  organizationId: null;
+  enabledVerticals: string[];      // ['HERMES', 'GROWTH', 'RWA']
+  workspaces: NexusWorkspace[];
+  activeWorkspace: string;
+  badges: NexusBadges;
+  organizationId: string | null;
   issuedAt: number;
   expiresAt: number;
   token: string;

@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { eq, and } from 'drizzle-orm';
-import { nexusActionRequests, nexusCollaborators, users, purchases, auditLogs } from '@/db/schema';
+import { nexusActionRequests, nexusCollaborators, users, purchases, auditLogs, hermesConversations, hermesEscalations } from '@/db/schema';
 import { NexusTeamTransport } from './telegram-team-transport';
 import { resolveEffectivePermissions, NexusRole, NexusPermissions } from './nexus-rbac';
 
@@ -126,20 +126,58 @@ const ACTION_HANDLERS: Record<string, (payload: ActionPayload, context: any) => 
   },
   'HERMES_TAKEOVER': async (payload, { collaborator }) => {
     const chatId = payload.chatId as string;
+    const organizationId = (payload.organizationId || payload.canonicalOrgId || 'pandoras') as string;
     if (!chatId) throw new Error("Missing chatId");
 
     await db.transaction(async (tx) => {
-      // In a real scenario, update the chat session to HITL state
+      // 1. Pause Hermes on this conversation (upsert-like: update if exists)
+      const [conv] = await tx
+        .select({ id: hermesConversations.id, version: hermesConversations.version })
+        .from(hermesConversations)
+        .where(eq(hermesConversations.conversationId, chatId))
+        .limit(1);
+
+      if (conv) {
+        await tx.update(hermesConversations)
+          .set({
+            status: 'PAUSED_HUMAN',
+            escalationReason: 'MANUAL',
+            assignedCollaboratorId: collaborator.id,
+            escalatedAt: new Date(),
+            version: conv.version + 1,
+          })
+          .where(eq(hermesConversations.id, conv.id));
+      }
+
+      // 2. Update any PENDING escalation to IN_PROGRESS
+      await tx.update(hermesEscalations)
+        .set({
+          status: 'IN_PROGRESS',
+          actorId: collaborator.id.toString(),
+        })
+        .where(
+          and(
+            eq(hermesEscalations.conversationId, chatId),
+            eq(hermesEscalations.status, 'PENDING')
+          )
+        );
+
+      // 3. Audit the takeover action
       await tx.insert(auditLogs).values({
         event: 'HERMES_TAKEOVER',
         category: 'nexus_tma',
         ip: 'system',
         success: true,
-        metadata: { source: 'nexus_tma', actorId: collaborator.id.toString(), targetResource: `chat:${chatId}` }
+        metadata: {
+          source: 'nexus_tma',
+          actorId: collaborator.id.toString(),
+          targetResource: `chat:${chatId}`,
+          organizationId,
+        }
       });
     });
 
-    return `🧠 Control de Hermes asumido para chat ${chatId}`;
+    return `🧠 Control de Hermes asumido para chat ${chatId}. Bot pausado, tú tienes el control.`;
   }
 };
 

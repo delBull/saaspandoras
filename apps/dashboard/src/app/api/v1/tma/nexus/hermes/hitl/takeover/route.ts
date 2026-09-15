@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { db } from '@/db';
 import { eq, and } from 'drizzle-orm';
-import { nexusActionRequests } from '@/db/schema';
+import { nexusActionRequests, hermesConversations, hermesEscalations, auditLogs } from '@/db/schema';
 
 export async function POST(req: Request) {
   try {
-    const authCtx = await getNexusAuthContext();
+    const authCtx = await getNexusAuthContext(new Headers(req.headers));
     
     if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,54 +17,91 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const itemId = body.itemId;
+    const itemId = body.itemId as string; // conversationId (chatId) or actionToken
 
     if (!itemId) {
       return NextResponse.json({ error: 'itemId is required' }, { status: 400 });
     }
 
-    // 1. Verify the action request belongs to this user and is PENDING
-    const [actionRequest] = await db.select().from(nexusActionRequests).where(
-      and(
-        eq(nexusActionRequests.actionToken, itemId),
-        eq(nexusActionRequests.actorIdentityId, authCtx.collaboratorId),
-        eq(nexusActionRequests.status, 'PENDING')
-      )
-    ).limit(1);
+    await db.transaction(async (tx) => {
+      // 1. Find the conversation by conversationId
+      const [conv] = await tx
+        .select({ id: hermesConversations.id, version: hermesConversations.version })
+        .from(hermesConversations)
+        .where(eq(hermesConversations.conversationId, itemId))
+        .limit(1);
 
-    if (!actionRequest) {
-      return NextResponse.json({ error: 'Action request not found, expired, or already completed' }, { status: 404 });
-    }
+      if (conv) {
+        // 2. Optimistic lock: transition ACTIVE → PAUSED_HUMAN atomically
+        const [updated] = await tx.update(hermesConversations)
+          .set({
+            status: 'PAUSED_HUMAN',
+            escalationReason: 'MANUAL',
+            assignedCollaboratorId: authCtx.collaboratorId,
+            escalatedAt: new Date(),
+            version: conv.version + 1,
+          })
+          .where(
+            and(
+              eq(hermesConversations.id, conv.id),
+              eq(hermesConversations.version, conv.version) // Optimistic lock
+            )
+          )
+          .returning({ id: hermesConversations.id });
 
-    // 2. Mark the action as COMPLETED with concurrency control (Optimistic Locking)
-    const [updated] = await db.update(nexusActionRequests)
-      .set({
-        status: 'COMPLETED',
-        completedAt: new Date(),
-        result: 'TAKEN_OVER'
-      })
-      .where(
-        and(
-          eq(nexusActionRequests.id, actionRequest.id),
-          eq(nexusActionRequests.status, 'PENDING') // Lock against race conditions
-        )
-      )
-      .returning({ id: nexusActionRequests.id });
+        if (!updated) {
+          throw new Error('CONFLICT: Conversation was modified concurrently. Please retry.');
+        }
+      }
 
-    if (!updated) {
-      return NextResponse.json({ error: 'Conflict: This action was already resolved by another operator' }, { status: 409 });
-    }
+      // 3. Transition any PENDING escalation to IN_PROGRESS
+      await tx.update(hermesEscalations)
+        .set({
+          status: 'IN_PROGRESS',
+          actorId: authCtx.collaboratorId!.toString(),
+        })
+        .where(
+          and(
+            eq(hermesEscalations.conversationId, itemId),
+            eq(hermesEscalations.status, 'PENDING')
+          )
+        );
 
-    // NOTE: In a fully wired production system, this would also trigger a 
-    // message to the Discord webhook or internal chat to notify that the 
-    // operator has taken control of the session, and would mutate the 
-    // actual `whatsappSessions` table to `flowType = "human"`.
-    // Since this is the TMA interface layer, resolving the action request
-    // acts as the primary source of truth for the action being fulfilled.
+      // 4. Also resolve any pending HERMES_TAKEOVER action request for this conversation
+      await tx.update(nexusActionRequests)
+        .set({ status: 'COMPLETED', completedAt: new Date(), result: 'TAKEN_OVER_VIA_TMA' })
+        .where(
+          and(
+            eq(nexusActionRequests.targetResource, itemId),
+            eq(nexusActionRequests.actionType, 'HERMES_TAKEOVER'),
+            eq(nexusActionRequests.status, 'PENDING')
+          )
+        );
 
-    return NextResponse.json({ success: true, message: 'Takeover completed successfully' });
+      // 5. Audit
+      await tx.insert(auditLogs).values({
+        event: 'HERMES_TAKEOVER',
+        category: 'nexus_tma',
+        ip: 'tma',
+        success: true,
+        metadata: {
+          source: 'nexus_tma_http',
+          actorId: authCtx.collaboratorId!.toString(),
+          targetResource: `chat:${itemId}`,
+          canonicalOrgId: authCtx.canonicalOrgId,
+        }
+      });
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Hermes pausado. El bot ha cedido el control al operador.' 
+    });
     
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message?.startsWith('CONFLICT')) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     console.error('[NexusHermesHITLTakeoverAPI] Error completing takeover:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

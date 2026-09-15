@@ -235,6 +235,20 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
             <div className="flex items-center gap-2" style={{ marginBottom: 2 }}>
               <span style={{ fontSize: 16 }}>⚡</span>
               <span className="font-semibold text-lg">Nexus Command</span>
+              {session.badges?.total > 0 && (
+                <span style={{
+                  background: 'var(--color-danger)',
+                  color: '#fff',
+                  borderRadius: '999px',
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  minWidth: 18,
+                  textAlign: 'center',
+                }}>
+                  {session.badges.total}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-secondary text-sm">{getGreeting()}, {session.name.split(' ')[0]}.</span>
@@ -252,6 +266,91 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
             🔄
           </button>
         </div>
+
+        {/* Workspace Switcher — only shown when collaborator has multiple orgs */}
+        {session.workspaces && session.workspaces.length > 1 && (
+          <div className="flex gap-2 mt-3" style={{ overflowX: 'auto', paddingBottom: 2 }}>
+            {session.workspaces.map((ws) => (
+              <button
+                key={ws.id}
+                className={`text-xs font-semibold px-3 py-1`}
+                style={{
+                  borderRadius: 'var(--radius-sm)',
+                  whiteSpace: 'nowrap',
+                  background: session.activeWorkspace === ws.id
+                    ? 'var(--color-accent)'
+                    : 'var(--color-bg-elevated)',
+                  color: session.activeWorkspace === ws.id
+                    ? '#fff'
+                    : 'var(--color-text-secondary)',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  // Switch active workspace — reload operations for the new org
+                  // (Full reload; the session is re-hydrated via retry)
+                  window.location.reload();
+                }}
+              >
+                {ws.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Vertical badges — show only enabled verticals with counts */}
+        {session.enabledVerticals && session.enabledVerticals.length > 0 && (
+          <div className="flex gap-2 mt-3">
+            {session.enabledVerticals.includes('HERMES') && (
+              <div className="flex items-center gap-1" style={{
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+              }}>
+                <span>🧠</span>
+                <span className="text-secondary">HITL</span>
+                {session.badges?.hitlUrgentChats > 0 && (
+                  <span style={{ color: 'var(--color-danger)', fontWeight: 700 }}>
+                    {session.badges.hitlUrgentChats}
+                  </span>
+                )}
+              </div>
+            )}
+            {session.enabledVerticals.includes('GROWTH') && (
+              <div className="flex items-center gap-1" style={{
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+              }}>
+                <span>🚀</span>
+                <span className="text-secondary">Leads</span>
+                {session.badges?.growthHotLeadsToday > 0 && (
+                  <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>
+                    {session.badges.growthHotLeadsToday}
+                  </span>
+                )}
+              </div>
+            )}
+            {session.enabledVerticals.includes('RWA') && (
+              <div className="flex items-center gap-1" style={{
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+              }}>
+                <span>🏦</span>
+                <span className="text-secondary">Depósitos</span>
+                {session.badges?.rwaPendingDeposits > 0 && (
+                  <span style={{ color: 'var(--color-warning)', fontWeight: 700 }}>
+                    {session.badges.rwaPendingDeposits}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
       <div className="page-content flex-col gap-4">
