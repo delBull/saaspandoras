@@ -74,7 +74,7 @@ export function TasksView({ session }: TasksViewProps) {
     }
   };
 
-  const myTasks = tasks.filter(t => t.assigneeCollaboratorId === session.collaborator.id && ['OPEN', 'IN_PROGRESS'].includes(t.status));
+  const myTasks = tasks.filter(t => t.assigneeCollaboratorId === session.collaboratorId && ['OPEN', 'IN_PROGRESS'].includes(t.status));
   const teamTasks = tasks.filter(t => !t.assigneeCollaboratorId && t.status === 'OPEN');
   
   const getPriorityColor = (priority: string) => {

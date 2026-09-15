@@ -16,8 +16,8 @@ export function MoreView({ session }: MoreViewProps) {
   const handleOpenWeb = () => {
     // @ts-ignore
     const tg = window.Telegram?.WebApp;
-    if (tg && tg.openLink) {
-      tg.openLink('https://dash.pandoras.finance/dashboard');
+    if (tg && (tg as any).openLink) {
+      (tg as any).openLink('https://dash.pandoras.finance/dashboard');
     } else {
       window.open('https://dash.pandoras.finance/dashboard', '_blank');
     }
@@ -47,7 +47,7 @@ export function MoreView({ session }: MoreViewProps) {
           </div>
           <div>
             <h3 className="font-semibold text-lg">{session.name}</h3>
-            <p className="text-secondary text-sm">@{session.collaborator.telegramUsername || 'User'}</p>
+            <p className="text-secondary text-sm">@{session.telegramUsername || 'User'}</p>
           </div>
         </div>
 
