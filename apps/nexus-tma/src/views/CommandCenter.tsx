@@ -153,10 +153,34 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [resolvingDeepLink, setResolvingDeepLink] = useState(false);
+  const [deepLinkOp, setDeepLinkOp] = useState<NexusOperation | null>(null);
+
   const fetchOperations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // 1. Check for deep link
+      // @ts-ignore
+      const tg = window.Telegram?.WebApp;
+      const startParam = (tg?.initDataUnsafe as any)?.start_param;
+      
+      if (startParam && !deepLinkOp && !resolvingDeepLink) {
+        setResolvingDeepLink(true);
+        try {
+          const res = await nexusPost('/api/v1/tma/nexus/deep-links/resolve', { reference: startParam }, session.token);
+          if (res.operation) {
+            setDeepLinkOp(res.operation);
+          }
+        } catch (err: any) {
+          setError(err.message || 'El enlace ha expirado o ya fue consumido.');
+        } finally {
+          setResolvingDeepLink(false);
+        }
+      }
+
+      // 2. Load standard hub
       const data = await nexusGet<{ operations: any }>('/api/v1/tma/nexus/operations/my-work', session.token);
       setBuckets(data.operations || { NEEDS_ATTENTION: [], TODAY: [], RECENT: [] });
     } catch (err: any) {
@@ -164,7 +188,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     } finally {
       setLoading(false);
     }
-  }, [session.token]);
+  }, [session.token, deepLinkOp, resolvingDeepLink]);
 
   useEffect(() => {
     fetchOperations();
@@ -180,6 +204,11 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
       } else {
         console.log('Action unhandled in TMA:', op.domain, action);
         // Fallback for unhandled actions
+      }
+      
+      // If we were focusing on a deep link, clear it
+      if (deepLinkOp && deepLinkOp.id === op.id) {
+        setDeepLinkOp(null);
       }
       
       // Refresh list to pull updated state from server
@@ -245,6 +274,16 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
               Tu rol actual no tiene módulos de acción asignados.<br/>
               Contacta al administrador del espacio de trabajo.
             </p>
+          </div>
+        ) : deepLinkOp ? (
+          <div>
+             <div className="flex justify-between items-center mb-3">
+               <h3 className="font-bold text-sm text-accent flex items-center gap-2">
+                 <span>🎯</span> SOLICITUD DIRECTA
+               </h3>
+               <button onClick={() => setDeepLinkOp(null)} className="text-xs text-secondary underline">Volver al Hub</button>
+             </div>
+             <OperationCard op={deepLinkOp} onAction={handleAction} />
           </div>
         ) : (
           <>

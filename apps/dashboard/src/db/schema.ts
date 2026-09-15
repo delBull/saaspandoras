@@ -4458,3 +4458,25 @@ export type DistributionExecutionAttempt = typeof distributionExecutionAttempts.
 export type NewDistributionExecutionAttempt = typeof distributionExecutionAttempts.$inferInsert;
 
 
+
+
+/**
+ * 🔗 Nexus Deep Links
+ *
+ * Secure, opaque, single-use resolution deep links for Telegram -> TMA.
+ */
+export const nexusDeepLinks = pgTable('nexus_deep_links', {
+  id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  referenceHash: varchar('reference_hash', { length: 64 }).notNull().unique(), // sha256 of the random reference string
+  canonicalOrgId: varchar('canonical_org_id', { length: 128 }).notNull(),
+  targetType: varchar('target_type', { length: 64 }).notNull(), // 'action_request', 'hitl_intervention', etc.
+  targetId: varchar('target_id', { length: 128 }).notNull(),
+  createdBy: varchar('created_by', { length: 128 }).notNull(), // usually 'system' or 'hermes'
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  consumedAt: timestamp('consumed_at', { withTimezone: true }),
+  consumedByIdentityId: varchar('consumed_by_identity_id', { length: 128 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type NexusDeepLink = typeof nexusDeepLinks.$inferSelect;
+export type NewNexusDeepLink = typeof nexusDeepLinks.$inferInsert;

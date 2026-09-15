@@ -52,7 +52,10 @@ export class TreasuryAdapter implements DomainAdapter {
           { label: 'Reject', action: 'REJECT', intent: 'danger' },
           { label: 'Defer', action: 'DEFER', intent: 'secondary' }
         ],
-        payload: req.payload
+        payload: {
+          ...req.payload as object,
+          actionRequestId: req.id
+        }
       };
     });
   }

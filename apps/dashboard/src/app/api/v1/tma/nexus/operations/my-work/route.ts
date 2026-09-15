@@ -16,9 +16,12 @@ export async function GET(req: Request) {
       new HermesAdapter(),
     ];
 
+    const adapterErrors: string[] = [];
+
     const results = await Promise.all(
       adapters.map(adapter => adapter.getOperations(authCtx).catch(err => {
         console.warn(`[OperationHub] Adapter failed:`, err);
+        adapterErrors.push(err.message || 'Unknown adapter error');
         return [];
       }))
     );
@@ -64,7 +67,11 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({ operations: buckets });
+    return NextResponse.json({ 
+      operations: buckets,
+      degraded: adapterErrors.length > 0,
+      errors: adapterErrors.length > 0 ? adapterErrors : undefined
+    });
     
   } catch (error) {
     console.error('[OperationHub] Error fetching my-work:', error);

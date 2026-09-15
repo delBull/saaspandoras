@@ -4,6 +4,7 @@ import { nexusCollaborators } from '@/db/schema';
 import { NexusTeamTransport } from './telegram-team-transport';
 import { NexusActionDispatcher, ActionPayload } from './nexus-action-dispatcher';
 import { resolveEffectivePermissions, NexusRole, NexusPermissions } from './nexus-rbac';
+import { createDeepLinkReference, dispatchTelegramNotification } from './notifications/TelegramDispatcher';
 
 export class NexusTeamNotificationDispatcher {
   private transport: NexusTeamTransport;
@@ -47,6 +48,8 @@ export class NexusTeamNotificationDispatcher {
         if (!collaborator.telegramUserId) continue;
 
         let inline_keyboard: any[][] = [];
+        let deepLinkRef: string | undefined = undefined;
+
         if (actionConfig) {
           try {
             const approveToken = await this.actionDispatcher.createActionRequest(
@@ -71,6 +74,17 @@ export class NexusTeamNotificationDispatcher {
               { text: `✅ ${actionConfig.approveText || 'Aprobar'}`, callback_data: approveToken },
               { text: `❌ ${actionConfig.rejectText || 'Rechazar'}`, callback_data: rejectToken }
             ]];
+            
+            // Wire the Deep Link
+            const targetType = actionConfig.actionType === 'HERMES' ? 'hitl_intervention' : 'action_request';
+            deepLinkRef = await createDeepLinkReference({
+              canonicalOrgId: actionConfig.canonicalOrgId || 'pandoras',
+              targetType,
+              targetId: actionConfig.targetResource,
+              createdBy: collaborator.id.toString(),
+              ttlHours: 24
+            });
+            
           } catch (tokenErr) {
             console.error(`[NexusTeamNotification] Failed to create action tokens for user ${collaborator.id}:`, tokenErr);
             continue; // Skip this user if we can't create tokens
@@ -78,12 +92,11 @@ export class NexusTeamNotificationDispatcher {
         }
 
         try {
-          await this.transport.sendMessage({
-            chat_id: parseInt(collaborator.telegramUserId, 10),
-            text: message,
-            parse_mode: 'HTML',
-            reply_markup: inline_keyboard.length > 0 ? { inline_keyboard } : undefined,
-          });
+          await dispatchTelegramNotification(
+            collaborator.telegramUserId,
+            message,
+            deepLinkRef
+          );
         } catch (err) {
           console.error(`[NexusTeamNotification] Failed to notify user ${collaborator.telegramUserId}:`, err);
         }
