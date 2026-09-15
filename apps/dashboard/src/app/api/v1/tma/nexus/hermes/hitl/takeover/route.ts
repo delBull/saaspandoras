@@ -36,14 +36,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Action request not found, expired, or already completed' }, { status: 404 });
     }
 
-    // 2. Mark the action as COMPLETED
-    await db.update(nexusActionRequests)
+    // 2. Mark the action as COMPLETED with concurrency control (Optimistic Locking)
+    const [updated] = await db.update(nexusActionRequests)
       .set({
         status: 'COMPLETED',
         completedAt: new Date(),
         result: 'TAKEN_OVER'
       })
-      .where(eq(nexusActionRequests.id, actionRequest.id));
+      .where(
+        and(
+          eq(nexusActionRequests.id, actionRequest.id),
+          eq(nexusActionRequests.status, 'PENDING') // Lock against race conditions
+        )
+      )
+      .returning({ id: nexusActionRequests.id });
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Conflict: This action was already resolved by another operator' }, { status: 409 });
+    }
 
     // NOTE: In a fully wired production system, this would also trigger a 
     // message to the Discord webhook or internal chat to notify that the 

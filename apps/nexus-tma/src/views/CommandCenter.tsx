@@ -141,22 +141,34 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     fetchOverview();
   }, [session.token]);
 
+  const [drawerError, setDrawerError] = useState<string | null>(null);
+
   // Drawer Fetch Data
   useEffect(() => {
+    setDrawerError(null);
     if (activeDrawer === 'hermes') {
       nexusGet<{ items: any[] }>('/api/v1/tma/nexus/hermes/hitl', session.token)
         .then(res => setHitlItems(res.items || []))
-        .catch(() => setHitlItems([]));
+        .catch(err => {
+          setHitlItems([]);
+          setDrawerError(err.message || 'Unauthorized or failed to load HITL data');
+        });
     }
     if (activeDrawer === 'growth') {
       nexusGet<{ items: any[] }>('/api/v1/tma/nexus/growth/leads', session.token)
         .then(res => setGrowthItems(res.items || []))
-        .catch(() => setGrowthItems([]));
+        .catch(err => {
+          setGrowthItems([]);
+          setDrawerError(err.message || 'Unauthorized or failed to load Growth leads');
+        });
     }
     if (activeDrawer === 'finance') {
       nexusGet<{ items: any[] }>('/api/v1/tma/nexus/finance/deposits', session.token)
         .then(res => setFinanceItems(res.items || []))
-        .catch(() => setFinanceItems([]));
+        .catch(err => {
+          setFinanceItems([]);
+          setDrawerError(err.message || 'Unauthorized or failed to load Finance deposits');
+        });
     }
   }, [activeDrawer, session.token]);
 
@@ -304,6 +316,12 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
         >
           <div className="drawer-handle" />
           
+          {drawerError && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-xl mb-4 w-full">
+              {drawerError}
+            </div>
+          )}
+
           {activeDrawer === 'hermes' && (
             <div className="flex-col gap-4">
               <h2 className="font-semibold text-xl mb-4">Hermes Interventions (HITL)</h2>
