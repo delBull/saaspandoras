@@ -118,6 +118,8 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   });
 
   const [hitlItems, setHitlItems] = useState<any[]>([]);
+  const [growthItems, setGrowthItems] = useState<any[]>([]);
+  const [financeItems, setFinanceItems] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchOverview() {
@@ -142,14 +144,19 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   // Drawer Fetch Data
   useEffect(() => {
     if (activeDrawer === 'hermes') {
-      // Fetch real HITL data
       nexusGet<{ items: any[] }>('/api/v1/tma/nexus/hermes/hitl', session.token)
         .then(res => setHitlItems(res.items || []))
-        .catch(err => {
-          console.error(err);
-          // Set to empty if fails, no mocks
-          setHitlItems([]);
-        });
+        .catch(() => setHitlItems([]));
+    }
+    if (activeDrawer === 'growth') {
+      nexusGet<{ items: any[] }>('/api/v1/tma/nexus/growth/leads', session.token)
+        .then(res => setGrowthItems(res.items || []))
+        .catch(() => setGrowthItems([]));
+    }
+    if (activeDrawer === 'finance') {
+      nexusGet<{ items: any[] }>('/api/v1/tma/nexus/finance/deposits', session.token)
+        .then(res => setFinanceItems(res.items || []))
+        .catch(() => setFinanceItems([]));
     }
   }, [activeDrawer, session.token]);
 
@@ -157,9 +164,14 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
 
   const handleTakeover = async (itemId: string) => {
     await nexusPost('/api/v1/tma/nexus/hermes/hitl/takeover', { itemId }, session.token);
-    // Remove item from list locally
     setHitlItems(prev => prev.filter(i => i.id !== itemId));
     setMetrics(m => ({ ...m, hitl: Math.max(0, m.hitl - 1) }));
+  };
+
+  const handleApproveDeposit = async (actionRequestId: number, actionToken: string) => {
+    await nexusPost('/api/v1/tma/nexus/finance/deposits/approve', { actionRequestId, actionToken }, session.token);
+    setFinanceItems(prev => prev.filter(i => i.actionRequestId !== actionRequestId));
+    setMetrics(m => ({ ...m, deposits: Math.max(0, m.deposits - 1), approvals: Math.max(0, m.approvals - 1) }));
   };
 
   const getGreeting = () => {
@@ -183,7 +195,6 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
               <span className="text-secondary text-sm">{getGreeting()}, {session.name.split(' ')[0]}.</span>
             </div>
           </div>
-          {/* Connection indicator */}
           <div style={{
             width: 8, height: 8,
             background: 'var(--color-success)',
@@ -195,7 +206,6 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
 
       {/* Content */}
       <div className="page-content flex-col gap-3">
-        {/* Requiere Atención (Triage) */}
         {totalAttention > 0 ? (
           <div style={{
             background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.15) 0%, rgba(124, 92, 252, 0.05) 100%)',
@@ -233,7 +243,6 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
           </div>
         )}
 
-        {/* Hermes AI Module */}
         {hasCapability('nexus.manage') && (
           <ModuleCard
             icon="🧠"
@@ -245,19 +254,17 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
           />
         )}
 
-        {/* Growth Module */}
         {hasCapability('growth.manage') && (
           <ModuleCard
             icon="🚀"
             title="Growth OS"
-            subtitle="Pipeline 24h"
+            subtitle="Recent Leads"
             badge={metrics.leads}
             badgeVariant="accent"
             onClick={() => setActiveDrawer('growth')}
           />
         )}
 
-        {/* Finance / RWA Module */}
         {hasCapability('finance.manage') && (
           <ModuleCard
             icon="🏦"
@@ -269,7 +276,6 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
           />
         )}
 
-        {/* Fallback if no capabilities */}
         {!hasCapability('nexus.manage') &&
          !hasCapability('growth.manage') &&
          !hasCapability('finance.manage') &&
@@ -294,7 +300,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
       >
         <div 
           className="drawer-content"
-          onClick={(e) => e.stopPropagation()} /* Prevent close when clicking inside drawer */
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="drawer-handle" />
           
@@ -327,21 +333,58 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
 
           {activeDrawer === 'growth' && (
             <div className="flex-col gap-4">
-              <h2 className="font-semibold text-xl mb-4">Growth Pipeline</h2>
-              <div className="text-center p-6 text-secondary">
-                <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>🔌</span>
-                Not connected. This capability is not available yet.
-              </div>
+              <h2 className="font-semibold text-xl mb-4">Recent Leads (24h)</h2>
+              
+              {growthItems.length === 0 ? (
+                <div className="text-center p-6 text-secondary">
+                  <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>🍃</span>
+                  No new leads in the last 24 hours.
+                </div>
+              ) : (
+                growthItems.map(item => (
+                  <div key={item.id} className="action-card flex-col gap-3" style={{ marginBottom: 'var(--space-3)' }}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{item.name}</span>
+                      <span className="badge badge-accent text-xs" style={{ color: 'white' }}>{item.intent}</span>
+                    </div>
+                    <p className="text-sm text-secondary line-clamp-1">Status: {item.status}</p>
+                  </div>
+                ))
+              )}
             </div>
           )}
 
           {activeDrawer === 'finance' && (
             <div className="flex-col gap-4">
               <h2 className="font-semibold text-xl mb-4">Treasury Approvals</h2>
-              <div className="text-center p-6 text-secondary">
-                <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>🔌</span>
-                Not connected. This capability is not available yet.
-              </div>
+              
+              {financeItems.length === 0 ? (
+                <div className="text-center p-6 text-secondary">
+                  <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>✅</span>
+                  No pending deposit approvals.
+                </div>
+              ) : (
+                financeItems.map(item => (
+                  <div key={item.actionRequestId} className="action-card flex-col gap-3" style={{ marginBottom: 'var(--space-3)' }}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{item.userName}</span>
+                      <span className="badge badge-success text-xs" style={{ color: 'white' }}>SPEI</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary">Amount</span>
+                      <span className="font-semibold">${item.amount} {item.currency}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary">Ref</span>
+                      <span className="font-mono text-xs">{item.reference}</span>
+                    </div>
+                    <ActionButton 
+                      label="Approve Deposit"
+                      onClick={() => handleApproveDeposit(item.actionRequestId, item.actionToken)}
+                    />
+                  </div>
+                ))
+              )}
             </div>
           )}
           
