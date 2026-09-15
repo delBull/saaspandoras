@@ -39,7 +39,7 @@ const ACTION_POLICY: Record<string, PolicyDefinition> = {
     requiredCapability: 'nexus.manage', // Ops/Support context
     description: 'Toma de control de conversación Hermes'
   },
-  'CAMPAIGN_AUTHORIZE': {
+  'CAMPAIGN_APPROVE': {
     requiredCapability: 'growth.manage',
     description: 'Autorización y distribución de campaña de Demand'
   },
@@ -188,7 +188,7 @@ const ACTION_HANDLERS: Record<string, (payload: ActionPayload, context: any) => 
 
     return `🧠 Control de Hermes asumido para chat ${chatId}. Bot pausado, tú tienes el control.`;
   },
-  'CAMPAIGN_AUTHORIZE': async (payload, { collaborator }) => {
+  'CAMPAIGN_APPROVE': async (payload, { collaborator }) => {
     const campaignId = payload.campaignId as string;
     const canonicalOrgId = payload.canonicalOrgId as string;
     if (!campaignId) throw new Error("Missing campaignId");

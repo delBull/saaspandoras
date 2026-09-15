@@ -1,4 +1,5 @@
 import type { NexusTmaSession } from '../lib/session-store';
+import { clearSession } from '../lib/session-store';
 
 interface MoreViewProps {
   session: NexusTmaSession;
@@ -8,8 +9,7 @@ interface MoreViewProps {
 export function MoreView({ session }: MoreViewProps) {
   
   const handleSignOut = () => {
-    // Clear session from local storage or where it's stored and reload
-    localStorage.removeItem('nexus_tma_token');
+    clearSession();
     window.location.reload();
   };
 

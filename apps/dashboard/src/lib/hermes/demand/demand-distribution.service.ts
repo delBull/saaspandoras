@@ -25,6 +25,7 @@ import { distributionOrchestratorService } from '@/lib/hermes/channels/distribut
 import { HermesMediaOrchestratorService } from '../media/hermes-media-orchestrator.service';
 import { HermesTrialPolicyService } from '@/lib/hermes/trial/hermes-trial-policy.service';
 import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
+import { NexusTeamNotificationDispatcher } from '@/lib/nexus/nexus-team-notification-dispatcher';
 
 // ─── 1. OBJECTIVES ────────────────────────────────────────────────────────────
 
@@ -410,8 +411,19 @@ export class DemandDistributionService {
           await HermesTrialTimelineService.recordEvent(cleanTenant, 'CAMPAIGN_CREATED', {
             metadata: { campaignId, objective, piecesCount },
           });
+
+          // Trigger Team Notification (Phase 6C wiring)
+          const notificationDispatcher = new NexusTeamNotificationDispatcher();
+          await notificationDispatcher.notifyCampaignProposal(
+            cleanTenant,
+            campaignId,
+            campaign.name,
+            objective,
+            piecesCount,
+            targetChannels
+          );
         } catch (err) {
-          console.warn('[DemandDistributionService] Notice recording trial timeline event:', err);
+          console.warn('[DemandDistributionService] Notice recording trial timeline event or notifying team:', err);
         }
 
         return campaign;
