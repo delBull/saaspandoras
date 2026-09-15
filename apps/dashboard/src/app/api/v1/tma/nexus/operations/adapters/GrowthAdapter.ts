@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { eq, and, gt } from 'drizzle-orm';
-import { marketingLeads } from '@/db/schema';
+import { marketingLeads, projects } from '@/db/schema';
 import { DomainAdapter, NexusOperation } from './DomainAdapter';
 import { NexusAuthContext, checkNexusPermission } from '@/lib/nexus/nexus-rbac';
 
@@ -14,9 +14,17 @@ export class GrowthAdapter implements DomainAdapter {
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+    // 1. Resolve canonicalOrgId (slug) to projects.id
+    const [project] = await db.query.projects.findMany({
+      where: eq(projects.slug, authCtx.canonicalOrgId),
+      limit: 1
+    });
+
+    if (!project) return [];
+
     const leads = await db.query.marketingLeads.findMany({
       where: and(
-        eq(marketingLeads.projectId, authCtx.canonicalOrgId),
+        eq(marketingLeads.projectId, project.id),
         gt(marketingLeads.createdAt, twentyFourHoursAgo),
         eq(marketingLeads.status, 'active')
       ),

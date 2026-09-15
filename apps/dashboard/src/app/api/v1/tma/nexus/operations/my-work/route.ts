@@ -35,13 +35,17 @@ export async function GET(req: Request) {
     };
 
     operations.sort((a, b) => {
-      const pDiff = priorityWeight[b.priority] - priorityWeight[a.priority];
+      const pDiff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
       if (pDiff !== 0) return pDiff;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     // Bucket into NEEDS_ATTENTION, TODAY, RECENT
-    const buckets: Record<string, NexusOperation[]> = {
+    const buckets: {
+      NEEDS_ATTENTION: NexusOperation[],
+      TODAY: NexusOperation[],
+      RECENT: NexusOperation[]
+    } = {
       NEEDS_ATTENTION: [],
       TODAY: [],
       RECENT: []
