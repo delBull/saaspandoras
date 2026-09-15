@@ -1,15 +1,5 @@
-/**
- * 📱 Nexus TMA — Command Center View (F4 Shell)
- * src/views/CommandCenter.tsx
- *
- * The main authenticated view. Implements the "5–10 second triage" design:
- *  - Header: operator name + role badge + workspace name
- *  - "Requires Attention" section: pending approvals count
- *  - Capability-gated modules
- */
-
-import { useState, useEffect } from 'react';
-import { nexusGet } from '../lib/api-client';
+import { useState, useEffect, useCallback } from 'react';
+import { nexusGet, nexusPost } from '../lib/api-client';
 import type { NexusTmaSession } from '../lib/session-store';
 
 interface CommandCenterProps {
@@ -17,211 +7,363 @@ interface CommandCenterProps {
   hasCapability: (cap: string) => boolean;
 }
 
-// ─── Role display mapping ─────────────────────────────────────────────────────
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN:       'Super Admin',
-  ADMIN:             'Admin',
-  ADMIN_OPERATIONS:  'Operaciones',
-  ADMIN_MARKETING:   'Marketing',
-  ADMIN_COMPLIANCE:  'Compliance',
-  OPERATOR:          'Operador',
-  MARKETING:         'Marketing',
-  VIEWER:            'Viewer',
-};
+// ─── Shared Types ───────────────────────────────────────────────────
+export type OperationPriority = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
+export type OperationType = 'DECISION' | 'TASK' | 'ALERT' | 'INTERVENTION';
+export type OperationDomain = 'TREASURY' | 'GROWTH' | 'HERMES' | 'GOVERNANCE';
+export type OperationVisibility = 'ASSIGNED' | 'TEAM' | 'ORG';
 
-// ─── Capability Module Card ───────────────────────────────────────────────────
-interface ModuleCardProps {
-  icon: string;
+export interface NexusOperation {
+  id: string;
+  type: OperationType;
+  priority: OperationPriority;
+  domain: OperationDomain;
   title: string;
-  subtitle: string;
-  badge?: number;
-  badgeVariant?: 'accent' | 'warning' | 'danger' | 'success';
-  onClick?: () => void;
+  description?: string;
+  status: string;
+  requiredCapability: string;
+  assigneeId?: number | null;
+  visibility: OperationVisibility;
+  createdAt: string;
+  expiresAt?: string | null;
+  actions: {
+    label: string;
+    action: string;
+    intent: 'primary' | 'secondary' | 'danger';
+  }[];
+  payload?: any;
 }
 
-function ModuleCard({ icon, title, subtitle, badge, badgeVariant = 'accent', onClick }: ModuleCardProps) {
+// ─── Action Button ───────────────────────────────────────────────────
+type ActionState = 'AVAILABLE' | 'CONFIRMING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+function ActionButton({ onClick, label, variant = 'accent' }: { onClick: () => Promise<void>, label: string, variant?: string }) {
+  const [state, setState] = useState<ActionState>('AVAILABLE');
+
+  const handleClick = async () => {
+    if (state === 'AVAILABLE') {
+      setState('CONFIRMING');
+      return;
+    }
+    if (state === 'CONFIRMING') {
+      setState('PROCESSING');
+      try {
+        await onClick();
+        setState('COMPLETED');
+      } catch (err) {
+        setState('FAILED');
+        setTimeout(() => setState('AVAILABLE'), 3000);
+      }
+    }
+  };
+
+  const getLabel = () => {
+    switch (state) {
+      case 'AVAILABLE': return label;
+      case 'CONFIRMING': return '¿Confirmar?';
+      case 'PROCESSING': return 'Procesando...';
+      case 'COMPLETED': return '✓ Listo';
+      case 'FAILED': return '❌ Error';
+    }
+  };
+
   return (
-    <div className="card flex items-center gap-3" onClick={onClick}
-      style={{
-        cursor: 'pointer',
-        transition: 'all var(--transition-fast)',
-      }}>
-      <div style={{
-        width: 44, height: 44, flexShrink: 0,
-        background: 'var(--color-bg-elevated)',
-        borderRadius: 'var(--radius-md)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+    <button
+      className={`btn btn-${state === 'CONFIRMING' ? 'danger' : state === 'COMPLETED' ? 'success' : variant} w-full`}
+      onClick={handleClick}
+      disabled={state === 'PROCESSING' || state === 'COMPLETED'}
+      style={{ transition: 'all 0.2s', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontSize: '0.875rem' }}
+    >
+      {getLabel()}
+    </button>
+  );
+}
+
+// ─── Operation Card ───────────────────────────────────────────────────
+function OperationCard({ op, onAction }: { op: NexusOperation, onAction: (op: NexusOperation, action: string) => Promise<void> }) {
+  const getDomainIcon = () => {
+    switch(op.domain) {
+      case 'TREASURY': return '🏦';
+      case 'GROWTH': return '🚀';
+      case 'HERMES': return '🧠';
+      case 'GOVERNANCE': return '⚖️';
+      default: return '⚡';
+    }
+  };
+
+  const getPriorityColor = () => {
+    switch(op.priority) {
+      case 'CRITICAL': return 'var(--color-danger)';
+      case 'HIGH': return 'var(--color-warning)';
+      case 'NORMAL': return 'var(--color-accent)';
+      case 'LOW': return 'var(--color-text-muted)';
+      default: return 'var(--color-accent)';
+    }
+  };
+
+  return (
+    <div className="card flex-col gap-3" style={{ 
+      marginBottom: 'var(--space-3)', 
+      borderLeft: `4px solid ${getPriorityColor()}`
+    }}>
+      <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-base" style={{
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-          }}>
-            {title}
-          </span>
-          {badge !== undefined && badge > 0 && (
-            <span className={`badge badge-${badgeVariant}`}>{badge}</span>
-          )}
+          <span style={{ fontSize: '1.25rem' }}>{getDomainIcon()}</span>
+          <div>
+            <h4 className="font-semibold" style={{ fontSize: '1rem', lineHeight: 1.2 }}>{op.title}</h4>
+            <span className="text-secondary text-xs">{op.domain} • {op.type}</span>
+          </div>
         </div>
-        <p className="text-secondary text-sm" style={{
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-        }}>
-          {subtitle}
-        </p>
+        {op.priority === 'CRITICAL' && (
+           <span className="badge badge-danger text-xs text-white">Critical</span>
+        )}
       </div>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-        style={{ flexShrink: 0, color: 'var(--color-text-muted)' }}>
-        <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5"
-          strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
+
+      {op.description && (
+        <p className="text-sm text-secondary line-clamp-2">{op.description}</p>
+      )}
+
+      {op.actions && op.actions.length > 0 && (
+        <div className="flex gap-2 mt-2">
+          {op.actions.map((act, i) => (
+            <div key={i} className="flex-1">
+              <ActionButton 
+                label={act.label}
+                variant={act.intent}
+                onClick={() => onAction(op, act.action)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
+
 // ─── Main View ────────────────────────────────────────────────────────────────
 export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
-  const roleLabel = ROLE_LABELS[session.role] ?? session.role;
   
-  const [metrics, setMetrics] = useState({
-    approvals: 0,
-    hitl: 0,
-    tasks: 0,
-    leads: 0,
-    deposits: 0,
-  });
+  const [buckets, setBuckets] = useState<{
+    NEEDS_ATTENTION: NexusOperation[],
+    TODAY: NexusOperation[],
+    RECENT: NexusOperation[]
+  }>({ NEEDS_ATTENTION: [], TODAY: [], RECENT: [] });
+
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [resolvingDeepLink, setResolvingDeepLink] = useState(false);
+  const [deepLinkOp, setDeepLinkOp] = useState<NexusOperation | null>(null);
+
+  const fetchOperations = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // 1. Check for deep link
+      // @ts-ignore
+      const tg = window.Telegram?.WebApp;
+      const startParam = (tg?.initDataUnsafe as any)?.start_param;
+      
+      if (startParam && !deepLinkOp && !resolvingDeepLink) {
+        setResolvingDeepLink(true);
+        try {
+          const res = await nexusPost('/api/v1/tma/nexus/deep-links/resolve', { reference: startParam }, session.token);
+          if (res.operation) {
+            setDeepLinkOp(res.operation);
+          }
+        } catch (err: any) {
+          setError(err.message || 'El enlace ha expirado o ya fue consumido.');
+        } finally {
+          setResolvingDeepLink(false);
+        }
+      }
+
+      // 2. Load standard hub
+      const data = await nexusGet<{ operations: any }>('/api/v1/tma/nexus/operations/my-work', session.token);
+      setBuckets(data.operations || { NEEDS_ATTENTION: [], TODAY: [], RECENT: [] });
+    } catch (err: any) {
+      setError(err.message || 'Failed to load operations');
+    } finally {
+      setLoading(false);
+    }
+  }, [session.token, deepLinkOp, resolvingDeepLink]);
 
   useEffect(() => {
-    async function fetchOverview() {
-      try {
-        const data = await nexusGet<{
-          requiresAttention: { kyc: number; deposits: number; hermesInbox: number; governance: number };
-        }>('/api/v1/tma/nexus/overview', session.token);
-        
-        setMetrics(m => ({
-          ...m,
-          approvals: data.requiresAttention.kyc,
-          deposits: data.requiresAttention.deposits,
-          hitl: data.requiresAttention.hermesInbox,
-        }));
-      } catch (err) {
-        console.error('Failed to fetch overview metrics', err);
-      }
-    }
-    fetchOverview();
-  }, [session.token]);
+    fetchOperations();
+  }, [fetchOperations]);
 
-  const totalAttention = metrics.approvals + metrics.hitl + metrics.tasks;
+  const handleAction = async (op: NexusOperation, action: string) => {
+    try {
+      if (op.domain === 'HERMES' && action === 'TAKEOVER') {
+        await nexusPost('/api/v1/tma/nexus/hermes/hitl/takeover', { itemId: op.id }, session.token);
+      } else if (op.domain === 'TREASURY' && action === 'APPROVE') {
+        const reqId = op.payload?.actionRequestId || op.id; 
+        await nexusPost('/api/v1/tma/nexus/finance/deposits/approve', { actionRequestId: reqId, actionToken: op.id }, session.token);
+      } else {
+        console.log('Action unhandled in TMA:', op.domain, action);
+        // Fallback for unhandled actions
+      }
+      
+      // If we were focusing on a deep link, clear it
+      if (deepLinkOp && deepLinkOp.id === op.id) {
+        setDeepLinkOp(null);
+      }
+      
+      // Refresh list to pull updated state from server
+      await fetchOperations();
+    } catch (err: any) {
+      throw err; 
+    }
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const totalOps = buckets.NEEDS_ATTENTION.length + buckets.TODAY.length + buckets.RECENT.length;
 
   return (
     <div className="screen fade-in">
-      {/* Header */}
       <header className="nexus-header">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2" style={{ marginBottom: 2 }}>
               <span style={{ fontSize: 16 }}>⚡</span>
               <span className="font-semibold text-lg">Nexus Command</span>
+              {session.badges?.total > 0 && (
+                <span style={{
+                  background: 'var(--color-danger)',
+                  color: '#fff',
+                  borderRadius: '999px',
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  minWidth: 18,
+                  textAlign: 'center',
+                }}>
+                  {session.badges.total}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-secondary text-sm">{session.name}</span>
-              <span className="badge badge-accent">{roleLabel}</span>
+              <span className="text-secondary text-sm">{getGreeting()}, {session.name.split(' ')[0]}.</span>
             </div>
           </div>
-          {/* Connection indicator */}
-          <div style={{
-            width: 8, height: 8,
-            background: 'var(--color-success)',
-            borderRadius: '50%',
-            boxShadow: '0 0 8px var(--color-success)',
-          }} />
+          <button 
+            onClick={() => fetchOperations()} 
+            className="flex items-center justify-center"
+            style={{
+              width: 36, height: 36,
+              background: 'var(--color-bg-elevated)',
+              borderRadius: '50%',
+            }}
+          >
+            🔄
+          </button>
         </div>
+
+        {/* Workspace Switcher — only shown when collaborator has multiple orgs */}
+        {session.workspaces && session.workspaces.length > 1 && (
+          <div className="flex gap-2 mt-3" style={{ overflowX: 'auto', paddingBottom: 2 }}>
+            {session.workspaces.map((ws) => (
+              <button
+                key={ws.id}
+                className={`text-xs font-semibold px-3 py-1`}
+                style={{
+                  borderRadius: 'var(--radius-sm)',
+                  whiteSpace: 'nowrap',
+                  background: session.activeWorkspace === ws.id
+                    ? 'var(--color-accent)'
+                    : 'var(--color-bg-elevated)',
+                  color: session.activeWorkspace === ws.id
+                    ? '#fff'
+                    : 'var(--color-text-secondary)',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  // Switch active workspace — reload operations for the new org
+                  // (Full reload; the session is re-hydrated via retry)
+                  window.location.reload();
+                }}
+              >
+                {ws.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Vertical badges — show only enabled verticals with counts */}
+        {session.enabledVerticals && session.enabledVerticals.length > 0 && (
+          <div className="flex gap-2 mt-3">
+            {session.enabledVerticals.includes('HERMES') && (
+              <div className="flex items-center gap-1" style={{
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+              }}>
+                <span>🧠</span>
+                <span className="text-secondary">HITL</span>
+                {session.badges?.hitlUrgentChats > 0 && (
+                  <span style={{ color: 'var(--color-danger)', fontWeight: 700 }}>
+                    {session.badges.hitlUrgentChats}
+                  </span>
+                )}
+              </div>
+            )}
+            {session.enabledVerticals.includes('GROWTH') && (
+              <div className="flex items-center gap-1" style={{
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+              }}>
+                <span>🚀</span>
+                <span className="text-secondary">Leads</span>
+                {session.badges?.growthHotLeadsToday > 0 && (
+                  <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>
+                    {session.badges.growthHotLeadsToday}
+                  </span>
+                )}
+              </div>
+            )}
+            {session.enabledVerticals.includes('RWA') && (
+              <div className="flex items-center gap-1" style={{
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+              }}>
+                <span>🏦</span>
+                <span className="text-secondary">Depósitos</span>
+                {session.badges?.rwaPendingDeposits > 0 && (
+                  <span style={{ color: 'var(--color-warning)', fontWeight: 700 }}>
+                    {session.badges.rwaPendingDeposits}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
-      {/* Content */}
-      <div className="page-content flex-col gap-3">
-        {/* Requiere Atención (Triage) */}
-        {totalAttention > 0 && (
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.15) 0%, rgba(124, 92, 252, 0.05) 100%)',
-            border: '1px solid rgba(124, 92, 252, 0.25)',
-            borderRadius: 'var(--radius-lg)',
-            padding: 'var(--space-4)',
-            marginBottom: 'var(--space-4)',
-          }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-              <span className="font-semibold text-base flex items-center gap-2">
-                ⚡ REQUIERE ATENCIÓN
-                <span className="badge badge-warning" style={{ color: 'white' }}>{totalAttention}</span>
-              </span>
-            </div>
-            <ul style={{ listStyleType: 'none', padding: 0, margin: 0, fontSize: '0.875rem' }} className="text-secondary">
-              {metrics.approvals > 0 && <li>• {metrics.approvals} aprobación pendiente</li>}
-              {metrics.hitl > 0 && <li>• {metrics.hitl} intervención Hermes (HITL)</li>}
-              {metrics.tasks > 0 && <li>• {metrics.tasks} tarea urgente</li>}
-            </ul>
+      <div className="page-content flex-col gap-4">
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-xl mb-4">
+            {error}
           </div>
         )}
 
-        <p className="text-muted text-xs font-medium" style={{
-          letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4
-        }}>
-          Módulos activos
-        </p>
-
-        {/* Hermes AI Module */}
-        {hasCapability('nexus.manage') && (
-          <ModuleCard
-            icon="🧠"
-            title="Hermes AI"
-            subtitle="Triage de hechos · Inbox HITL"
-            badge={metrics.hitl}
-            badgeVariant="warning"
-            onClick={() => console.log('Navigate to Hermes Inbox')}
-          />
-        )}
-
-        {/* Growth Module */}
-        {hasCapability('growth.manage') && (
-          <ModuleCard
-            icon="🚀"
-            title="Growth OS"
-            subtitle="Hot leads · Pipeline 24h"
-            badge={metrics.leads}
-            badgeVariant="accent"
-            onClick={() => console.log('Navigate to Growth Pipeline')}
-          />
-        )}
-
-        {/* Finance / RWA Module */}
-        {hasCapability('finance.manage') && (
-          <ModuleCard
-            icon="🏦"
-            title="RWA · Depósitos"
-            subtitle="Aprobación SPEI · Compras"
-            badge={metrics.deposits}
-            badgeVariant="success"
-            onClick={() => console.log('Navigate to Deposits')}
-          />
-        )}
-
-        {/* Users Module */}
-        {hasCapability('users.manage') && (
-          <ModuleCard
-            icon="👥"
-            title="Equipo"
-            subtitle="Colaboradores · Invitaciones"
-            onClick={() => console.log('Navigate to Team')}
-          />
-        )}
-
-        {/* Fallback if no capabilities */}
         {!hasCapability('nexus.manage') &&
          !hasCapability('growth.manage') &&
          !hasCapability('finance.manage') &&
-         !hasCapability('users.manage') && (
+         !hasCapability('users.manage') ? (
           <div className="card text-center" style={{ padding: 'var(--space-6)' }}>
             <div style={{ fontSize: 32, marginBottom: 'var(--space-3)' }}>👁️</div>
             <p className="font-medium" style={{ marginBottom: 'var(--space-2)' }}>
@@ -232,18 +374,63 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
               Contacta al administrador del espacio de trabajo.
             </p>
           </div>
-        )}
-
-        {/* Capability summary (dev helper) */}
-        {import.meta.env.DEV && (
-          <div className="card" style={{ marginTop: 'var(--space-4)', opacity: 0.6 }}>
-            <p className="text-muted text-xs font-mono" style={{ marginBottom: 4 }}>
-              DEV · capabilities:
-            </p>
-            <p className="text-xs font-mono" style={{ wordBreak: 'break-all', color: 'var(--color-accent)' }}>
-              {session.capabilities.join(', ') || '(ninguna)'}
-            </p>
+        ) : deepLinkOp ? (
+          <div>
+             <div className="flex justify-between items-center mb-3">
+               <h3 className="font-bold text-sm text-accent flex items-center gap-2">
+                 <span>🎯</span> SOLICITUD DIRECTA
+               </h3>
+               <button onClick={() => setDeepLinkOp(null)} className="text-xs text-secondary underline">Volver al Hub</button>
+             </div>
+             <OperationCard op={deepLinkOp} onAction={handleAction} />
           </div>
+        ) : (
+          <>
+            {loading && totalOps === 0 && (
+              <div className="text-center p-8 text-secondary">Loading operations...</div>
+            )}
+            
+            {!loading && totalOps === 0 && (
+              <div className="text-center p-8">
+                 <span style={{ fontSize: 40, display: 'block', marginBottom: 12 }}>✅</span>
+                 <p className="font-medium">All caught up!</p>
+                 <p className="text-sm text-secondary">No operations require your attention right now.</p>
+              </div>
+            )}
+
+            {buckets.NEEDS_ATTENTION.length > 0 && (
+              <div>
+                <h3 className="font-bold text-sm text-danger mb-3 flex items-center gap-2">
+                  <span>🚨</span> NEEDS ATTENTION
+                </h3>
+                {buckets.NEEDS_ATTENTION.map(op => (
+                  <OperationCard key={op.id} op={op} onAction={handleAction} />
+                ))}
+              </div>
+            )}
+
+            {buckets.TODAY.length > 0 && (
+              <div>
+                <h3 className="font-bold text-sm text-secondary mb-3 flex items-center gap-2">
+                  <span>📅</span> TODAY
+                </h3>
+                {buckets.TODAY.map(op => (
+                  <OperationCard key={op.id} op={op} onAction={handleAction} />
+                ))}
+              </div>
+            )}
+
+            {buckets.RECENT.length > 0 && (
+              <div>
+                <h3 className="font-bold text-sm text-secondary mb-3 flex items-center gap-2">
+                  <span>🕒</span> RECENT
+                </h3>
+                {buckets.RECENT.map(op => (
+                  <OperationCard key={op.id} op={op} onAction={handleAction} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

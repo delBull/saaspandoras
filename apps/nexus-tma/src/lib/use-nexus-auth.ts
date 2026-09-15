@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getInitData, initTelegramWebApp } from './telegram-webapp';
-import { authenticateWithInitData, ApiError } from './api-client';
+import { authenticateWithInitData, nexusGet, ApiError } from './api-client';
 import { loadSession, saveSession, clearSession, hasCapability, type NexusTmaSession } from './session-store';
 
 export interface AuthState {
@@ -59,6 +59,31 @@ export function useNexusAuth(): AuthState {
     // 3. Authenticate with backend
     try {
       const newSession = await authenticateWithInitData(initData);
+
+      // 4. Hydrate with Phase 5 context (enabledVerticals, workspaces, badges)
+      try {
+        const overview = await nexusGet<{
+          enabledVerticals: string[];
+          workspaces: { id: string; name: string }[];
+          activeWorkspace: string;
+          badges: { hitlUrgentChats: number; growthHotLeadsToday: number; rwaPendingDeposits: number; total: number };
+          capabilities: string[];
+        }>('/api/v1/tma/nexus/overview', newSession.token);
+
+        newSession.enabledVerticals = overview.enabledVerticals ?? [];
+        newSession.workspaces = overview.workspaces ?? [];
+        newSession.activeWorkspace = overview.activeWorkspace ?? newSession.activeWorkspace;
+        newSession.badges = overview.badges ?? { hitlUrgentChats: 0, growthHotLeadsToday: 0, rwaPendingDeposits: 0, total: 0 };
+        if (overview.capabilities?.length) {
+          newSession.capabilities = overview.capabilities;
+        }
+      } catch {
+        // Non-fatal: the session is valid, overview is best-effort
+        newSession.enabledVerticals = newSession.enabledVerticals ?? [];
+        newSession.workspaces = newSession.workspaces ?? [];
+        newSession.badges = newSession.badges ?? { hitlUrgentChats: 0, growthHotLeadsToday: 0, rwaPendingDeposits: 0, total: 0 };
+      }
+
       saveSession(newSession);
       setSession(newSession);
     } catch (err) {

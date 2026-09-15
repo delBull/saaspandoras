@@ -7,7 +7,7 @@
  */
 
 import { db } from '@/db';
-import { users, nexusCollaborators, type NexusPermissionsOverride, type NexusProvisionStatus } from '@/db/schema';
+import { users, nexusCollaborators, projectCollaborators, type NexusPermissionsOverride, type NexusProvisionStatus } from '@/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { headers as nextHeaders, cookies as nextCookies } from 'next/headers';
@@ -50,6 +50,7 @@ export interface NexusAuthContext {
   email?: string | null;
   name?: string | null;
   collaboratorId?: number | null;
+  canonicalOrgId?: string | null;
   whatsappPhone?: string | null;
   provisionStatus?: NexusProvisionStatus | null;
   permissions: NexusPermissions;
@@ -304,6 +305,7 @@ export async function getNexusAuthContext(
           email: email || 'admin@pandoras.finance',
           name: name || 'Marco',
           whatsappPhone: whatsappPhone || '+523222741987',
+          canonicalOrgId: 'pandoras',
           permissions: resolveEffectivePermissions('SUPER_ADMIN'),
         };
       }
@@ -335,10 +337,14 @@ export async function getNexusAuthContext(
         let collaboratorOverrides: NexusPermissionsOverride = {};
 
         let whatsappPhone: string | null = null;
+        let collaboratorId: number | null = null;
+        let canonicalOrgId: string | null = null;
+
         if (user.email) {
           try {
             const collabRecords = await db
               .select({
+                id: nexusCollaborators.id,
                 name: nexusCollaborators.name,
                 role: nexusCollaborators.role,
                 permissions: nexusCollaborators.permissions,
@@ -350,6 +356,16 @@ export async function getNexusAuthContext(
               .limit(1);
             if (collabRecords.length > 0 && collabRecords[0]) {
               const c = collabRecords[0];
+              collaboratorId = c.id;
+
+              const [projCollab] = await db
+                .select({ projectId: projectCollaborators.projectId })
+                .from(projectCollaborators)
+                .where(eq(projectCollaborators.collaboratorId, c.id))
+                .limit(1);
+              if (projCollab) {
+                canonicalOrgId = projCollab.projectId;
+              }
               if (c.status !== 'REJECTED' && c.status !== 'DISABLED') {
                 if (!effectiveRole && c.role) {
                   effectiveRole = c.role.toUpperCase() as NexusRole;
@@ -378,6 +394,8 @@ export async function getNexusAuthContext(
             email: user.email,
             name: user.name,
             whatsappPhone,
+            collaboratorId,
+            canonicalOrgId,
             permissions: resolveEffectivePermissions(
               effectiveRole, 
               collaboratorOverrides
@@ -448,6 +466,24 @@ export async function getNexusAuthContext(
           role = 'SUPER_ADMIN';
         }
 
+        let canonicalOrgId: string | null = null;
+        if (role === 'SUPER_ADMIN') {
+          canonicalOrgId = 'pandoras';
+        } else {
+          try {
+            const [projCollab] = await db
+              .select({ projectId: projectCollaborators.projectId })
+              .from(projectCollaborators)
+              .where(eq(projectCollaborators.collaboratorId, collaborator.id))
+              .limit(1);
+            if (projCollab) {
+              canonicalOrgId = projCollab.projectId;
+            }
+          } catch (err) {
+            console.warn('[NexusRBAC] Error resolving canonicalOrgId:', err);
+          }
+        }
+
         const permissions = resolveEffectivePermissions(role, collaborator.permissions as NexusPermissionsOverride);
 
         return {
@@ -456,6 +492,7 @@ export async function getNexusAuthContext(
           email: collaborator.email,
           name: collaborator.name,
           collaboratorId: collaborator.id,
+          canonicalOrgId,
           whatsappPhone: collaborator.whatsappPhone,
           provisionStatus: provisionStatus as NexusProvisionStatus,
           permissions,

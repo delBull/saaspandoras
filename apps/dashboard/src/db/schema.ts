@@ -4458,3 +4458,86 @@ export type DistributionExecutionAttempt = typeof distributionExecutionAttempts.
 export type NewDistributionExecutionAttempt = typeof distributionExecutionAttempts.$inferInsert;
 
 
+
+
+/**
+ * 🔗 Nexus Deep Links
+ *
+ * Secure, opaque, single-use resolution deep links for Telegram -> TMA.
+ */
+export const nexusDeepLinks = pgTable('nexus_deep_links', {
+  id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  referenceHash: varchar('reference_hash', { length: 64 }).notNull().unique(), // sha256 of the random reference string
+  canonicalOrgId: varchar('canonical_org_id', { length: 128 }).notNull(),
+  targetType: varchar('target_type', { length: 64 }).notNull(), // 'action_request', 'hitl_intervention', etc.
+  targetId: varchar('target_id', { length: 128 }).notNull(),
+  createdBy: varchar('created_by', { length: 128 }).notNull(), // usually 'system' or 'hermes'
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  consumedAt: timestamp('consumed_at', { withTimezone: true }),
+  consumedByIdentityId: varchar('consumed_by_identity_id', { length: 128 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type NexusDeepLink = typeof nexusDeepLinks.$inferSelect;
+export type NewNexusDeepLink = typeof nexusDeepLinks.$inferInsert;
+
+/**
+ * 📋 Collaborator Work Queue (Tasks)
+ */
+export const nexusTasks = pgTable('nexus_tasks', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  canonicalOrgId: varchar('canonical_org_id', { length: 256 }).notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  status: varchar('status', { length: 50 }).notNull().default('OPEN'),
+  priority: varchar('priority', { length: 20 }).notNull().default('NORMAL'),
+  visibility: varchar('visibility', { length: 20 }).notNull().default('TEAM_VISIBLE'),
+  assigneeCollaboratorId: integer('assignee_collaborator_id').references(() => nexusCollaborators.id, { onDelete: 'set null' }),
+  createdBy: integer('created_by').notNull().references(() => nexusCollaborators.id),
+  dueDate: timestamp('due_date', { withTimezone: true }),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    orgStatusIdx: index('idx_nexus_tasks_org_status').on(t.canonicalOrgId, t.status),
+    assigneeIdx: index('idx_nexus_tasks_assignee').on(t.assigneeCollaboratorId, t.status),
+  };
+});
+
+export type NexusTask = typeof nexusTasks.$inferSelect;
+export type NewNexusTask = typeof nexusTasks.$inferInsert;
+
+/**
+ * 🚀 Campaign Proposals
+ */
+export const nexusCampaignProposals = pgTable('nexus_campaign_proposals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  canonicalOrgId: varchar('canonical_org_id', { length: 256 }).notNull(),
+  externalCampaignId: varchar('external_campaign_id', { length: 256 }),
+  name: text('name').notNull(),
+  objective: varchar('objective', { length: 100 }).notNull(),
+  piecesCount: integer('pieces_count').notNull().default(0),
+  channels: text('channels').array().notNull().default(sql`'{}'::text[]`),
+  blastRadius: integer('blast_radius'),
+  proposalPayload: jsonb('proposal_payload'),
+  status: varchar('status', { length: 50 }).notNull().default('PROPOSED'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  proposedBy: varchar('proposed_by', { length: 256 }),
+  approvedBy: integer('approved_by').references(() => nexusCollaborators.id),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  rejectedBy: integer('rejected_by').references(() => nexusCollaborators.id),
+  rejectedAt: timestamp('rejected_at', { withTimezone: true }),
+  idempotencyKey: varchar('idempotency_key', { length: 256 }).unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    orgStatusIdx: index('idx_campaign_proposals_org_status').on(t.canonicalOrgId, t.status),
+  };
+});
+
+export type NexusCampaignProposal = typeof nexusCampaignProposals.$inferSelect;
+export type NewNexusCampaignProposal = typeof nexusCampaignProposals.$inferInsert;
