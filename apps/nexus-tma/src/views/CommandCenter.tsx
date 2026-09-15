@@ -1,15 +1,5 @@
-/**
- * 📱 Nexus TMA — Command Center View (F4 Shell)
- * src/views/CommandCenter.tsx
- *
- * The main authenticated view. Implements the "5–10 second triage" design:
- *  - Header: operator name + role badge + workspace name
- *  - "Requires Attention" section: pending approvals count
- *  - Capability-gated modules
- */
-
 import { useState, useEffect } from 'react';
-import { nexusGet } from '../lib/api-client';
+import { nexusGet, nexusPost } from '../lib/api-client';
 import type { NexusTmaSession } from '../lib/session-store';
 
 interface CommandCenterProps {
@@ -17,19 +7,7 @@ interface CommandCenterProps {
   hasCapability: (cap: string) => boolean;
 }
 
-// ─── Role display mapping ─────────────────────────────────────────────────────
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN:       'Super Admin',
-  ADMIN:             'Admin',
-  ADMIN_OPERATIONS:  'Operaciones',
-  ADMIN_MARKETING:   'Marketing',
-  ADMIN_COMPLIANCE:  'Compliance',
-  OPERATOR:          'Operador',
-  MARKETING:         'Marketing',
-  VIEWER:            'Viewer',
-};
-
-// ─── Capability Module Card ───────────────────────────────────────────────────
+// ─── Module Card ───────────────────────────────────────────────────
 interface ModuleCardProps {
   icon: string;
   title: string;
@@ -81,9 +59,55 @@ function ModuleCard({ icon, title, subtitle, badge, badgeVariant = 'accent', onC
   );
 }
 
+// ─── Action Button with Lifecycle ───────────────────────────────────────────────────
+type ActionState = 'AVAILABLE' | 'CONFIRMING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+function ActionButton({ onClick, label, variant = 'accent' }: { onClick: () => Promise<void>, label: string, variant?: string }) {
+  const [state, setState] = useState<ActionState>('AVAILABLE');
+
+  const handleClick = async () => {
+    if (state === 'AVAILABLE') {
+      setState('CONFIRMING');
+      return;
+    }
+    if (state === 'CONFIRMING') {
+      setState('PROCESSING');
+      try {
+        await onClick();
+        setState('COMPLETED');
+      } catch (err) {
+        setState('FAILED');
+        setTimeout(() => setState('AVAILABLE'), 3000);
+      }
+    }
+  };
+
+  const getLabel = () => {
+    switch (state) {
+      case 'AVAILABLE': return label;
+      case 'CONFIRMING': return '¿Confirmar?';
+      case 'PROCESSING': return 'Procesando...';
+      case 'COMPLETED': return '✓ Completado';
+      case 'FAILED': return '❌ Error';
+    }
+  };
+
+  return (
+    <button
+      className={`btn btn-${state === 'CONFIRMING' ? 'danger' : state === 'COMPLETED' ? 'success' : variant} w-full`}
+      onClick={handleClick}
+      disabled={state === 'PROCESSING' || state === 'COMPLETED'}
+      style={{ transition: 'all 0.2s', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', fontWeight: 600 }}
+    >
+      {getLabel()}
+    </button>
+  );
+}
+
+
 // ─── Main View ────────────────────────────────────────────────────────────────
 export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
-  const roleLabel = ROLE_LABELS[session.role] ?? session.role;
+  const [activeDrawer, setActiveDrawer] = useState<'hermes' | 'growth' | 'finance' | 'users' | null>(null);
   
   const [metrics, setMetrics] = useState({
     approvals: 0,
@@ -92,6 +116,8 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     leads: 0,
     deposits: 0,
   });
+
+  const [hitlItems, setHitlItems] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchOverview() {
@@ -113,7 +139,35 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     fetchOverview();
   }, [session.token]);
 
+  // Drawer Fetch Data
+  useEffect(() => {
+    if (activeDrawer === 'hermes') {
+      // Fetch real HITL data
+      nexusGet<{ items: any[] }>('/api/v1/tma/nexus/hermes/hitl', session.token)
+        .then(res => setHitlItems(res.items || []))
+        .catch(err => {
+          console.error(err);
+          // Set to empty if fails, no mocks
+          setHitlItems([]);
+        });
+    }
+  }, [activeDrawer, session.token]);
+
   const totalAttention = metrics.approvals + metrics.hitl + metrics.tasks;
+
+  const handleTakeover = async (itemId: string) => {
+    await nexusPost('/api/v1/tma/nexus/hermes/hitl/takeover', { itemId }, session.token);
+    // Remove item from list locally
+    setHitlItems(prev => prev.filter(i => i.id !== itemId));
+    setMetrics(m => ({ ...m, hitl: Math.max(0, m.hitl - 1) }));
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   return (
     <div className="screen fade-in">
@@ -126,8 +180,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
               <span className="font-semibold text-lg">Nexus Command</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-secondary text-sm">{session.name}</span>
-              <span className="badge badge-accent">{roleLabel}</span>
+              <span className="text-secondary text-sm">{getGreeting()}, {session.name.split(' ')[0]}.</span>
             </div>
           </div>
           {/* Connection indicator */}
@@ -143,7 +196,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
       {/* Content */}
       <div className="page-content flex-col gap-3">
         {/* Requiere Atención (Triage) */}
-        {totalAttention > 0 && (
+        {totalAttention > 0 ? (
           <div style={{
             background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.15) 0%, rgba(124, 92, 252, 0.05) 100%)',
             border: '1px solid rgba(124, 92, 252, 0.25)',
@@ -153,33 +206,42 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
           }}>
             <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
               <span className="font-semibold text-base flex items-center gap-2">
-                ⚡ REQUIERE ATENCIÓN
-                <span className="badge badge-warning" style={{ color: 'white' }}>{totalAttention}</span>
+                ⚡ REQUIRES ATTENTION
               </span>
             </div>
             <ul style={{ listStyleType: 'none', padding: 0, margin: 0, fontSize: '0.875rem' }} className="text-secondary">
-              {metrics.approvals > 0 && <li>• {metrics.approvals} aprobación pendiente</li>}
-              {metrics.hitl > 0 && <li>• {metrics.hitl} intervención Hermes (HITL)</li>}
-              {metrics.tasks > 0 && <li>• {metrics.tasks} tarea urgente</li>}
+              {metrics.approvals > 0 && (
+                <li style={{ cursor: 'pointer', padding: '4px 0' }} onClick={() => setActiveDrawer('finance')}>
+                  • {metrics.approvals} approval pending
+                </li>
+              )}
+              {metrics.hitl > 0 && (
+                <li style={{ cursor: 'pointer', padding: '4px 0' }} onClick={() => setActiveDrawer('hermes')}>
+                  • {metrics.hitl} HITL intervention required
+                </li>
+              )}
+              {metrics.tasks > 0 && (
+                <li style={{ cursor: 'pointer', padding: '4px 0' }} onClick={() => setActiveDrawer('users')}>
+                  • {metrics.tasks} urgent tasks
+                </li>
+              )}
             </ul>
           </div>
+        ) : (
+          <div style={{ padding: 'var(--space-2) 0 var(--space-4)', color: 'var(--color-success)', fontSize: '0.875rem' }}>
+            ✓ No items requiring attention right now.
+          </div>
         )}
-
-        <p className="text-muted text-xs font-medium" style={{
-          letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4
-        }}>
-          Módulos activos
-        </p>
 
         {/* Hermes AI Module */}
         {hasCapability('nexus.manage') && (
           <ModuleCard
             icon="🧠"
             title="Hermes AI"
-            subtitle="Triage de hechos · Inbox HITL"
+            subtitle={metrics.hitl > 0 ? `${metrics.hitl} interventions waiting` : "Cognitive core active"}
             badge={metrics.hitl}
             badgeVariant="warning"
-            onClick={() => console.log('Navigate to Hermes Inbox')}
+            onClick={() => setActiveDrawer('hermes')}
           />
         )}
 
@@ -188,10 +250,10 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
           <ModuleCard
             icon="🚀"
             title="Growth OS"
-            subtitle="Hot leads · Pipeline 24h"
+            subtitle="Pipeline 24h"
             badge={metrics.leads}
             badgeVariant="accent"
-            onClick={() => console.log('Navigate to Growth Pipeline')}
+            onClick={() => setActiveDrawer('growth')}
           />
         )}
 
@@ -200,20 +262,10 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
           <ModuleCard
             icon="🏦"
             title="RWA · Depósitos"
-            subtitle="Aprobación SPEI · Compras"
+            subtitle={metrics.deposits > 0 ? `${metrics.deposits} approvals pending` : "Treasury Operations"}
             badge={metrics.deposits}
             badgeVariant="success"
-            onClick={() => console.log('Navigate to Deposits')}
-          />
-        )}
-
-        {/* Users Module */}
-        {hasCapability('users.manage') && (
-          <ModuleCard
-            icon="👥"
-            title="Equipo"
-            subtitle="Colaboradores · Invitaciones"
-            onClick={() => console.log('Navigate to Team')}
+            onClick={() => setActiveDrawer('finance')}
           />
         )}
 
@@ -233,19 +285,69 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
             </p>
           </div>
         )}
-
-        {/* Capability summary (dev helper) */}
-        {import.meta.env.DEV && (
-          <div className="card" style={{ marginTop: 'var(--space-4)', opacity: 0.6 }}>
-            <p className="text-muted text-xs font-mono" style={{ marginBottom: 4 }}>
-              DEV · capabilities:
-            </p>
-            <p className="text-xs font-mono" style={{ wordBreak: 'break-all', color: 'var(--color-accent)' }}>
-              {session.capabilities.join(', ') || '(ninguna)'}
-            </p>
-          </div>
-        )}
       </div>
+
+      {/* ─── BOTTOM DRAWER ──────────────────────────────────────────────────────────── */}
+      <div 
+        className={`drawer-overlay ${activeDrawer ? 'open' : ''}`}
+        onClick={() => setActiveDrawer(null)}
+      >
+        <div 
+          className="drawer-content"
+          onClick={(e) => e.stopPropagation()} /* Prevent close when clicking inside drawer */
+        >
+          <div className="drawer-handle" />
+          
+          {activeDrawer === 'hermes' && (
+            <div className="flex-col gap-4">
+              <h2 className="font-semibold text-xl mb-4">Hermes Interventions (HITL)</h2>
+              
+              {hitlItems.length === 0 ? (
+                <div className="text-center p-6 text-secondary">
+                  <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>✅</span>
+                  No interventions requiring attention.
+                </div>
+              ) : (
+                hitlItems.map(item => (
+                  <div key={item.id} className="action-card flex-col gap-3" style={{ marginBottom: 'var(--space-3)' }}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{item.userName || 'Customer'}</span>
+                      <span className="badge badge-warning text-xs" style={{ color: 'white' }}>Urgent</span>
+                    </div>
+                    <p className="text-sm text-secondary line-clamp-2">"{item.lastMessage}"</p>
+                    <ActionButton 
+                      label="Take Control"
+                      onClick={() => handleTakeover(item.id)}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {activeDrawer === 'growth' && (
+            <div className="flex-col gap-4">
+              <h2 className="font-semibold text-xl mb-4">Growth Pipeline</h2>
+              <div className="text-center p-6 text-secondary">
+                <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>🔌</span>
+                Not connected. This capability is not available yet.
+              </div>
+            </div>
+          )}
+
+          {activeDrawer === 'finance' && (
+            <div className="flex-col gap-4">
+              <h2 className="font-semibold text-xl mb-4">Treasury Approvals</h2>
+              <div className="text-center p-6 text-secondary">
+                <span style={{ fontSize: 24, display: 'block', marginBottom: 8 }}>🔌</span>
+                Not connected. This capability is not available yet.
+              </div>
+            </div>
+          )}
+          
+        </div>
+      </div>
+
     </div>
   );
 }

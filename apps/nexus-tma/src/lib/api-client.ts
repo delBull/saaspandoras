@@ -82,3 +82,30 @@ export async function nexusGet<T>(
 
   return data as T;
 }
+
+/**
+ * Generic authenticated POST helper.
+ */
+export async function nexusPost<T = any>(
+  path: string,
+  body: any,
+  sessionToken: string
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${sessionToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json() as T | { error?: string; code?: string };
+
+  if (!res.ok) {
+    const err = data as { error?: string; code?: string };
+    throw new ApiError(res.status, err.code ?? 'API_ERROR', err.error ?? 'Request failed');
+  }
+
+  return data as T;
+}
