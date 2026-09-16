@@ -6,15 +6,19 @@ import { SovereignMeetRoom } from "./SovereignMeetRoom";
 
 interface SovereignMeetClientProps {
     /**
-     * Opaque join reference token (HMAC-signed JWT from /api/v1/tma/nexus/agenda).
-     * This is forwarded to /api/v1/meet/token for server-side verification.
-     * The client never decodes it — it is treated as an opaque string.
+     * Opaque join reference token (HMAC-signed HS256 JWT).
+     * Issued by either:
+     *   - /api/v1/tma/nexus/agenda  → for TMA collaborators (15min TTL)
+     *   - /meet/[meetingId]/page.tsx server component → for booking confirmation links / guests
+     *   - /meet/page.tsx server component → for ?ref= query param links
+     *
+     * The client never decodes it. It is forwarded opaquely to /api/v1/meet/token
+     * which verifies the signature and generates the Jitsi JWT.
      */
-    joinRef?: string;
-    meetingId?: string; // Legacy: admin direct join only
+    joinRef: string;
 }
 
-export function SovereignMeetClient({ joinRef, meetingId }: SovereignMeetClientProps) {
+export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
     const [token, setToken] = useState<string | null>(null);
     const [appId, setAppId] = useState<string | null>(null);
     const [roomName, setRoomName] = useState<string | null>(null);
@@ -25,21 +29,10 @@ export function SovereignMeetClient({ joinRef, meetingId }: SovereignMeetClientP
     useEffect(() => {
         const fetchToken = async () => {
             try {
-                if (!joinRef && !meetingId) {
-                    throw new Error("No se proporcionó referencia de reunión.");
-                }
-
-                // --- TMA path: use the opaque signed ref ---
-                // The server validates the ref and extracts identity — client sends nothing sensitive.
-                const body = joinRef
-                    ? { ref: joinRef }
-                    : { meetingId }; // Legacy fallback for admin direct-join (SIWE session required)
-
                 const res = await fetch("/api/v1/meet/token", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    credentials: "include", // Send session cookie for legacy admin path
-                    body: JSON.stringify(body),
+                    body: JSON.stringify({ ref: joinRef }),
                 });
 
                 if (!res.ok) {
@@ -60,7 +53,7 @@ export function SovereignMeetClient({ joinRef, meetingId }: SovereignMeetClientP
         };
 
         fetchToken();
-    }, [joinRef, meetingId]);
+    }, [joinRef]);
 
     if (loading) {
         return (

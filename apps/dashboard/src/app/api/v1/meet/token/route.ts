@@ -73,9 +73,12 @@ export async function POST(req: NextRequest) {
     }
 
     // --- 3. Determine role from meeting relationship ---
-    const isHost = meeting.hostCollaboratorId === collaboratorId;
+    // 'guest:<meetingId>' is the collaboratorId used by /meet/[meetingId] for
+    // unauthenticated leads arriving via booking confirmation links.
+    const isGuestLead = collaboratorId.startsWith('guest:');
+    const isHost = !isGuestLead && meeting.hostCollaboratorId === collaboratorId;
     const role = isHost ? "host" : "participant";
-    const participantName = `Collaborator ${collaboratorId.substring(0, 8)}`;
+    const participantName = isGuestLead ? "Invitado" : `Collaborator ${collaboratorId.substring(0, 8)}`;
 
     // --- 4. Generate Jitsi JWT (RS256 for JaaS) ---
     const privateKey = Buffer.from(JITSI_PRIVATE_KEY_B64, "base64").toString("utf8");
