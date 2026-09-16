@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useReducer, useCallback } from "react";
 import { getContract, prepareContractCall } from "thirdweb";
-import { useActiveAccount, useActiveWalletChain, useIsAutoConnecting, useSendTransaction, useDisconnect, useActiveWallet } from "thirdweb/react";
+import { useActiveAccount, useActiveWalletChain, useSwitchActiveWalletChain, useIsAutoConnecting, useSendTransaction, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { useToast } from "@saasfly/ui/use-toast";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
@@ -133,7 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const activeWallet = useActiveWallet();
     const { disconnect } = useDisconnect();
     const isAutoConnecting = useIsAutoConnecting();
-    const chain = useActiveWalletChain();
+    const activeChain = useActiveWalletChain();
+    const switchChain = useSwitchActiveWalletChain();
     const { toast } = useToast();
     const { getIdentity } = useEOAIdentity();
     const { mutate: sendTransaction } = useSendTransaction();
@@ -340,7 +341,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const domain = window.location.hostname;
             const uri = window.location.origin;
-            const message = `${domain} wants you to sign in with your Ethereum account:\n${identityAddress}\n\nTo access Pandoras Dashboard\n\nURI: ${uri}\nVersion: 1\nChain ID: ${chain?.id || config.chain.id}\nNonce: ${nonce}\nIssued At: ${new Date().toISOString()}\nExpiration Time: ${new Date(Date.now() + 5 * 60 * 1000).toISOString()}`;
+
+            // Force chain switch before signing if mismatch
+            if (activeChain?.id !== config.chain.id) {
+                console.log(`[AuthMachine] 🔄 Forcing chain switch from ${activeChain?.id} to ${config.chain.id} before signing...`);
+                try {
+                    await switchChain(config.chain);
+                } catch (err: any) {
+                    console.error("[AuthMachine] Failed to switch chain:", err);
+                    throw new Error("Debes cambiar a la red correcta (Sepolia) en tu wallet para continuar.");
+                }
+            }
+
+            const message = `${domain} wants you to sign in with your Ethereum account:\n${identityAddress}\n\nTo access Pandoras Dashboard\n\nURI: ${uri}\nVersion: 1\nChain ID: ${config.chain.id}\nNonce: ${nonce}\nIssued At: ${new Date().toISOString()}\nExpiration Time: ${new Date(Date.now() + 5 * 60 * 1000).toISOString()}`;
 
             // Prevent hanging if SDK crashes internally (e.g. WalletConnect getDefaultChain error)
             const signature = await Promise.race([
@@ -354,7 +367,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    payload: { domain, address: identityAddress, uri, chainId: chain?.id || config.chain.id, nonce, message, expirationTime: new Date(Date.now() + 5 * 60 * 1000).toISOString() },
+                    payload: { domain, address: identityAddress, uri, chainId: activeChain?.id || config.chain.id, nonce, message, expirationTime: new Date(Date.now() + 5 * 60 * 1000).toISOString() },
                     signature
                 }),
                 credentials: "include",
