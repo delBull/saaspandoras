@@ -17,7 +17,7 @@
  */
 
 import { db } from '@/db';
-import { marketingLeads, clients, projects } from '@/db/schema';
+import { marketingLeads, clients, projects, meetings } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { sendBookingConfirmedEmail } from '@/lib/email/scheduler-mailer';
 import { sendSchedulerTelegramAlert } from '@/lib/scheduling/scheduler-telegram-notifier';
@@ -90,6 +90,28 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
     tenantSlug === 'pandoras';
 
   const brandName = isPandoras ? "Pandora's" : (targetProject?.title || tenantSlug || 'Tenant');
+  const canonicalOrgId = targetProject?.organizationId || tenantSlug || 'pandoras';
+
+  // 1.5. Create Sovereign Meeting Entity
+  let finalMeetingLink = meetingLink;
+  try {
+    const { randomUUID } = await import('crypto');
+    const newMeetingId = randomUUID();
+    
+    await db.insert(meetings).values({
+      id: newMeetingId,
+      canonicalOrgId,
+      appointmentId: bookingId,
+      hostCollaboratorId: hostUserId || 'usr_platform_admin_default',
+      startsAt: slotStartTime,
+      endsAt: slotEndTime,
+      status: 'scheduled',
+    });
+    
+    finalMeetingLink = `https://dash.pandoras.finance/meet/${newMeetingId}`;
+  } catch (meetErr) {
+    console.error('[SyncBookingPipeline] Failed to create Sovereign Meeting:', meetErr);
+  }
 
   // 2. Marketing Lead Upsert with Idempotent Scoring (+50)
   try {
@@ -178,7 +200,7 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
       name: leadData.name,
       start: slotStartTime,
       end: slotEndTime,
-      meetingLink,
+      meetingLink: finalMeetingLink,
       brand: {
         name: brandName,
         isPandoras,
@@ -198,7 +220,7 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
         phone: leadData.phone,
         notes: leadData.notes,
       },
-      meetingLink,
+      meetingLink: finalMeetingLink,
       tenantSlug: targetProject?.slug || tenantSlug,
       project: targetProject,
       hostUserId,
@@ -239,8 +261,8 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
     });
 
     const smsText = isPandoras
-      ? `Hola ${leadData.name}, tu sesión con Pandora's está confirmada para el ${dateReadable} a las ${timeReadable}. Acceso: ${meetingLink}`
-      : `Hola ${leadData.name}, tu sesión con ${brandName} está confirmada para el ${dateReadable} a las ${timeReadable}. Acceso: ${meetingLink}`;
+      ? `Hola ${leadData.name}, tu sesión con Pandora's está confirmada para el ${dateReadable} a las ${timeReadable}. Acceso: ${finalMeetingLink}`
+      : `Hola ${leadData.name}, tu sesión con ${brandName} está confirmada para el ${dateReadable} a las ${timeReadable}. Acceso: ${finalMeetingLink}`;
 
     notificationTasks.push(
       SignalWireService.sendSMS({
