@@ -724,12 +724,12 @@ export function NFTGate({
         Para entrar al Protocolo Pandora's, necesitas reclamar tu slot Genesis en la blockchain.
       </p>
       {/* Access Gate Button */}
-      {isAdmin ? (
+      {isAdmin || !account ? (
         <button
           onClick={runRitual}
           className="group relative bg-white text-black px-12 py-5 rounded-full font-black uppercase text-[12px] tracking-[0.2em] hover:scale-105 hover:bg-lime-400 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 overflow-hidden"
         >
-          <span className="relative z-10">Iniciar Ritual de Acceso</span>
+          <span className="relative z-10">{!account ? "Conectar Wallet" : "Iniciar Ritual de Acceso"}</span>
           <div className="absolute inset-0 bg-gradient-to-r from-lime-500 to-lime-300 opacity-0 group-hover:opacity-10 transition-opacity" />
         </button>
       ) : (
