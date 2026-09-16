@@ -293,6 +293,9 @@ export class OllamaReasoningProvider implements ReasoningProvider {
                 durationMs: Date.now() - start,
               },
             };
+          } else {
+            const errorText = await oaiRes.text();
+            console.error('[OllamaReasoningProvider] OpenAI fallback returned non-OK status:', oaiRes.status, errorText);
           }
         } finally {
           clearTimeout(t3);
