@@ -281,7 +281,7 @@ export function middleware(request: NextRequest) {
       "img-src 'self' blob: data: https:",
       "font-src 'self' https://fonts.gstatic.com",
       `connect-src ${connectSrc} https://vercel.live`,
-      "frame-src 'self' https://telegram.org https://vercel.live https://*.thirdweb.com",
+      "frame-src 'self' https://telegram.org https://vercel.live https://*.thirdweb.com https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc",
       "base-uri 'self'",
       "form-action 'self'",
     ].join('; ')

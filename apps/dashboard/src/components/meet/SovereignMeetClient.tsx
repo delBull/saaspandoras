@@ -26,7 +26,7 @@ export function SovereignMeetClient({ meetingId }: SovereignMeetClientProps) {
             try {
                 const isGuest = !user;
                 const identityId = user?.id || null;
-                const displayName = user?.name || "Invitado";
+                const displayName = user ? `Usuario ${user.address.substring(0, 4)}` : "Invitado";
 
                 const res = await fetch("/api/v1/meet/token", {
                     method: "POST",
@@ -91,7 +91,7 @@ export function SovereignMeetClient({ meetingId }: SovereignMeetClientProps) {
     return (
         <SovereignMeetRoom 
             roomName={meetingId}
-            displayName={user?.name || "Invitado"}
+            displayName={user ? `Usuario ${user.address.substring(0, 4)}` : "Invitado"}
             role={role || "guest"}
             jwt={token}
             appId={appId}

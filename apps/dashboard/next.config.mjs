@@ -109,7 +109,7 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: ipfs:",
               "connect-src 'self' https: wss: data:",
-              "frame-src 'self' https://*.thirdweb.com https://*.pandoras.finance",
+              "frame-src 'self' https://*.thirdweb.com https://*.pandoras.finance https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc https://meet.jit.si",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
