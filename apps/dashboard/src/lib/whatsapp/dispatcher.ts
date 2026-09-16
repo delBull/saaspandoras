@@ -377,7 +377,7 @@ export class WhatsAppDispatcher {
 
         await this.sendReply({
           to: phone,
-          text: cognitiveAnswer,
+          text: formatWhatsAppText(cognitiveAnswer),
           replyToId: messageId,
           secrets: tenant.secrets,
           defaultPhoneId: phoneNumberId,
@@ -465,7 +465,7 @@ export class WhatsAppDispatcher {
           : `Hola ${resolvedName}, estoy procesando tu solicitud en Pandora's Growth OS.`
       );
 
-      await sendWhatsAppMessage(phone, replyText, messageId);
+      await sendWhatsAppMessage(phone, formatWhatsAppText(replyText), messageId);
 
       return {
         status: 'success',

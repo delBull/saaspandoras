@@ -270,7 +270,8 @@ export default function AcademyConsole({
       userWallet?.toLowerCase() === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || "").toLowerCase()
     ))
   );
-  const isFounderOrAdmin = isSovereignSuperAdmin || role === "admin";
+  // Only Sovereign Super Admin has global platform rights over tracks by default
+  const isFounderOrAdmin = isSovereignSuperAdmin;
   const currentUserId = (userEmail || userWallet || (isSovereignSuperAdmin ? "SUPER_ADMIN" : "admin")).toLowerCase().trim();
   const currentDisplayName = userName || (isSovereignSuperAdmin ? "Super Admin (Sovereign Authority)" : (userEmail || "Admin"));
 
@@ -316,7 +317,7 @@ export default function AcademyConsole({
     }
     if (courseScope === "all") {
       // Super Admin sees all; regular collaborators only see mine + shared
-      if (isFounderOrAdmin) return true;
+      if (isSovereignSuperAdmin) return true;
       return isOwner || isShared;
     }
     return true;
@@ -546,11 +547,10 @@ export default function AcademyConsole({
   };
 
   return (
-    <div className="min-h-screen bg-[#08080A] text-zinc-100 p-2 sm:p-4 md:p-6 font-sans">
+    <div className="min-h-screen bg-[#08080A] text-zinc-100 p-1 sm:p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
-        
         {/* Top Header matching Nexus Drawer Command Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:p-5 rounded-2xl bg-[#0C0C10] border border-white/10 shadow-[0_0_50px_rgba(168,85,247,0.08)] min-w-0 overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 md:p-5 rounded-2xl bg-[#0C0C10] border border-white/10 shadow-[0_0_50px_rgba(168,85,247,0.08)] min-w-0 overflow-hidden">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full">
             <Link 
               href="/nexus" 
@@ -578,9 +578,9 @@ export default function AcademyConsole({
                 )}
                 <span className="hidden md:inline-block text-xs font-mono text-zinc-500">v2.0 · MULTI-TRACK</span>
               </div>
-              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight mt-1 truncate flex items-center gap-2.5">
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight mt-1 flex items-center gap-2.5 min-w-0">
                 <GraduationCap className="w-6 h-6 text-purple-400 shrink-0" />
-                Pandora&apos;s Academy · Certificaciones &amp; Tracks
+                <span className="truncate">Pandora&apos;s Academy · Certificaciones &amp; Tracks</span>
               </h1>
             </div>
           </div>

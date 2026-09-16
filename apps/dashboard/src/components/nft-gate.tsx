@@ -309,6 +309,7 @@ interface NFTGateProps {
   initialState?: "HERO" | "FORM" | "RITUAL"; 
   projectId?: string | null;
   origin?: string | null;
+  skipLeadGate?: boolean;
   context?: {
     hasWallet: boolean;
     status: AuthStatus;
@@ -322,6 +323,7 @@ export function NFTGate({
   initialState,
   projectId,
   origin,
+  skipLeadGate,
   context 
 }: NFTGateProps) {
   const [visualState, setVisualState] = useState<GateVisualState>("idle");
@@ -706,7 +708,9 @@ export function NFTGate({
 
   // 🎭 CASE 6: Lead not yet captured → show capture gate
   if (!mounted) return null;
-  return createPortal(<LeadCaptureGate onLeadCaptured={handleLeadCaptured} projectId={projectId} />, document.body);
+  if (!skipLeadGate && !leadCaptured) {
+    return createPortal(<LeadCaptureGate onLeadCaptured={handleLeadCaptured} projectId={projectId} />, document.body);
+  }
 
   // 🎭 CASE 7: Lead captured → Ritual entry
   return (

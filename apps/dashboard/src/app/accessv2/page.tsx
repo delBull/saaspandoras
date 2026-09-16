@@ -340,6 +340,7 @@ function AccessV2Inner() {
         projectId={projectSlug}
         origin={origin}
         initialState={bypass === 'ritual' ? 'RITUAL' : undefined}
+        skipLeadGate={true}
       >
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center pt-14">
             {/* ── LOADING STATE ─────────────────────────────────────────────── */}

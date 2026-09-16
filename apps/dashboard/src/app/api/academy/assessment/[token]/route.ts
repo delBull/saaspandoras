@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { AcademyStore } from '@/lib/pandoras/core/domains/academy/candidates/candidate-store';
+import { COO_EXECUTIVE_PROGRAM } from '@/lib/pandoras/core/domains/academy/curriculum/coo-program';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +22,8 @@ export async function GET(
 
     if (token === 'preview') {
       const trackId = url.searchParams.get('track');
-      // Import mocked program (fallback to COO program for the demo structure)
-      const mockProgram = require('@/lib/pandoras/core/domains/academy/curriculum/coo-program').COO_EXECUTIVE_PROGRAM;
+      // Use static imported mock program (fallback to COO program for the demo structure)
+      const mockProgram = COO_EXECUTIVE_PROGRAM;
       
       return NextResponse.json({
         success: true,
