@@ -342,7 +342,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const uri = window.location.origin;
             const message = `${domain} wants you to sign in with your Ethereum account:\n${identityAddress}\n\nTo access Pandoras Dashboard\n\nURI: ${uri}\nVersion: 1\nChain ID: ${chain?.id || config.chain.id}\nNonce: ${nonce}\nIssued At: ${new Date().toISOString()}\nExpiration Time: ${new Date(Date.now() + 5 * 60 * 1000).toISOString()}`;
 
-            const signature = await account.signMessage({ message });
+            // Prevent hanging if SDK crashes internally (e.g. WalletConnect getDefaultChain error)
+            const signature = await Promise.race([
+                account.signMessage({ message }),
+                new Promise<string>((_, reject) => 
+                    setTimeout(() => reject(new Error("Firma de mensaje caducada. Por favor, asegúrate de estar en la red correcta (Sepolia) y vuelve a intentarlo.")), 15000)
+                )
+            ]);
 
             const loginRes = await fetch(`/api/auth/login`, {
                 method: "POST",
