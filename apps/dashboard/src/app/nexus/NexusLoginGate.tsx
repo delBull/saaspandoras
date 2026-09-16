@@ -38,6 +38,7 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
   const [phoneError, setPhoneError] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
   
   const { user, status } = useAuth();
   const router = useRouter();
@@ -64,7 +65,8 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
 
   useEffect(() => {
     async function handleWeb3Registration() {
-      if (user && (status === "has_access" || status === "authenticated") && !requireCompletion) {
+      if (user && (status === "has_access" || status === "authenticated") && !requireCompletion && !hasRefreshed) {
+        setHasRefreshed(true);
         // Interceptar login web3 para registrar datos obligatorios
         if (name && email && whatsappPhone && user.address) {
           try {
@@ -81,7 +83,7 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
       }
     }
     handleWeb3Registration();
-  }, [user, status, router, name, email, whatsappPhone, requireCompletion]);
+  }, [user, status, router, name, email, whatsappPhone, requireCompletion, hasRefreshed]);
 
   const handleRequestMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();

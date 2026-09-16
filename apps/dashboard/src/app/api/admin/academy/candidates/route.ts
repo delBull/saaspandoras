@@ -18,7 +18,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges or valid unlock token required.' }, { status: 401 });
     }
 
-    const candidates = await AcademyStore.listCandidatesAsync();
+    const { getNexusAuthContext } = require('@/lib/nexus/nexus-rbac');
+    const authCtx = await getNexusAuthContext(req.headers);
+    const isSuperAdmin = authCtx.role === 'SUPER_ADMIN';
+
+    let candidates = await AcademyStore.listCandidatesAsync();
+
+    if (!isSuperAdmin) {
+      // Isolate candidates to the specific track/tenant mapping for this admin
+      const orgScope = (authCtx.canonicalOrgId || '').toUpperCase();
+      candidates = candidates.filter(c => c.targetRole.toUpperCase() === orgScope || orgScope === 'ALL_TRACKS');
+    }
 
     const total = candidates.length;
     const attended = candidates.filter(c => c.attendanceStatus !== 'INVITED').length;
@@ -57,6 +67,22 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { action, name, email, phone, targetRole, notes, candidateId } = body;
+
+    const { getNexusAuthContext } = require('@/lib/nexus/nexus-rbac');
+    const authCtx = await getNexusAuthContext(req.headers);
+    const isSuperAdmin = authCtx.role === 'SUPER_ADMIN';
+    const orgScope = (authCtx.canonicalOrgId || '').toUpperCase();
+
+    if (!isSuperAdmin) {
+      if (action === 'REINVITE' && candidateId) {
+        const existing = await AcademyStore.getCandidateAsync(candidateId);
+        if (existing && existing.targetRole.toUpperCase() !== orgScope && orgScope !== 'ALL_TRACKS') {
+           return NextResponse.json({ success: false, error: 'Unauthorized tenant scope' }, { status: 403 });
+        }
+      } else if (targetRole && targetRole.toUpperCase() !== orgScope && orgScope !== 'ALL_TRACKS') {
+         return NextResponse.json({ success: false, error: 'Unauthorized tenant scope' }, { status: 403 });
+      }
+    }
 
     if (action === 'REINVITE' && candidateId) {
       const invitation = await AcademyStore.createInvitationAsync(candidateId);

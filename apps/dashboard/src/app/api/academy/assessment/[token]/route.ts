@@ -17,6 +17,32 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
+    const url = new URL(req.url);
+
+    if (token === 'preview') {
+      const trackId = url.searchParams.get('track');
+      // Import mocked program (fallback to COO program for the demo structure)
+      const mockProgram = require('@/lib/pandoras/core/domains/academy/curriculum/coo-program').COO_EXECUTIVE_PROGRAM;
+      
+      return NextResponse.json({
+        success: true,
+        requiresVerification: false,
+        assessment: {
+          id: 'mock_assessment_123',
+          candidateName: 'Admin (Modo Prueba)',
+          targetRole: trackId?.includes('rwa') ? 'RWA_REAL_ESTATE_SPECIALIST' : (trackId?.includes('cmo') ? 'CMO' : 'COO'),
+          status: 'IN_PROGRESS',
+          currentModuleIndex: 0,
+          totalModules: mockProgram.modules.length,
+          curriculumVersion: mockProgram.version,
+          responses: []
+        },
+        currentModule: mockProgram.modules[0],
+        isComplete: false,
+        certificationId: null
+      });
+    }
+
     const invitation = await AcademyStore.getInvitationAsync(token);
 
     if (!invitation) {
@@ -32,7 +58,6 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Candidato no registrado' }, { status: 404 });
     }
 
-    const url = new URL(req.url);
     const emailParam = (url.searchParams.get('email') || '').trim().toLowerCase();
 
     // Mask helper: p***@gmail.com
@@ -94,6 +119,25 @@ export async function POST(
 ) {
   try {
     const { token } = await params;
+
+    if (token === 'preview') {
+      const body = await req.json();
+      if (body.action === 'SUBMIT_ANSWER') {
+        // Silently accept the answer in preview mode
+        return NextResponse.json({ success: true, result: { status: 'mock_saved' } });
+      }
+      if (body.action === 'FINALIZE') {
+        // Return a mocked certification in preview mode
+        return NextResponse.json({
+          success: true,
+          assessment: { candidateId: 'mock_cand_123', targetRole: 'COO' },
+          certification: { id: 'mock_cert_123', readinessScore: 95.5, certificateHash: 'mock_hash_abc123' },
+          nextSuiteInvitation: null
+        });
+      }
+      return NextResponse.json({ success: false, error: 'Acción no válida en modo prueba' }, { status: 400 });
+    }
+
     const invitation = await AcademyStore.getInvitationAsync(token);
 
     // 🛡️ SECURITY GUARD 1: Validate token exists and is active

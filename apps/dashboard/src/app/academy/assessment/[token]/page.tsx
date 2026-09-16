@@ -250,7 +250,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
           <h2 className="text-xl font-bold text-white">Acceso No Válido</h2>
           <p className="text-xs text-zinc-400 leading-relaxed font-sans">{error || "El enlace de evaluación no existe o ha expirado."}</p>
           <Link
-            href="/academy"
+            href={token === "preview" ? "/admin/academy" : "/academy"}
             className="inline-block px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-purple-300 hover:bg-white/10 transition-colors"
           >
             ← Volver al Portal de Academy

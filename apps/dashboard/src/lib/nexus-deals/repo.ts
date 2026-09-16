@@ -60,6 +60,11 @@ export function isUserCreatorOfDeal(room: any, userIdentifier: string, email?: s
   const creator = resolveRoomCreator(room).toLowerCase().trim();
   const ident = (userIdentifier || "").toLowerCase().trim();
   const em = (email || "").toLowerCase().trim();
+  
+  // 🛡️ SECURITY GUARD: Prevent generic actor collisions ("Nexus Ops") from granting global access
+  if (creator === "nexus ops" || creator === "") return false;
+  if (ident === "nexus ops" && em === "") return false;
+
   return (ident !== "" && creator === ident) || (em !== "" && creator === em);
 }
 
