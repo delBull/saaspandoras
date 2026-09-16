@@ -447,12 +447,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error(`[AuthMachine] ❌ Flow #${id} failed (object):`, err);
                 console.error(`[AuthMachine] ❌ Flow #${id} failed (stringified):`, JSON.stringify(err, Object.getOwnPropertyNames(err)));
                 
-                // Si el usuario rechaza la firma o el popup es bloqueado por auto-login
+                // Si el usuario rechaza la firma, el popup es bloqueado, o hay un error de inyección de wallet (ej. Rabby vs MetaMask)
                 // Pasamos a unauthenticated para que pueda intentar manualmente, pero NO desconectamos
                 // la wallet agresivamente porque eso rompe el flujo de In-App Wallets (Social Login).
                 const msg = err?.message?.toLowerCase() || "";
-                if (msg.includes("rejected") || msg.includes("user denied") || msg.includes("popup")) {
-                    console.log("[AuthMachine] Signature failed or popup blocked. Reverting to unauthenticated (Signature Required).");
+                const isInfraError = msg.includes("infrastructure") || msg.includes("fetch failed") || msg.includes("network") || msg.includes("gateway");
+
+                if (!isInfraError) {
+                    console.log("[AuthMachine] Wallet/Signature error or rejected. Reverting to unauthenticated so user can retry.");
                     
                     // Si el error viene del service worker de MetaMask (zombie state)
                     const stack = err?.stack?.toLowerCase() || "";
@@ -468,6 +470,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return;
                 }
 
+                // If it really looks like an infrastructure/API error:
                 safeDispatch({ type: "SET_ERROR", error: err.message || "Error desconocido" }, id);
                 safeDispatch({ type: "SET_STATUS", status: "error" }, id);
             }
