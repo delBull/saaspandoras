@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { eq, or, and, gte, desc, inArray } from 'drizzle-orm';
+import { eq, or, and, inArray } from 'drizzle-orm';
 import {
   meetings,
   meetingParticipants,
@@ -8,6 +8,9 @@ import {
   users
 } from '@/db/schema';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import jwt from 'jsonwebtoken';
+
+const MEET_JOIN_SECRET = process.env.MEET_JOIN_SECRET;
 
 export async function GET(req: Request) {
   try {
@@ -82,8 +85,27 @@ export async function GET(req: Request) {
       // Title derivation (Fallback to "Sovereign Meet" if not tied to a booking)
       const title = row.booking ? `Reunión con ${row.booking.leadName}` : 'Sovereign Meet';
 
+      // --- SECURE JOIN URL ---
+      // We never expose the raw meetingId in the URL.
+      // We issue a short-lived (15min) HMAC-signed reference token that embeds
+      // meetingId + collaboratorId + orgId. The /meet/token endpoint verifies it.
+      let joinUrl: string | null = null;
+      if (canJoin) {
+        if (!MEET_JOIN_SECRET) {
+          // Fail-closed: misconfiguration → no join available
+          console.warn('[NexusTMA_Agenda] MEET_JOIN_SECRET not configured — joinUrl disabled');
+        } else {
+          const joinRef = jwt.sign(
+            { meetingId: row.meeting.id, collaboratorId: collaboratorId.toString(), orgId },
+            MEET_JOIN_SECRET,
+            { algorithm: 'HS256', expiresIn: '15m' }
+          );
+          joinUrl = `https://dash.pandoras.finance/meet?ref=${joinRef}`;
+        }
+      }
+
       return {
-        id: row.meeting.id, // Opaque reference
+        id: row.meeting.id,
         title,
         startsAt: startsAt.toISOString(),
         endsAt: endsAt.toISOString(),
@@ -94,7 +116,7 @@ export async function GET(req: Request) {
           canStart: isHost && canJoin,
           canCancel,
         },
-        joinUrl: canJoin ? `https://dash.pandoras.finance/meet/${row.meeting.id}` : null
+        joinUrl
       };
     });
 
