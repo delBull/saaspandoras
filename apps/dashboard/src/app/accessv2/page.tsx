@@ -162,8 +162,14 @@ function AccessV2Inner() {
   const bypass = searchParams?.get('bypass') || null;
 
   const isMinting = authStatus === 'minting';
+  // isLoading = only truly transient states where we're waiting on server response
+  // 'booting' and 'checking_session' are startup states — we don't want to show the
+  // spin button for them because they resolve quickly and a persistent cookie session
+  // will skip straight to has_access without user interaction.
   const isLoading =
     isOracleLoading ||
+    authStatus === 'checking_access';
+  const isBooting =
     authStatus === 'booting' ||
     authStatus === 'checking_session';
 
@@ -242,9 +248,11 @@ function AccessV2Inner() {
 
   // Logic for the primary button in the "Not Authenticated" view
   const getPrimaryButtonLabel = () => {
+    if (isBooting) return 'VERIFICANDO...';
     if (isLoading) return 'VERIFICANDO...';
     if (account && authStatus === 'unauthenticated') return 'ACEPTAR Y CONTINUAR';
     if (account && (authStatus === 'has_access' || hasAccess || isAdmin)) return 'ENTRAR AL SISTEMA';
+    if (account && authStatus === 'signing') return 'FIRMA PENDIENTE...';
     if (account) return 'PROCESANDO...';
     return 'SOLICITAR ACCESO';
   };

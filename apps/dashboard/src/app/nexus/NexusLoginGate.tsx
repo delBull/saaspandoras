@@ -6,6 +6,7 @@ import { Shield, Lock, Mail, ArrowRight, Wallet, CheckCircle2, AlertCircle, Chev
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { wallets } from "@/lib/wallets";
+import { config } from "@/config";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 
@@ -291,6 +292,7 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
                     <div className="w-full space-y-1.5">
                       <ConnectButton
                         client={client}
+                        chain={config.chain}
                         theme="dark"
                         wallets={wallets}
                         connectButton={{
