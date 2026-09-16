@@ -456,6 +456,13 @@
       "when": 1789488693410,
       "tag": "0064_sour_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1789592610214,
+      "tag": "0065_fuzzy_sprite",
+      "breakpoints": true
     }
   ]
 }

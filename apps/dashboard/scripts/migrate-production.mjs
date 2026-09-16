@@ -177,6 +177,68 @@ async function migrateDatabase(dbUrl) {
 
   console.log("✅ All Hermes Compute & Credit tables migrated successfully!");
 
+  // 5. Sovereign Meet tables
+  console.log("📦 Applying Sovereign Meet DDL...");
+  await sql`
+    DO $$ BEGIN
+      CREATE TYPE "public"."meeting_status" AS ENUM('scheduled', 'starting', 'live', 'ended', 'cancelled');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `;
+  await sql`
+    DO $$ BEGIN
+      CREATE TYPE "public"."participant_type" AS ENUM('collaborator', 'external_guest', 'anonymous_guest');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `;
+  await sql`
+    DO $$ BEGIN
+      CREATE TYPE "public"."participant_role" AS ENUM('host', 'co_host', 'participant', 'guest');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS "meetings" (
+      "id" TEXT PRIMARY KEY NOT NULL,
+      "canonical_org_id" TEXT NOT NULL,
+      "appointment_id" TEXT,
+      "host_collaborator_id" VARCHAR(255) NOT NULL,
+      "status" "public"."meeting_status" DEFAULT 'scheduled' NOT NULL,
+      "starts_at" TIMESTAMP WITH TIME ZONE,
+      "ends_at" TIMESTAMP WITH TIME ZONE,
+      "started_at" TIMESTAMP WITH TIME ZONE,
+      "ended_at" TIMESTAMP WITH TIME ZONE,
+      "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+      "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+    );
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS "meeting_participants" (
+      "id" TEXT PRIMARY KEY NOT NULL,
+      "meeting_id" TEXT NOT NULL,
+      "identity_id" VARCHAR(255),
+      "participant_type" "public"."participant_type" DEFAULT 'anonymous_guest' NOT NULL,
+      "role" "public"."participant_role" DEFAULT 'guest' NOT NULL,
+      "invited_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      "joined_at" TIMESTAMP WITH TIME ZONE,
+      "left_at" TIMESTAMP WITH TIME ZONE
+    );
+  `;
+  
+  await sql`
+    DO $$ BEGIN
+      ALTER TABLE "meeting_participants" ADD CONSTRAINT "meeting_participants_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "public"."meetings"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `;
+  console.log("✅ Sovereign Meet tables migrated successfully!");
+
   // Verify
   const tables = await sql`
     SELECT table_name FROM information_schema.tables 

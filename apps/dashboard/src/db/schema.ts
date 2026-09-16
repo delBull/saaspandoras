@@ -1509,6 +1509,27 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "completed"
 ]);
 
+export const meetingStatusEnum = pgEnum("meeting_status", [
+  "scheduled",
+  "starting",
+  "live",
+  "ended",
+  "cancelled"
+]);
+
+export const participantTypeEnum = pgEnum("participant_type", [
+  "collaborator",
+  "external_guest",
+  "anonymous_guest"
+]);
+
+export const participantRoleEnum = pgEnum("participant_role", [
+  "host",
+  "co_host",
+  "participant",
+  "guest"
+]);
+
 export const schedulingSlots = pgTable("scheduling_slots", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(), // The host (Admin/Creator)
@@ -1547,12 +1568,50 @@ export const schedulingBookings = pgTable("scheduling_bookings", {
   cancellationReason: text("cancellation_reason"),
 });
 
+// =========================================================
+// SOVEREIGN MEET (Jitsi/Video Meetings)
+// =========================================================
+
+export const meetings = pgTable("meetings", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  canonicalOrgId: text("canonical_org_id").notNull(), // Strict Tenant Isolation
+  appointmentId: text("appointment_id").references(() => schedulingBookings.id), // Link to Agenda
+  hostCollaboratorId: varchar("host_collaborator_id", { length: 255 }).references(() => users.id).notNull(), // The actual owner/host
+  
+  status: meetingStatusEnum("status").default("scheduled").notNull(),
+  
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const meetingParticipants = pgTable("meeting_participants", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  meetingId: text("meeting_id").references(() => meetings.id).notNull(),
+  identityId: varchar("identity_id", { length: 255 }), // Can be null for anonymous guests
+  
+  participantType: participantTypeEnum("participant_type").default("anonymous_guest").notNull(),
+  role: participantRoleEnum("role").default("guest").notNull(),
+  
+  invitedAt: timestamp("invited_at", { withTimezone: true }).defaultNow(),
+  joinedAt: timestamp("joined_at", { withTimezone: true }),
+  leftAt: timestamp("left_at", { withTimezone: true }),
+});
+
 export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
 export type MarketingExecution = typeof marketingExecutions.$inferSelect;
 
 // Scheduler Types
 export type SchedulingSlot = typeof schedulingSlots.$inferSelect;
 export type SchedulingBooking = typeof schedulingBookings.$inferSelect;
+
+// Sovereign Meet Types
+export type Meeting = typeof meetings.$inferSelect;
+export type MeetingParticipant = typeof meetingParticipants.$inferSelect;
 
 // =========================================================
 // CLIENTS & PAYMENTS SYSTEM (CRM LITE & PAYMENT BRIDGE)
