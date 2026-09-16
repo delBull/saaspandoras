@@ -88,13 +88,17 @@ export async function POST(req: NextRequest) {
       aud: "jitsi",
       iss: "chat",
       sub: JITSI_APP_ID,
-      room: meetingId,
+      // JaaS docs: `room` in JWT is the room name WITHOUT the appId prefix.
+      // The SDK roomName prop is `${appId}/${meetingId}` — JaaS strips the prefix
+      // before matching against this claim. Using '*' is also valid and allows
+      // any room under this appId (safer for server-issued tokens).
+      room: "*",
       nbf: now - 30,
       exp: now + 4 * 3600, // 4h Jitsi session
       context: {
         features: {
-          livestreaming: role === "host",
-          recording: false,
+          livestreaming: isHost,
+          recording: isHost, // Host can record their own sessions
           transcription: false,
           "outbound-call": false,
         },
@@ -102,7 +106,7 @@ export async function POST(req: NextRequest) {
           id: collaboratorId,
           name: participantName,
           email: "",
-          moderator: role === "host",
+          moderator: isHost,
         },
       },
     };
