@@ -1,6 +1,7 @@
 import { CompiledExecutionManifest, IPipelineRuntime } from './orchestrator-types';
 import { ProspectIdentityResolver } from './prospect-identity-resolver';
 import { ProspectIntelligenceService } from './prospect-intelligence-service';
+import { ProspectStrategyService } from './prospect-strategy-service';
 import { IdentityIdentifiers } from '@/lib/marketing/identity-resolver';
 
 /**
@@ -31,11 +32,13 @@ export class ProspectIntelligenceRuntime implements IPipelineRuntime {
       const rawContext = await ProspectIntelligenceService.buildInitialContext(identity);
 
       // 4. Apply Privacy/Scope Filters
-      // By default, we do not allow restricted or cross-tenant facts in the LLM context
       const safeContext = ProspectIntelligenceService.applyPrivacyFilter(rawContext, {
         allowRestrictedFacts: false,
         allowCrossTenantFacts: false,
       });
+
+      // 4.5. Generate Deterministic Strategy
+      safeContext.strategy = ProspectStrategyService.defineStrategy(safeContext);
 
       // 5. Inject into Manifest
       manifest.prospectContext = safeContext;

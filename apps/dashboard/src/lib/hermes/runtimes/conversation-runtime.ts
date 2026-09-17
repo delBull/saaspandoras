@@ -1,10 +1,11 @@
 import { CompiledExecutionManifest, IPipelineRuntime } from './orchestrator-types';
+import { ProspectStrategyService } from './prospect-strategy-service';
 
 /**
  * Hermes OS — Conversation Runtime
  * 
- * Pipeline Stage 1.
- * Acts as the "LLM Renderer". Does NOT know about tenants, DBs, or packs.
+ * Pipeline Stage 3 (After Intelligence and Knowledge).
+ * Acts as the "LLM Renderer".
  * Reads the CompiledExecutionManifest and generates the conversational response/intents.
  */
 export class ConversationRuntime implements IPipelineRuntime {
@@ -12,11 +13,16 @@ export class ConversationRuntime implements IPipelineRuntime {
   async process(manifest: CompiledExecutionManifest, input: string): Promise<void> {
     console.log(`[ConversationRuntime] Processing input: "${input}"`);
     
-    // In a real implementation, this would:
-    // 1. Build a prompt context from manifest.runtimeConfig, manifest.discoveryGraph, manifest.relevantKnowledge
-    // 2. Call the LLM (OpenAI/Anthropic/Gemini)
-    // 3. Parse the LLM output (messages, detected intents)
+    let systemPrompt = 'You are Hermes, the AI Agent.';
     
+    // P5: Inject Prospect Intelligence Summary
+    if (manifest.prospectContext) {
+      const prospectSummary = ProspectStrategyService.generateContextSummary(manifest.prospectContext);
+      systemPrompt += `\n\n${prospectSummary}`;
+      console.log(`[ConversationRuntime] Injected Prospect Intelligence Summary into prompt.`);
+    }
+
+    // In a real implementation, this would call the LLM with the systemPrompt.
     // Mocking an LLM response based on the input
     const isInvesting = input.toLowerCase().includes('invertir') || input.toLowerCase().includes('invest');
     
