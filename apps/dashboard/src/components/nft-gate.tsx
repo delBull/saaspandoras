@@ -535,7 +535,8 @@ export function NFTGate({
   // FIX 2: Explicit === true — eliminates undefined/null ambiguity
   const hasAccess = status === "has_access";
   const isVerifiedAdmin = isAdmin === true && !!account;
-  const shouldBypass = hasAccess || isVerifiedAdmin;
+  // FIX: allow unauthenticated users to fall through so they can see the SIWE "Autenticar identidad" button
+  const shouldBypass = hasAccess || isVerifiedAdmin || status === "unauthenticated";
 
   // 🟢 CASE 1: Full Access (Bypass everything except wallet requirement)
   if (shouldBypass) {

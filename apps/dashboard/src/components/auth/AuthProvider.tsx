@@ -359,7 +359,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const signature = await Promise.race([
                 account.signMessage({ message }),
                 new Promise<string>((_, reject) => 
-                    setTimeout(() => reject(new Error("Firma de mensaje caducada. Por favor, asegúrate de estar en la red correcta (Sepolia) y vuelve a intentarlo.")), 15000)
+                    setTimeout(() => reject(new Error("Firma de mensaje caducada. Por favor, asegúrate de estar en la red correcta (Sepolia) y vuelve a intentarlo.")), 60000)
                 )
             ]);
 
