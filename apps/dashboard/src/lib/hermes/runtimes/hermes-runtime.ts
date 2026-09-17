@@ -7,6 +7,7 @@ import { UIRuntime } from './ui-runtime';
 import { MediaRuntime } from './media-runtime';
 import { ActionRuntime } from './action-runtime';
 import { IntentRuntime } from './intent-runtime';
+import { ProspectIntelligenceRuntime } from './prospect-intelligence-runtime';
 import { KnowledgeRuntime } from './knowledge-runtime';
 
 /**
@@ -19,6 +20,7 @@ import { KnowledgeRuntime } from './knowledge-runtime';
 export class HermesRuntime {
   private pipeline = [
     new IntentRuntime(),
+    new ProspectIntelligenceRuntime(),
     new KnowledgeRuntime(),
     new ConversationRuntime(),
     new UIRuntime(),

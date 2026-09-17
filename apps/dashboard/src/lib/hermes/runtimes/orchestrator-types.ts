@@ -1,5 +1,6 @@
 import { CompiledRuntimeManifest } from './pack-types';
 import { CompiledDiscoveryManifest } from './discovery-types';
+import { ProspectContext } from './prospect-intelligence-types';
 
 /**
  * The full OS state for the current turn.
@@ -20,6 +21,7 @@ export interface CompiledExecutionManifest {
   // Turn-specific Context
   currentJourneyId?: string;
   currentStageId?: string;
+  prospectContext?: ProspectContext;
   relevantKnowledge: any[];
   
   // Pipeline State (mutated by the pipeline runtimes)
