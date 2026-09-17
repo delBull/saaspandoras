@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { nexusGet, nexusPost } from '../lib/api-client';
 import type { NexusTmaSession } from '../lib/session-store';
+import { AgendaView } from './AgendaView';
 
 interface CommandCenterProps {
   session: NexusTmaSession;
@@ -156,6 +157,9 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   const [resolvingDeepLink, setResolvingDeepLink] = useState(false);
   const [deepLinkOp, setDeepLinkOp] = useState<NexusOperation | null>(null);
 
+  const [showAgenda, setShowAgenda] = useState(false);
+  const [agendaMeetings, setAgendaMeetings] = useState<any[]>([]);
+
   const fetchOperations = useCallback(async () => {
     try {
       setLoading(true);
@@ -183,6 +187,16 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
       // 2. Load standard hub
       const data = await nexusGet<{ operations: any }>('/api/v1/tma/nexus/operations/my-work', session.token);
       setBuckets(data.operations || { NEEDS_ATTENTION: [], TODAY: [], RECENT: [] });
+
+      // 3. Load next 2 agenda items
+      try {
+        const agendaData = await nexusGet<{ agenda: any[] }>('/api/v1/tma/nexus/agenda', session.token);
+        if (agendaData.agenda) {
+          setAgendaMeetings(agendaData.agenda.slice(0, 2));
+        }
+      } catch (err) {
+        // non-fatal
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load operations');
     } finally {
@@ -226,6 +240,10 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   };
 
   const totalOps = buckets.NEEDS_ATTENTION.length + buckets.TODAY.length + buckets.RECENT.length;
+
+  if (showAgenda) {
+    return <AgendaView session={session} onBack={() => setShowAgenda(false)} />;
+  }
 
   return (
     <div className="screen fade-in">
@@ -386,6 +404,39 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
           </div>
         ) : (
           <>
+            <div className="card flex-col gap-3" style={{ marginBottom: 'var(--space-4)', borderLeft: '4px solid var(--color-accent)' }}>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '1.25rem' }}>📅</span>
+                  <h4 className="font-semibold text-sm">Próximas Reuniones</h4>
+                </div>
+                <button onClick={() => setShowAgenda(true)} className="text-xs font-bold text-accent underline">
+                  Ver agenda
+                </button>
+              </div>
+              {agendaMeetings.length === 0 ? (
+                <p className="text-xs text-secondary">No tienes reuniones programadas pronto.</p>
+              ) : (
+                <div className="flex flex-col gap-2 mt-2">
+                  {agendaMeetings.map(m => (
+                    <div key={m.id} className="flex items-center justify-between bg-[var(--color-bg-elevated)] p-2 rounded">
+                      <div>
+                        <p className="text-xs font-bold">{m.title}</p>
+                        <p className="text-[10px] text-secondary">
+                           {new Date(m.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      {m.actions?.canJoin && (
+                        <button onClick={() => window.open(m.joinUrl, '_blank')} className="btn btn-accent text-[10px] px-2 py-1 h-auto min-h-0">
+                          Unirse
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {loading && totalOps === 0 && (
               <div className="text-center p-8 text-secondary">Loading operations...</div>
             )}

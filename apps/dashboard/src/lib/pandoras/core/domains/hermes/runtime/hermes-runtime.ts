@@ -197,6 +197,57 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         controlPlaneContext.actorId,
       );
 
+      // --- PROSPECT INTELLIGENCE INJECTION (P1-P5) ---
+      try {
+        const { IdentityResolver } = await import('@/lib/marketing/identity-resolver');
+        const identityId = await IdentityResolver.resolveIdentity({
+          userId: controlPlaneContext.actorId
+        });
+
+        if (identityId) {
+          const prospectIdentity = {
+            marketingIdentityId: identityId,
+            canonicalId: controlPlaneContext.actorId || identityId,
+            resolvedAt: new Date()
+          };
+
+          const { ProspectIntelligenceService } = await import('@/lib/hermes/runtimes/prospect-intelligence-service');
+          const { ProspectStrategyService } = await import('@/lib/hermes/runtimes/prospect-strategy-service');
+          
+          const rawContext = await ProspectIntelligenceService.buildInitialContext(prospectIdentity as any);
+          const prospectContext = ProspectIntelligenceService.applyPrivacyFilter(rawContext, {
+              allowRestrictedFacts: false,
+              allowCrossTenantFacts: false,
+          });
+          prospectContext.strategy = ProspectStrategyService.defineStrategy(prospectContext);
+          
+          const prospectSummary = ProspectStrategyService.generateContextSummary(prospectContext);
+
+          // Inject as a virtual GovernedKnowledgeFact
+          effectiveContext.knowledge.push({
+             id: 'prospect_intelligence_summary',
+             key: 'prospect_intelligence',
+             content: prospectSummary,
+             status: 'ACTIVE',
+             visibility: 'INTERNAL_OPERATIONAL',
+             dimension: 'strategy',
+             classification: 'TENANT_RESTRICTED'
+          });
+
+          // P7: Apply Knowledge Strategy Avoid Filters (RAG dynamic filtering)
+          if (prospectContext.strategy.knowledgeStrategy.avoidTopics.length > 0) {
+             const avoid = prospectContext.strategy.knowledgeStrategy.avoidTopics;
+             effectiveContext.knowledge = effectiveContext.knowledge.filter(k => {
+                 // Very basic text-based avoidance for MVP
+                 return !avoid.some(topic => k.content.toLowerCase().includes(topic.toLowerCase()));
+             });
+          }
+        }
+      } catch (e) {
+        console.warn('[HermesRuntime] Failed to inject Prospect Intelligence:', e);
+      }
+      // --- END PROSPECT INTELLIGENCE ---
+
       // Forward interlocutor, Boss executive authority and Sovereign Canonical Identity Context (F6)
       const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
       if (rawInterlocutor) {
